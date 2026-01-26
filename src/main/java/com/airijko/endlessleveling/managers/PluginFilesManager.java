@@ -1,42 +1,69 @@
 package com.airijko.endlessleveling.managers;
 
+import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
+import com.hypixel.hytale.server.core.plugin.PluginManager;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.UUID;
 
 public class PluginFilesManager {
 
+    private static final String PLUGIN_FOLDER_NAME = "EndlessLeveling";
+    private static final String PLAYERDATA_FOLDER_NAME = "playerdata";
+    private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
+
+    private final JavaPlugin plugin;
     private final File pluginFolder;
-    private File playerDataFolder;
+    private final File playerDataFolder;
 
-    private File configFile;
-    private File levelingFile;
+    private final File configFile;
+    private final File levelingFile;
 
-    public PluginFilesManager(File pluginFolder, JavaPlugin plugin) {
-        this.pluginFolder = pluginFolder;
+    public PluginFilesManager(JavaPlugin plugin) {
+        this.plugin = plugin;
+        Path modsPath = PluginManager.MODS_PATH;
+        if (modsPath == null) {
+            throw new IllegalStateException("Mods path is not initialized for EndlessLeveling");
+        }
+        this.pluginFolder = modsPath.resolve(PLUGIN_FOLDER_NAME).toFile();
+        this.playerDataFolder = new File(pluginFolder, PLAYERDATA_FOLDER_NAME);
+
         createFolders();
 
-        // Initialize YAML files
-        this.configFile = initYamlFile("config.yml", plugin);
-        this.levelingFile = initYamlFile("leveling.yml", plugin);
+        this.configFile = initYamlFile("config.yml");
+        this.levelingFile = initYamlFile("leveling.yml");
     }
 
     /** Create the plugin folder and player data folder */
     private void createFolders() {
-        if (!pluginFolder.exists()) pluginFolder.mkdirs();
-
-        playerDataFolder = new File(pluginFolder, "playerdata");
-        if (!playerDataFolder.exists()) playerDataFolder.mkdirs();
-
-        System.out.println("[Endless Leveling] Plugin folders initialized at: " + pluginFolder.getAbsolutePath());
+        try {
+            Files.createDirectories(pluginFolder.toPath());
+            Files.createDirectories(playerDataFolder.toPath());
+            LOGGER.atInfo().log("Plugin folders initialized at: %s", pluginFolder.getAbsolutePath());
+        } catch (IOException e) {
+            throw new IllegalStateException("Unable to create EndlessLeveling folders", e);
+        }
     }
 
     /** Accessors */
-    public File getPluginFolder() { return pluginFolder; }
-    public File getPlayerDataFolder() { return playerDataFolder; }
-    public File getConfigFile() { return configFile; }
-    public File getLevelingFile() { return levelingFile; }
+    public File getPluginFolder() {
+        return pluginFolder;
+    }
+
+    public File getPlayerDataFolder() {
+        return playerDataFolder;
+    }
+
+    public File getConfigFile() {
+        return configFile;
+    }
+
+    public File getLevelingFile() {
+        return levelingFile;
+    }
 
     /** Convenience method for player data file */
     public File getPlayerDataFile(UUID uuid) {
@@ -46,7 +73,7 @@ public class PluginFilesManager {
     /**
      * Initialize a default config file from plugin resources if it doesn't exist.
      */
-    public File initYamlFile(String resourceName, JavaPlugin plugin) {
+    public File initYamlFile(String resourceName) {
         File yamlFile = new File(pluginFolder, resourceName);
 
         if (!yamlFile.exists()) {
@@ -61,12 +88,12 @@ public class PluginFilesManager {
                         out.write(buffer, 0, length);
                     }
                 }
-                System.out.println("[Endless Leveling] YAML file " + resourceName + " created at " + yamlFile.getAbsolutePath());
+                LOGGER.atInfo().log("YAML file %s created at %s", resourceName, yamlFile.getAbsolutePath());
             } catch (IOException e) {
-                e.printStackTrace();
+                throw new IllegalStateException("Unable to create YAML file: " + resourceName, e);
             }
         } else {
-            System.out.println("[Endless Leveling] YAML file " + resourceName + " already exists.");
+            LOGGER.atFine().log("YAML file %s already exists.", resourceName);
         }
 
         return yamlFile;

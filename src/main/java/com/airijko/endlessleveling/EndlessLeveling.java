@@ -16,7 +16,6 @@ import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 
 import javax.annotation.Nonnull;
-import java.io.File;
 
 public class EndlessLeveling extends JavaPlugin {
 
@@ -67,13 +66,8 @@ public class EndlessLeveling extends JavaPlugin {
 
     @Override
     protected void setup() {
-        // Create main plugin folder
-        File pluginFolder = new File(getFile().getParent().toFile(), "EndlessLeveling");
-        if (!pluginFolder.exists())
-            pluginFolder.mkdirs();
-
         // Initialize all folders and managers
-        filesManager = new PluginFilesManager(pluginFolder, this);
+        filesManager = new PluginFilesManager(this);
         configManager = new ConfigManager(filesManager.getConfigFile());
 
         boolean enableLogging = toBoolean(configManager.get("enable_logging", Boolean.FALSE, false), false);
@@ -102,7 +96,8 @@ public class EndlessLeveling extends JavaPlugin {
         this.getCommandRegistry().registerCommand(new EndlessLevelingCommand("skills", "Skills menu"));
         this.getCommandRegistry().registerCommand(new PartyCommand());
 
-        LOGGER.atInfo().log("Plugin initialized! Plugin folder: %s", pluginFolder.getAbsolutePath());
+        LOGGER.atInfo().log("Plugin initialized! Plugin folder: %s",
+                filesManager.getPluginFolder().getAbsolutePath());
     }
 
     protected void shutdown() {
