@@ -2,7 +2,7 @@
   "Group": "com.airijko",
   "Name": "endlessleveling",
   "Version": "2.1",
-  "Main": "com.airijko.endlessleveling.Endlessleveling",
+  "Main": "com.airijko.endlessleveling.endlesslevelinghytale",
   "ServerVersion": "*",
   "Authors": [
     {
