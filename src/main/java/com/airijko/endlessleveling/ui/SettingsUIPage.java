@@ -3,7 +3,7 @@ package com.airijko.endlessleveling.ui;
 import javax.annotation.Nonnull;
 
 import com.airijko.endlessleveling.data.PlayerData;
-import com.airijko.endlessleveling.Endlessleveling;
+import com.airijko.endlessleveling.Endlesslevelinghytale;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.logger.HytaleLogger;
@@ -54,7 +54,7 @@ public class SettingsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             return;
         }
 
-        PlayerData data = Endlessleveling.getInstance()
+        PlayerData data = Endlesslevelinghytale.getInstance()
                 .getPlayerDataManager()
                 .get(playerRef.getUuid());
 
@@ -97,7 +97,7 @@ public class SettingsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             return;
         }
 
-        PlayerData playerData = Endlessleveling.getInstance()
+        PlayerData playerData = Endlesslevelinghytale.getInstance()
                 .getPlayerDataManager()
                 .get(playerRef.getUuid());
         if (playerData == null) {
@@ -135,7 +135,7 @@ public class SettingsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         }
 
         if (changed) {
-            Endlessleveling.getInstance().getPlayerDataManager().save(playerData);
+            Endlesslevelinghytale.getInstance().getPlayerDataManager().save(playerData);
             rebuild();
         }
     }

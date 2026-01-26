@@ -1,7 +1,7 @@
 package com.airijko.endlessleveling.commands.subcommands;
 
 import com.airijko.endlessleveling.data.PlayerData;
-import com.airijko.endlessleveling.Endlessleveling;
+import com.airijko.endlessleveling.Endlesslevelinghytale;
 import com.airijko.endlessleveling.managers.LevelingManager;
 import com.airijko.endlessleveling.managers.PlayerDataManager;
 import com.airijko.endlessleveling.managers.SkillManager;
@@ -34,9 +34,9 @@ public class ResetLevelCommand extends AbstractPlayerCommand {
     public ResetLevelCommand() {
         super("resetlevel", "Reset a player's level back to 1");
 
-        this.playerDataManager = Endlessleveling.getInstance().getPlayerDataManager();
-        this.levelingManager = Endlessleveling.getInstance().getLevelingManager();
-        this.skillManager = Endlessleveling.getInstance().getSkillManager();
+        this.playerDataManager = Endlesslevelinghytale.getInstance().getPlayerDataManager();
+        this.levelingManager = Endlesslevelinghytale.getInstance().getLevelingManager();
+        this.skillManager = Endlesslevelinghytale.getInstance().getSkillManager();
     }
 
     @Override

@@ -1,7 +1,7 @@
 package com.airijko.endlessleveling.ui;
 
 import com.airijko.endlessleveling.data.PlayerData;
-import com.airijko.endlessleveling.Endlessleveling;
+import com.airijko.endlessleveling.Endlesslevelinghytale;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.airijko.endlessleveling.managers.PlayerDataManager;
 import com.airijko.endlessleveling.managers.SkillManager;
@@ -47,8 +47,8 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
         public SkillsUIPage(@Nonnull PlayerRef playerRef, @Nonnull CustomPageLifetime lifetime) {
                 super(playerRef, lifetime, Data.CODEC);
-                this.skillManager = Endlessleveling.getInstance().getSkillManager();
-                this.playerDataManager = Endlessleveling.getInstance().getPlayerDataManager();
+                this.skillManager = Endlesslevelinghytale.getInstance().getSkillManager();
+                this.playerDataManager = Endlesslevelinghytale.getInstance().getPlayerDataManager();
         }
 
         @Override
@@ -103,7 +103,7 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                         return;
                 }
 
-                var playerData = Endlessleveling.getInstance()
+                var playerData = Endlesslevelinghytale.getInstance()
                                 .getPlayerDataManager()
                                 .get(playerRef.getUuid());
 
@@ -190,7 +190,7 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 if (data != null && data.action != null && !data.action.isEmpty()) {
                         var player = Universe.get().getPlayer(playerRef.getUuid());
                         if (player != null) {
-                                var playerData = Endlessleveling.getInstance()
+                                var playerData = Endlesslevelinghytale.getInstance()
                                                 .getPlayerDataManager()
                                                 .get(playerRef.getUuid());
 

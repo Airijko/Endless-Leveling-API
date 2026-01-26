@@ -1,7 +1,7 @@
 package com.airijko.endlessleveling.commands.subcommands;
 
 import com.airijko.endlessleveling.data.PlayerData;
-import com.airijko.endlessleveling.Endlessleveling;
+import com.airijko.endlessleveling.Endlesslevelinghytale;
 import com.airijko.endlessleveling.managers.LevelingManager;
 import com.airijko.endlessleveling.managers.PlayerDataManager;
 import com.hypixel.hytale.component.Ref;
@@ -35,8 +35,8 @@ public class SetLevelCommand extends AbstractPlayerCommand {
         super("setlevel", "Set a player's level");
 
         // Initialize the managers from your main plugin instance
-        this.playerDataManager = Endlessleveling.getInstance().getPlayerDataManager();
-        this.levelingManager = Endlessleveling.getInstance().getLevelingManager();
+        this.playerDataManager = Endlesslevelinghytale.getInstance().getPlayerDataManager();
+        this.levelingManager = Endlesslevelinghytale.getInstance().getLevelingManager();
     }
 
     @Override

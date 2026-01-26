@@ -3,7 +3,7 @@ package com.airijko.endlessleveling.ui;
 import javax.annotation.Nonnull;
 
 import com.airijko.endlessleveling.data.PlayerData;
-import com.airijko.endlessleveling.Endlessleveling;
+import com.airijko.endlessleveling.Endlesslevelinghytale;
 import com.airijko.endlessleveling.managers.PartyManager;
 import com.airijko.endlessleveling.managers.PlayerDataManager;
 import com.hypixel.hytale.component.Ref;
@@ -31,8 +31,8 @@ public class PartyUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     public PartyUIPage(@Nonnull PlayerRef playerRef,
             @Nonnull CustomPageLifetime lifetime) {
         super(playerRef, lifetime, SkillsUIPage.Data.CODEC);
-        this.partyManager = Endlessleveling.getInstance().getPartyManager();
-        this.playerDataManager = Endlessleveling.getInstance().getPlayerDataManager();
+        this.partyManager = Endlesslevelinghytale.getInstance().getPartyManager();
+        this.playerDataManager = Endlesslevelinghytale.getInstance().getPlayerDataManager();
     }
 
     @Override

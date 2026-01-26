@@ -1,7 +1,7 @@
 package com.airijko.endlessleveling.commands.party;
 
 import com.airijko.endlessleveling.data.PlayerData;
-import com.airijko.endlessleveling.Endlessleveling;
+import com.airijko.endlessleveling.Endlesslevelinghytale;
 import com.airijko.endlessleveling.managers.PartyManager;
 import com.airijko.endlessleveling.managers.PlayerDataManager;
 import com.hypixel.hytale.component.Ref;
@@ -26,7 +26,7 @@ abstract class AbstractPartySubCommand extends AbstractPlayerCommand {
 
     protected AbstractPartySubCommand(@Nonnull String name, @Nonnull String description) {
         super(name, description);
-        Endlessleveling plugin = Endlessleveling.getInstance();
+        Endlesslevelinghytale plugin = Endlesslevelinghytale.getInstance();
         this.partyManager = plugin.getPartyManager();
         this.playerDataManager = plugin.getPlayerDataManager();
     }
