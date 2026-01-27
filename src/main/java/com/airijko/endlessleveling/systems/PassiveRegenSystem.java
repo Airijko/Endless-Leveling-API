@@ -94,7 +94,9 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
         }
 
         if (!runtimeState.isRegenerationActive()) {
-            sendPassiveRegenNotification(playerRef);
+            if (playerData.isHealthRegenNotifEnabled()) {
+                sendPassiveRegenNotification(playerRef);
+            }
             runtimeState.setRegenerationActive(true);
         }
 

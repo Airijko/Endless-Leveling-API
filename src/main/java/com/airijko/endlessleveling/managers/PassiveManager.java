@@ -109,6 +109,7 @@ public class PassiveManager {
         if (ref == null) {
             return;
         }
+        boolean popupEnabled = playerData.isPassiveLevelUpNotifEnabled();
         var packetHandler = ref.getPacketHandler();
         for (PassiveType type : result.leveledUp()) {
             PassiveSnapshot snapshot = result.snapshots().get(type);
@@ -124,7 +125,7 @@ public class PassiveManager {
                     Message.raw(" (" + formattedValue + ")").color("#9be7ff"));
             ref.sendMessage(message);
 
-            if (packetHandler != null) {
+            if (popupEnabled && packetHandler != null) {
                 Message primary = Message.join(
                         Message.raw("Passive Level Up: ").color("#4fd7f7"),
                         Message.raw(type.getDisplayName()).color("#ffc300"));
@@ -135,7 +136,49 @@ public class PassiveManager {
                         Message.raw(formattedValue).color("#9be7ff"));
                 var icon = new ItemStack("Ingredient_Life_Essence", 1).toPacket();
                 NotificationUtil.sendNotification(packetHandler, primary, secondary, icon);
+            } else if (popupEnabled) {
+                LOGGER.atFine().log("Skipping passive level-up popup for %s - packet handler unavailable",
+                        playerData.getPlayerName());
             }
+        }
+    }
+
+    public void notifyLuckDoubleDrop(@Nonnull PlayerData playerData,
+            @Nonnull String dropDisplayName,
+            int baseAmount,
+            int bonusAmount) {
+        if (!playerData.isLuckDoubleDropsNotifEnabled() || bonusAmount <= 0) {
+            return;
+        }
+
+        PlayerRef ref = Universe.get().getPlayer(playerData.getUuid());
+        if (ref == null) {
+            return;
+        }
+
+        String dropName = dropDisplayName.isBlank() ? "your loot" : dropDisplayName;
+        int safeBase = Math.max(0, baseAmount);
+        int totalAmount = safeBase + bonusAmount;
+
+        Message chatMessage = Message.join(
+                Message.raw("[Luck] ").color("#4fd7f7"),
+                Message.raw("Double drop! ").color("#ffffff"),
+                Message.raw(dropName).color("#ffc300"),
+                Message.raw(" +" + bonusAmount + " (total x" + totalAmount + ")").color("#9be7ff"));
+        ref.sendMessage(chatMessage);
+
+        var packetHandler = ref.getPacketHandler();
+        if (packetHandler != null) {
+            Message primary = Message.join(
+                    Message.raw("Luck Double Drop").color("#4fd7f7"),
+                    Message.raw(" +" + bonusAmount).color("#9be7ff"));
+            Message secondary = Message.join(
+                    Message.raw(dropName + " x" + totalAmount).color("#ffc300"));
+            var icon = new ItemStack("Ingredient_Life_Essence", 1).toPacket();
+            NotificationUtil.sendNotification(packetHandler, primary, secondary, icon);
+        } else {
+            LOGGER.atFine().log("Skipping luck double-drop popup for %s - packet handler unavailable",
+                    playerData.getPlayerName());
         }
     }
 
