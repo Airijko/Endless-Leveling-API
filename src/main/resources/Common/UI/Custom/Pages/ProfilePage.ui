@@ -12,7 +12,7 @@ $Nav = "Nav/LeftNavPanel.ui";
 @ButtonClusterWidth = 180;
 
 $C.@PageOverlay {
-    $C.@Container {
+    $C.@DecoratedContainer {
         Anchor: (Width: 800, Height: 700);
         #Title {
             Group {
@@ -86,27 +86,33 @@ $C.@PageOverlay {
 
                 Group { Anchor: (Height: 10); }
 
-                // -------- AMPLIFIED STATS (BY SKILL) --------
-                Group #AmplifiedStats {
-                    LayoutMode: Top;
-                    Padding: (Full: 16);
+                // -------- AMPLIFIED STATS + PASSIVES --------
+                Group {
+                    FlexWeight: 1;
+                    LayoutMode: TopScrolling;
+                    Padding: (Full: 0);
+                    ScrollbarStyle: $C.@DefaultScrollbarStyle;
 
-                    Label {
-                        Text: "Amplified Skill Stats";
-                        Style: (FontSize: 18, TextColor: #ffffff, RenderBold: true);
-                        Anchor: (Height: 28);
-                    }
+                    Group #AmplifiedStats {
+                        LayoutMode: Top;
+                        Padding: (Full: 16);
 
-                    Group { Anchor: (Height: 6); }
+                        Label {
+                            Text: "Amplified Skill Stats";
+                            Style: (FontSize: 18, TextColor: #ffffff, RenderBold: true);
+                            Anchor: (Height: 28);
+                        }
 
-                    Group #Headers {
-                        LayoutMode: Left;
-                        Padding: (Vertical: 6);
+                        Group { Anchor: (Height: 6); }
 
-                        Label { Style: $C.@DefaultLabelStyle; Text: "Skill"; FlexWeight: 1; }
-                        Label { Style: $C.@DefaultLabelStyle; Text: "Level"; Anchor: (Width: 60); }
-                        Label { Style: $C.@DefaultLabelStyle; Text: "Value"; Anchor: (Width: 200); }
-                    }
+                        Group #Headers {
+                            LayoutMode: Left;
+                            Padding: (Vertical: 6);
+
+                            Label { Style: $C.@DefaultLabelStyle; Text: "Skill"; FlexWeight: 1; }
+                            Label { Style: $C.@DefaultLabelStyle; Text: "Level"; Anchor: (Width: 60); }
+                            Label { Style: $C.@DefaultLabelStyle; Text: "Value"; Anchor: (Width: 200); }
+                        }
 
                     // ---------------- LIFE FORCE ----------------
                     Group #LifeForceRow {
@@ -186,6 +192,83 @@ $C.@PageOverlay {
                         Label #IntelligenceLabel { Style: $C.@DefaultLabelStyle; Text: "Intelligence"; FlexWeight: 1; }
                         Label #IntelligenceLevel { Style: $C.@DefaultLabelStyle; Text: "0"; Anchor: (Width: 60); }
                         Label #IntelligenceValue { Style: $C.@DefaultLabelStyle; Text: "0 Mana"; Anchor: (Width: 200); }
+                    }
+                }
+
+                    Group #PassiveStats {
+                        LayoutMode: Top;
+                        Padding: (Full: 16);
+
+                        Label {
+                            Text: "Passive Effects";
+                            Style: (FontSize: 18, TextColor: #ffffff, RenderBold: true);
+                            Anchor: (Height: 28);
+                        }
+
+                        Group { Anchor: (Height: 6); }
+
+                        Group #PassiveHeaders {
+                            LayoutMode: Left;
+                            Padding: (Vertical: 6);
+
+                            Label { Style: $C.@DefaultLabelStyle; Text: "Passive"; FlexWeight: 1; }
+                            Label { Style: $C.@DefaultLabelStyle; Text: "Level"; Anchor: (Width: 60); }
+                            Label { Style: $C.@DefaultLabelStyle; Text: "Value"; Anchor: (Width: 200); }
+                        }
+
+                        Group #LifeStealPassiveRow {
+                            LayoutMode: Left;
+                            Padding: (Vertical: 4);
+
+                            Label #LifeStealPassiveLabel { Style: $C.@DefaultLabelStyle; Text: "Life Steal"; FlexWeight: 1; }
+                            Label #LifeStealPassiveLevel { Style: $C.@DefaultLabelStyle; Text: "0"; Anchor: (Width: 60); }
+                            Label #LifeStealPassiveValue { Style: $C.@DefaultLabelStyle; Text: "0%"; Anchor: (Width: 200); }
+                        }
+
+                        Group #RegenerationPassiveRow {
+                            LayoutMode: Left;
+                            Padding: (Vertical: 4);
+
+                            Label #RegenerationPassiveLabel { Style: $C.@DefaultLabelStyle; Text: "Regeneration"; FlexWeight: 1; }
+                            Label #RegenerationPassiveLevel { Style: $C.@DefaultLabelStyle; Text: "0"; Anchor: (Width: 60); }
+                            Label #RegenerationPassiveValue { Style: $C.@DefaultLabelStyle; Text: "0 Health/sec"; Anchor: (Width: 200); }
+                        }
+
+                        Group #SignaturePassiveRow {
+                            LayoutMode: Left;
+                            Padding: (Vertical: 4);
+
+                            Label #SignaturePassiveLabel { Style: $C.@DefaultLabelStyle; Text: "Signature Gain"; FlexWeight: 1; }
+                            Label #SignaturePassiveLevel { Style: $C.@DefaultLabelStyle; Text: "0"; Anchor: (Width: 60); }
+                            Label #SignaturePassiveValue { Style: $C.@DefaultLabelStyle; Text: "0%"; Anchor: (Width: 200); }
+                        }
+
+                        Group #LuckPassiveRow {
+                            LayoutMode: Left;
+                            Padding: (Vertical: 4);
+
+                            Label #LuckPassiveLabel { Style: $C.@DefaultLabelStyle; Text: "Luck"; FlexWeight: 1; }
+                            Label #LuckPassiveLevel { Style: $C.@DefaultLabelStyle; Text: "0"; Anchor: (Width: 60); }
+                            Label #LuckPassiveValue { Style: $C.@DefaultLabelStyle; Text: "0% Luck"; Anchor: (Width: 200); }
+                        }
+
+                        Group #ManaPassiveRow {
+                            LayoutMode: Left;
+                            Padding: (Vertical: 4);
+
+                            Label #ManaPassiveLabel { Style: $C.@DefaultLabelStyle; Text: "Mana Regeneration"; FlexWeight: 1; }
+                            Label #ManaPassiveLevel { Style: $C.@DefaultLabelStyle; Text: "0"; Anchor: (Width: 60); }
+                            Label #ManaPassiveValue { Style: $C.@DefaultLabelStyle; Text: "0 Mana/sec"; Anchor: (Width: 200); }
+                        }
+
+                        Group #StaminaPassiveRow {
+                            LayoutMode: Left;
+                            Padding: (Vertical: 4);
+
+                            Label #StaminaPassiveLabel { Style: $C.@DefaultLabelStyle; Text: "Stamina Regeneration"; FlexWeight: 1; }
+                            Label #StaminaPassiveLevel { Style: $C.@DefaultLabelStyle; Text: "0"; Anchor: (Width: 60); }
+                            Label #StaminaPassiveValue { Style: $C.@DefaultLabelStyle; Text: "0 Stamina/sec"; Anchor: (Width: 200); }
+                        }
                     }
                 }
             }

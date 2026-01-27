@@ -1,9 +1,11 @@
 package com.airijko.endlessleveling.data;
 
+import com.airijko.endlessleveling.enums.PassiveType;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.hypixel.hytale.logger.HytaleLogger;
 
 import java.util.EnumMap;
+import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 
@@ -22,6 +24,7 @@ public class PlayerData {
     private int skillPoints;
 
     private final Map<SkillAttributeType, Integer> attributes;
+    private final Map<PassiveType, Integer> passiveLevels;
 
     private boolean playerHudEnabled;
     private boolean criticalNotifEnabled;
@@ -47,26 +50,45 @@ public class PlayerData {
             this.attributes.put(type, 0);
         }
 
+        this.passiveLevels = new EnumMap<>(PassiveType.class);
+        for (PassiveType passiveType : PassiveType.values()) {
+            this.passiveLevels.put(passiveType, 0);
+        }
+
         LOGGER.atInfo().log("PlayerData created for player: %s (UUID: %s)", playerName, uuid);
     }
 
     // --- Basic getters/setters ---
-    public UUID getUuid() { return uuid; }
-    public String getPlayerName() { return playerName; }
+    public UUID getUuid() {
+        return uuid;
+    }
 
-    public double getXp() { return xp; }
+    public String getPlayerName() {
+        return playerName;
+    }
+
+    public double getXp() {
+        return xp;
+    }
+
     public void setXp(double xp) {
         LOGGER.atFine().log("Setting XP for %s (UUID: %s) to %f", playerName, uuid, xp);
         this.xp = xp;
     }
 
-    public int getLevel() { return level; }
+    public int getLevel() {
+        return level;
+    }
+
     public void setLevel(int level) {
         LOGGER.atFine().log("Setting Level for %s (UUID: %s) to %d", playerName, uuid, level);
         this.level = level;
     }
 
-    public int getSkillPoints() { return skillPoints; }
+    public int getSkillPoints() {
+        return skillPoints;
+    }
+
     public void setSkillPoints(int skillPoints) {
         LOGGER.atFine().log("Setting SkillPoints for %s (UUID: %s) to %d", playerName, uuid, skillPoints);
         this.skillPoints = skillPoints;
@@ -108,6 +130,18 @@ public class PlayerData {
 
     public Map<SkillAttributeType, Integer> getAttributes() {
         return attributes;
+    }
+
+    public int getPassiveLevel(PassiveType type) {
+        return passiveLevels.getOrDefault(type, 0);
+    }
+
+    public void setPassiveLevel(PassiveType type, int level) {
+        passiveLevels.put(type, Math.max(0, level));
+    }
+
+    public Map<PassiveType, Integer> getPassiveLevelsSnapshot() {
+        return Collections.unmodifiableMap(passiveLevels);
     }
 
     /**

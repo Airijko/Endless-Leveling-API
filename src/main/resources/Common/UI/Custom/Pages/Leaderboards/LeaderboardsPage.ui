@@ -12,7 +12,7 @@ $Nav = "../Nav/LeftNavPanel.ui";
 @ButtonClusterWidth = 180;
 
 $C.@PageOverlay {
-    $C.@Container {
+    $C.@DecoratedContainer {
         Anchor: (Width: 800, Height: 700);
         #Title {
             Group {

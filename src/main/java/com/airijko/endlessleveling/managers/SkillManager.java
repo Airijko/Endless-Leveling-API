@@ -273,7 +273,7 @@ public class SkillManager {
         PlayerRef playerRef = componentAccessor.getComponent(ref, PlayerRef.getComponentType());
         if (playerRef != null) {
             movementManager.update(playerRef.getPacketHandler());
-                LOGGER.atInfo().log(
+            LOGGER.atInfo().log(
                     "applyMovementSpeedModifier: hasteLevel=%d, perPointPercent=%.2f, multiplier=%.4f for player %s",
                     hasteLevel, perPointPercent, clampedMultiplier, playerData.getPlayerName());
         } else {
@@ -470,7 +470,8 @@ public class SkillManager {
         // Calculate total defense value
         double defenseValue = defenseLevel * perPointValue;
 
-        LOGGER.atInfo().log("calculatePlayerDefense: DEFENSE level=%d, perPointValue=%.2f, defenseValue=%.2f for player %s",
+        LOGGER.atInfo().log(
+                "calculatePlayerDefense: DEFENSE level=%d, perPointValue=%.2f, defenseValue=%.2f for player %s",
                 defenseLevel, perPointValue, defenseValue, playerData.getPlayerName());
 
         // Apply damage reduction curve

@@ -7,6 +7,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Store;
 import com.airijko.endlessleveling.data.PlayerData;
+import com.airijko.endlessleveling.managers.PassiveManager;
 import com.airijko.endlessleveling.managers.PlayerDataManager;
 import com.airijko.endlessleveling.managers.SkillManager;
 import com.hypixel.hytale.component.ArchetypeChunk;
@@ -21,17 +22,21 @@ import javax.annotation.Nonnull;
 import com.hypixel.hytale.server.core.modules.entity.damage.DamageSystems;
 
 /**
- * Listens for player join/ready events and applies defense stat modifiers using SkillManager.
+ * Listens for player join/ready events and applies defense stat modifiers using
+ * SkillManager.
  * Also reduces incoming damage based on defense stat.
  */
 public class PlayerDefenseListener extends DamageEventSystem {
 	private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
 	private final PlayerDataManager playerDataManager;
 	private final SkillManager skillManager;
+	private final PassiveManager passiveManager;
 
-	public PlayerDefenseListener(PlayerDataManager playerDataManager, SkillManager skillManager) {
+	public PlayerDefenseListener(PlayerDataManager playerDataManager, SkillManager skillManager,
+			PassiveManager passiveManager) {
 		this.playerDataManager = playerDataManager;
 		this.skillManager = skillManager;
+		this.passiveManager = passiveManager;
 	}
 
 	@Override
@@ -67,9 +72,14 @@ public class PlayerDefenseListener extends DamageEventSystem {
 				float reducedAmount = originalAmount * (1.0f - resistance);
 				float reducedBy = originalAmount - reducedAmount;
 				damage.setAmount(reducedAmount);
-				
-				LOGGER.atInfo().log("PlayerDefenseListener: Player %s took %.2f damage (original: %.2f, reduced by %.2f, %.1f%% resistance)",
-					defenderPlayer.getUsername(), reducedAmount, originalAmount, reducedBy, resistance * 100);
+
+				if (passiveManager != null) {
+					passiveManager.markCombat(playerData.getUuid());
+				}
+
+				LOGGER.atInfo().log(
+						"PlayerDefenseListener: Player %s took %.2f damage (original: %.2f, reduced by %.2f, %.1f%% resistance)",
+						defenderPlayer.getUsername(), reducedAmount, originalAmount, reducedBy, resistance * 100);
 			}
 		}
 	}

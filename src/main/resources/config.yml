@@ -10,44 +10,60 @@ skill_attributes: # Value per level
   intelligence: 0.5 # Mana
 
 passives:
+  # Player passives scale as the player levels up.
+  # Each passive has:
+  #   - unlock_level: player level when the passive becomes available
+  #   - base_value: the starting value at passive level 1
+  #   - value_per_level: the amount the passive increases per passive level
+  #   - max_level: maximum passive level
+  #   - tier_interval: number of player levels required to gain 1 passive level
+
   life_steal:
     enabled: true
     unlock_level: 25
-    base_value: 4.0 # % of damage converted to health at passive level 1
-    value_per_level: 2.0 # Additional % per passive level
+    base_value: 4.75
+    value_per_level: 2.25
     max_level: 10
-    tier_interval: 7 # Gain 1 passive level every 7 player levels
+    tier_interval: 7
 
   regeneration:
     enabled: true
     unlock_level: 20
-    base_value: 5.0 # Health/sec out of combat at passive level 1
-    value_per_level: 2.5 # Additional health/sec per passive level
+    base_value: 3.0
+    value_per_level: 1.5
     max_level: 10
-    tier_interval: 6 # Gain 1 passive level every 6 player levels
+    tier_interval: 6
 
   signature_gain:
     enabled: true
     unlock_level: 15
-    base_value: 20.0 # % bonus to Signature gain at passive level 1
-    value_per_level: 10.0 # Additional % per passive level
+    base_value: 25.0
+    value_per_level: 25.0
     max_level: 10
-    tier_interval: 6 # Gain 1 passive level every 6 player levels
+    tier_interval: 6
+
+  luck:
+    enabled: true
+    unlock_level: 15
+    base_value: 10.0
+    value_per_level: 10.0
+    max_level: 10
+    tier_interval: 5
 
   mana_regeneration:
     enabled: true
     unlock_level: 10
-    base_value: 2.0 # Mana/sec at passive level 1
-    value_per_level: 1.0 # Additional mana/sec per passive level
+    base_value: 2.0
+    value_per_level: 1.0
     max_level: 10
-    tier_interval: 5 # Gain 1 passive level every 5 player levels
+    tier_interval: 5
 
   stamina_regeneration:
     enabled: true
     unlock_level: 5
-    base_value: 1.0 # Stamina/sec at passive level 1
-    value_per_level: 0.5 # Additional mana/sec per passive level
+    base_value: 1.0
+    value_per_level: 0.5
     max_level: 10
-    tier_interval: 5 # Gain 1 passive level every 5 player levels
+    tier_interval: 5
 
 enable_logging: false # Enable or disable logging

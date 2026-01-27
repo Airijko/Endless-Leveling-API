@@ -1,32 +1,44 @@
 package com.airijko.endlessleveling.listeners;
 
+import com.airijko.endlessleveling.data.PlayerData;
+import com.airijko.endlessleveling.enums.PassiveType;
+import com.airijko.endlessleveling.managers.PassiveManager;
+import com.airijko.endlessleveling.managers.PlayerDataManager;
+import com.airijko.endlessleveling.managers.SkillManager;
+import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
-import com.airijko.endlessleveling.data.PlayerData;
-import com.airijko.endlessleveling.EndlessLeveling;
-import com.airijko.endlessleveling.managers.SkillManager;
-import com.hypixel.hytale.component.ArchetypeChunk;
-import com.hypixel.hytale.component.query.Query;
-import com.hypixel.hytale.server.core.modules.entity.damage.Damage;
-import com.hypixel.hytale.server.core.modules.entity.damage.DamageEventSystem;
-import com.hypixel.hytale.server.core.universe.PlayerRef;
-import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.component.dependency.Dependency;
 import com.hypixel.hytale.component.dependency.Order;
 import com.hypixel.hytale.component.dependency.SystemDependency;
+import com.hypixel.hytale.component.query.Query;
+import com.hypixel.hytale.server.core.modules.entity.damage.Damage;
+import com.hypixel.hytale.server.core.modules.entity.damage.DamageEventSystem;
+import com.hypixel.hytale.server.core.modules.entity.damage.DamageSystems;
+import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
+import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue;
+import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import java.util.Set;
-
 import javax.annotation.Nonnull;
 
-import com.hypixel.hytale.server.core.modules.entity.damage.DamageSystems;
-
 /**
- * Listens for when a player deals damage and sends a chat message with the
- * damage dealt.
+ * Listens for player-inflicted damage and applies EndlessLeveling combat logic.
  */
 public class PlayerCombatListener extends DamageEventSystem {
-    private final SkillManager skillManager = EndlessLeveling.getInstance().getSkillManager();
+    private final PlayerDataManager playerDataManager;
+    private final SkillManager skillManager;
+    private final PassiveManager passiveManager;
+
+    public PlayerCombatListener(@Nonnull PlayerDataManager playerDataManager,
+            @Nonnull SkillManager skillManager,
+            @Nonnull PassiveManager passiveManager) {
+        this.playerDataManager = playerDataManager;
+        this.skillManager = skillManager;
+        this.passiveManager = passiveManager;
+    }
 
     @Override
     @Nonnull
@@ -53,18 +65,54 @@ public class PlayerCombatListener extends DamageEventSystem {
             Ref<EntityStore> attackerRef = entitySource.getRef();
             PlayerRef attackerPlayer = commandBuffer.getComponent(attackerRef, PlayerRef.getComponentType());
             if (attackerPlayer != null && attackerPlayer.isValid()) {
-                // Get the player's PlayerData (assume a PlayerDataManager is accessible
-                // statically or via singleton)
-                PlayerData playerData = com.airijko.endlessleveling.EndlessLeveling.getInstance().getPlayerDataManager()
-                        .get(attackerPlayer.getUuid());
+                PlayerData playerData = playerDataManager.get(attackerPlayer.getUuid());
                 if (playerData != null) {
                     // Calculate strength bonus using SkillManager
                     float baseAmount = skillManager.applyStrengthModifier(damage.getAmount(), playerData);
                     // Apply critical hit system
                     SkillManager.CritResult critResult = skillManager.applyCriticalHit(playerData, baseAmount);
                     damage.setAmount(critResult.damage);
+                    applyLifeSteal(attackerRef, commandBuffer, playerData, critResult.damage);
+                    passiveManager.markCombat(playerData.getUuid());
                 }
             }
+        }
+    }
+
+    private void applyLifeSteal(@Nonnull Ref<EntityStore> attackerRef,
+            @Nonnull CommandBuffer<EntityStore> commandBuffer,
+            @Nonnull PlayerData playerData,
+            float damageDealt) {
+        if (passiveManager == null || damageDealt <= 0) {
+            return;
+        }
+
+        PassiveManager.PassiveSnapshot snapshot = passiveManager.getSnapshot(playerData, PassiveType.LIFE_STEAL);
+        if (snapshot == null || !snapshot.isUnlocked() || snapshot.value() <= 0) {
+            return;
+        }
+
+        double healPercent = snapshot.value() / 100.0D;
+        double healAmount = damageDealt * healPercent;
+        if (healAmount <= 0) {
+            return;
+        }
+
+        EntityStatMap statMap = commandBuffer.getComponent(attackerRef, EntityStatMap.getComponentType());
+        if (statMap == null) {
+            return;
+        }
+
+        EntityStatValue healthStat = statMap.get(DefaultEntityStatTypes.getHealth());
+        if (healthStat == null) {
+            return;
+        }
+
+        float currentHealth = healthStat.get();
+        float maxHealth = healthStat.getMax();
+        float updatedHealth = (float) Math.min(maxHealth, currentHealth + healAmount);
+        if (updatedHealth > currentHealth) {
+            statMap.setStatValue(DefaultEntityStatTypes.getHealth(), updatedHealth);
         }
     }
 }

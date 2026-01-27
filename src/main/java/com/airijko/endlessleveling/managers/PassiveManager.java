@@ -1,0 +1,262 @@
+package com.airijko.endlessleveling.managers;
+
+import com.airijko.endlessleveling.data.PlayerData;
+import com.airijko.endlessleveling.enums.PassiveType;
+import com.hypixel.hytale.logger.HytaleLogger;
+import com.hypixel.hytale.server.core.Message;
+import com.hypixel.hytale.server.core.inventory.ItemStack;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
+import com.hypixel.hytale.server.core.universe.Universe;
+import com.hypixel.hytale.server.core.util.NotificationUtil;
+
+import javax.annotation.Nonnull;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
+/**
+ * Handles player passives that scale automatically with player level.
+ */
+public class PassiveManager {
+
+    private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
+
+    private final ConfigManager configManager;
+    private final Map<PassiveType, PassiveDefinition> definitions = new EnumMap<>(PassiveType.class);
+    private final Map<UUID, PassiveRuntimeState> runtimeStates = new ConcurrentHashMap<>();
+
+    public PassiveManager(@Nonnull ConfigManager configManager) {
+        this.configManager = configManager;
+        reload();
+    }
+
+    public void reload() {
+        definitions.clear();
+        for (PassiveType type : PassiveType.values()) {
+            definitions.put(type, loadDefinition(type));
+        }
+        LOGGER.atInfo().log("Loaded %d passive definitions", definitions.size());
+    }
+
+    public void markCombat(@Nonnull UUID uuid) {
+        PassiveRuntimeState state = runtimeStates.computeIfAbsent(uuid, PassiveRuntimeState::new);
+        state.setLastCombatMillis(System.currentTimeMillis());
+        state.setRegenerationActive(false);
+    }
+
+    public boolean isOutOfCombat(@Nonnull UUID uuid, long cooldownMillis) {
+        PassiveRuntimeState state = runtimeStates.get(uuid);
+        if (state == null) {
+            return true;
+        }
+        long lastCombat = state.getLastCombatMillis();
+        if (lastCombat <= 0L) {
+            return true;
+        }
+        return (System.currentTimeMillis() - lastCombat) >= cooldownMillis;
+    }
+
+    public PassiveRuntimeState getRuntimeState(@Nonnull UUID uuid) {
+        return runtimeStates.computeIfAbsent(uuid, PassiveRuntimeState::new);
+    }
+
+    public void resetRuntimeState(@Nonnull UUID uuid) {
+        runtimeStates.remove(uuid);
+    }
+
+    private PassiveDefinition loadDefinition(PassiveType type) {
+        String basePath = "passives." + type.getConfigKey();
+        boolean enabled = toBoolean(configManager.get(basePath + ".enabled", Boolean.TRUE, false), true);
+        int unlockLevel = toInt(configManager.get(basePath + ".unlock_level", 1, false), 1);
+        double baseValue = toDouble(configManager.get(basePath + ".base_value", 0.0, false), 0.0);
+        double valuePerLevel = toDouble(configManager.get(basePath + ".value_per_level", 0.0, false), 0.0);
+        int maxLevel = Math.max(1, toInt(configManager.get(basePath + ".max_level", 1, false), 1));
+        int interval = Math.max(1, toInt(configManager.get(basePath + ".tier_interval", 5, false), 5));
+        return new PassiveDefinition(type, enabled, unlockLevel, baseValue, valuePerLevel, maxLevel, interval);
+    }
+
+    public PassiveSyncResult syncPassives(@Nonnull PlayerData playerData) {
+        Map<PassiveType, PassiveSnapshot> snapshots = new EnumMap<>(PassiveType.class);
+        List<PassiveType> leveled = new ArrayList<>();
+
+        for (PassiveType type : PassiveType.values()) {
+            PassiveDefinition definition = definitions.getOrDefault(type, PassiveDefinition.disabled(type));
+            int computedLevel = computePassiveLevel(definition, playerData.getLevel());
+            int previousLevel = playerData.getPassiveLevel(type);
+            playerData.setPassiveLevel(type, computedLevel);
+
+            double value = computedLevel <= 0 ? 0.0
+                    : definition.baseValue + (computedLevel - 1) * definition.valuePerLevel;
+            snapshots.put(type, new PassiveSnapshot(definition, computedLevel, value));
+
+            if (computedLevel > previousLevel) {
+                leveled.add(type);
+            }
+        }
+
+        return new PassiveSyncResult(Collections.unmodifiableMap(snapshots), Collections.unmodifiableList(leveled));
+    }
+
+    public void notifyPassiveChanges(@Nonnull PlayerData playerData, @Nonnull PassiveSyncResult result) {
+        if (result.leveledUp().isEmpty()) {
+            return;
+        }
+        PlayerRef ref = Universe.get().getPlayer(playerData.getUuid());
+        if (ref == null) {
+            return;
+        }
+        var packetHandler = ref.getPacketHandler();
+        for (PassiveType type : result.leveledUp()) {
+            PassiveSnapshot snapshot = result.snapshots().get(type);
+            if (snapshot == null || snapshot.level() <= 0) {
+                continue;
+            }
+            String formattedValue = type.formatValue(snapshot.value());
+            Message message = Message.join(
+                    Message.raw("[Passive] ").color("#4fd7f7"),
+                    Message.raw(type.getDisplayName()).color("#ffc300"),
+                    Message.raw(" is now Level ").color("#ffffff"),
+                    Message.raw(String.valueOf(snapshot.level())).color("#4fd7f7"),
+                    Message.raw(" (" + formattedValue + ")").color("#9be7ff"));
+            ref.sendMessage(message);
+
+            if (packetHandler != null) {
+                Message primary = Message.join(
+                        Message.raw("Passive Level Up: ").color("#4fd7f7"),
+                        Message.raw(type.getDisplayName()).color("#ffc300"));
+                Message secondary = Message.join(
+                        Message.raw("Level ").color("#ffffff"),
+                        Message.raw(String.valueOf(snapshot.level())).color("#4fd7f7"),
+                        Message.raw(" - ").color("#ffffff"),
+                        Message.raw(formattedValue).color("#9be7ff"));
+                var icon = new ItemStack("Ingredient_Life_Essence", 1).toPacket();
+                NotificationUtil.sendNotification(packetHandler, primary, secondary, icon);
+            }
+        }
+    }
+
+    public PassiveSnapshot getSnapshot(@Nonnull PlayerData playerData, @Nonnull PassiveType type) {
+        PassiveDefinition definition = definitions.getOrDefault(type, PassiveDefinition.disabled(type));
+        int level = computePassiveLevel(definition, playerData.getLevel());
+        double value = level <= 0 ? 0.0 : definition.baseValue + (level - 1) * definition.valuePerLevel;
+        return new PassiveSnapshot(definition, level, value);
+    }
+
+    /**
+     * Returns the player's computed luck value. The downstream usage is not yet
+     * defined,
+     * but persisting the value keeps player data forward-compatible.
+     */
+    public double getLuckValue(@Nonnull PlayerData playerData) {
+        PassiveSnapshot snapshot = getSnapshot(playerData, PassiveType.LUCK);
+        return snapshot != null && snapshot.isUnlocked() ? snapshot.value() : 0.0;
+    }
+
+    private int computePassiveLevel(PassiveDefinition definition, int playerLevel) {
+        if (!definition.enabled || playerLevel < definition.unlockLevel) {
+            return 0;
+        }
+        int relativeLevel = playerLevel - definition.unlockLevel;
+        int tiers = definition.tierInterval <= 0 ? relativeLevel : relativeLevel / definition.tierInterval;
+        int computed = 1 + Math.max(0, tiers);
+        return Math.min(definition.maxLevel, computed);
+    }
+
+    private boolean toBoolean(Object value, boolean defaultValue) {
+        if (value instanceof Boolean bool) {
+            return bool;
+        }
+        if (value instanceof String str) {
+            return Boolean.parseBoolean(str.trim());
+        }
+        if (value instanceof Number number) {
+            return number.intValue() != 0;
+        }
+        return defaultValue;
+    }
+
+    private int toInt(Object value, int defaultValue) {
+        if (value instanceof Number number) {
+            return number.intValue();
+        }
+        if (value instanceof String str) {
+            try {
+                return Integer.parseInt(str.trim());
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return defaultValue;
+    }
+
+    private double toDouble(Object value, double defaultValue) {
+        if (value instanceof Number number) {
+            return number.doubleValue();
+        }
+        if (value instanceof String str) {
+            try {
+                return Double.parseDouble(str.trim());
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return defaultValue;
+    }
+
+    public record PassiveDefinition(PassiveType type,
+            boolean enabled,
+            int unlockLevel,
+            double baseValue,
+            double valuePerLevel,
+            int maxLevel,
+            int tierInterval) {
+        static PassiveDefinition disabled(PassiveType type) {
+            return new PassiveDefinition(type, false, Integer.MAX_VALUE, 0.0, 0.0, 0, 1);
+        }
+    }
+
+    public record PassiveSnapshot(PassiveDefinition definition, int level, double value) {
+        public boolean isUnlocked() {
+            return level > 0;
+        }
+    }
+
+    public record PassiveSyncResult(Map<PassiveType, PassiveSnapshot> snapshots,
+            List<PassiveType> leveledUp) {
+    }
+
+    public static final class PassiveRuntimeState {
+        private long lastCombatMillis;
+        private float lastSignatureValue = Float.NaN;
+        private boolean regenerationActive;
+
+        PassiveRuntimeState(UUID ignored) {
+        }
+
+        public long getLastCombatMillis() {
+            return lastCombatMillis;
+        }
+
+        public void setLastCombatMillis(long lastCombatMillis) {
+            this.lastCombatMillis = lastCombatMillis;
+        }
+
+        public float getLastSignatureValue() {
+            return lastSignatureValue;
+        }
+
+        public void setLastSignatureValue(float lastSignatureValue) {
+            this.lastSignatureValue = lastSignatureValue;
+        }
+
+        public boolean isRegenerationActive() {
+            return regenerationActive;
+        }
+
+        public void setRegenerationActive(boolean regenerationActive) {
+            this.regenerationActive = regenerationActive;
+        }
+    }
+}

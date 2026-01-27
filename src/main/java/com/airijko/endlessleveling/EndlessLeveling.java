@@ -9,6 +9,7 @@ import com.airijko.endlessleveling.listeners.PlayerDataListener;
 import com.airijko.endlessleveling.listeners.PlayerDefenseListener;
 import com.airijko.endlessleveling.listeners.XpEventListener;
 import com.airijko.endlessleveling.managers.*;
+import com.airijko.endlessleveling.systems.PassiveRegenSystem;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.event.events.player.PlayerDisconnectEvent;
 import com.hypixel.hytale.server.core.event.events.player.PlayerReadyEvent;
@@ -30,6 +31,7 @@ public class EndlessLeveling extends JavaPlugin {
     private PlayerDataManager playerDataManager;
     private LevelingManager levelingManager;
     private SkillManager skillManager;
+    private PassiveManager passiveManager;
     private PartyManager partyManager;
 
     // Getter for SkillManager
@@ -44,6 +46,10 @@ public class EndlessLeveling extends JavaPlugin {
 
     public LevelingManager getLevelingManager() {
         return levelingManager;
+    }
+
+    public PassiveManager getPassiveManager() {
+        return passiveManager;
     }
 
     public PartyManager getPartyManager() {
@@ -74,12 +80,13 @@ public class EndlessLeveling extends JavaPlugin {
         LoggingManager.configure(enableLogging);
 
         skillManager = new SkillManager(filesManager);
+        passiveManager = new PassiveManager(configManager);
         playerDataManager = new PlayerDataManager(filesManager, skillManager);
-        levelingManager = new LevelingManager(playerDataManager, filesManager, skillManager);
+        levelingManager = new LevelingManager(playerDataManager, filesManager, skillManager, passiveManager);
         partyManager = new PartyManager(playerDataManager, levelingManager, filesManager);
 
         // Register event listeners
-        PlayerDataListener playerDataListener = new PlayerDataListener(playerDataManager);
+        PlayerDataListener playerDataListener = new PlayerDataListener(playerDataManager, passiveManager);
         this.getEventRegistry().registerGlobal(PlayerReadyEvent.class, playerDataListener::onPlayerReady);
         this.getEventRegistry().registerGlobal(PlayerDisconnectEvent.class, playerDataListener::onPlayerDisconnect);
 
@@ -89,8 +96,11 @@ public class EndlessLeveling extends JavaPlugin {
         this.getEventRegistry().registerGlobal(PlayerReadyEvent.class, OpenPlayerHudListener::openGui);
         this.getEntityStoreRegistry()
                 .registerSystem(new XpEventListener(playerDataManager, levelingManager, partyManager));
-        this.getEntityStoreRegistry().registerSystem(new PlayerCombatListener());
-        this.getEntityStoreRegistry().registerSystem(new PlayerDefenseListener(playerDataManager, skillManager));
+        this.getEntityStoreRegistry()
+                .registerSystem(new PlayerCombatListener(playerDataManager, skillManager, passiveManager));
+        this.getEntityStoreRegistry()
+                .registerSystem(new PlayerDefenseListener(playerDataManager, skillManager, passiveManager));
+        this.getEntityStoreRegistry().registerSystem(new PassiveRegenSystem(playerDataManager, passiveManager));
 
         // Register commands
         this.getCommandRegistry().registerCommand(new EndlessLevelingCommand("skills", "Skills menu"));

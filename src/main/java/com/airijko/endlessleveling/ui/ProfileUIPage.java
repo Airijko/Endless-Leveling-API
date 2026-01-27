@@ -4,8 +4,10 @@ import javax.annotation.Nonnull;
 
 import com.airijko.endlessleveling.data.PlayerData;
 import com.airijko.endlessleveling.EndlessLeveling;
+import com.airijko.endlessleveling.enums.PassiveType;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.airijko.endlessleveling.managers.LevelingManager;
+import com.airijko.endlessleveling.managers.PassiveManager;
 import com.airijko.endlessleveling.managers.PlayerDataManager;
 import com.airijko.endlessleveling.managers.SkillManager;
 import com.hypixel.hytale.component.Ref;
@@ -58,10 +60,15 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         PlayerDataManager playerDataManager = plugin.getPlayerDataManager();
         LevelingManager levelingManager = plugin.getLevelingManager();
         SkillManager skillManager = plugin.getSkillManager();
+        PassiveManager passiveManager = plugin.getPassiveManager();
 
         if (playerDataManager == null || levelingManager == null || skillManager == null) {
             LOGGER.atSevere().log("ProfileUIPage.build: One or more managers are null");
             return;
+        }
+
+        if (passiveManager == null) {
+            LOGGER.atSevere().log("ProfileUIPage.build: PassiveManager is null");
         }
 
         PlayerData playerData = playerDataManager.get(playerRef.getUuid());
@@ -144,6 +151,22 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         float bonusIntelligence = skillManager.calculatePlayerIntelligence(playerData);
         ui.set("#IntelligenceLevel.Text", String.valueOf(intLevel));
         ui.set("#IntelligenceValue.Text", formatNumber(bonusIntelligence) + " Mana");
+
+        // -----------------------------
+        // PASSIVE EFFECTS
+        // -----------------------------
+        setPassiveRow(ui, passiveManager, playerData, PassiveType.LIFE_STEAL,
+                "#LifeStealPassiveLevel.Text", "#LifeStealPassiveValue.Text");
+        setPassiveRow(ui, passiveManager, playerData, PassiveType.REGENERATION,
+                "#RegenerationPassiveLevel.Text", "#RegenerationPassiveValue.Text");
+        setPassiveRow(ui, passiveManager, playerData, PassiveType.SIGNATURE_GAIN,
+                "#SignaturePassiveLevel.Text", "#SignaturePassiveValue.Text");
+        setPassiveRow(ui, passiveManager, playerData, PassiveType.LUCK,
+                "#LuckPassiveLevel.Text", "#LuckPassiveValue.Text");
+        setPassiveRow(ui, passiveManager, playerData, PassiveType.MANA_REGENERATION,
+                "#ManaPassiveLevel.Text", "#ManaPassiveValue.Text");
+        setPassiveRow(ui, passiveManager, playerData, PassiveType.STAMINA_REGENERATION,
+                "#StaminaPassiveLevel.Text", "#StaminaPassiveValue.Text");
     }
 
     @Override
@@ -165,5 +188,28 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             formatted = formatted.replaceAll("0+$", "").replaceAll("\\.$", "");
         }
         return formatted;
+    }
+
+    private void setPassiveRow(@Nonnull UICommandBuilder ui,
+            PassiveManager passiveManager,
+            @Nonnull PlayerData playerData,
+            @Nonnull PassiveType type,
+            @Nonnull String levelSelector,
+            @Nonnull String valueSelector) {
+        if (passiveManager == null) {
+            ui.set(levelSelector, "-");
+            ui.set(valueSelector, "Unavailable");
+            return;
+        }
+
+        PassiveManager.PassiveSnapshot snapshot = passiveManager.getSnapshot(playerData, type);
+        if (snapshot == null || !snapshot.isUnlocked()) {
+            ui.set(levelSelector, "-");
+            ui.set(valueSelector, "Locked");
+            return;
+        }
+
+        ui.set(levelSelector, String.valueOf(snapshot.level()));
+        ui.set(valueSelector, type.formatValue(snapshot.value()));
     }
 }

@@ -1,6 +1,7 @@
 package com.airijko.endlessleveling.managers;
 
 import com.airijko.endlessleveling.data.PlayerData;
+import com.airijko.endlessleveling.enums.PassiveType;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.hypixel.hytale.logger.HytaleLogger;
 
@@ -105,11 +106,18 @@ public class PlayerDataManager {
         options.put("xpNotif", data.isXpNotifEnabled());
         map.put("options", options);
 
+        Map<String, Integer> passives = new LinkedHashMap<>();
+        for (PassiveType type : PassiveType.values()) {
+            passives.put(type.name(), data.getPassiveLevel(type));
+        }
+        map.put("passives", passives);
+
         try (StringWriter buffer = new StringWriter(); FileWriter writer = new FileWriter(file)) {
             yaml.dump(map, buffer);
             String yamlContent = buffer.toString()
                     .replace("\nattributes:", "\n\nattributes:")
-                    .replace("\noptions:", "\n\noptions:");
+                    .replace("\noptions:", "\n\noptions:")
+                    .replace("\npassives:", "\n\npassives:");
             writer.write(yamlContent);
             LOGGER.atFine().log("PlayerData for UUID %s saved to file.", data.getUuid());
         } catch (IOException e) {
@@ -123,7 +131,8 @@ public class PlayerDataManager {
         try (FileReader reader = new FileReader(file)) {
             Map<String, Object> map = yaml.load(reader);
             if (map == null) {
-                LOGGER.atWarning().log("PlayerData file %s for UUID %s is empty; creating new data.", file.getName(), uuid);
+                LOGGER.atWarning().log("PlayerData file %s for UUID %s is empty; creating new data.", file.getName(),
+                        uuid);
                 return new PlayerData(uuid, playerName, getStartingSkillPoints());
             }
             PlayerData data = new PlayerData(uuid, playerName, getStartingSkillPoints());
@@ -148,6 +157,15 @@ public class PlayerDataManager {
             data.setPlayerHudEnabled(parseBoolean(playerHud, true));
             data.setCriticalNotifEnabled(parseBoolean(criticalNotif, true));
             data.setXpNotifEnabled(parseBoolean(xpNotif, true));
+
+            Map<String, Object> passives = castToStringObjectMap(map.get("passives"));
+            if (passives != null) {
+                for (PassiveType passiveType : PassiveType.values()) {
+                    Object value = passives.get(passiveType.name());
+                    int level = value instanceof Number number ? number.intValue() : 0;
+                    data.setPassiveLevel(passiveType, level);
+                }
+            }
             LOGGER.atInfo().log("PlayerData for UUID %s loaded from disk.", uuid);
             return data;
         } catch (Exception e) {
@@ -286,6 +304,15 @@ public class PlayerDataManager {
             data.setPlayerHudEnabled(parseBoolean(playerHud, true));
             data.setCriticalNotifEnabled(parseBoolean(criticalNotif, true));
             data.setXpNotifEnabled(parseBoolean(xpNotif, true));
+
+            Map<String, Object> passives = castToStringObjectMap(map.get("passives"));
+            if (passives != null) {
+                for (PassiveType passiveType : PassiveType.values()) {
+                    Object value = passives.get(passiveType.name());
+                    int level = value instanceof Number number ? number.intValue() : 0;
+                    data.setPassiveLevel(passiveType, level);
+                }
+            }
 
             return data;
         } catch (Exception e) {

@@ -1,6 +1,7 @@
 package com.airijko.endlessleveling.listeners;
 
 import com.airijko.endlessleveling.data.PlayerData;
+import com.airijko.endlessleveling.managers.PassiveManager;
 import com.airijko.endlessleveling.managers.PlayerDataManager;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.Message;
@@ -17,9 +18,11 @@ public class PlayerDataListener {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
     private final PlayerDataManager playerDataManager;
+    private final PassiveManager passiveManager;
 
-    public PlayerDataListener(PlayerDataManager playerDataManager) {
+    public PlayerDataListener(PlayerDataManager playerDataManager, PassiveManager passiveManager) {
         this.playerDataManager = playerDataManager;
+        this.passiveManager = passiveManager;
     }
 
     /** Called when a player joins */
@@ -35,6 +38,15 @@ public class PlayerDataListener {
         // Load or create PlayerData
         PlayerData playerData = playerDataManager.loadOrCreate(uuid, playerRef.getUsername());
 
+        if (passiveManager != null) {
+            passiveManager.resetRuntimeState(uuid);
+            var result = passiveManager.syncPassives(playerData);
+            if (!result.leveledUp().isEmpty()) {
+                passiveManager.notifyPassiveChanges(playerData, result);
+            }
+            playerDataManager.save(playerData);
+        }
+
         LOGGER.atInfo().log("Loaded PlayerData for player: %s", playerRef.getUsername());
 
         if (playerData.getSkillPoints() > 0) {
@@ -49,9 +61,13 @@ public class PlayerDataListener {
 
         PlayerData data = playerDataManager.get(uuid);
         if (data != null) {
-            playerDataManager.save(data);   // persist to uuid.yml
+            playerDataManager.save(data); // persist to uuid.yml
             playerDataManager.remove(uuid); // remove from cache
             LOGGER.atInfo().log("Saved and removed PlayerData for %s on disconnect.", uuid);
+        }
+
+        if (passiveManager != null) {
+            passiveManager.resetRuntimeState(uuid);
         }
     }
 
@@ -65,19 +81,17 @@ public class PlayerDataListener {
         var secondaryMessage = Message.join(
                 Message.raw("Open ").color("#ff9d00"),
                 Message.raw("/skills").color("#4fd7f7"),
-                Message.raw(" to invest them").color("#ff9d00")
-        );
+                Message.raw(" to invest them").color("#ff9d00"));
         var icon = new ItemStack("Ingredient_Ice_Essence", 1).toPacket();
         NotificationUtil.sendNotification(packetHandler, primaryMessage, secondaryMessage, icon);
 
         var chatMessage = Message.join(
-            Message.raw("[EndlessLeveling] ").color("#4fd7f7"),
-            Message.raw("You still have ").color("#ffc300"),
-            Message.raw(String.valueOf(skillPoints)).color("#4fd7f7"),
-            Message.raw(" skill points. Use ").color("#ffc300"),
-            Message.raw("/skills").color("#4fd7f7"),
-            Message.raw(" to spend them.").color("#ffc300")
-        );
+                Message.raw("[EndlessLeveling] ").color("#4fd7f7"),
+                Message.raw("You still have ").color("#ffc300"),
+                Message.raw(String.valueOf(skillPoints)).color("#4fd7f7"),
+                Message.raw(" skill points. Use ").color("#ffc300"),
+                Message.raw("/skills").color("#4fd7f7"),
+                Message.raw(" to spend them.").color("#ffc300"));
         playerRef.sendMessage(chatMessage);
     }
 }
