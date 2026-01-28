@@ -16,14 +16,20 @@ public class ConfigManager {
     private final Yaml yaml;
     private Map<String, Object> configMap = new LinkedHashMap<>();
     private final int bundledConfigVersion;
+    private final boolean createBackupOnRefresh;
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
     private final String resourceName;
     private static final String CONFIG_VERSION_KEY = "config_version";
     private static final String BACKUP_EXTENSION = ".old";
 
     public ConfigManager(File configFile) {
+        this(configFile, true);
+    }
+
+    public ConfigManager(File configFile, boolean createBackupOnRefresh) {
         this.configFile = configFile;
         this.resourceName = configFile.getName();
+        this.createBackupOnRefresh = createBackupOnRefresh;
 
         // Setup SnakeYAML
         DumperOptions options = new DumperOptions();
@@ -144,7 +150,8 @@ public class ConfigManager {
                 "Config version is missing/outdated (found=%s, expected=%s). Refreshing config...",
                 foundVersion, expectedVersion);
 
-        backupCurrentConfig();
+        if (createBackupOnRefresh)
+            backupCurrentConfig();
         try {
             copyBundledConfigToFile();
         } catch (IOException e) {
@@ -155,9 +162,10 @@ public class ConfigManager {
     }
 
     private void backupCurrentConfig() {
-        if (!configFile.exists()) {
+        if (!createBackupOnRefresh)
             return;
-        }
+        if (!configFile.exists())
+            return;
         File backupFile = new File(configFile.getParentFile(), configFile.getName() + BACKUP_EXTENSION);
         try {
             Files.copy(configFile.toPath(), backupFile.toPath(), StandardCopyOption.REPLACE_EXISTING);

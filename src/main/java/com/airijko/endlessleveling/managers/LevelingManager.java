@@ -28,7 +28,7 @@ public class LevelingManager {
     public LevelingManager(PlayerDataManager playerDataManager, PluginFilesManager filesManager,
             SkillManager skillManager, PassiveManager passiveManager) {
         this.playerDataManager = playerDataManager;
-        this.configManager = new ConfigManager(filesManager.getLevelingFile());
+        this.configManager = new ConfigManager(filesManager.getLevelingFile(), false);
         this.skillManager = skillManager;
         this.passiveManager = passiveManager;
 
