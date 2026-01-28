@@ -17,12 +17,13 @@ public class ConfigManager {
     private Map<String, Object> configMap = new LinkedHashMap<>();
     private final int bundledConfigVersion;
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
-    private static final String CONFIG_RESOURCE = "config.yml";
+    private final String resourceName;
     private static final String CONFIG_VERSION_KEY = "config_version";
     private static final String BACKUP_EXTENSION = ".old";
 
     public ConfigManager(File configFile) {
         this.configFile = configFile;
+        this.resourceName = configFile.getName();
 
         // Setup SnakeYAML
         DumperOptions options = new DumperOptions();
@@ -167,23 +168,24 @@ public class ConfigManager {
     }
 
     private void copyBundledConfigToFile() throws IOException {
-        try (InputStream in = ConfigManager.class.getClassLoader().getResourceAsStream(CONFIG_RESOURCE)) {
+        try (InputStream in = ConfigManager.class.getClassLoader().getResourceAsStream(resourceName)) {
             if (in == null) {
-                throw new FileNotFoundException("Bundled config resource not found: " + CONFIG_RESOURCE);
+                throw new FileNotFoundException("Bundled config resource not found: " + resourceName);
             }
             Files.copy(in, configFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
         }
     }
 
     private int resolveBundledConfigVersion() {
-        try (InputStream in = ConfigManager.class.getClassLoader().getResourceAsStream(CONFIG_RESOURCE)) {
+        try (InputStream in = ConfigManager.class.getClassLoader().getResourceAsStream(resourceName)) {
             if (in == null) {
-                throw new IllegalStateException("Bundled config resource missing: " + CONFIG_RESOURCE);
+                throw new IllegalStateException("Bundled config resource missing: " + resourceName);
             }
             Map<String, Object> bundledMap = toMutableMap(yaml.load(in));
             Integer version = extractConfigVersion(bundledMap);
             if (version == null) {
-                throw new IllegalStateException("Bundled config is missing a valid config_version");
+                LOGGER.atWarning().log("Bundled resource %s is missing config_version; defaulting to 1", resourceName);
+                return 1;
             }
             return version;
         } catch (IOException e) {
