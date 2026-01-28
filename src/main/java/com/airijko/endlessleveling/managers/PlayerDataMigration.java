@@ -9,10 +9,10 @@ import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public final class PlayerDataMigration {
 
@@ -29,75 +29,35 @@ public final class PlayerDataMigration {
      */
     public static Map<String, Object> migrateIfNeeded(File file, Map<String, Object> originalMap, Yaml yaml,
             int currentVersion) {
-        int fileVersion = 1;
-        Object versionObj = originalMap.get("version");
-        boolean missingVersion = false;
-        if (versionObj instanceof Number) {
-            fileVersion = ((Number) versionObj).intValue();
-        } else if (versionObj instanceof String) {
-            try {
-                fileVersion = Integer.parseInt((String) versionObj);
-            } catch (NumberFormatException ignored) {
-            }
-        } else {
-            // missing or null version -> mark as missing so we still back up
-            missingVersion = true;
-            fileVersion = 1; // assume initial schema
-        }
 
-        // If the file is already at or above current version and it had a
-        // version tag, nothing to do. If it was missing a version tag we
-        // still proceed so we can back it up and normalize it.
+        int fileVersion = parseVersion(originalMap);
+        boolean missingVersion = !originalMap.containsKey("version");
+
+        // If already up-to-date and had explicit version, nothing to do.
         if (fileVersion >= currentVersion && !missingVersion) {
             return originalMap;
         }
 
-        // Backup original file into backups/<timestamp>/ so multiple files
-        // can be grouped per migration run.
+        // Perform a safe backup of the original file under backups/<timestamp>/
+        Path dated = file.toPath().getParent().resolve("backups").resolve(timestamp());
         try {
-            // use date + hour + minute (no seconds) as requested
-            String timestamp = new SimpleDateFormat("yyyyMMdd_HHmm").format(new Date());
-            Path backupsRoot = file.toPath().getParent().resolve("backups");
-            // ensure the backups root and dated folder exist
-            Path dated = backupsRoot.resolve(timestamp);
-            try {
-                Files.createDirectories(dated);
-            } catch (Exception dirEx) {
-                LOGGER.atWarning().log("Failed to create backup directories for %s: %s", file.getName(),
-                        dirEx.getMessage());
-                throw dirEx;
-            }
-
+            Files.createDirectories(dated);
             Path backupPath = dated.resolve(file.getName());
             Files.copy(file.toPath(), backupPath, StandardCopyOption.REPLACE_EXISTING);
             LOGGER.atInfo().log("Backed up %s to %s before migration.", file.getName(), backupPath.toString());
-
         } catch (Exception e) {
-            LOGGER.atWarning().log("Failed to backup %s before migration: %s", file.getName(), e.getMessage());
+            LOGGER.atWarning().log("Failed to create backup for %s: %s", file.getName(), e.getMessage());
         }
 
         Map<String, Object> migrated = new LinkedHashMap<>(originalMap);
-        int v = fileVersion;
-        while (v < currentVersion) {
-            switch (v) {
-                case 1 -> {
-                    // v1 -> v2: add 'prestige' default 0
-                    if (!migrated.containsKey("prestige")) {
-                        migrated.put("prestige", 0);
-                    }
-                    v = 2;
-                    migrated.put("version", v);
-                    LOGGER.atInfo().log("Migrated %s from v1 to v2.", file.getName());
-                }
-                default -> {
-                    v++;
-                    migrated.put("version", v);
-                    LOGGER.atInfo().log("Bumped %s to version %d (default migration).", file.getName(), v);
-                }
-            }
+
+        // Sequentially apply migrations from fileVersion -> currentVersion
+        for (int v = fileVersion; v < currentVersion; v++) {
+            applyMigrationStep(v, migrated, file);
+            migrated.put("version", v + 1);
         }
 
-        // Write migrated YAML back to disk
+        // Write migrated YAML back to disk (normalize formatting)
         try (StringWriter buffer = new StringWriter(); FileWriter writer = new FileWriter(file)) {
             yaml.dump(migrated, buffer);
             String yamlContent = buffer.toString()
@@ -105,12 +65,41 @@ public final class PlayerDataMigration {
                     .replace("\noptions:", "\n\noptions:")
                     .replace("\npassives:", "\n\npassives:");
             writer.write(yamlContent);
-            LOGGER.atInfo().log("Wrote migrated PlayerData to %s (now v%d).", file.getName(), v);
+            LOGGER.atInfo().log("Wrote migrated PlayerData to %s (now v%d).", file.getName(), currentVersion);
         } catch (Exception e) {
             LOGGER.atSevere().log("Failed to write migrated PlayerData for %s: %s", file.getName(), e.getMessage());
             e.printStackTrace();
         }
 
         return migrated;
+    }
+
+    private static int parseVersion(Map<String, Object> map) {
+        Object versionObj = map.get("version");
+        if (versionObj instanceof Number)
+            return ((Number) versionObj).intValue();
+        if (versionObj instanceof String) {
+            try {
+                return Integer.parseInt((String) versionObj);
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return 1;
+    }
+
+    private static String timestamp() {
+        return LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmm"));
+    }
+
+    private static void applyMigrationStep(int fromVersion, Map<String, Object> migrated, File file) {
+        switch (fromVersion) {
+            case 1 -> {
+                // v1 -> v2: add 'prestige' default 0
+                migrated.putIfAbsent("prestige", 0);
+                LOGGER.atInfo().log("Migrated %s from v1 to v2.", file.getName());
+            }
+            default -> LOGGER.atInfo().log("Bumped %s from v%d to v%d (default).", file.getName(), fromVersion,
+                    fromVersion + 1);
+        }
     }
 }
