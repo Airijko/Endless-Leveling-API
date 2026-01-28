@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.StringWriter;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -30,6 +31,7 @@ public final class PlayerDataMigration {
             int currentVersion) {
         int fileVersion = 1;
         Object versionObj = originalMap.get("version");
+        boolean missingVersion = false;
         if (versionObj instanceof Number) {
             fileVersion = ((Number) versionObj).intValue();
         } else if (versionObj instanceof String) {
@@ -38,26 +40,38 @@ public final class PlayerDataMigration {
             } catch (NumberFormatException ignored) {
             }
         } else {
-            fileVersion = 1;
+            // missing or null version -> mark as missing so we still back up
+            missingVersion = true;
+            fileVersion = 1; // assume initial schema
         }
 
-        if (fileVersion >= currentVersion) {
+        // If the file is already at or above current version and it had a
+        // version tag, nothing to do. If it was missing a version tag we
+        // still proceed so we can back it up and normalize it.
+        if (fileVersion >= currentVersion && !missingVersion) {
             return originalMap;
         }
 
         // Backup original file into backups/<timestamp>/ so multiple files
         // can be grouped per migration run.
         try {
-            String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-            File backupsRoot = new File(file.getParentFile(), "backups");
-            if (!backupsRoot.exists())
-                backupsRoot.mkdirs();
-            File dated = new File(backupsRoot, timestamp);
-            if (!dated.exists())
-                dated.mkdirs();
-            File backup = new File(dated, file.getName() + ".v" + fileVersion + ".bak");
-            Files.copy(file.toPath(), backup.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            LOGGER.atInfo().log("Backed up %s to %s before migration.", file.getName(), backup.getPath());
+            // use date + hour + minute (no seconds) as requested
+            String timestamp = new SimpleDateFormat("yyyyMMdd_HHmm").format(new Date());
+            Path backupsRoot = file.toPath().getParent().resolve("backups");
+            // ensure the backups root and dated folder exist
+            Path dated = backupsRoot.resolve(timestamp);
+            try {
+                Files.createDirectories(dated);
+            } catch (Exception dirEx) {
+                LOGGER.atWarning().log("Failed to create backup directories for %s: %s", file.getName(),
+                        dirEx.getMessage());
+                throw dirEx;
+            }
+
+            Path backupPath = dated.resolve(file.getName());
+            Files.copy(file.toPath(), backupPath, StandardCopyOption.REPLACE_EXISTING);
+            LOGGER.atInfo().log("Backed up %s to %s before migration.", file.getName(), backupPath.toString());
+
         } catch (Exception e) {
             LOGGER.atWarning().log("Failed to backup %s before migration: %s", file.getName(), e.getMessage());
         }

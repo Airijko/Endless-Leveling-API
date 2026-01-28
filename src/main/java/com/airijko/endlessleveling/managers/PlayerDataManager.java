@@ -30,7 +30,7 @@ public class PlayerDataManager {
 
     // Current schema version for player data files. Increment when adding new
     // fields that require migration. Use this to detect/outdate/migrate files.
-    private static final int CURRENT_PLAYERDATA_VERSION = 2;
+    private static final int CURRENT_PLAYERDATA_VERSION = 1;
 
     public PlayerDataManager(PluginFilesManager filesManager, SkillManager skillManager) {
         this.filesManager = filesManager;
@@ -136,66 +136,69 @@ public class PlayerDataManager {
 
     // --- Load from file helper ---
     private PlayerData loadFromFile(UUID uuid, String playerName, File file) {
+        Map<String, Object> map;
         try (FileReader reader = new FileReader(file)) {
-            Map<String, Object> map = yaml.load(reader);
-            if (map == null) {
-                LOGGER.atWarning().log("PlayerData file %s for UUID %s is empty; creating new data.", file.getName(),
-                        uuid);
-                return new PlayerData(uuid, playerName, getStartingSkillPoints());
-            }
-            // Migrate file if it's an older schema version. This will create
-            // a backup of the original file and write a migrated file in-place.
-            map = PlayerDataMigration.migrateIfNeeded(file, map, yaml, CURRENT_PLAYERDATA_VERSION);
-            PlayerData data = new PlayerData(uuid, playerName, getStartingSkillPoints());
-
-            data.setXp(((Number) map.getOrDefault("xp", 0)).doubleValue());
-            data.setLevel((Integer) map.getOrDefault("level", 1));
-            data.setSkillPoints((Integer) map.getOrDefault("skillPoints", 0));
-
-            Map<String, Object> attrs = castToStringObjectMap(map.get("attributes"));
-            if (attrs != null) {
-                for (SkillAttributeType type : SkillAttributeType.values()) {
-                    Object value = attrs.get(type.name());
-                    int level = value instanceof Number number ? number.intValue() : 1;
-                    data.setPlayerSkillAttributeLevel(type, level);
-                }
-            }
-
-            Map<String, Object> options = castToStringObjectMap(map.get("options"));
-            Object playerHud = options != null ? options.get("playerHud") : map.get("playerHud");
-            Object criticalNotif = options != null ? options.get("criticalNotif") : map.get("criticalNotif");
-            Object xpNotif = options != null ? options.get("xpNotif") : map.get("xpNotif");
-            Object passiveLevelUpNotif = options != null ? options.get("passiveLevelUpNotif")
-                    : map.get("passiveLevelUpNotif");
-            Object luckDoubleDropsNotif = options != null ? options.get("luckDoubleDropsNotif")
-                    : map.get("luckDoubleDropsNotif");
-            Object healthRegenNotif = options != null ? options.get("healthRegenNotif")
-                    : map.get("healthRegenNotif");
-            data.setPlayerHudEnabled(parseBoolean(playerHud, true));
-            data.setCriticalNotifEnabled(parseBoolean(criticalNotif, true));
-            data.setXpNotifEnabled(parseBoolean(xpNotif, true));
-            data.setPassiveLevelUpNotifEnabled(parseBoolean(passiveLevelUpNotif, true));
-            data.setLuckDoubleDropsNotifEnabled(parseBoolean(luckDoubleDropsNotif, true));
-            data.setHealthRegenNotifEnabled(parseBoolean(healthRegenNotif, true));
-
-            Map<String, Object> passives = castToStringObjectMap(map.get("passives"));
-            if (passives != null) {
-                for (PassiveType passiveType : PassiveType.values()) {
-                    Object value = passives.get(passiveType.name());
-                    int level = value instanceof Number number ? number.intValue() : 0;
-                    data.setPassiveLevel(passiveType, level);
-                }
-            }
-            LOGGER.atInfo().log("PlayerData for UUID %s loaded from disk.", uuid);
-            return data;
+            map = yaml.load(reader);
         } catch (Exception e) {
             LOGGER.atSevere().log("Failed to load PlayerData for UUID %s from %s: %s", uuid,
                     file.getName(), e.getMessage());
             e.printStackTrace();
-            // Safety net: fall back to a fresh PlayerData so one bad file
-            // cannot crash joins or UI.
             return new PlayerData(uuid, playerName, getStartingSkillPoints());
         }
+
+        if (map == null) {
+            LOGGER.atWarning().log("PlayerData file %s for UUID %s is empty; creating new data.", file.getName(),
+                    uuid);
+            return new PlayerData(uuid, playerName, getStartingSkillPoints());
+        }
+
+        // Close reader before attempting backup/copy on Windows.
+        // Migrate file if it's an older schema version. This will create
+        // a backup of the original file and write a migrated file in-place.
+        map = PlayerDataMigration.migrateIfNeeded(file, map, yaml, CURRENT_PLAYERDATA_VERSION);
+
+        PlayerData data = new PlayerData(uuid, playerName, getStartingSkillPoints());
+
+        data.setXp(((Number) map.getOrDefault("xp", 0)).doubleValue());
+        data.setLevel((Integer) map.getOrDefault("level", 1));
+        data.setSkillPoints((Integer) map.getOrDefault("skillPoints", 0));
+
+        Map<String, Object> attrs = castToStringObjectMap(map.get("attributes"));
+        if (attrs != null) {
+            for (SkillAttributeType type : SkillAttributeType.values()) {
+                Object value = attrs.get(type.name());
+                int level = value instanceof Number number ? number.intValue() : 0;
+                data.setPlayerSkillAttributeLevel(type, level);
+            }
+        }
+
+        Map<String, Object> options = castToStringObjectMap(map.get("options"));
+        Object playerHud = options != null ? options.get("playerHud") : map.get("playerHud");
+        Object criticalNotif = options != null ? options.get("criticalNotif") : map.get("criticalNotif");
+        Object xpNotif = options != null ? options.get("xpNotif") : map.get("xpNotif");
+        Object passiveLevelUpNotif = options != null ? options.get("passiveLevelUpNotif")
+                : map.get("passiveLevelUpNotif");
+        Object luckDoubleDropsNotif = options != null ? options.get("luckDoubleDropsNotif")
+                : map.get("luckDoubleDropsNotif");
+        Object healthRegenNotif = options != null ? options.get("healthRegenNotif")
+                : map.get("healthRegenNotif");
+        data.setPlayerHudEnabled(parseBoolean(playerHud, true));
+        data.setCriticalNotifEnabled(parseBoolean(criticalNotif, true));
+        data.setXpNotifEnabled(parseBoolean(xpNotif, true));
+        data.setPassiveLevelUpNotifEnabled(parseBoolean(passiveLevelUpNotif, true));
+        data.setLuckDoubleDropsNotifEnabled(parseBoolean(luckDoubleDropsNotif, true));
+        data.setHealthRegenNotifEnabled(parseBoolean(healthRegenNotif, true));
+
+        Map<String, Object> passives = castToStringObjectMap(map.get("passives"));
+        if (passives != null) {
+            for (PassiveType passiveType : PassiveType.values()) {
+                Object value = passives.get(passiveType.name());
+                int level = value instanceof Number number ? number.intValue() : 0;
+                data.setPassiveLevel(passiveType, level);
+            }
+        }
+        LOGGER.atInfo().log("PlayerData for UUID %s loaded from disk.", uuid);
+        return data;
     }
 
     public PlayerData getByName(String playerName) {
@@ -315,7 +318,7 @@ public class PlayerDataManager {
             if (attrs != null) {
                 for (SkillAttributeType type : SkillAttributeType.values()) {
                     Object value = attrs.get(type.name());
-                    int level = value instanceof Number number ? number.intValue() : 1;
+                    int level = value instanceof Number number ? number.intValue() : 0;
                     data.setPlayerSkillAttributeLevel(type, level);
                 }
             }
