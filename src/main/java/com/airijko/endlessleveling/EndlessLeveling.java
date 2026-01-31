@@ -110,10 +110,9 @@ public class EndlessLeveling extends JavaPlugin {
                 .registerSystem(new PlayerDefenseListener(playerDataManager, skillManager, passiveManager));
         this.getEntityStoreRegistry().registerSystem(new PassiveRegenSystem(playerDataManager, passiveManager));
         this.getEntityStoreRegistry().registerSystem(new MobNameplateSystem());
+        this.getEntityStoreRegistry().registerSystem(new com.airijko.endlessleveling.systems.MobHealthModifierSystem());
         this.getEntityStoreRegistry()
                 .registerSystem(new com.airijko.endlessleveling.systems.MobDamageScalingSystem(levelingManager));
-        this.getEntityStoreRegistry().registerSystem(
-                new com.airijko.endlessleveling.systems.MobIncomingDamageScalingSystem(levelingManager));
 
         // Register commands
         this.getCommandRegistry().registerCommand(new EndlessLevelingCommand("skills", "Skills menu"));
