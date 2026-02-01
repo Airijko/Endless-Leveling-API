@@ -446,4 +446,23 @@ public class MobLevelingManager {
             return defaultValue;
         }
     }
+
+    public boolean shouldShowMobLevelUi() {
+        return getConfigBoolean("Mob_Leveling.UI.Show_Mob_Level", true);
+    }
+
+    public boolean shouldIncludeLevelInNameplate() {
+        return getConfigBoolean("Mob_Leveling.UI.Show_Level_In_Name", true);
+    }
+
+    private boolean getConfigBoolean(String path, boolean defaultValue) {
+        Object raw = configManager.get(path, defaultValue, false);
+        if (raw instanceof Boolean b)
+            return b;
+        if (raw instanceof Number n)
+            return n.intValue() != 0;
+        if (raw instanceof String s)
+            return Boolean.parseBoolean(s.trim());
+        return defaultValue;
+    }
 }
