@@ -1,230 +1,139 @@
 package com.airijko.endlessleveling.systems;
 
 import com.airijko.endlessleveling.EndlessLeveling;
-import com.airijko.endlessleveling.managers.LevelingManager;
-import com.hypixel.hytale.component.ArchetypeChunk;
-import com.hypixel.hytale.component.CommandBuffer;
-import com.hypixel.hytale.component.Ref;
+import com.airijko.endlessleveling.managers.MobLevelingManager;
+import com.hypixel.hytale.component.AddReason;
+import com.hypixel.hytale.component.Holder;
+import com.hypixel.hytale.component.RemoveReason;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
-import com.hypixel.hytale.component.system.tick.EntityTickingSystem;
+import com.hypixel.hytale.component.system.HolderSystem;
 import com.hypixel.hytale.logger.HytaleLogger;
+import com.hypixel.hytale.math.vector.Vector3d;
+import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
+import com.hypixel.hytale.server.core.modules.entity.component.WorldGenId;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue;
 import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
+import com.hypixel.hytale.server.core.modules.entitystats.modifier.Modifier;
 import com.hypixel.hytale.server.core.modules.entitystats.modifier.StaticModifier;
-import com.hypixel.hytale.server.core.modules.entitystats.modifier.Modifier.ModifierTarget;
-import com.hypixel.hytale.server.core.modules.entitystats.modifier.StaticModifier.CalculationType;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
-import com.hypixel.hytale.server.npc.entities.NPCEntity;
-import com.hypixel.hytale.server.core.modules.entity.component.WorldGenId;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.hypixel.hytale.server.npc.entities.NPCEntity;
 
-import java.util.HashSet;
-import java.util.Set;
+import javax.annotation.Nonnull;
 
 /**
- * Applies mob max-health modifiers using EntityStatMap.putModifier (no
- * reflection).
+ * Applies level-based health scaling exactly once when a mob enters the store
+ * by attaching an EntityStat modifier instead of mutating
+ * {@link EntityStatValue}
+ * through reflection. This mirrors Hytale's own balancing systems.
  */
-public class MobHealthModifierSystem extends EntityTickingSystem<EntityStore> {
+public class MobHealthModifierSystem extends HolderSystem<EntityStore> {
 
+    private static final Query<EntityStore> QUERY = Query.and(EntityStatMap.getComponentType());
+    private static final String HEALTH_MODIFIER_KEY = "ENDLESSLEVELING_HEALTH";
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
-    private static final Set<Integer> applied = new HashSet<>();
 
-    public MobHealthModifierSystem() {
-    }
+    private final MobLevelingManager mobLevelingManager = EndlessLeveling.getInstance().getMobLevelingManager();
 
-    @Override
-    public void tick(float deltaSeconds, int index, ArchetypeChunk<EntityStore> chunk, Store<EntityStore> store,
-            CommandBuffer<EntityStore> commandBuffer) {
-        if (store == null || store.isShutdown())
-            return;
-
-        var levelingManager = EndlessLeveling.getInstance().getMobLevelingManager();
-        if (levelingManager == null || !levelingManager.isMobLevelingEnabled()
-                || !levelingManager.isMobHealthScalingEnabled())
-            return;
-
-        Ref<EntityStore> ref = chunk.getReferenceTo(index);
-        applyModifierToRef(ref, store, commandBuffer);
-    }
-
-    private static void applyModifierToRef(Ref<EntityStore> ref, Store<EntityStore> store,
-            CommandBuffer<EntityStore> commandBuffer) {
-        if (ref == null || store == null)
-            return;
-        int idx = ref.getIndex();
-        if (applied.contains(idx))
-            return;
-
-        var levelingManager = EndlessLeveling.getInstance().getMobLevelingManager();
-        if (levelingManager == null || !levelingManager.isMobLevelingEnabled()
-                || !levelingManager.isMobHealthScalingEnabled())
-            return;
-
-        // skip players
-        PlayerRef playerRef;
-        if (commandBuffer != null) {
-            playerRef = commandBuffer.getComponent(ref, PlayerRef.getComponentType());
-        } else {
-            playerRef = (PlayerRef) store.getComponent(ref, PlayerRef.getComponentType());
-        }
-        if (playerRef != null && playerRef.isValid())
-            return;
-
-        // check blacklist
-        String mobType = null;
-        Object worldGen;
-        if (commandBuffer != null) {
-            worldGen = commandBuffer.getComponent(ref, WorldGenId.getComponentType());
-        } else {
-            worldGen = store.getComponent(ref, WorldGenId.getComponentType());
-        }
-        if (worldGen != null) {
-            try {
-                mobType = worldGen.toString();
-            } catch (Throwable ignored) {
-            }
-        }
-        if (mobType != null && levelingManager.isMobTypeBlacklisted(mobType))
-            return;
-
-        // If passive mob leveling is disabled, skip entities that are not NPCs
-        if (!levelingManager.allowPassiveMobLeveling()) {
-            Object npcComp;
-            if (commandBuffer != null) {
-                npcComp = commandBuffer.getComponent(ref, NPCEntity.getComponentType());
-            } else {
-                npcComp = store.getComponent(ref, NPCEntity.getComponentType());
-            }
-            if (npcComp == null)
-                return;
-        }
-
-        // Hard-coded level for now
-        int mobLevel = 100;
-
-        EntityStatMap statMap;
-        if (commandBuffer != null) {
-            statMap = commandBuffer.getComponent(ref, EntityStatMap.getComponentType());
-        } else {
-            statMap = (EntityStatMap) store.getComponent(ref, EntityStatMap.getComponentType());
-        }
-        if (statMap == null)
-            return;
-
-        try {
-            int healthIndex = DefaultEntityStatTypes.getHealth();
-            EntityStatValue hp = statMap.get(healthIndex);
-            if (hp == null)
-                return;
-
-            double mult = levelingManager.getMobHealthMultiplierForLevel(mobLevel);
-            float oldMax = hp.getMax();
-            float add = (float) (oldMax * (mult - 1.0));
-
-            if (add == 0.0f) {
-                applied.add(idx);
-                return;
-            }
-
-            String key = "EL_MOB_HEALTH_" + idx;
-            StaticModifier modifier = new StaticModifier(ModifierTarget.MAX, CalculationType.ADDITIVE, add);
-            statMap.putModifier(healthIndex, key, modifier);
-            try {
-                statMap.maximizeStatValue(healthIndex);
-            } catch (Throwable ignore) {
-            }
-            LOGGER.atInfo().log("MobHealthModifier: applied +%.2f max HP to entity %d (mult=%.3f)", add, idx, mult);
-            applied.add(idx);
-        } catch (Throwable t) {
-            LOGGER.atSevere().log("MobHealthModifier: failed for entity %d: %s", idx, t.toString());
-        }
-    }
-
+    @Nonnull
     @Override
     public Query<EntityStore> getQuery() {
-        return Query.and(EntityStatMap.getComponentType());
+        return QUERY;
     }
 
-    /**
-     * Compatibility shim for NPC load event registration. Called reflectively from
-     * `EndlessLeveling` if NPC events are present. No-op fallback.
-     */
-    public static void enqueueFromEvent(Object evt) {
-        if (evt == null)
+    @Override
+    public void onEntityAdd(@Nonnull Holder<EntityStore> holder, @Nonnull AddReason reason,
+            @Nonnull Store<EntityStore> store) {
+        if (!isEnabled() || store == null)
             return;
+
         try {
-            Ref<EntityStore> ref = getRefFromEvent(evt);
-            if (ref == null)
+            if (isPlayer(holder))
                 return;
 
-            Store<EntityStore> store = ref.getStore();
-            if (store == null)
+            if (!mobLevelingManager.allowPassiveMobLeveling()
+                    && holder.getComponent(NPCEntity.getComponentType()) == null)
                 return;
 
-            // try to get the world and execute on its thread; fall back to immediate call
-            try {
-                Object entityStore = store.getExternalData();
-                if (entityStore != null) {
-                    try {
-                        java.lang.reflect.Method gw = entityStore.getClass().getMethod("getWorld");
-                        Object world = gw.invoke(entityStore);
-                        if (world != null) {
-                            java.lang.reflect.Method exec = world.getClass().getMethod("execute", Runnable.class);
-                            final Ref<EntityStore> fref = ref;
-                            exec.invoke(world, (Runnable) () -> applyModifierToRef(fref, store, null));
-                            return;
-                        }
-                    } catch (Throwable ignored) {
-                    }
-                }
-            } catch (Throwable ignored) {
-            }
+            String mobType = resolveMobType(holder);
+            if (mobType != null && mobLevelingManager.isMobTypeBlacklisted(mobType))
+                return;
 
-            // immediate fallback (may be off-thread)
-            applyModifierToRef(ref, store, null);
-        } catch (Throwable ignored) {
+            EntityStatMap statMap = holder.getComponent(EntityStatMap.getComponentType());
+            if (statMap == null)
+                return;
+
+            Vector3d position = resolvePosition(holder);
+            int mobLevel = mobLevelingManager.resolveMobLevel(store, position);
+            applyHealthScaling(statMap, mobLevel);
+        } catch (Throwable t) {
+            LOGGER.atWarning().log("MobHealthModifierSystem: failed to scale mob health: %s", t.toString());
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private static Ref<EntityStore> getRefFromEvent(Object evt) {
-        if (evt == null)
+    @Override
+    public void onEntityRemoved(@Nonnull Holder<EntityStore> holder, @Nonnull RemoveReason reason,
+            @Nonnull Store<EntityStore> store) {
+        // No clean-up needed because modifiers live inside the stat map that will be
+        // discarded
+        // alongside the entity; method implemented to satisfy HolderSystem contract.
+    }
+
+    private boolean isEnabled() {
+        return mobLevelingManager != null
+                && mobLevelingManager.isMobLevelingEnabled()
+                && mobLevelingManager.isMobHealthScalingEnabled();
+    }
+
+    private boolean isPlayer(Holder<EntityStore> holder) {
+        return holder.getComponent(PlayerRef.getComponentType()) != null;
+    }
+
+    private String resolveMobType(Holder<EntityStore> holder) {
+        WorldGenId worldGenId = holder.getComponent(WorldGenId.getComponentType());
+        if (worldGenId == null)
             return null;
         try {
-            for (java.lang.reflect.Method m : evt.getClass().getMethods()) {
-                if (m.getParameterCount() != 0)
-                    continue;
-                if (Ref.class.isAssignableFrom(m.getReturnType())) {
-                    try {
-                        Object r = m.invoke(evt);
-                        if (r instanceof Ref)
-                            return (Ref<EntityStore>) r;
-                    } catch (Throwable ignored) {
-                    }
-                }
-            }
-            for (java.lang.reflect.Field f : evt.getClass().getFields()) {
-                if (Ref.class.isAssignableFrom(f.getType())) {
-                    try {
-                        Object r = f.get(evt);
-                        if (r instanceof Ref)
-                            return (Ref<EntityStore>) r;
-                    } catch (Throwable ignored) {
-                    }
-                }
-            }
+            return worldGenId.toString();
         } catch (Throwable ignored) {
+            return null;
         }
-        return null;
     }
 
-    /**
-     * Compatibility shim for NPC unload event registration. No-op fallback.
-     */
-    public static void removeOnUnload(Object evt) {
-        // No-op: nothing to remove for the static per-entity modifier approach.
+    private Vector3d resolvePosition(Holder<EntityStore> holder) {
+        TransformComponent transform = holder.getComponent(TransformComponent.getComponentType());
+        return transform != null ? transform.getPosition() : null;
+    }
+
+    private void applyHealthScaling(EntityStatMap statMap, int mobLevel) {
+        int healthIndex = DefaultEntityStatTypes.getHealth();
+        EntityStatValue currentHealth = statMap.get(healthIndex);
+        if (currentHealth == null)
+            return;
+
+        float previousMax = currentHealth.getMax();
+        float previousValue = currentHealth.get();
+
+        statMap.removeModifier(healthIndex, HEALTH_MODIFIER_KEY);
+        EntityStatValue baselineHealth = statMap.get(healthIndex);
+        if (baselineHealth == null)
+            baselineHealth = currentHealth;
+
+        float baseMax = baselineHealth.getMax();
+        double multiplier = mobLevelingManager.getMobHealthMultiplierForLevel(mobLevel);
+        float targetMax = (float) Math.max(1.0, baseMax * multiplier);
+        float additive = targetMax - baseMax;
+
+        if (Math.abs(additive) > 0.01f) {
+            StaticModifier modifier = new StaticModifier(Modifier.ModifierTarget.MAX,
+                    StaticModifier.CalculationType.ADDITIVE, additive);
+            statMap.putModifier(healthIndex, HEALTH_MODIFIER_KEY, modifier);
+        }
+
+        float ratio = previousMax > 0.0f ? previousValue / previousMax : 1.0f;
+        float newValue = Math.max(0.01f, Math.min(targetMax, ratio * targetMax));
+        statMap.setStatValue(healthIndex, newValue);
     }
 }

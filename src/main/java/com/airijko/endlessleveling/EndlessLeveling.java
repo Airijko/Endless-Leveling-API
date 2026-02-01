@@ -92,7 +92,7 @@ public class EndlessLeveling extends JavaPlugin {
         passiveManager = new PassiveManager(configManager);
         playerDataManager = new PlayerDataManager(filesManager, skillManager);
         levelingManager = new LevelingManager(playerDataManager, filesManager, skillManager, passiveManager);
-        mobLevelingManager = new MobLevelingManager(filesManager);
+        mobLevelingManager = new MobLevelingManager(filesManager, playerDataManager);
         partyManager = new PartyManager(playerDataManager, levelingManager, filesManager);
 
         // Register event listeners

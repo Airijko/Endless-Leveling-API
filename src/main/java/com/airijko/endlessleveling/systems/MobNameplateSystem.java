@@ -86,8 +86,9 @@ public class MobNameplateSystem extends TickingSystem<EntityStore> {
                         // including HP
                         Nameplate nameplate = commandBuffer.ensureAndGetComponent(ref, Nameplate.getComponentType());
                         if (nameplate != null) {
+                            int mobLevel = levelingManager.resolveMobLevel(ref, commandBuffer);
                             StringBuilder label = new StringBuilder();
-                            label.append("[Lv.10] ").append(baseName);
+                            label.append("[Lv.").append(mobLevel).append("] ").append(baseName);
 
                             // Append health if available
                             EntityStatMap statMap = commandBuffer.getComponent(ref, EntityStatMap.getComponentType());

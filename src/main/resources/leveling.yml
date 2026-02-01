@@ -37,6 +37,13 @@ Mob_Leveling:
     # DISTANCE | PLAYER | FIXED
     Mode: "DISTANCE"
 
+    # Mob level is based on distance from spawn / world center
+    Distance_Level:
+      Start_Level: 1
+      Blocks_Per_Level: 100
+      Max_Level: 100
+      Min_Level: 1
+
     # Mob level is based on the player's level
     Player_Based:
       Offset: 0 # Mob level = player level + offset
