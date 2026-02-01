@@ -16,7 +16,7 @@ import com.hypixel.hytale.server.core.entity.nameplate.Nameplate;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.airijko.endlessleveling.EndlessLeveling;
-import com.airijko.endlessleveling.managers.LevelingManager;
+import com.airijko.endlessleveling.managers.MobLevelingManager;
 
 public class MobNameplateSystem extends TickingSystem<EntityStore> {
 
@@ -33,7 +33,7 @@ public class MobNameplateSystem extends TickingSystem<EntityStore> {
             return;
         }
 
-        LevelingManager levelingManager = EndlessLeveling.getInstance().getLevelingManager();
+        MobLevelingManager levelingManager = EndlessLeveling.getInstance().getMobLevelingManager();
         if (levelingManager == null || !levelingManager.isMobLevelingEnabled()) {
             return; // mob leveling disabled globally
         }

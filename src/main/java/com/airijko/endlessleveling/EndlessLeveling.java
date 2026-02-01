@@ -34,6 +34,7 @@ public class EndlessLeveling extends JavaPlugin {
     private ConfigManager configManager;
     private PlayerDataManager playerDataManager;
     private LevelingManager levelingManager;
+    private MobLevelingManager mobLevelingManager;
     private SkillManager skillManager;
     private PassiveManager passiveManager;
     private PartyManager partyManager;
@@ -50,6 +51,10 @@ public class EndlessLeveling extends JavaPlugin {
 
     public LevelingManager getLevelingManager() {
         return levelingManager;
+    }
+
+    public MobLevelingManager getMobLevelingManager() {
+        return mobLevelingManager;
     }
 
     public PassiveManager getPassiveManager() {
@@ -87,6 +92,7 @@ public class EndlessLeveling extends JavaPlugin {
         passiveManager = new PassiveManager(configManager);
         playerDataManager = new PlayerDataManager(filesManager, skillManager);
         levelingManager = new LevelingManager(playerDataManager, filesManager, skillManager, passiveManager);
+        mobLevelingManager = new MobLevelingManager(filesManager);
         partyManager = new PartyManager(playerDataManager, levelingManager, filesManager);
 
         // Register event listeners
@@ -112,7 +118,7 @@ public class EndlessLeveling extends JavaPlugin {
         this.getEntityStoreRegistry().registerSystem(new MobNameplateSystem());
         this.getEntityStoreRegistry().registerSystem(new com.airijko.endlessleveling.systems.MobHealthModifierSystem());
         this.getEntityStoreRegistry()
-                .registerSystem(new com.airijko.endlessleveling.systems.MobDamageScalingSystem(levelingManager));
+                .registerSystem(new com.airijko.endlessleveling.systems.MobDamageScalingSystem(mobLevelingManager));
 
         // Register commands
         this.getCommandRegistry().registerCommand(new EndlessLevelingCommand("skills", "Skills menu"));

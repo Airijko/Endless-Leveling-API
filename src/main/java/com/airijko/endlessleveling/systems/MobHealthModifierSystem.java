@@ -41,7 +41,7 @@ public class MobHealthModifierSystem extends EntityTickingSystem<EntityStore> {
         if (store == null || store.isShutdown())
             return;
 
-        LevelingManager levelingManager = EndlessLeveling.getInstance().getLevelingManager();
+        var levelingManager = EndlessLeveling.getInstance().getMobLevelingManager();
         if (levelingManager == null || !levelingManager.isMobLevelingEnabled()
                 || !levelingManager.isMobHealthScalingEnabled())
             return;
@@ -58,7 +58,7 @@ public class MobHealthModifierSystem extends EntityTickingSystem<EntityStore> {
         if (applied.contains(idx))
             return;
 
-        LevelingManager levelingManager = EndlessLeveling.getInstance().getLevelingManager();
+        var levelingManager = EndlessLeveling.getInstance().getMobLevelingManager();
         if (levelingManager == null || !levelingManager.isMobLevelingEnabled()
                 || !levelingManager.isMobHealthScalingEnabled())
             return;

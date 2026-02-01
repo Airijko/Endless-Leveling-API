@@ -1,6 +1,6 @@
 package com.airijko.endlessleveling.systems;
 
-import com.airijko.endlessleveling.managers.LevelingManager;
+import com.airijko.endlessleveling.managers.MobLevelingManager;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
@@ -24,10 +24,10 @@ import java.util.Objects;
  */
 public class MobDamageScalingSystem extends DamageEventSystem {
 
-    private final LevelingManager levelingManager;
+    private final MobLevelingManager levelingManager;
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
 
-    public MobDamageScalingSystem(LevelingManager levelingManager) {
+    public MobDamageScalingSystem(MobLevelingManager levelingManager) {
         this.levelingManager = Objects.requireNonNull(levelingManager);
     }
 
