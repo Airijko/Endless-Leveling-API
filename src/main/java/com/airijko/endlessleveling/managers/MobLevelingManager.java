@@ -81,8 +81,7 @@ public class MobLevelingManager {
             return false;
 
         // check blacklist
-        String mobType = resolveMobType(ref, store, commandBuffer);
-        if (mobType != null && isMobTypeBlacklisted(mobType))
+        if (isEntityBlacklisted(ref, store, commandBuffer))
             return false;
 
         // If passive mob leveling is disabled, skip non-NPCs
@@ -361,6 +360,15 @@ public class MobLevelingManager {
 
         String single = raw.toString();
         return mobType.equalsIgnoreCase(single);
+    }
+
+    /** Returns true if the referenced entity matches a blacklisted mob type */
+    public boolean isEntityBlacklisted(Ref<EntityStore> ref, Store<EntityStore> store,
+            CommandBuffer<EntityStore> commandBuffer) {
+        if (ref == null)
+            return false;
+        String mobType = resolveMobType(ref, store, commandBuffer);
+        return mobType != null && isMobTypeBlacklisted(mobType);
     }
 
     private String resolveMobType(Ref<EntityStore> ref, Store<EntityStore> store,

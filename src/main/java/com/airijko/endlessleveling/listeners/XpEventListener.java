@@ -85,13 +85,17 @@ public class XpEventListener extends DeathSystems.OnDeathSystem {
         if (healthStat == null)
             return;
 
+        boolean mobIsBlacklisted = mobLevelingManager != null
+                && mobLevelingManager.isEntityBlacklisted(ref, store, commandBuffer);
+
         int mobLevel = mobLevelingManager != null ? mobLevelingManager.resolveMobLevel(ref, commandBuffer) : 1;
 
         double xpGained = Math.max(1, healthStat.getMax());
-        xpGained = levelingManager.applyMobKillXpRules(playerData, mobLevel, xpGained);
+        xpGained = levelingManager.applyMobKillXpRules(playerData, mobLevel, xpGained, mobIsBlacklisted);
         if (xpGained <= 0.0) {
-            LOGGER.atFine().log("XP gain blocked for player %s due to level gap (player=%d, mob=%d)",
-                    playerUuid, playerData.getLevel(), mobLevel);
+            String mobLevelText = mobIsBlacklisted ? "N/A" : Integer.toString(Math.max(1, mobLevel));
+            LOGGER.atFine().log("XP gain blocked for player %s due to level gap (player=%d, mob=%s)",
+                    playerUuid, playerData.getLevel(), mobLevelText);
             return;
         }
         LOGGER.atInfo().log("Granting XP (before party share): %f to player %s", xpGained, playerUuid);

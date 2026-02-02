@@ -219,7 +219,8 @@ public class LevelingManager {
         return levelCap;
     }
 
-    public double applyMobKillXpRules(PlayerData player, int mobLevel, double baseXpAmount) {
+    public double applyMobKillXpRules(PlayerData player, int mobLevel, double baseXpAmount,
+            boolean skipLevelRangeChecks) {
         if (player == null || baseXpAmount <= 0)
             return 0.0;
 
@@ -232,7 +233,8 @@ public class LevelingManager {
 
         boolean blockedForBeingTooHigh = false;
         boolean blockedForBeingTooLow = false;
-        if (xpLevelRangeEnabled) {
+        boolean levelKnown = !skipLevelRangeChecks;
+        if (xpLevelRangeEnabled && !skipLevelRangeChecks) {
             int mobLvl = Math.max(1, mobLevel);
             int diff = player.getLevel() - mobLvl;
             if (playerBasedMode)
@@ -247,25 +249,29 @@ public class LevelingManager {
         }
         if (adjustedXp <= 0.0) {
             if (blockedForBeingTooHigh)
-                notifyXpSuppressed(player, mobLevel, XpSuppressionReason.PLAYER_TOO_HIGH);
+                notifyXpSuppressed(player, mobLevel, levelKnown, XpSuppressionReason.PLAYER_TOO_HIGH);
             else if (blockedForBeingTooLow)
-                notifyXpSuppressed(player, mobLevel, XpSuppressionReason.PLAYER_TOO_LOW);
+                notifyXpSuppressed(player, mobLevel, levelKnown, XpSuppressionReason.PLAYER_TOO_LOW);
             return 0.0;
         }
         return adjustedXp;
     }
 
-    private void notifyXpSuppressed(PlayerData player, int mobLevel, XpSuppressionReason reason) {
+    private void notifyXpSuppressed(PlayerData player, int mobLevel, boolean levelKnown, XpSuppressionReason reason) {
         PlayerRef playerRef = Universe.get().getPlayer(player.getUuid());
         if (playerRef == null)
             return;
 
+        String mobLabel = levelKnown
+                ? String.format("this mob (level %d)", Math.max(1, mobLevel))
+                : "this mob";
         String messageText = switch (reason) {
-            case PLAYER_TOO_HIGH -> String.format("No XP awarded: your level (%d) is too high for this mob (level %d).",
-                    player.getLevel(), Math.max(1, mobLevel));
+            case PLAYER_TOO_HIGH -> String.format(
+                    "No XP awarded: your level (%d) is too high for %s.",
+                    player.getLevel(), mobLabel);
             case PLAYER_TOO_LOW -> String.format(
-                    "No XP awarded: this mob (level %d) is too far above your level (%d).",
-                    Math.max(1, mobLevel), player.getLevel());
+                    "No XP awarded: %s is too far above your level (%d).",
+                    mobLabel, player.getLevel());
         };
         playerRef.sendMessage(Message.raw(messageText).color("#ff6666"));
     }
