@@ -18,7 +18,6 @@ Mob_Leveling:
 
   # Mobs listed here will NEVER be leveled
   Blacklist_Mob_Types:
-    # Source: https://hytale.fandom.com/wiki/Category:Passive (fetched Feb 2, 2026)
     - "Antelope"
     - "Bat"
     - "Jackalope"
@@ -74,6 +73,7 @@ Mob_Leveling:
   # -------------------------------------------------
   Level_Source:
     # DISTANCE | PLAYER | FIXED
+    # PLAYER is experimental. report any bugs in https://discord.gg/hfMeu9KWsh
     Mode: "DISTANCE"
 
     # Mob level is based on distance from spawn / world center
@@ -99,13 +99,13 @@ Mob_Leveling:
   Scaling:
     Health:
       Enabled: true
-      Base_Multiplier: 1.0
+      Base_Multiplier: 1.0 # Initial health multiplier
       Per_Level: 0.05 # +5% HP per mob level
 
     Damage:
       Enabled: true
-      Base_Multiplier: 1.0
-      Per_Level: 0.02 # optional suggestion (2% per level)
+      Base_Multiplier: 1.0 # Initial damage multiplier
+      Per_Level: 0.02 # +2% Damage per mob level
 
   # -------------------------------------------------
   # EXPERIENCE & ANTI-EXPLOIT RULES
