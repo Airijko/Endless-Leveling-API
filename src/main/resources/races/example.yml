@@ -16,15 +16,61 @@
 #   intelligence     -> Flat mana/intelligence pool.
 # ----------------------------------------------------------------------------
 # Passive Reference (declare under `passives:` using `- type: <PASSIVE>`)
-#   XP_BONUS               -> `value`: decimal percent (1.0 = +100% XP).
-#   INCREASED_HEALTH_REGEN -> `value`: flat HP regen/second (2.5 = +2.5 HP/s).
-#   INCREASED_MANA_REGEN   -> `value`: flat mana regen/second.
-#   HEALING_BONUS          -> `value`: decimal percent bonus to healing done/received.
-#   SPECIAL_CHARGE_BONUS   -> `value`: decimal percent faster special-charge gain.
-#   LIFELINE               -> `shield`: absorb value, `cooldown`: seconds between triggers.
-#   FIRST_STRIKE           -> `value`: decimal percent extra damage on the first hit per target.
-#   INCREASED_ATTRIBUTE_GAIN -> `attribute`: one of the keys below, `value`: decimal percent bonus.
-# Valid attribute keys: life_force, strength, defense, haste, precision, ferocity, stamina, intelligence.
+
+#   XP_BONUS
+#     -> `value`: decimal percent bonus XP gained (1.0 = +100% XP)
+
+#   INCREASED_HEALTH_REGEN
+#     -> `value`: flat HP regenerated per second (e.g., 2.5 = +2.5 HP/s)
+
+#   INCREASED_MANA_REGEN
+#     -> `value`: flat mana regenerated per second
+
+#   HEALING_BONUS
+#     -> `value`: decimal percent bonus to healing done and received
+
+#   SPECIAL_CHARGE_BONUS
+#     -> `value`: decimal percent faster special-charge gain
+
+#   LAST_STAND
+#     -> `value`: decimal percent health healed when below a health threshold
+#     -> `threshold`: player health percent to trigger effect
+#     -> `duration`: seconds the effect lasts
+#     -> `cooldown`: seconds between triggers
+
+#   FIRST_STRIKE
+#     -> `value`: decimal percent extra damage on the first hit per target
+#     -> `cooldown`: seconds between procs
+
+#   SECOND_WIND
+#     -> `value`: flat stamina regen when below a stamina threshold
+#     -> `threshold`: player stamina percent to trigger effect
+#     -> `duration`: seconds the effect lasts
+#     -> `cooldown`: seconds between triggers
+
+#   BERZERKER
+#     -> `value`: decimal percent damage increase at low health
+#     -> `threshold`: player health percent to activate bonus (e.g., 0.3 = below 30% HP)
+
+#   RETALIATION
+#     -> `value`: decimal percent of damage taken that is reflected after the window expires
+#     -> `window`: damage accumulation period in seconds
+#     -> `cooldown`: seconds between activations
+
+#   EXECUTIONER
+#     -> `value`: decimal percent increased damage against targets below a health threshold
+#     -> `threshold`: target health percent (e.g., 0.3 = below 30% HP)
+
+#   SWIFTNESS
+#     -> `value`: decimal percent movement speed gained on hit
+#     -> `duration`: seconds the effect lasts
+#     -> `cooldown`: seconds between triggers
+
+#   INNATE_ATTRIBUTE_GAIN
+#     -> `attribute`: which attribute gains bonus
+#     -> `value`: decimal percent bonus applied to the attribute gain from level-ups
+#     Valid attribute keys: life_force, strength, defense, haste, precision, ferocity, stamina, intelligence
+
 # ============================================================================
 
 race_name: "Example"
@@ -52,11 +98,13 @@ passives:
     value: 0.2 # +20% healing dealt/received
   - type: SPECIAL_CHARGE_BONUS
     value: 0.5 # +50% faster special charge
-  - type: LIFELINE
-    shield: 50.0 # absorbs 50 damage
-    cooldown: 60 # seconds between triggers
+  - type: LAST_STAND
+      value: 0.5 # Heal 50% of max HP
+      threshold: 0.2 # Trigger when below 20% HP
+      duration: 10  # Lasts for 10 seconds
+      cooldown: 60 # seconds between triggers 
   - type: FIRST_STRIKE
     value: 0.3 # +30% damage on first hit
-  - type: INCREASED_ATTRIBUTE_GAIN
+  - type: INNATE_ATTRIBUTE_GAIN
     attribute: strength
     value: 0.15 # +15% strength gain from level-ups

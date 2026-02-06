@@ -55,12 +55,14 @@ Mob_Leveling:
     - "Ram"
     - "Regal_Tang"
     - "Skeleton_Horse"
+    - "Undead_Cow"
     - "Snail"
     - "Snake"
     - "Sparrow"
     - "Vulture"
     - "Woodpecker"
     - "Sheep"
+    - "Gecko"
 
   # -------------------------------------------------
   # GLOBAL MOB LEVEL RANGE
