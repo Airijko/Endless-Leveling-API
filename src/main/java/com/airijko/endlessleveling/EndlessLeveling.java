@@ -14,6 +14,7 @@ import com.airijko.endlessleveling.listeners.BreakBlockEntitySystem;
 import com.airijko.endlessleveling.managers.*;
 import com.airijko.endlessleveling.systems.PassiveRegenSystem;
 import com.airijko.endlessleveling.systems.MobNameplateSystem;
+import com.airijko.endlessleveling.systems.PlayerRaceStatSystem;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.event.events.entity.LivingEntityInventoryChangeEvent;
 import com.hypixel.hytale.server.core.event.events.player.PlayerDisconnectEvent;
@@ -40,6 +41,8 @@ public class EndlessLeveling extends JavaPlugin {
     private PassiveManager passiveManager;
     private PartyManager partyManager;
     private RaceManager raceManager;
+    private PlayerAttributeManager playerAttributeManager;
+    private PlayerRaceStatSystem playerRaceStatSystem;
 
     // Getter for SkillManager
     public SkillManager getSkillManager() {
@@ -75,6 +78,14 @@ public class EndlessLeveling extends JavaPlugin {
         return raceManager;
     }
 
+    public PlayerAttributeManager getPlayerAttributeManager() {
+        return playerAttributeManager;
+    }
+
+    public PlayerRaceStatSystem getPlayerRaceStatSystem() {
+        return playerRaceStatSystem;
+    }
+
     /** Singleton access to the mod instance */
     public static EndlessLeveling getInstance() {
         return INSTANCE;
@@ -95,7 +106,8 @@ public class EndlessLeveling extends JavaPlugin {
         LoggingManager.configure(enableLogging);
 
         raceManager = new RaceManager(configManager, filesManager);
-        skillManager = new SkillManager(filesManager);
+        playerAttributeManager = new PlayerAttributeManager(raceManager);
+        skillManager = new SkillManager(filesManager, playerAttributeManager);
         passiveManager = new PassiveManager(configManager);
         playerDataManager = new PlayerDataManager(filesManager, skillManager, raceManager);
         levelingManager = new LevelingManager(playerDataManager, filesManager, skillManager, passiveManager);
@@ -103,7 +115,7 @@ public class EndlessLeveling extends JavaPlugin {
         partyManager = new PartyManager(playerDataManager, levelingManager, filesManager);
 
         // Register event listeners
-        PlayerDataListener playerDataListener = new PlayerDataListener(playerDataManager, passiveManager);
+        PlayerDataListener playerDataListener = new PlayerDataListener(playerDataManager, passiveManager, skillManager);
         this.getEventRegistry().registerGlobal(PlayerReadyEvent.class, playerDataListener::onPlayerReady);
         this.getEventRegistry().registerGlobal(PlayerDisconnectEvent.class, playerDataListener::onPlayerDisconnect);
 
@@ -123,6 +135,8 @@ public class EndlessLeveling extends JavaPlugin {
         this.getEntityStoreRegistry()
                 .registerSystem(new PlayerDefenseListener(playerDataManager, skillManager, passiveManager));
         this.getEntityStoreRegistry().registerSystem(new PassiveRegenSystem(playerDataManager, passiveManager));
+        playerRaceStatSystem = new PlayerRaceStatSystem(playerDataManager, skillManager);
+        this.getEntityStoreRegistry().registerSystem(playerRaceStatSystem);
         this.getEntityStoreRegistry().registerSystem(new MobNameplateSystem());
         this.getEntityStoreRegistry().registerSystem(new com.airijko.endlessleveling.systems.MobHealthModifierSystem());
         this.getEntityStoreRegistry()
@@ -131,7 +145,7 @@ public class EndlessLeveling extends JavaPlugin {
         // Register commands
         this.getCommandRegistry().registerCommand(new EndlessLevelingCommand("skills", "Skills menu"));
         this.getCommandRegistry().registerCommand(new PartyCommand());
-        this.getCommandRegistry().registerCommand(new RaceCommand(raceManager));
+        this.getCommandRegistry().registerCommand(new RaceCommand(raceManager, playerDataManager));
 
         LOGGER.atInfo().log("Plugin initialized! Plugin folder: %s",
                 filesManager.getPluginFolder().getAbsolutePath());

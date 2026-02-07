@@ -1,10 +1,10 @@
 package com.airijko.endlessleveling.managers;
 
 import com.airijko.endlessleveling.data.PlayerData;
-import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.airijko.endlessleveling.races.RaceDefinition;
 import com.hypixel.hytale.logger.HytaleLogger;
 import org.yaml.snakeyaml.Yaml;
+import com.airijko.endlessleveling.enums.SkillAttributeType;
 
 import java.io.File;
 import java.io.IOException;
@@ -106,11 +106,25 @@ public class RaceManager {
         if (data == null) {
             return null;
         }
-        RaceDefinition current = getRace(data.getRaceId());
-        if (current != null) {
-            return current;
+        String resolvedId = resolveRaceIdentifier(data.getRaceId());
+        RaceDefinition resolved = getRace(resolvedId);
+        if (resolved != null) {
+            if (!resolved.getId().equals(data.getRaceId())) {
+                data.setRaceId(resolved.getId());
+            }
+            return resolved;
         }
-        return getDefaultRace();
+
+        RaceDefinition fallback = getDefaultRace();
+        if (fallback != null) {
+            if (!fallback.getId().equals(data.getRaceId())) {
+                data.setRaceId(fallback.getId());
+            }
+            return fallback;
+        }
+
+        data.setRaceId(PlayerData.DEFAULT_RACE_ID);
+        return null;
     }
 
     public RaceDefinition setPlayerRace(PlayerData data, String requestedValue) {
@@ -132,6 +146,17 @@ public class RaceManager {
 
     public Collection<RaceDefinition> getLoadedRaces() {
         return Collections.unmodifiableCollection(racesByKey.values());
+    }
+
+    public double getAttribute(PlayerData playerData, SkillAttributeType attributeType, double fallback) {
+        if (!isEnabled() || playerData == null || attributeType == null) {
+            return fallback;
+        }
+        RaceDefinition race = getPlayerRace(playerData);
+        if (race == null) {
+            return fallback;
+        }
+        return race.getBaseAttribute(attributeType, fallback);
     }
 
     private void loadRaces() {
@@ -189,7 +214,10 @@ public class RaceManager {
         EnumMap<SkillAttributeType, Double> attributes = new EnumMap<>(SkillAttributeType.class);
         Map<String, Object> attributeSection = castToStringObjectMap(yamlData.get("attributes"));
         for (SkillAttributeType type : SkillAttributeType.values()) {
-            double value = attributeSection != null ? parseDouble(attributeSection.get(type.getConfigKey())) : 0.0;
+            if (attributeSection == null || !attributeSection.containsKey(type.getConfigKey())) {
+                continue;
+            }
+            double value = parseDouble(attributeSection.get(type.getConfigKey()));
             attributes.put(type, value);
         }
 

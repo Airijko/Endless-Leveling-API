@@ -93,6 +93,10 @@ public class PlayerDataManager {
 
     // --- Save a player ---
     public void save(PlayerData data) {
+        if (data == null) {
+            return;
+        }
+        ensureValidRace(data);
         File file = filesManager.getPlayerDataFile(data.getUuid());
 
         Map<String, Object> map = new LinkedHashMap<>();
@@ -120,7 +124,12 @@ public class PlayerDataManager {
         map.put("options", options);
 
         Map<String, Object> raceSection = new LinkedHashMap<>();
-        raceSection.put("name", resolveRaceDisplayName(data.getRaceId()));
+        String raceId = data.getRaceId();
+        raceSection.put("id", raceId);
+        String raceDisplay = resolveRaceDisplayName(raceId);
+        if (raceDisplay != null && !raceDisplay.equalsIgnoreCase(raceId)) {
+            raceSection.put("name", raceDisplay);
+        }
         map.put("race", raceSection);
 
         Map<String, Integer> passives = new LinkedHashMap<>();
@@ -307,8 +316,9 @@ public class PlayerDataManager {
     }
 
     private String parseRaceId(Object raceNode) {
-        if (raceNode instanceof String raceString) {
-            return raceString;
+        String directValue = coerceRaceString(raceNode);
+        if (directValue != null) {
+            return directValue;
         }
 
         Map<String, Object> raceMap = castToStringObjectMap(raceNode);
@@ -316,32 +326,43 @@ public class PlayerDataManager {
             return PlayerData.DEFAULT_RACE_ID;
         }
 
-        Object nameValue = raceMap.get("name");
-        if (nameValue instanceof String nameString) {
-            return nameString;
+        String idValue = coerceRaceString(raceMap.get("id"));
+        if (idValue != null) {
+            return idValue;
         }
 
-        Object idValue = raceMap.get("id");
-        if (idValue instanceof String idString) {
-            return idString;
+        String nameValue = coerceRaceString(raceMap.get("name"));
+        if (nameValue != null) {
+            return nameValue;
         }
 
-        Object legacyValue = raceMap.get("race");
-        if (legacyValue instanceof String legacyString) {
-            return legacyString;
+        String legacyValue = coerceRaceString(raceMap.get("race"));
+        if (legacyValue != null) {
+            return legacyValue;
         }
 
         return PlayerData.DEFAULT_RACE_ID;
+    }
+
+    private String coerceRaceString(Object value) {
+        if (value instanceof String stringValue) {
+            String trimmed = stringValue.trim();
+            if (!trimmed.isEmpty()) {
+                return trimmed;
+            }
+        }
+        return null;
     }
 
     private void ensureValidRace(PlayerData data) {
         if (data == null) {
             return;
         }
-        String sanitized = raceManager != null
-                ? raceManager.resolveRaceIdentifier(data.getRaceId())
-                : PlayerData.DEFAULT_RACE_ID;
-        data.setRaceId(sanitized);
+        if (raceManager != null) {
+            raceManager.setPlayerRace(data, data.getRaceId());
+        } else {
+            data.setRaceId(PlayerData.DEFAULT_RACE_ID);
+        }
     }
 
     private String resolveRaceDisplayName(String raceId) {

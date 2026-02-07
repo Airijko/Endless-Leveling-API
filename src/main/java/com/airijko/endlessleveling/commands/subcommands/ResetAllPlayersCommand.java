@@ -36,10 +36,10 @@ public class ResetAllPlayersCommand extends AbstractPlayerCommand {
 
     @Override
     protected void execute(@Nonnull CommandContext commandContext,
-                            @Nonnull Store<EntityStore> store,
-                            @Nonnull Ref<EntityStore> ref,
-                            @Nonnull PlayerRef senderRef,
-                            @Nonnull World world) {
+            @Nonnull Store<EntityStore> store,
+            @Nonnull Ref<EntityStore> ref,
+            @Nonnull PlayerRef senderRef,
+            @Nonnull World world) {
         CommandUtil.requirePermission(commandContext.sender(), PERMISSION_NODE);
 
         var cachedPlayers = playerDataManager.getAllCached();
@@ -73,6 +73,12 @@ public class ResetAllPlayersCommand extends AbstractPlayerCommand {
         }
 
         Store<EntityStore> targetStore = targetEntity.getStore();
-        skillManager.applyAllSkillModifiers(targetEntity, targetStore, data);
+        boolean applied = skillManager.applyAllSkillModifiers(targetEntity, targetStore, data);
+        if (!applied) {
+            var retrySystem = EndlessLeveling.getInstance().getPlayerRaceStatSystem();
+            if (retrySystem != null) {
+                retrySystem.scheduleRetry(data.getUuid());
+            }
+        }
     }
 }

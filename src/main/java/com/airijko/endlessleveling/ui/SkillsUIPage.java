@@ -126,19 +126,22 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 ui.set("#LifeForceValue.Text", formatNumber(lifeLevel * lifePer) + " Health");
 
                 int strLevel = getPreviewLevel(SkillAttributeType.STRENGTH);
-                double strPer = skillManager.getSkillAttributeConfigValue(SkillAttributeType.STRENGTH);
+                SkillManager.StrengthBreakdown strengthPreview = skillManager.getStrengthBreakdown(playerData,
+                                strLevel);
                 ui.set("#StrengthLevel.Text", String.valueOf(strLevel));
-                ui.set("#StrengthValue.Text", "+" + formatNumber(strLevel * strPer) + "% Damage");
+                ui.set("#StrengthValue.Text",
+                                "+" + formatNumber(strengthPreview.totalValue()) + "% Damage");
 
                 int defLevel = getPreviewLevel(SkillAttributeType.DEFENSE);
-                float defenseResistance = skillManager.calculateDefenseResistanceForLevel(defLevel);
+                SkillManager.DefenseBreakdown defensePreview = skillManager.getDefenseBreakdown(playerData, defLevel);
                 ui.set("#DefenseLevel.Text", String.valueOf(defLevel));
-                ui.set("#DefenseValue.Text", formatNumber(defenseResistance * 100) + "% Reduction");
+                ui.set("#DefenseValue.Text", formatNumber(defensePreview.resistance() * 100) + "% Reduction");
 
                 int hasteLevel = getPreviewLevel(SkillAttributeType.HASTE);
-                double hastePerPercent = skillManager.getSkillAttributeConfigValue(SkillAttributeType.HASTE);
+                SkillManager.HasteBreakdown hastePreview = skillManager.getHasteBreakdown(playerData, hasteLevel);
+                double hastePercent = (hastePreview.totalMultiplier() - 1.0f) * 100.0f;
                 ui.set("#HasteLevel.Text", String.valueOf(hasteLevel));
-                ui.set("#HasteValue.Text", "+" + formatNumber(hasteLevel * hastePerPercent) + "% Speed");
+                ui.set("#HasteValue.Text", "+" + formatNumber(hastePercent) + "% Speed");
 
                 int precLevel = getPreviewLevel(SkillAttributeType.PRECISION);
                 double precPer = skillManager.getSkillAttributeConfigValue(SkillAttributeType.PRECISION);
@@ -349,7 +352,15 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 playerData.setSkillPoints(previewSkillPoints);
                 playerDataManager.save(playerData);
                 if (ref != null && store != null) {
-                        skillManager.applyAllSkillModifiers(ref, store, playerData);
+                        boolean applied = skillManager.applyAllSkillModifiers(ref, store, playerData);
+                        if (!applied) {
+                                LOGGER.atFine().log("applyPreviewChanges: modifiers deferred for %s",
+                                                playerRef.getUuid());
+                                var retrySystem = EndlessLeveling.getInstance().getPlayerRaceStatSystem();
+                                if (retrySystem != null) {
+                                        retrySystem.scheduleRetry(playerData.getUuid());
+                                }
+                        }
                 } else {
                         LOGGER.atWarning().log("applyPreviewChanges: missing ref/store for player %s",
                                         playerRef.getUuid());

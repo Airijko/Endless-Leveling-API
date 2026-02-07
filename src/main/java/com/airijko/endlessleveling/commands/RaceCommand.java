@@ -1,5 +1,7 @@
 package com.airijko.endlessleveling.commands;
 
+import com.airijko.endlessleveling.commands.races.RaceProfileCommand;
+import com.airijko.endlessleveling.managers.PlayerDataManager;
 import com.airijko.endlessleveling.managers.RaceManager;
 import com.airijko.endlessleveling.races.RaceDefinition;
 import com.hypixel.hytale.component.Ref;
@@ -19,11 +21,14 @@ import java.util.List;
 public class RaceCommand extends AbstractPlayerCommand {
 
     private final RaceManager raceManager;
+    private final PlayerDataManager playerDataManager;
 
-    public RaceCommand(RaceManager raceManager) {
+    public RaceCommand(RaceManager raceManager, PlayerDataManager playerDataManager) {
         super("races", "List available EndlessLeveling races");
         this.raceManager = raceManager;
+        this.playerDataManager = playerDataManager;
         this.addAliases("race");
+        this.addSubCommand(new RaceProfileCommand(raceManager, playerDataManager));
     }
 
     @Override

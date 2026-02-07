@@ -5,16 +5,10 @@ import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.hypixel.hytale.component.ComponentAccessor;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.logger.HytaleLogger;
-import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue;
-import com.hypixel.hytale.server.core.modules.entitystats.modifier.StaticModifier;
-import com.hypixel.hytale.server.core.modules.entitystats.modifier.Modifier.ModifierTarget;
-import com.hypixel.hytale.server.core.modules.entitystats.modifier.StaticModifier.CalculationType;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.entity.entities.player.movement.MovementManager;
 import com.hypixel.hytale.protocol.MovementSettings;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
-import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
-import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.util.NotificationUtil;
@@ -40,13 +34,15 @@ public class SkillManager {
 
     private final LevelingConfigManager levelingConfig;
     private final ConfigManager config;
+    private final PlayerAttributeManager attributeManager;
 
     private int baseSkillPoints;
     private int skillPointsPerLevel;
 
-    public SkillManager(PluginFilesManager filesManager) {
+    public SkillManager(PluginFilesManager filesManager, PlayerAttributeManager attributeManager) {
         this.levelingConfig = new LevelingConfigManager(filesManager.getLevelingFile());
         this.config = new ConfigManager(filesManager.getConfigFile());
+        this.attributeManager = attributeManager;
         loadConfigValues();
     }
 
@@ -130,40 +126,11 @@ public class SkillManager {
         return totalBonusHealth;
     }
 
-    public static float getPlayerHealth(@Nonnull Ref<EntityStore> ref,
-            @Nonnull ComponentAccessor<EntityStore> componentAccessor) {
-        EntityStatMap statMap = componentAccessor.getComponent(ref, EntityStatMap.getComponentType());
-        if (statMap != null) {
-            int healthIndex = DefaultEntityStatTypes.getHealth();
-            EntityStatValue value = statMap.get(healthIndex);
-            if (value != null) {
-                return value.get();
-            }
-        }
-        return 0.0F;
-    }
-
-    public void applyHealthModifiers(@Nonnull Ref<EntityStore> ref,
+    public boolean applyHealthModifiers(@Nonnull Ref<EntityStore> ref,
             @Nonnull ComponentAccessor<EntityStore> componentAccessor, PlayerData playerData) {
-        EntityStatMap statMap = componentAccessor.getComponent(ref, EntityStatMap.getComponentType());
-        if (statMap != null) {
-            int healthIndex = DefaultEntityStatTypes.getHealth();
-            float modifierAmount = calculatePlayerHealth(playerData);
-            String key = "SKILL_BONUS_HEALTH";
-            try {
-                StaticModifier modifier = new StaticModifier(
-                        ModifierTarget.MAX,
-                        CalculationType.ADDITIVE,
-                        modifierAmount);
-                statMap.putModifier(healthIndex, key, modifier);
-                LOGGER.atInfo().log("applyHealthModifiers: Applied StaticModifier to max health: +%.2f for entity %s",
-                        modifierAmount, ref);
-            } catch (Exception e) {
-                LOGGER.atSevere().log("applyHealthModifiers: Failed to apply StaticModifier: %s", e.getMessage());
-            }
-        } else {
-            LOGGER.atWarning().log("applyHealthModifiers: No EntityStatMap found for entity %s", ref);
-        }
+        float skillBonus = calculatePlayerHealth(playerData);
+        return attributeManager.applyAttribute(PlayerAttributeManager.AttributeSlot.LIFE_FORCE, ref, componentAccessor,
+                playerData, skillBonus);
     }
 
     // Stamina / skill modifiers
@@ -183,69 +150,36 @@ public class SkillManager {
         return totalBonusStamina;
     }
 
-    public static float getPlayerStamina(@Nonnull Ref<EntityStore> ref,
-            @Nonnull ComponentAccessor<EntityStore> componentAccessor) {
-        EntityStatMap statMap = componentAccessor.getComponent(ref, EntityStatMap.getComponentType());
-        if (statMap != null) {
-            // Replace with correct stamina stat index if available
-            int staminaIndex = DefaultEntityStatTypes.getStamina();
-            EntityStatValue value = statMap.get(staminaIndex);
-            if (value != null) {
-                return value.get();
-            }
-        }
-        return 0.0F;
-    }
-
-    public void applyStaminaModifiers(@Nonnull Ref<EntityStore> ref,
+    public boolean applyStaminaModifiers(@Nonnull Ref<EntityStore> ref,
             @Nonnull ComponentAccessor<EntityStore> componentAccessor, PlayerData playerData) {
-        EntityStatMap statMap = componentAccessor.getComponent(ref, EntityStatMap.getComponentType());
-        if (statMap != null) {
-            // Replace with correct stamina stat index if available
-            int staminaIndex = DefaultEntityStatTypes.getStamina();
-            float modifierAmount = calculatePlayerStamina(playerData);
-            String key = "SKILL_BONUS_STAMINA";
-            try {
-                StaticModifier modifier = new StaticModifier(
-                        ModifierTarget.MAX,
-                        CalculationType.ADDITIVE,
-                        modifierAmount);
-                statMap.putModifier(staminaIndex, key, modifier);
-                LOGGER.atInfo().log("applyStaminaModifiers: Applied StaticModifier to max stamina: +%.2f for entity %s",
-                        modifierAmount, ref);
-            } catch (Exception e) {
-                LOGGER.atSevere().log("applyStaminaModifiers: Failed to apply StaticModifier: %s", e.getMessage());
-            }
-        } else {
-            LOGGER.atWarning().log("applyStaminaModifiers: No EntityStatMap found for entity %s", ref);
-        }
+        float skillBonus = calculatePlayerStamina(playerData);
+        return attributeManager.applyAttribute(PlayerAttributeManager.AttributeSlot.STAMINA, ref, componentAccessor,
+                playerData, skillBonus);
     }
 
     // Movement / skill modifiers
-    public void applyMovementSpeedModifier(@Nonnull Ref<EntityStore> ref,
+    public boolean applyMovementSpeedModifier(@Nonnull Ref<EntityStore> ref,
             @Nonnull ComponentAccessor<EntityStore> componentAccessor, PlayerData playerData) {
         if (playerData == null) {
             LOGGER.atWarning().log("applyMovementSpeedModifier: playerData null for entity %s", ref);
-            return;
+            return false;
         }
 
         MovementManager movementManager = componentAccessor.getComponent(ref, MovementManager.getComponentType());
         if (movementManager == null) {
             LOGGER.atWarning().log("applyMovementSpeedModifier: MovementManager missing for %s", ref);
-            return;
+            return false;
         }
 
         MovementSettings defaults = movementManager.getDefaultSettings();
         MovementSettings settings = movementManager.getSettings();
         if (defaults == null || settings == null) {
             LOGGER.atWarning().log("applyMovementSpeedModifier: Missing MovementSettings for %s", ref);
-            return;
+            return false;
         }
 
-        int hasteLevel = playerData.getPlayerSkillAttributeLevel(SkillAttributeType.HASTE);
-        double perPointPercent = getSkillAttributeConfigValue(SkillAttributeType.HASTE);
-        double perPointValue = perPointPercent / 100.0D; // Convert percent config to multiplier increment
-        float requestedMultiplier = 1.0F + (float) (hasteLevel * perPointValue);
+        HasteBreakdown hasteBreakdown = getHasteBreakdown(playerData);
+        float requestedMultiplier = hasteBreakdown.totalMultiplier();
 
         float clampedMultiplier = requestedMultiplier;
         if (settings.maxSpeedMultiplier > 0.0F) {
@@ -270,10 +204,13 @@ public class SkillManager {
         if (playerRef != null) {
             movementManager.update(playerRef.getPacketHandler());
             LOGGER.atInfo().log(
-                    "applyMovementSpeedModifier: hasteLevel=%d, perPointPercent=%.2f, multiplier=%.4f for player %s",
-                    hasteLevel, perPointPercent, clampedMultiplier, playerData.getPlayerName());
+                    "applyMovementSpeedModifier: base=%.3f, skill=%.3f, final=%.4f for player %s",
+                    hasteBreakdown.raceMultiplier(), hasteBreakdown.skillBonus(), clampedMultiplier,
+                    playerData.getPlayerName());
+            return true;
         } else {
             LOGGER.atWarning().log("applyMovementSpeedModifier: PlayerRef missing for %s", ref);
+            return false;
         }
     }
 
@@ -294,43 +231,11 @@ public class SkillManager {
         return totalBonusIntelligence;
     }
 
-    public static float getPlayerIntelligence(@Nonnull Ref<EntityStore> ref,
-            @Nonnull ComponentAccessor<EntityStore> componentAccessor) {
-        EntityStatMap statMap = componentAccessor.getComponent(ref, EntityStatMap.getComponentType());
-        if (statMap != null) {
-            // Replace with correct mana/intelligence stat index if available
-            int intelligenceIndex = DefaultEntityStatTypes.getMana();
-            EntityStatValue value = statMap.get(intelligenceIndex);
-            if (value != null) {
-                return value.get();
-            }
-        }
-        return 0.0F;
-    }
-
-    public void applyIntelligenceModifiers(@Nonnull Ref<EntityStore> ref,
+    public boolean applyIntelligenceModifiers(@Nonnull Ref<EntityStore> ref,
             @Nonnull ComponentAccessor<EntityStore> componentAccessor, PlayerData playerData) {
-        EntityStatMap statMap = componentAccessor.getComponent(ref, EntityStatMap.getComponentType());
-        if (statMap != null) {
-            // Replace with correct mana/intelligence stat index if available
-            int intelligenceIndex = DefaultEntityStatTypes.getMana();
-            float modifierAmount = calculatePlayerIntelligence(playerData);
-            String key = "SKILL_BONUS_INTELLIGENCE";
-            try {
-                StaticModifier modifier = new StaticModifier(
-                        ModifierTarget.MAX,
-                        CalculationType.ADDITIVE,
-                        modifierAmount);
-                statMap.putModifier(intelligenceIndex, key, modifier);
-                LOGGER.atInfo().log(
-                        "applyIntelligenceModifiers: Applied StaticModifier to max intelligence: +%.2f for entity %s",
-                        modifierAmount, ref);
-            } catch (Exception e) {
-                LOGGER.atSevere().log("applyIntelligenceModifiers: Failed to apply StaticModifier: %s", e.getMessage());
-            }
-        } else {
-            LOGGER.atWarning().log("applyIntelligenceModifiers: No EntityStatMap found for entity %s", ref);
-        }
+        float skillBonus = calculatePlayerIntelligence(playerData);
+        return attributeManager.applyAttribute(PlayerAttributeManager.AttributeSlot.INTELLIGENCE, ref,
+                componentAccessor, playerData, skillBonus);
     }
 
     // Strength / skill modifiers
@@ -338,16 +243,12 @@ public class SkillManager {
         if (playerData == null)
             return 0.0F;
 
-        int strengthLevel = playerData.getPlayerSkillAttributeLevel(SkillAttributeType.STRENGTH);
-        double perPointValue = getSkillAttributeConfigValue(SkillAttributeType.STRENGTH);
-
-        float totalBonusStrength = (float) (strengthLevel * perPointValue);
-
+        StrengthBreakdown breakdown = getStrengthBreakdown(playerData);
         LOGGER.atInfo().log(
-                "calculatePlayerStrength: STRENGTH level=%d, perPointValue=%.2f, totalBonusStrength=%.2f for player %s",
-                strengthLevel, perPointValue, totalBonusStrength, playerData.getPlayerName());
+                "calculatePlayerStrength: raceMultiplier=%.2f, skill=%.2f, total=%.2f for player %s",
+                breakdown.raceMultiplier(), breakdown.skillValue(), breakdown.totalValue(), playerData.getPlayerName());
 
-        return totalBonusStrength;
+        return breakdown.totalValue();
     }
 
     /**
@@ -367,6 +268,26 @@ public class SkillManager {
         return baseDamage * (1.0f + (strengthBonus / 100.0f));
     }
 
+    public StrengthBreakdown getStrengthBreakdown(PlayerData playerData) {
+        return getStrengthBreakdown(playerData, -1);
+    }
+
+    public StrengthBreakdown getStrengthBreakdown(PlayerData playerData, int overrideLevel) {
+        if (playerData == null) {
+            return new StrengthBreakdown(1.0f, 0.0f, 0.0f);
+        }
+        int strengthLevel = overrideLevel >= 0 ? overrideLevel
+                : playerData.getPlayerSkillAttributeLevel(SkillAttributeType.STRENGTH);
+        double perPointValue = getSkillAttributeConfigValue(SkillAttributeType.STRENGTH);
+        float raceMultiplier = (float) attributeManager.getRaceAttribute(playerData, SkillAttributeType.STRENGTH, 1.0D);
+        if (raceMultiplier < 0.0f) {
+            raceMultiplier = 0.0f;
+        }
+        float skillValue = (float) (strengthLevel * perPointValue);
+        float totalValue = skillValue * raceMultiplier;
+        return new StrengthBreakdown(raceMultiplier, skillValue, totalValue);
+    }
+
     /**
      * Returns the player's precision crit chance as a float between 0.0 and 1.0.
      */
@@ -374,19 +295,28 @@ public class SkillManager {
         if (playerData == null)
             return 0.0F;
 
-        int precisionLevel = playerData.getPlayerSkillAttributeLevel(SkillAttributeType.PRECISION);
-        LOGGER.atInfo().log("calculatePlayerPrecision: precisionLevel=%d for player %s", precisionLevel,
-                playerData.getPlayerName());
-        double perPointChance = getSkillAttributeConfigValue(SkillAttributeType.PRECISION);
-        LOGGER.atInfo().log("calculatePlayerPrecision: perPointChance=%.4f for player %s", perPointChance,
-                playerData.getPlayerName());
-        float critChance = (float) (precisionLevel * perPointChance / 100.0F);
-        if (critChance > 1.0F)
-            critChance = 1.0F;
+        PrecisionBreakdown breakdown = getPrecisionBreakdown(playerData);
         LOGGER.atInfo().log(
-                "getPrecisionCritChance: PRECISION level=%d, perPointChance=%.4f, critChance=%.4f for player %s",
-                precisionLevel, perPointChance, critChance, playerData.getPlayerName());
-        return critChance;
+                "getPrecisionCritChance: basePercent=%.4f, skillPercent=%.4f, totalPercent=%.4f, critChance=%.4f for player %s",
+                breakdown.racePercent(), breakdown.skillPercent(), breakdown.totalPercent(), breakdown.critChance(),
+                playerData.getPlayerName());
+        return breakdown.critChance();
+    }
+
+    public PrecisionBreakdown getPrecisionBreakdown(PlayerData playerData) {
+        if (playerData == null) {
+            return new PrecisionBreakdown(0.0f, 0.0f, 0.0f, 0.0f);
+        }
+        int precisionLevel = playerData.getPlayerSkillAttributeLevel(SkillAttributeType.PRECISION);
+        double perPointChance = getSkillAttributeConfigValue(SkillAttributeType.PRECISION);
+        float racePercent = (float) attributeManager.getRaceAttribute(playerData, SkillAttributeType.PRECISION, 0.0D);
+        float skillPercent = (float) (precisionLevel * perPointChance);
+        float totalPercent = racePercent + skillPercent;
+        float critChance = totalPercent / 100.0f;
+        if (critChance > 1.0f) {
+            critChance = 1.0f;
+        }
+        return new PrecisionBreakdown(racePercent, skillPercent, totalPercent, critChance);
     }
 
     /**
@@ -396,14 +326,47 @@ public class SkillManager {
         if (playerData == null)
             return 0.0F;
 
-        float baseFerocityDamage = 50.0F;
-        int ferocityLevel = playerData.getPlayerSkillAttributeLevel(SkillAttributeType.FEROCITY);
-        double perPointFerocity = getSkillAttributeConfigValue(SkillAttributeType.FEROCITY); // e.g., 1.0 per point
-        float ferocity = baseFerocityDamage + (float) (ferocityLevel * perPointFerocity); // Base 50 + bonus
+        FerocityBreakdown breakdown = getFerocityBreakdown(playerData);
         LOGGER.atInfo().log(
-                "getPlayerFerocity: FEROCITY level=%d, perPointFerocity=%.4f, ferocity=%.4f for player %s (includes base 50)",
-                ferocityLevel, perPointFerocity, ferocity, playerData.getPlayerName());
-        return ferocity;
+                "getPlayerFerocity: base=%.2f, skill=%.2f, total=%.2f for player %s",
+                breakdown.raceValue(), breakdown.skillValue(), breakdown.totalValue(), playerData.getPlayerName());
+        return breakdown.totalValue();
+    }
+
+    public FerocityBreakdown getFerocityBreakdown(PlayerData playerData) {
+        if (playerData == null) {
+            return new FerocityBreakdown(0.0f, 0.0f, 0.0f);
+        }
+        int ferocityLevel = playerData.getPlayerSkillAttributeLevel(SkillAttributeType.FEROCITY);
+        double perPointFerocity = getSkillAttributeConfigValue(SkillAttributeType.FEROCITY);
+        float raceValue = (float) attributeManager.getRaceAttribute(playerData, SkillAttributeType.FEROCITY, 0.0D);
+        float skillValue = (float) (ferocityLevel * perPointFerocity);
+        return new FerocityBreakdown(raceValue, skillValue, raceValue + skillValue);
+    }
+
+    public float calculatePlayerHasteMultiplier(PlayerData playerData) {
+        return getHasteBreakdown(playerData).totalMultiplier();
+    }
+
+    public HasteBreakdown getHasteBreakdown(PlayerData playerData) {
+        return getHasteBreakdown(playerData, -1);
+    }
+
+    public HasteBreakdown getHasteBreakdown(PlayerData playerData, int overrideLevel) {
+        if (playerData == null) {
+            return new HasteBreakdown(1.0f, 0.0f, 1.0f);
+        }
+        int hasteLevel = overrideLevel >= 0 ? overrideLevel
+                : playerData.getPlayerSkillAttributeLevel(SkillAttributeType.HASTE);
+        double perPointPercent = getSkillAttributeConfigValue(SkillAttributeType.HASTE);
+        double perPointValue = perPointPercent / 100.0D;
+        double raceMultiplier = attributeManager.getRaceAttribute(playerData, SkillAttributeType.HASTE, 1.0D);
+        if (raceMultiplier <= 0.0D) {
+            raceMultiplier = 1.0D;
+        }
+        float skillBonus = (float) (hasteLevel * perPointValue);
+        float total = (float) (raceMultiplier * (1.0D + skillBonus));
+        return new HasteBreakdown((float) raceMultiplier, skillBonus, total);
     }
 
     /**
@@ -455,32 +418,55 @@ public class SkillManager {
         }
     }
 
+    public record StrengthBreakdown(float raceMultiplier, float skillValue, float totalValue) {
+    }
+
+    public record FerocityBreakdown(float raceValue, float skillValue, float totalValue) {
+    }
+
+    public record PrecisionBreakdown(float racePercent, float skillPercent, float totalPercent, float critChance) {
+    }
+
+    public record HasteBreakdown(float raceMultiplier, float skillBonus, float totalMultiplier) {
+    }
+
+    public record DefenseBreakdown(float raceMultiplier, float skillValue, float totalValue, float resistance) {
+    }
+
     // Defense / skill modifiers
     public float calculatePlayerDefense(PlayerData playerData) {
         if (playerData == null)
             return 0.0F;
 
-        int defenseLevel = playerData.getPlayerSkillAttributeLevel(SkillAttributeType.DEFENSE);
-        double perPointValue = getSkillAttributeConfigValue(SkillAttributeType.DEFENSE);
-        double defenseValue = defenseLevel * perPointValue;
-        double reduction = applyDefenseCurve(defenseValue);
-        float resistance = (float) (reduction / 100.0);
-
+        DefenseBreakdown breakdown = getDefenseBreakdown(playerData);
         LOGGER.atInfo().log(
-                "calculatePlayerDefense: DEFENSE level=%d, perPointValue=%.2f, defenseValue=%.2f for player %s",
-                defenseLevel, perPointValue, defenseValue, playerData.getPlayerName());
+                "calculatePlayerDefense: raceMultiplier=%.2f, skill=%.2f, total=%.2f, resistance=%.2f%% for player %s",
+                breakdown.raceMultiplier(), breakdown.skillValue(), breakdown.totalValue(),
+                breakdown.resistance() * 100.0f,
+                playerData.getPlayerName());
 
-        LOGGER.atInfo().log("calculatePlayerDefense: Applied curve - reduction=%.2f%%, defenseValue=%.4f for player %s",
-                reduction, defenseValue, playerData.getPlayerName());
-
-        return resistance;
+        return breakdown.resistance();
     }
 
-    public float calculateDefenseResistanceForLevel(int defenseLevel) {
+    public DefenseBreakdown getDefenseBreakdown(PlayerData playerData) {
+        return getDefenseBreakdown(playerData, -1);
+    }
+
+    public DefenseBreakdown getDefenseBreakdown(PlayerData playerData, int overrideLevel) {
+        if (playerData == null) {
+            return new DefenseBreakdown(1.0f, 0.0f, 0.0f, 0.0f);
+        }
+        int defenseLevel = overrideLevel >= 0 ? overrideLevel
+                : playerData.getPlayerSkillAttributeLevel(SkillAttributeType.DEFENSE);
         double perPointValue = getSkillAttributeConfigValue(SkillAttributeType.DEFENSE);
-        double defenseValue = defenseLevel * perPointValue;
-        double reduction = applyDefenseCurve(defenseValue);
-        return (float) (reduction / 100.0);
+        float raceMultiplier = (float) attributeManager.getRaceAttribute(playerData, SkillAttributeType.DEFENSE, 1.0D);
+        if (raceMultiplier < 0.0f) {
+            raceMultiplier = 0.0f;
+        }
+        float skillValue = (float) (defenseLevel * perPointValue);
+        float totalValue = skillValue * raceMultiplier;
+        float resistance = (float) (applyDefenseCurve(totalValue) / 100.0D);
+        return new DefenseBreakdown(raceMultiplier, skillValue, totalValue, resistance);
     }
 
     private double applyDefenseCurve(double defenseValue) {
@@ -504,14 +490,21 @@ public class SkillManager {
     /**
      * Apply all skill-based modifiers to an entity (health, stamina, etc.)
      */
-    public void applyAllSkillModifiers(@Nonnull Ref<EntityStore> ref,
+    public boolean applyAllSkillModifiers(@Nonnull Ref<EntityStore> ref,
             @Nonnull ComponentAccessor<EntityStore> componentAccessor, PlayerData playerData) {
-        applyHealthModifiers(ref, componentAccessor, playerData);
-        applyStaminaModifiers(ref, componentAccessor, playerData);
-        applyMovementSpeedModifier(ref, componentAccessor, playerData);
-        applyIntelligenceModifiers(ref, componentAccessor, playerData);
-        // Add more as needed (e.g., strength, defense, etc.)
-        LOGGER.atInfo().log("applyAllSkillModifiers: Applied all skill modifiers for player %s",
-                playerData.getPlayerName());
+        boolean healthApplied = applyHealthModifiers(ref, componentAccessor, playerData);
+        boolean staminaApplied = applyStaminaModifiers(ref, componentAccessor, playerData);
+        boolean movementApplied = applyMovementSpeedModifier(ref, componentAccessor, playerData);
+        boolean intelligenceApplied = applyIntelligenceModifiers(ref, componentAccessor, playerData);
+        boolean success = healthApplied && staminaApplied && movementApplied && intelligenceApplied;
+        if (success) {
+            LOGGER.atInfo().log("applyAllSkillModifiers: Applied all skill modifiers for player %s",
+                    playerData.getPlayerName());
+        } else {
+            LOGGER.atFine().log(
+                    "applyAllSkillModifiers: deferred or partial application for player %s (health=%s, stamina=%s, movement=%s, intelligence=%s)",
+                    playerData.getPlayerName(), healthApplied, staminaApplied, movementApplied, intelligenceApplied);
+        }
+        return success;
     }
 }

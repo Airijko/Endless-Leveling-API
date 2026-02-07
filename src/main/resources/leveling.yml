@@ -63,6 +63,16 @@ Mob_Leveling:
     - "Woodpecker"
     - "Sheep"
     - "Gecko"
+    - "Chick"
+    - "Pig"
+    - "Rabbit"
+    - "Turtle"
+    - "Goat"
+    - "Squirrel"
+    - "Raccoon"
+    - "Badger"
+    - "Lamb"
+    - "Camel"
 
   # -------------------------------------------------
   # GLOBAL MOB LEVEL RANGE

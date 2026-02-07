@@ -68,6 +68,13 @@ public class RaceDefinition {
         return baseAttributes;
     }
 
+    public double getBaseAttribute(SkillAttributeType type, double defaultValue) {
+        if (type == null) {
+            return defaultValue;
+        }
+        return baseAttributes.getOrDefault(type, defaultValue);
+    }
+
     public List<Map<String, Object>> getPassives() {
         return passives;
     }

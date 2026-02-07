@@ -7,11 +7,11 @@
 #   enabled          -> Set to true
 # Base Attributes (always-on stats granted by the race)
 #   life_force       -> Flat HP baseline before player-earned attributes.
-#   strength         -> Percentage bonus to outgoing damage.
-#   defense          -> Percentage of damage mitigated innately.
-#   haste            -> Movement speed multiplier that stacks with other effects.
-#   precision        -> Base crit chance (use percent values, e.g., 0.1 = 10%).
-#   ferocity         -> Base crit damage bonus (0.5 = +50%).
+#   strength         -> Base multiplier applied to skill-derived damage bonuses (1.0 = normal).
+#   defense          -> Base multiplier applied to skill-derived defense values before curves (1.0 = normal).
+#   haste            -> Baseline movement multiplier that multiplies the skill haste bonus (1.0 = normal).
+#   precision        -> Base crit chance (use percent values, e.g., 10 = 10%).
+#   ferocity         -> Base crit damage bonus (50 = +50%).
 #   stamina          -> Flat stamina pool.
 #   intelligence     -> Flat mana/intelligence pool.
 # ----------------------------------------------------------------------------
@@ -82,8 +82,8 @@ attributes: # Base Values
   strength: 1.0
   defense: 1.0
   haste: 1.0
-  precision: 0.1
-  ferocity: 0.5
+  precision: 10.0
+  ferocity: 50.0
   stamina: 10.0
   intelligence: 20.0
 

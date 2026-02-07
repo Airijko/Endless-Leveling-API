@@ -129,8 +129,8 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
         // Haste (movement speed percent)
         int hasteLevel = playerData.getPlayerSkillAttributeLevel(SkillAttributeType.HASTE);
-        double hastePerPercent = skillManager.getSkillAttributeConfigValue(SkillAttributeType.HASTE);
-        double hasteBonus = hasteLevel * hastePerPercent;
+        SkillManager.HasteBreakdown hasteBreakdown = skillManager.getHasteBreakdown(playerData);
+        double hasteBonus = (hasteBreakdown.totalMultiplier() - 1.0f) * 100.0f;
         ui.set("#HasteLevel.Text", String.valueOf(hasteLevel));
         ui.set("#HasteValue.Text", "+" + formatNumber(hasteBonus) + "% Speed");
 

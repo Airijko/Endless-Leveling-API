@@ -29,8 +29,7 @@ public class ResetLevelCommand extends AbstractPlayerCommand {
     private final LevelingManager levelingManager;
     private final SkillManager skillManager;
 
-    private final RequiredArg<String> targetArg =
-            this.withRequiredArg("player", "Target player name", ArgTypes.STRING);
+    private final RequiredArg<String> targetArg = this.withRequiredArg("player", "Target player name", ArgTypes.STRING);
 
     public ResetLevelCommand() {
         super("resetlevel", "Reset a player's level back to 1");
@@ -46,8 +45,7 @@ public class ResetLevelCommand extends AbstractPlayerCommand {
             @Nonnull Store<EntityStore> store,
             @Nonnull Ref<EntityStore> ref,
             @Nonnull PlayerRef senderRef,
-            @Nonnull World world
-    ) {
+            @Nonnull World world) {
         CommandUtil.requirePermission(commandContext.sender(), PERMISSION_NODE);
 
         String targetName = targetArg.get(commandContext);
@@ -82,6 +80,12 @@ public class ResetLevelCommand extends AbstractPlayerCommand {
 
         Store<EntityStore> targetStore = targetEntity.getStore();
 
-        skillManager.applyAllSkillModifiers(targetEntity, targetStore, targetData);
+        boolean applied = skillManager.applyAllSkillModifiers(targetEntity, targetStore, targetData);
+        if (!applied) {
+            var retrySystem = EndlessLeveling.getInstance().getPlayerRaceStatSystem();
+            if (retrySystem != null) {
+                retrySystem.scheduleRetry(targetData.getUuid());
+            }
+        }
     }
 }

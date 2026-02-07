@@ -6,6 +6,7 @@ import com.airijko.endlessleveling.managers.PlayerDataManager;
 import com.airijko.endlessleveling.managers.SkillManager;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
 import com.hypixel.hytale.server.core.command.system.basecommands.AbstractPlayerCommand;
@@ -23,6 +24,7 @@ public class ResetSkillPointsCommand extends AbstractPlayerCommand {
 
     private final PlayerDataManager playerDataManager;
     private final SkillManager skillManager;
+    private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
 
     public ResetSkillPointsCommand() {
         super("resetskillpoints", "Reset your EndlessLeveling skill points to their default distribution");
@@ -50,7 +52,14 @@ public class ResetSkillPointsCommand extends AbstractPlayerCommand {
         }
 
         skillManager.resetSkillAttributes(playerData);
-        skillManager.applyAllSkillModifiers(ref, store, playerData);
+        boolean applied = skillManager.applyAllSkillModifiers(ref, store, playerData);
+        if (!applied) {
+            LOGGER.atFine().log("ResetSkillPointsCommand: modifiers deferred for %s", playerRef.getUuid());
+            var retrySystem = EndlessLeveling.getInstance().getPlayerRaceStatSystem();
+            if (retrySystem != null) {
+                retrySystem.scheduleRetry(playerData.getUuid());
+            }
+        }
         playerDataManager.save(playerData);
 
         playerRef.sendMessage(Message.raw("Your skill points have been reset to the default layout.").color("#4fd7f7"));

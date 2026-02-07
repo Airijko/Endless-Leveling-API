@@ -1,75 +1,209 @@
 package com.airijko.endlessleveling.commands.subcommands;
 
+import com.airijko.endlessleveling.EndlessLeveling;
+import com.airijko.endlessleveling.data.PlayerData;
+import com.airijko.endlessleveling.enums.SkillAttributeType;
+import com.airijko.endlessleveling.managers.PlayerAttributeManager;
+import com.airijko.endlessleveling.managers.PlayerDataManager;
+import com.airijko.endlessleveling.managers.SkillManager;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
 import com.hypixel.hytale.server.core.command.system.basecommands.AbstractPlayerCommand;
+import com.hypixel.hytale.server.core.entity.entities.player.movement.MovementManager;
+import com.hypixel.hytale.protocol.MovementSettings;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
 import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-import com.hypixel.hytale.server.core.entity.entities.player.movement.MovementManager;
-import com.hypixel.hytale.protocol.MovementSettings;
 
 import javax.annotation.Nonnull;
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 public class StatTestCommand extends AbstractPlayerCommand {
 
+    private final PlayerDataManager playerDataManager;
+    private final SkillManager skillManager;
+    private final PlayerAttributeManager attributeManager;
+
     public StatTestCommand() {
         super("stattest", "Test player stats");
+        EndlessLeveling plugin = EndlessLeveling.getInstance();
+        this.playerDataManager = plugin.getPlayerDataManager();
+        this.skillManager = plugin.getSkillManager();
+        this.attributeManager = plugin.getPlayerAttributeManager();
     }
 
     @Override
-    protected void execute(@Nonnull CommandContext commandContext, @Nonnull Store<EntityStore> store, @Nonnull Ref<EntityStore> ref, @Nonnull PlayerRef playerRef, @Nonnull World world) {
+    protected void execute(@Nonnull CommandContext commandContext, @Nonnull Store<EntityStore> store,
+            @Nonnull Ref<EntityStore> ref, @Nonnull PlayerRef playerRef, @Nonnull World world) {
         CompletableFuture.runAsync(() -> {
+            PlayerData playerData = playerDataManager != null ? playerDataManager.get(playerRef.getUuid()) : null;
+            if (playerData == null) {
+                playerRef.sendMessage(Message.raw("No player data loaded. Try rejoining."));
+                return;
+            }
+
             // Fetch entity stats
             EntityStatMap entityStatMap = store.getComponent(ref, EntityStatMap.getComponentType());
 
-            StringBuilder statsMessage = new StringBuilder("Player Stats:\n");
+            List<Message> lines = new ArrayList<>();
 
+            lines.add(sectionHeader("Player Stats"));
             if (entityStatMap != null) {
-                appendStat(statsMessage, entityStatMap, "Health", DefaultEntityStatTypes.getHealth());
-                appendStat(statsMessage, entityStatMap, "Oxygen", DefaultEntityStatTypes.getOxygen());
-                appendStat(statsMessage, entityStatMap, "Stamina", DefaultEntityStatTypes.getStamina());
-                appendStat(statsMessage, entityStatMap, "Mana", DefaultEntityStatTypes.getMana());
-                appendStat(statsMessage, entityStatMap, "Signature Energy", DefaultEntityStatTypes.getSignatureEnergy());
-                appendStat(statsMessage, entityStatMap, "Ammo", DefaultEntityStatTypes.getAmmo());
+                ensureSyncedAttributes(store, ref, playerData);
+                addStatLine(lines, entityStatMap, "Health", DefaultEntityStatTypes.getHealth());
+                addStatLine(lines, entityStatMap, "Oxygen", DefaultEntityStatTypes.getOxygen());
+                addStatLine(lines, entityStatMap, "Stamina", DefaultEntityStatTypes.getStamina());
+                addStatLine(lines, entityStatMap, "Mana", DefaultEntityStatTypes.getMana());
+                addStatLine(lines, entityStatMap, "Signature Energy", DefaultEntityStatTypes.getSignatureEnergy());
+                addStatLine(lines, entityStatMap, "Ammo", DefaultEntityStatTypes.getAmmo());
             } else {
-                statsMessage.append("No stats found for the player.\n");
+                lines.add(infoLine("No stats found for the player."));
             }
 
-            // Fetch movement settings
+            lines.add(sectionHeader("Attributes (Race + Skill)"));
+            Map<String, AttributeBreakdown> attributeBreakdowns = collectAttributeBreakdowns(playerData);
+            if (attributeBreakdowns.isEmpty()) {
+                lines.add(infoLine("No attribute data available."));
+            } else {
+                attributeBreakdowns.forEach((label, breakdown) -> addAttributeLine(lines, label, breakdown));
+                lines.add(sectionHeader("Totals"));
+                attributeBreakdowns.forEach((label, breakdown) -> lines.add(totalLine(label, breakdown)));
+            }
+
+            lines.add(sectionHeader("Movement"));
             MovementManager movementManager = store.getComponent(ref, MovementManager.getComponentType());
             if (movementManager != null) {
                 MovementSettings settings = movementManager.getSettings();
-
-                // Calculate movement values
                 float walkSpeed = settings.baseSpeed * settings.forwardWalkSpeedMultiplier;
                 float runSpeed = settings.baseSpeed * settings.forwardRunSpeedMultiplier;
                 float sprintSpeed = settings.baseSpeed * settings.forwardSprintSpeedMultiplier;
 
-                statsMessage.append("\nMovement Speeds:\n");
-                statsMessage.append("Walk Speed: ").append(walkSpeed).append("\n");
-                statsMessage.append("Run Speed: ").append(runSpeed).append("\n");
-                statsMessage.append("Sprint Speed: ").append(sprintSpeed).append("\n");
+                lines.add(movementLine("Walk Speed", walkSpeed));
+                lines.add(movementLine("Run Speed", runSpeed));
+                lines.add(movementLine("Sprint Speed", sprintSpeed));
             } else {
-                statsMessage.append("No movement settings found.\n");
+                lines.add(infoLine("No movement settings found."));
             }
 
-            // Send message to player
-            playerRef.sendMessage(Message.raw(statsMessage.toString()));
+            lines.forEach(playerRef::sendMessage);
         }, world);
     }
 
-    private void appendStat(StringBuilder statsMessage, EntityStatMap statMap, String label, int statIndex) {
-        var statValue = statMap.get(statIndex);
-        if (statValue != null) {
-            statsMessage.append(label).append(": ").append(statValue.get()).append("\n");
-        } else {
-            statsMessage.append(label).append(": N/A\n");
+    private void ensureSyncedAttributes(Store<EntityStore> store, Ref<EntityStore> ref, PlayerData playerData) {
+        if (attributeManager == null || skillManager == null) {
+            return;
         }
+
+        Map<PlayerAttributeManager.AttributeSlot, Float> bonuses = new EnumMap<>(
+                PlayerAttributeManager.AttributeSlot.class);
+        bonuses.put(PlayerAttributeManager.AttributeSlot.LIFE_FORCE, skillManager.calculatePlayerHealth(playerData));
+        bonuses.put(PlayerAttributeManager.AttributeSlot.STAMINA, skillManager.calculatePlayerStamina(playerData));
+        bonuses.put(PlayerAttributeManager.AttributeSlot.INTELLIGENCE,
+                skillManager.calculatePlayerIntelligence(playerData));
+
+        for (Map.Entry<PlayerAttributeManager.AttributeSlot, Float> entry : bonuses.entrySet()) {
+            attributeManager.applyAttribute(entry.getKey(), ref, store, playerData, entry.getValue());
+        }
+    }
+
+    private void addStatLine(List<Message> lines, EntityStatMap statMap, String label, int statIndex) {
+        var statValue = statMap.get(statIndex);
+        String valueText = statValue != null ? formatDouble(statValue.get()) : "N/A";
+        lines.add(Message.raw(label + ": " + valueText).color("#7FDBFF"));
+    }
+
+    private void addAttributeLine(List<Message> lines, String label, AttributeBreakdown breakdown) {
+        String raceSegment = breakdown.raceIsMultiplier()
+                ? "race x" + formatDouble(breakdown.race())
+                : "race=" + formatDouble(breakdown.race());
+        String text = String.format("%s | %s, skill=%s", label,
+                raceSegment, formatDouble(breakdown.skill()));
+        lines.add(Message.raw(text).color("#2ECC71"));
+    }
+
+    private Message movementLine(String label, float value) {
+        return Message.raw(label + ": " + formatDouble(value)).color("#FFAB40");
+    }
+
+    private Message totalLine(String label, AttributeBreakdown breakdown) {
+        String totalValue = formatDouble(breakdown.total());
+        if (breakdown.totalIsMultiplier()) {
+            totalValue = "x" + totalValue;
+        }
+        return Message.raw(label + " Total: " + totalValue).color("#00E676");
+    }
+
+    private Message infoLine(String text) {
+        return Message.raw(text).color("#FF6B6B");
+    }
+
+    private Message sectionHeader(String title) {
+        return Message.raw("=== " + title + " ===").color("#F5A623");
+    }
+
+    private String formatDouble(double value) {
+        return String.format("%.2f", value);
+    }
+
+    private Map<String, AttributeBreakdown> collectAttributeBreakdowns(PlayerData playerData) {
+        Map<String, AttributeBreakdown> breakdowns = new LinkedHashMap<>();
+        if (playerData == null || attributeManager == null || skillManager == null) {
+            return breakdowns;
+        }
+
+        double lifeRace = attributeManager.getRaceAttribute(playerData,
+                PlayerAttributeManager.AttributeSlot.LIFE_FORCE.attributeType(), 0.0D);
+        double lifeSkill = skillManager.calculatePlayerHealth(playerData);
+        breakdowns.put("Life Force", new AttributeBreakdown(lifeRace, lifeSkill, lifeRace + lifeSkill, false, false));
+
+        double staminaRace = attributeManager.getRaceAttribute(playerData,
+                PlayerAttributeManager.AttributeSlot.STAMINA.attributeType(), 0.0D);
+        double staminaSkill = skillManager.calculatePlayerStamina(playerData);
+        breakdowns.put("Stamina", new AttributeBreakdown(staminaRace, staminaSkill, staminaRace + staminaSkill, false,
+                false));
+
+        double intRace = attributeManager.getRaceAttribute(playerData,
+                PlayerAttributeManager.AttributeSlot.INTELLIGENCE.attributeType(), 0.0D);
+        double intSkill = skillManager.calculatePlayerIntelligence(playerData);
+        breakdowns.put("Intelligence", new AttributeBreakdown(intRace, intSkill, intRace + intSkill, false, false));
+
+        SkillManager.StrengthBreakdown strength = skillManager.getStrengthBreakdown(playerData);
+        breakdowns.put("Strength",
+                new AttributeBreakdown(strength.raceMultiplier(), strength.skillValue(), strength.totalValue(), true,
+                        false));
+
+        SkillManager.DefenseBreakdown defense = skillManager.getDefenseBreakdown(playerData);
+        breakdowns.put("Defense",
+                new AttributeBreakdown(defense.raceMultiplier(), defense.skillValue(), defense.totalValue(), true,
+                        false));
+
+        SkillManager.HasteBreakdown haste = skillManager.getHasteBreakdown(playerData);
+        breakdowns.put("Haste", new AttributeBreakdown(haste.raceMultiplier(), haste.skillBonus(),
+                haste.totalMultiplier(), true, true));
+
+        SkillManager.PrecisionBreakdown precision = skillManager.getPrecisionBreakdown(playerData);
+        breakdowns.put("Precision",
+                new AttributeBreakdown(precision.racePercent(), precision.skillPercent(), precision.totalPercent(),
+                        false, false));
+
+        SkillManager.FerocityBreakdown ferocity = skillManager.getFerocityBreakdown(playerData);
+        breakdowns.put("Ferocity",
+                new AttributeBreakdown(ferocity.raceValue(), ferocity.skillValue(), ferocity.totalValue(), false,
+                        false));
+
+        return breakdowns;
+    }
+
+    private record AttributeBreakdown(double race, double skill, double total, boolean raceIsMultiplier,
+            boolean totalIsMultiplier) {
     }
 }

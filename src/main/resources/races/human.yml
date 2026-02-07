@@ -3,12 +3,12 @@ description: "Versatile and ambitious, humans are known for their adaptability a
 enabled: true
 
 attributes: # Base Values
-  life_force: 100.0
+  life_force: 150
   strength: 1.0
   defense: 1.0
   haste: 1.0
-  precision: 0.1
-  ferocity: 0.5
+  precision: 10.0
+  ferocity: 50.0
   stamina: 10.0
   intelligence: 20.0
 

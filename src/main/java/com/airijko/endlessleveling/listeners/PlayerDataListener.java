@@ -1,15 +1,20 @@
 package com.airijko.endlessleveling.listeners;
 
+import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.data.PlayerData;
 import com.airijko.endlessleveling.managers.PassiveManager;
 import com.airijko.endlessleveling.managers.PlayerDataManager;
+import com.airijko.endlessleveling.managers.SkillManager;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.event.events.player.PlayerDisconnectEvent;
 import com.hypixel.hytale.server.core.event.events.player.PlayerReadyEvent;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
+import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.util.NotificationUtil;
 
 import java.util.UUID;
@@ -19,15 +24,20 @@ public class PlayerDataListener {
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
     private final PlayerDataManager playerDataManager;
     private final PassiveManager passiveManager;
+    private final SkillManager skillManager;
 
-    public PlayerDataListener(PlayerDataManager playerDataManager, PassiveManager passiveManager) {
+    public PlayerDataListener(PlayerDataManager playerDataManager, PassiveManager passiveManager,
+            SkillManager skillManager) {
         this.playerDataManager = playerDataManager;
         this.passiveManager = passiveManager;
+        this.skillManager = skillManager;
     }
 
     /** Called when a player joins */
     public void onPlayerReady(PlayerReadyEvent event) {
         var player = event.getPlayer();
+        Ref<EntityStore> entityRef = event.getPlayerRef();
+        Store<EntityStore> store = entityRef != null ? entityRef.getStore() : null;
         PlayerRef playerRef = Universe.get().getPlayer(player.getUuid());
         if (playerRef == null) {
             LOGGER.atWarning().log("Unable to find PlayerRef for joining player %s", player.getUuid());
@@ -45,6 +55,22 @@ public class PlayerDataListener {
                 passiveManager.notifyPassiveChanges(playerData, result);
             }
             playerDataManager.save(playerData);
+        }
+
+        if (skillManager != null && entityRef != null && store != null) {
+            try {
+                boolean applied = skillManager.applyAllSkillModifiers(entityRef, store, playerData);
+                if (!applied) {
+                    LOGGER.atFine().log("Skill modifiers scheduled for retry for %s", playerRef.getUsername());
+                    var retrySystem = EndlessLeveling.getInstance().getPlayerRaceStatSystem();
+                    if (retrySystem != null) {
+                        retrySystem.scheduleRetry(uuid);
+                    }
+                }
+            } catch (Exception e) {
+                LOGGER.atWarning().log("Failed to apply skill modifiers for %s: %s", playerRef.getUsername(),
+                        e.getMessage());
+            }
         }
 
         LOGGER.atInfo().log("Loaded PlayerData for player: %s", playerRef.getUsername());

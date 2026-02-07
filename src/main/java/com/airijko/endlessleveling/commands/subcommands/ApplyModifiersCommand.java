@@ -40,8 +40,7 @@ public class ApplyModifiersCommand extends AbstractPlayerCommand {
             @Nonnull Store<EntityStore> store,
             @Nonnull Ref<EntityStore> ref,
             @Nonnull PlayerRef senderRef,
-            @Nonnull World world
-    ) {
+            @Nonnull World world) {
         CommandUtil.requirePermission(commandContext.sender(), PERMISSION_NODE);
 
         if (playerDataManager == null) {
@@ -68,7 +67,15 @@ public class ApplyModifiersCommand extends AbstractPlayerCommand {
         }
 
         // Apply the health modifier using SkillManager
-        skillManager.applyAllSkillModifiers(ref, store, playerData);
-        senderRef.sendMessage(Message.raw("Applied health modifier using SkillManager."));
+        boolean applied = skillManager.applyAllSkillModifiers(ref, store, playerData);
+        if (!applied) {
+            var retrySystem = EndlessLeveling.getInstance().getPlayerRaceStatSystem();
+            if (retrySystem != null) {
+                retrySystem.scheduleRetry(playerData.getUuid());
+            }
+            senderRef.sendMessage(Message.raw("Modifiers scheduled for retry."));
+        } else {
+            senderRef.sendMessage(Message.raw("Applied health modifier using SkillManager."));
+        }
     }
 }

@@ -73,4 +73,4 @@ enable_races: true # Set to false to disable race loading and default everyone t
 enable_logging: false # Enable or disable logging
 
 # DON'T EDIT THIS LINE BELOW
-config_version: 1
+config_version: 2
