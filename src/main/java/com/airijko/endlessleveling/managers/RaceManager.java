@@ -27,7 +27,6 @@ public class RaceManager {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
 
-    private final ConfigManager configManager;
     private final PluginFilesManager filesManager;
     private final boolean racesEnabled;
     private final Map<String, RaceDefinition> racesByKey = new HashMap<>();
@@ -36,7 +35,7 @@ public class RaceManager {
     private String defaultRaceId = PlayerData.DEFAULT_RACE_ID;
 
     public RaceManager(ConfigManager configManager, PluginFilesManager filesManager) {
-        this.configManager = Objects.requireNonNull(configManager, "ConfigManager is required");
+        Objects.requireNonNull(configManager, "ConfigManager is required");
         this.filesManager = Objects.requireNonNull(filesManager, "PluginFilesManager is required");
         this.racesEnabled = parseBoolean(configManager.get("enable_races", Boolean.TRUE, false), true);
 

@@ -13,12 +13,7 @@ import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.util.NotificationUtil;
 
-import org.yaml.snakeyaml.Yaml;
-
 import javax.annotation.Nonnull;
-import java.io.File;
-import java.io.FileInputStream;
-import java.util.Map;
 
 /**
  * Handles all skill points and modifiers.
