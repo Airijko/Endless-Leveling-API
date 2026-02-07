@@ -1,0 +1,17 @@
+race_name: "Watcher"
+description: "Eldritch entities from beyond reality, Watchers wield incomprehensible power but struggle to endure the physical world."
+enabled: true
+
+attributes:
+  life_force: 110
+  strength: 0.8
+  defense: 0.9
+  haste: 0.9
+  precision: 5.0
+  ferocity: 30.0
+  stamina: 6.0
+  intelligence: 90.0
+
+passives:
+  - type: XP_BONUS
+    value: 1.0 # +100% XP gain

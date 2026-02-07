@@ -28,6 +28,7 @@ public class PlayerData {
     private final Map<SkillAttributeType, Integer> attributes;
     private final Map<PassiveType, Integer> passiveLevels;
     private String raceId;
+    private long lastRaceChangeEpochSeconds;
 
     private boolean playerHudEnabled;
     private boolean criticalNotifEnabled;
@@ -54,6 +55,7 @@ public class PlayerData {
         this.luckDoubleDropsNotifEnabled = true;
         this.healthRegenNotifEnabled = true;
         this.raceId = DEFAULT_RACE_ID;
+        this.lastRaceChangeEpochSeconds = 0L;
 
         this.attributes = new EnumMap<>(SkillAttributeType.class);
         for (SkillAttributeType type : SkillAttributeType.values()) {
@@ -188,6 +190,18 @@ public class PlayerData {
             return;
         }
         this.raceId = raceId.trim();
+    }
+
+    public long getLastRaceChangeEpochSeconds() {
+        return lastRaceChangeEpochSeconds;
+    }
+
+    public void setLastRaceChangeEpochSeconds(long epochSeconds) {
+        if (epochSeconds < 0) {
+            this.lastRaceChangeEpochSeconds = 0L;
+            return;
+        }
+        this.lastRaceChangeEpochSeconds = epochSeconds;
     }
 
     /**

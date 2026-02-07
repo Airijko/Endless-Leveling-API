@@ -2,7 +2,7 @@ race_name: "Human"
 description: "Versatile and ambitious, humans are known for their adaptability and determination."
 enabled: true
 
-attributes: # Base Values
+attributes:
   life_force: 150
   strength: 1.0
   defense: 1.0
@@ -10,7 +10,7 @@ attributes: # Base Values
   precision: 10.0
   ferocity: 50.0
   stamina: 10.0
-  intelligence: 20.0
+  intelligence: 25.0
 
 passives:
   - type: XP_BONUS

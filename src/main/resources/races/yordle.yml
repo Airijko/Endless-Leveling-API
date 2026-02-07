@@ -1,0 +1,17 @@
+race_name: "Yordle"
+description: "Whimsical yet dangerous, Yordles rely on agility, trickery, and explosive damage."
+enabled: true
+
+attributes:
+  life_force: 90
+  strength: 0.95
+  defense: 0.9
+  haste: 1.2
+  precision: 25.0
+  ferocity: 10.0
+  stamina: 17.5
+  intelligence: 60.0
+
+passives:
+  - type: XP_BONUS
+    value: 1.0 # +100% XP gain

@@ -1,6 +1,7 @@
 package com.airijko.endlessleveling.commands;
 
 import com.airijko.endlessleveling.commands.races.RaceProfileCommand;
+import com.airijko.endlessleveling.commands.races.RaceChooseCommand;
 import com.airijko.endlessleveling.managers.PlayerDataManager;
 import com.airijko.endlessleveling.managers.RaceManager;
 import com.airijko.endlessleveling.races.RaceDefinition;
@@ -29,6 +30,7 @@ public class RaceCommand extends AbstractPlayerCommand {
         this.playerDataManager = playerDataManager;
         this.addAliases("race");
         this.addSubCommand(new RaceProfileCommand(raceManager, playerDataManager));
+        this.addSubCommand(new RaceChooseCommand(raceManager, playerDataManager));
     }
 
     @Override

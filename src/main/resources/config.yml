@@ -1,24 +1,34 @@
-# config.yml
+# ============================================================
+# CONFIGURATION FILE
+# ============================================================
 
-skill_attributes: # Value per level
-  life_force: 2.0 # Health
-  strength: 0.5 # Damage
-  defense: 0.5 # Damage reduction
-  haste: 0.75 # Movement speed
-  precision: 0.8 # Critical chance
-  ferocity: 1.2 # Critical damage
-  stamina: 0.2 # Stamina
-  intelligence: 0.5 # Mana
+# ------------------------------------------------------------
+# SKILL ATTRIBUTE SCALING
+# Values applied PER PLAYER LEVEL
+# ------------------------------------------------------------
+skill_attributes:
+  life_force: 2.0 # Health gained per level
+  strength: 0.5 # Damage bonus per level
+  defense: 0.5 # Damage reduction per level
+  haste: 0.75 # Movement speed per level
+  precision: 0.8 # Critical chance per level
+  ferocity: 1.2 # Critical damage per level
+  stamina: 0.2 # Stamina per level
+  intelligence: 0.5 # Mana per level
 
+# ------------------------------------------------------------
+# PASSIVE SKILLS
+# Player passives scale automatically as the player levels up.
+#
+# Each passive supports:
+#   enabled          -> Whether the passive is active
+#   unlock_level     -> Player level required to unlock
+#   base_value       -> Value at passive level 1
+#   value_per_level  -> Increase per passive level
+#   max_level        -> Maximum passive level
+#   tier_interval    -> Player levels required per passive level
+# ------------------------------------------------------------
 passives:
-  # Player passives scale as the player levels up.
-  # Each passive has:
-  #   - unlock_level: player level when the passive becomes available
-  #   - base_value: the starting value at passive level 1
-  #   - value_per_level: the amount the passive increases per passive level
-  #   - max_level: maximum passive level
-  #   - tier_interval: number of player levels required to gain 1 passive level
-
   life_steal:
     enabled: true
     unlock_level: 25
@@ -67,10 +77,20 @@ passives:
     max_level: 10
     tier_interval: 5
 
-# RACES
-enable_races: true # Set to false to disable race loading and default everyone to Human
+# ------------------------------------------------------------
+# RACE SETTINGS
+# ------------------------------------------------------------
+enable_races: true # Enable or disable the race system
+default_race: "Human" # Race assigned to new players
+choose_race_cooldown: 3600 # Cooldown (seconds) before changing race again
 
-enable_logging: false # Enable or disable logging
+# ------------------------------------------------------------
+# DEBUG / LOGGING
+# ------------------------------------------------------------
+enable_logging: false # Enable detailed logging output
 
-# DON'T EDIT THIS LINE BELOW
+# ------------------------------------------------------------
+# INTERNAL CONFIG VERSION
+# DO NOT MODIFY
+# ------------------------------------------------------------
 config_version: 2

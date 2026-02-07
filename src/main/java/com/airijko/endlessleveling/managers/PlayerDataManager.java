@@ -32,7 +32,7 @@ public class PlayerDataManager {
 
     // Current schema version for player data files. Increment when adding new
     // fields that require migration. Use this to detect/outdate/migrate files.
-    private static final int CURRENT_PLAYERDATA_VERSION = 2;
+    private static final int CURRENT_PLAYERDATA_VERSION = 3;
 
     public PlayerDataManager(PluginFilesManager filesManager, SkillManager skillManager, RaceManager raceManager) {
         this.filesManager = filesManager;
@@ -130,6 +130,7 @@ public class PlayerDataManager {
         if (raceDisplay != null && !raceDisplay.equalsIgnoreCase(raceId)) {
             raceSection.put("name", raceDisplay);
         }
+        raceSection.put("lastChangedEpochSeconds", data.getLastRaceChangeEpochSeconds());
         map.put("race", raceSection);
 
         Map<String, Integer> passives = new LinkedHashMap<>();
@@ -208,7 +209,9 @@ public class PlayerDataManager {
         data.setLuckDoubleDropsNotifEnabled(parseBoolean(luckDoubleDropsNotif, true));
         data.setHealthRegenNotifEnabled(parseBoolean(healthRegenNotif, true));
 
-        data.setRaceId(parseRaceId(map.get("race")));
+        Object raceNode = map.get("race");
+        data.setRaceId(parseRaceId(raceNode));
+        data.setLastRaceChangeEpochSeconds(parseRaceLastChanged(raceNode));
         ensureValidRace(data);
 
         Map<String, Object> passives = castToStringObjectMap(map.get("passives"));
@@ -344,6 +347,26 @@ public class PlayerDataManager {
         return PlayerData.DEFAULT_RACE_ID;
     }
 
+    private long parseRaceLastChanged(Object raceNode) {
+        Map<String, Object> raceMap = castToStringObjectMap(raceNode);
+        if (raceMap == null) {
+            return 0L;
+        }
+
+        Object raw = raceMap.get("lastChangedEpochSeconds");
+        if (raw instanceof Number number) {
+            return Math.max(0L, number.longValue());
+        }
+        if (raw instanceof String stringValue) {
+            try {
+                long parsed = Long.parseLong(stringValue.trim());
+                return Math.max(0L, parsed);
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return 0L;
+    }
+
     private String coerceRaceString(Object value) {
         if (value instanceof String stringValue) {
             String trimmed = stringValue.trim();
@@ -432,7 +455,9 @@ public class PlayerDataManager {
                 }
             }
 
-            data.setRaceId(parseRaceId(map.get("race")));
+            Object raceNode = map.get("race");
+            data.setRaceId(parseRaceId(raceNode));
+            data.setLastRaceChangeEpochSeconds(parseRaceLastChanged(raceNode));
             ensureValidRace(data);
 
             return data;

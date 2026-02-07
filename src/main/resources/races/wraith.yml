@@ -1,0 +1,17 @@
+race_name: "Wraith"
+description: "Cursed spirits tethered to the mortal plane, Wraiths excel at swift, lethal strikes and evasion."
+enabled: true
+
+attributes:
+  life_force: 80
+  strength: 1.05
+  defense: 0.85
+  haste: 1.25
+  precision: 20.0
+  ferocity: 75.0
+  stamina: 10.0
+  intelligence: 20.0
+
+passives:
+  - type: XP_BONUS
+    value: 1.0 # +100% XP gain

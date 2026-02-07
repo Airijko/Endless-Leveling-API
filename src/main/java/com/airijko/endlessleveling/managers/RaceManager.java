@@ -33,11 +33,19 @@ public class RaceManager {
     private final Yaml yaml = new Yaml();
 
     private String defaultRaceId = PlayerData.DEFAULT_RACE_ID;
+    private final long chooseRaceCooldownSeconds;
 
     public RaceManager(ConfigManager configManager, PluginFilesManager filesManager) {
         Objects.requireNonNull(configManager, "ConfigManager is required");
         this.filesManager = Objects.requireNonNull(filesManager, "PluginFilesManager is required");
         this.racesEnabled = parseBoolean(configManager.get("enable_races", Boolean.TRUE, false), true);
+        Object defaultRaceConfig = configManager.get("default_race", PlayerData.DEFAULT_RACE_ID, false);
+        String configuredDefault = safeString(defaultRaceConfig);
+        if (configuredDefault != null) {
+            this.defaultRaceId = configuredDefault;
+        }
+        Object cooldownConfig = configManager.get("choose_race_cooldown", 0, false);
+        this.chooseRaceCooldownSeconds = parseCooldownSeconds(cooldownConfig);
 
         if (!racesEnabled) {
             LOGGER.atInfo().log("Race system disabled via config.yml (enable_races=false).");
@@ -66,6 +74,10 @@ public class RaceManager {
         return racesByKey.values().stream().findFirst().orElse(null);
     }
 
+    public long getChooseRaceCooldownSeconds() {
+        return Math.max(0L, chooseRaceCooldownSeconds);
+    }
+
     public String getDefaultRaceId() {
         RaceDefinition defaultRace = getDefaultRace();
         return defaultRace != null ? defaultRace.getId() : PlayerData.DEFAULT_RACE_ID;
@@ -84,17 +96,9 @@ public class RaceManager {
             return fallback != null ? fallback.getId() : PlayerData.DEFAULT_RACE_ID;
         }
 
-        RaceDefinition requested = getRace(requestedValue);
+        RaceDefinition requested = findRaceByUserInput(requestedValue);
         if (requested != null) {
             return requested.getId();
-        }
-
-        String normalizedName = requestedValue.trim().toLowerCase(Locale.ROOT);
-        for (RaceDefinition definition : racesByKey.values()) {
-            if (definition.getDisplayName() != null
-                    && definition.getDisplayName().trim().toLowerCase(Locale.ROOT).equals(normalizedName)) {
-                return definition.getId();
-            }
         }
 
         RaceDefinition fallback = getDefaultRace();
@@ -145,6 +149,29 @@ public class RaceManager {
 
     public Collection<RaceDefinition> getLoadedRaces() {
         return Collections.unmodifiableCollection(racesByKey.values());
+    }
+
+    public RaceDefinition findRaceByUserInput(String userInput) {
+        if (!isEnabled() || userInput == null) {
+            return null;
+        }
+        RaceDefinition byId = getRace(userInput);
+        if (byId != null) {
+            return byId;
+        }
+
+        String normalizedName = normalizeKey(userInput);
+        if (normalizedName.isEmpty()) {
+            return null;
+        }
+
+        for (RaceDefinition definition : racesByKey.values()) {
+            String displayName = definition.getDisplayName();
+            if (displayName != null && normalizeKey(displayName).equals(normalizedName)) {
+                return definition;
+            }
+        }
+        return null;
     }
 
     public double getAttribute(PlayerData playerData, SkillAttributeType attributeType, double fallback) {
@@ -301,6 +328,20 @@ public class RaceManager {
             return Boolean.parseBoolean(stringValue.trim());
         }
         return defaultValue;
+    }
+
+    private long parseCooldownSeconds(Object value) {
+        if (value instanceof Number number) {
+            return Math.max(0L, number.longValue());
+        }
+        if (value instanceof String stringValue) {
+            try {
+                long parsed = Long.parseLong(stringValue.trim());
+                return Math.max(0L, parsed);
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return 0L;
     }
 
     private String normalizeKey(String input) {

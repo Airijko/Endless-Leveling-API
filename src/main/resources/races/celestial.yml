@@ -1,0 +1,17 @@
+race_name: "Celestial"
+description: "Ancient cosmic entities born of starlight, Celestials wield immense magical power and unparalleled resilience."
+enabled: true
+
+attributes:
+  life_force: 140
+  strength: 0.9
+  defense: 1.1
+  haste: 1.0
+  precision: 5.0
+  ferocity: 40.0
+  stamina: 8.0
+  intelligence: 70.0
+
+passives:
+  - type: XP_BONUS
+    value: 1.0 # +100% XP gain

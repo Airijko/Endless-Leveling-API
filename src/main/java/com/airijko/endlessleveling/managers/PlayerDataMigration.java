@@ -98,8 +98,42 @@ public final class PlayerDataMigration {
                 migrated.putIfAbsent("prestige", 0);
                 LOGGER.atInfo().log("Migrated %s from v1 to v2.", file.getName());
             }
+            case 2 -> {
+                ensureRaceTimestamp(migrated);
+                LOGGER.atInfo().log("Migrated %s from v2 to v3.", file.getName());
+            }
             default -> LOGGER.atInfo().log("Bumped %s from v%d to v%d (default).", file.getName(), fromVersion,
                     fromVersion + 1);
         }
+    }
+
+    private static void ensureRaceTimestamp(Map<String, Object> migrated) {
+        Object raceNode = migrated.get("race");
+        Map<String, Object> raceMap = toMutableStringObjectMap(raceNode);
+        if (raceMap == null) {
+            raceMap = new LinkedHashMap<>();
+            if (raceNode instanceof String stringValue) {
+                String trimmed = stringValue.trim();
+                if (!trimmed.isEmpty()) {
+                    raceMap.put("id", trimmed);
+                }
+            }
+        }
+
+        raceMap.putIfAbsent("lastChangedEpochSeconds", 0L);
+        migrated.put("race", raceMap);
+    }
+
+    private static Map<String, Object> toMutableStringObjectMap(Object source) {
+        if (!(source instanceof Map<?, ?> raw)) {
+            return null;
+        }
+        Map<String, Object> result = new LinkedHashMap<>();
+        for (Map.Entry<?, ?> entry : raw.entrySet()) {
+            if (entry.getKey() instanceof String key) {
+                result.put(key, entry.getValue());
+            }
+        }
+        return result;
     }
 }

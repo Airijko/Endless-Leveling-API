@@ -1,0 +1,17 @@
+race_name: "Vastaya"
+description: "Mysterious and agile, Vastaya are a race of animalistic humanoids with a deep connection to nature."
+enabled: true
+
+attributes: # Base Values
+  life_force: 125
+  strength: 1.0
+  defense: 0.975
+  haste: 1.15
+  precision: 15.0
+  ferocity: 40.0
+  stamina: 10.0
+  intelligence: 50.0
+
+passives:
+  - type: XP_BONUS
+    value: 1.0 # +100% XP gain
