@@ -5,7 +5,7 @@ enabled: true
 attributes:
   life_force: 190
   strength: 1.2
-  defense: 1.25
+  defense: 1.2
   haste: 1.05
   precision: 5.0
   ferocity: 60.0

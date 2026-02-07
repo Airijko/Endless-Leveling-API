@@ -9,7 +9,7 @@ attributes:
   haste: 1.0
   precision: 15.0
   ferocity: 60.0
-  stamina: 15.0
+  stamina: 20.0
   intelligence: 10.0
 
 passives:
