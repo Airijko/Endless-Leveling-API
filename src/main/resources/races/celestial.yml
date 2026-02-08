@@ -22,4 +22,4 @@ passives:
     value: 1.5
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: precision
-    value: 0.65
+    value: 0.55

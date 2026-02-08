@@ -21,7 +21,7 @@ passives:
     max_stacks: 5 # Can stack up to 5 times after killing a target for a total of +100% movement speed
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: haste
-    value: 0.5
+    value: 0.25
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: precision
     value: 0.35

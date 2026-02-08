@@ -22,7 +22,7 @@ passives:
     cooldown: 20 # seconds between first-strike windows
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: haste
-    value: 0.5
+    value: 0.4
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: ferocity
     value: 1.5

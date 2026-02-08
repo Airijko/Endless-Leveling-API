@@ -24,7 +24,7 @@ passives:
     cooldown: 60 # seconds between triggers
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: defense
-    value: 0.3
+    value: 0.25
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: haste
-    value: 0.5
+    value: 0.2
