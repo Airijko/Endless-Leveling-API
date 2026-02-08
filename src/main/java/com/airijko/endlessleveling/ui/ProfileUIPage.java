@@ -9,6 +9,7 @@ import java.util.Locale;
 import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.data.PlayerData;
 import com.airijko.endlessleveling.data.PlayerData.PlayerProfile;
+import com.airijko.endlessleveling.enums.ArchetypePassiveType;
 import com.airijko.endlessleveling.enums.PassiveType;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.airijko.endlessleveling.managers.PlayerDataManager;
@@ -149,8 +150,9 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         List<PassiveEntry> skillEntries = collectSkillPassiveEntries(profile);
         if (skillEntries.isEmpty()) {
             ui.set("#SkillPassiveSummary.Text", "No skill passives selected");
+            ui.set("#SkillPassiveSummary.Visible", true);
         } else {
-            ui.set("#SkillPassiveSummary.Text", skillEntries.size() + " passive(s) active");
+            ui.set("#SkillPassiveSummary.Visible", false);
         }
         populatePassiveEntries(ui,
                 "#SkillPassiveEntries",
@@ -159,6 +161,7 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
         RacePassiveSummary raceSummary = buildRacePassiveSummary(profile);
         ui.set("#RacePassiveSummary.Text", raceSummary.summary());
+        ui.set("#RacePassiveSummary.Visible", raceSummary.entries().isEmpty());
         populatePassiveEntries(ui,
                 "#RacePassiveEntries",
                 "Pages/Profile/ProfileRacePassiveEntry.ui",
@@ -191,8 +194,10 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         ui.set("#AttributeFerocityValue.Text", "--");
         ui.set("#AttributeStaminaValue.Text", "--");
         ui.set("#AttributeIntelligenceValue.Text", "--");
-        ui.set("#SkillPassiveSummary.Text", "No skill passives selected");
+        ui.set("#SkillPassiveSummary.Text", "No skill passives unlocked");
+        ui.set("#SkillPassiveSummary.Visible", true);
         ui.set("#RacePassiveSummary.Text", "Select a profile to view race bonuses");
+        ui.set("#RacePassiveSummary.Visible", true);
         ui.clear("#SkillPassiveEntries");
         ui.clear("#RacePassiveEntries");
     }
@@ -246,9 +251,7 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 if (passive.attributeType() != null) {
                     label.append(" (" + toDisplay(passive.attributeType().name()) + ")");
                 }
-                String valueText = passive.value() == 0.0D
-                        ? "Passive"
-                        : "+" + formatNumber(passive.value());
+                String valueText = formatRacePassiveValue(passive);
                 entries.add(new PassiveEntry(label.toString(), valueText));
             }
         }
@@ -294,6 +297,139 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     }
 
     private record RacePassiveSummary(String summary, List<PassiveEntry> entries) {
+    }
+
+    private String formatRacePassiveValue(@Nonnull RacePassiveDefinition passive) {
+        ArchetypePassiveType type = passive.type();
+        double value = passive.value();
+        Map<String, Object> props = passive.properties() == null ? Map.of() : passive.properties();
+
+        Double threshold = getDoubleProp(props, "threshold");
+        Double duration = getDoubleProp(props, "duration");
+        Double cooldown = getDoubleProp(props, "cooldown");
+        Double window = getDoubleProp(props, "window");
+        Double stacks = getDoubleProp(props, "max_stacks");
+
+        if (type == null) {
+            return value == 0.0D ? "Passive" : formatSigned(value);
+        }
+
+        return switch (type) {
+            case XP_BONUS -> formatPercentValue(value) + " XP gain";
+            case INCREASED_HEALTH_REGEN -> formatPercentValue(value) + " HP/5s";
+            case INCREASED_MANA_REGEN -> formatSigned(value) + " mana/5s";
+            case HEALING_BONUS -> formatPercentValue(value) + " healing";
+            case SPECIAL_CHARGE_BONUS -> formatPercentValue(value) + " charge rate";
+            case LAST_STAND -> appendDetails(
+                    formatPercentValue(value) + " heal",
+                    formatThresholdDetail(threshold, "HP"),
+                    formatDurationDetail(duration),
+                    formatCooldownDetail(cooldown));
+            case FIRST_STRIKE -> appendDetails(
+                    formatPercentValue(value) + " first hit",
+                    formatCooldownDetail(cooldown));
+            case INNATE_ATTRIBUTE_GAIN -> formatSigned(value);
+            case ADRENALINE -> appendDetails(
+                    formatPercentValue(value) + " stamina",
+                    formatThresholdDetail(threshold, "stamina"),
+                    formatDurationDetail(duration),
+                    formatCooldownDetail(cooldown));
+            case BERZERKER -> appendDetails(
+                    formatPercentValue(value) + " damage",
+                    formatThresholdDetail(threshold, "HP"));
+            case RETALIATION -> appendDetails(
+                    formatPercentValue(value) + " reflect",
+                    formatWindowDetail(window),
+                    formatCooldownDetail(cooldown));
+            case EXECUTIONER -> appendDetails(
+                    formatPercentValue(value) + " finisher",
+                    formatThresholdDetail(threshold, "target HP"),
+                    formatCooldownDetail(cooldown));
+            case SWIFTNESS -> appendDetails(
+                    formatPercentValue(value) + " speed",
+                    formatDurationDetail(duration),
+                    formatStacksDetail(stacks));
+        };
+    }
+
+    private Double getDoubleProp(@Nonnull Map<String, Object> props, @Nonnull String key) {
+        Object raw = props.get(key);
+        if (raw instanceof Number number) {
+            return number.doubleValue();
+        }
+        if (raw instanceof String str) {
+            try {
+                return Double.parseDouble(str);
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return null;
+    }
+
+    private String formatPercentValue(double ratio) {
+        return formatSigned(ratio * 100.0D) + "%";
+    }
+
+    private String formatSigned(double number) {
+        String prefix = number >= 0 ? "+" : "-";
+        return prefix + formatNumber(Math.abs(number));
+    }
+
+    private String formatThresholdDetail(Double ratio, String scope) {
+        if (ratio == null) {
+            return null;
+        }
+        return "<" + formatNumber(ratio * 100.0D) + "% " + scope;
+    }
+
+    private String formatDurationDetail(Double seconds) {
+        if (seconds == null) {
+            return null;
+        }
+        return formatNumber(seconds) + "s duration";
+    }
+
+    private String formatCooldownDetail(Double seconds) {
+        if (seconds == null) {
+            return null;
+        }
+        return formatNumber(seconds) + "s cd";
+    }
+
+    private String formatWindowDetail(Double seconds) {
+        if (seconds == null) {
+            return null;
+        }
+        return formatNumber(seconds) + "s window";
+    }
+
+    private String formatStacksDetail(Double stacks) {
+        if (stacks == null) {
+            return null;
+        }
+        return formatNumber(stacks) + " stacks";
+    }
+
+    private String appendDetails(String base, String... extra) {
+        String detail = joinDetails(extra);
+        if (detail.isEmpty()) {
+            return base;
+        }
+        return base + " (" + detail + ")";
+    }
+
+    private String joinDetails(String... parts) {
+        StringBuilder builder = new StringBuilder();
+        for (String part : parts) {
+            if (part == null || part.isBlank()) {
+                continue;
+            }
+            if (builder.length() > 0) {
+                builder.append(", ");
+            }
+            builder.append(part);
+        }
+        return builder.toString();
     }
 
     @Override
