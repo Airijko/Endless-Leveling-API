@@ -55,7 +55,6 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         PlayerData playerData = resolvePlayerData();
         if (playerData == null) {
             ui.set("#ProfilesSummary.Text", "Player data unavailable.");
-            ui.set("#EmptyStateLabel.Text", "Unable to load profiles right now.");
             return;
         }
 
@@ -94,13 +93,6 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 .sorted(Map.Entry.comparingByKey())
                 .toList();
 
-        if (profiles.isEmpty()) {
-            ui.set("#EmptyStateLabel.Text", "No profiles yet. Use NEW PROFILE to create one.");
-            return;
-        }
-
-        ui.set("#EmptyStateLabel.Text", "");
-
         int index = 0;
         for (Map.Entry<Integer, PlayerProfile> entry : profiles) {
             int slot = entry.getKey();
@@ -115,7 +107,6 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             ui.set(base + " #ProfileName.Text", profile.getName());
             ui.set(base + " #LevelValue.Text", "Level " + profile.getLevel());
             ui.set(base + " #XpValue.Text", formatNumber(profile.getXp()) + " XP");
-            ui.set(base + " #RaceValue.Text", profile.getRaceId());
             ui.set(base + " #StatusBadge.Text", active ? "ACTIVE" : "");
 
             ui.set(base + " #SelectButton.Text", active ? "ACTIVE" : "SELECT");

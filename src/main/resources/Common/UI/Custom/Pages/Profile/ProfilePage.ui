@@ -3,7 +3,7 @@ $Nav = "../Nav/LeftNavPanel.ui";
 
 $C.@PageOverlay {
     $C.@DecoratedContainer {
-        Anchor: (Width: 1200, Height: 700);
+        Anchor: (Width: 1000, Height: 700);
         #Title {
             Group {
                 $C.@Title {
@@ -43,31 +43,22 @@ $C.@PageOverlay {
                 }
 
                 Group { Anchor: (Height: 1); Background: #2b3542; }
-                Group { Anchor: (Height: 8); }
 
                 Group #ProfileContent {
                     LayoutMode: Left;
                     FlexWeight: 1;
-                    Padding: (Left: 16, Right: 16, Bottom: 12);
+                    Padding: (Horizontal: 16, Vertical: 16);
 
                     Group #ProfileListColumn {
+                        FlexWeight: 1;
                         LayoutMode: Top;
-                        Anchor: (Width: 420);
 
                         Group #ProfileListSection {
                             LayoutMode: Top;
                             FlexWeight: 1;
 
-                            Label #EmptyStateLabel {
-                                Anchor: (Height: 32);
-                                Style: (FontSize: 15, TextColor: #9fb6d3);
-                                Text: "Loading profiles...";
-                            }
-
                             Group #ProfileRows {
                                 FlexWeight: 1;
-                                LayoutMode: TopScrolling;
-                                ScrollbarStyle: $C.@DefaultScrollbarStyle;
 
                                 Group #ProfileCards {
                                     LayoutMode: Top;
@@ -79,8 +70,8 @@ $C.@PageOverlay {
                     Group { Anchor: (Width: 16); }
 
                     Group #ProfileDetailPanel {
-                        FlexWeight: 1;
                         LayoutMode: Top;
+                        Anchor: (Width: 425);
                         Background: #050910(0.85);
                         Padding: (Left: 18, Right: 18, Top: 18, Bottom: 18);
 
@@ -248,8 +239,6 @@ $C.@PageOverlay {
 
                                 Group #SkillPassiveList {
                                     LayoutMode: Top;
-                                    Background: #0b141f(0.6);
-                                    Padding: (Left: 12, Right: 12, Top: 8, Bottom: 8);
 
                                     Label #SkillPassiveSummary {
                                         Text: "No skill passives selected";
@@ -272,8 +261,6 @@ $C.@PageOverlay {
 
                                 Group #RacePassiveList {
                                     LayoutMode: Top;
-                                    Background: #0b141f(0.6);
-                                    Padding: (Left: 12, Right: 12, Top: 8, Bottom: 8);
 
                                     Label #RacePassiveSummary {
                                         Text: "Select a profile to view race bonuses";
