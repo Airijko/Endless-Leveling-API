@@ -20,7 +20,7 @@ passives:
   - type: ADRENALINE
     value: 0.8 # Restore 80% of max stamina when drained
     threshold: 0.2 # Trigger below 20% stamina
-    duration: 3 # Spread recovery over 3 seconds
+    duration: 3 # Seconds to spread stamina recovery over
     cooldown: 45 # Seconds between adrenaline bursts
   - type: FIRST_STRIKE
     value: 3.0 # +300% damage on first hit

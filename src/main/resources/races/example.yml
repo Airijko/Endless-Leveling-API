@@ -108,7 +108,7 @@ passives:
   - type: ADRENALINE
     value: 0.8 # Restore 80% of max stamina when drained
     threshold: 0.2 # Trigger below 20% stamina
-    duration: 3 # Spread recovery over 3 seconds
+    duration: 3 # Seconds to spread stamina recovery over
     cooldown: 45 # Seconds between adrenaline bursts
   - type: BERZERKER
     value: 0.2 # Up to +20% damage when hurt (full bonus at/below 35% HP)
@@ -123,7 +123,7 @@ passives:
     cooldown: 45 # Seconds between executioner procs
   - type: SWIFTNESS
     value: 0.2 # Passive +20% movement speed applied after haste
-    duration: 5 # Swiftness bonus lasts for 5 seconds after triggering
+    duration: 8 # Seconds after killing a target to maintain swiftness bonus
     max_stacks: 5 # Can stack up to 5 times after killing a target for a total of +100% movement speed
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: life_force

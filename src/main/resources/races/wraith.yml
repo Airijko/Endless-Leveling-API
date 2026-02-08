@@ -15,7 +15,7 @@ attributes:
 passives:
   - type: SWIFTNESS
     value: 0.2 # Passive +20% movement speed applied after haste
-    duration: 5 # Swiftness bonus lasts for 5 seconds after triggering
+    duration: 8 # Seconds after killing a target to maintain swiftness bonus
     max_stacks: 5 # Can stack up to 5 times after killing a target for a total of +125% movement speed
   - type: FIRST_STRIKE
     value: 3.0 # +300% damage on first hit
