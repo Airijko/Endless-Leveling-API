@@ -17,7 +17,7 @@ passives:
     value: 1.0 # +100% healing dealt/received
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: life_force
-    value: 3.0
+    value: 2.5
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: strength
-    value: 2.0
+    value: 1.5

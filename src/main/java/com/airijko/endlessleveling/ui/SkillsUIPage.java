@@ -3,6 +3,7 @@ package com.airijko.endlessleveling.ui;
 import com.airijko.endlessleveling.data.PlayerData;
 import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
+import com.airijko.endlessleveling.managers.PlayerAttributeManager;
 import com.airijko.endlessleveling.managers.PlayerDataManager;
 import com.airijko.endlessleveling.managers.SkillManager;
 import com.hypixel.hytale.codec.Codec;
@@ -44,11 +45,14 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
         private final SkillManager skillManager;
         private final PlayerDataManager playerDataManager;
+        private final PlayerAttributeManager attributeManager;
 
         public SkillsUIPage(@Nonnull PlayerRef playerRef, @Nonnull CustomPageLifetime lifetime) {
                 super(playerRef, lifetime, Data.CODEC);
-                this.skillManager = EndlessLeveling.getInstance().getSkillManager();
-                this.playerDataManager = EndlessLeveling.getInstance().getPlayerDataManager();
+                EndlessLeveling plugin = EndlessLeveling.getInstance();
+                this.skillManager = plugin.getSkillManager();
+                this.playerDataManager = plugin.getPlayerDataManager();
+                this.attributeManager = plugin.getPlayerAttributeManager();
         }
 
         @Override
@@ -121,9 +125,9 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 ui.set("#SKILLPOINTS.Text", "SKILL POINTS: " + previewSkillPoints);
 
                 int lifeLevel = getPreviewLevel(SkillAttributeType.LIFE_FORCE);
-                double lifePer = skillManager.getSkillAttributeConfigValue(SkillAttributeType.LIFE_FORCE);
+                double lifeTotal = resolveResourcePreviewTotal(playerData, SkillAttributeType.LIFE_FORCE, lifeLevel);
                 ui.set("#LifeForceLevel.Text", String.valueOf(lifeLevel));
-                ui.set("#LifeForceValue.Text", formatNumber(lifeLevel * lifePer) + " Health");
+                ui.set("#LifeForceValue.Text", formatResourceDisplay(lifeTotal, "Health"));
 
                 int strLevel = getPreviewLevel(SkillAttributeType.STRENGTH);
                 SkillManager.StrengthBreakdown strengthPreview = skillManager.getStrengthBreakdown(playerData,
@@ -154,14 +158,15 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 ui.set("#FerocityValue.Text", "+" + formatNumber(ferLevel * ferPer) + "% Crit Damage");
 
                 int stamLevel = getPreviewLevel(SkillAttributeType.STAMINA);
-                double stamPer = skillManager.getSkillAttributeConfigValue(SkillAttributeType.STAMINA);
+                double staminaTotal = resolveResourcePreviewTotal(playerData, SkillAttributeType.STAMINA, stamLevel);
                 ui.set("#StaminaLevel.Text", String.valueOf(stamLevel));
-                ui.set("#StaminaValue.Text", formatNumber(stamLevel * stamPer) + " Stamina");
+                ui.set("#StaminaValue.Text", formatResourceDisplay(staminaTotal, "Stamina"));
 
                 int intLevel = getPreviewLevel(SkillAttributeType.INTELLIGENCE);
-                double intPer = skillManager.getSkillAttributeConfigValue(SkillAttributeType.INTELLIGENCE);
+                double intelligenceTotal = resolveResourcePreviewTotal(playerData, SkillAttributeType.INTELLIGENCE,
+                                intLevel);
                 ui.set("#IntelligenceLevel.Text", String.valueOf(intLevel));
-                ui.set("#IntelligenceValue.Text", formatNumber(intLevel * intPer) + " Mana");
+                ui.set("#IntelligenceValue.Text", formatResourceDisplay(intelligenceTotal, "Mana"));
         }
 
         @Override
@@ -365,6 +370,27 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                         LOGGER.atWarning().log("applyPreviewChanges: missing ref/store for player %s",
                                         playerRef.getUuid());
                 }
+        }
+
+        private double resolveResourcePreviewTotal(@Nonnull PlayerData playerData,
+                        @Nonnull SkillAttributeType type,
+                        int previewLevel) {
+                double raceBase = 0.0D;
+                if (attributeManager != null) {
+                        raceBase = attributeManager.getRaceAttribute(playerData, type, 0.0D);
+                }
+                double skillBonus = skillManager != null
+                                ? skillManager.calculateSkillAttributeBonus(playerData, type, previewLevel)
+                                : 0.0D;
+                double total = raceBase + skillBonus;
+                return total > 0.0D ? total : 0.0D;
+        }
+
+        private String formatResourceDisplay(double total, String label) {
+                if (total <= 0.0D) {
+                        return "--";
+                }
+                return formatNumber(total) + " " + label;
         }
 
         private String formatNumber(double value) {

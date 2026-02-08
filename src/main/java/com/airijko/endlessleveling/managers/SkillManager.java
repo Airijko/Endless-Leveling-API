@@ -244,6 +244,25 @@ public class SkillManager {
         return totalBonusIntelligence;
     }
 
+    /**
+     * Computes the additive skill contribution (including innate gains) for the
+     * supplied attribute, optionally overriding the player's current attribute
+     * level.
+     */
+    public double calculateSkillAttributeBonus(PlayerData playerData,
+            SkillAttributeType attributeType,
+            int overrideLevel) {
+        if (playerData == null || attributeType == null) {
+            return 0.0D;
+        }
+        int effectiveLevel = overrideLevel >= 0 ? overrideLevel
+                : playerData.getPlayerSkillAttributeLevel(attributeType);
+        double perPointValue = getSkillAttributeConfigValue(attributeType);
+        double innateBonus = getInnateAttributeBonus(playerData, attributeType);
+        double contribution = (effectiveLevel * perPointValue) + innateBonus;
+        return contribution > 0.0D ? contribution : 0.0D;
+    }
+
     public boolean applyIntelligenceModifiers(@Nonnull Ref<EntityStore> ref,
             @Nonnull ComponentAccessor<EntityStore> componentAccessor, PlayerData playerData) {
         float skillBonus = calculatePlayerIntelligence(playerData);

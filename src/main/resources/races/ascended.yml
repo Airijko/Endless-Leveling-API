@@ -21,7 +21,7 @@ passives:
     cooldown: 45 # Seconds between executioner procs
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: ferocity
-    value: 2.0
+    value: 1.5
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: life_force
     value: 2.0
