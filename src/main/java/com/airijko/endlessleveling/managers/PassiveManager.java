@@ -327,6 +327,7 @@ public class PassiveManager {
         private boolean lastStandReadyNotified = true;
         private boolean firstStrikeReadyNotified = true;
         private boolean adrenalineReadyNotified = true;
+        private boolean executionerReadyNotified = true;
         private boolean retaliationReadyNotified = true;
         private double lastStandHealPerSecond;
         private double lastStandHealRemaining;
@@ -337,6 +338,7 @@ public class PassiveManager {
         private long retaliationCooldownExpiresAt;
         private long retaliationWindowExpiresAt;
         private double retaliationDamageStored;
+        private long executionerCooldownExpiresAt;
         private long swiftnessActiveUntil;
         private int swiftnessStacks;
 
@@ -439,6 +441,14 @@ public class PassiveManager {
             this.adrenalineReadyNotified = adrenalineReadyNotified;
         }
 
+        public boolean isExecutionerReadyNotified() {
+            return executionerReadyNotified;
+        }
+
+        public void setExecutionerReadyNotified(boolean executionerReadyNotified) {
+            this.executionerReadyNotified = executionerReadyNotified;
+        }
+
         public boolean isRetaliationReadyNotified() {
             return retaliationReadyNotified;
         }
@@ -470,6 +480,7 @@ public class PassiveManager {
             this.lastStandReadyNotified = true;
             this.firstStrikeReadyNotified = true;
             this.adrenalineReadyNotified = true;
+            this.executionerReadyNotified = true;
             this.retaliationReadyNotified = true;
             this.lastStandHealPerSecond = 0.0D;
             this.lastStandHealRemaining = 0.0D;
@@ -480,6 +491,7 @@ public class PassiveManager {
             this.retaliationCooldownExpiresAt = 0L;
             this.retaliationWindowExpiresAt = 0L;
             this.retaliationDamageStored = 0.0D;
+            this.executionerCooldownExpiresAt = 0L;
             this.swiftnessActiveUntil = 0L;
             this.swiftnessStacks = 0;
         }
@@ -538,6 +550,14 @@ public class PassiveManager {
 
         public void setRetaliationDamageStored(double retaliationDamageStored) {
             this.retaliationDamageStored = Math.max(0.0D, retaliationDamageStored);
+        }
+
+        public long getExecutionerCooldownExpiresAt() {
+            return executionerCooldownExpiresAt;
+        }
+
+        public void setExecutionerCooldownExpiresAt(long executionerCooldownExpiresAt) {
+            this.executionerCooldownExpiresAt = executionerCooldownExpiresAt;
         }
 
         public long getSwiftnessActiveUntil() {

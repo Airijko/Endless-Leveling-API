@@ -527,6 +527,13 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
             runtimeState.setAdrenalineReadyNotified(true);
         }
 
+        if (!runtimeState.isExecutionerReadyNotified()
+                && runtimeState.getExecutionerCooldownExpiresAt() > 0
+                && now >= runtimeState.getExecutionerCooldownExpiresAt()) {
+            sendCooldownMessage(playerRef, "Executioner is ready again!");
+            runtimeState.setExecutionerReadyNotified(true);
+        }
+
         if (!runtimeState.isRetaliationReadyNotified()
                 && runtimeState.getRetaliationCooldownExpiresAt() > 0
                 && now >= runtimeState.getRetaliationCooldownExpiresAt()) {

@@ -9,7 +9,9 @@ import java.util.Map;
  * Represents executioner-style bonus damage entries applied against low-health
  * targets.
  */
-public record ExecutionerSettings(List<Entry> entries) {
+public record ExecutionerSettings(List<Entry> entries, double cooldownSeconds) {
+
+    private static final double DEFAULT_COOLDOWN = 12.0D;
 
     public record Entry(double thresholdPercent, double bonusPercent) {
         public boolean isExecute() {
@@ -19,13 +21,14 @@ public record ExecutionerSettings(List<Entry> entries) {
 
     public static ExecutionerSettings fromSnapshot(ArchetypePassiveSnapshot snapshot) {
         List<Entry> entries = new ArrayList<>();
+        double cooldown = DEFAULT_COOLDOWN;
         if (snapshot == null) {
-            return new ExecutionerSettings(List.of());
+            return new ExecutionerSettings(List.of(), cooldown);
         }
 
         List<RacePassiveDefinition> definitions = snapshot.getDefinitions(ArchetypePassiveType.EXECUTIONER);
         if (definitions.isEmpty()) {
-            return new ExecutionerSettings(List.of());
+            return new ExecutionerSettings(List.of(), cooldown);
         }
 
         for (RacePassiveDefinition definition : definitions) {
@@ -42,12 +45,21 @@ public record ExecutionerSettings(List<Entry> entries) {
                 continue;
             }
             entries.add(new Entry(threshold, bonusPercent));
+
+            double cooldownCandidate = parsePositiveDouble(props, "cooldown", 0.0D);
+            if (cooldownCandidate > 0.0D) {
+                cooldown = cooldown <= 0.0D ? cooldownCandidate : Math.min(cooldown, cooldownCandidate);
+            }
         }
-        return new ExecutionerSettings(List.copyOf(entries));
+        return new ExecutionerSettings(List.copyOf(entries), cooldown);
     }
 
     public boolean enabled() {
         return !entries.isEmpty();
+    }
+
+    public long cooldownMillis() {
+        return (long) Math.max(0L, Math.round(Math.max(0.0D, cooldownSeconds) * 1000.0D));
     }
 
     private static double parsePositiveDouble(Map<String, Object> props, String key, double fallback) {

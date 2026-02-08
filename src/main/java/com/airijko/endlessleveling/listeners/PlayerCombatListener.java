@@ -130,10 +130,14 @@ public class PlayerCombatListener extends DamageEventSystem {
                         }
                     }
 
-                    float beforeExecutioner = finalDamage;
-                    finalDamage = applyExecutionerBonus(executionerSettings, targetRef, commandBuffer, finalDamage);
-                    float executionerBonus = finalDamage - beforeExecutioner;
+                    float executionerBonus = applyExecutionerBonus(runtimeState,
+                            executionerSettings,
+                            attackerPlayer,
+                            targetRef,
+                            commandBuffer,
+                            finalDamage);
                     if (executionerBonus > 0f) {
+                        finalDamage += executionerBonus;
                         applyLifeSteal(attackerRef, commandBuffer, playerData, executionerBonus);
                     }
 
@@ -301,25 +305,27 @@ public class PlayerCombatListener extends DamageEventSystem {
         return (float) bonus;
     }
 
-    private float applyExecutionerBonus(@Nonnull ExecutionerSettings settings,
+    private float applyExecutionerBonus(PassiveRuntimeState runtimeState,
+            @Nonnull ExecutionerSettings settings,
+            PlayerRef playerRef,
             Ref<EntityStore> targetRef,
             @Nonnull CommandBuffer<EntityStore> commandBuffer,
             float currentDamage) {
-        if (!settings.enabled() || targetRef == null || currentDamage <= 0f) {
-            return currentDamage;
+        if (runtimeState == null || !settings.enabled() || targetRef == null || currentDamage <= 0f) {
+            return 0f;
         }
         EntityStatMap statMap = commandBuffer.getComponent(targetRef, EntityStatMap.getComponentType());
         if (statMap == null) {
-            return currentDamage;
+            return 0f;
         }
         EntityStatValue healthStat = statMap.get(DefaultEntityStatTypes.getHealth());
         if (healthStat == null) {
-            return currentDamage;
+            return 0f;
         }
         float current = healthStat.get();
         float max = healthStat.getMax();
         if (max <= 0f || current <= 0f) {
-            return currentDamage;
+            return 0f;
         }
         float predicted = Math.max(0f, current - currentDamage);
         double bonusPercent = 0.0D;
@@ -338,14 +344,33 @@ public class PlayerCombatListener extends DamageEventSystem {
                 bonusPercent += Math.max(0.0D, entry.bonusPercent());
             }
         }
-        if (execute) {
-            return current;
+
+        if (!execute && bonusPercent <= 0.0D) {
+            return 0f;
         }
-        if (bonusPercent <= 0.0D) {
-            return currentDamage;
+
+        long cooldownMillis = settings.cooldownMillis();
+        long now = System.currentTimeMillis();
+        if (cooldownMillis > 0 && now < runtimeState.getExecutionerCooldownExpiresAt()) {
+            return 0f;
         }
-        float bonusDamage = (float) (currentDamage * bonusPercent);
-        return bonusDamage > 0f ? currentDamage + bonusDamage : currentDamage;
+
+        float bonusDamage = execute ? Math.max(0f, current) : (float) (currentDamage * bonusPercent);
+        if (bonusDamage <= 0f) {
+            return 0f;
+        }
+
+        if (cooldownMillis > 0) {
+            runtimeState.setExecutionerCooldownExpiresAt(now + cooldownMillis);
+            runtimeState.setExecutionerReadyNotified(false);
+        }
+
+        sendPassiveMessage(playerRef,
+                execute
+                        ? "Executioner triggered! Target executed."
+                        : String.format("Executioner triggered! +%.0f%% damage.", bonusPercent * 100.0D));
+
+        return bonusDamage;
     }
 
     private void handleSwiftnessKill(PassiveRuntimeState runtimeState,

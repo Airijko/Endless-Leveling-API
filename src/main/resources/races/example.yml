@@ -21,7 +21,7 @@
 #     -> `value`: decimal percent bonus XP gained (1.0 = +100% XP)
 
 #   INCREASED_HEALTH_REGEN
-#     -> `value`: flat HP regenerated per 5 seconds (e.g., 2.5 = +2.5 HP every 5s)
+#     -> `value`: decimal percent of max HP regenerated over 5 seconds (e.g., 0.02 = 2% every 5s)
 
 #   INCREASED_MANA_REGEN
 #     -> `value`: flat mana regenerated per 5 seconds
@@ -58,8 +58,9 @@
 #     -> `cooldown`: seconds between activations
 
 #   EXECUTIONER
-#     -> `value`: decimal percent of execution damage threshold (e.g., 0.3 = execute targets when fatal damage takes them 30% HP or below)
+#     -> `value`: decimal percent bonus damage (e.g., 0.25 = +25%). Values >= 1.0 execute the target.
 #     -> `threshold`: target health percent (e.g., 0.3 = below 30% HP)
+#     -> `cooldown`: seconds between executions/bonus procs (lowest configured value wins)
 
 #   SWIFTNESS
 #     -> `value`: decimal percent bonus applied to the final movement speed after haste (e.g., 0.05 = +5%)
@@ -117,8 +118,9 @@ passives:
     window: 4 # Collect damage for 4 seconds before retaliating
     cooldown: 25 # Seconds between retaliations
   - type: EXECUTIONER
-    value: 0.25 # Execute targets when fatal blow would leave them at 25% HP
-    threshold: 0.25 # Only applies to targets already below 25% HP
+    value: 100 # +10000% damage to targets below the threshold
+    threshold: 0.2 # Only applies to targets already below 20% HP
+    cooldown: 25 # Seconds between executioner procs
   - type: SWIFTNESS
     value: 0.2 # Passive +20% movement speed applied after haste
     duration: 5 # Swiftness bonus lasts for 5 seconds after triggering
