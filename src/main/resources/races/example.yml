@@ -24,7 +24,7 @@
 #     -> `value`: decimal percent of max HP regenerated over 5 seconds (e.g., 0.02 = 2% every 5s)
 
 #   MANA_REGEN
-#     -> `value`: flat mana regenerated per 5 seconds
+#     -> `value`: decimal percent of max mana regenerated over 5 seconds
 
 #   HEALING_BONUS
 #     -> `value`: decimal percent bonus to healing done and received
@@ -74,7 +74,7 @@
 
 race_name: "Example"
 description: "PEEPEE POOPOO"
-enabled: true
+enabled: false
 
 attributes: # Base Values
   life_force: 100.0
@@ -92,7 +92,7 @@ passives:
   - type: HEALTH_REGEN
     value: 0.025 # Heal 2.5% of max HP every 5 seconds
   - type: MANA_REGEN
-    value: 1.25 # +1.25 mana every 5 seconds
+    value: 0.02 # Restore 2% of max mana every 5 seconds
   - type: HEALING_BONUS
     value: 0.2 # +20% healing dealt/received
   - type: SPECIAL_CHARGE_BONUS
@@ -120,32 +120,32 @@ passives:
   - type: EXECUTIONER
     value: 100 # +10000% damage to targets below the threshold
     threshold: 0.2 # Only applies to targets already below 20% HP
-    cooldown: 25 # Seconds between executioner procs
+    cooldown: 45 # Seconds between executioner procs
   - type: SWIFTNESS
     value: 0.2 # Passive +20% movement speed applied after haste
     duration: 5 # Swiftness bonus lasts for 5 seconds after triggering
-    max_stacks: 5 # Can stack up to 5 times after killing a target for a total of +125% movement speed
-  # - type: INNATE_ATTRIBUTE_GAIN
-  #   attribute: life_force
-  #   value: 2.0
-  # - type: INNATE_ATTRIBUTE_GAIN
-  #   attribute: strength
-  #   value: 2.0
-  # - type: INNATE_ATTRIBUTE_GAIN
-  #   attribute: defense
-  #   value: 2.0
-  # - type: INNATE_ATTRIBUTE_GAIN
-  #   attribute: haste
-  #   value: 2.0
-  # - type: INNATE_ATTRIBUTE_GAIN
-  #   attribute: precision
-  #   value: 2.0
-  # - type: INNATE_ATTRIBUTE_GAIN
-  #   attribute: ferocity
-  #   value: 2.0
-  # - type: INNATE_ATTRIBUTE_GAIN
-  #   attribute: stamina
-  #   value: 2.0
-  # - type: INNATE_ATTRIBUTE_GAIN
-  #   attribute: intelligence
-  #   value: 2.0
+    max_stacks: 5 # Can stack up to 5 times after killing a target for a total of +100% movement speed
+  - type: INNATE_ATTRIBUTE_GAIN
+    attribute: life_force
+    value: 2.0
+  - type: INNATE_ATTRIBUTE_GAIN
+    attribute: strength
+    value: 2.0
+  - type: INNATE_ATTRIBUTE_GAIN
+    attribute: defense
+    value: 2.0
+  - type: INNATE_ATTRIBUTE_GAIN
+    attribute: haste
+    value: 2.0
+  - type: INNATE_ATTRIBUTE_GAIN
+    attribute: precision
+    value: 2.0
+  - type: INNATE_ATTRIBUTE_GAIN
+    attribute: ferocity
+    value: 2.0
+  - type: INNATE_ATTRIBUTE_GAIN
+    attribute: stamina
+    value: 2.0
+  - type: INNATE_ATTRIBUTE_GAIN
+    attribute: intelligence
+    value: 2.0

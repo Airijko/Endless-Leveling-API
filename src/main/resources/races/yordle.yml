@@ -14,6 +14,14 @@ attributes:
 
 passives:
   - type: SWIFTNESS
-    value: 0.2 # Passive +20% movement speed applied after haste
+    value: 0.25 # Passive +25% movement speed applied after haste
     duration: 5 # Swiftness bonus lasts for 5 seconds after triggering
     max_stacks: 5 # Can stack up to 5 times after killing a target for a total of +125% movement speed
+  - type: SPECIAL_CHARGE_BONUS
+    value: 1.0 # +100% faster special charge
+  - type: INNATE_ATTRIBUTE_GAIN
+    attribute: intelligence
+    value: 1.0
+  - type: INNATE_ATTRIBUTE_GAIN
+    attribute: stamina
+    value: 0.2

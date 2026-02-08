@@ -181,9 +181,18 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
             perSecond += snapshot.value();
         }
 
-        double archetypeBonus = archetypeSnapshot.getValue(ArchetypePassiveType.MANA_REGEN);
-        if (archetypeBonus > 0) {
-            perSecond += archetypeBonus / RESOURCE_REGEN_DIVISOR;
+        double percentOverFiveSeconds = archetypeSnapshot.getValue(ArchetypePassiveType.MANA_REGEN);
+        if (percentOverFiveSeconds > 0) {
+            EntityStatValue manaStat = statMap.get(DefaultEntityStatTypes.getMana());
+            if (manaStat != null) {
+                float maxMana = manaStat.getMax();
+                if (maxMana > 0f) {
+                    double totalRegen = maxMana * percentOverFiveSeconds;
+                    if (totalRegen > 0.0D) {
+                        perSecond += totalRegen / RESOURCE_REGEN_DIVISOR;
+                    }
+                }
+            }
         }
 
         if (perSecond <= 0) {

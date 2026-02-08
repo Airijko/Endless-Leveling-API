@@ -14,8 +14,14 @@ attributes:
 
 passives:
   - type: MANA_REGEN
-    value: 3.0 # +3.0 mana every 5 seconds
+    value: 0.03 # Restore 3% of max mana every 5 seconds
   - type: EXECUTIONER
     value: 100 # +10000% damage to targets below the threshold
     threshold: 0.2 # Only applies to targets already below 20% HP
     cooldown: 45 # Seconds between executioner procs
+  - type: INNATE_ATTRIBUTE_GAIN
+    attribute: intelligence
+    value: 1.5
+  - type: INNATE_ATTRIBUTE_GAIN
+    attribute: ferocity
+    value: 3.0

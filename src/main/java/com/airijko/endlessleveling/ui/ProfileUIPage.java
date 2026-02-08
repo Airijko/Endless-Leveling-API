@@ -337,7 +337,7 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         return switch (type) {
             case XP_BONUS -> formatPercentValue(value) + " XP gain";
             case HEALTH_REGEN -> formatPercentValue(value) + " HP/5s";
-            case MANA_REGEN -> formatSigned(value) + " mana/5s";
+            case MANA_REGEN -> formatPercentValue(value) + " max mana/5s";
             case HEALING_BONUS -> formatPercentValue(value) + " healing";
             case SPECIAL_CHARGE_BONUS -> formatPercentValue(value) + " charge rate";
             case LAST_STAND -> appendDetails(

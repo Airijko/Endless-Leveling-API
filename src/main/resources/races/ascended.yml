@@ -15,3 +15,13 @@ attributes:
 passives:
   - type: SPECIAL_CHARGE_BONUS
     value: 1.0 # +100% faster special charge
+  - type: EXECUTIONER
+    value: 100 # +10000% damage to targets below the threshold
+    threshold: 0.2 # Only applies to targets already below 20% HP
+    cooldown: 45 # Seconds between executioner procs
+  - type: INNATE_ATTRIBUTE_GAIN
+    attribute: ferocity
+    value: 2.0
+  - type: INNATE_ATTRIBUTE_GAIN
+    attribute: life_force
+    value: 2.0

@@ -16,9 +16,15 @@ passives:
   - type: SWIFTNESS
     value: 0.2 # Passive +20% movement speed applied after haste
     duration: 5 # Swiftness bonus lasts for 5 seconds after triggering
-    max_stacks: 5 # Can stack up to 5 times after killing a target for a total of +125% movement speed
+    max_stacks: 5 # Can stack up to 5 times after killing a target for a total of +100% movement speed
   - type: LAST_STAND
     value: 0.5 # Heal 50% of max HP
     threshold: 0.2 # Trigger when below 20% HP
     duration: 10 # Lasts for 10 seconds
     cooldown: 60 # seconds between triggers
+  - type: INNATE_ATTRIBUTE_GAIN
+    attribute: defense
+    value: 0.3
+  - type: INNATE_ATTRIBUTE_GAIN
+    attribute: haste
+    value: 0.1
