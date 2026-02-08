@@ -1,5 +1,6 @@
 package com.airijko.endlessleveling.races;
 
+import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.airijko.endlessleveling.passives.ArchetypePassiveType;
 
 import java.util.Collections;
@@ -11,7 +12,8 @@ import java.util.Map;
  */
 public record RacePassiveDefinition(ArchetypePassiveType type,
         double value,
-        Map<String, Object> properties) {
+        Map<String, Object> properties,
+        SkillAttributeType attributeType) {
 
     public RacePassiveDefinition {
         Map<String, Object> safeProps = properties == null

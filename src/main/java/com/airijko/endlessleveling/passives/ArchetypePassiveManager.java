@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Aggregates passive modifiers contributed by player archetypes (races,
@@ -32,18 +33,26 @@ public class ArchetypePassiveManager {
         }
 
         EnumMap<ArchetypePassiveType, Double> totals = new EnumMap<>(ArchetypePassiveType.class);
+        EnumMap<ArchetypePassiveType, List<RacePassiveDefinition>> grouped = new EnumMap<>(ArchetypePassiveType.class);
         for (PassiveSource source : sources) {
-            source.collect(playerData, totals);
+            source.collect(playerData, totals, grouped);
         }
 
-        if (totals.isEmpty()) {
+        if (totals.isEmpty() && grouped.isEmpty()) {
             return ArchetypePassiveSnapshot.empty();
         }
-        return new ArchetypePassiveSnapshot(Collections.unmodifiableMap(totals));
+        Map<ArchetypePassiveType, Double> immutableTotals = Collections.unmodifiableMap(totals);
+        Map<ArchetypePassiveType, List<RacePassiveDefinition>> immutableDefinitions = grouped.entrySet().stream()
+                .collect(() -> new EnumMap<>(ArchetypePassiveType.class),
+                        (map, entry) -> map.put(entry.getKey(), List.copyOf(entry.getValue())),
+                        Map::putAll);
+        return new ArchetypePassiveSnapshot(immutableTotals, Collections.unmodifiableMap(immutableDefinitions));
     }
 
     private interface PassiveSource {
-        void collect(PlayerData playerData, EnumMap<ArchetypePassiveType, Double> totals);
+        void collect(PlayerData playerData,
+                EnumMap<ArchetypePassiveType, Double> totals,
+                EnumMap<ArchetypePassiveType, List<RacePassiveDefinition>> grouped);
     }
 
     private static final class RacePassiveSource implements PassiveSource {
@@ -54,7 +63,9 @@ public class ArchetypePassiveManager {
         }
 
         @Override
-        public void collect(PlayerData playerData, EnumMap<ArchetypePassiveType, Double> totals) {
+        public void collect(PlayerData playerData,
+                EnumMap<ArchetypePassiveType, Double> totals,
+                EnumMap<ArchetypePassiveType, List<RacePassiveDefinition>> grouped) {
             if (playerData == null || raceManager == null || !raceManager.isEnabled()) {
                 return;
             }
@@ -71,6 +82,7 @@ public class ArchetypePassiveManager {
                     continue;
                 }
                 totals.merge(passive.type(), value, Double::sum);
+                grouped.computeIfAbsent(passive.type(), key -> new ArrayList<>()).add(passive);
             }
         }
     }

@@ -106,6 +106,18 @@ public class PassiveManager {
         runtimeStates.remove(uuid);
     }
 
+    public int resetAllPassiveCooldowns() {
+        int affected = 0;
+        for (PassiveRuntimeState state : runtimeStates.values()) {
+            if (state == null) {
+                continue;
+            }
+            state.clearPassiveCooldowns();
+            affected++;
+        }
+        return affected;
+    }
+
     private PassiveDefinition loadDefinition(PassiveType type) {
         String basePath = "passives." + type.getConfigKey();
         boolean enabled = toBoolean(configManager.get(basePath + ".enabled", Boolean.TRUE, false), true);
@@ -309,6 +321,20 @@ public class PassiveManager {
         private long luckMobDropWindowExpiresAt;
         private int luckMobDropStacks;
         private float lastHealingSample = Float.NaN;
+        private long lastStandCooldownExpiresAt;
+        private long lastStandActiveUntil;
+        private long firstStrikeCooldownExpiresAt;
+        private boolean lastStandReadyNotified = true;
+        private boolean firstStrikeReadyNotified = true;
+        private double lastStandHealPerSecond;
+        private double lastStandHealRemaining;
+        private long adrenalineCooldownExpiresAt;
+        private long adrenalineActiveUntil;
+        private double adrenalineRestorePerSecond;
+        private double adrenalineRestoreRemaining;
+        private long retaliationCooldownExpiresAt;
+        private long retaliationWindowExpiresAt;
+        private double retaliationDamageStored;
 
         PassiveRuntimeState(UUID ignored) {
         }
@@ -360,5 +386,135 @@ public class PassiveManager {
         public void setLastHealingSample(float lastHealingSample) {
             this.lastHealingSample = lastHealingSample;
         }
+
+        public long getLastStandCooldownExpiresAt() {
+            return lastStandCooldownExpiresAt;
+        }
+
+        public void setLastStandCooldownExpiresAt(long lastStandCooldownExpiresAt) {
+            this.lastStandCooldownExpiresAt = lastStandCooldownExpiresAt;
+        }
+
+        public long getLastStandActiveUntil() {
+            return lastStandActiveUntil;
+        }
+
+        public void setLastStandActiveUntil(long lastStandActiveUntil) {
+            this.lastStandActiveUntil = lastStandActiveUntil;
+        }
+
+        public long getFirstStrikeCooldownExpiresAt() {
+            return firstStrikeCooldownExpiresAt;
+        }
+
+        public void setFirstStrikeCooldownExpiresAt(long firstStrikeCooldownExpiresAt) {
+            this.firstStrikeCooldownExpiresAt = firstStrikeCooldownExpiresAt;
+        }
+
+        public boolean isLastStandReadyNotified() {
+            return lastStandReadyNotified;
+        }
+
+        public void setLastStandReadyNotified(boolean lastStandReadyNotified) {
+            this.lastStandReadyNotified = lastStandReadyNotified;
+        }
+
+        public boolean isFirstStrikeReadyNotified() {
+            return firstStrikeReadyNotified;
+        }
+
+        public void setFirstStrikeReadyNotified(boolean firstStrikeReadyNotified) {
+            this.firstStrikeReadyNotified = firstStrikeReadyNotified;
+        }
+
+        public double getLastStandHealPerSecond() {
+            return lastStandHealPerSecond;
+        }
+
+        public void setLastStandHealPerSecond(double lastStandHealPerSecond) {
+            this.lastStandHealPerSecond = Math.max(0.0D, lastStandHealPerSecond);
+        }
+
+        public double getLastStandHealRemaining() {
+            return lastStandHealRemaining;
+        }
+
+        public void setLastStandHealRemaining(double lastStandHealRemaining) {
+            this.lastStandHealRemaining = Math.max(0.0D, lastStandHealRemaining);
+        }
+
+        public void clearPassiveCooldowns() {
+            this.lastStandCooldownExpiresAt = 0L;
+            this.lastStandActiveUntil = 0L;
+            this.firstStrikeCooldownExpiresAt = 0L;
+            this.lastStandReadyNotified = true;
+            this.firstStrikeReadyNotified = true;
+            this.lastStandHealPerSecond = 0.0D;
+            this.lastStandHealRemaining = 0.0D;
+            this.adrenalineCooldownExpiresAt = 0L;
+            this.adrenalineActiveUntil = 0L;
+            this.adrenalineRestorePerSecond = 0.0D;
+            this.adrenalineRestoreRemaining = 0.0D;
+            this.retaliationCooldownExpiresAt = 0L;
+            this.retaliationWindowExpiresAt = 0L;
+            this.retaliationDamageStored = 0.0D;
+        }
+
+        public long getAdrenalineCooldownExpiresAt() {
+            return adrenalineCooldownExpiresAt;
+        }
+
+        public void setAdrenalineCooldownExpiresAt(long adrenalineCooldownExpiresAt) {
+            this.adrenalineCooldownExpiresAt = adrenalineCooldownExpiresAt;
+        }
+
+        public long getAdrenalineActiveUntil() {
+            return adrenalineActiveUntil;
+        }
+
+        public void setAdrenalineActiveUntil(long adrenalineActiveUntil) {
+            this.adrenalineActiveUntil = adrenalineActiveUntil;
+        }
+
+        public double getAdrenalineRestorePerSecond() {
+            return adrenalineRestorePerSecond;
+        }
+
+        public void setAdrenalineRestorePerSecond(double adrenalineRestorePerSecond) {
+            this.adrenalineRestorePerSecond = Math.max(0.0D, adrenalineRestorePerSecond);
+        }
+
+        public double getAdrenalineRestoreRemaining() {
+            return adrenalineRestoreRemaining;
+        }
+
+        public void setAdrenalineRestoreRemaining(double adrenalineRestoreRemaining) {
+            this.adrenalineRestoreRemaining = Math.max(0.0D, adrenalineRestoreRemaining);
+        }
+
+        public long getRetaliationCooldownExpiresAt() {
+            return retaliationCooldownExpiresAt;
+        }
+
+        public void setRetaliationCooldownExpiresAt(long retaliationCooldownExpiresAt) {
+            this.retaliationCooldownExpiresAt = retaliationCooldownExpiresAt;
+        }
+
+        public long getRetaliationWindowExpiresAt() {
+            return retaliationWindowExpiresAt;
+        }
+
+        public void setRetaliationWindowExpiresAt(long retaliationWindowExpiresAt) {
+            this.retaliationWindowExpiresAt = retaliationWindowExpiresAt;
+        }
+
+        public double getRetaliationDamageStored() {
+            return retaliationDamageStored;
+        }
+
+        public void setRetaliationDamageStored(double retaliationDamageStored) {
+            this.retaliationDamageStored = Math.max(0.0D, retaliationDamageStored);
+        }
+
     }
 }

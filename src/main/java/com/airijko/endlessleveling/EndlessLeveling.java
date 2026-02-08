@@ -115,7 +115,7 @@ public class EndlessLeveling extends JavaPlugin {
         raceManager = new RaceManager(configManager, filesManager);
         archetypePassiveManager = new ArchetypePassiveManager(raceManager);
         playerAttributeManager = new PlayerAttributeManager(raceManager);
-        skillManager = new SkillManager(filesManager, playerAttributeManager);
+        skillManager = new SkillManager(filesManager, playerAttributeManager, archetypePassiveManager);
         passiveManager = new PassiveManager(configManager);
         playerDataManager = new PlayerDataManager(filesManager, skillManager, raceManager);
         levelingManager = new LevelingManager(playerDataManager, filesManager, skillManager, passiveManager,
@@ -140,9 +140,11 @@ public class EndlessLeveling extends JavaPlugin {
                 .registerSystem(new XpEventListener(playerDataManager, levelingManager, partyManager, passiveManager,
                         mobLevelingManager));
         this.getEntityStoreRegistry()
-                .registerSystem(new PlayerCombatListener(playerDataManager, skillManager, passiveManager));
+                .registerSystem(new PlayerCombatListener(playerDataManager, skillManager, passiveManager,
+                        archetypePassiveManager));
         this.getEntityStoreRegistry()
-                .registerSystem(new PlayerDefenseListener(playerDataManager, skillManager, passiveManager));
+                .registerSystem(new PlayerDefenseListener(playerDataManager, skillManager, passiveManager,
+                        archetypePassiveManager));
         this.getEntityStoreRegistry()
                 .registerSystem(new PassiveRegenSystem(playerDataManager, passiveManager, archetypePassiveManager));
         playerRaceStatSystem = new PlayerRaceStatSystem(playerDataManager, skillManager);

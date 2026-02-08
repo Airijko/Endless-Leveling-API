@@ -293,7 +293,18 @@ public class RaceManager {
             }
 
             double value = parseDouble(passive.get("value"));
-            definitions.add(new RacePassiveDefinition(type, value, passive));
+            SkillAttributeType attributeType = null;
+            if (type == ArchetypePassiveType.INNATE_ATTRIBUTE_GAIN) {
+                String attributeKey = safeString(passive.get("attribute"));
+                attributeType = SkillAttributeType.fromConfigKey(attributeKey);
+                if (attributeType == null) {
+                    LOGGER.atWarning().log(
+                            "Race %s passive entry %d has INNATE_ATTRIBUTE_GAIN without a valid attribute key",
+                            raceId, index + 1);
+                    continue;
+                }
+            }
+            definitions.add(new RacePassiveDefinition(type, value, passive, attributeType));
         }
         return definitions;
     }

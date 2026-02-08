@@ -1,5 +1,7 @@
 package com.airijko.endlessleveling.enums;
 
+import java.util.Locale;
+
 public enum SkillAttributeType {
     LIFE_FORCE("life_force"),
     STRENGTH("strength"),
@@ -18,5 +20,18 @@ public enum SkillAttributeType {
 
     public String getConfigKey() {
         return configKey;
+    }
+
+    public static SkillAttributeType fromConfigKey(String key) {
+        if (key == null) {
+            return null;
+        }
+        String normalized = key.trim().toLowerCase(Locale.ROOT);
+        for (SkillAttributeType type : values()) {
+            if (type.configKey.equals(normalized) || type.name().equalsIgnoreCase(key.trim())) {
+                return type;
+            }
+        }
+        return null;
     }
 }

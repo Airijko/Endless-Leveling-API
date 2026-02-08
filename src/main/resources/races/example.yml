@@ -21,10 +21,10 @@
 #     -> `value`: decimal percent bonus XP gained (1.0 = +100% XP)
 
 #   INCREASED_HEALTH_REGEN
-#     -> `value`: flat HP regenerated per second (e.g., 2.5 = +2.5 HP/s)
+#     -> `value`: flat HP regenerated per 5 seconds (e.g., 2.5 = +2.5 HP every 5s)
 
 #   INCREASED_MANA_REGEN
-#     -> `value`: flat mana regenerated per second
+#     -> `value`: flat mana regenerated per 5 seconds
 
 #   HEALING_BONUS
 #     -> `value`: decimal percent bonus to healing done and received
@@ -35,7 +35,7 @@
 #   LAST_STAND
 #     -> `value`: decimal percent health healed when below a health threshold
 #     -> `threshold`: player health percent to trigger effect
-#     -> `duration`: seconds the effect lasts
+#     -> `duration`: seconds the restoration is spread over
 #     -> `cooldown`: seconds between triggers
 
 #   FIRST_STRIKE
@@ -43,9 +43,9 @@
 #     -> `cooldown`: seconds between procs
 
 #   ADRENALINE
-#     -> `value`: flat stamina regen when below a stamina threshold
+#     -> `value`: decimal percent of max stamina restored when below a stamina threshold
 #     -> `threshold`: player stamina percent to trigger effect
-#     -> `duration`: seconds the effect lasts
+#     -> `duration`: seconds the restoration is spread over
 #     -> `cooldown`: seconds between triggers
 
 #   BERZERKER
@@ -58,24 +58,22 @@
 #     -> `cooldown`: seconds between activations
 
 #   EXECUTIONER
-#     -> `value`: decimal percent increased damage against targets below a health threshold
+#     -> `value`: decimal percent of execution damage threshold (e.g., 0.3 = execute targets when fatal damage takes them 30% HP or below)
 #     -> `threshold`: target health percent (e.g., 0.3 = below 30% HP)
 
 #   SWIFTNESS
-#     -> `value`: decimal percent movement speed gained on hit
-#     -> `duration`: seconds the effect lasts
-#     -> `cooldown`: seconds between triggers
+#     -> `value`: decimal percent bonus applied to the final movement speed after haste (e.g., 0.05 = +5%)
 
 #   INNATE_ATTRIBUTE_GAIN
 #     -> `attribute`: which attribute gains bonus
-#     -> `value`: decimal percent bonus applied to the attribute gain from level-ups
+#     -> `value`: flat amount granted per player level (use the same units as skill_attributes)
 #     Valid attribute keys: life_force, strength, defense, haste, precision, ferocity, stamina, intelligence
 
 # ============================================================================
 
 race_name: "Example"
 description: "PEEPEE POOPOO"
-enabled: false
+enabled: true
 
 attributes: # Base Values
   life_force: 100.0
@@ -91,20 +89,38 @@ passives:
   - type: XP_BONUS
     value: 1.0 # +100% XP gain
   - type: INCREASED_HEALTH_REGEN
-    value: 2.5 # +2.5 HP/sec racial regen
+    value: 2.5 # +2.5 HP every 5 seconds
   - type: INCREASED_MANA_REGEN
-    value: 3.0 # +3 mana/sec
+    value: 1.25 # +1.25 mana every 5 seconds
   - type: HEALING_BONUS
     value: 0.2 # +20% healing dealt/received
   - type: SPECIAL_CHARGE_BONUS
-    value: 0.5 # +50% faster special charge
+    value: 1.0 # +100% faster special charge
   - type: LAST_STAND
-      value: 0.5 # Heal 50% of max HP
-      threshold: 0.2 # Trigger when below 20% HP
-      duration: 10  # Lasts for 10 seconds
-      cooldown: 60 # seconds between triggers 
+    value: 0.5 # Heal 50% of max HP
+    threshold: 0.2 # Trigger when below 20% HP
+    duration: 10 # Lasts for 10 seconds
+    cooldown: 60 # seconds between triggers
   - type: FIRST_STRIKE
-    value: 0.3 # +30% damage on first hit
+    value: 1.0 # +100% damage on first hit
+    cooldown: 20 # seconds between first-strike windows
+  - type: ADRENALINE
+    value: 0.25 # Restore 25% of max stamina when drained
+    threshold: 0.3 # Trigger below 30% stamina
+    duration: 5 # Spread recovery over 5 seconds
+    cooldown: 45 # Seconds between adrenaline bursts
+  - type: BERZERKER
+    value: 0.2 # +20% damage when hurt
+    threshold: 0.35 # Activates below 35% HP
+  - type: RETALIATION
+    value: 0.35 # Reflect 35% of damage taken in the window
+    window: 4 # Collect damage for 4 seconds before retaliating
+    cooldown: 25 # Seconds between retaliations
+  - type: EXECUTIONER
+    value: 0.25 # Execute targets when fatal blow would leave them at 25% HP
+    threshold: 0.25 # Only applies to targets already below 25% HP
+  - type: SWIFTNESS
+    value: 0.08 # Passive +8% movement speed applied after haste
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: strength
-    value: 0.15 # +15% strength gain from level-ups
+    value: 1 # +1 strength value per player level (same as spending 1 point each level)

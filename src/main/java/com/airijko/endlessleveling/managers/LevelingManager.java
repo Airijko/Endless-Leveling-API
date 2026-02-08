@@ -1,10 +1,12 @@
 package com.airijko.endlessleveling.managers;
 
+import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.data.PlayerData;
 import com.airijko.endlessleveling.passives.ArchetypePassiveManager;
 import com.airijko.endlessleveling.passives.ArchetypePassiveSnapshot;
 import com.airijko.endlessleveling.passives.ArchetypePassiveType;
 import com.airijko.endlessleveling.ui.PlayerHud;
+import com.airijko.endlessleveling.systems.PlayerRaceStatSystem;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
@@ -174,6 +176,7 @@ public class LevelingManager {
 
         notifyLevelUp(player);
         PlayerHud.refreshHud(player.getUuid());
+        requestAttributeResync(player);
     }
 
     private void notifyXpGain(PlayerData player, double xpAmount) {
@@ -238,6 +241,7 @@ public class LevelingManager {
                 player.getPlayerName(), oldLevel, newLevel);
 
         PlayerHud.refreshHud(player.getUuid());
+        requestAttributeResync(player);
     }
 
     public int getLevelCap() {
@@ -352,6 +356,20 @@ public class LevelingManager {
     private double lerp(double start, double end, double ratio) {
         double clampedRatio = Math.max(0.0, Math.min(1.0, ratio));
         return start + ((end - start) * clampedRatio);
+    }
+
+    private void requestAttributeResync(PlayerData player) {
+        if (player == null) {
+            return;
+        }
+        EndlessLeveling plugin = EndlessLeveling.getInstance();
+        if (plugin == null) {
+            return;
+        }
+        PlayerRaceStatSystem retrySystem = plugin.getPlayerRaceStatSystem();
+        if (retrySystem != null) {
+            retrySystem.scheduleRetry(player.getUuid());
+        }
     }
 
     private double clampMultiplier(double value) {

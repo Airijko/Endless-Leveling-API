@@ -5,6 +5,7 @@ import com.airijko.endlessleveling.enums.PassiveType;
 import com.airijko.endlessleveling.managers.PassiveManager;
 import com.airijko.endlessleveling.managers.PassiveManager.PassiveRuntimeState;
 import com.airijko.endlessleveling.managers.PlayerDataManager;
+import com.airijko.endlessleveling.passives.AdrenalineSettings;
 import com.airijko.endlessleveling.passives.ArchetypePassiveManager;
 import com.airijko.endlessleveling.passives.ArchetypePassiveSnapshot;
 import com.airijko.endlessleveling.passives.ArchetypePassiveType;
@@ -72,16 +73,24 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
                             continue;
                         }
 
+                        PassiveRuntimeState runtimeState = passiveManager.getRuntimeState(playerData.getUuid());
+                        if (runtimeState == null) {
+                            continue;
+                        }
+
                         ArchetypePassiveSnapshot archetypeSnapshot = archetypePassiveManager != null
                                 ? archetypePassiveManager.getSnapshot(playerData)
                                 : ArchetypePassiveSnapshot.empty();
 
-                        applyHealthRegeneration(playerRef, playerData, statMap, deltaSeconds);
+                        applyHealthRegeneration(playerRef, playerData, statMap, deltaSeconds, runtimeState);
                         applyArchetypeHealthRegeneration(playerData, statMap, deltaSeconds, archetypeSnapshot);
                         applyManaRegeneration(playerData, statMap, deltaSeconds, archetypeSnapshot);
                         applyStaminaRegeneration(playerData, statMap, deltaSeconds);
-                        applySignatureGainBonus(playerData, statMap, archetypeSnapshot);
-                        applyHealingBonus(playerData, statMap, archetypeSnapshot);
+                        applyAdrenalineStamina(playerRef, statMap, deltaSeconds, archetypeSnapshot, runtimeState);
+                        applySignatureGainBonus(playerData, statMap, archetypeSnapshot, runtimeState);
+                        applyHealingBonus(statMap, archetypeSnapshot, runtimeState);
+                        applyLastStandHealing(statMap, runtimeState, deltaSeconds);
+                        notifyPassiveCooldowns(playerRef, runtimeState);
                     }
                 });
     }
@@ -89,11 +98,8 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
     private void applyHealthRegeneration(@Nonnull PlayerRef playerRef,
             @Nonnull PlayerData playerData,
             @Nonnull EntityStatMap statMap,
-            float deltaSeconds) {
-        PassiveRuntimeState runtimeState = passiveManager.getRuntimeState(playerData.getUuid());
-        if (runtimeState == null) {
-            return;
-        }
+            float deltaSeconds,
+            @Nonnull PassiveRuntimeState runtimeState) {
 
         PassiveManager.PassiveSnapshot snapshot = passiveManager.getSnapshot(playerData, PassiveType.REGENERATION);
         if (!snapshot.isUnlocked() || snapshot.value() <= 0) {
@@ -122,7 +128,11 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
         if (archetypeSnapshot.isEmpty() || deltaSeconds <= 0) {
             return;
         }
-        double perSecond = archetypeSnapshot.getValue(ArchetypePassiveType.INCREASED_HEALTH_REGEN);
+        double perFiveSeconds = archetypeSnapshot.getValue(ArchetypePassiveType.INCREASED_HEALTH_REGEN);
+        if (perFiveSeconds <= 0) {
+            return;
+        }
+        double perSecond = perFiveSeconds / RESOURCE_REGEN_DIVISOR;
         if (perSecond <= 0) {
             return;
         }
@@ -141,7 +151,7 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
 
         double archetypeBonus = archetypeSnapshot.getValue(ArchetypePassiveType.INCREASED_MANA_REGEN);
         if (archetypeBonus > 0) {
-            perSecond += archetypeBonus;
+            perSecond += archetypeBonus / RESOURCE_REGEN_DIVISOR;
         }
 
         if (perSecond <= 0) {
@@ -165,13 +175,102 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
         addResource(statMap, DefaultEntityStatTypes.getStamina(), perSecond, deltaSeconds);
     }
 
+    private void applyAdrenalineStamina(@Nonnull PlayerRef playerRef,
+            @Nonnull EntityStatMap statMap,
+            float deltaSeconds,
+            @Nonnull ArchetypePassiveSnapshot archetypeSnapshot,
+            @Nonnull PassiveRuntimeState runtimeState) {
+        if (deltaSeconds <= 0) {
+            return;
+        }
+
+        AdrenalineSettings settings = AdrenalineSettings.fromSnapshot(archetypeSnapshot);
+        if (!settings.enabled()) {
+            clearAdrenalineState(runtimeState);
+            return;
+        }
+
+        EntityStatValue staminaStat = statMap.get(DefaultEntityStatTypes.getStamina());
+        if (staminaStat == null) {
+            return;
+        }
+
+        float max = staminaStat.getMax();
+        if (max <= 0f) {
+            return;
+        }
+
+        long now = System.currentTimeMillis();
+        if (runtimeState.getAdrenalineActiveUntil() > 0 && now >= runtimeState.getAdrenalineActiveUntil()) {
+            clearAdrenalineState(runtimeState);
+        }
+
+        double perSecond = runtimeState.getAdrenalineRestorePerSecond();
+        double remaining = runtimeState.getAdrenalineRestoreRemaining();
+        boolean effectActive = perSecond > 0.0D
+                && remaining > 0.0D
+                && runtimeState.getAdrenalineActiveUntil() > now;
+
+        if (effectActive) {
+            float current = staminaStat.get();
+            if (current < max) {
+                double potential = perSecond * deltaSeconds;
+                double allowed = Math.min(remaining, potential);
+                if (allowed > 0.0D) {
+                    float applied = (float) Math.min(max - current, allowed);
+                    if (applied > 0f) {
+                        statMap.setStatValue(DefaultEntityStatTypes.getStamina(), current + applied);
+                        runtimeState.setAdrenalineRestoreRemaining(remaining - applied);
+                    }
+                }
+            }
+
+            if (runtimeState.getAdrenalineRestoreRemaining() <= 0.0001D
+                    || staminaStat.get() >= staminaStat.getMax()) {
+                clearAdrenalineState(runtimeState);
+            }
+            return;
+        }
+
+        float ratio = staminaStat.get() / max;
+        if (ratio > settings.thresholdPercent()) {
+            return;
+        }
+
+        if (now < runtimeState.getAdrenalineCooldownExpiresAt()) {
+            return;
+        }
+
+        double restorePercent = Math.max(0.0D, settings.restorePercent());
+        if (restorePercent <= 0.0D) {
+            return;
+        }
+
+        double totalRestore = Math.min(max, max * restorePercent);
+        if (totalRestore <= 0.0D) {
+            return;
+        }
+
+        double durationSeconds = Math.max(0.1D, settings.durationSeconds());
+        double perSecondRestore = totalRestore / durationSeconds;
+
+        runtimeState.setAdrenalineRestorePerSecond(perSecondRestore);
+        runtimeState.setAdrenalineRestoreRemaining(totalRestore);
+        runtimeState.setAdrenalineActiveUntil(now + settings.durationMillis());
+        runtimeState.setAdrenalineCooldownExpiresAt(now + settings.cooldownMillis());
+
+        sendAdrenalineMessage(playerRef,
+                restorePercent,
+                settings.durationSeconds());
+    }
+
     private void applySignatureGainBonus(@Nonnull PlayerData playerData,
             @Nonnull EntityStatMap statMap,
-            @Nonnull ArchetypePassiveSnapshot archetypeSnapshot) {
+            @Nonnull ArchetypePassiveSnapshot archetypeSnapshot,
+            @Nonnull PassiveRuntimeState runtimeState) {
         PassiveManager.PassiveSnapshot snapshot = passiveManager.getSnapshot(playerData, PassiveType.SIGNATURE_GAIN);
-        PassiveRuntimeState runtimeState = passiveManager.getRuntimeState(playerData.getUuid());
         EntityStatValue signatureStat = statMap.get(DefaultEntityStatTypes.getSignatureEnergy());
-        if (signatureStat == null || runtimeState == null) {
+        if (signatureStat == null) {
             return;
         }
 
@@ -212,14 +311,9 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
         runtimeState.setLastSignatureValue(newValue);
     }
 
-    private void applyHealingBonus(@Nonnull PlayerData playerData,
-            @Nonnull EntityStatMap statMap,
-            @Nonnull ArchetypePassiveSnapshot archetypeSnapshot) {
-        PassiveRuntimeState runtimeState = passiveManager.getRuntimeState(playerData.getUuid());
-        if (runtimeState == null) {
-            return;
-        }
-
+    private void applyHealingBonus(@Nonnull EntityStatMap statMap,
+            @Nonnull ArchetypePassiveSnapshot archetypeSnapshot,
+            @Nonnull PassiveRuntimeState runtimeState) {
         EntityStatValue healthStat = statMap.get(DefaultEntityStatTypes.getHealth());
         if (healthStat == null) {
             runtimeState.setLastHealingSample(Float.NaN);
@@ -304,5 +398,103 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
         Message secondary = Message.raw("Health is slowly returning").color("#ffffff");
         var icon = new ItemStack("Consumable_Potion_Health", 1).toPacket();
         NotificationUtil.sendNotification(packetHandler, primary, secondary, icon);
+    }
+
+    private void applyLastStandHealing(@Nonnull EntityStatMap statMap,
+            PassiveRuntimeState runtimeState,
+            float deltaSeconds) {
+        if (runtimeState == null || deltaSeconds <= 0) {
+            return;
+        }
+
+        double perSecond = runtimeState.getLastStandHealPerSecond();
+        double remaining = runtimeState.getLastStandHealRemaining();
+        if (perSecond <= 0.0D || remaining <= 0.0D) {
+            return;
+        }
+
+        long activeUntil = runtimeState.getLastStandActiveUntil();
+        if (activeUntil > 0 && System.currentTimeMillis() > activeUntil) {
+            runtimeState.setLastStandHealPerSecond(0.0D);
+            runtimeState.setLastStandHealRemaining(0.0D);
+            return;
+        }
+
+        EntityStatValue healthStat = statMap.get(DefaultEntityStatTypes.getHealth());
+        if (healthStat == null) {
+            return;
+        }
+
+        float current = healthStat.get();
+        float max = healthStat.getMax();
+        if (current >= max) {
+            return;
+        }
+
+        double potential = perSecond * deltaSeconds;
+        if (potential <= 0.0D) {
+            return;
+        }
+
+        double allowed = Math.min(remaining, potential);
+        float applied = (float) Math.min(max - current, allowed);
+        if (applied <= 0f) {
+            return;
+        }
+
+        statMap.setStatValue(DefaultEntityStatTypes.getHealth(), current + applied);
+        runtimeState.setLastStandHealRemaining(remaining - applied);
+        if (runtimeState.getLastStandHealRemaining() <= 0.0001D) {
+            runtimeState.setLastStandHealPerSecond(0.0D);
+            runtimeState.setLastStandHealRemaining(0.0D);
+        }
+    }
+
+    private void notifyPassiveCooldowns(PlayerRef playerRef, PassiveRuntimeState runtimeState) {
+        if (playerRef == null || !playerRef.isValid() || runtimeState == null) {
+            return;
+        }
+
+        long now = System.currentTimeMillis();
+        if (!runtimeState.isLastStandReadyNotified()
+                && runtimeState.getLastStandCooldownExpiresAt() > 0
+                && now >= runtimeState.getLastStandCooldownExpiresAt()) {
+            sendCooldownMessage(playerRef, "Last Stand is ready again!");
+            runtimeState.setLastStandReadyNotified(true);
+        }
+
+        if (!runtimeState.isFirstStrikeReadyNotified()
+                && runtimeState.getFirstStrikeCooldownExpiresAt() > 0
+                && now >= runtimeState.getFirstStrikeCooldownExpiresAt()) {
+            sendCooldownMessage(playerRef, "First Strike is ready again!");
+            runtimeState.setFirstStrikeReadyNotified(true);
+        }
+    }
+
+    private void sendCooldownMessage(PlayerRef playerRef, String text) {
+        if (playerRef == null || !playerRef.isValid() || text == null || text.isBlank()) {
+            return;
+        }
+        playerRef.sendMessage(Message.raw(text).color("#4fd7f7"));
+    }
+
+    private void clearAdrenalineState(@Nonnull PassiveRuntimeState runtimeState) {
+        runtimeState.setAdrenalineRestorePerSecond(0.0D);
+        runtimeState.setAdrenalineRestoreRemaining(0.0D);
+        runtimeState.setAdrenalineActiveUntil(0L);
+    }
+
+    private void sendAdrenalineMessage(PlayerRef playerRef,
+            double restorePercent,
+            double durationSeconds) {
+        if (playerRef == null || !playerRef.isValid()) {
+            return;
+        }
+        double percentDisplay = Math.max(0.0D, restorePercent) * 100.0D;
+        playerRef.sendMessage(Message.raw(
+                String.format("Adrenaline triggered! Restoring %.0f%% stamina over %.0fs",
+                        percentDisplay,
+                        Math.max(0.0D, durationSeconds)))
+                .color("#4fd7f7"));
     }
 }

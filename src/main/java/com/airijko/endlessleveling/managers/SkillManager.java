@@ -2,6 +2,11 @@ package com.airijko.endlessleveling.managers;
 
 import com.airijko.endlessleveling.data.PlayerData;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
+import com.airijko.endlessleveling.passives.ArchetypePassiveManager;
+import com.airijko.endlessleveling.passives.ArchetypePassiveSnapshot;
+import com.airijko.endlessleveling.passives.ArchetypePassiveType;
+import com.airijko.endlessleveling.passives.SwiftnessSettings;
+import com.airijko.endlessleveling.races.RacePassiveDefinition;
 import com.hypixel.hytale.component.ComponentAccessor;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.logger.HytaleLogger;
@@ -14,6 +19,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.util.NotificationUtil;
 
 import javax.annotation.Nonnull;
+import java.util.List;
 
 /**
  * Handles all skill points and modifiers.
@@ -30,14 +36,18 @@ public class SkillManager {
     private final LevelingConfigManager levelingConfig;
     private final ConfigManager config;
     private final PlayerAttributeManager attributeManager;
+    private final ArchetypePassiveManager archetypePassiveManager;
 
     private int baseSkillPoints;
     private int skillPointsPerLevel;
 
-    public SkillManager(PluginFilesManager filesManager, PlayerAttributeManager attributeManager) {
+    public SkillManager(PluginFilesManager filesManager,
+            PlayerAttributeManager attributeManager,
+            ArchetypePassiveManager archetypePassiveManager) {
         this.levelingConfig = new LevelingConfigManager(filesManager.getLevelingFile());
         this.config = new ConfigManager(filesManager.getConfigFile());
         this.attributeManager = attributeManager;
+        this.archetypePassiveManager = archetypePassiveManager;
         loadConfigValues();
     }
 
@@ -112,11 +122,12 @@ public class SkillManager {
         int lifeForceLevel = playerData.getPlayerSkillAttributeLevel(SkillAttributeType.LIFE_FORCE);
         double perPointValue = getSkillAttributeConfigValue(SkillAttributeType.LIFE_FORCE);
 
-        float totalBonusHealth = (float) (lifeForceLevel * perPointValue);
+        double innateBonus = getInnateAttributeBonus(playerData, SkillAttributeType.LIFE_FORCE);
+        float totalBonusHealth = (float) ((lifeForceLevel * perPointValue) + innateBonus);
 
         LOGGER.atInfo().log(
-                "calculatePlayerHealth: LIFE_FORCE level=%d, perPointValue=%.2f, totalBonusHealth=%.2f for player %s",
-                lifeForceLevel, perPointValue, totalBonusHealth, playerData.getPlayerName());
+                "calculatePlayerHealth: LIFE_FORCE level=%d, perPointValue=%.2f, innate=%.2f, totalBonusHealth=%.2f for player %s",
+                lifeForceLevel, perPointValue, innateBonus, totalBonusHealth, playerData.getPlayerName());
 
         return totalBonusHealth;
     }
@@ -136,11 +147,12 @@ public class SkillManager {
         int staminaLevel = playerData.getPlayerSkillAttributeLevel(SkillAttributeType.STAMINA);
         double perPointValue = getSkillAttributeConfigValue(SkillAttributeType.STAMINA);
 
-        float totalBonusStamina = (float) (staminaLevel * perPointValue);
+        double innateBonus = getInnateAttributeBonus(playerData, SkillAttributeType.STAMINA);
+        float totalBonusStamina = (float) ((staminaLevel * perPointValue) + innateBonus);
 
         LOGGER.atInfo().log(
-                "calculatePlayerStamina: STAMINA level=%d, perPointValue=%.2f, totalBonusStamina=%.2f for player %s",
-                staminaLevel, perPointValue, totalBonusStamina, playerData.getPlayerName());
+                "calculatePlayerStamina: STAMINA level=%d, perPointValue=%.2f, innate=%.2f, totalBonusStamina=%.2f for player %s",
+                staminaLevel, perPointValue, innateBonus, totalBonusStamina, playerData.getPlayerName());
 
         return totalBonusStamina;
     }
@@ -175,6 +187,8 @@ public class SkillManager {
 
         HasteBreakdown hasteBreakdown = getHasteBreakdown(playerData);
         float requestedMultiplier = hasteBreakdown.totalMultiplier();
+        float swiftnessMultiplier = getSwiftnessMultiplier(playerData);
+        requestedMultiplier *= swiftnessMultiplier;
 
         float clampedMultiplier = requestedMultiplier;
         if (settings.maxSpeedMultiplier > 0.0F) {
@@ -199,9 +213,9 @@ public class SkillManager {
         if (playerRef != null) {
             movementManager.update(playerRef.getPacketHandler());
             LOGGER.atInfo().log(
-                    "applyMovementSpeedModifier: base=%.3f, skill=%.3f, final=%.4f for player %s",
-                    hasteBreakdown.raceMultiplier(), hasteBreakdown.skillBonus(), clampedMultiplier,
-                    playerData.getPlayerName());
+                    "applyMovementSpeedModifier: base=%.3f, skill=%.3f, swiftness=%.3f, final=%.4f for player %s",
+                    hasteBreakdown.raceMultiplier(), hasteBreakdown.skillBonus(), swiftnessMultiplier,
+                    clampedMultiplier, playerData.getPlayerName());
             return true;
         } else {
             LOGGER.atWarning().log("applyMovementSpeedModifier: PlayerRef missing for %s", ref);
@@ -217,11 +231,12 @@ public class SkillManager {
         int intelligenceLevel = playerData.getPlayerSkillAttributeLevel(SkillAttributeType.INTELLIGENCE);
         double perPointValue = getSkillAttributeConfigValue(SkillAttributeType.INTELLIGENCE);
 
-        float totalBonusIntelligence = (float) (intelligenceLevel * perPointValue);
+        double innateBonus = getInnateAttributeBonus(playerData, SkillAttributeType.INTELLIGENCE);
+        float totalBonusIntelligence = (float) ((intelligenceLevel * perPointValue) + innateBonus);
 
         LOGGER.atInfo().log(
-                "calculatePlayerIntelligence: INTELLIGENCE level=%d, perPointValue=%.2f, totalBonusIntelligence=%.2f for player %s",
-                intelligenceLevel, perPointValue, totalBonusIntelligence, playerData.getPlayerName());
+                "calculatePlayerIntelligence: INTELLIGENCE level=%d, perPointValue=%.2f, innate=%.2f, totalBonusIntelligence=%.2f for player %s",
+                intelligenceLevel, perPointValue, innateBonus, totalBonusIntelligence, playerData.getPlayerName());
 
         return totalBonusIntelligence;
     }
@@ -278,7 +293,8 @@ public class SkillManager {
         if (raceMultiplier < 0.0f) {
             raceMultiplier = 0.0f;
         }
-        float skillValue = (float) (strengthLevel * perPointValue);
+        double innateBonus = getInnateAttributeBonus(playerData, SkillAttributeType.STRENGTH);
+        float skillValue = (float) ((strengthLevel * perPointValue) + innateBonus);
         float totalValue = skillValue * raceMultiplier;
         return new StrengthBreakdown(raceMultiplier, skillValue, totalValue);
     }
@@ -305,7 +321,8 @@ public class SkillManager {
         int precisionLevel = playerData.getPlayerSkillAttributeLevel(SkillAttributeType.PRECISION);
         double perPointChance = getSkillAttributeConfigValue(SkillAttributeType.PRECISION);
         float racePercent = (float) attributeManager.getRaceAttribute(playerData, SkillAttributeType.PRECISION, 0.0D);
-        float skillPercent = (float) (precisionLevel * perPointChance);
+        double innateBonus = getInnateAttributeBonus(playerData, SkillAttributeType.PRECISION);
+        float skillPercent = (float) ((precisionLevel * perPointChance) + innateBonus);
         float totalPercent = racePercent + skillPercent;
         float critChance = totalPercent / 100.0f;
         if (critChance > 1.0f) {
@@ -335,7 +352,8 @@ public class SkillManager {
         int ferocityLevel = playerData.getPlayerSkillAttributeLevel(SkillAttributeType.FEROCITY);
         double perPointFerocity = getSkillAttributeConfigValue(SkillAttributeType.FEROCITY);
         float raceValue = (float) attributeManager.getRaceAttribute(playerData, SkillAttributeType.FEROCITY, 0.0D);
-        float skillValue = (float) (ferocityLevel * perPointFerocity);
+        double innateBonus = getInnateAttributeBonus(playerData, SkillAttributeType.FEROCITY);
+        float skillValue = (float) ((ferocityLevel * perPointFerocity) + innateBonus);
         return new FerocityBreakdown(raceValue, skillValue, raceValue + skillValue);
     }
 
@@ -359,7 +377,9 @@ public class SkillManager {
         if (raceMultiplier <= 0.0D) {
             raceMultiplier = 1.0D;
         }
-        float skillBonus = (float) (hasteLevel * perPointValue);
+        double innatePercent = getInnateAttributeBonus(playerData, SkillAttributeType.HASTE);
+        double innateRatio = innatePercent / 100.0D;
+        float skillBonus = (float) ((hasteLevel * perPointValue) + innateRatio);
         float total = (float) (raceMultiplier * (1.0D + skillBonus));
         return new HasteBreakdown((float) raceMultiplier, skillBonus, total);
     }
@@ -458,7 +478,8 @@ public class SkillManager {
         if (raceMultiplier < 0.0f) {
             raceMultiplier = 0.0f;
         }
-        float skillValue = (float) (defenseLevel * perPointValue);
+        double innateBonus = getInnateAttributeBonus(playerData, SkillAttributeType.DEFENSE);
+        float skillValue = (float) ((defenseLevel * perPointValue) + innateBonus);
         float totalValue = skillValue * raceMultiplier;
         float resistance = (float) (applyDefenseCurve(totalValue) / 100.0D);
         return new DefenseBreakdown(raceMultiplier, skillValue, totalValue, resistance);
@@ -480,6 +501,55 @@ public class SkillManager {
         }
 
         return Math.min(reduction, DEFENSE_MAX_REDUCTION);
+    }
+
+    private float getSwiftnessMultiplier(PlayerData playerData) {
+        if (playerData == null || archetypePassiveManager == null) {
+            return 1.0F;
+        }
+        ArchetypePassiveSnapshot snapshot = archetypePassiveManager.getSnapshot(playerData);
+        SwiftnessSettings settings = SwiftnessSettings.fromSnapshot(snapshot);
+        if (!settings.enabled()) {
+            return 1.0F;
+        }
+        double multiplier = settings.multiplier();
+        return multiplier > 0.0D ? (float) multiplier : 1.0F;
+    }
+
+    private double getInnateAttributeBonus(PlayerData playerData, SkillAttributeType attributeType) {
+        if (playerData == null || attributeType == null || archetypePassiveManager == null) {
+            return 0.0D;
+        }
+        ArchetypePassiveSnapshot snapshot = archetypePassiveManager.getSnapshot(playerData);
+        if (snapshot == null || snapshot.isEmpty()) {
+            return 0.0D;
+        }
+        List<RacePassiveDefinition> definitions = snapshot.getDefinitions(ArchetypePassiveType.INNATE_ATTRIBUTE_GAIN);
+        if (definitions.isEmpty()) {
+            return 0.0D;
+        }
+        double perLevelValue = 0.0D;
+        for (RacePassiveDefinition definition : definitions) {
+            if (definition == null) {
+                continue;
+            }
+            if (definition.attributeType() != attributeType) {
+                continue;
+            }
+            double candidate = Math.max(0.0D, definition.value());
+            if (candidate == 0.0D) {
+                continue;
+            }
+            perLevelValue += candidate;
+        }
+        if (perLevelValue == 0.0D) {
+            return 0.0D;
+        }
+        int effectiveLevels = Math.max(0, playerData.getLevel() - 1);
+        if (effectiveLevels <= 0) {
+            return 0.0D;
+        }
+        return perLevelValue * effectiveLevels;
     }
 
     /**
