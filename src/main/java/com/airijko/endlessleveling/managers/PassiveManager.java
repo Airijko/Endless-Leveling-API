@@ -321,6 +321,7 @@ public class PassiveManager {
         private long luckMobDropWindowExpiresAt;
         private int luckMobDropStacks;
         private float lastHealingSample = Float.NaN;
+        private float lastStaminaSample = Float.NaN;
         private long lastStandCooldownExpiresAt;
         private long lastStandActiveUntil;
         private long firstStrikeCooldownExpiresAt;
@@ -391,6 +392,14 @@ public class PassiveManager {
 
         public void setLastHealingSample(float lastHealingSample) {
             this.lastHealingSample = lastHealingSample;
+        }
+
+        public float getLastStaminaSample() {
+            return lastStaminaSample;
+        }
+
+        public void setLastStaminaSample(float lastStaminaSample) {
+            this.lastStaminaSample = lastStaminaSample;
         }
 
         public long getLastStandCooldownExpiresAt() {
@@ -494,6 +503,8 @@ public class PassiveManager {
             this.executionerCooldownExpiresAt = 0L;
             this.swiftnessActiveUntil = 0L;
             this.swiftnessStacks = 0;
+            this.lastHealingSample = Float.NaN;
+            this.lastStaminaSample = Float.NaN;
         }
 
         public long getAdrenalineCooldownExpiresAt() {

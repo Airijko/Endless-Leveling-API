@@ -22,12 +22,10 @@ import java.util.List;
 public class RaceCommand extends AbstractPlayerCommand {
 
     private final RaceManager raceManager;
-    private final PlayerDataManager playerDataManager;
 
     public RaceCommand(RaceManager raceManager, PlayerDataManager playerDataManager) {
         super("races", "List available EndlessLeveling races");
         this.raceManager = raceManager;
-        this.playerDataManager = playerDataManager;
         this.addAliases("race");
         this.addSubCommand(new RaceProfileCommand(raceManager, playerDataManager));
         this.addSubCommand(new RaceChooseCommand(raceManager, playerDataManager));

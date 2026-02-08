@@ -35,7 +35,7 @@ profiles:
       SIGNATURE_GAIN: 1
       LUCK: 0
       MANA_REGENERATION: 0
-      STAMINA_REGENERATION: 0
+      STAMINA_GAIN_BONUS: 0
   2:
     name: "Boss DPS"
     xp: 98500.0
@@ -60,7 +60,7 @@ profiles:
       SIGNATURE_GAIN: 10
       LUCK: 10
       MANA_REGENERATION: 10
-      STAMINA_REGENERATION: 10
+      STAMINA_GAIN_BONUS: 10
   3:
     name: "Fresh alt"
     xp: 0.0
@@ -85,4 +85,4 @@ profiles:
       SIGNATURE_GAIN: 0
       LUCK: 0
       MANA_REGENERATION: 0
-      STAMINA_REGENERATION: 0
+      STAMINA_GAIN_BONUS: 0

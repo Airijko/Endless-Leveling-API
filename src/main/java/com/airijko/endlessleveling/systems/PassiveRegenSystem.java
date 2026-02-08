@@ -85,8 +85,8 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
                         applyHealthRegeneration(playerRef, playerData, statMap, deltaSeconds, runtimeState);
                         applyArchetypeHealthRegeneration(playerData, statMap, deltaSeconds, archetypeSnapshot);
                         applyManaRegeneration(playerData, statMap, deltaSeconds, archetypeSnapshot);
-                        applyStaminaRegeneration(playerData, statMap, deltaSeconds);
                         applyAdrenalineStamina(playerRef, statMap, deltaSeconds, archetypeSnapshot, runtimeState);
+                        applyStaminaGainBonus(playerData, statMap, runtimeState);
                         expireSwiftnessIfNeeded(runtimeState);
                         applySignatureGainBonus(playerData, statMap, archetypeSnapshot, runtimeState);
                         applyHealingBonus(statMap, archetypeSnapshot, runtimeState);
@@ -192,34 +192,66 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
         addResource(statMap, DefaultEntityStatTypes.getMana(), perSecond, deltaSeconds);
     }
 
-    private void applyStaminaRegeneration(@Nonnull PlayerData playerData,
+    private void applyStaminaGainBonus(@Nonnull PlayerData playerData,
             @Nonnull EntityStatMap statMap,
-            float deltaSeconds) {
-        PassiveManager.PassiveSnapshot snapshot = passiveManager.getSnapshot(playerData,
-                PassiveType.STAMINA_REGENERATION);
-        if (!snapshot.isUnlocked() || snapshot.value() <= 0) {
+            @Nonnull PassiveRuntimeState runtimeState) {
+        if (runtimeState == null) {
             return;
         }
+
         EntityStatValue staminaStat = statMap.get(DefaultEntityStatTypes.getStamina());
         if (staminaStat == null) {
-            return;
-        }
-        float maxStamina = staminaStat.getMax();
-        if (maxStamina <= 0f) {
+            runtimeState.setLastStaminaSample(Float.NaN);
             return;
         }
 
-        double bonusPercent = snapshot.value() / 100.0D;
-        if (bonusPercent <= 0.0D) {
+        float current = staminaStat.get();
+        float max = staminaStat.getMax();
+        if (max <= 0f) {
+            runtimeState.setLastStaminaSample(Float.NaN);
             return;
         }
 
-        double perSecond = (maxStamina * bonusPercent) / RESOURCE_REGEN_DIVISOR;
-        if (perSecond <= 0.0D) {
+        PassiveManager.PassiveSnapshot snapshot = passiveManager.getSnapshot(playerData,
+                PassiveType.STAMINA_GAIN_BONUS);
+        if (!snapshot.isUnlocked() || snapshot.value() <= 0) {
+            runtimeState.setLastStaminaSample(current);
             return;
         }
 
-        addResource(statMap, DefaultEntityStatTypes.getStamina(), perSecond, deltaSeconds);
+        float lastSample = runtimeState.getLastStaminaSample();
+        if (Float.isNaN(lastSample)) {
+            runtimeState.setLastStaminaSample(current);
+            return;
+        }
+
+        float delta = current - lastSample;
+        if (delta <= 0f) {
+            runtimeState.setLastStaminaSample(current);
+            return;
+        }
+
+        double bonusFactor = Math.max(0.0D, snapshot.value()) / 100.0D;
+        if (bonusFactor <= 0.0D) {
+            runtimeState.setLastStaminaSample(current);
+            return;
+        }
+
+        double bonusAmount = delta * bonusFactor;
+        if (bonusAmount <= 0.0D) {
+            runtimeState.setLastStaminaSample(current);
+            return;
+        }
+
+        float applied = (float) Math.min(max - current, bonusAmount);
+        if (applied <= 0f) {
+            runtimeState.setLastStaminaSample(current);
+            return;
+        }
+
+        float newValue = current + applied;
+        statMap.setStatValue(DefaultEntityStatTypes.getStamina(), newValue);
+        runtimeState.setLastStaminaSample(newValue);
     }
 
     private void applyAdrenalineStamina(@Nonnull PlayerRef playerRef,

@@ -14,7 +14,7 @@ public enum PassiveType {
     SIGNATURE_GAIN("signature_gain", "Signature Gain"),
     LUCK("luck", "Luck"),
     MANA_REGENERATION("mana_regeneration", "Mana Regeneration"),
-    STAMINA_REGENERATION("stamina_regeneration", "Stamina Regeneration");
+    STAMINA_GAIN_BONUS("stamina_gain_bonus", "Stamina Gain Bonus");
 
     private final String configKey;
     private final String displayName;
@@ -38,7 +38,7 @@ public enum PassiveType {
             case REGENERATION -> formatNumber(value) + " Health/sec";
             case LUCK -> formatNumber(value) + "% Luck";
             case MANA_REGENERATION -> formatNumber(value * PassiveRegenSystem.RESOURCE_REGEN_DIVISOR) + " Mana/5s";
-            case STAMINA_REGENERATION -> formatNumber(value) + "% Stamina Regen";
+            case STAMINA_GAIN_BONUS -> formatNumber(value) + "% Stamina Gain";
         };
     }
 
