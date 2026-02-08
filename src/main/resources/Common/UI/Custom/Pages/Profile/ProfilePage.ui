@@ -1,0 +1,89 @@
+$C = "../../Common.ui";
+$Nav = "../Nav/LeftNavPanel.ui";
+
+$C.@PageOverlay {
+    $C.@DecoratedContainer {
+        Anchor: (Width: 800, Height: 700);
+        #Title {
+            Group {
+                $C.@Title {
+                    @Text = "ENDLESS LEVELING";
+                }
+            }
+        }
+
+        #Content {
+            LayoutMode: Left;
+            Padding: (Full: 0);
+
+            // ---------------- LEFT NAV ----------------
+            $Nav.@LeftNavPanel {}
+
+            // ---------------- RIGHT PANEL ----------------
+            Group #RightPanel {
+                FlexWeight: 1;
+                LayoutMode: Top;
+                Anchor: (Right: 7, Bottom: 7);
+
+                Label #ProfileTitleLabel {
+                    Text: "Profiles";
+                    Anchor: (Height: 48);
+                    Style: (FontSize: 22, TextColor: #ffffff, RenderBold: true);
+                    Padding: (Horizontal: 16, Top: 8);
+                }
+
+                Group { Anchor: (Height: 1); Background: #2b3542; }
+                Group { Anchor: (Height: 8); }
+
+                Group #ProfilesHeader {
+                    LayoutMode: Left;
+                    Anchor: (Height: 48);
+                    Padding: (Horizontal: 16);
+
+                    Label #ProfilesSummary {
+                        FlexWeight: 1;
+                        Style: $C.@DefaultLabelStyle;
+                        Text: "Profiles 0/5";
+                    }
+
+                    Group { Anchor: (Width: 16); }
+
+                    $C.@TextButton #NewProfileButton {
+                        Text: "NEW PROFILE";
+                        Anchor: (Height: 32, Width: 170);
+                        Padding: (Left: 18, Right: 18, Top: 4, Bottom: 4);
+                    }
+                }
+
+                Group { Anchor: (Height: 12); }
+
+                Group #ProfileListSection {
+                    LayoutMode: Top;
+                    FlexWeight: 1;
+                    Padding: (Horizontal: 16);
+
+                    Label #EmptyStateLabel {
+                        Anchor: (Height: 32);
+                        Style: (FontSize: 15, TextColor: #9fb6d3);
+                        Text: "Loading profiles...";
+                    }
+
+                    Group #ProfileRows {
+                        FlexWeight: 1;
+                        LayoutMode: TopScrolling;
+                        ScrollbarStyle: $C.@DefaultScrollbarStyle;
+                        Padding: (Left: 0);
+
+                        Group #ProfileCards {
+                            LayoutMode: Top;
+                        }
+                    }
+                }
+
+                Group { Anchor: (Height: 12); }
+            }
+        }
+    }
+}
+
+$C.@BackButton {}

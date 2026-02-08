@@ -42,7 +42,7 @@
 #     -> `value`: decimal percent extra damage on the first hit per target
 #     -> `cooldown`: seconds between procs
 
-#   SECOND_WIND
+#   ADRENALINE
 #     -> `value`: flat stamina regen when below a stamina threshold
 #     -> `threshold`: player stamina percent to trigger effect
 #     -> `duration`: seconds the effect lasts

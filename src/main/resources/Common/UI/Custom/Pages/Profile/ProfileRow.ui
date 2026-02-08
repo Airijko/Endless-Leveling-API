@@ -1,0 +1,86 @@
+$C = "../../Common.ui";
+
+Group {
+    LayoutMode: Top;
+    Anchor: (Height: 72);
+
+    Group {
+        LayoutMode: Left;
+        Anchor: (Height: 56);
+        Background: #000000(0.18);
+        Padding: (Full: 12);
+
+        Group {
+            FlexWeight: 1;
+            LayoutMode: Top;
+            Padding: (Right: 8);
+
+            Label #SlotLabel {
+                Style: (FontSize: 12, TextColor: #8aa1bf);
+                Text: "Slot 1";
+                Anchor: (Height: 16);
+            }
+
+            Label #ProfileName {
+                Style: (FontSize: 18, TextColor: #ffffff, RenderBold: true);
+                Text: "Profile";
+                Anchor: (Height: 28);
+            }
+
+            Group {
+                LayoutMode: Left;
+                Anchor: (Height: 24);
+
+                Label #LevelValue {
+                    Style: $C.@DefaultLabelStyle;
+                    Text: "Level 1";
+                    FlexWeight: 1;
+                }
+
+                Label #XpValue {
+                    Style: $C.@DefaultLabelStyle;
+                    Text: "0 XP";
+                    FlexWeight: 1;
+                }
+
+                Label #RaceValue {
+                    Style: $C.@DefaultLabelStyle;
+                    Text: "Human";
+                    FlexWeight: 1;
+                }
+            }
+        }
+
+        Group {
+            LayoutMode: Top;
+            Anchor: (Width: 200);
+            Padding: (Left: 8);
+
+            Label #StatusBadge {
+                Anchor: (Height: 18);
+                Style: (FontSize: 12, TextColor: #4fd7f7, RenderBold: true);
+                Text: "";
+            }
+
+            Group {
+                LayoutMode: Left;
+                Anchor: (Height: 28);
+
+                $C.@TextButton #SelectButton {
+                    Text: "SELECT";
+                    Anchor: (Height: 28, Width: 90);
+                    Padding: (Left: 12, Right: 12, Top: 3, Bottom: 3);
+                }
+
+                Group { Anchor: (Width: 8); }
+
+                $C.@CancelTextButton #DeleteButton {
+                    Text: "DELETE";
+                    Anchor: (Height: 28, Width: 90);
+                }
+            }
+        }
+    }
+
+    Group { Anchor: (Height: 6); }
+}

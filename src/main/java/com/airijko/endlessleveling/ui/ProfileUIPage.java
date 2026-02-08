@@ -1,38 +1,36 @@
 package com.airijko.endlessleveling.ui;
 
 import javax.annotation.Nonnull;
+import java.util.List;
+import java.util.Map;
 
-import com.airijko.endlessleveling.data.PlayerData;
 import com.airijko.endlessleveling.EndlessLeveling;
-import com.airijko.endlessleveling.enums.PassiveType;
-import com.airijko.endlessleveling.enums.SkillAttributeType;
-import com.airijko.endlessleveling.managers.LevelingManager;
-import com.airijko.endlessleveling.managers.PassiveManager;
+import com.airijko.endlessleveling.data.PlayerData;
+import com.airijko.endlessleveling.data.PlayerData.PlayerProfile;
 import com.airijko.endlessleveling.managers.PlayerDataManager;
-import com.airijko.endlessleveling.managers.SkillManager;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
+import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.entity.entities.player.pages.InteractiveCustomUIPage;
-import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
-import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue;
-import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
-import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
-/**
- * Profile page showing the player's amplified stats and current skill levels.
- */
+import static com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType.Activating;
+import static com.hypixel.hytale.server.core.ui.builder.EventData.of;
+
 public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
 
+    private final PlayerDataManager playerDataManager;
+
     public ProfileUIPage(@Nonnull com.hypixel.hytale.server.core.universe.PlayerRef playerRef,
             @Nonnull CustomPageLifetime lifetime) {
         super(playerRef, lifetime, SkillsUIPage.Data.CODEC);
+        this.playerDataManager = EndlessLeveling.getInstance().getPlayerDataManager();
     }
 
     @Override
@@ -41,142 +39,86 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             @Nonnull UIEventBuilder events,
             @Nonnull Store<EntityStore> store) {
 
-        ui.append("Pages/ProfilePage.ui");
+        ui.append("Pages/Profile/ProfilePage.ui");
         NavUIHelper.bindNavEvents(events);
 
-        var universePlayer = Universe.get().getPlayer(playerRef.getUuid());
-        if (universePlayer == null) {
-            LOGGER.atWarning().log("ProfileUIPage.build: Universe player is null for %s", playerRef.getUuid());
-            ui.set("#PlayerNameValue.Text", "Unknown");
-            ui.set("#PlayerLevelValue.Text", "Level ?");
-            ui.set("#PlayerXpValue.Text", "0 / 0");
-            ui.set("#SkillPointsValue.Text", "0");
-            return;
-        }
-
-        EndlessLeveling plugin = EndlessLeveling.getInstance();
-        if (plugin == null) {
-            LOGGER.atSevere().log("ProfileUIPage.build: Endless_Leveling_Hytale instance is null");
-            return;
-        }
-
-        PlayerDataManager playerDataManager = plugin.getPlayerDataManager();
-        LevelingManager levelingManager = plugin.getLevelingManager();
-        SkillManager skillManager = plugin.getSkillManager();
-        PassiveManager passiveManager = plugin.getPassiveManager();
-
-        if (playerDataManager == null || levelingManager == null || skillManager == null) {
-            LOGGER.atSevere().log("ProfileUIPage.build: One or more managers are null");
-            return;
-        }
-
-        if (passiveManager == null) {
-            LOGGER.atSevere().log("ProfileUIPage.build: PassiveManager is null");
-        }
-
-        PlayerData playerData = playerDataManager.get(playerRef.getUuid());
+        PlayerData playerData = resolvePlayerData();
         if (playerData == null) {
-            LOGGER.atWarning().log("ProfileUIPage.build: PlayerData is null for %s", playerRef.getUuid());
-            ui.set("#PlayerNameValue.Text", universePlayer.getUsername());
-            ui.set("#PlayerLevelValue.Text", "Level ?");
-            ui.set("#PlayerXpValue.Text", "0 / 0");
-            ui.set("#SkillPointsValue.Text", "0");
+            ui.set("#ProfilesSummary.Text", "Player data unavailable.");
+            ui.set("#EmptyStateLabel.Text", "Unable to load profiles right now.");
             return;
         }
 
-        // -----------------------------
-        // PLAYER OVERVIEW
-        // -----------------------------
-        int level = playerData.getLevel();
-        double xp = playerData.getXp();
-        double xpForNext = levelingManager.getXpForNextLevel(level);
+        events.addEventBinding(Activating, "#NewProfileButton", of("Action", "profile:new"), false);
 
-        ui.set("#PlayerNameValue.Text", playerData.getPlayerName() + " Profile");
-        ui.set("#PlayerLevelValue.Text", "Level " + level);
+        updateSummary(ui, playerData);
+        buildProfileList(ui, events, playerData);
+    }
 
-        if (Double.isInfinite(xpForNext)) {
-            ui.set("#PlayerXpValue.Text", formatNumber(xp) + " XP (MAX)");
-        } else {
-            ui.set("#PlayerXpValue.Text", formatNumber(xp) + " / " + formatNumber(xpForNext) + " XP");
+    private PlayerData resolvePlayerData() {
+        if (playerDataManager == null) {
+            LOGGER.atSevere().log("ProfileUIPage: PlayerDataManager is not available");
+            return null;
         }
 
-        ui.set("#SkillPointsValue.Text", String.valueOf(playerData.getSkillPoints()));
+        PlayerData data = playerDataManager.get(playerRef.getUuid());
+        if (data == null) {
+            LOGGER.atWarning().log("ProfileUIPage: PlayerData missing for %s", playerRef.getUuid());
+            return null;
+        }
+        return data;
+    }
 
-        // -----------------------------
-        // AMPLIFIED SKILL STATS
-        // -----------------------------
-        EntityStatMap statMap = store.getComponent(ref, EntityStatMap.getComponentType());
+    private void updateSummary(@Nonnull UICommandBuilder ui, @Nonnull PlayerData data) {
+        ui.set("#ProfilesSummary.Text",
+                "Profiles " + data.getProfileCount() + "/" + PlayerData.MAX_PROFILES);
+    }
 
-        // Life Force (bonus health)
-        int lifeLevel = playerData.getPlayerSkillAttributeLevel(SkillAttributeType.LIFE_FORCE);
-        float bonusHealth = skillManager.calculatePlayerHealth(playerData);
-        float maxHealth = resolveMaxStatValue(statMap, DefaultEntityStatTypes.getHealth());
-        float displayedHealth = maxHealth > 0 ? maxHealth : bonusHealth;
-        ui.set("#LifeForceLevel.Text", String.valueOf(lifeLevel));
-        ui.set("#LifeForceValue.Text", formatNumber(displayedHealth) + " Health");
+    private void buildProfileList(@Nonnull UICommandBuilder ui,
+            @Nonnull UIEventBuilder events,
+            @Nonnull PlayerData data) {
+        ui.clear("#ProfileCards");
 
-        // Strength (bonus damage percent)
-        int strLevel = playerData.getPlayerSkillAttributeLevel(SkillAttributeType.STRENGTH);
-        float bonusStrength = skillManager.calculatePlayerStrength(playerData);
-        ui.set("#StrengthLevel.Text", String.valueOf(strLevel));
-        ui.set("#StrengthValue.Text", "+" + formatNumber(bonusStrength) + "% Damage");
+        List<Map.Entry<Integer, PlayerProfile>> profiles = data.getProfiles().entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .toList();
 
-        // Defense (damage reduction percent)
-        int defLevel = playerData.getPlayerSkillAttributeLevel(SkillAttributeType.DEFENSE);
-        float resistance = skillManager.calculatePlayerDefense(playerData); // 0.0 - 0.8
-        ui.set("#DefenseLevel.Text", String.valueOf(defLevel));
-        ui.set("#DefenseValue.Text", formatNumber(resistance * 100.0) + "% Reduction");
+        if (profiles.isEmpty()) {
+            ui.set("#EmptyStateLabel.Text", "No profiles yet. Use NEW PROFILE to create one.");
+            return;
+        }
 
-        // Haste (movement speed percent)
-        int hasteLevel = playerData.getPlayerSkillAttributeLevel(SkillAttributeType.HASTE);
-        SkillManager.HasteBreakdown hasteBreakdown = skillManager.getHasteBreakdown(playerData);
-        double hasteBonus = (hasteBreakdown.totalMultiplier() - 1.0f) * 100.0f;
-        ui.set("#HasteLevel.Text", String.valueOf(hasteLevel));
-        ui.set("#HasteValue.Text", "+" + formatNumber(hasteBonus) + "% Speed");
+        ui.set("#EmptyStateLabel.Text", "");
 
-        // Precision (crit chance percent)
-        int precLevel = playerData.getPlayerSkillAttributeLevel(SkillAttributeType.PRECISION);
-        float critChance = skillManager.calculatePlayerPrecision(playerData) * 100.0F;
-        ui.set("#PrecisionLevel.Text", String.valueOf(precLevel));
-        ui.set("#PrecisionValue.Text", formatNumber(critChance) + "% Crit Chance");
+        int index = 0;
+        for (Map.Entry<Integer, PlayerProfile> entry : profiles) {
+            int slot = entry.getKey();
+            PlayerProfile profile = entry.getValue();
+            boolean active = data.isProfileActive(slot);
+            boolean canDelete = data.getProfileCount() > 1 && !active;
 
-        // Ferocity (crit damage percent)
-        int ferLevel = playerData.getPlayerSkillAttributeLevel(SkillAttributeType.FEROCITY);
-        float ferocity = skillManager.calculatePlayerFerocity(playerData); // already in percent
-        ui.set("#FerocityLevel.Text", String.valueOf(ferLevel));
-        ui.set("#FerocityValue.Text", formatNumber(ferocity) + "% Crit Damage");
+            ui.append("#ProfileCards", "Pages/Profile/ProfileRow.ui");
+            String base = "#ProfileCards[" + index + "]";
 
-        // Stamina (bonus stamina)
-        int stamLevel = playerData.getPlayerSkillAttributeLevel(SkillAttributeType.STAMINA);
-        float bonusStamina = skillManager.calculatePlayerStamina(playerData);
-        float maxStamina = resolveMaxStatValue(statMap, DefaultEntityStatTypes.getStamina());
-        float displayedStamina = maxStamina > 0 ? maxStamina : bonusStamina;
-        ui.set("#StaminaLevel.Text", String.valueOf(stamLevel));
-        ui.set("#StaminaValue.Text", formatNumber(displayedStamina) + " Stamina");
+            ui.set(base + " #SlotLabel.Text", "Slot " + slot);
+            ui.set(base + " #ProfileName.Text", profile.getName());
+            ui.set(base + " #LevelValue.Text", "Level " + profile.getLevel());
+            ui.set(base + " #XpValue.Text", formatNumber(profile.getXp()) + " XP");
+            ui.set(base + " #RaceValue.Text", profile.getRaceId());
+            ui.set(base + " #StatusBadge.Text", active ? "ACTIVE" : "");
 
-        // Intelligence (bonus mana)
-        int intLevel = playerData.getPlayerSkillAttributeLevel(SkillAttributeType.INTELLIGENCE);
-        float bonusIntelligence = skillManager.calculatePlayerIntelligence(playerData);
-        float maxMana = resolveMaxStatValue(statMap, DefaultEntityStatTypes.getMana());
-        float displayedMana = maxMana > 0 ? maxMana : bonusIntelligence;
-        ui.set("#IntelligenceLevel.Text", String.valueOf(intLevel));
-        ui.set("#IntelligenceValue.Text", formatNumber(displayedMana) + " Mana");
+            ui.set(base + " #SelectButton.Text", active ? "ACTIVE" : "SELECT");
+            if (!active) {
+                events.addEventBinding(Activating, base + " #SelectButton",
+                        of("Action", "profile:select:" + slot), false);
+            }
+            if (canDelete) {
+                events.addEventBinding(Activating, base + " #DeleteButton",
+                        of("Action", "profile:delete:" + slot), false);
+            }
 
-        // -----------------------------
-        // PASSIVE EFFECTS
-        // -----------------------------
-        setPassiveRow(ui, passiveManager, playerData, PassiveType.LIFE_STEAL,
-                "#LifeStealPassiveLevel.Text", "#LifeStealPassiveValue.Text");
-        setPassiveRow(ui, passiveManager, playerData, PassiveType.REGENERATION,
-                "#RegenerationPassiveLevel.Text", "#RegenerationPassiveValue.Text");
-        setPassiveRow(ui, passiveManager, playerData, PassiveType.SIGNATURE_GAIN,
-                "#SignaturePassiveLevel.Text", "#SignaturePassiveValue.Text");
-        setPassiveRow(ui, passiveManager, playerData, PassiveType.LUCK,
-                "#LuckPassiveLevel.Text", "#LuckPassiveValue.Text");
-        setPassiveRow(ui, passiveManager, playerData, PassiveType.MANA_REGENERATION,
-                "#ManaPassiveLevel.Text", "#ManaPassiveValue.Text");
-        setPassiveRow(ui, passiveManager, playerData, PassiveType.STAMINA_REGENERATION,
-                "#StaminaPassiveLevel.Text", "#StaminaPassiveValue.Text");
+            index++;
+        }
     }
 
     @Override
@@ -190,6 +132,142 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 return;
             }
         }
+
+        if (data.action == null || data.action.isEmpty() || !data.action.startsWith("profile:")) {
+            return;
+        }
+
+        PlayerData playerData = resolvePlayerData();
+        if (playerData == null) {
+            playerRef.sendMessage(Message.raw("Unable to load your profiles right now.").color("#ff0000"));
+            return;
+        }
+
+        ProfileActionOutcome outcome = handleProfileAction(data.action, playerData);
+        if (outcome.requiresSave() && playerDataManager != null) {
+            playerDataManager.save(playerData);
+        }
+        if (outcome.requiresRebuild()) {
+            rebuild();
+        }
+    }
+
+    private ProfileActionOutcome handleProfileAction(@Nonnull String action,
+            @Nonnull PlayerData playerData) {
+        String payload = action.substring("profile:".length());
+
+        try {
+            if ("new".equalsIgnoreCase(payload)) {
+                return handleNewProfile(playerData);
+            }
+            if (payload.startsWith("select:")) {
+                return handleSelectProfile(playerData, payload);
+            }
+            if (payload.startsWith("delete:")) {
+                return handleDeleteRequest(playerData, payload);
+            }
+        } catch (Exception ex) {
+            LOGGER.atSevere().withCause(ex).log("ProfileUIPage: error handling action %s", action);
+            playerRef.sendMessage(Message.raw("Something went wrong handling that request.").color("#ff0000"));
+        }
+
+        return new ProfileActionOutcome(false, false);
+    }
+
+    private ProfileActionOutcome handleNewProfile(@Nonnull PlayerData playerData) {
+        if (playerData.getProfileCount() >= PlayerData.MAX_PROFILES) {
+            playerRef.sendMessage(Message.raw("All profile slots are already in use. Delete one first.")
+                    .color("#ff9900"));
+            return new ProfileActionOutcome(false, false);
+        }
+
+        int nextSlot = playerData.findNextAvailableProfileSlot();
+        if (!PlayerData.isValidProfileIndex(nextSlot)) {
+            playerRef.sendMessage(Message.raw("Unable to find an open slot right now.").color("#ff0000"));
+            return new ProfileActionOutcome(false, false);
+        }
+
+        boolean created = playerData.createProfile(nextSlot, PlayerData.defaultProfileName(nextSlot), false, true);
+        if (!created) {
+            playerRef.sendMessage(Message.raw("Could not create that profile slot.").color("#ff0000"));
+            return new ProfileActionOutcome(false, false);
+        }
+
+        playerRef.sendMessage(Message.raw("Created and activated profile slot " + nextSlot + ".")
+                .color("#4fd7f7"));
+        return new ProfileActionOutcome(true, true);
+    }
+
+    private ProfileActionOutcome handleSelectProfile(@Nonnull PlayerData playerData, @Nonnull String payload) {
+        int slot = parseSlot(payload, "select:");
+        if (!PlayerData.isValidProfileIndex(slot)) {
+            playerRef.sendMessage(Message.raw("Profile slot must be between 1 and " + PlayerData.MAX_PROFILES + ".")
+                    .color("#ff0000"));
+            return new ProfileActionOutcome(false, false);
+        }
+
+        if (!playerData.hasProfile(slot)) {
+            playerRef.sendMessage(Message.raw("Profile slot " + slot + " has not been created yet.")
+                    .color("#ff9900"));
+            return new ProfileActionOutcome(false, false);
+        }
+
+        if (playerData.isProfileActive(slot)) {
+            playerRef.sendMessage(Message.raw("Profile slot " + slot + " is already active.").color("#4fd7f7"));
+            return new ProfileActionOutcome(false, false);
+        }
+
+        PlayerData.ProfileSwitchResult result = playerData.switchProfile(slot);
+        if (result == PlayerData.ProfileSwitchResult.SWITCHED_EXISTING) {
+            playerRef.sendMessage(Message.raw(
+                    "Switched to profile slot " + slot + " (" + playerData.getProfileName(slot) + ").")
+                    .color("#00ff00"));
+            return new ProfileActionOutcome(true, true);
+        }
+
+        playerRef.sendMessage(Message.raw("Unable to switch to that slot right now.").color("#ff0000"));
+        return new ProfileActionOutcome(false, false);
+    }
+
+    private ProfileActionOutcome handleDeleteRequest(@Nonnull PlayerData playerData,
+            @Nonnull String payload) {
+        int slot = parseSlot(payload, "delete:");
+        if (!PlayerData.isValidProfileIndex(slot)) {
+            playerRef.sendMessage(Message.raw("Profile slot must be between 1 and " + PlayerData.MAX_PROFILES + ".")
+                    .color("#ff0000"));
+            return new ProfileActionOutcome(false, false);
+        }
+        if (!playerData.hasProfile(slot)) {
+            playerRef.sendMessage(Message.raw("Profile slot " + slot + " is already empty.").color("#ff9900"));
+            return new ProfileActionOutcome(false, false);
+        }
+        if (playerData.isProfileActive(slot)) {
+            playerRef.sendMessage(Message.raw("Switch to a different profile before deleting slot " + slot + ".")
+                    .color("#ff9900"));
+            return new ProfileActionOutcome(false, false);
+        }
+        if (playerData.getProfileCount() <= 1) {
+            playerRef.sendMessage(Message.raw("You must keep at least one profile slot.").color("#ff0000"));
+            return new ProfileActionOutcome(false, false);
+        }
+
+        boolean deleted = playerData.deleteProfile(slot);
+        if (!deleted) {
+            playerRef.sendMessage(Message.raw("Could not delete that profile slot right now.").color("#ff0000"));
+            return new ProfileActionOutcome(false, false);
+        }
+
+        playerRef.sendMessage(Message.raw("Deleted profile slot " + slot + ".").color("#4fd7f7"));
+        return new ProfileActionOutcome(true, true);
+    }
+
+    private int parseSlot(@Nonnull String payload, @Nonnull String prefix) {
+        try {
+            return Integer.parseInt(payload.substring(prefix.length()));
+        } catch (Exception ex) {
+            LOGGER.atWarning().log("ProfileUIPage: invalid slot payload %s", payload);
+            return -1;
+        }
     }
 
     private String formatNumber(double value) {
@@ -200,35 +278,6 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         return formatted;
     }
 
-    private void setPassiveRow(@Nonnull UICommandBuilder ui,
-            PassiveManager passiveManager,
-            @Nonnull PlayerData playerData,
-            @Nonnull PassiveType type,
-            @Nonnull String levelSelector,
-            @Nonnull String valueSelector) {
-        if (passiveManager == null) {
-            ui.set(levelSelector, "-");
-            ui.set(valueSelector, "Unavailable");
-            return;
-        }
-
-        PassiveManager.PassiveSnapshot snapshot = passiveManager.getSnapshot(playerData, type);
-        if (snapshot == null || !snapshot.isUnlocked()) {
-            ui.set(levelSelector, "-");
-            ui.set(valueSelector, "Locked");
-            return;
-        }
-
-        ui.set(levelSelector, String.valueOf(snapshot.level()));
-        ui.set(valueSelector, type.formatValue(snapshot.value()));
+    private record ProfileActionOutcome(boolean requiresSave, boolean requiresRebuild) {
     }
-
-    private float resolveMaxStatValue(EntityStatMap statMap, int statIndex) {
-        if (statMap == null) {
-            return 0.0F;
-        }
-        EntityStatValue statValue = statMap.get(statIndex);
-        return statValue != null ? statValue.getMax() : 0.0F;
-    }
-
 }
