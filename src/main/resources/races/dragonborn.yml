@@ -27,4 +27,4 @@ passives:
     value: 0.3
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: haste
-    value: 0.1
+    value: 0.5
