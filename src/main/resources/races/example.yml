@@ -20,10 +20,10 @@
 #   XP_BONUS
 #     -> `value`: decimal percent bonus XP gained (1.0 = +100% XP)
 
-#   INCREASED_HEALTH_REGEN
+#   HEALTH_REGEN
 #     -> `value`: decimal percent of max HP regenerated over 5 seconds (e.g., 0.02 = 2% every 5s)
 
-#   INCREASED_MANA_REGEN
+#   MANA_REGEN
 #     -> `value`: flat mana regenerated per 5 seconds
 
 #   HEALING_BONUS
@@ -89,9 +89,9 @@ attributes: # Base Values
 passives:
   - type: XP_BONUS
     value: 1.0 # +100% XP gain
-  - type: INCREASED_HEALTH_REGEN
+  - type: HEALTH_REGEN
     value: 0.025 # Heal 2.5% of max HP every 5 seconds
-  - type: INCREASED_MANA_REGEN
+  - type: MANA_REGEN
     value: 1.25 # +1.25 mana every 5 seconds
   - type: HEALING_BONUS
     value: 0.2 # +20% healing dealt/received

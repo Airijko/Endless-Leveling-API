@@ -146,7 +146,7 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
         if (archetypeSnapshot.isEmpty() || deltaSeconds <= 0) {
             return;
         }
-        double percentOverFiveSeconds = archetypeSnapshot.getValue(ArchetypePassiveType.INCREASED_HEALTH_REGEN);
+        double percentOverFiveSeconds = archetypeSnapshot.getValue(ArchetypePassiveType.HEALTH_REGEN);
         if (percentOverFiveSeconds <= 0) {
             return;
         }
@@ -181,7 +181,7 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
             perSecond += snapshot.value();
         }
 
-        double archetypeBonus = archetypeSnapshot.getValue(ArchetypePassiveType.INCREASED_MANA_REGEN);
+        double archetypeBonus = archetypeSnapshot.getValue(ArchetypePassiveType.MANA_REGEN);
         if (archetypeBonus > 0) {
             perSecond += archetypeBonus / RESOURCE_REGEN_DIVISOR;
         }
