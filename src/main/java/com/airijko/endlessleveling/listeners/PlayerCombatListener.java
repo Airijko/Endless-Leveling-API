@@ -12,7 +12,6 @@ import com.airijko.endlessleveling.passives.BerzerkerSettings;
 import com.airijko.endlessleveling.passives.ExecutionerSettings;
 import com.airijko.endlessleveling.passives.FirstStrikeSettings;
 import com.airijko.endlessleveling.passives.RetaliationSettings;
-import com.airijko.endlessleveling.passives.SwiftnessSettings;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
@@ -89,7 +88,6 @@ public class PlayerCombatListener extends DamageEventSystem {
                     FirstStrikeSettings firstStrikeSettings = FirstStrikeSettings.fromSnapshot(archetypeSnapshot);
                     BerzerkerSettings berzerkerSettings = BerzerkerSettings.fromSnapshot(archetypeSnapshot);
                     ExecutionerSettings executionerSettings = ExecutionerSettings.fromSnapshot(archetypeSnapshot);
-                    SwiftnessSettings swiftnessSettings = SwiftnessSettings.fromSnapshot(archetypeSnapshot);
                     RetaliationSettings retaliationSettings = RetaliationSettings.fromSnapshot(archetypeSnapshot);
 
                     // Calculate strength bonus using SkillManager
@@ -142,8 +140,6 @@ public class PlayerCombatListener extends DamageEventSystem {
                     }
 
                     damage.setAmount(finalDamage);
-
-                    handleSwiftnessKill(runtimeState, swiftnessSettings, targetRef, commandBuffer, finalDamage);
 
                     passiveManager.markCombat(playerData.getUuid());
                 }
@@ -371,45 +367,6 @@ public class PlayerCombatListener extends DamageEventSystem {
                         : String.format("Executioner triggered! +%.0f%% damage.", bonusPercent * 100.0D));
 
         return bonusDamage;
-    }
-
-    private void handleSwiftnessKill(PassiveRuntimeState runtimeState,
-            @Nonnull SwiftnessSettings settings,
-            Ref<EntityStore> targetRef,
-            @Nonnull CommandBuffer<EntityStore> commandBuffer,
-            float expectedDamage) {
-        if (runtimeState == null || targetRef == null || !settings.enabled() || expectedDamage <= 0f) {
-            return;
-        }
-        long durationMillis = settings.durationMillis();
-        if (durationMillis <= 0L) {
-            return;
-        }
-
-        EntityStatMap statMap = commandBuffer.getComponent(targetRef, EntityStatMap.getComponentType());
-        if (statMap == null) {
-            return;
-        }
-
-        EntityStatValue healthStat = statMap.get(DefaultEntityStatTypes.getHealth());
-        if (healthStat == null) {
-            return;
-        }
-
-        float current = healthStat.get();
-        if (current <= 0f) {
-            return;
-        }
-
-        float predicted = Math.max(0f, current - expectedDamage);
-        if (predicted > 0f) {
-            return;
-        }
-
-        int maxStacks = Math.max(1, settings.maxStacks());
-        int newStacks = Math.min(maxStacks, runtimeState.getSwiftnessStacks() + 1);
-        runtimeState.setSwiftnessStacks(newStacks);
-        runtimeState.setSwiftnessActiveUntil(System.currentTimeMillis() + durationMillis);
     }
 
     private void sendPassiveMessage(PlayerRef playerRef, String text) {

@@ -6,6 +6,7 @@ import com.airijko.endlessleveling.enums.PassiveType;
 import com.airijko.endlessleveling.managers.PassiveManager;
 import com.airijko.endlessleveling.managers.PassiveManager.PassiveRuntimeState;
 import com.airijko.endlessleveling.managers.PlayerDataManager;
+import com.airijko.endlessleveling.managers.SkillManager;
 import com.airijko.endlessleveling.passives.AdrenalineSettings;
 import com.airijko.endlessleveling.passives.ArchetypePassiveManager;
 import com.airijko.endlessleveling.passives.ArchetypePassiveSnapshot;
@@ -39,13 +40,16 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
     private final PlayerDataManager playerDataManager;
     private final PassiveManager passiveManager;
     private final ArchetypePassiveManager archetypePassiveManager;
+    private final SkillManager skillManager;
 
     public PassiveRegenSystem(@Nonnull PlayerDataManager playerDataManager,
             @Nonnull PassiveManager passiveManager,
-            ArchetypePassiveManager archetypePassiveManager) {
+            ArchetypePassiveManager archetypePassiveManager,
+            SkillManager skillManager) {
         this.playerDataManager = playerDataManager;
         this.passiveManager = passiveManager;
         this.archetypePassiveManager = archetypePassiveManager;
+        this.skillManager = skillManager;
     }
 
     @Override
@@ -87,7 +91,7 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
                         applyManaRegeneration(playerData, statMap, deltaSeconds, archetypeSnapshot);
                         applyAdrenalineStamina(playerRef, statMap, deltaSeconds, archetypeSnapshot, runtimeState);
                         applyStaminaGainBonus(playerData, statMap, runtimeState);
-                        expireSwiftnessIfNeeded(runtimeState);
+                        expireSwiftnessIfNeeded(playerRef, ref, commandBuffer, playerData, runtimeState);
                         applySignatureGainBonus(playerData, statMap, archetypeSnapshot, runtimeState);
                         applyHealingBonus(statMap, archetypeSnapshot, runtimeState);
                         applyLastStandHealing(statMap, runtimeState, deltaSeconds);
@@ -96,21 +100,44 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
                 });
     }
 
-    private void expireSwiftnessIfNeeded(@Nonnull PassiveRuntimeState runtimeState) {
-        if (runtimeState == null) {
-            return;
-        }
-        if (runtimeState.getSwiftnessStacks() <= 0) {
+    private void expireSwiftnessIfNeeded(PlayerRef playerRef,
+            Ref<EntityStore> ref,
+            CommandBuffer<EntityStore> commandBuffer,
+            PlayerData playerData,
+            PassiveRuntimeState runtimeState) {
+        if (runtimeState == null || runtimeState.getSwiftnessStacks() <= 0) {
             return;
         }
         long activeUntil = runtimeState.getSwiftnessActiveUntil();
         if (activeUntil <= 0L) {
             runtimeState.clearSwiftness();
+            refreshMovementSpeed(ref, commandBuffer, playerData);
             return;
         }
         if (System.currentTimeMillis() > activeUntil) {
             runtimeState.clearSwiftness();
+            sendSwiftnessExpiredMessage(playerRef);
+            refreshMovementSpeed(ref, commandBuffer, playerData);
         }
+    }
+
+    private void refreshMovementSpeed(Ref<EntityStore> ref,
+            CommandBuffer<EntityStore> commandBuffer,
+            PlayerData playerData) {
+        if (skillManager == null || ref == null || !ref.isValid() || commandBuffer == null || playerData == null) {
+            return;
+        }
+        try {
+            skillManager.applyMovementSpeedModifier(ref, commandBuffer, playerData);
+        } catch (Exception ignored) {
+        }
+    }
+
+    private void sendSwiftnessExpiredMessage(PlayerRef playerRef) {
+        if (playerRef == null || !playerRef.isValid()) {
+            return;
+        }
+        playerRef.sendMessage(Message.raw("Swiftness has faded.").color("#4fd7f7"));
     }
 
     private void applyHealthRegeneration(@Nonnull PlayerRef playerRef,

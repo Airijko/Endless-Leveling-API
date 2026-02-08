@@ -4,6 +4,7 @@ import com.airijko.endlessleveling.data.PlayerData;
 import com.airijko.endlessleveling.managers.PassiveManager;
 import com.airijko.endlessleveling.managers.PassiveManager.PassiveRuntimeState;
 import com.airijko.endlessleveling.managers.PlayerDataManager;
+import com.airijko.endlessleveling.managers.SkillManager;
 import com.airijko.endlessleveling.passives.ArchetypePassiveManager;
 import com.airijko.endlessleveling.passives.ArchetypePassiveSnapshot;
 import com.airijko.endlessleveling.passives.SwiftnessSettings;
@@ -30,13 +31,16 @@ public class SwiftnessKillSystem extends DeathSystems.OnDeathSystem {
     private final PlayerDataManager playerDataManager;
     private final PassiveManager passiveManager;
     private final ArchetypePassiveManager archetypePassiveManager;
+    private final SkillManager skillManager;
 
     public SwiftnessKillSystem(@Nonnull PlayerDataManager playerDataManager,
             @Nonnull PassiveManager passiveManager,
-            ArchetypePassiveManager archetypePassiveManager) {
+            ArchetypePassiveManager archetypePassiveManager,
+            @Nonnull SkillManager skillManager) {
         this.playerDataManager = playerDataManager;
         this.passiveManager = passiveManager;
         this.archetypePassiveManager = archetypePassiveManager;
+        this.skillManager = skillManager;
     }
 
     @Override
@@ -105,22 +109,48 @@ public class SwiftnessKillSystem extends DeathSystems.OnDeathSystem {
         int newStacks = Math.min(maxStacks, currentStacks + 1);
         runtimeState.setSwiftnessStacks(newStacks);
         runtimeState.setSwiftnessActiveUntil(System.currentTimeMillis() + durationMillis);
+        refreshMovementSpeed(attackerRef, store, playerData);
 
         if (wasInactive) {
-            sendSwiftnessActivatedMessage(attackerPlayer, settings.durationSeconds());
+            double totalBonusPercent = settings.totalBonusPercent(newStacks) * 100.0D;
+            sendSwiftnessActivatedMessage(attackerPlayer, settings.durationSeconds(), totalBonusPercent);
         }
     }
 
-    private void sendSwiftnessActivatedMessage(PlayerRef playerRef, double durationSeconds) {
+    private void refreshMovementSpeed(Ref<EntityStore> attackerRef,
+            Store<EntityStore> store,
+            PlayerData playerData) {
+        if (skillManager == null || store == null || attackerRef == null || playerData == null
+                || !attackerRef.isValid()) {
+            return;
+        }
+        try {
+            skillManager.applyMovementSpeedModifier(attackerRef, store, playerData);
+        } catch (Exception ignored) {
+        }
+    }
+
+    private void sendSwiftnessActivatedMessage(PlayerRef playerRef, double durationSeconds, double bonusPercent) {
         if (playerRef == null || !playerRef.isValid()) {
             return;
         }
-        String durationText = durationSeconds > 0.0D
-                ? String.format("%.0fs", durationSeconds)
-                : null;
+        String durationText = formatDuration(durationSeconds);
+        String bonusText = bonusPercent > 0.0D
+                ? String.format("+%.0f%% movement speed", bonusPercent)
+                : "Movement speed increased";
         String text = durationText == null
-                ? "Swiftness activated!"
-                : "Swiftness activated! Bonus lasts for " + durationText + ".";
+                ? "Swiftness activated! " + bonusText + "."
+                : String.format("Swiftness activated! %s for %s.", bonusText, durationText);
         playerRef.sendMessage(Message.raw(text).color("#4fd7f7"));
+    }
+
+    private String formatDuration(double durationSeconds) {
+        if (durationSeconds <= 0.0D) {
+            return null;
+        }
+        if (Math.abs(durationSeconds - Math.rint(durationSeconds)) < 0.05D) {
+            return String.format("%.0fs", durationSeconds);
+        }
+        return String.format("%.1fs", durationSeconds);
     }
 }

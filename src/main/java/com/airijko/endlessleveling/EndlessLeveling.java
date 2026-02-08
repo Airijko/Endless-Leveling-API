@@ -10,6 +10,7 @@ import com.airijko.endlessleveling.listeners.PartyListener;
 import com.airijko.endlessleveling.listeners.PlayerCombatListener;
 import com.airijko.endlessleveling.listeners.PlayerDataListener;
 import com.airijko.endlessleveling.listeners.PlayerDefenseListener;
+import com.airijko.endlessleveling.listeners.SwiftnessKillSystem;
 import com.airijko.endlessleveling.listeners.XpEventListener;
 import com.airijko.endlessleveling.listeners.BreakBlockEntitySystem;
 import com.airijko.endlessleveling.managers.*;
@@ -143,10 +144,14 @@ public class EndlessLeveling extends JavaPlugin {
                 .registerSystem(new PlayerCombatListener(playerDataManager, skillManager, passiveManager,
                         archetypePassiveManager));
         this.getEntityStoreRegistry()
+                .registerSystem(new SwiftnessKillSystem(playerDataManager, passiveManager, archetypePassiveManager,
+                        skillManager));
+        this.getEntityStoreRegistry()
                 .registerSystem(new PlayerDefenseListener(playerDataManager, skillManager, passiveManager,
                         archetypePassiveManager));
         this.getEntityStoreRegistry()
-                .registerSystem(new PassiveRegenSystem(playerDataManager, passiveManager, archetypePassiveManager));
+                .registerSystem(new PassiveRegenSystem(playerDataManager, passiveManager, archetypePassiveManager,
+                        skillManager));
         playerRaceStatSystem = new PlayerRaceStatSystem(playerDataManager, skillManager);
         this.getEntityStoreRegistry().registerSystem(playerRaceStatSystem);
         this.getEntityStoreRegistry().registerSystem(new MobNameplateSystem());
