@@ -278,8 +278,6 @@ $C.@PageOverlay {
 
                                 Group #RacePassiveEntries {
                                     LayoutMode: Top;
-                                    Background: #20140a(0.75);
-                                    Padding: (Left: 12, Right: 12, Top: 10, Bottom: 10);
                                 }
                             }
                         }

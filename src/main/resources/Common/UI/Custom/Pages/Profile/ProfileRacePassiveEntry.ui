@@ -1,7 +1,7 @@
 Group {
     LayoutMode: Left;
     Anchor: (Height: 22);
-    Background: #20140a(0.75);
+    Background: #0f1824(0.8);
     Padding: (Left: 10, Right: 10, Top: 3, Bottom: 3);
 
     Label #PassiveName {

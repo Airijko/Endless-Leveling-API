@@ -217,8 +217,24 @@ $C.@PageOverlay {
 
                                 Group #ClassWeaponEntries {
                                     LayoutMode: Top;
-                                    Background: #0b141f(0.7);
-                                    Padding: (Left: 12, Right: 12, Top: 8, Bottom: 8);
+                                }
+
+                                Group { Anchor: (Height: 16); }
+
+                                Label {
+                                    Text: "Innate Attribute Gains";
+                                    Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
+                                    Anchor: (Height: 20);
+                                }
+
+                                Label #ClassInnateSummary {
+                                    Text: "Inspect a class to preview innate attribute bonuses.";
+                                    Style: (FontSize: 12, TextColor: #9fb6d3, RenderBold: true);
+                                    Anchor: (Height: 18);
+                                }
+
+                                Group #ClassInnateEntries {
+                                    LayoutMode: Top;
                                 }
 
                                 Group { Anchor: (Height: 16); }
@@ -237,8 +253,6 @@ $C.@PageOverlay {
 
                                 Group #ClassPassiveEntries {
                                     LayoutMode: Top;
-                                    Background: #20140a(0.75);
-                                    Padding: (Left: 12, Right: 12, Top: 10, Bottom: 10);
                                 }
                             }
                         }

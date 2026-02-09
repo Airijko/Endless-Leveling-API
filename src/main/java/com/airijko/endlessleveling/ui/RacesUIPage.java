@@ -137,8 +137,6 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         List<RaceDefinition> races = getSortedRaces();
         ui.set("#RaceCountLabel.Text", races.size() + (races.size() == 1 ? " race" : " races"));
 
-        long cooldownSeconds = raceManager.getChooseRaceCooldownSeconds();
-
         for (int index = 0; index < races.size(); index++) {
             RaceDefinition definition = races.get(index);
             ui.append("#RaceRows", "Pages/Races/RaceRow.ui");

@@ -90,16 +90,14 @@
       Text: "CLASSES";
     }
 
+    Group { Anchor: (Height: 24); }
+
     @LeftNavButton #NavParty {
       Text: "PARTY";
     }
 
     @LeftNavButton #NavLeaderboards {
       Text: "LEADERBOARDS";
-    }
-
-    @LeftNavButton #NavSettings {
-      Text: "SETTINGS";
     }
   }
 
@@ -111,5 +109,9 @@
     Anchor: (Height: 20);
     Padding: (Left: 16);
     Style: (FontSize: 10, TextColor: #4a5568);
+  }
+
+  @LeftNavButton #NavSettings {
+    Text: "SETTINGS";
   }
 };

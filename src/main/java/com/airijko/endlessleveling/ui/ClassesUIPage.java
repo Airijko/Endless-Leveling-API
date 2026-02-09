@@ -176,6 +176,9 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             ui.set("#ClassPassiveSummary.Visible", true);
             ui.set("#ClassPassiveSummary.Text", "No class selected.");
             ui.clear("#ClassPassiveEntries");
+            ui.set("#ClassInnateSummary.Visible", true);
+            ui.set("#ClassInnateSummary.Text", "No class selected.");
+            ui.clear("#ClassInnateEntries");
             ui.set("#ConfirmPrimaryButton.Visible", false);
             ui.set("#ConfirmSecondaryButton.Visible", false);
             ui.set("#ClassDetailStatus.Text", "Select a class to preview bonuses.");
@@ -234,17 +237,62 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     private void buildPassiveList(UICommandBuilder ui, CharacterClassDefinition selection, PlayerData data) {
         List<RacePassiveDefinition> passives = selection.getPassiveDefinitions();
         if (passives == null || passives.isEmpty()) {
-            ui.set("#ClassPassiveSummary.Visible", true);
-            ui.set("#ClassPassiveSummary.Text", "This class does not define passive bonuses.");
-            ui.clear("#ClassPassiveEntries");
+            populatePassiveSection(ui,
+                    List.of(),
+                    data,
+                    "#ClassPassiveSummary",
+                    "#ClassPassiveEntries",
+                    "This class does not define passive bonuses.");
+            populatePassiveSection(ui,
+                    List.of(),
+                    data,
+                    "#ClassInnateSummary",
+                    "#ClassInnateEntries",
+                    "This class does not grant innate attribute bonuses.");
             return;
         }
-        ui.set("#ClassPassiveSummary.Visible", false);
-        ui.clear("#ClassPassiveEntries");
+
+        List<RacePassiveDefinition> innate = new ArrayList<>();
+        List<RacePassiveDefinition> standard = new ArrayList<>();
+        for (RacePassiveDefinition passive : passives) {
+            if (passive.type() == ArchetypePassiveType.INNATE_ATTRIBUTE_GAIN) {
+                innate.add(passive);
+            } else {
+                standard.add(passive);
+            }
+        }
+
+        populatePassiveSection(ui,
+                standard,
+                data,
+                "#ClassPassiveSummary",
+                "#ClassPassiveEntries",
+                "This class does not define passive bonuses.");
+        populatePassiveSection(ui,
+                innate,
+                data,
+                "#ClassInnateSummary",
+                "#ClassInnateEntries",
+                "This class does not grant innate attribute bonuses.");
+    }
+
+    private void populatePassiveSection(UICommandBuilder ui,
+            List<RacePassiveDefinition> passives,
+            PlayerData data,
+            String summarySelector,
+            String entriesSelector,
+            String emptyText) {
+        ui.clear(entriesSelector);
+        if (passives == null || passives.isEmpty()) {
+            ui.set(summarySelector + ".Visible", true);
+            ui.set(summarySelector + ".Text", emptyText);
+            return;
+        }
+        ui.set(summarySelector + ".Visible", false);
         for (int index = 0; index < passives.size(); index++) {
             RacePassiveDefinition passive = passives.get(index);
-            ui.append("#ClassPassiveEntries", "Pages/Profile/ProfileRacePassiveEntry.ui");
-            String base = "#ClassPassiveEntries[" + index + "]";
+            ui.append(entriesSelector, "Pages/Profile/ProfileRacePassiveEntry.ui");
+            String base = entriesSelector + "[" + index + "]";
             ui.set(base + " #PassiveName.Text", buildPassiveLabel(passive));
             ui.set(base + " #PassiveValue.Text", formatPassiveDescription(passive, data));
         }
