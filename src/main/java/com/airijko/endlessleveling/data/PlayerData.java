@@ -18,6 +18,7 @@ public class PlayerData {
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
 
     public static final String DEFAULT_RACE_ID = "Human";
+    public static final String DEFAULT_PRIMARY_CLASS_ID = "Adventurer";
     public static final int MAX_PROFILES = 5;
     public static final int MAX_PROFILE_NAME_LENGTH = 32;
 
@@ -369,6 +370,22 @@ public class PlayerData {
         getActiveProfile().setLastRaceChangeEpochSeconds(epochSeconds);
     }
 
+    public String getPrimaryClassId() {
+        return getActiveProfile().getPrimaryClassId();
+    }
+
+    public void setPrimaryClassId(String classId) {
+        getActiveProfile().setPrimaryClassId(classId);
+    }
+
+    public String getSecondaryClassId() {
+        return getActiveProfile().getSecondaryClassId();
+    }
+
+    public void setSecondaryClassId(String classId) {
+        getActiveProfile().setSecondaryClassId(classId);
+    }
+
     /**
      * Increase a skill attribute if the player has skill points.
      * Returns true if successful, false if not enough points.
@@ -406,6 +423,8 @@ public class PlayerData {
         private final Map<PassiveType, Integer> passiveLevels;
         private String raceId;
         private long lastRaceChangeEpochSeconds;
+        private String primaryClassId;
+        private String secondaryClassId;
 
         private String name;
 
@@ -423,6 +442,8 @@ public class PlayerData {
             }
             this.raceId = DEFAULT_RACE_ID;
             this.lastRaceChangeEpochSeconds = 0L;
+            this.primaryClassId = DEFAULT_PRIMARY_CLASS_ID;
+            this.secondaryClassId = null;
             this.name = (name == null || name.isBlank()) ? "Profile" : name;
         }
 
@@ -496,6 +517,39 @@ public class PlayerData {
 
         public void setLastRaceChangeEpochSeconds(long epochSeconds) {
             this.lastRaceChangeEpochSeconds = Math.max(0L, epochSeconds);
+        }
+
+        public String getPrimaryClassId() {
+            return primaryClassId;
+        }
+
+        public void setPrimaryClassId(String classId) {
+            if (classId == null || classId.isBlank()) {
+                this.primaryClassId = DEFAULT_PRIMARY_CLASS_ID;
+                return;
+            }
+            this.primaryClassId = classId.trim();
+            if (secondaryClassId != null
+                    && secondaryClassId.equalsIgnoreCase(this.primaryClassId)) {
+                this.secondaryClassId = null;
+            }
+        }
+
+        public String getSecondaryClassId() {
+            return secondaryClassId;
+        }
+
+        public void setSecondaryClassId(String classId) {
+            if (classId == null || classId.isBlank()) {
+                this.secondaryClassId = null;
+                return;
+            }
+            String trimmed = classId.trim();
+            if (trimmed.equalsIgnoreCase(primaryClassId)) {
+                this.secondaryClassId = null;
+                return;
+            }
+            this.secondaryClassId = trimmed;
         }
     }
 }

@@ -113,6 +113,10 @@ public final class PlayerDataMigration {
                 ensureProfileNames(migrated);
                 LOGGER.atInfo().log("Migrated %s from v4 to v5.", file.getName());
             }
+            case 5 -> {
+                ensureProfileClasses(migrated);
+                LOGGER.atInfo().log("Migrated %s from v5 to v6.", file.getName());
+            }
             default -> LOGGER.atInfo().log("Bumped %s from v%d to v%d (default).", file.getName(), fromVersion,
                     fromVersion + 1);
         }
@@ -230,6 +234,39 @@ public final class PlayerDataMigration {
             profileMap.put("name", normalized);
             profilesMap.put(entry.getKey(), profileMap);
         }
+    }
+
+    private static void ensureProfileClasses(Map<String, Object> migrated) {
+        Object profilesNode = migrated.get("profiles");
+        if (!(profilesNode instanceof Map<?, ?> rawProfiles)) {
+            Map<String, Object> profile = toMutableStringObjectMap(migrated.get("profile"));
+            if (profile == null) {
+                profile = new LinkedHashMap<>();
+            }
+            profile.put("classes", defaultClassesSection(profile.get("classes")));
+            migrated.put("profile", profile);
+            return;
+        }
+
+        @SuppressWarnings("unchecked")
+        Map<Object, Object> profilesMap = (Map<Object, Object>) rawProfiles;
+        for (Map.Entry<Object, Object> entry : profilesMap.entrySet()) {
+            Map<String, Object> profileMap = toMutableStringObjectMap(entry.getValue());
+            if (profileMap == null) {
+                profileMap = new LinkedHashMap<>();
+            }
+            profileMap.put("classes", defaultClassesSection(profileMap.get("classes")));
+            profilesMap.put(entry.getKey(), profileMap);
+        }
+    }
+
+    private static Map<String, Object> defaultClassesSection(Object existingNode) {
+        Map<String, Object> classesMap = toMutableStringObjectMap(existingNode);
+        if (classesMap == null) {
+            classesMap = new LinkedHashMap<>();
+        }
+        classesMap.putIfAbsent("primary", PlayerData.DEFAULT_PRIMARY_CLASS_ID);
+        return classesMap;
     }
 
     private static int parseProfileIndex(Object key) {

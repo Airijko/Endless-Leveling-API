@@ -1,0 +1,469 @@
+package com.airijko.endlessleveling.managers;
+
+import com.airijko.endlessleveling.classes.CharacterClassDefinition;
+import com.airijko.endlessleveling.data.PlayerData;
+import com.airijko.endlessleveling.enums.ArchetypePassiveType;
+import com.airijko.endlessleveling.enums.ClassWeaponType;
+import com.airijko.endlessleveling.enums.SkillAttributeType;
+import com.airijko.endlessleveling.races.RacePassiveDefinition;
+import com.hypixel.hytale.logger.HytaleLogger;
+import org.yaml.snakeyaml.Yaml;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.Reader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Stream;
+
+/**
+ * Loads and resolves EndlessLeveling character class definitions.
+ */
+public class ClassManager {
+
+    private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
+
+    private final PluginFilesManager filesManager;
+    private final boolean classesEnabled;
+    private final Map<String, CharacterClassDefinition> classesByKey = new HashMap<>();
+    private final Yaml yaml = new Yaml();
+
+    private String defaultPrimaryClassId = PlayerData.DEFAULT_PRIMARY_CLASS_ID;
+    private String defaultSecondaryClassId = null;
+    private final double secondaryPassiveScale = 0.5D;
+    private final double secondaryWeaponScale = 0.5D;
+
+    public ClassManager(ConfigManager configManager, PluginFilesManager filesManager) {
+        Objects.requireNonNull(configManager, "ConfigManager is required");
+        this.filesManager = Objects.requireNonNull(filesManager, "PluginFilesManager is required");
+        this.classesEnabled = parseBoolean(configManager.get("enable_classes", Boolean.TRUE, false), true);
+
+        Object primaryConfig = configManager.get("default_primary_class", PlayerData.DEFAULT_PRIMARY_CLASS_ID, false);
+        String configuredPrimary = safeString(primaryConfig);
+        if (configuredPrimary != null) {
+            this.defaultPrimaryClassId = configuredPrimary;
+        }
+
+        Object secondaryConfig = configManager.get("default_secondary_class", null, false);
+        this.defaultSecondaryClassId = safeString(secondaryConfig);
+
+        if (!classesEnabled) {
+            LOGGER.atInfo().log("Class system disabled via config.yml (enable_classes=false).");
+            return;
+        }
+
+        loadClasses();
+    }
+
+    public boolean isEnabled() {
+        return classesEnabled && !classesByKey.isEmpty();
+    }
+
+    public Collection<CharacterClassDefinition> getLoadedClasses() {
+        return Collections.unmodifiableCollection(classesByKey.values());
+    }
+
+    public CharacterClassDefinition getClass(String classId) {
+        if (classId == null) {
+            return null;
+        }
+        return classesByKey.get(normalizeKey(classId));
+    }
+
+    public CharacterClassDefinition getPlayerPrimaryClass(PlayerData data) {
+        if (data == null) {
+            return null;
+        }
+        String resolvedId = resolvePrimaryClassIdentifier(data.getPrimaryClassId());
+        CharacterClassDefinition resolved = getClass(resolvedId);
+        if (resolved != null && !resolved.getId().equals(data.getPrimaryClassId())) {
+            data.setPrimaryClassId(resolved.getId());
+        }
+        return resolved;
+    }
+
+    public CharacterClassDefinition getPlayerSecondaryClass(PlayerData data) {
+        if (data == null) {
+            return null;
+        }
+        String resolvedId = resolveSecondaryClassIdentifier(data.getSecondaryClassId());
+        if (resolvedId == null) {
+            if (data.getSecondaryClassId() != null) {
+                data.setSecondaryClassId(null);
+            }
+            return null;
+        }
+        CharacterClassDefinition resolved = getClass(resolvedId);
+        if (resolved != null && !resolved.getId().equals(data.getSecondaryClassId())) {
+            data.setSecondaryClassId(resolved.getId());
+        }
+        if (resolved != null && resolved.getId().equals(data.getPrimaryClassId())) {
+            // prevent duplicate stacking
+            data.setSecondaryClassId(null);
+            return null;
+        }
+        return resolved;
+    }
+
+    public CharacterClassDefinition setPlayerPrimaryClass(PlayerData data, String requestedValue) {
+        if (data == null) {
+            return null;
+        }
+        String resolvedId = resolvePrimaryClassIdentifier(requestedValue);
+        CharacterClassDefinition resolved = getClass(resolvedId);
+        if (resolved == null) {
+            resolved = getDefaultPrimaryClass();
+        }
+        if (resolved != null) {
+            data.setPrimaryClassId(resolved.getId());
+        } else {
+            data.setPrimaryClassId(PlayerData.DEFAULT_PRIMARY_CLASS_ID);
+        }
+        return resolved;
+    }
+
+    public CharacterClassDefinition setPlayerSecondaryClass(PlayerData data, String requestedValue) {
+        if (data == null) {
+            return null;
+        }
+        String resolvedId = resolveSecondaryClassIdentifier(requestedValue);
+        if (resolvedId == null) {
+            data.setSecondaryClassId(null);
+            return null;
+        }
+        CharacterClassDefinition resolved = getClass(resolvedId);
+        if (resolved == null) {
+            data.setSecondaryClassId(null);
+            return null;
+        }
+        if (resolved.getId().equalsIgnoreCase(data.getPrimaryClassId())) {
+            data.setSecondaryClassId(null);
+            return null;
+        }
+        data.setSecondaryClassId(resolved.getId());
+        return resolved;
+    }
+
+    public CharacterClassDefinition getDefaultPrimaryClass() {
+        CharacterClassDefinition configured = getClass(defaultPrimaryClassId);
+        if (configured != null) {
+            return configured;
+        }
+        return classesByKey.values().stream().findFirst().orElse(null);
+    }
+
+    public double getWeaponDamageMultiplier(PlayerData data, ClassWeaponType weaponType) {
+        if (!isEnabled() || data == null) {
+            return 1.0D;
+        }
+        double totalBonus = 0.0D;
+        CharacterClassDefinition primary = getPlayerPrimaryClass(data);
+        if (primary != null) {
+            double primaryBonus = Math.max(0.0D, primary.getWeaponMultiplier(weaponType) - 1.0D);
+            totalBonus += primaryBonus;
+        }
+        CharacterClassDefinition secondary = getPlayerSecondaryClass(data);
+        if (secondary != null && secondary != primary) {
+            double secondaryBonus = Math.max(0.0D, secondary.getWeaponMultiplier(weaponType) - 1.0D);
+            if (secondaryBonus > 0.0D) {
+                totalBonus += secondaryBonus * secondaryWeaponScale;
+            }
+        }
+        return 1.0D + totalBonus;
+    }
+
+    public double getSecondaryPassiveScale() {
+        return secondaryPassiveScale;
+    }
+
+    public String resolvePrimaryClassIdentifier(String requestedValue) {
+        if (!isEnabled()) {
+            return PlayerData.DEFAULT_PRIMARY_CLASS_ID;
+        }
+        if (requestedValue == null || requestedValue.isBlank()) {
+            CharacterClassDefinition fallback = getDefaultPrimaryClass();
+            return fallback != null ? fallback.getId() : PlayerData.DEFAULT_PRIMARY_CLASS_ID;
+        }
+        CharacterClassDefinition byId = findClassByUserInput(requestedValue);
+        if (byId != null) {
+            return byId.getId();
+        }
+        CharacterClassDefinition fallback = getDefaultPrimaryClass();
+        return fallback != null ? fallback.getId() : PlayerData.DEFAULT_PRIMARY_CLASS_ID;
+    }
+
+    public String resolveSecondaryClassIdentifier(String requestedValue) {
+        if (!isEnabled()) {
+            return null;
+        }
+        if (requestedValue == null || requestedValue.isBlank()) {
+            CharacterClassDefinition fallback = getClass(defaultSecondaryClassId);
+            return fallback != null ? fallback.getId() : null;
+        }
+        CharacterClassDefinition byId = findClassByUserInput(requestedValue);
+        return byId != null ? byId.getId() : null;
+    }
+
+    public CharacterClassDefinition findClassByUserInput(String userInput) {
+        if (!isEnabled() || userInput == null) {
+            return null;
+        }
+        CharacterClassDefinition byId = getClass(userInput);
+        if (byId != null) {
+            return byId;
+        }
+        String normalizedName = normalizeKey(userInput);
+        if (normalizedName.isEmpty()) {
+            return null;
+        }
+        for (CharacterClassDefinition definition : classesByKey.values()) {
+            String displayName = definition.getDisplayName();
+            if (displayName != null && normalizeKey(displayName).equals(normalizedName)) {
+                return definition;
+            }
+        }
+        return null;
+    }
+
+    private void loadClasses() {
+        File classesFolder = filesManager.getClassesFolder();
+        if (classesFolder == null || !classesFolder.exists()) {
+            LOGGER.atWarning().log("Classes folder is missing; cannot load class definitions.");
+            return;
+        }
+        try (Stream<Path> files = Files.walk(classesFolder.toPath())) {
+            files.filter(Files::isRegularFile)
+                    .filter(path -> path.toString().toLowerCase(Locale.ROOT).endsWith(".yml"))
+                    .forEach(this::loadClassFromFile);
+        } catch (IOException e) {
+            LOGGER.atSevere().log("Failed to walk classes directory: %s", e.getMessage());
+        }
+
+        if (!classesByKey.containsKey(normalizeKey(defaultPrimaryClassId)) && !classesByKey.isEmpty()) {
+            defaultPrimaryClassId = classesByKey.values().iterator().next().getId();
+            LOGGER.atInfo().log("Default primary class set to %s", defaultPrimaryClassId);
+        }
+        if (defaultSecondaryClassId != null
+                && !classesByKey.containsKey(normalizeKey(defaultSecondaryClassId))) {
+            defaultSecondaryClassId = null;
+        }
+
+        LOGGER.atInfo().log("Loaded %d class definition(s).", classesByKey.size());
+    }
+
+    private void loadClassFromFile(Path path) {
+        try (Reader reader = Files.newBufferedReader(path)) {
+            Map<String, Object> yamlData = yaml.load(reader);
+            if (yamlData == null) {
+                LOGGER.atWarning().log("Class file %s was empty.", path.getFileName());
+                return;
+            }
+
+            CharacterClassDefinition definition = buildDefinition(path, yamlData);
+            if (!definition.isEnabled()) {
+                LOGGER.atInfo().log("Skipping disabled class %s from %s", definition.getId(), path.getFileName());
+                return;
+            }
+            classesByKey.put(normalizeKey(definition.getId()), definition);
+            LOGGER.atInfo().log("Loaded class %s", definition.getId());
+        } catch (IOException e) {
+            LOGGER.atSevere().log("Failed to read class file %s: %s", path.getFileName(), e.getMessage());
+        } catch (RuntimeException e) {
+            LOGGER.atSevere().log("Failed to parse class file %s: %s", path.getFileName(), e.getMessage());
+        }
+    }
+
+    private CharacterClassDefinition buildDefinition(Path file, Map<String, Object> yamlData) {
+        String classId = deriveClassId(file, yamlData);
+        String displayName = safeString(yamlData.getOrDefault("class_name", yamlData.get("name")));
+        if (displayName == null) {
+            displayName = classId;
+        }
+        String description = safeString(yamlData.get("description"));
+        String role = safeString(yamlData.get("role"));
+        boolean enabled = parseBoolean(yamlData.getOrDefault("enabled", Boolean.TRUE), true);
+
+        Map<ClassWeaponType, Double> weaponMultipliers = parseWeaponSection(yamlData);
+        List<Map<String, Object>> passives = parsePassives(yamlData.get("passives"));
+        List<RacePassiveDefinition> passiveDefinitions = buildPassiveDefinitions(classId, passives);
+
+        return new CharacterClassDefinition(classId,
+                displayName,
+                description,
+                role,
+                enabled,
+                weaponMultipliers,
+                passives,
+                passiveDefinitions);
+    }
+
+    private Map<ClassWeaponType, Double> parseWeaponSection(Map<String, Object> yamlData) {
+        Object node = yamlData.get("Weapon");
+        if (node == null) {
+            node = yamlData.get("weapon");
+        }
+        if (node == null) {
+            node = yamlData.get("weapons");
+        }
+        Map<ClassWeaponType, Double> result = new EnumMap<>(ClassWeaponType.class);
+        if (!(node instanceof Iterable<?> iterable)) {
+            return result;
+        }
+        for (Object entry : iterable) {
+            Map<String, Object> weaponMap = castToStringObjectMap(entry);
+            if (weaponMap == null) {
+                continue;
+            }
+            String typeKey = safeString(weaponMap.get("type"));
+            if (typeKey == null) {
+                continue;
+            }
+            ClassWeaponType weaponType = ClassWeaponType.fromConfigKey(typeKey);
+            if (weaponType == null) {
+                continue;
+            }
+            double multiplier = parseDouble(weaponMap.get("damage"), 1.0D);
+            if (multiplier <= 0.0D) {
+                multiplier = 1.0D;
+            }
+            result.put(weaponType, multiplier);
+        }
+        return result;
+    }
+
+    private List<Map<String, Object>> parsePassives(Object node) {
+        List<Map<String, Object>> passives = new ArrayList<>();
+        if (!(node instanceof Iterable<?> iterable)) {
+            return passives;
+        }
+        for (Object entry : iterable) {
+            Map<String, Object> passive = castToStringObjectMap(entry);
+            if (passive != null && passive.containsKey("type")) {
+                passives.add(passive);
+            }
+        }
+        return passives;
+    }
+
+    private List<RacePassiveDefinition> buildPassiveDefinitions(String classId, List<Map<String, Object>> passives) {
+        List<RacePassiveDefinition> definitions = new ArrayList<>();
+        if (passives == null) {
+            return definitions;
+        }
+        for (int index = 0; index < passives.size(); index++) {
+            Map<String, Object> passive = passives.get(index);
+            if (passive == null) {
+                continue;
+            }
+            String rawType = safeString(passive.get("type"));
+            if (rawType == null) {
+                LOGGER.atWarning().log("Class %s passive entry %d is missing a type", classId, index + 1);
+                continue;
+            }
+            ArchetypePassiveType type = ArchetypePassiveType.fromConfigKey(rawType);
+            if (type == null) {
+                LOGGER.atWarning().log("Class %s passive type '%s' is not recognized", classId, rawType);
+                continue;
+            }
+            double value = parseDouble(passive.get("value"), 0.0D);
+            SkillAttributeType attributeType = null;
+            if (type == ArchetypePassiveType.INNATE_ATTRIBUTE_GAIN) {
+                String attributeKey = safeString(passive.get("attribute"));
+                attributeType = SkillAttributeType.fromConfigKey(attributeKey);
+                if (attributeType == null) {
+                    LOGGER.atWarning().log(
+                            "Class %s passive entry %d has INNATE_ATTRIBUTE_GAIN without a valid attribute key",
+                            classId, index + 1);
+                    continue;
+                }
+            }
+            definitions.add(new RacePassiveDefinition(type, value, passive, attributeType));
+        }
+        return definitions;
+    }
+
+    private double parseDouble(Object value, double defaultValue) {
+        if (value instanceof Number number) {
+            return number.doubleValue();
+        }
+        if (value instanceof String stringValue) {
+            String trimmed = stringValue.trim();
+            if (trimmed.isEmpty()) {
+                return defaultValue;
+            }
+            int spaceIndex = trimmed.indexOf(' ');
+            String numericPortion = spaceIndex >= 0 ? trimmed.substring(0, spaceIndex) : trimmed;
+            try {
+                return Double.parseDouble(numericPortion);
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return defaultValue;
+    }
+
+    private boolean parseBoolean(Object value, boolean defaultValue) {
+        if (value instanceof Boolean bool) {
+            return bool;
+        }
+        if (value instanceof Number number) {
+            return number.intValue() != 0;
+        }
+        if (value instanceof String stringValue) {
+            return Boolean.parseBoolean(stringValue.trim());
+        }
+        return defaultValue;
+    }
+
+    private String deriveClassId(Path file, Map<String, Object> yamlData) {
+        String explicitId = safeString(yamlData.get("id"));
+        if (explicitId != null) {
+            return explicitId;
+        }
+        String className = safeString(yamlData.get("class_name"));
+        if (className != null) {
+            return className;
+        }
+        String fileName = file.getFileName().toString();
+        int dotIndex = fileName.lastIndexOf('.');
+        String base = dotIndex > 0 ? fileName.substring(0, dotIndex) : fileName;
+        if (base.isBlank()) {
+            return PlayerData.DEFAULT_PRIMARY_CLASS_ID;
+        }
+        return Character.toUpperCase(base.charAt(0)) + base.substring(1);
+    }
+
+    private String safeString(Object value) {
+        if (value instanceof String stringValue) {
+            String trimmed = stringValue.trim();
+            return trimmed.isEmpty() ? null : trimmed;
+        }
+        return null;
+    }
+
+    private Map<String, Object> castToStringObjectMap(Object node) {
+        if (!(node instanceof Map<?, ?> map)) {
+            return null;
+        }
+        Map<String, Object> result = new LinkedHashMap<>();
+        for (Map.Entry<?, ?> entry : map.entrySet()) {
+            if (entry.getKey() instanceof String key) {
+                result.put(key, entry.getValue());
+            }
+        }
+        return result;
+    }
+
+    private String normalizeKey(String input) {
+        return input == null ? "" : input.trim().toLowerCase(Locale.ROOT);
+    }
+}

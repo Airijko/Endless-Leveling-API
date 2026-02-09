@@ -1,0 +1,72 @@
+$C = "../../Common.ui";
+
+Group {
+    LayoutMode: Top;
+
+    Group {
+        LayoutMode: Left;
+        Anchor: (Height: 110);
+        Background: #050910(0.88);
+        Padding: (Horizontal: 14, Vertical: 12);
+
+        Group {
+            Anchor: (Width: 4);
+            Background: #4fd7f7(0.95);
+        }
+
+        Group {
+            FlexWeight: 1;
+            LayoutMode: Top;
+            Padding: (Left: 12, Right: 12, Bottom: 12);
+
+            Group {
+                LayoutMode: Left;
+                Anchor: (Height: 22);
+
+                Label #ClassName {
+                    Style: (FontSize: 18, TextColor: #ffffff, RenderBold: true);
+                    Text: "Class Name";
+                    FlexWeight: 1;
+                }
+
+                Label #ClassSelectionStatus {
+                    Style: (FontSize: 12, TextColor: #4fd7f7, RenderBold: true);
+                    Text: "PRIMARY";
+                    Anchor: (Height: 18);
+                    Visible: false;
+                }
+            }
+
+            Group { Anchor: (Height: 10); }
+            Group { FlexWeight: 1; }
+
+            Group {
+                LayoutMode: Left;
+                Anchor: (Height: 38);
+
+                $C.@TextButton #ViewClassButton {
+                    Text: "VIEW";
+                    Anchor: (Height: 34, Width: 110);
+                }
+
+                Group { Anchor: (Width: 10); }
+
+                $C.@TextButton #SetPrimaryButton {
+                    Text: "PRIMARY";
+                    Anchor: (Height: 34, Width: 120);
+                }
+
+                Group { Anchor: (Width: 10); }
+
+                $C.@TextButton #SetSecondaryButton {
+                    Text: "SECONDARY";
+                    Anchor: (Height: 34, Width: 130);
+                }
+
+                Group { FlexWeight: 1; }
+            }
+        }
+    }
+
+    Group { Anchor: (Height: 8); }
+}

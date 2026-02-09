@@ -28,17 +28,22 @@ public class PlayerDataManager {
     private final PluginFilesManager filesManager;
     private final SkillManager skillManager;
     private final RaceManager raceManager;
+    private final ClassManager classManager;
     private final Yaml yaml;
     private final Map<UUID, PlayerData> playerCache = new HashMap<>();
 
     // Current schema version for player data files. Increment when adding new
     // fields that require migration. Use this to detect/outdate/migrate files.
-    private static final int CURRENT_PLAYERDATA_VERSION = 5;
+    private static final int CURRENT_PLAYERDATA_VERSION = 6;
 
-    public PlayerDataManager(PluginFilesManager filesManager, SkillManager skillManager, RaceManager raceManager) {
+    public PlayerDataManager(PluginFilesManager filesManager,
+            SkillManager skillManager,
+            RaceManager raceManager,
+            ClassManager classManager) {
         this.filesManager = filesManager;
         this.skillManager = skillManager;
         this.raceManager = raceManager;
+        this.classManager = classManager;
 
         DumperOptions options = new DumperOptions();
         options.setIndent(2);
@@ -71,6 +76,8 @@ public class PlayerDataManager {
         }
 
         ensureValidRace(data);
+        ensureValidClasses(data);
+        ensureValidClasses(data);
 
         // Cache and save
         playerCache.put(uuid, data);
@@ -98,6 +105,7 @@ public class PlayerDataManager {
             return;
         }
         ensureValidRace(data);
+        ensureValidClasses(data);
         File file = filesManager.getPlayerDataFile(data.getUuid());
 
         Map<String, Object> map = new LinkedHashMap<>();
@@ -148,6 +156,13 @@ public class PlayerDataManager {
                     }
                     raceSection.put("lastChangedEpochSeconds", profile.getLastRaceChangeEpochSeconds());
                     profileMap.put("race", raceSection);
+
+                    Map<String, Object> classesSection = new LinkedHashMap<>();
+                    classesSection.put("primary", profile.getPrimaryClassId());
+                    if (profile.getSecondaryClassId() != null) {
+                        classesSection.put("secondary", profile.getSecondaryClassId());
+                    }
+                    profileMap.put("classes", classesSection);
 
                     Map<String, Integer> profilePassives = new LinkedHashMap<>();
                     for (PassiveType type : PassiveType.values()) {
@@ -389,6 +404,12 @@ public class PlayerDataManager {
         Object raceNode = source.get("race");
         profile.setRaceId(parseRaceId(raceNode));
         profile.setLastRaceChangeEpochSeconds(parseRaceLastChanged(raceNode));
+
+        Map<String, Object> classesNode = castToStringObjectMap(source.get("classes"));
+        String primaryClassId = parseClassId(classesNode != null ? classesNode.get("primary") : null);
+        String secondaryClassId = parseClassId(classesNode != null ? classesNode.get("secondary") : null);
+        profile.setPrimaryClassId(primaryClassId);
+        profile.setSecondaryClassId(secondaryClassId);
     }
 
     private int parseProfileIndex(String key) {
@@ -492,6 +513,14 @@ public class PlayerDataManager {
         return 0L;
     }
 
+    private String parseClassId(Object classNode) {
+        if (classNode instanceof String stringValue) {
+            String trimmed = stringValue.trim();
+            return trimmed.isEmpty() ? null : trimmed;
+        }
+        return null;
+    }
+
     private String coerceRaceString(Object value) {
         if (value instanceof String stringValue) {
             String trimmed = stringValue.trim();
@@ -518,6 +547,34 @@ public class PlayerDataManager {
         });
 
         raceManager.setPlayerRace(data, data.getRaceId());
+    }
+
+    private void ensureValidClasses(PlayerData data) {
+        if (data == null) {
+            return;
+        }
+        if (classManager == null || !classManager.isEnabled()) {
+            data.getProfiles().values().forEach(profile -> {
+                profile.setPrimaryClassId(PlayerData.DEFAULT_PRIMARY_CLASS_ID);
+                profile.setSecondaryClassId(null);
+            });
+            data.setPrimaryClassId(PlayerData.DEFAULT_PRIMARY_CLASS_ID);
+            data.setSecondaryClassId(null);
+            return;
+        }
+
+        data.getProfiles().values().forEach(profile -> {
+            String resolvedPrimary = classManager.resolvePrimaryClassIdentifier(profile.getPrimaryClassId());
+            profile.setPrimaryClassId(resolvedPrimary);
+            String resolvedSecondary = classManager.resolveSecondaryClassIdentifier(profile.getSecondaryClassId());
+            if (resolvedSecondary != null && resolvedSecondary.equalsIgnoreCase(resolvedPrimary)) {
+                resolvedSecondary = null;
+            }
+            profile.setSecondaryClassId(resolvedSecondary);
+        });
+
+        classManager.setPlayerPrimaryClass(data, data.getPrimaryClassId());
+        classManager.setPlayerSecondaryClass(data, data.getSecondaryClassId());
     }
 
     private String resolveRaceDisplayName(String raceId) {
@@ -572,6 +629,7 @@ public class PlayerDataManager {
             data.setLuckDoubleDropsNotifEnabled(parseBoolean(luckDoubleDropsNotif, true));
             data.setHealthRegenNotifEnabled(parseBoolean(healthRegenNotif, true));
             ensureValidRace(data);
+            ensureValidClasses(data);
 
             return data;
         } catch (Exception e) {

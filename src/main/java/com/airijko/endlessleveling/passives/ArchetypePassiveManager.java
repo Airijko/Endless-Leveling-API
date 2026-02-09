@@ -1,10 +1,12 @@
 package com.airijko.endlessleveling.passives;
 
+import com.airijko.endlessleveling.classes.CharacterClassDefinition;
 import com.airijko.endlessleveling.data.PlayerData;
 import com.airijko.endlessleveling.enums.ArchetypePassiveType;
+import com.airijko.endlessleveling.managers.ClassManager;
+import com.airijko.endlessleveling.managers.RaceManager;
 import com.airijko.endlessleveling.races.RaceDefinition;
 import com.airijko.endlessleveling.races.RacePassiveDefinition;
-import com.airijko.endlessleveling.managers.RaceManager;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -20,10 +22,13 @@ public class ArchetypePassiveManager {
 
     private final List<PassiveSource> sources;
 
-    public ArchetypePassiveManager(RaceManager raceManager) {
+    public ArchetypePassiveManager(RaceManager raceManager, ClassManager classManager) {
         List<PassiveSource> builder = new ArrayList<>();
         if (raceManager != null) {
             builder.add(new RacePassiveSource(raceManager));
+        }
+        if (classManager != null) {
+            builder.add(new ClassPassiveSource(classManager));
         }
         this.sources = List.copyOf(builder);
     }
@@ -75,16 +80,55 @@ public class ArchetypePassiveManager {
                 return;
             }
             for (RacePassiveDefinition passive : race.getPassiveDefinitions()) {
-                if (passive == null || passive.type() == null) {
-                    continue;
-                }
-                double value = passive.value();
-                if (value == 0.0D) {
-                    continue;
-                }
-                totals.merge(passive.type(), value, Double::sum);
-                grouped.computeIfAbsent(passive.type(), key -> new ArrayList<>()).add(passive);
+                addPassive(passive, 1.0D, totals, grouped);
             }
         }
+    }
+
+    private static final class ClassPassiveSource implements PassiveSource {
+        private final ClassManager classManager;
+
+        ClassPassiveSource(ClassManager classManager) {
+            this.classManager = classManager;
+        }
+
+        @Override
+        public void collect(PlayerData playerData,
+                EnumMap<ArchetypePassiveType, Double> totals,
+                EnumMap<ArchetypePassiveType, List<RacePassiveDefinition>> grouped) {
+            if (playerData == null || classManager == null || !classManager.isEnabled()) {
+                return;
+            }
+            CharacterClassDefinition primary = classManager.getPlayerPrimaryClass(playerData);
+            if (primary != null) {
+                for (RacePassiveDefinition passive : primary.getPassiveDefinitions()) {
+                    addPassive(passive, 1.0D, totals, grouped);
+                }
+            }
+            CharacterClassDefinition secondary = classManager.getPlayerSecondaryClass(playerData);
+            if (secondary != null && secondary != primary) {
+                double scale = classManager.getSecondaryPassiveScale();
+                for (RacePassiveDefinition passive : secondary.getPassiveDefinitions()) {
+                    addPassive(passive, scale, totals, grouped);
+                }
+            }
+        }
+    }
+
+    private static void addPassive(RacePassiveDefinition passive,
+            double scale,
+            EnumMap<ArchetypePassiveType, Double> totals,
+            EnumMap<ArchetypePassiveType, List<RacePassiveDefinition>> grouped) {
+        if (passive == null || passive.type() == null) {
+            return;
+        }
+        double scaledValue = passive.value() * scale;
+        if (scaledValue == 0.0D) {
+            return;
+        }
+        totals.merge(passive.type(), scaledValue, Double::sum);
+        RacePassiveDefinition effectiveDefinition = scale == 1.0D ? passive
+                : new RacePassiveDefinition(passive.type(), scaledValue, passive.properties(), passive.attributeType());
+        grouped.computeIfAbsent(passive.type(), key -> new ArrayList<>()).add(effectiveDefinition);
     }
 }

@@ -1,4 +1,4 @@
-version: 5
+version: 6
 playerName: Airijko
 activeProfile: 2
 
@@ -29,6 +29,8 @@ profiles:
       id: Human
       name: Human
       lastChangedEpochSeconds: 1770463537
+    classes:
+      primary: Adventurer
     passives:
       LIFE_STEAL: 4
       REGENERATION: 2
@@ -54,6 +56,8 @@ profiles:
       id: Golem
       name: Golem
       lastChangedEpochSeconds: 1770463537
+    classes:
+      primary: Adventurer
     passives:
       LIFE_STEAL: 10
       REGENERATION: 10
@@ -79,6 +83,8 @@ profiles:
       id: Celestial
       name: Celestial
       lastChangedEpochSeconds: 0
+    classes:
+      primary: Adventurer
     passives:
       LIFE_STEAL: 0
       REGENERATION: 0

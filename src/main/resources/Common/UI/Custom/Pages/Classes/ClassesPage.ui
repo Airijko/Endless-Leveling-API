@@ -1,0 +1,282 @@
+$C = "../../Common.ui";
+$Nav = "../Nav/LeftNavPanel.ui";
+
+$C.@PageOverlay {
+    $C.@DecoratedContainer {
+        Anchor: (Width: 1000, Height: 700);
+        #Title {
+            Group {
+                $C.@Title {
+                    @Text = "ENDLESS LEVELING";
+                }
+            }
+        }
+
+        #Content {
+            LayoutMode: Left;
+            Padding: (Full: 0);
+
+            $Nav.@LeftNavPanel {}
+
+            Group #RightPanel {
+                FlexWeight: 1;
+                LayoutMode: Top;
+                Anchor: (Right: 7, Bottom: 7);
+
+                Group #Header {
+                    LayoutMode: Left;
+                    Anchor: (Height: 60);
+                    Padding: (Horizontal: 16, Vertical: 10);
+
+                    Label #ClassesTitleLabel {
+                        Text: "Class Codex";
+                        Anchor: (Height: 60);
+                        Style: (FontSize: 22, TextColor: #ffffff, RenderBold: true, VerticalAlignment: Center);
+                    }
+
+                    Group { FlexWeight: 1; }
+
+                    Group #ClassStatusCard {
+                        LayoutMode: Top;
+                        Anchor: (Width: 320);
+                        Background: #0b141f(0.92);
+                        Padding: (Full: 10);
+
+                        Label {
+                            Text: "Class Assignments";
+                            Style: (FontSize: 12, TextColor: #8aa1bf, RenderBold: true, LetterSpacing: 1);
+                            Anchor: (Height: 12);
+                        }
+
+                        Group { Anchor: (Height: 8); }
+
+                        Group {
+                            LayoutMode: Left;
+                            Anchor: (Height: 20);
+                            Label {
+                                Text: "Primary";
+                                Style: (FontSize: 11, TextColor: #6fe3ff, RenderBold: true);
+                            }
+                            Group { Anchor: (Width: 8); }
+                            Label #CurrentPrimaryValue {
+                                Text: "--";
+                                Style: (FontSize: 13, TextColor: #ffffff, RenderBold: true);
+                                FlexWeight: 1;
+                            }
+                        }
+
+                        Group {
+                            LayoutMode: Left;
+                            Anchor: (Height: 20);
+                            Label {
+                                Text: "Secondary";
+                                Style: (FontSize: 11, TextColor: #d4b5ff, RenderBold: true);
+                            }
+                            Group { Anchor: (Width: 8); }
+                            Label #CurrentSecondaryValue {
+                                Text: "None";
+                                Style: (FontSize: 13, TextColor: #ffffff, RenderBold: true);
+                                FlexWeight: 1;
+                            }
+                        }
+
+                        Group { Anchor: (Height: 6); }
+                        Label {
+                            Text: "Secondary classes share 50% of bonuses.";
+                            Style: (FontSize: 11, TextColor: #9fb6d3);
+                            Anchor: (Height: 14);
+                        }
+                    }
+                }
+
+                Group { Anchor: (Height: 1); Background: #2b3542; }
+
+                Group #ClassContent {
+                    LayoutMode: Left;
+                    FlexWeight: 1;
+                    Padding: (Full: 16);
+
+                    Group #ClassListColumn {
+                        FlexWeight: 1;
+                        LayoutMode: Top;
+
+                        Group #ClassListHeader {
+                            LayoutMode: Left;
+                            Anchor: (Height: 32);
+
+                            Label {
+                                Text: "Available Classes";
+                                Style: (FontSize: 16, TextColor: #ffffff, RenderBold: true);
+                            }
+
+                            Group { FlexWeight: 1; }
+
+                            Label #ClassCountLabel {
+                                Text: "0 classes";
+                                Style: (FontSize: 12, TextColor: #9fb6d3);
+                                Anchor: (Height: 18);
+                            }
+                        }
+
+                        Group {
+                            LayoutMode: Top;
+                            Background: #0b141f(0.6);
+                            Padding: (Left: 14, Right: 14, Top: 10, Bottom: 10);
+
+                            Label {
+                                Text: "View a class to inspect its role, weapon affinities, and passives. Assign it as primary or secondary to apply bonuses.";
+                                Style: (FontSize: 12, TextColor: #8aa1bf, Wrap: true);
+                                FlexWeight: 1;
+                            }
+                        }
+
+                        Group { Anchor: (Height: 10); }
+
+                        Group #ClassListScroll {
+                            FlexWeight: 1;
+                            LayoutMode: TopScrolling;
+                            ScrollbarStyle: $C.@DefaultScrollbarStyle;
+
+                            Group #ClassRows {
+                                LayoutMode: Top;
+                            }
+                        }
+                    }
+
+                    Group { Anchor: (Width: 16); }
+
+                    Group #ClassDetailPanel {
+                        LayoutMode: Top;
+                        Anchor: (Width: 430);
+                        Background: #050910(0.85);
+                        Padding: (Left: 18, Right: 18, Top: 18, Bottom: 18);
+
+                        Label #SelectedClassLabel {
+                            Text: "Select a Class";
+                            Style: (FontSize: 20, TextColor: #ffffff, RenderBold: true);
+                            Anchor: (Height: 24);
+                        }
+
+                        Label #SelectedClassSubtitle {
+                            Text: "Choose a class on the left to preview its bonuses.";
+                            Style: (FontSize: 13, TextColor: #8aa1bf);
+                            Anchor: (Height: 18);
+                        }
+
+                        Group { Anchor: (Height: 8); }
+
+                        Label #ClassRoleValue {
+                            Text: "Role: --";
+                            Style: (FontSize: 12, TextColor: #9fb6d3, RenderBold: true);
+                            Anchor: (Height: 16);
+                        }
+
+                        Group { Anchor: (Height: 8); }
+                        Group { Anchor: (Height: 1); Background: #ffffff(0.08); }
+                        Group { Anchor: (Height: 8); }
+
+                        Group #ClassDetailScrollArea {
+                            FlexWeight: 1;
+                            LayoutMode: TopScrolling;
+                            ScrollbarStyle: $C.@DefaultScrollbarStyle;
+
+                            Group #ClassDetailScrollContent {
+                                LayoutMode: Top;
+
+                                Label {
+                                    Text: "Lore Preview";
+                                    Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
+                                    Anchor: (Height: 20);
+                                }
+
+                                Label #ClassLoreText {
+                                    Text: "Dive into the fantasy and goals of this class.";
+                                    Style: (FontSize: 12, TextColor: #9fb6d3, Wrap: true);
+                                    Anchor: (Height: 48);
+                                    FlexWeight: 1;
+                                }
+
+                                Group { Anchor: (Height: 16); }
+
+                                Label {
+                                    Text: "Weapon Affinities";
+                                    Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
+                                    Anchor: (Height: 20);
+                                }
+
+                                Label #ClassWeaponSummary {
+                                    Text: "This class does not define weapon bonuses.";
+                                    Style: (FontSize: 12, TextColor: #9fb6d3, RenderBold: true);
+                                    Anchor: (Height: 18);
+                                }
+
+                                Group #ClassWeaponEntries {
+                                    LayoutMode: Top;
+                                    Background: #0b141f(0.7);
+                                    Padding: (Left: 12, Right: 12, Top: 8, Bottom: 8);
+                                }
+
+                                Group { Anchor: (Height: 16); }
+
+                                Label {
+                                    Text: "Passives";
+                                    Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
+                                    Anchor: (Height: 20);
+                                }
+
+                                Label #ClassPassiveSummary {
+                                    Text: "Inspect a class to preview its passive bonuses.";
+                                    Style: (FontSize: 12, TextColor: #9fb6d3, RenderBold: true);
+                                    Anchor: (Height: 18);
+                                }
+
+                                Group #ClassPassiveEntries {
+                                    LayoutMode: Top;
+                                    Background: #20140a(0.75);
+                                    Padding: (Left: 12, Right: 12, Top: 10, Bottom: 10);
+                                }
+                            }
+                        }
+
+                        Group { Anchor: (Height: 16); }
+
+                        Group #ClassDetailActions {
+                            LayoutMode: Left;
+                            Anchor: (Height: 42);
+
+                            Label #ClassDetailStatus {
+                                Text: "Secondary classes grant half value. Changes apply instantly.";
+                                Style: (FontSize: 11, TextColor: #ffc300, RenderBold: true);
+                                FlexWeight: 1;
+                            }
+
+                            Group { Anchor: (Width: 10); }
+
+                            $C.@TextButton #ClearSecondaryButton {
+                                Text: "CLEAR SECONDARY";
+                                Anchor: (Height: 32, Width: 140);
+                                Visible: false;
+                            }
+
+                            Group { Anchor: (Width: 8); }
+
+                            $C.@TextButton #ConfirmSecondaryButton {
+                                Text: "SET SECONDARY";
+                                Anchor: (Height: 32, Width: 140);
+                            }
+
+                            Group { Anchor: (Width: 8); }
+
+                            $C.@TextButton #ConfirmPrimaryButton {
+                                Text: "SET PRIMARY";
+                                Anchor: (Height: 32, Width: 140);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+$C.@BackButton {}

@@ -85,6 +85,13 @@ default_race: "Human" # Race assigned to new players
 choose_race_cooldown: 3600 # Cooldown (seconds) before changing race again
 
 # ------------------------------------------------------------
+# CLASS SETTINGS
+# ------------------------------------------------------------
+enable_classes: true # Enable or disable the class system
+default_primary_class: "Adventurer" # Class assigned to new players
+default_secondary_class: "" # Optional secondary class; leave blank for none
+
+# ------------------------------------------------------------
 # DEBUG / LOGGING
 # ------------------------------------------------------------
 enable_logging: false # Enable detailed logging output
@@ -93,4 +100,4 @@ enable_logging: false # Enable detailed logging output
 # INTERNAL CONFIG VERSION
 # DO NOT MODIFY
 # ------------------------------------------------------------
-config_version: 3
+config_version: 4

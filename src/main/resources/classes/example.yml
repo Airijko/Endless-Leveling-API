@@ -1,26 +1,27 @@
-race_name: "Example"
-description: "PEEPEE POOPOO CLASS"
+class_name: "Example"
+description: "Template class showcasing supported fields."
+role: "Template"
 enabled: false
 
-Weapon:
+weapons:
   - type: SWORD
-    damage: 1.25 (+25% damage)
+    damage: 1.25 # +25% damage
   - type: AXE
-    damage: 1.15 (+15% damage)
+    damage: 1.15 # +15% damage
   - type: BOW
-    damage: 1.10 (+10% damage)
+    damage: 1.10 # +10% damage
   - type: STAFF
-    damage: 1.05 (+5% damage)
+    damage: 1.05 # +5% damage
   - type: DAGGER
-    damage: 1.20 (+20% damage)
+    damage: 1.20 # +20% damage
   - type: MACE
-    damage: 1.30 (+30% damage)
+    damage: 1.30 # +30% damage
   - type: SPEAR
-    damage: 1.10 (+10% damage)
+    damage: 1.10 # +10% damage
   - type: CROSSBOW
-    damage: 1.15 (+15% damage)
+    damage: 1.15 # +15% damage
   - type: WAND
-    damage: 1.05 (+5% damage)
+    damage: 1.05 # +5% damage
 
 passives:
   - type: XP_BONUS

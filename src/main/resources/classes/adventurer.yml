@@ -1,0 +1,32 @@
+class_name: "Adventurer"
+description: "A flexible pathfinder who blends martial training with survival instincts."
+role: "Vanguard"
+enabled: true
+
+weapons:
+  - type: SWORD
+    damage: 1.10
+  - type: BOW
+    damage: 1.05
+  - type: STAFF
+    damage: 1.05
+  - type: DAGGER
+    damage: 1.08
+
+passives:
+  - type: XP_BONUS
+    value: 0.15 # +15% XP gain
+  - type: ADRENALINE
+    value: 0.35
+    threshold: 0.3
+    duration: 2
+    cooldown: 40
+  - type: INNATE_ATTRIBUTE_GAIN
+    attribute: strength
+    value: 0.25
+  - type: INNATE_ATTRIBUTE_GAIN
+    attribute: stamina
+    value: 0.25
+  - type: INNATE_ATTRIBUTE_GAIN
+    attribute: precision
+    value: 0.20

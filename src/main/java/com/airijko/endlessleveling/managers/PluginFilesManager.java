@@ -20,6 +20,7 @@ public class PluginFilesManager {
     private static final String PLAYERDATA_FOLDER_NAME = "playerdata";
     private static final String PARTYDATA_FOLDER_NAME = "partydata";
     private static final String RACES_FOLDER_NAME = "races";
+    private static final String CLASSES_FOLDER_NAME = "classes";
     private static final String PARTYDATA_FILE_NAME = "parties.json";
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
 
@@ -28,6 +29,7 @@ public class PluginFilesManager {
     private final File playerDataFolder;
     private final File partyDataFolder;
     private final File racesFolder;
+    private final File classesFolder;
 
     private final File configFile;
     private final File levelingFile;
@@ -43,6 +45,7 @@ public class PluginFilesManager {
         this.playerDataFolder = new File(pluginFolder, PLAYERDATA_FOLDER_NAME);
         this.partyDataFolder = new File(pluginFolder, PARTYDATA_FOLDER_NAME);
         this.racesFolder = new File(pluginFolder, RACES_FOLDER_NAME);
+        this.classesFolder = new File(pluginFolder, CLASSES_FOLDER_NAME);
 
         createFolders();
 
@@ -51,6 +54,7 @@ public class PluginFilesManager {
         this.partyDataFile = initPartyDataFile();
 
         exportResourceDirectory("races", racesFolder);
+        exportResourceDirectory("classes", classesFolder);
     }
 
     /** Create the plugin folder and player data folder */
@@ -60,6 +64,7 @@ public class PluginFilesManager {
             Files.createDirectories(playerDataFolder.toPath());
             Files.createDirectories(partyDataFolder.toPath());
             Files.createDirectories(racesFolder.toPath());
+            Files.createDirectories(classesFolder.toPath());
             LOGGER.atInfo().log("Plugin folders initialized at: %s", pluginFolder.getAbsolutePath());
         } catch (IOException e) {
             throw new IllegalStateException("Unable to create EndlessLeveling folders", e);
@@ -81,6 +86,10 @@ public class PluginFilesManager {
 
     public File getRacesFolder() {
         return racesFolder;
+    }
+
+    public File getClassesFolder() {
+        return classesFolder;
     }
 
     public File getConfigFile() {

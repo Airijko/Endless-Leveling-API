@@ -1,7 +1,10 @@
 package com.airijko.endlessleveling.listeners;
 
+import com.airijko.endlessleveling.classes.ClassWeaponResolver;
 import com.airijko.endlessleveling.data.PlayerData;
+import com.airijko.endlessleveling.enums.ClassWeaponType;
 import com.airijko.endlessleveling.enums.PassiveType;
+import com.airijko.endlessleveling.managers.ClassManager;
 import com.airijko.endlessleveling.managers.PassiveManager;
 import com.airijko.endlessleveling.managers.PassiveManager.PassiveRuntimeState;
 import com.airijko.endlessleveling.managers.PlayerDataManager;
@@ -20,12 +23,14 @@ import com.hypixel.hytale.component.dependency.Dependency;
 import com.hypixel.hytale.component.dependency.Order;
 import com.hypixel.hytale.component.dependency.SystemDependency;
 import com.hypixel.hytale.component.query.Query;
+import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.modules.entity.damage.Damage;
 import com.hypixel.hytale.server.core.modules.entity.damage.DamageEventSystem;
 import com.hypixel.hytale.server.core.modules.entity.damage.DamageSystems;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue;
 import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
+import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.Message;
@@ -40,15 +45,18 @@ public class PlayerCombatListener extends DamageEventSystem {
     private final SkillManager skillManager;
     private final PassiveManager passiveManager;
     private final ArchetypePassiveManager archetypePassiveManager;
+    private final ClassManager classManager;
 
     public PlayerCombatListener(@Nonnull PlayerDataManager playerDataManager,
             @Nonnull SkillManager skillManager,
             @Nonnull PassiveManager passiveManager,
-            ArchetypePassiveManager archetypePassiveManager) {
+            ArchetypePassiveManager archetypePassiveManager,
+            ClassManager classManager) {
         this.playerDataManager = playerDataManager;
         this.skillManager = skillManager;
         this.passiveManager = passiveManager;
         this.archetypePassiveManager = archetypePassiveManager;
+        this.classManager = classManager;
     }
 
     @Override
@@ -92,6 +100,7 @@ public class PlayerCombatListener extends DamageEventSystem {
 
                     // Calculate strength bonus using SkillManager
                     float baseAmount = skillManager.applyStrengthModifier(damage.getAmount(), playerData);
+                    baseAmount *= resolveClassDamageMultiplier(commandBuffer, attackerRef, playerData);
                     // Apply critical hit system
                     SkillManager.CritResult critResult = skillManager.applyCriticalHit(playerData, baseAmount);
                     float finalDamage = critResult.damage;
@@ -145,6 +154,21 @@ public class PlayerCombatListener extends DamageEventSystem {
                 }
             }
         }
+    }
+
+    private float resolveClassDamageMultiplier(@Nonnull CommandBuffer<EntityStore> commandBuffer,
+            @Nonnull Ref<EntityStore> attackerRef,
+            PlayerData playerData) {
+        if (classManager == null || playerData == null) {
+            return 1.0f;
+        }
+        Player player = commandBuffer.getComponent(attackerRef, Player.getComponentType());
+        if (player == null) {
+            return 1.0f;
+        }
+        ItemStack weapon = player.getInventory() != null ? player.getInventory().getItemInHand() : null;
+        ClassWeaponType weaponType = ClassWeaponResolver.resolve(weapon);
+        return (float) classManager.getWeaponDamageMultiplier(playerData, weaponType);
     }
 
     private float applyFirstStrike(@Nonnull PassiveRuntimeState runtimeState,

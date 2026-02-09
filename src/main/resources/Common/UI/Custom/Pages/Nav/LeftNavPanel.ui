@@ -78,12 +78,16 @@
       Text: "PROFILE";
     }
 
+    @LeftNavButton #NavSkills {
+      Text: "SKILLS";
+    }
+
     @LeftNavButton #NavRaces {
       Text: "RACES";
     }
 
-    @LeftNavButton #NavSkills {
-      Text: "SKILLS";
+    @LeftNavButton #NavClasses {
+      Text: "CLASSES";
     }
 
     @LeftNavButton #NavParty {
