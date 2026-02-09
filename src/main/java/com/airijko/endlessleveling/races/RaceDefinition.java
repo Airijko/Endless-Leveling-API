@@ -19,8 +19,6 @@ public class RaceDefinition {
     private final Map<SkillAttributeType, Double> baseAttributes;
     private final List<Map<String, Object>> passives;
     private final List<RacePassiveDefinition> passiveDefinitions;
-    private final String primaryRole;
-    private final String secondaryRole;
 
     public RaceDefinition(String id,
             String displayName,
@@ -28,9 +26,7 @@ public class RaceDefinition {
             boolean enabled,
             Map<SkillAttributeType, Double> baseAttributes,
             List<Map<String, Object>> passives,
-            List<RacePassiveDefinition> passiveDefinitions,
-            String primaryRole,
-            String secondaryRole) {
+            List<RacePassiveDefinition> passiveDefinitions) {
         this.id = Objects.requireNonNull(id, "Race id cannot be null");
         this.displayName = displayName == null ? id : displayName;
         this.description = description == null ? "" : description;
@@ -41,8 +37,6 @@ public class RaceDefinition {
                 ? new ArrayList<>()
                 : new ArrayList<>(passiveDefinitions);
         this.passiveDefinitions = Collections.unmodifiableList(typed);
-        this.primaryRole = normalizeRole(primaryRole);
-        this.secondaryRole = normalizeRole(secondaryRole);
     }
 
     private List<Map<String, Object>> copyPassives(List<Map<String, Object>> source) {
@@ -93,21 +87,5 @@ public class RaceDefinition {
 
     public List<RacePassiveDefinition> getPassiveDefinitions() {
         return passiveDefinitions;
-    }
-
-    public String getPrimaryRole() {
-        return primaryRole;
-    }
-
-    public String getSecondaryRole() {
-        return secondaryRole;
-    }
-
-    private static String normalizeRole(String value) {
-        if (value == null) {
-            return "";
-        }
-        String trimmed = value.trim();
-        return trimmed.isEmpty() ? "" : trimmed;
     }
 }

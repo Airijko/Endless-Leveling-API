@@ -27,8 +27,8 @@ $C.@PageOverlay {
 
                 Group {
                     LayoutMode: Left;
-                    Anchor: (Height: 48);
-                    Padding: (Horizontal: 16, Vertical: 8);
+                    Anchor: (Height: 60);
+                    Padding: (Horizontal: 16, Vertical: 10);
 
                     Label #ProfileTitleLabel {
                         FlexWeight: 1;

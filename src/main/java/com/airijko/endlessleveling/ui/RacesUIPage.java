@@ -139,7 +139,6 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
         long cooldownSeconds = raceManager.getChooseRaceCooldownSeconds();
         long remaining = computeCooldownRemaining(data, cooldownSeconds);
-        boolean canSwap = remaining <= 0;
 
         for (int index = 0; index < races.size(); index++) {
             RaceDefinition definition = races.get(index);
@@ -156,11 +155,6 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             boolean hasStatus = !selectionStatus.isEmpty();
             ui.set(baseSelector + " #RaceSelectionStatus.Visible", hasStatus);
             ui.set(baseSelector + " #RaceSelectionStatus.Text", selectionStatus);
-
-            ui.set(baseSelector + " #RacePrimaryRoleLabel.Text",
-                    formatRoleLabel(definition.getPrimaryRole()));
-            ui.set(baseSelector + " #RaceSecondaryRoleLabel.Text",
-                    formatRoleLabel(definition.getSecondaryRole()));
 
             events.addEventBinding(Activating,
                     baseSelector + " #ViewRaceButton",
@@ -186,8 +180,6 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             ui.set("#SelectedRaceLabel.Text", "Select a Race");
             ui.set("#SelectedRaceSubtitle.Text", "Choose a race on the left to preview its identity.");
             ui.set("#RaceLoreText.Text", "Lore unavailable.");
-            ui.set("#RacePrimaryRoleDetailValue.Text", "--");
-            ui.set("#RaceSecondaryRoleDetailValue.Text", "--");
             ui.clear("#RacePassiveEntries");
             ui.set("#RacePassiveSummary.Visible", true);
             ui.set("#RacePassiveSummary.Text", "No race selected.");
@@ -201,8 +193,6 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         String lore = selection.getDescription();
         ui.set("#RaceLoreText.Text",
                 lore == null || lore.isBlank() ? "No lore provided for this race." : lore);
-        ui.set("#RacePrimaryRoleDetailValue.Text", formatRoleLabel(selection.getPrimaryRole()));
-        ui.set("#RaceSecondaryRoleDetailValue.Text", formatRoleLabel(selection.getSecondaryRole()));
 
         applyAttributePreview(ui, selection, SkillAttributeType.LIFE_FORCE, "#RaceAttributeLifeForce");
         applyAttributePreview(ui, selection, SkillAttributeType.STRENGTH, "#RaceAttributeStrength");
@@ -294,10 +284,6 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             selectedRaceId = fallback.getId();
         }
         return fallback;
-    }
-
-    private String formatRoleLabel(String role) {
-        return role == null || role.isBlank() ? "Unassigned" : role;
     }
 
     private boolean selectedRaceMatches(String raceId) {

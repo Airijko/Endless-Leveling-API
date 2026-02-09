@@ -38,9 +38,9 @@ $C.@PageOverlay {
                 // -------- Title --------
                 Label {
                     Text: "Leaderboards";
-                    Anchor: (Height: 48);
+                    Anchor: (Height: 60);
+                    Padding: (Horizontal: 16, Vertical: 10);
                     Style: (FontSize: 22, TextColor: #ffffff, RenderBold: true);
-                    Padding: (Horizontal: 16, Top: 8);
                 }
 
                 Group {

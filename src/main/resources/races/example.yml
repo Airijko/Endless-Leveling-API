@@ -76,10 +76,6 @@ race_name: "Example"
 description: "PEEPEE POOPOO"
 enabled: false
 
-roles:
-  primary: "Template"
-  secondary: "Hybrid"
-
 attributes: # Base Values
   life_force: 100.0
   strength: 1.0
