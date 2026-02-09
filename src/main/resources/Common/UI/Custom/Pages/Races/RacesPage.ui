@@ -140,66 +140,6 @@ $C.@PageOverlay {
                         Group { Anchor: (Height: 1); Background: #ffffff(0.08); }
                         Group { Anchor: (Height: 14); }
 
-                        Group #RaceDetailBadges {
-                            LayoutMode: Left;
-                            Anchor: (Height: 48);
-
-                            Group {
-                                LayoutMode: Top;
-                                Anchor: (Width: 120);
-
-                                Label {
-                                    Text: "ROLE";
-                                    Style: (FontSize: 11, TextColor: #6e7f98, RenderBold: true);
-                                    Anchor: (Height: 10);
-                                }
-
-                                Label #RaceRoleValue {
-                                    Text: "--";
-                                    Style: (FontSize: 15, TextColor: #ffffff);
-                                    Anchor: (Height: 18);
-                                }
-                            }
-
-                            Group { Anchor: (Width: 14); }
-
-                            Group {
-                                LayoutMode: Top;
-                                Anchor: (Width: 120);
-
-                                Label {
-                                    Text: "DIFFICULTY";
-                                    Style: (FontSize: 11, TextColor: #6e7f98, RenderBold: true);
-                                    Anchor: (Height: 10);
-                                }
-
-                                Label #RaceDifficultyValue {
-                                    Text: "--";
-                                    Style: (FontSize: 15, TextColor: #ffffff);
-                                    Anchor: (Height: 18);
-                                }
-                            }
-
-                            Group { Anchor: (Width: 14); }
-
-                            Group {
-                                LayoutMode: Top;
-                                Anchor: (Width: 140);
-
-                                Label {
-                                    Text: "SWAP COST";
-                                    Style: (FontSize: 11, TextColor: #6e7f98, RenderBold: true);
-                                    Anchor: (Height: 10);
-                                }
-
-                                Label #RaceSwapCostValue {
-                                    Text: "--";
-                                    Style: (FontSize: 15, TextColor: #ffffff);
-                                    Anchor: (Height: 18);
-                                }
-                            }
-                        }
-
                         Group { Anchor: (Height: 16); }
 
                         Group #RaceDetailScrollArea {
@@ -220,6 +160,7 @@ $C.@PageOverlay {
                                     Text: "Dive into the mythos behind this race.";
                                     Style: (FontSize: 12, TextColor: #9fb6d3);
                                     Anchor: (Height: 48);
+                                    WrapText: true;
                                 }
 
                                 Group { Anchor: (Height: 16); }
@@ -312,7 +253,7 @@ $C.@PageOverlay {
                                 Group { Anchor: (Height: 16); }
 
                                 Label {
-                                    Text: "Signature Passives";
+                                    Text: "Passives";
                                     Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
                                     Anchor: (Height: 20);
                                 }
