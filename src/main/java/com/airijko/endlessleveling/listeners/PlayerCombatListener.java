@@ -99,8 +99,8 @@ public class PlayerCombatListener extends DamageEventSystem {
                     RetaliationSettings retaliationSettings = RetaliationSettings.fromSnapshot(archetypeSnapshot);
 
                     // Calculate strength bonus using SkillManager
+                    float weaponMultiplier = resolveClassDamageMultiplier(commandBuffer, attackerRef, playerData);
                     float baseAmount = skillManager.applyStrengthModifier(damage.getAmount(), playerData);
-                    baseAmount *= resolveClassDamageMultiplier(commandBuffer, attackerRef, playerData);
                     // Apply critical hit system
                     SkillManager.CritResult critResult = skillManager.applyCriticalHit(playerData, baseAmount);
                     float finalDamage = critResult.damage;
@@ -146,6 +146,15 @@ public class PlayerCombatListener extends DamageEventSystem {
                     if (executionerBonus > 0f) {
                         finalDamage += executionerBonus;
                         applyLifeSteal(attackerRef, commandBuffer, playerData, executionerBonus);
+                    }
+
+                    float damageBeforeWeaponAffinity = finalDamage;
+                    if (weaponMultiplier > 0f && Math.abs(weaponMultiplier - 1.0f) > 0.0001f) {
+                        finalDamage *= weaponMultiplier;
+                        float extraFromWeapon = finalDamage - damageBeforeWeaponAffinity;
+                        if (extraFromWeapon > 0f) {
+                            applyLifeSteal(attackerRef, commandBuffer, playerData, extraFromWeapon);
+                        }
                     }
 
                     damage.setAmount(finalDamage);

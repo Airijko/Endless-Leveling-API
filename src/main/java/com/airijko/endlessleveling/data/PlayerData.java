@@ -386,6 +386,14 @@ public class PlayerData {
         getActiveProfile().setSecondaryClassId(classId);
     }
 
+    public long getLastClassChangeEpochSeconds() {
+        return getActiveProfile().getLastClassChangeEpochSeconds();
+    }
+
+    public void setLastClassChangeEpochSeconds(long epochSeconds) {
+        getActiveProfile().setLastClassChangeEpochSeconds(epochSeconds);
+    }
+
     /**
      * Increase a skill attribute if the player has skill points.
      * Returns true if successful, false if not enough points.
@@ -425,6 +433,7 @@ public class PlayerData {
         private long lastRaceChangeEpochSeconds;
         private String primaryClassId;
         private String secondaryClassId;
+        private long lastClassChangeEpochSeconds;
 
         private String name;
 
@@ -444,6 +453,7 @@ public class PlayerData {
             this.lastRaceChangeEpochSeconds = 0L;
             this.primaryClassId = DEFAULT_PRIMARY_CLASS_ID;
             this.secondaryClassId = null;
+            this.lastClassChangeEpochSeconds = 0L;
             this.name = (name == null || name.isBlank()) ? "Profile" : name;
         }
 
@@ -550,6 +560,14 @@ public class PlayerData {
                 return;
             }
             this.secondaryClassId = trimmed;
+        }
+
+        public long getLastClassChangeEpochSeconds() {
+            return lastClassChangeEpochSeconds;
+        }
+
+        public void setLastClassChangeEpochSeconds(long epochSeconds) {
+            this.lastClassChangeEpochSeconds = Math.max(0L, epochSeconds);
         }
     }
 }

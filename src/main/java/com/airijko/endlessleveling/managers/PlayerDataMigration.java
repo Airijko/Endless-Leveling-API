@@ -117,6 +117,10 @@ public final class PlayerDataMigration {
                 ensureProfileClasses(migrated);
                 LOGGER.atInfo().log("Migrated %s from v5 to v6.", file.getName());
             }
+            case 6 -> {
+                ensureClassTimestamp(migrated);
+                LOGGER.atInfo().log("Migrated %s from v6 to v7.", file.getName());
+            }
             default -> LOGGER.atInfo().log("Bumped %s from v%d to v%d (default).", file.getName(), fromVersion,
                     fromVersion + 1);
         }
@@ -267,6 +271,35 @@ public final class PlayerDataMigration {
         }
         classesMap.putIfAbsent("primary", PlayerData.DEFAULT_PRIMARY_CLASS_ID);
         return classesMap;
+    }
+
+    private static void ensureClassTimestamp(Map<String, Object> migrated) {
+        Object profilesNode = migrated.get("profiles");
+        if (profilesNode instanceof Map<?, ?> rawProfiles) {
+            @SuppressWarnings("unchecked")
+            Map<Object, Object> profilesMap = (Map<Object, Object>) rawProfiles;
+            for (Map.Entry<Object, Object> entry : profilesMap.entrySet()) {
+                Map<String, Object> profileMap = toMutableStringObjectMap(entry.getValue());
+                if (profileMap == null) {
+                    profileMap = new LinkedHashMap<>();
+                }
+                Map<String, Object> classesMap = toMutableStringObjectMap(profileMap.get("classes"));
+                if (classesMap == null) {
+                    classesMap = new LinkedHashMap<>();
+                }
+                classesMap.putIfAbsent("lastChangedEpochSeconds", 0L);
+                profileMap.put("classes", classesMap);
+                profilesMap.put(entry.getKey(), profileMap);
+            }
+            return;
+        }
+
+        Map<String, Object> classesMap = toMutableStringObjectMap(migrated.get("classes"));
+        if (classesMap == null) {
+            classesMap = new LinkedHashMap<>();
+        }
+        classesMap.putIfAbsent("lastChangedEpochSeconds", 0L);
+        migrated.put("classes", classesMap);
     }
 
     private static int parseProfileIndex(Object key) {

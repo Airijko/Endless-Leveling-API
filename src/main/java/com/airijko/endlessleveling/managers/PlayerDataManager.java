@@ -34,7 +34,7 @@ public class PlayerDataManager {
 
     // Current schema version for player data files. Increment when adding new
     // fields that require migration. Use this to detect/outdate/migrate files.
-    private static final int CURRENT_PLAYERDATA_VERSION = 6;
+    private static final int CURRENT_PLAYERDATA_VERSION = 7;
 
     public PlayerDataManager(PluginFilesManager filesManager,
             SkillManager skillManager,
@@ -162,6 +162,7 @@ public class PlayerDataManager {
                     if (profile.getSecondaryClassId() != null) {
                         classesSection.put("secondary", profile.getSecondaryClassId());
                     }
+                    classesSection.put("lastChangedEpochSeconds", profile.getLastClassChangeEpochSeconds());
                     profileMap.put("classes", classesSection);
 
                     Map<String, Integer> profilePassives = new LinkedHashMap<>();
@@ -410,6 +411,7 @@ public class PlayerDataManager {
         String secondaryClassId = parseClassId(classesNode != null ? classesNode.get("secondary") : null);
         profile.setPrimaryClassId(primaryClassId);
         profile.setSecondaryClassId(secondaryClassId);
+        profile.setLastClassChangeEpochSeconds(parseClassLastChanged(classesNode));
     }
 
     private int parseProfileIndex(String key) {
@@ -519,6 +521,24 @@ public class PlayerDataManager {
             return trimmed.isEmpty() ? null : trimmed;
         }
         return null;
+    }
+
+    private long parseClassLastChanged(Map<String, Object> classesNode) {
+        if (classesNode == null) {
+            return 0L;
+        }
+        Object raw = classesNode.get("lastChangedEpochSeconds");
+        if (raw instanceof Number number) {
+            return Math.max(0L, number.longValue());
+        }
+        if (raw instanceof String stringValue) {
+            try {
+                long parsed = Long.parseLong(stringValue.trim());
+                return Math.max(0L, parsed);
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return 0L;
     }
 
     private String coerceRaceString(Object value) {

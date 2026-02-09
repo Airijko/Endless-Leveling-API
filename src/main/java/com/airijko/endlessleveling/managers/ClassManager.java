@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -42,6 +43,7 @@ public class ClassManager {
     private String defaultSecondaryClassId = null;
     private final double secondaryPassiveScale = 0.5D;
     private final double secondaryWeaponScale = 0.5D;
+    private final long chooseClassCooldownSeconds;
 
     public ClassManager(ConfigManager configManager, PluginFilesManager filesManager) {
         Objects.requireNonNull(configManager, "ConfigManager is required");
@@ -56,6 +58,9 @@ public class ClassManager {
 
         Object secondaryConfig = configManager.get("default_secondary_class", null, false);
         this.defaultSecondaryClassId = safeString(secondaryConfig);
+
+        Object classCooldownConfig = configManager.get("choose_class_cooldown", 0, false);
+        this.chooseClassCooldownSeconds = parseCooldownSeconds(classCooldownConfig);
 
         if (!classesEnabled) {
             LOGGER.atInfo().log("Class system disabled via config.yml (enable_classes=false).");
@@ -184,6 +189,37 @@ public class ClassManager {
 
     public double getSecondaryPassiveScale() {
         return secondaryPassiveScale;
+    }
+
+    public long getChooseClassCooldownSeconds() {
+        return Math.max(0L, chooseClassCooldownSeconds);
+    }
+
+    public long getClassCooldownRemaining(PlayerData data) {
+        if (data == null) {
+            return 0L;
+        }
+        long cooldown = getChooseClassCooldownSeconds();
+        if (cooldown <= 0L) {
+            return 0L;
+        }
+        long lastChange = data.getLastClassChangeEpochSeconds();
+        if (lastChange <= 0L) {
+            return 0L;
+        }
+        long now = Instant.now().getEpochSecond();
+        long availableAt = lastChange + cooldown;
+        if (availableAt <= now) {
+            return 0L;
+        }
+        return availableAt - now;
+    }
+
+    public void markClassChange(PlayerData data) {
+        if (data == null) {
+            return;
+        }
+        data.setLastClassChangeEpochSeconds(Instant.now().getEpochSecond());
     }
 
     public String resolvePrimaryClassIdentifier(String requestedValue) {
@@ -409,6 +445,23 @@ public class ClassManager {
             }
         }
         return defaultValue;
+    }
+
+    private long parseCooldownSeconds(Object value) {
+        if (value instanceof Number number) {
+            return Math.max(0L, number.longValue());
+        }
+        if (value instanceof String stringValue) {
+            String trimmed = stringValue.trim();
+            if (trimmed.isEmpty()) {
+                return 0L;
+            }
+            try {
+                return Math.max(0L, Long.parseLong(trimmed));
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return 0L;
     }
 
     private boolean parseBoolean(Object value, boolean defaultValue) {

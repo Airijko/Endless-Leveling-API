@@ -90,6 +90,7 @@ choose_race_cooldown: 3600 # Cooldown (seconds) before changing race again
 enable_classes: true # Enable or disable the class system
 default_primary_class: "Adventurer" # Class assigned to new players
 default_secondary_class: "" # Optional secondary class; leave blank for none
+choose_class_cooldown: 1800 # Cooldown (seconds) before changing class again
 
 # ------------------------------------------------------------
 # DEBUG / LOGGING

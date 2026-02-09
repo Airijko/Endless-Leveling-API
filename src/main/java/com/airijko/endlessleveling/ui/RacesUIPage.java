@@ -8,6 +8,7 @@ import com.airijko.endlessleveling.managers.PlayerDataManager;
 import com.airijko.endlessleveling.managers.RaceManager;
 import com.airijko.endlessleveling.races.RaceDefinition;
 import com.airijko.endlessleveling.races.RacePassiveDefinition;
+import com.airijko.endlessleveling.util.OperatorHelper;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.logger.HytaleLogger;
@@ -101,17 +102,25 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             return;
         }
 
+        boolean operatorBypass = OperatorHelper.isOperator(playerRef);
         RaceDefinition activeRace = raceManager.getPlayerRace(playerData);
         if (selectedRaceId == null && activeRace != null) {
             selectedRaceId = activeRace.getId();
         }
 
-        updateCooldownCard(ui, playerData);
+        updateCooldownCard(ui, playerData, operatorBypass);
         buildRaceList(ui, events, playerData, activeRace);
-        updateRaceDetailPanel(ui, playerData, activeRace);
+        updateRaceDetailPanel(ui, playerData, activeRace, operatorBypass);
     }
 
-    private void updateCooldownCard(@Nonnull UICommandBuilder ui, @Nonnull PlayerData data) {
+    private void updateCooldownCard(@Nonnull UICommandBuilder ui,
+            @Nonnull PlayerData data,
+            boolean operatorBypass) {
+        if (operatorBypass) {
+            ui.set("#RaceSwapCooldownValue.Text", "Bypassed");
+            ui.set("#RaceSwapCooldownHint.Text", "Operator bypass active.");
+            return;
+        }
         long cooldownSeconds = raceManager.getChooseRaceCooldownSeconds();
         long remaining = computeCooldownRemaining(data, cooldownSeconds);
         if (remaining > 0) {
@@ -171,7 +180,8 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
     private void updateRaceDetailPanel(@Nonnull UICommandBuilder ui,
             @Nonnull PlayerData data,
-            RaceDefinition activeRace) {
+            RaceDefinition activeRace,
+            boolean operatorBypass) {
         RaceDefinition selection = resolveSelection(activeRace);
         if (selection == null) {
             ui.set("#SelectedRaceLabel.Text", "Select a Race");
@@ -215,6 +225,11 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 ui.set(base + " #PassiveName.Text", buildPassiveLabel(passive));
                 ui.set(base + " #PassiveValue.Text", formatPassiveDescription(passive, data));
             }
+        }
+
+        if (operatorBypass) {
+            ui.set("#RaceDetailCooldownWarning.Text", "Operator bypass active. Swapping is immediate.");
+            return;
         }
 
         long cooldownSeconds = raceManager.getChooseRaceCooldownSeconds();
@@ -595,6 +610,8 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             return;
         }
 
+        boolean operatorBypass = OperatorHelper.isOperator(playerRef);
+
         if (data.action.startsWith("race:view:")) {
             String targetId = data.action.substring("race:view:".length());
             if (targetId != null && !targetId.isBlank()) {
@@ -609,20 +626,21 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 playerRef.sendMessage(Message.raw("Select a race to swap into.").color("#ff9900"));
                 return;
             }
-            handleRaceChoose(selectedRaceId, playerData, ref, store);
+            handleRaceChoose(selectedRaceId, playerData, ref, store, operatorBypass);
             return;
         }
 
         if (data.action.startsWith("race:choose:")) {
             String targetId = data.action.substring("race:choose:".length());
-            handleRaceChoose(targetId, playerData, ref, store);
+            handleRaceChoose(targetId, playerData, ref, store, operatorBypass);
         }
     }
 
     private void handleRaceChoose(String targetRaceId,
             @Nonnull PlayerData playerData,
             @Nonnull Ref<EntityStore> ref,
-            @Nonnull Store<EntityStore> store) {
+            @Nonnull Store<EntityStore> store,
+            boolean operatorBypass) {
         if (targetRaceId == null || targetRaceId.isBlank()) {
             return;
         }
@@ -645,14 +663,16 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             return;
         }
 
-        long cooldownSeconds = raceManager.getChooseRaceCooldownSeconds();
-        long remaining = computeCooldownRemaining(playerData, cooldownSeconds);
-        if (remaining > 0) {
-            playerRef.sendMessage(Message.join(
-                    Message.raw("You can swap again in ").color("#ffffff"),
-                    Message.raw(formatDuration(remaining)).color("#ffc300"),
-                    Message.raw(".").color("#ffffff")));
-            return;
+        if (!operatorBypass) {
+            long cooldownSeconds = raceManager.getChooseRaceCooldownSeconds();
+            long remaining = computeCooldownRemaining(playerData, cooldownSeconds);
+            if (remaining > 0) {
+                playerRef.sendMessage(Message.join(
+                        Message.raw("You can swap again in ").color("#ffffff"),
+                        Message.raw(formatDuration(remaining)).color("#ffc300"),
+                        Message.raw(".").color("#ffffff")));
+                return;
+            }
         }
 
         long now = Instant.now().getEpochSecond();

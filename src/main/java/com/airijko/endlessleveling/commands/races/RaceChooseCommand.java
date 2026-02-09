@@ -5,6 +5,7 @@ import com.airijko.endlessleveling.data.PlayerData;
 import com.airijko.endlessleveling.managers.PlayerDataManager;
 import com.airijko.endlessleveling.managers.RaceManager;
 import com.airijko.endlessleveling.races.RaceDefinition;
+import com.airijko.endlessleveling.util.OperatorHelper;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.Message;
@@ -84,18 +85,20 @@ public class RaceChooseCommand extends AbstractPlayerCommand {
             return;
         }
 
-        long cooldownSeconds = raceManager.getChooseRaceCooldownSeconds();
         long now = Instant.now().getEpochSecond();
-        long lastChange = data.getLastRaceChangeEpochSeconds();
-        if (cooldownSeconds > 0 && lastChange > 0) {
-            long availableAt = lastChange + cooldownSeconds;
-            if (now < availableAt) {
-                long secondsRemaining = availableAt - now;
-                senderRef.sendMessage(Message.join(
-                        Message.raw("You can choose another race in ").color("#ffffff"),
-                        Message.raw(formatDuration(secondsRemaining)).color("#ffc300"),
-                        Message.raw(".").color("#ffffff")));
-                return;
+        if (!OperatorHelper.isOperator(senderRef)) {
+            long cooldownSeconds = raceManager.getChooseRaceCooldownSeconds();
+            long lastChange = data.getLastRaceChangeEpochSeconds();
+            if (cooldownSeconds > 0 && lastChange > 0) {
+                long availableAt = lastChange + cooldownSeconds;
+                if (now < availableAt) {
+                    long secondsRemaining = availableAt - now;
+                    senderRef.sendMessage(Message.join(
+                            Message.raw("You can choose another race in ").color("#ffffff"),
+                            Message.raw(formatDuration(secondsRemaining)).color("#ffc300"),
+                            Message.raw(".").color("#ffffff")));
+                    return;
+                }
             }
         }
 

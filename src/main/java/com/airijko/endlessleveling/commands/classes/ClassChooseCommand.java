@@ -7,6 +7,7 @@ import com.airijko.endlessleveling.managers.ClassManager;
 import com.airijko.endlessleveling.managers.PlayerDataManager;
 import com.airijko.endlessleveling.systems.PlayerRaceStatSystem;
 import com.airijko.endlessleveling.managers.SkillManager;
+import com.airijko.endlessleveling.util.OperatorHelper;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.Message;
@@ -100,7 +101,12 @@ public class ClassChooseCommand extends AbstractPlayerCommand {
             return;
         }
 
+        if (!isClassChangeReady(senderRef, data)) {
+            return;
+        }
+
         CharacterClassDefinition applied = classManager.setPlayerPrimaryClass(data, desired.getId());
+        classManager.markClassChange(data);
         playerDataManager.save(data);
         reapplyBonuses(data, ref, store);
 
@@ -141,12 +147,17 @@ public class ClassChooseCommand extends AbstractPlayerCommand {
             return;
         }
 
+        if (!isClassChangeReady(senderRef, data)) {
+            return;
+        }
+
         CharacterClassDefinition applied = classManager.setPlayerSecondaryClass(data, desired.getId());
         if (applied == null) {
             senderRef.sendMessage(Message.raw("Unable to set that as your secondary class.").color("#ff6666"));
             return;
         }
 
+        classManager.markClassChange(data);
         playerDataManager.save(data);
         reapplyBonuses(data, ref, store);
 
@@ -164,7 +175,12 @@ public class ClassChooseCommand extends AbstractPlayerCommand {
             senderRef.sendMessage(Message.raw("You do not have a secondary class assigned.").color("#ff9900"));
             return;
         }
+
+        if (!isClassChangeReady(senderRef, data)) {
+            return;
+        }
         data.setSecondaryClassId(null);
+        classManager.markClassChange(data);
         playerDataManager.save(data);
         reapplyBonuses(data, ref, store);
         senderRef.sendMessage(Message.raw("Secondary class cleared.").color("#4fd7f7"));
@@ -198,5 +214,48 @@ public class ClassChooseCommand extends AbstractPlayerCommand {
         }
         String trimmed = input.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private boolean isClassChangeReady(PlayerRef senderRef, PlayerData data) {
+        if (OperatorHelper.isOperator(senderRef)) {
+            return true;
+        }
+        long remaining = classManager.getClassCooldownRemaining(data);
+        if (remaining <= 0L) {
+            return true;
+        }
+        senderRef.sendMessage(Message.join(
+                Message.raw("[Classes] ").color("#ff6666"),
+                Message.raw("You can change classes again in ").color("#ffffff"),
+                Message.raw(formatDuration(remaining)).color("#ffc300"),
+                Message.raw(".").color("#ffffff")));
+        return false;
+    }
+
+    private String formatDuration(long seconds) {
+        if (seconds <= 0) {
+            return "0s";
+        }
+        long hours = seconds / 3600;
+        long minutes = (seconds % 3600) / 60;
+        long remainingSeconds = seconds % 60;
+
+        StringBuilder builder = new StringBuilder();
+        if (hours > 0) {
+            builder.append(hours).append("h");
+        }
+        if (minutes > 0) {
+            if (builder.length() > 0) {
+                builder.append(' ');
+            }
+            builder.append(minutes).append("m");
+        }
+        if (remainingSeconds > 0 || builder.length() == 0) {
+            if (builder.length() > 0) {
+                builder.append(' ');
+            }
+            builder.append(remainingSeconds).append("s");
+        }
+        return builder.toString();
     }
 }
