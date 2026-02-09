@@ -28,9 +28,9 @@ public class SkillManager {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
     private static final double DEFENSE_MAX_REDUCTION = 80.0;
-    private static final double DEFENSE_CURVE_START = 30.0;
-    private static final double DEFENSE_SHARP_CURVE_START = 100.0;
-    private static final double DEFENSE_MID_SEGMENT_SLOPE = 0.5;
+    private static final double DEFENSE_CURVE_START = 25.0;
+    private static final double DEFENSE_SHARP_CURVE_START = 70.0;
+    private static final double DEFENSE_MID_SEGMENT_SLOPE = 20.0 / 45.0;
     private static final double DEFENSE_FINAL_SEGMENT_SLOPE = 0.2;
 
     private final LevelingConfigManager levelingConfig;
@@ -345,11 +345,9 @@ public class SkillManager {
         float racePercent = (float) attributeManager.getRaceAttribute(playerData, SkillAttributeType.PRECISION, 0.0D);
         double innateBonus = getInnateAttributeBonus(playerData, SkillAttributeType.PRECISION);
         float skillPercent = (float) ((precisionLevel * perPointChance) + innateBonus);
-        float totalPercent = racePercent + skillPercent;
+        float rawTotalPercent = racePercent + skillPercent;
+        float totalPercent = Math.min(100.0f, rawTotalPercent);
         float critChance = totalPercent / 100.0f;
-        if (critChance > 1.0f) {
-            critChance = 1.0f;
-        }
         return new PrecisionBreakdown(racePercent, skillPercent, totalPercent, critChance);
     }
 
@@ -467,7 +465,11 @@ public class SkillManager {
     public record HasteBreakdown(float raceMultiplier, float skillBonus, float totalMultiplier) {
     }
 
-    public record DefenseBreakdown(float raceMultiplier, float skillValue, float totalValue, float resistance) {
+    public record DefenseBreakdown(float raceMultiplier,
+            float skillValue,
+            float innateValue,
+            float totalValue,
+            float resistance) {
     }
 
     // Defense / skill modifiers
@@ -477,8 +479,11 @@ public class SkillManager {
 
         DefenseBreakdown breakdown = getDefenseBreakdown(playerData);
         LOGGER.atInfo().log(
-                "calculatePlayerDefense: raceMultiplier=%.2f, skill=%.2f, total=%.2f, resistance=%.2f%% for player %s",
-                breakdown.raceMultiplier(), breakdown.skillValue(), breakdown.totalValue(),
+                "calculatePlayerDefense: raceMultiplier=%.2f, skill=%.2f, innate=%.2f, total=%.2f, resistance=%.2f%% for player %s",
+                breakdown.raceMultiplier(),
+                breakdown.skillValue(),
+                breakdown.innateValue(),
+                breakdown.totalValue(),
                 breakdown.resistance() * 100.0f,
                 playerData.getPlayerName());
 
@@ -491,7 +496,7 @@ public class SkillManager {
 
     public DefenseBreakdown getDefenseBreakdown(PlayerData playerData, int overrideLevel) {
         if (playerData == null) {
-            return new DefenseBreakdown(1.0f, 0.0f, 0.0f, 0.0f);
+            return new DefenseBreakdown(1.0f, 0.0f, 0.0f, 0.0f, 0.0f);
         }
         int defenseLevel = overrideLevel >= 0 ? overrideLevel
                 : playerData.getPlayerSkillAttributeLevel(SkillAttributeType.DEFENSE);
@@ -500,11 +505,13 @@ public class SkillManager {
         if (raceMultiplier < 0.0f) {
             raceMultiplier = 0.0f;
         }
-        double innateBonus = getInnateAttributeBonus(playerData, SkillAttributeType.DEFENSE);
-        float skillValue = (float) ((defenseLevel * perPointValue) + innateBonus);
-        float totalValue = skillValue * raceMultiplier;
-        float resistance = (float) (applyDefenseCurve(totalValue) / 100.0D);
-        return new DefenseBreakdown(raceMultiplier, skillValue, totalValue, resistance);
+
+        float skillValue = (float) (defenseLevel * perPointValue);
+        float innateValue = (float) getInnateAttributeBonus(playerData, SkillAttributeType.DEFENSE);
+        float defenseAttributeValue = skillValue + innateValue;
+        float scaledValue = defenseAttributeValue * raceMultiplier;
+        float resistance = (float) (applyDefenseCurve(scaledValue) / 100.0D);
+        return new DefenseBreakdown(raceMultiplier, skillValue, innateValue, scaledValue, resistance);
     }
 
     private double applyDefenseCurve(double defenseValue) {
@@ -585,10 +592,7 @@ public class SkillManager {
         if (perLevelValue == 0.0D) {
             return 0.0D;
         }
-        int effectiveLevels = Math.max(0, playerData.getLevel() - 1);
-        if (effectiveLevels <= 0) {
-            return 0.0D;
-        }
+        int effectiveLevels = Math.max(1, playerData.getLevel());
         return perLevelValue * effectiveLevels;
     }
 

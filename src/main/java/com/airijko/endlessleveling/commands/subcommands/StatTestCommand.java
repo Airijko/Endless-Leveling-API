@@ -182,8 +182,9 @@ public class StatTestCommand extends AbstractPlayerCommand {
                         false));
 
         SkillManager.DefenseBreakdown defense = skillManager.getDefenseBreakdown(playerData);
+        double defenseSkillTotal = defense.skillValue() + defense.innateValue();
         breakdowns.put("Defense",
-                new AttributeBreakdown(defense.raceMultiplier(), defense.skillValue(), defense.totalValue(), true,
+                new AttributeBreakdown(defense.raceMultiplier(), defenseSkillTotal, defense.totalValue(), true,
                         false));
 
         SkillManager.HasteBreakdown haste = skillManager.getHasteBreakdown(playerData);
