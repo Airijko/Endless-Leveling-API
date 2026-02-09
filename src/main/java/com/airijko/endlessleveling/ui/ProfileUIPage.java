@@ -643,15 +643,13 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     }
 
     private String formatInnateAttributeValue(SkillAttributeType attributeType,
-            double gain,
+            double perLevelGain,
             @Nonnull PlayerProfile profile) {
-        String gainText = formatSigned(gain);
-        if (attributeType == null) {
-            return gainText;
-        }
-        double current = profile.getAttributes().getOrDefault(attributeType, 0);
-        double total = current + gain;
-        return gainText + " (Total " + formatNumber(total) + ")";
+        String perLevelText = formatSigned(perLevelGain) + " per level";
+        int level = Math.max(1, profile.getLevel());
+        double totalGain = perLevelGain * level;
+        String totalText = formatSigned(totalGain);
+        return perLevelText + " (Total " + totalText + " @ Lv " + level + ")";
     }
 
     private Double getDoubleProp(@Nonnull Map<String, Object> props, @Nonnull String key) {

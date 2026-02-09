@@ -450,9 +450,9 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         String perLevelText = formatSigned(perLevel) + " per level";
 
         int level = playerData == null ? 1 : Math.max(1, playerData.getLevel());
-        int effectiveLevels = Math.max(0, level - 1);
-        double total = perLevel * effectiveLevels;
-        return perLevelText + " (Total " + formatSigned(total) + " @ Lv " + level + ")";
+        double total = perLevel * level;
+        String totalText = formatSigned(total);
+        return perLevelText + " (Total " + totalText + " @ Lv " + level + ")";
     }
 
     private Double getDoubleProp(@Nonnull Map<String, Object> props, @Nonnull String key) {
