@@ -175,9 +175,14 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 ui.set("#HasteValue.Text", "+" + formatNumber(hastePercent) + "% Speed");
 
                 int precLevel = getPreviewLevel(SkillAttributeType.PRECISION);
-                double precPer = skillManager.getSkillAttributeConfigValue(SkillAttributeType.PRECISION);
                 ui.set("#PrecisionLevel.Text", String.valueOf(precLevel));
-                ui.set("#PrecisionValue.Text", formatNumber(precLevel * precPer) + "% Crit Chance");
+                SkillManager.PrecisionBreakdown precisionPreview = skillManager != null
+                                ? skillManager.getPrecisionBreakdown(playerData, precLevel)
+                                : null;
+                double precisionTotal = precisionPreview != null
+                                ? precisionPreview.totalPercent()
+                                : Math.min(100.0D, getPrecisionPreviewPercent(playerData, precLevel));
+                ui.set("#PrecisionValue.Text", formatNumber(precisionTotal) + "% Crit Chance");
 
                 int ferLevel = getPreviewLevel(SkillAttributeType.FEROCITY);
                 double ferPer = skillManager.getSkillAttributeConfigValue(SkillAttributeType.FEROCITY);
@@ -462,14 +467,17 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         }
 
         private double getPrecisionPreviewPercent(@Nonnull PlayerData playerData, int previewLevel) {
+                if (skillManager != null) {
+                        SkillManager.PrecisionBreakdown breakdown = skillManager.getPrecisionBreakdown(playerData,
+                                        previewLevel);
+                        if (breakdown != null) {
+                                return breakdown.racePercent() + breakdown.skillPercent();
+                        }
+                }
                 double racePercent = attributeManager != null
                                 ? attributeManager.getRaceAttribute(playerData, SkillAttributeType.PRECISION, 0.0D)
                                 : 0.0D;
-                double skillPercent = skillManager != null
-                                ? skillManager.calculateSkillAttributeBonus(playerData, SkillAttributeType.PRECISION,
-                                                previewLevel)
-                                : 0.0D;
-                return racePercent + skillPercent;
+                return racePercent;
         }
 
         private int clampPrecisionAddition(@Nonnull PlayerData playerData, int currentLevel, int requestedPoints) {

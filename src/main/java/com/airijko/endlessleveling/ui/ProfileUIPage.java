@@ -281,8 +281,10 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                         double percent = (breakdown.totalMultiplier() - 1.0f) * 100.0f;
                         yield "+" + formatNumber(percent) + "% Speed";
                     }
-                    case PRECISION ->
-                        formatNumber(level * skillManager.getSkillAttributeConfigValue(type)) + "% Crit Chance";
+                    case PRECISION -> {
+                        SkillManager.PrecisionBreakdown breakdown = skillManager.getPrecisionBreakdown(data, level);
+                        yield formatNumber(breakdown.totalPercent()) + "% Crit Chance";
+                    }
                     case FEROCITY ->
                         "+" + formatNumber(level * skillManager.getSkillAttributeConfigValue(type)) + "% Crit Damage";
                     default -> "--";

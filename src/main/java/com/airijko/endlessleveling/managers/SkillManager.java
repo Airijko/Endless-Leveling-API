@@ -337,10 +337,15 @@ public class SkillManager {
     }
 
     public PrecisionBreakdown getPrecisionBreakdown(PlayerData playerData) {
+        return getPrecisionBreakdown(playerData, -1);
+    }
+
+    public PrecisionBreakdown getPrecisionBreakdown(PlayerData playerData, int overrideLevel) {
         if (playerData == null) {
             return new PrecisionBreakdown(0.0f, 0.0f, 0.0f, 0.0f);
         }
-        int precisionLevel = playerData.getPlayerSkillAttributeLevel(SkillAttributeType.PRECISION);
+        int precisionLevel = overrideLevel >= 0 ? overrideLevel
+                : playerData.getPlayerSkillAttributeLevel(SkillAttributeType.PRECISION);
         double perPointChance = getSkillAttributeConfigValue(SkillAttributeType.PRECISION);
         float racePercent = (float) attributeManager.getRaceAttribute(playerData, SkillAttributeType.PRECISION, 0.0D);
         double innateBonus = getInnateAttributeBonus(playerData, SkillAttributeType.PRECISION);
