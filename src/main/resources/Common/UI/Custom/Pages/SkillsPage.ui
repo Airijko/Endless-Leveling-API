@@ -48,14 +48,11 @@ $C.@PageOverlay {
                     Background: #2b3542;
                 }
 
-                Group { Anchor: (Height: 10); }
-
                 // -------- SKILLS --------
                 Group #Main {
                     LayoutMode: Top;
                     FlexWeight: 1;
                     Padding: (Full: 20);
-                    Background: #0b0f18;
 
                     Group #SkillsIntro {
                         LayoutMode: Top;
@@ -628,30 +625,55 @@ $C.@PageOverlay {
 
                 // -------- FOOTER --------
                 Group #Footer {
-                    Anchor: (Height: @PrimaryButtonHeight + 16);
-                    LayoutMode: Right;
-                    Padding: (Full: 16);
-                    Background: #000000(0.12);
+                    LayoutMode: Top;
+                    Background: #070b12;
 
-                    Label #SKILLPOINTS {
-                        Style: $C.@DefaultLabelStyle;
-                        FlexWeight: 1;
+                    Group {
+                        Anchor: (Height: 2);
+                        Background: #142034;
                     }
 
-                    Group { FlexWeight: 1; }
+                    Group {
+                        LayoutMode: Left;
+                        Padding: (Full: 20);
+                        Background: #0b141f(0.95);
+                        Anchor: (Height: 80);
 
-                    $C.@CancelTextButton #ResetSkills {
-                        Text: "UNDO";
-                        Anchor: (Height: @PrimaryButtonHeight, Width: 120);
-                        Padding: (Horizontal: @ButtonPadding);
-                    }
+                        Group {
+                            LayoutMode: Top;
+                            FlexWeight: 1;
 
-                    Group { Anchor: (Width: 10); }
+                            Label #SKILLPOINTS {
+                                Style: (TextColor: #6fe3ff, FontSize: 22, RenderBold: true);
+                                Padding: (Bottom: 2);
+                            }
 
-                    $C.@TextButton #ApplySkills {
-                        Text: "APPLY";
-                        Anchor: (Height: @PrimaryButtonHeight, Width: 120);
-                        Padding: (Horizontal: @ButtonPadding);
+                            Label {
+                                Text: "Undo to revert pending tweaks, apply to lock them in.";
+                                Style: (TextColor: #c0cee5, FontSize: 12);
+                            }
+                        }
+
+                        Group { Anchor: (Width: 20); }
+
+                        Group {
+                            LayoutMode: Left;
+                            Anchor: (Width: 280);
+
+                            $C.@CancelTextButton #ResetSkills {
+                                Text: "UNDO";
+                                Anchor: (Height: @PrimaryButtonHeight + 4, Width: 130);
+                                Padding: (Horizontal: @ButtonPadding);
+                            }
+
+                            Group { Anchor: (Width: 12); }
+
+                            $C.@TextButton #ApplySkills {
+                                Text: "APPLY";
+                                Anchor: (Height: @PrimaryButtonHeight + 4, Width: 130);
+                                Padding: (Horizontal: @ButtonPadding);
+                            }
+                        }
                     }
                 }
             }
