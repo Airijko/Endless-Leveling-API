@@ -33,7 +33,7 @@ $C.@PageOverlay {
                     Label #ProfileTitleLabel {
                         FlexWeight: 1;
                         Text: "Profiles 0/5";
-                        Style: (FontSize: 22, TextColor: #ffffff, RenderBold: true);
+                        Style: (FontSize: 22, TextColor: #ffffff, RenderBold: true, VerticalAlignment: Center);
                     }
 
                     $C.@TextButton #NewProfileButton {
@@ -47,7 +47,7 @@ $C.@PageOverlay {
                 Group #ProfileContent {
                     LayoutMode: Left;
                     FlexWeight: 1;
-                    Padding: (Horizontal: 16, Vertical: 16);
+                    Padding: (Full: 16);
 
                     Group #ProfileListColumn {
                         FlexWeight: 1;

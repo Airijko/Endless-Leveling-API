@@ -40,7 +40,7 @@ $C.@PageOverlay {
                     Text: "Leaderboards";
                     Anchor: (Height: 60);
                     Padding: (Horizontal: 16, Vertical: 10);
-                    Style: (FontSize: 22, TextColor: #ffffff, RenderBold: true);
+                    Style: (FontSize: 22, TextColor: #ffffff, RenderBold: true, VerticalAlignment: Center);
                 }
 
                 Group {

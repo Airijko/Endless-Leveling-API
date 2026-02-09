@@ -35,20 +35,18 @@ $C.@PageOverlay {
                 LayoutMode: Top;
                 Anchor: (Right: 7, Bottom: 7);
 
-                // -------- Title --------
-                Label {
+                // -------- Title -------
+                Label #Header {
                     Text: "Settings";
-                    Anchor: (Height: 48);
-                    Style: (FontSize: 22, TextColor: #ffffff, RenderBold: true);
-                    Padding: (Horizontal: 16, Top: 8);
+                    Anchor: (Height: 60);
+                    Padding: (Horizontal: 16, Vertical: 10);
+                    Style: (FontSize: 22, TextColor: #ffffff, RenderBold: true, VerticalAlignment: Center);
                 }
 
                 Group {
                     Anchor: (Height: 1);
                     Background: #2b3542;
                 }
-
-                Group { Anchor: (Height: 10); }
 
                 // -------- OPTIONS --------
                 Group #Main {

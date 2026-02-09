@@ -42,7 +42,7 @@ $C.@PageOverlay {
                         LayoutMode: Left;
                         Anchor: (Width: 280);
                         Background: #0b141f(0.92);
-                        Padding: (Horizontal: 8, Vertical: 8);
+                        Padding: (Full: 8);
 
                         Group {
                             LayoutMode: Top;
@@ -79,7 +79,7 @@ $C.@PageOverlay {
                 Group #RaceContent {
                     LayoutMode: Left;
                     FlexWeight: 1;
-                    Padding: (Horizontal: 16, Vertical: 16);
+                    Padding: (Full: 16);
 
                     Group #RaceListColumn {
                         FlexWeight: 1;

@@ -40,15 +40,13 @@ $C.@PageOverlay {
                     Text: "Party";
                     Anchor: (Height: 60);
                     Padding: (Horizontal: 16, Vertical: 10);
-                    Style: (FontSize: 22, TextColor: #ffffff, RenderBold: true);
+                    Style: (FontSize: 22, TextColor: #ffffff, RenderBold: true, VerticalAlignment: Center);
                 }
 
                 Group {
                     Anchor: (Height: 1);
                     Background: #2b3542;
                 }
-
-                Group { Anchor: (Height: 10); }
 
                 // -------- CONTENT --------
                 Group #Main {

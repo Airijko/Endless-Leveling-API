@@ -36,23 +36,27 @@ $C.@PageOverlay {
                 Anchor: (Right: 7, Bottom: 7);
 
                 // -------- Title --------
-                Label {
-                    Text: "Skill Attributes";
+                Group #Header {
+                    LayoutMode: Left;
                     Anchor: (Height: 60);
                     Padding: (Horizontal: 16, Vertical: 10);
-                    Style: (FontSize: 22, TextColor: #ffffff, RenderBold: true);
+
+                    Label {
+                        Text: "Skill Attributes";
+                        Anchor: (Height: 60);
+                        Style: (FontSize: 22, TextColor: #ffffff, RenderBold: true, VerticalAlignment: Center);
+                    }
+
+                    Group { FlexWeight: 1; }
                 }
 
-                Group {
-                    Anchor: (Height: 1);
-                    Background: #2b3542;
-                }
+                Group { Anchor: (Height: 1); Background: #2b3542; }
 
                 // -------- SKILLS --------
                 Group #Main {
                     LayoutMode: Top;
                     FlexWeight: 1;
-                    Padding: (Full: 20);
+                    Padding: (Full: 16);
 
                     Group #SkillsIntro {
                         LayoutMode: Top;
@@ -110,6 +114,7 @@ $C.@PageOverlay {
                                     Group #LifeForceButtons {
                                         Anchor: (Width: @ButtonClusterWidth);
                                         LayoutMode: Left;
+                                        Group { FlexWeight: 1; }
 
                                         $C.@TextButton #LifeForceMinus1 {
                                             Anchor: (Height: 28, Width: 46);
@@ -178,6 +183,7 @@ $C.@PageOverlay {
                                     Group #StrengthButtons {
                                         Anchor: (Width: @ButtonClusterWidth);
                                         LayoutMode: Left;
+                                        Group { FlexWeight: 1; }
 
                                         $C.@TextButton #StrengthMinus1 {
                                             Anchor: (Height: 28, Width: 46);
@@ -246,6 +252,7 @@ $C.@PageOverlay {
                                     Group #DefenseButtons {
                                         Anchor: (Width: @ButtonClusterWidth);
                                         LayoutMode: Left;
+                                        Group { FlexWeight: 1; }
 
                                         $C.@TextButton #DefenseMinus1 {
                                             Anchor: (Height: 28, Width: 46);
@@ -314,6 +321,7 @@ $C.@PageOverlay {
                                     Group #HasteButtons {
                                         Anchor: (Width: @ButtonClusterWidth);
                                         LayoutMode: Left;
+                                        Group { FlexWeight: 1; }
 
                                         $C.@TextButton #HasteMinus1 {
                                             Anchor: (Height: 28, Width: 46);
@@ -387,6 +395,7 @@ $C.@PageOverlay {
                                     Group #PrecisionButtons {
                                         Anchor: (Width: @ButtonClusterWidth);
                                         LayoutMode: Left;
+                                        Group { FlexWeight: 1; }
 
                                         $C.@TextButton #PrecisionMinus1 {
                                             Anchor: (Height: 28, Width: 46);
@@ -455,6 +464,7 @@ $C.@PageOverlay {
                                     Group #FerocityButtons {
                                         Anchor: (Width: @ButtonClusterWidth);
                                         LayoutMode: Left;
+                                        Group { FlexWeight: 1; }
 
                                         $C.@TextButton #FerocityMinus1 {
                                             Anchor: (Height: 28, Width: 46);
@@ -523,6 +533,7 @@ $C.@PageOverlay {
                                     Group #StaminaButtons {
                                         Anchor: (Width: @ButtonClusterWidth);
                                         LayoutMode: Left;
+                                        Group { FlexWeight: 1; }
 
                                         $C.@TextButton #StaminaMinus1 {
                                             Anchor: (Height: 28, Width: 46);
@@ -591,6 +602,7 @@ $C.@PageOverlay {
                                     Group #IntelligenceButtons {
                                         Anchor: (Width: @ButtonClusterWidth);
                                         LayoutMode: Left;
+                                        Group { FlexWeight: 1; }
 
                                         $C.@TextButton #IntelligenceMinus1 {
                                             Anchor: (Height: 28, Width: 46);
@@ -644,13 +656,15 @@ $C.@PageOverlay {
                             FlexWeight: 1;
 
                             Label #SKILLPOINTS {
-                                Style: (TextColor: #6fe3ff, FontSize: 22, RenderBold: true);
+                                Style: (TextColor: #6fe3ff, FontSize: 22, RenderBold: true, VerticalAlignment: Center);
                                 Padding: (Bottom: 2);
+                                FlexWeight: 1;
                             }
 
                             Label {
                                 Text: "Undo to revert pending tweaks, apply to lock them in.";
-                                Style: (TextColor: #c0cee5, FontSize: 12);
+                                Style: (TextColor: #c0cee5, FontSize: 12, VerticalAlignment: Center);
+                                FlexWeight: 1;
                             }
                         }
 
