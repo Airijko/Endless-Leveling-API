@@ -386,12 +386,20 @@ public class PlayerData {
         getActiveProfile().setSecondaryClassId(classId);
     }
 
-    public long getLastClassChangeEpochSeconds() {
-        return getActiveProfile().getLastClassChangeEpochSeconds();
+    public long getLastPrimaryClassChangeEpochSeconds() {
+        return getActiveProfile().getLastPrimaryClassChangeEpochSeconds();
     }
 
-    public void setLastClassChangeEpochSeconds(long epochSeconds) {
-        getActiveProfile().setLastClassChangeEpochSeconds(epochSeconds);
+    public void setLastPrimaryClassChangeEpochSeconds(long epochSeconds) {
+        getActiveProfile().setLastPrimaryClassChangeEpochSeconds(epochSeconds);
+    }
+
+    public long getLastSecondaryClassChangeEpochSeconds() {
+        return getActiveProfile().getLastSecondaryClassChangeEpochSeconds();
+    }
+
+    public void setLastSecondaryClassChangeEpochSeconds(long epochSeconds) {
+        getActiveProfile().setLastSecondaryClassChangeEpochSeconds(epochSeconds);
     }
 
     /**
@@ -433,7 +441,8 @@ public class PlayerData {
         private long lastRaceChangeEpochSeconds;
         private String primaryClassId;
         private String secondaryClassId;
-        private long lastClassChangeEpochSeconds;
+        private long lastPrimaryClassChangeEpochSeconds;
+        private long lastSecondaryClassChangeEpochSeconds;
 
         private String name;
 
@@ -453,7 +462,8 @@ public class PlayerData {
             this.lastRaceChangeEpochSeconds = 0L;
             this.primaryClassId = DEFAULT_PRIMARY_CLASS_ID;
             this.secondaryClassId = null;
-            this.lastClassChangeEpochSeconds = 0L;
+            this.lastPrimaryClassChangeEpochSeconds = 0L;
+            this.lastSecondaryClassChangeEpochSeconds = 0L;
             this.name = (name == null || name.isBlank()) ? "Profile" : name;
         }
 
@@ -562,12 +572,20 @@ public class PlayerData {
             this.secondaryClassId = trimmed;
         }
 
-        public long getLastClassChangeEpochSeconds() {
-            return lastClassChangeEpochSeconds;
+        public long getLastPrimaryClassChangeEpochSeconds() {
+            return lastPrimaryClassChangeEpochSeconds;
         }
 
-        public void setLastClassChangeEpochSeconds(long epochSeconds) {
-            this.lastClassChangeEpochSeconds = Math.max(0L, epochSeconds);
+        public void setLastPrimaryClassChangeEpochSeconds(long epochSeconds) {
+            this.lastPrimaryClassChangeEpochSeconds = Math.max(0L, epochSeconds);
+        }
+
+        public long getLastSecondaryClassChangeEpochSeconds() {
+            return lastSecondaryClassChangeEpochSeconds;
+        }
+
+        public void setLastSecondaryClassChangeEpochSeconds(long epochSeconds) {
+            this.lastSecondaryClassChangeEpochSeconds = Math.max(0L, epochSeconds);
         }
     }
 }

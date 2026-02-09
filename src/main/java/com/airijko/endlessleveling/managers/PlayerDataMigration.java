@@ -121,6 +121,10 @@ public final class PlayerDataMigration {
                 ensureClassTimestamp(migrated);
                 LOGGER.atInfo().log("Migrated %s from v6 to v7.", file.getName());
             }
+            case 7 -> {
+                ensureClassSlotTimestamps(migrated);
+                LOGGER.atInfo().log("Migrated %s from v7 to v8.", file.getName());
+            }
             default -> LOGGER.atInfo().log("Bumped %s from v%d to v%d (default).", file.getName(), fromVersion,
                     fromVersion + 1);
         }
@@ -302,6 +306,39 @@ public final class PlayerDataMigration {
         migrated.put("classes", classesMap);
     }
 
+    private static void ensureClassSlotTimestamps(Map<String, Object> migrated) {
+        Object profilesNode = migrated.get("profiles");
+        if (profilesNode instanceof Map<?, ?> rawProfiles) {
+            @SuppressWarnings("unchecked")
+            Map<Object, Object> profilesMap = (Map<Object, Object>) rawProfiles;
+            for (Map.Entry<Object, Object> entry : profilesMap.entrySet()) {
+                Map<String, Object> profileMap = toMutableStringObjectMap(entry.getValue());
+                if (profileMap == null) {
+                    profileMap = new LinkedHashMap<>();
+                }
+                Map<String, Object> classesMap = toMutableStringObjectMap(profileMap.get("classes"));
+                if (classesMap == null) {
+                    classesMap = new LinkedHashMap<>();
+                }
+                long legacyTimestamp = parseTimestamp(classesMap.get("lastChangedEpochSeconds"));
+                classesMap.putIfAbsent("primaryLastChangedEpochSeconds", legacyTimestamp);
+                classesMap.putIfAbsent("secondaryLastChangedEpochSeconds", legacyTimestamp);
+                profileMap.put("classes", classesMap);
+                profilesMap.put(entry.getKey(), profileMap);
+            }
+            return;
+        }
+
+        Map<String, Object> classesMap = toMutableStringObjectMap(migrated.get("classes"));
+        if (classesMap == null) {
+            classesMap = new LinkedHashMap<>();
+        }
+        long legacyTimestamp = parseTimestamp(classesMap.get("lastChangedEpochSeconds"));
+        classesMap.putIfAbsent("primaryLastChangedEpochSeconds", legacyTimestamp);
+        classesMap.putIfAbsent("secondaryLastChangedEpochSeconds", legacyTimestamp);
+        migrated.put("classes", classesMap);
+    }
+
     private static int parseProfileIndex(Object key) {
         if (key instanceof Number number) {
             return number.intValue();
@@ -313,5 +350,18 @@ public final class PlayerDataMigration {
             }
         }
         return -1;
+    }
+
+    private static long parseTimestamp(Object raw) {
+        if (raw instanceof Number number) {
+            return Math.max(0L, number.longValue());
+        }
+        if (raw instanceof String stringValue) {
+            try {
+                return Math.max(0L, Long.parseLong(stringValue.trim()));
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return 0L;
     }
 }

@@ -3,6 +3,7 @@ package com.airijko.endlessleveling.managers;
 import com.airijko.endlessleveling.classes.CharacterClassDefinition;
 import com.airijko.endlessleveling.data.PlayerData;
 import com.airijko.endlessleveling.enums.ArchetypePassiveType;
+import com.airijko.endlessleveling.enums.ClassAssignmentSlot;
 import com.airijko.endlessleveling.enums.ClassWeaponType;
 import com.airijko.endlessleveling.enums.DamageLayer;
 import com.airijko.endlessleveling.enums.PassiveStackingStyle;
@@ -198,31 +199,39 @@ public class ClassManager {
         return Math.max(0L, chooseClassCooldownSeconds);
     }
 
-    public long getClassCooldownRemaining(PlayerData data) {
-        if (data == null) {
+    public long getClassCooldownRemaining(PlayerData data, ClassAssignmentSlot slot) {
+        if (data == null || slot == null) {
             return 0L;
         }
-        long cooldown = getChooseClassCooldownSeconds();
-        if (cooldown <= 0L) {
-            return 0L;
-        }
-        long lastChange = data.getLastClassChangeEpochSeconds();
-        if (lastChange <= 0L) {
-            return 0L;
+        long lastChange = slot == ClassAssignmentSlot.PRIMARY
+                ? data.getLastPrimaryClassChangeEpochSeconds()
+                : data.getLastSecondaryClassChangeEpochSeconds();
+        return calculateRemainingCooldown(lastChange);
+    }
+
+    public void markClassChange(PlayerData data, ClassAssignmentSlot slot) {
+        if (data == null || slot == null) {
+            return;
         }
         long now = Instant.now().getEpochSecond();
-        long availableAt = lastChange + cooldown;
+        if (slot == ClassAssignmentSlot.PRIMARY) {
+            data.setLastPrimaryClassChangeEpochSeconds(now);
+        } else {
+            data.setLastSecondaryClassChangeEpochSeconds(now);
+        }
+    }
+
+    private long calculateRemainingCooldown(long lastChangeEpochSeconds) {
+        long cooldown = getChooseClassCooldownSeconds();
+        if (cooldown <= 0L || lastChangeEpochSeconds <= 0L) {
+            return 0L;
+        }
+        long availableAt = lastChangeEpochSeconds + cooldown;
+        long now = Instant.now().getEpochSecond();
         if (availableAt <= now) {
             return 0L;
         }
         return availableAt - now;
-    }
-
-    public void markClassChange(PlayerData data) {
-        if (data == null) {
-            return;
-        }
-        data.setLastClassChangeEpochSeconds(Instant.now().getEpochSecond());
     }
 
     public String resolvePrimaryClassIdentifier(String requestedValue) {

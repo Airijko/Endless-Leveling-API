@@ -34,7 +34,7 @@ public class PlayerDataManager {
 
     // Current schema version for player data files. Increment when adding new
     // fields that require migration. Use this to detect/outdate/migrate files.
-    private static final int CURRENT_PLAYERDATA_VERSION = 7;
+    private static final int CURRENT_PLAYERDATA_VERSION = 8;
 
     public PlayerDataManager(PluginFilesManager filesManager,
             SkillManager skillManager,
@@ -162,7 +162,11 @@ public class PlayerDataManager {
                     if (profile.getSecondaryClassId() != null) {
                         classesSection.put("secondary", profile.getSecondaryClassId());
                     }
-                    classesSection.put("lastChangedEpochSeconds", profile.getLastClassChangeEpochSeconds());
+                    long primaryChanged = profile.getLastPrimaryClassChangeEpochSeconds();
+                    long secondaryChanged = profile.getLastSecondaryClassChangeEpochSeconds();
+                    classesSection.put("primaryLastChangedEpochSeconds", primaryChanged);
+                    classesSection.put("secondaryLastChangedEpochSeconds", secondaryChanged);
+                    classesSection.put("lastChangedEpochSeconds", Math.max(primaryChanged, secondaryChanged));
                     profileMap.put("classes", classesSection);
 
                     Map<String, Integer> profilePassives = new LinkedHashMap<>();
@@ -411,7 +415,17 @@ public class PlayerDataManager {
         String secondaryClassId = parseClassId(classesNode != null ? classesNode.get("secondary") : null);
         profile.setPrimaryClassId(primaryClassId);
         profile.setSecondaryClassId(secondaryClassId);
-        profile.setLastClassChangeEpochSeconds(parseClassLastChanged(classesNode));
+        long legacyClassTimestamp = parseClassTimestamp(classesNode, "lastChangedEpochSeconds");
+        long primaryClassTimestamp = parseClassTimestamp(classesNode, "primaryLastChangedEpochSeconds");
+        long secondaryClassTimestamp = parseClassTimestamp(classesNode, "secondaryLastChangedEpochSeconds");
+        if (primaryClassTimestamp <= 0L && legacyClassTimestamp > 0L) {
+            primaryClassTimestamp = legacyClassTimestamp;
+        }
+        if (secondaryClassTimestamp <= 0L && legacyClassTimestamp > 0L) {
+            secondaryClassTimestamp = legacyClassTimestamp;
+        }
+        profile.setLastPrimaryClassChangeEpochSeconds(primaryClassTimestamp);
+        profile.setLastSecondaryClassChangeEpochSeconds(secondaryClassTimestamp);
     }
 
     private int parseProfileIndex(String key) {
@@ -523,11 +537,11 @@ public class PlayerDataManager {
         return null;
     }
 
-    private long parseClassLastChanged(Map<String, Object> classesNode) {
-        if (classesNode == null) {
+    private long parseClassTimestamp(Map<String, Object> classesNode, String key) {
+        if (classesNode == null || key == null) {
             return 0L;
         }
-        Object raw = classesNode.get("lastChangedEpochSeconds");
+        Object raw = classesNode.get(key);
         if (raw instanceof Number number) {
             return Math.max(0L, number.longValue());
         }

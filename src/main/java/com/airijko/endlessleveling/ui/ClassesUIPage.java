@@ -4,6 +4,7 @@ import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.classes.CharacterClassDefinition;
 import com.airijko.endlessleveling.data.PlayerData;
 import com.airijko.endlessleveling.enums.ArchetypePassiveType;
+import com.airijko.endlessleveling.enums.ClassAssignmentSlot;
 import com.airijko.endlessleveling.enums.ClassWeaponType;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.airijko.endlessleveling.managers.ClassManager;
@@ -99,11 +100,29 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         }
 
         long cooldownSeconds = classManager.getChooseClassCooldownSeconds();
-        long cooldownRemaining = operatorBypass ? 0L : classManager.getClassCooldownRemaining(playerData);
+        long primaryCooldownRemaining = operatorBypass
+                ? 0L
+                : classManager.getClassCooldownRemaining(playerData, ClassAssignmentSlot.PRIMARY);
+        long secondaryCooldownRemaining = operatorBypass
+                ? 0L
+                : classManager.getClassCooldownRemaining(playerData, ClassAssignmentSlot.SECONDARY);
 
         updateStatusCard(ui, primary, secondary);
-        buildClassList(ui, events, playerData, primary, secondary, operatorBypass || cooldownRemaining <= 0L);
-        updateClassDetailPanel(ui, playerData, primary, secondary, cooldownSeconds, cooldownRemaining, operatorBypass);
+        buildClassList(ui,
+                events,
+                playerData,
+                primary,
+                secondary,
+                operatorBypass || primaryCooldownRemaining <= 0L,
+                operatorBypass || secondaryCooldownRemaining <= 0L);
+        updateClassDetailPanel(ui,
+                playerData,
+                primary,
+                secondary,
+                cooldownSeconds,
+                primaryCooldownRemaining,
+                secondaryCooldownRemaining,
+                operatorBypass);
     }
 
     private void updateStatusCard(UICommandBuilder ui,
@@ -120,7 +139,8 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             PlayerData data,
             CharacterClassDefinition primary,
             CharacterClassDefinition secondary,
-            boolean canModifyClasses) {
+            boolean canModifyPrimary,
+            boolean canModifySecondary) {
         ui.clear("#ClassRows");
 
         List<CharacterClassDefinition> classes = new ArrayList<>(classManager.getLoadedClasses());
@@ -149,22 +169,24 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                     of("Action", "class:view:" + definition.getId()),
                     false);
 
-            boolean showPrimaryButton = !isPrimary && canModifyClasses;
+            boolean showPrimaryButton = !isPrimary;
             ui.set(base + " #SetPrimaryButton.Visible", showPrimaryButton);
             if (showPrimaryButton) {
                 events.addEventBinding(Activating,
                         base + " #SetPrimaryButton",
                         of("Action", "class:set_primary:" + definition.getId()),
                         false);
+                ui.set(base + " #SetPrimaryButton.Enabled", canModifyPrimary);
             }
 
-            boolean showSecondaryButton = !isPrimary && canModifyClasses;
+            boolean showSecondaryButton = !isPrimary;
             ui.set(base + " #SetSecondaryButton.Visible", showSecondaryButton);
             if (showSecondaryButton) {
                 events.addEventBinding(Activating,
                         base + " #SetSecondaryButton",
                         of("Action", "class:set_secondary:" + definition.getId()),
                         false);
+                ui.set(base + " #SetSecondaryButton.Enabled", canModifySecondary);
             }
         }
     }
@@ -174,7 +196,8 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             CharacterClassDefinition primary,
             CharacterClassDefinition secondary,
             long cooldownSeconds,
-            long cooldownRemaining,
+            long primaryCooldownRemaining,
+            long secondaryCooldownRemaining,
             boolean operatorBypass) {
         CharacterClassDefinition selection = resolveSelection(primary);
         if (selection == null) {
@@ -197,8 +220,9 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             String status = "Select a class to preview bonuses.";
             if (operatorBypass) {
                 status += " Operator bypass active; swapping is immediate.";
-            } else if (cooldownRemaining > 0L) {
-                status += " Next change in " + formatDuration(cooldownRemaining) + ".";
+            } else if (primaryCooldownRemaining > 0L || secondaryCooldownRemaining > 0L) {
+                status += " Primary " + formatSlotAvailability(primaryCooldownRemaining)
+                        + ", Secondary " + formatSlotAvailability(secondaryCooldownRemaining) + ".";
             } else if (cooldownSeconds > 0L) {
                 status += " Changing classes triggers a " + formatDuration(cooldownSeconds) + " cooldown.";
             }
@@ -228,16 +252,24 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         boolean canSecondary = (secondary == null || !secondary.getId().equalsIgnoreCase(selection.getId()))
                 && (primary == null || !primary.getId().equalsIgnoreCase(selection.getId()));
 
-        boolean canModifyClasses = operatorBypass || cooldownRemaining <= 0L;
-        ui.set("#ConfirmPrimaryButton.Visible", canModifyClasses && canPrimary);
-        ui.set("#ConfirmSecondaryButton.Visible", canModifyClasses && canSecondary);
+        boolean canModifyPrimary = operatorBypass || primaryCooldownRemaining <= 0L;
+        boolean canModifySecondary = operatorBypass || secondaryCooldownRemaining <= 0L;
+        ui.set("#ConfirmPrimaryButton.Visible", canPrimary);
+        ui.set("#ConfirmPrimaryButton.Enabled", canModifyPrimary && canPrimary);
+        ui.set("#ConfirmSecondaryButton.Visible", canSecondary);
+        ui.set("#ConfirmSecondaryButton.Enabled", canModifySecondary && canSecondary);
 
         StringBuilder statusBuilder = new StringBuilder(
                 "Primary classes grant 100% of bonuses. Secondary classes grant 50% of weapon + passive effects.");
         if (operatorBypass) {
             statusBuilder.append(' ').append("Operator bypass active; swapping is immediate.");
-        } else if (cooldownRemaining > 0L) {
-            statusBuilder.append(" Next change in ").append(formatDuration(cooldownRemaining)).append('.');
+        } else if (primaryCooldownRemaining > 0L || secondaryCooldownRemaining > 0L) {
+            statusBuilder.append(' ')
+                    .append("Primary ")
+                    .append(formatSlotAvailability(primaryCooldownRemaining))
+                    .append(", Secondary ")
+                    .append(formatSlotAvailability(secondaryCooldownRemaining))
+                    .append('.');
         } else if (cooldownSeconds > 0L) {
             statusBuilder.append(' ')
                     .append("Changing classes triggers a ")
@@ -444,11 +476,11 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             playerRef.sendMessage(Message.raw("That is already your primary class.").color("#ff9900"));
             return;
         }
-        if (!isClassChangeReady(data)) {
+        if (!isClassChangeReady(data, ClassAssignmentSlot.PRIMARY)) {
             return;
         }
         CharacterClassDefinition applied = classManager.setPlayerPrimaryClass(data, desired.getId());
-        classManager.markClassChange(data);
+        classManager.markClassChange(data, ClassAssignmentSlot.PRIMARY);
         playerDataManager.save(data);
         reapplyBonuses(data, ref, store);
         this.selectedClassId = applied.getId();
@@ -485,7 +517,7 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             playerRef.sendMessage(Message.raw("That is already your secondary class.").color("#ff9900"));
             return;
         }
-        if (!isClassChangeReady(data)) {
+        if (!isClassChangeReady(data, ClassAssignmentSlot.SECONDARY)) {
             return;
         }
         CharacterClassDefinition applied = classManager.setPlayerSecondaryClass(data, desired.getId());
@@ -493,7 +525,7 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             playerRef.sendMessage(Message.raw("Unable to set that as your secondary class.").color("#ff6666"));
             return;
         }
-        classManager.markClassChange(data);
+        classManager.markClassChange(data, ClassAssignmentSlot.SECONDARY);
         playerDataManager.save(data);
         reapplyBonuses(data, ref, store);
         playerRef.sendMessage(Message.join(
@@ -510,11 +542,11 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             playerRef.sendMessage(Message.raw("You do not have a secondary class assigned.").color("#ff9900"));
             return;
         }
-        if (!isClassChangeReady(data)) {
+        if (!isClassChangeReady(data, ClassAssignmentSlot.SECONDARY)) {
             return;
         }
         data.setSecondaryClassId(null);
-        classManager.markClassChange(data);
+        classManager.markClassChange(data, ClassAssignmentSlot.SECONDARY);
         playerDataManager.save(data);
         reapplyBonuses(data, ref, store);
         playerRef.sendMessage(Message.raw("Secondary class cleared.").color("#4fd7f7"));
@@ -537,20 +569,23 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         }
     }
 
-    private boolean isClassChangeReady(PlayerData data) {
-        if (classManager == null) {
+    private boolean isClassChangeReady(PlayerData data, ClassAssignmentSlot slot) {
+        if (classManager == null || slot == null) {
             return true;
         }
         if (OperatorHelper.isOperator(playerRef)) {
             return true;
         }
-        long remaining = classManager.getClassCooldownRemaining(data);
+        long remaining = classManager.getClassCooldownRemaining(data, slot);
         if (remaining <= 0L) {
             return true;
         }
+        String slotLabel = slot == ClassAssignmentSlot.PRIMARY ? "primary" : "secondary";
         playerRef.sendMessage(Message.join(
                 Message.raw("[Classes] ").color("#ff6666"),
-                Message.raw("You can change classes again in ").color("#ffffff"),
+                Message.raw("You can change your ").color("#ffffff"),
+                Message.raw(slotLabel).color("#ffc300"),
+                Message.raw(" class again in ").color("#ffffff"),
                 Message.raw(formatDuration(remaining)).color("#ffc300"),
                 Message.raw(".").color("#ffffff")));
         return false;
@@ -666,6 +701,13 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             builder.append(part);
         }
         return builder.toString();
+    }
+
+    private String formatSlotAvailability(long remainingSeconds) {
+        if (remainingSeconds <= 0L) {
+            return "ready now";
+        }
+        return "ready in " + formatDuration(remainingSeconds);
     }
 
     private String formatPercentValue(double ratio) {

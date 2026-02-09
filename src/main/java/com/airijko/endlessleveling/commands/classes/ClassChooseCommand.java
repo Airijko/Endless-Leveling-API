@@ -3,6 +3,7 @@ package com.airijko.endlessleveling.commands.classes;
 import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.classes.CharacterClassDefinition;
 import com.airijko.endlessleveling.data.PlayerData;
+import com.airijko.endlessleveling.enums.ClassAssignmentSlot;
 import com.airijko.endlessleveling.managers.ClassManager;
 import com.airijko.endlessleveling.managers.PlayerDataManager;
 import com.airijko.endlessleveling.systems.PlayerRaceStatSystem;
@@ -101,12 +102,12 @@ public class ClassChooseCommand extends AbstractPlayerCommand {
             return;
         }
 
-        if (!isClassChangeReady(senderRef, data)) {
+        if (!isClassChangeReady(senderRef, data, ClassAssignmentSlot.PRIMARY)) {
             return;
         }
 
         CharacterClassDefinition applied = classManager.setPlayerPrimaryClass(data, desired.getId());
-        classManager.markClassChange(data);
+        classManager.markClassChange(data, ClassAssignmentSlot.PRIMARY);
         playerDataManager.save(data);
         reapplyBonuses(data, ref, store);
 
@@ -147,7 +148,7 @@ public class ClassChooseCommand extends AbstractPlayerCommand {
             return;
         }
 
-        if (!isClassChangeReady(senderRef, data)) {
+        if (!isClassChangeReady(senderRef, data, ClassAssignmentSlot.SECONDARY)) {
             return;
         }
 
@@ -157,7 +158,7 @@ public class ClassChooseCommand extends AbstractPlayerCommand {
             return;
         }
 
-        classManager.markClassChange(data);
+        classManager.markClassChange(data, ClassAssignmentSlot.SECONDARY);
         playerDataManager.save(data);
         reapplyBonuses(data, ref, store);
 
@@ -176,11 +177,11 @@ public class ClassChooseCommand extends AbstractPlayerCommand {
             return;
         }
 
-        if (!isClassChangeReady(senderRef, data)) {
+        if (!isClassChangeReady(senderRef, data, ClassAssignmentSlot.SECONDARY)) {
             return;
         }
         data.setSecondaryClassId(null);
-        classManager.markClassChange(data);
+        classManager.markClassChange(data, ClassAssignmentSlot.SECONDARY);
         playerDataManager.save(data);
         reapplyBonuses(data, ref, store);
         senderRef.sendMessage(Message.raw("Secondary class cleared.").color("#4fd7f7"));
@@ -216,17 +217,23 @@ public class ClassChooseCommand extends AbstractPlayerCommand {
         return trimmed.isEmpty() ? null : trimmed;
     }
 
-    private boolean isClassChangeReady(PlayerRef senderRef, PlayerData data) {
+    private boolean isClassChangeReady(PlayerRef senderRef, PlayerData data, ClassAssignmentSlot slot) {
+        if (slot == null) {
+            return true;
+        }
         if (OperatorHelper.isOperator(senderRef)) {
             return true;
         }
-        long remaining = classManager.getClassCooldownRemaining(data);
+        long remaining = classManager.getClassCooldownRemaining(data, slot);
         if (remaining <= 0L) {
             return true;
         }
+        String slotLabel = slot == ClassAssignmentSlot.PRIMARY ? "primary" : "secondary";
         senderRef.sendMessage(Message.join(
                 Message.raw("[Classes] ").color("#ff6666"),
-                Message.raw("You can change classes again in ").color("#ffffff"),
+                Message.raw("You can change your ").color("#ffffff"),
+                Message.raw(slotLabel).color("#ffc300"),
+                Message.raw(" class again in ").color("#ffffff"),
                 Message.raw(formatDuration(remaining)).color("#ffc300"),
                 Message.raw(".").color("#ffffff")));
         return false;
