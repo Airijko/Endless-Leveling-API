@@ -2,6 +2,8 @@ package com.airijko.endlessleveling.ui;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Locale;
@@ -17,6 +19,8 @@ import com.airijko.endlessleveling.managers.PlayerAttributeManager;
 import com.airijko.endlessleveling.managers.PlayerDataManager;
 import com.airijko.endlessleveling.managers.RaceManager;
 import com.airijko.endlessleveling.managers.SkillManager;
+import com.airijko.endlessleveling.passives.ArchetypePassiveManager;
+import com.airijko.endlessleveling.passives.ArchetypePassiveSnapshot;
 import com.airijko.endlessleveling.races.RaceDefinition;
 import com.airijko.endlessleveling.races.RacePassiveDefinition;
 import com.hypixel.hytale.component.Ref;
@@ -37,12 +41,14 @@ import static com.hypixel.hytale.server.core.ui.builder.EventData.of;
 public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
+    private static final String PASSIVE_ENTRY_TEMPLATE = "Pages/Profile/ProfileRacePassiveEntry.ui";
 
     private final PlayerDataManager playerDataManager;
     private final RaceManager raceManager;
     private final PassiveManager passiveManager;
     private final SkillManager skillManager;
     private final PlayerAttributeManager attributeManager;
+    private final ArchetypePassiveManager archetypePassiveManager;
     private Integer pendingDeleteSlot;
 
     public ProfileUIPage(@Nonnull com.hypixel.hytale.server.core.universe.PlayerRef playerRef,
@@ -54,6 +60,7 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         this.passiveManager = plugin != null ? plugin.getPassiveManager() : null;
         this.skillManager = plugin != null ? plugin.getSkillManager() : null;
         this.attributeManager = plugin != null ? plugin.getPlayerAttributeManager() : null;
+        this.archetypePassiveManager = plugin != null ? plugin.getArchetypePassiveManager() : null;
         this.pendingDeleteSlot = null;
     }
 
@@ -195,13 +202,17 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         }
         populateSkillPassiveEntries(ui, skillEntries);
 
-        RacePassiveSummary raceSummary = buildRacePassiveSummary(profile);
-        ui.set("#RacePassiveSummary.Text", raceSummary.summary());
-        ui.set("#RacePassiveSummary.Visible", raceSummary.entries().isEmpty());
-        populateRacePassiveEntries(ui,
-                "#RacePassiveEntries",
-                "Pages/Profile/ProfileRacePassiveEntry.ui",
-                raceSummary.entries());
+        AggregatedPassiveSections passiveSections = buildAggregatedPassiveSections(data, profile);
+        renderPassiveSection(ui,
+                "#PassiveSummary",
+                "#PassiveEntries",
+                passiveSections.passiveSummary(),
+                passiveSections.passiveEntries());
+        renderPassiveSection(ui,
+                "#InnatePassiveSummary",
+                "#InnatePassiveEntries",
+                passiveSections.innateSummary(),
+                passiveSections.innateEntries());
     }
 
     private PlayerProfile resolveActiveProfile(@Nonnull PlayerData data) {
@@ -233,10 +244,13 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 emptyAttributeDisplay());
         ui.set("#SkillPassiveSummary.Text", "No skill passives unlocked");
         ui.set("#SkillPassiveSummary.Visible", true);
-        ui.set("#RacePassiveSummary.Text", "Select a profile to view race bonuses");
-        ui.set("#RacePassiveSummary.Visible", true);
+        ui.set("#PassiveSummary.Text", "Select a profile to view passive bonuses");
+        ui.set("#PassiveSummary.Visible", true);
+        ui.set("#InnatePassiveSummary.Text", "Select a profile to view innate bonuses");
+        ui.set("#InnatePassiveSummary.Visible", true);
         ui.clear("#SkillPassiveEntries");
-        ui.clear("#RacePassiveEntries");
+        ui.clear("#PassiveEntries");
+        ui.clear("#InnatePassiveEntries");
     }
 
     private AttributeDisplay getAttributeDisplay(@Nonnull PlayerData data,
@@ -320,44 +334,127 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         return type.formatValue(snapshot.value());
     }
 
-    private RacePassiveSummary buildRacePassiveSummary(@Nonnull PlayerProfile profile) {
-        List<PassiveEntry> entries = new ArrayList<>();
-        if (raceManager == null || !raceManager.isEnabled()) {
-            return new RacePassiveSummary("Race bonuses unavailable", entries);
+    private AggregatedPassiveSections buildAggregatedPassiveSections(@Nonnull PlayerData playerData,
+            @Nonnull PlayerProfile profile) {
+        if (archetypePassiveManager == null) {
+            return new AggregatedPassiveSections(List.of(), List.of(),
+                    "Passive bonuses unavailable",
+                    "Innate bonuses unavailable");
         }
-        RaceDefinition definition = raceManager.getRace(profile.getRaceId());
-        if (definition == null) {
-            String raceId = profile.getRaceId() == null ? PlayerData.DEFAULT_RACE_ID : profile.getRaceId();
-            return new RacePassiveSummary("Race: " + raceId, entries);
+        ArchetypePassiveSnapshot snapshot = archetypePassiveManager.getSnapshot(playerData);
+        if (snapshot == null || snapshot.isEmpty()) {
+            return new AggregatedPassiveSections(List.of(), List.of(),
+                    "No passive bonuses active",
+                    "No innate bonuses active");
         }
-        List<RacePassiveDefinition> passives = definition.getPassiveDefinitions();
-        if (passives != null) {
-            for (RacePassiveDefinition passive : passives) {
-                if (passive == null || passive.type() == null) {
-                    continue;
-                }
-                String labelText;
-                if (passive.type() == ArchetypePassiveType.INNATE_ATTRIBUTE_GAIN
-                        && passive.attributeType() != null) {
-                    labelText = toDisplay(passive.attributeType().name());
-                } else {
-                    StringBuilder label = new StringBuilder(toDisplay(passive.type().name()));
-                    if (passive.attributeType() != null) {
-                        label.append(" (" + toDisplay(passive.attributeType().name()) + ")");
-                    }
-                    labelText = label.toString();
-                }
-                String valueText = formatRacePassiveValue(passive, profile);
-                entries.add(new PassiveEntry(labelText, valueText));
+
+        List<PassiveEntry> passiveEntries = new ArrayList<>();
+        for (ArchetypePassiveType type : ArchetypePassiveType.values()) {
+            if (type == null || type == ArchetypePassiveType.INNATE_ATTRIBUTE_GAIN) {
+                continue;
             }
+            double totalValue = snapshot.getValue(type);
+            if (Math.abs(totalValue) <= 1.0E-6D) {
+                continue;
+            }
+            AggregatedPassiveProps props = aggregatePassiveProperties(snapshot.getDefinitions(type));
+            String label = toDisplay(type.name());
+            String valueText = formatAggregatedPassiveValue(type, totalValue, props);
+            passiveEntries.add(new PassiveEntry(label, valueText));
         }
-        String summary = entries.isEmpty()
-                ? definition.getDisplayName() + " bonuses active"
-                : definition.getDisplayName() + " passives";
-        return new RacePassiveSummary(summary, entries);
+
+        List<PassiveEntry> innateEntries = buildInnateEntries(
+                snapshot.getDefinitions(ArchetypePassiveType.INNATE_ATTRIBUTE_GAIN),
+                profile);
+
+        String passiveSummary = passiveEntries.isEmpty() ? "No passive bonuses active" : "";
+        String innateSummary = innateEntries.isEmpty() ? "No innate bonuses active" : "";
+
+        return new AggregatedPassiveSections(List.copyOf(passiveEntries),
+                List.copyOf(innateEntries),
+                passiveSummary,
+                innateSummary);
     }
 
-    private void populateRacePassiveEntries(@Nonnull UICommandBuilder ui,
+    private List<PassiveEntry> buildInnateEntries(@Nonnull List<RacePassiveDefinition> definitions,
+            @Nonnull PlayerProfile profile) {
+        if (definitions.isEmpty()) {
+            return List.of();
+        }
+        Map<SkillAttributeType, Double> totals = new EnumMap<>(SkillAttributeType.class);
+        for (RacePassiveDefinition definition : definitions) {
+            if (definition == null || definition.attributeType() == null) {
+                continue;
+            }
+            double value = definition.value();
+            if (Math.abs(value) <= 1.0E-6D) {
+                continue;
+            }
+            totals.merge(definition.attributeType(), value, Double::sum);
+        }
+        if (totals.isEmpty()) {
+            return List.of();
+        }
+        List<SkillAttributeType> attributes = new ArrayList<>(totals.keySet());
+        attributes.sort(Comparator.comparing(Enum::name));
+        List<PassiveEntry> entries = new ArrayList<>();
+        for (SkillAttributeType attribute : attributes) {
+            double gain = totals.getOrDefault(attribute, 0.0D);
+            String label = toDisplay(attribute.name());
+            String valueText = formatInnateAttributeValue(attribute, gain, profile);
+            entries.add(new PassiveEntry(label, valueText));
+        }
+        return entries;
+    }
+
+    private AggregatedPassiveProps aggregatePassiveProperties(@Nonnull List<RacePassiveDefinition> definitions) {
+        if (definitions.isEmpty()) {
+            return new AggregatedPassiveProps(null, null, null, null, null);
+        }
+        Double threshold = averageProperty(definitions, "threshold");
+        Double duration = averageProperty(definitions, "duration");
+        Double cooldown = averageProperty(definitions, "cooldown");
+        Double window = averageProperty(definitions, "window");
+        Double stacks = averageProperty(definitions, "max_stacks");
+        return new AggregatedPassiveProps(threshold, duration, cooldown, window, stacks);
+    }
+
+    private Double averageProperty(@Nonnull List<RacePassiveDefinition> definitions, @Nonnull String key) {
+        double sum = 0.0D;
+        int count = 0;
+        for (RacePassiveDefinition definition : definitions) {
+            if (definition == null || definition.properties() == null) {
+                continue;
+            }
+            Double value = getDoubleProp(definition.properties(), key);
+            if (value == null) {
+                continue;
+            }
+            sum += value;
+            count++;
+        }
+        if (count == 0) {
+            return null;
+        }
+        return sum / count;
+    }
+
+    private void renderPassiveSection(@Nonnull UICommandBuilder ui,
+            @Nonnull String summarySelector,
+            @Nonnull String entriesSelector,
+            @Nonnull String emptyText,
+            @Nonnull List<PassiveEntry> entries) {
+        if (entries.isEmpty()) {
+            ui.set(summarySelector + ".Visible", true);
+            ui.set(summarySelector + ".Text", emptyText);
+            ui.clear(entriesSelector);
+            return;
+        }
+        ui.set(summarySelector + ".Visible", false);
+        populatePassiveEntries(ui, entriesSelector, PASSIVE_ENTRY_TEMPLATE, entries);
+    }
+
+    private void populatePassiveEntries(@Nonnull UICommandBuilder ui,
             @Nonnull String containerSelector,
             @Nonnull String template,
             @Nonnull List<PassiveEntry> entries) {
@@ -488,28 +585,25 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     private record SkillPassiveEntry(String label, String value, String level) {
     }
 
-    private record RacePassiveSummary(String summary, List<PassiveEntry> entries) {
+    private record AggregatedPassiveSections(List<PassiveEntry> passiveEntries,
+            List<PassiveEntry> innateEntries,
+            String passiveSummary,
+            String innateSummary) {
+    }
+
+    private record AggregatedPassiveProps(Double threshold,
+            Double duration,
+            Double cooldown,
+            Double window,
+            Double stacks) {
     }
 
     private record AttributeDisplay(String value, String level) {
     }
 
-    private String formatRacePassiveValue(@Nonnull RacePassiveDefinition passive,
-            @Nonnull PlayerProfile profile) {
-        ArchetypePassiveType type = passive.type();
-        double value = passive.value();
-        Map<String, Object> props = passive.properties() == null ? Map.of() : passive.properties();
-
-        Double threshold = getDoubleProp(props, "threshold");
-        Double duration = getDoubleProp(props, "duration");
-        Double cooldown = getDoubleProp(props, "cooldown");
-        Double window = getDoubleProp(props, "window");
-        Double stacks = getDoubleProp(props, "max_stacks");
-
-        if (type == null) {
-            return value == 0.0D ? "Passive" : formatSigned(value);
-        }
-
+    private String formatAggregatedPassiveValue(@Nonnull ArchetypePassiveType type,
+            double value,
+            @Nonnull AggregatedPassiveProps props) {
         return switch (type) {
             case XP_BONUS -> formatPercentValue(value) + " XP gain";
             case HEALTH_REGEN -> formatPercentValue(value) + " HP/5s";
@@ -518,40 +612,39 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             case SPECIAL_CHARGE_BONUS -> formatPercentValue(value) + " charge rate";
             case SECOND_WIND -> appendDetails(
                     formatPercentValue(value) + " heal",
-                    formatThresholdDetail(threshold, "HP"),
-                    formatDurationDetail(duration),
-                    formatCooldownDetail(cooldown));
+                    formatThresholdDetail(props.threshold(), "HP"),
+                    formatDurationDetail(props.duration()),
+                    formatCooldownDetail(props.cooldown()));
             case FIRST_STRIKE -> appendDetails(
                     formatPercentValue(value) + " first hit",
-                    formatCooldownDetail(cooldown));
-            case INNATE_ATTRIBUTE_GAIN -> formatInnateAttributeValue(passive, profile);
+                    formatCooldownDetail(props.cooldown()));
             case ADRENALINE -> appendDetails(
                     formatPercentValue(value) + " stamina",
-                    formatThresholdDetail(threshold, "stamina"),
-                    formatDurationDetail(duration),
-                    formatCooldownDetail(cooldown));
+                    formatThresholdDetail(props.threshold(), "stamina"),
+                    formatDurationDetail(props.duration()),
+                    formatCooldownDetail(props.cooldown()));
             case BERZERKER -> appendDetails(
                     formatPercentValue(value) + " damage",
-                    formatThresholdDetail(threshold, "HP"));
+                    formatThresholdDetail(props.threshold(), "HP"));
             case RETALIATION -> appendDetails(
                     formatPercentValue(value) + " reflect",
-                    formatWindowDetail(window),
-                    formatCooldownDetail(cooldown));
+                    formatWindowDetail(props.window()),
+                    formatCooldownDetail(props.cooldown()));
             case EXECUTIONER -> appendDetails(
                     formatPercentValue(value) + " finisher",
-                    formatThresholdDetail(threshold, "target HP"),
-                    formatCooldownDetail(cooldown));
+                    formatThresholdDetail(props.threshold(), "target HP"),
+                    formatCooldownDetail(props.cooldown()));
             case SWIFTNESS -> appendDetails(
                     formatPercentValue(value) + " speed",
-                    formatDurationDetail(duration),
-                    formatStacksDetail(stacks));
+                    formatDurationDetail(props.duration()),
+                    formatStacksDetail(props.stacks()));
+            case INNATE_ATTRIBUTE_GAIN -> formatSigned(value);
         };
     }
 
-    private String formatInnateAttributeValue(@Nonnull RacePassiveDefinition passive,
+    private String formatInnateAttributeValue(SkillAttributeType attributeType,
+            double gain,
             @Nonnull PlayerProfile profile) {
-        SkillAttributeType attributeType = passive.attributeType();
-        double gain = passive.value();
         String gainText = formatSigned(gain);
         if (attributeType == null) {
             return gainText;
@@ -721,6 +814,7 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
         playerRef.sendMessage(Message.raw("Created and activated profile slot " + nextSlot + ".")
                 .color("#4fd7f7"));
+        PlayerHud.refreshHud(playerData.getUuid());
         return new ProfileActionOutcome(true, true);
     }
 
@@ -748,6 +842,7 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             playerRef.sendMessage(Message.raw(
                     "Switched to profile slot " + slot + " (" + playerData.getProfileName(slot) + ").")
                     .color("#00ff00"));
+            PlayerHud.refreshHud(playerData.getUuid());
             return new ProfileActionOutcome(true, true);
         }
 

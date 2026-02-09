@@ -270,21 +270,43 @@ $C.@PageOverlay {
                                 Group { Anchor: (Height: 16); }
 
                                 Label {
-                                    Text: "Race Passives";
+                                    Text: "Passives";
                                     Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
                                     Anchor: (Height: 20);
                                 }
 
-                                Group #RacePassiveList {
+                                Group #PassiveList {
                                     LayoutMode: Top;
 
-                                    Label #RacePassiveSummary {
-                                        Text: "Select a profile to view race bonuses";
+                                    Label #PassiveSummary {
+                                        Text: "Select a profile to view passive bonuses";
                                         Style: (FontSize: 12, TextColor: #9fb6d3, RenderBold: true);
                                         Anchor: (Height: 18);
                                     }
 
-                                    Group #RacePassiveEntries {
+                                    Group #PassiveEntries {
+                                        LayoutMode: Top;
+                                    }
+                                }
+
+                                Group { Anchor: (Height: 16); }
+
+                                Label {
+                                    Text: "Innate Bonuses";
+                                    Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
+                                    Anchor: (Height: 20);
+                                }
+
+                                Group #InnatePassiveList {
+                                    LayoutMode: Top;
+
+                                    Label #InnatePassiveSummary {
+                                        Text: "Select a profile to view innate bonuses";
+                                        Style: (FontSize: 12, TextColor: #9fb6d3, RenderBold: true);
+                                        Anchor: (Height: 18);
+                                    }
+
+                                    Group #InnatePassiveEntries {
                                         LayoutMode: Top;
                                     }
                                 }
