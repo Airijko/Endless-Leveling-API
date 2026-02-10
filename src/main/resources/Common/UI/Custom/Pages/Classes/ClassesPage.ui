@@ -90,7 +90,7 @@ $C.@PageOverlay {
                                 Label {
                                     Text: "Primary";
                                     Style: (FontSize: 11, TextColor: #6fe3ff, RenderBold: true, VerticalAlignment: Center);
-                                }
+                                } 
 
                                 Group { FlexWeight: 1; }
 
