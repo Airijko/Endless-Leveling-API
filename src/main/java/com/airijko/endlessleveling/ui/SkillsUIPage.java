@@ -31,7 +31,7 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         private static final EnumMap<SkillAttributeType, String> ATTRIBUTE_DESCRIPTIONS = new EnumMap<>(
                         SkillAttributeType.class);
         private static final EnumMap<SkillAttributeType, String> DEFAULT_ATTRIBUTE_ICONS = new EnumMap<>(
-                        SkillAttributeType.class);
+                        SkillAttributeType.class); // Icon asset IDs live here (not in YAML).
         private static final SkillBinding[] SKILL_BINDINGS = {
                         new SkillBinding("LifeForce", "#LifeForceIcon", SkillAttributeType.LIFE_FORCE),
                         new SkillBinding("Strength", "#StrengthIcon", SkillAttributeType.STRENGTH),
@@ -68,7 +68,7 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                                 "Increases mana so spells and abilities stay online longer.");
 
                 DEFAULT_ATTRIBUTE_ICONS.put(SkillAttributeType.LIFE_FORCE, "Potion_Health");
-                DEFAULT_ATTRIBUTE_ICONS.put(SkillAttributeType.STRENGTH, "Weapon_Longsword_Adamantite");
+                DEFAULT_ATTRIBUTE_ICONS.put(SkillAttributeType.STRENGTH, "Weapon_Longsword_Adamantite_Saurian");
                 DEFAULT_ATTRIBUTE_ICONS.put(SkillAttributeType.DEFENSE, "Weapon_Shield_Orbis_Knight");
                 DEFAULT_ATTRIBUTE_ICONS.put(SkillAttributeType.HASTE, "Spawn_Temple_Helix");
                 DEFAULT_ATTRIBUTE_ICONS.put(SkillAttributeType.PRECISION, "Weapon_Shortbow_Combat");
@@ -558,23 +558,15 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         }
 
         private void applySkillIcons(UICommandBuilder ui) {
-                LOGGER.atInfo().log("Applying %d skill icon bindings", SKILL_BINDINGS.length);
                 for (SkillBinding binding : SKILL_BINDINGS) {
                         String selector = binding.iconSelector();
-                        SkillAttributeType attribute = binding.attribute();
-                        String rawId = DEFAULT_ATTRIBUTE_ICONS.get(attribute);
+                        String rawId = DEFAULT_ATTRIBUTE_ICONS.get(binding.attribute());
                         if (rawId == null || rawId.isBlank()) {
-                                LOGGER.atWarning().log(
-                                                "Icon lookup miss: attribute=%s selector=%s (no default mapping)",
-                                                attribute.name(), selector);
                                 ui.set(selector + ".Visible", false);
                                 continue;
                         }
 
                         String resolved = rawId.trim();
-                        LOGGER.atInfo().log(
-                                        "Icon mapping match: attribute=%s selector=%s assetId=%s (raw=%s)",
-                                        attribute.name(), selector, resolved, rawId);
                         ui.set(selector + ".ItemId", resolved);
                         ui.set(selector + ".Visible", true);
                 }
