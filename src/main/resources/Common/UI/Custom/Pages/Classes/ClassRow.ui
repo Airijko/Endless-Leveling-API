@@ -22,9 +22,8 @@ Group {
 
     Group {
         LayoutMode: Left;
-        Anchor: (Height: 110);
         Background: #050910(0.88);
-        Padding: (Horizontal: 14, Vertical: 12);
+        Padding: (Full: 14);
 
         Group {
             Anchor: (Width: 4);
@@ -32,13 +31,12 @@ Group {
         }
 
         Group {
-            FlexWeight: 1;
             LayoutMode: Top;
-            Padding: (Left: 12, Right: 12, Bottom: 12);
+            Padding: (Horizontal: 12);
+            FlexWeight: 1;
 
             Group {
                 LayoutMode: Left;
-                Anchor: (Height: 22);
 
                 Label #ClassName {
                     Style: (FontSize: 18, TextColor: #ffffff, RenderBold: true);
@@ -54,12 +52,10 @@ Group {
                 }
             }
 
-            Group { Anchor: (Height: 10); }
-            Group { FlexWeight: 1; }
+            Group { Anchor: (Height: 12); }
 
             Group {
                 LayoutMode: Left;
-                Anchor: (Height: 32);
 
                 $C.@TextButton #ViewClassButton {
                     Text: "VIEW";
@@ -85,8 +81,6 @@ Group {
                     Padding: (Horizontal: 5, Vertical: 2);
                     Style: @CustomStyle;
                 }
-
-                Group { FlexWeight: 1; }
             }
         }
     }

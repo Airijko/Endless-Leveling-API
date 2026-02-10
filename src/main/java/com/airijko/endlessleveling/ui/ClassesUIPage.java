@@ -208,7 +208,7 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                         base + " #SetPrimaryButton",
                         of("Action", "class:set_primary:" + definition.getId()),
                         false);
-                ui.set(base + " #SetPrimaryButton.Text", canModifyPrimary ? "PRIMARY" : "ON COOLDOWN");
+                ui.set(base + " #SetPrimaryButton.Text", canModifyPrimary ? "PRIMARY" : "COOLDOWN");
             }
 
             boolean showSecondaryButton = !isPrimary;
@@ -218,7 +218,7 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                         base + " #SetSecondaryButton",
                         of("Action", "class:set_secondary:" + definition.getId()),
                         false);
-                ui.set(base + " #SetSecondaryButton.Text", canModifySecondary ? "SECONDARY" : "ON COOLDOWN");
+                ui.set(base + " #SetSecondaryButton.Text", canModifySecondary ? "SECONDARY" : "COOLDOWN");
             }
         }
     }
