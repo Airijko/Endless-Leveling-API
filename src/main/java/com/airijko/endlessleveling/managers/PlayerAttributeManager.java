@@ -61,7 +61,10 @@ public class PlayerAttributeManager {
         }
     }
 
-    public record AttributeComputation(float hytaleBase, float raceBase, float raceDelta, float skillBonus,
+    public record AttributeComputation(float hytaleBase,
+            float raceBase,
+            float raceDelta,
+            float skillBonus,
             float finalMax) {
     }
 
@@ -120,8 +123,10 @@ public class PlayerAttributeManager {
         return true;
     }
 
-    public AttributeComputation computeContribution(@Nonnull SkillAttributeType attributeType, float hytaleBase,
-            float skillBonus, @Nonnull PlayerData playerData) {
+    public AttributeComputation computeContribution(@Nonnull SkillAttributeType attributeType,
+            float hytaleBase,
+            float skillBonus,
+            @Nonnull PlayerData playerData) {
         float raceBase = resolveRaceBaseValue(playerData, attributeType, hytaleBase);
         float raceDelta = raceBase - hytaleBase;
         float finalMax = raceBase + skillBonus;

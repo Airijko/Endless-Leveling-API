@@ -1,7 +1,6 @@
 package com.airijko.endlessleveling.systems;
 
 import com.airijko.endlessleveling.EndlessLeveling;
-import com.airijko.endlessleveling.managers.LevelingManager;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
@@ -9,15 +8,8 @@ import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.tick.TickingSystem;
 
-import com.hypixel.hytale.server.npc.entities.NPCEntity;
-import com.hypixel.hytale.server.core.modules.entity.component.WorldGenId;
-import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
-import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue;
-import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
-import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
-import java.lang.reflect.Field;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.airijko.endlessleveling.managers.MobLevelingManager;
 

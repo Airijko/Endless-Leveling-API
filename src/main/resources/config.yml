@@ -32,8 +32,8 @@ passives:
   life_steal:
     enabled: true
     unlock_level: 25
-    base_value: 4.75
-    value_per_level: 2.25
+    base_value: 1.0
+    value_per_level: 1.0
     max_level: 10
     tier_interval: 7
 
