@@ -20,36 +20,34 @@ import javax.annotation.Nonnull;
  * baselines with race overrides and EndlessLeveling skill bonuses.
  */
 public class PlayerAttributeManager {
+    // Key for suppressing vanilla mana
+    private static final String SUPPRESS_VANILLA_MANA_KEY = "EL_SUPPRESS_VANILLA_MANA";
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
 
     public enum AttributeSlot {
-        LIFE_FORCE(null, "EL_RACE_BASE_HEALTH", "SKILL_BONUS_HEALTH", DefaultEntityStatTypes.getHealth(),
-                SkillAttributeType.LIFE_FORCE, false),
-        STAMINA(null, "EL_RACE_BASE_STAMINA", "SKILL_BONUS_STAMINA", DefaultEntityStatTypes.getStamina(),
-                SkillAttributeType.STAMINA, false),
-        INTELLIGENCE("EL_SUPPRESS_VANILLA_MANA", "EL_RACE_BASE_INTELLIGENCE", "SKILL_BONUS_INTELLIGENCE",
-                DefaultEntityStatTypes.getMana(), SkillAttributeType.INTELLIGENCE, true);
+        LIFE_FORCE("EL_RACE_BASE_HEALTH", "SKILL_BONUS_HEALTH", DefaultEntityStatTypes.getHealth(),
+                SkillAttributeType.LIFE_FORCE, 100.0f, false),
+        STAMINA("EL_RACE_BASE_STAMINA", "SKILL_BONUS_STAMINA", DefaultEntityStatTypes.getStamina(),
+                SkillAttributeType.STAMINA, 10.0f, false),
+        INTELLIGENCE("EL_RACE_BASE_INTELLIGENCE", "SKILL_BONUS_INTELLIGENCE", DefaultEntityStatTypes.getMana(),
+                SkillAttributeType.INTELLIGENCE, 0.0f, true);
 
-        private final String baselineModifierKey;
         private final String raceModifierKey;
         private final String skillModifierKey;
         private final int statIndex;
         private final SkillAttributeType attributeType;
-        private final boolean zeroVanillaBase;
+        private final float vanillaBase;
+        private final boolean clampBaselineAtZero;
 
-        AttributeSlot(String baselineModifierKey, String raceModifierKey, String skillModifierKey, int statIndex,
-                SkillAttributeType attributeType, boolean zeroVanillaBase) {
-            this.baselineModifierKey = baselineModifierKey;
+        AttributeSlot(String raceModifierKey, String skillModifierKey, int statIndex,
+                SkillAttributeType attributeType, float vanillaBase, boolean clampBaselineAtZero) {
             this.raceModifierKey = raceModifierKey;
             this.skillModifierKey = skillModifierKey;
             this.statIndex = statIndex;
             this.attributeType = attributeType;
-            this.zeroVanillaBase = zeroVanillaBase;
-        }
-
-        public String baselineModifierKey() {
-            return baselineModifierKey;
+            this.vanillaBase = vanillaBase;
+            this.clampBaselineAtZero = clampBaselineAtZero;
         }
 
         public String raceModifierKey() {
@@ -68,8 +66,12 @@ public class PlayerAttributeManager {
             return attributeType;
         }
 
-        public boolean zeroVanillaBase() {
-            return zeroVanillaBase;
+        public float vanillaBase() {
+            return vanillaBase;
+        }
+
+        public boolean clampBaselineAtZero() {
+            return clampBaselineAtZero;
         }
     }
 
@@ -107,11 +109,13 @@ public class PlayerAttributeManager {
         float previousMax = current.getMax();
         float previousValue = current.get();
 
-        if (slot.zeroVanillaBase() && slot.baselineModifierKey() != null) {
-            statMap.removeModifier(slot.statIndex(), slot.baselineModifierKey());
-        }
         statMap.removeModifier(slot.statIndex(), slot.raceModifierKey());
         statMap.removeModifier(slot.statIndex(), slot.skillModifierKey());
+
+        // Remove old suppression modifier if present (for mana only)
+        if (slot == AttributeSlot.INTELLIGENCE) {
+            statMap.removeModifier(slot.statIndex(), SUPPRESS_VANILLA_MANA_KEY);
+        }
 
         EntityStatValue baseline = statMap.get(slot.statIndex());
         if (baseline == null) {
@@ -119,17 +123,21 @@ public class PlayerAttributeManager {
         }
 
         AttributeComputation computation = computeContribution(slot, baseline.getMax(), skillBonus, playerData);
-
-        if (slot.zeroVanillaBase() && slot.baselineModifierKey() != null) {
-            applyStatModifier(statMap, slot.statIndex(), slot.baselineModifierKey(), -computation.hytaleBase());
-            applyStatModifier(statMap, slot.statIndex(), slot.raceModifierKey(), computation.raceBase());
-        } else {
-            applyStatModifier(statMap, slot.statIndex(), slot.raceModifierKey(), computation.raceDelta());
-        }
+        applyStatModifier(statMap, slot.statIndex(), slot.raceModifierKey(), computation.raceDelta());
         applyStatModifier(statMap, slot.statIndex(), slot.skillModifierKey(), computation.skillBonus());
+
+        // Apply suppression modifier for vanilla mana (subtract vanilla base)
+        if (slot == AttributeSlot.INTELLIGENCE) {
+            float vanillaMana = slot.vanillaBase();
+            if (Math.abs(vanillaMana) > 0.0001f) {
+                applyStatModifier(statMap, slot.statIndex(), SUPPRESS_VANILLA_MANA_KEY, -vanillaMana);
+            }
+        }
 
         EntityStatValue updated = statMap.get(slot.statIndex());
         float newMax = updated != null ? updated.getMax() : computation.finalMax();
+        // Clamp the final max to a minimum of 0.0f to prevent negative stats
+        newMax = Math.max(0.0f, newMax);
         float ratio = previousMax > 0.01f ? previousValue / previousMax : 1.0f;
         float newValue = Math.max(0.01f, Math.min(newMax, ratio * newMax));
         statMap.setStatValue(slot.statIndex(), newValue);
@@ -147,11 +155,12 @@ public class PlayerAttributeManager {
             float skillBonus,
             @Nonnull PlayerData playerData) {
         SkillAttributeType attributeType = slot.attributeType();
-        float hytaleBase = slot.zeroVanillaBase() ? Math.max(0.0f, rawHytaleBase) : rawHytaleBase;
-        float raceBase = resolveRaceBaseValue(playerData, attributeType, hytaleBase);
-        float raceDelta = raceBase - hytaleBase;
-        float finalMax = raceBase + skillBonus;
-        return new AttributeComputation(hytaleBase, raceBase, raceDelta, skillBonus, finalMax);
+        float baseline = slot.clampBaselineAtZero() ? Math.max(0.0f, rawHytaleBase) : rawHytaleBase;
+        float vanillaBase = slot.vanillaBase();
+        float raceBase = resolveRaceBaseValue(playerData, attributeType, vanillaBase);
+        float raceDelta = raceBase - vanillaBase;
+        float finalMax = baseline + raceDelta + skillBonus;
+        return new AttributeComputation(baseline, raceBase, raceDelta, skillBonus, finalMax);
     }
 
     private float resolveRaceBaseValue(PlayerData playerData, SkillAttributeType attributeType, float fallback) {
