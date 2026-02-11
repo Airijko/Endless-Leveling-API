@@ -19,6 +19,7 @@ import com.airijko.endlessleveling.passives.ArchetypePassiveManager;
 import com.airijko.endlessleveling.systems.PassiveRegenSystem;
 import com.airijko.endlessleveling.systems.MobNameplateSystem;
 import com.airijko.endlessleveling.systems.PlayerRaceStatSystem;
+import com.airijko.endlessleveling.systems.PeriodicSkillModifierSystem;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.event.events.entity.LivingEntityInventoryChangeEvent;
 import com.hypixel.hytale.server.core.event.events.player.PlayerDisconnectEvent;
@@ -159,6 +160,8 @@ public class EndlessLeveling extends JavaPlugin {
         this.getEntityStoreRegistry()
                 .registerSystem(new PassiveRegenSystem(playerDataManager, passiveManager, archetypePassiveManager,
                         skillManager));
+        // Register periodic skill modifier reapplication system
+        this.getEntityStoreRegistry().registerSystem(new PeriodicSkillModifierSystem(playerDataManager, skillManager));
         playerRaceStatSystem = new PlayerRaceStatSystem(playerDataManager, skillManager);
         this.getEntityStoreRegistry().registerSystem(playerRaceStatSystem);
         this.getEntityStoreRegistry().registerSystem(new MobNameplateSystem());
