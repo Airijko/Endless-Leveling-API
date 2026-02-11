@@ -25,22 +25,29 @@ public class PlayerHud extends CustomUIHud {
     private final PlayerDataManager playerDataManager;
     private final LevelingManager levelingManager;
     private final PlayerRef targetPlayerRef;
+    private final java.util.concurrent.atomic.AtomicBoolean built = new java.util.concurrent.atomic.AtomicBoolean(
+            false);
 
     public PlayerHud(@Nonnull PlayerRef playerRef) {
         super(playerRef);
         this.playerDataManager = EndlessLeveling.getInstance().getPlayerDataManager();
         this.levelingManager = EndlessLeveling.getInstance().getLevelingManager();
         this.targetPlayerRef = playerRef;
-        ACTIVE_HUDS.put(playerRef.getUuid(), this);
     }
 
     @Override
     protected void build(@Nonnull UICommandBuilder uiCommandBuilder) {
         uiCommandBuilder.append("Hud/EndlessPlayerHud.ui");
+        built.set(true);
+        ACTIVE_HUDS.put(targetPlayerRef.getUuid(), this);
         pushHudState(uiCommandBuilder);
     }
 
     private void pushHudState(@Nonnull UICommandBuilder uiCommandBuilder) {
+        if (!built.get()) {
+            return; // HUD has not finished building, so skip pushing state to avoid missing element
+                    // errors.
+        }
         uiCommandBuilder.set("#Level.Text", resolveHudLabel());
         double progress = resolveXpProgress();
         uiCommandBuilder.set("#ProgressBar.Value", progress);
