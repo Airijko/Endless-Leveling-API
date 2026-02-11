@@ -111,4 +111,4 @@ enable_logging: false # Enable detailed logging output
 # INTERNAL CONFIG VERSION
 # DO NOT MODIFY
 # ------------------------------------------------------------
-config_version: 7
+config_version: 8
