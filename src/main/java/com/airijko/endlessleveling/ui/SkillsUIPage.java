@@ -35,6 +35,7 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         private static final SkillBinding[] SKILL_BINDINGS = {
                         new SkillBinding("LifeForce", "#LifeForceIcon", SkillAttributeType.LIFE_FORCE),
                         new SkillBinding("Strength", "#StrengthIcon", SkillAttributeType.STRENGTH),
+                        new SkillBinding("Sorcery", "#SorceryIcon", SkillAttributeType.SORCERY),
                         new SkillBinding("Defense", "#DefenseIcon", SkillAttributeType.DEFENSE),
                         new SkillBinding("Haste", "#HasteIcon", SkillAttributeType.HASTE),
                         new SkillBinding("Precision", "#PrecisionIcon", SkillAttributeType.PRECISION),
@@ -55,7 +56,9 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 ATTRIBUTE_DESCRIPTIONS.put(SkillAttributeType.LIFE_FORCE,
                                 "Boosts your total health so you can tank more hits.");
                 ATTRIBUTE_DESCRIPTIONS.put(SkillAttributeType.STRENGTH,
-                                "Multiplies weapon and ability damage outputs.");
+                                "Boosts physical damage for melee and ranged weapons.");
+                ATTRIBUTE_DESCRIPTIONS.put(SkillAttributeType.SORCERY,
+                                "Boosts magic damage for staff weapons.");
                 ATTRIBUTE_DESCRIPTIONS.put(SkillAttributeType.DEFENSE,
                                 "Cuts down incoming damage through resistances.");
                 ATTRIBUTE_DESCRIPTIONS.put(SkillAttributeType.HASTE, "Increases movement speed");
@@ -69,6 +72,7 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
                 DEFAULT_ATTRIBUTE_ICONS.put(SkillAttributeType.LIFE_FORCE, "Potion_Health");
                 DEFAULT_ATTRIBUTE_ICONS.put(SkillAttributeType.STRENGTH, "Weapon_Longsword_Adamantite_Saurian");
+                DEFAULT_ATTRIBUTE_ICONS.put(SkillAttributeType.SORCERY, "Weapon_Staff_Mithril");
                 DEFAULT_ATTRIBUTE_ICONS.put(SkillAttributeType.DEFENSE, "Weapon_Shield_Orbis_Knight");
                 DEFAULT_ATTRIBUTE_ICONS.put(SkillAttributeType.HASTE, "Spawn_Temple_Helix");
                 DEFAULT_ATTRIBUTE_ICONS.put(SkillAttributeType.PRECISION, "Weapon_Shortbow_Combat");
@@ -107,6 +111,8 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 ui.set("#LifeForceDescription.Text", getDescription(SkillAttributeType.LIFE_FORCE));
                 ui.set("#StrengthLabel.Text", "Strength");
                 ui.set("#StrengthDescription.Text", getDescription(SkillAttributeType.STRENGTH));
+                ui.set("#SorceryLabel.Text", "Sorcery");
+                ui.set("#SorceryDescription.Text", getDescription(SkillAttributeType.SORCERY));
                 ui.set("#DefenseLabel.Text", "Defense");
                 ui.set("#DefenseDescription.Text", getDescription(SkillAttributeType.DEFENSE));
                 ui.set("#HasteLabel.Text", "Haste");
@@ -175,6 +181,12 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 ui.set("#StrengthLevel.Text", String.valueOf(strLevel));
                 ui.set("#StrengthValue.Text",
                                 "+" + formatNumber(strengthPreview.totalValue()) + "% Damage");
+
+                int sorcLevel = getPreviewLevel(SkillAttributeType.SORCERY);
+                double sorceryTotal = skillManager.calculateSkillAttributeBonus(playerData, SkillAttributeType.SORCERY,
+                                sorcLevel);
+                ui.set("#SorceryLevel.Text", String.valueOf(sorcLevel));
+                ui.set("#SorceryValue.Text", "+" + formatNumber(sorceryTotal) + "% Magic Damage");
 
                 int defLevel = getPreviewLevel(SkillAttributeType.DEFENSE);
                 SkillManager.DefenseBreakdown defensePreview = skillManager.getDefenseBreakdown(playerData, defLevel);

@@ -263,8 +263,8 @@ $C.@PageOverlay {
 
                             Group { Anchor: (Height: 12); }
 
-                            // ---------------- DEFENSE ----------------
-                            Group #Defense {
+                            // ---------------- PRECISION ----------------
+                            Group #Precision {
                                 LayoutMode: Top;
                                 Background: #0b141f(0.8);
                                 Padding: (Full: 12);
@@ -276,7 +276,7 @@ $C.@PageOverlay {
                                         Background: #050b16(0.85);
                                         LayoutMode: Middle;
                                         Padding: (Full: 8);
-                                        ItemIcon #DefenseIcon {
+                                        ItemIcon #PrecisionIcon {
                                             Anchor: (Width: 36, Height: 36);
                                             Visible: false;
                                         }
@@ -291,31 +291,31 @@ $C.@PageOverlay {
                                         Group {
                                             LayoutMode: Left;
 
-                                            Label #DefenseLabel { Style: (TextColor: #ddfff3, FontSize: 16, RenderBold: true); FlexWeight: 1; }
+                                            Label #PrecisionLabel { Style: (TextColor: #dff6ff, FontSize: 16, RenderBold: true); FlexWeight: 1; }
 
                                             Group {
                                                 LayoutMode: Left;
 
                                                 Label {
                                                     Text: "Lv.";
-                                                    Style: (TextColor: #94ffe3, FontSize: 13);
+                                                    Style: (TextColor: #87dfff, FontSize: 13);
                                                 }
 
                                                 Group { Anchor: (Width: 2); }
 
-                                                Label #DefenseLevel { Style: (TextColor: #94ffe3, FontSize: 13); }
+                                                Label #PrecisionLevel { Style: (TextColor: #87dfff, FontSize: 13); }
                                             }
                                         }
 
                                         Group {
                                             LayoutMode: Left;
 
-                                            Label #DefenseValue { Style: (TextColor: #68f7c5, FontSize: 13, RenderBold: true); FlexWeight: 1; }
+                                            Label #PrecisionValue { Style: (TextColor: #6edcff, FontSize: 13, RenderBold: true); FlexWeight: 1; }
 
-                                            Group #DefenseButtons {
+                                            Group #PrecisionButtons {
                                                 LayoutMode: Left;
 
-                                                $C.@TextButton #DefenseMinus1 {
+                                                $C.@TextButton #PrecisionMinus1 {
                                                     Anchor: (Height: 28, Width: 46);
                                                     Padding: (Horizontal: 12, Vertical: 4);
                                                     Text: "-1";
@@ -324,7 +324,7 @@ $C.@PageOverlay {
 
                                                 Group { Anchor: (Width: 4); }
 
-                                                $C.@TextButton #DefensePlus1 {
+                                                $C.@TextButton #PrecisionPlus1 {
                                                     Anchor: (Height: 28, Width: 46);
                                                     Padding: (Horizontal: 12, Vertical: 4);
                                                     Text: "+1";
@@ -333,7 +333,7 @@ $C.@PageOverlay {
 
                                                 Group { Anchor: (Width: 4); }
 
-                                                $C.@TextButton #DefensePlus5 {
+                                                $C.@TextButton #PrecisionPlus5 {
                                                     Anchor: (Height: 28, Width: 46);
                                                     Padding: (Horizontal: 12, Vertical: 4);
                                                     Text: "+5";
@@ -346,12 +346,13 @@ $C.@PageOverlay {
 
                                 Group { Anchor: (Height: 4); }
 
-                                Label #DefenseDescription {
-                                    Style: (TextColor: #c7ede4, FontSize: 12);
-                                    Text: "Shrugs off more incoming damage.";
+                                Label #PrecisionDescription {
+                                    Style: (TextColor: #c3dfee, FontSize: 12);
+                                    Text: "Raises crit chance for all attacks.";
                                 }
+
                             }
-                            
+
                             Group { Anchor: (Height: 12); }
                             
                             // ---------------- HASTE ----------------
@@ -443,16 +444,11 @@ $C.@PageOverlay {
                                 }
 
                             }
-                        }
 
-                        Group { Anchor: (Width: 24); }
+                            Group { Anchor: (Height: 12); }
 
-                        Group #SkillsColumnRight {
-                            FlexWeight: 1;
-                            LayoutMode: Top;
-
-                            // ---------------- PRECISION ----------------
-                            Group #Precision {
+                            // ---------------- INTELLIGENCE ----------------
+                            Group #Intelligence {
                                 LayoutMode: Top;
                                 Background: #0b141f(0.8);
                                 Padding: (Full: 12);
@@ -464,7 +460,7 @@ $C.@PageOverlay {
                                         Background: #050b16(0.85);
                                         LayoutMode: Middle;
                                         Padding: (Full: 8);
-                                        ItemIcon #PrecisionIcon {
+                                        ItemIcon #IntelligenceIcon {
                                             Anchor: (Width: 36, Height: 36);
                                             Visible: false;
                                         }
@@ -479,31 +475,31 @@ $C.@PageOverlay {
                                         Group {
                                             LayoutMode: Left;
 
-                                            Label #PrecisionLabel { Style: (TextColor: #dff6ff, FontSize: 16, RenderBold: true); FlexWeight: 1; }
+                                            Label #IntelligenceLabel { Style: (TextColor: #e1f4ff, FontSize: 16, RenderBold: true); FlexWeight: 1; }
 
                                             Group {
                                                 LayoutMode: Left;
 
                                                 Label {
                                                     Text: "Lv.";
-                                                    Style: (TextColor: #87dfff, FontSize: 13);
+                                                    Style: (TextColor: #7edbff, FontSize: 13);
                                                 }
 
                                                 Group { Anchor: (Width: 2); }
 
-                                                Label #PrecisionLevel { Style: (TextColor: #87dfff, FontSize: 13); }
+                                                Label #IntelligenceLevel { Style: (TextColor: #7edbff, FontSize: 13); }
                                             }
                                         }
 
                                         Group {
                                             LayoutMode: Left;
 
-                                            Label #PrecisionValue { Style: (TextColor: #6edcff, FontSize: 13, RenderBold: true); FlexWeight: 1; }
+                                            Label #IntelligenceValue { Style: (TextColor: #60d2ff, FontSize: 13, RenderBold: true); FlexWeight: 1; }
 
-                                            Group #PrecisionButtons {
+                                            Group #IntelligenceButtons {
                                                 LayoutMode: Left;
 
-                                                $C.@TextButton #PrecisionMinus1 {
+                                                $C.@TextButton #IntelligenceMinus1 {
                                                     Anchor: (Height: 28, Width: 46);
                                                     Padding: (Horizontal: 12, Vertical: 4);
                                                     Text: "-1";
@@ -512,7 +508,7 @@ $C.@PageOverlay {
 
                                                 Group { Anchor: (Width: 4); }
 
-                                                $C.@TextButton #PrecisionPlus1 {
+                                                $C.@TextButton #IntelligencePlus1 {
                                                     Anchor: (Height: 28, Width: 46);
                                                     Padding: (Horizontal: 12, Vertical: 4);
                                                     Text: "+1";
@@ -521,7 +517,7 @@ $C.@PageOverlay {
 
                                                 Group { Anchor: (Width: 4); }
 
-                                                $C.@TextButton #PrecisionPlus5 {
+                                                $C.@TextButton #IntelligencePlus5 {
                                                     Anchor: (Height: 28, Width: 46);
                                                     Padding: (Horizontal: 12, Vertical: 4);
                                                     Text: "+5";
@@ -534,11 +530,198 @@ $C.@PageOverlay {
 
                                 Group { Anchor: (Height: 4); }
 
-                                Label #PrecisionDescription {
-                                    Style: (TextColor: #c3dfee, FontSize: 12);
-                                    Text: "Raises crit chance for all attacks.";
+                                Label #IntelligenceDescription {
+                                    Style: (TextColor: #c1dff5, FontSize: 12);
+                                    Text: "Feeds mana for abilities and spells.";
                                 }
 
+                            }
+                        }
+
+                        Group { Anchor: (Width: 24); }
+
+                        Group #SkillsColumnRight {
+                            FlexWeight: 1;
+                            LayoutMode: Top;
+
+                            // ---------------- DEFENSE ----------------
+                            Group #Defense {
+                                LayoutMode: Top;
+                                Background: #0b141f(0.8);
+                                Padding: (Full: 12);
+
+                                Group {
+                                    LayoutMode: Left;
+                                    Group {
+                                        Anchor: (Width: 56, Height: 56);
+                                        Background: #050b16(0.85);
+                                        LayoutMode: Middle;
+                                        Padding: (Full: 8);
+                                        ItemIcon #DefenseIcon {
+                                            Anchor: (Width: 36, Height: 36);
+                                            Visible: false;
+                                        }
+                                    }
+
+                                    Group { Anchor: (Width: 12); }
+
+                                    Group {
+                                        LayoutMode: Top;
+                                        FlexWeight: 1;
+
+                                        Group {
+                                            LayoutMode: Left;
+
+                                            Label #DefenseLabel { Style: (TextColor: #ddfff3, FontSize: 16, RenderBold: true); FlexWeight: 1; }
+
+                                            Group {
+                                                LayoutMode: Left;
+
+                                                Label {
+                                                    Text: "Lv.";
+                                                    Style: (TextColor: #94ffe3, FontSize: 13);
+                                                }
+
+                                                Group { Anchor: (Width: 2); }
+
+                                                Label #DefenseLevel { Style: (TextColor: #94ffe3, FontSize: 13); }
+                                            }
+                                        }
+
+                                        Group {
+                                            LayoutMode: Left;
+
+                                            Label #DefenseValue { Style: (TextColor: #68f7c5, FontSize: 13, RenderBold: true); FlexWeight: 1; }
+
+                                            Group #DefenseButtons {
+                                                LayoutMode: Left;
+
+                                                $C.@TextButton #DefenseMinus1 {
+                                                    Anchor: (Height: 28, Width: 46);
+                                                    Padding: (Horizontal: 12, Vertical: 4);
+                                                    Text: "-1";
+                                                    Style: @CancelTextButtonStyle;
+                                                }
+
+                                                Group { Anchor: (Width: 4); }
+
+                                                $C.@TextButton #DefensePlus1 {
+                                                    Anchor: (Height: 28, Width: 46);
+                                                    Padding: (Horizontal: 12, Vertical: 4);
+                                                    Text: "+1";
+                                                    Style: @CustomStyle;
+                                                }
+
+                                                Group { Anchor: (Width: 4); }
+
+                                                $C.@TextButton #DefensePlus5 {
+                                                    Anchor: (Height: 28, Width: 46);
+                                                    Padding: (Horizontal: 12, Vertical: 4);
+                                                    Text: "+5";
+                                                    Style: @CustomStyle;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                Group { Anchor: (Height: 4); }
+
+                                Label #DefenseDescription {
+                                    Style: (TextColor: #c7ede4, FontSize: 12);
+                                    Text: "Shrugs off more incoming damage.";
+                                }
+                            }
+                            
+                            Group { Anchor: (Height: 12); }
+
+                            // ---------------- SORCERY ----------------
+                            Group #Sorcery {
+                                LayoutMode: Top;
+                                Background: #0b141f(0.8);
+                                Padding: (Full: 12);
+
+                                Group {
+                                    LayoutMode: Left;
+                                    Group {
+                                        Anchor: (Width: 56, Height: 56);
+                                        Background: #050b16(0.85);
+                                        LayoutMode: Middle;
+                                        Padding: (Full: 8);
+                                        ItemIcon #SorceryIcon {
+                                            Anchor: (Width: 36, Height: 36);
+                                            Visible: false;
+                                        }
+                                    }
+
+                                    Group { Anchor: (Width: 12); }
+
+                                    Group {
+                                        LayoutMode: Top;
+                                        FlexWeight: 1;
+
+                                        Group {
+                                            LayoutMode: Left;
+
+                                            Label #SorceryLabel { Style: (TextColor: #d7baff, FontSize: 16, RenderBold: true); FlexWeight: 1; }
+
+                                            Group {
+                                                LayoutMode: Left;
+
+                                                Label {
+                                                    Text: "Lv.";
+                                                    Style: (TextColor: #bfaaff, FontSize: 13);
+                                                }
+
+                                                Group { Anchor: (Width: 2); }
+
+                                                Label #SorceryLevel { Style: (TextColor: #bfaaff, FontSize: 13); }
+                                            }
+                                        }
+
+                                        Group {
+                                            LayoutMode: Left;
+
+                                            Label #SorceryValue { Style: (TextColor: #d7baff, FontSize: 13, RenderBold: true); FlexWeight: 1; }
+
+                                            Group #SorceryButtons {
+                                                LayoutMode: Left;
+
+                                                $C.@TextButton #SorceryMinus1 {
+                                                    Anchor: (Height: 28, Width: 46);
+                                                    Padding: (Horizontal: 12, Vertical: 4);
+                                                    Text: "-1";
+                                                    Style: @CancelTextButtonStyle;
+                                                }
+
+                                                Group { Anchor: (Width: 4); }
+
+                                                $C.@TextButton #SorceryPlus1 {
+                                                    Anchor: (Height: 28, Width: 46);
+                                                    Padding: (Horizontal: 12, Vertical: 4);
+                                                    Text: "+1";
+                                                    Style: @CustomStyle;
+                                                }
+
+                                                Group { Anchor: (Width: 4); }
+
+                                                $C.@TextButton #SorceryPlus5 {
+                                                    Anchor: (Height: 28, Width: 46);
+                                                    Padding: (Horizontal: 12, Vertical: 4);
+                                                    Text: "+5";
+                                                    Style: @CustomStyle;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                Group { Anchor: (Height: 4); }
+
+                                Label #SorceryDescription {
+                                    Style: (TextColor: #bfaaff, FontSize: 13);
+                                    Text: "Sorcery increases your magic damage with staff weapons.";
+                                }
                             }
 
                             Group { Anchor: (Height: 12); }
@@ -726,96 +909,6 @@ $C.@PageOverlay {
                             }
 
                             Group { Anchor: (Height: 12); }
-
-                            // ---------------- INTELLIGENCE ----------------
-                            Group #Intelligence {
-                                LayoutMode: Top;
-                                Background: #0b141f(0.8);
-                                Padding: (Full: 12);
-
-                                Group {
-                                    LayoutMode: Left;
-                                    Group {
-                                        Anchor: (Width: 56, Height: 56);
-                                        Background: #050b16(0.85);
-                                        LayoutMode: Middle;
-                                        Padding: (Full: 8);
-                                        ItemIcon #IntelligenceIcon {
-                                            Anchor: (Width: 36, Height: 36);
-                                            Visible: false;
-                                        }
-                                    }
-
-                                    Group { Anchor: (Width: 12); }
-
-                                    Group {
-                                        LayoutMode: Top;
-                                        FlexWeight: 1;
-
-                                        Group {
-                                            LayoutMode: Left;
-
-                                            Label #IntelligenceLabel { Style: (TextColor: #e1f4ff, FontSize: 16, RenderBold: true); FlexWeight: 1; }
-
-                                            Group {
-                                                LayoutMode: Left;
-
-                                                Label {
-                                                    Text: "Lv.";
-                                                    Style: (TextColor: #7edbff, FontSize: 13);
-                                                }
-
-                                                Group { Anchor: (Width: 2); }
-
-                                                Label #IntelligenceLevel { Style: (TextColor: #7edbff, FontSize: 13); }
-                                            }
-                                        }
-
-                                        Group {
-                                            LayoutMode: Left;
-
-                                            Label #IntelligenceValue { Style: (TextColor: #60d2ff, FontSize: 13, RenderBold: true); FlexWeight: 1; }
-
-                                            Group #IntelligenceButtons {
-                                                LayoutMode: Left;
-
-                                                $C.@TextButton #IntelligenceMinus1 {
-                                                    Anchor: (Height: 28, Width: 46);
-                                                    Padding: (Horizontal: 12, Vertical: 4);
-                                                    Text: "-1";
-                                                    Style: @CancelTextButtonStyle;
-                                                }
-
-                                                Group { Anchor: (Width: 4); }
-
-                                                $C.@TextButton #IntelligencePlus1 {
-                                                    Anchor: (Height: 28, Width: 46);
-                                                    Padding: (Horizontal: 12, Vertical: 4);
-                                                    Text: "+1";
-                                                    Style: @CustomStyle;
-                                                }
-
-                                                Group { Anchor: (Width: 4); }
-
-                                                $C.@TextButton #IntelligencePlus5 {
-                                                    Anchor: (Height: 28, Width: 46);
-                                                    Padding: (Horizontal: 12, Vertical: 4);
-                                                    Text: "+5";
-                                                    Style: @CustomStyle;
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-
-                                Group { Anchor: (Height: 4); }
-
-                                Label #IntelligenceDescription {
-                                    Style: (TextColor: #c1dff5, FontSize: 12);
-                                    Text: "Feeds mana for abilities and spells.";
-                                }
-
-                            }
                         }
                     }
                 }
