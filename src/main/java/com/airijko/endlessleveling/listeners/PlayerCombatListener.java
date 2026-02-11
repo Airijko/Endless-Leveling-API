@@ -188,6 +188,10 @@ public class PlayerCombatListener extends DamageEventSystem {
         }
         ItemStack weapon = player.getInventory() != null ? player.getInventory().getItemInHand() : null;
         ClassWeaponType weaponType = ClassWeaponResolver.resolve(weapon);
+        // If weapon is a staff, use spell/class multiplier
+        if (weapon != null && weapon.getItemId() != null && weapon.getItemId().contains("Staff")) {
+            return (float) classManager.getSpellDamageMultiplier(playerData, weaponType);
+        }
         return (float) classManager.getWeaponDamageMultiplier(playerData, weaponType);
     }
 
@@ -217,7 +221,15 @@ public class PlayerCombatListener extends DamageEventSystem {
         runtimeState.setFirstStrikeCooldownExpiresAt(now + settings.cooldownMillis());
         runtimeState.setFirstStrikeReadyNotified(false);
         sendPassiveMessage(playerRef,
-                String.format("First Strike triggered! Cooldown: %.0fs",
+                        float baseAmount;
+                        // If weapon is a staff, use Sorcery modifier
+                        Player player = commandBuffer.getComponent(attackerRef, Player.getComponentType());
+                        ItemStack weapon = player != null && player.getInventory() != null ? player.getInventory().getItemInHand() : null;
+                        if (weapon != null && weapon.getItemId() != null && weapon.getItemId().contains("Staff")) {
+                            baseAmount = skillManager.applySorceryModifier(damage.getAmount(), playerData);
+                        } else {
+                            baseAmount = skillManager.applyStrengthModifier(damage.getAmount(), playerData);
+                        }
                         settings.cooldownMillis() / 1000.0D));
         return bonusDamage;
     }

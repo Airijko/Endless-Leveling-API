@@ -117,6 +117,41 @@ public class SkillManager {
                 player.getPlayerName(), totalSkillPoints);
     }
 
+    // Sorcery / skill modifiers
+    public float calculatePlayerSorcery(PlayerData playerData) {
+        if (playerData == null)
+            return 0f;
+
+        int sorceryLevel = playerData.getPlayerSkillAttributeLevel(SkillAttributeType.SORCERY);
+        double perPointValue = getSkillAttributeConfigValue(SkillAttributeType.SORCERY);
+
+        double innateBonus = getInnateAttributeBonus(playerData, SkillAttributeType.SORCERY);
+        float totalBonusSorcery = (float) ((sorceryLevel * perPointValue) + innateBonus);
+
+        LOGGER.atInfo().log(
+                "calculatePlayerSorcery: SORCERY level=%d, perPointValue=%.2f, innate=%.2f, totalBonusSorcery=%.2f for player %s",
+                sorceryLevel, perPointValue, innateBonus, totalBonusSorcery, playerData.getPlayerName());
+
+        return totalBonusSorcery;
+    }
+
+    /**
+     * Returns the damage modifier to apply based on sorcery.
+     * For staff items only. If base spell damage is D and this returns 1.5, use D *
+     * 1.5.
+     */
+    public float getSorceryDamageModifier(PlayerData playerData) {
+        float bonus = calculatePlayerSorcery(playerData);
+        LOGGER.atInfo().log("getSorceryDamageModifier: bonus=%.2f for player %s", bonus,
+                playerData.getPlayerName());
+        return bonus;
+    }
+
+    public float applySorceryModifier(float baseSpellDamage, PlayerData playerData) {
+        float sorceryBonus = getSorceryDamageModifier(playerData);
+        return baseSpellDamage * (1.0f + (sorceryBonus / 100.0f));
+    }
+
     // Health / skill modifiers
     public float calculatePlayerHealth(PlayerData playerData) {
         if (playerData == null)
