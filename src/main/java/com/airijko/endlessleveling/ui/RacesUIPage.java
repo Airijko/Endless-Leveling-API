@@ -47,6 +47,7 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     static {
         ATTRIBUTE_TAGLINES.put(SkillAttributeType.LIFE_FORCE, "Base health");
         ATTRIBUTE_TAGLINES.put(SkillAttributeType.STRENGTH, "Damage scaling");
+        ATTRIBUTE_TAGLINES.put(SkillAttributeType.SORCERY, "Magic damage");
         ATTRIBUTE_TAGLINES.put(SkillAttributeType.DEFENSE, "Damage reduction");
         ATTRIBUTE_TAGLINES.put(SkillAttributeType.HASTE, "Movement speed");
         ATTRIBUTE_TAGLINES.put(SkillAttributeType.PRECISION, "Crit chance");
@@ -204,6 +205,7 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
         applyAttributePreview(ui, selection, SkillAttributeType.LIFE_FORCE, "#RaceAttributeLifeForce");
         applyAttributePreview(ui, selection, SkillAttributeType.STRENGTH, "#RaceAttributeStrength");
+        applyAttributePreview(ui, selection, SkillAttributeType.SORCERY, "#RaceAttributeSorcery");
         applyAttributePreview(ui, selection, SkillAttributeType.DEFENSE, "#RaceAttributeDefense");
         applyAttributePreview(ui, selection, SkillAttributeType.HASTE, "#RaceAttributeHaste");
         applyAttributePreview(ui, selection, SkillAttributeType.PRECISION, "#RaceAttributePrecision");
@@ -249,6 +251,7 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     private void clearAttributePreview(@Nonnull UICommandBuilder ui) {
         ui.set("#RaceAttributeLifeForceValue.Text", "--");
         ui.set("#RaceAttributeStrengthValue.Text", "--");
+        ui.set("#RaceAttributeSorceryValue.Text", "--");
         ui.set("#RaceAttributeDefenseValue.Text", "--");
         ui.set("#RaceAttributeHasteValue.Text", "--");
         ui.set("#RaceAttributePrecisionValue.Text", "--");
@@ -258,6 +261,7 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
         ui.set("#RaceAttributeLifeForceNote.Text", "--");
         ui.set("#RaceAttributeStrengthNote.Text", "--");
+        ui.set("#RaceAttributeSorceryNote.Text", "--");
         ui.set("#RaceAttributeDefenseNote.Text", "--");
         ui.set("#RaceAttributeHasteNote.Text", "--");
         ui.set("#RaceAttributePrecisionNote.Text", "--");
@@ -336,6 +340,7 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             case HASTE -> formatDeltaPercent(value);
             case PRECISION -> formatAbsolutePercent(value);
             case FEROCITY -> formatAbsolutePercent(value);
+            case SORCERY -> formatDeltaPercent(value);
             default -> formatNumber(value);
         };
     }

@@ -184,6 +184,8 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 getAttributeDisplay(data, profile, SkillAttributeType.LIFE_FORCE, statMap));
         applyAttributeDisplay(ui, "#AttributeStrengthValue", "#AttributeStrengthLevel",
                 getAttributeDisplay(data, profile, SkillAttributeType.STRENGTH, statMap));
+        applyAttributeDisplay(ui, "#AttributeSorceryValue", "#AttributeSorceryLevel",
+                getAttributeDisplay(data, profile, SkillAttributeType.SORCERY, statMap));
         applyAttributeDisplay(ui, "#AttributeDefenseValue", "#AttributeDefenseLevel",
                 getAttributeDisplay(data, profile, SkillAttributeType.DEFENSE, statMap));
         applyAttributeDisplay(ui, "#AttributeHasteValue", "#AttributeHasteLevel",
@@ -239,6 +241,7 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         ui.set("#DetailRaceValue.Text", "--");
         applyAttributeDisplay(ui, "#AttributeLifeForceValue", "#AttributeLifeForceLevel", emptyAttributeDisplay());
         applyAttributeDisplay(ui, "#AttributeStrengthValue", "#AttributeStrengthLevel", emptyAttributeDisplay());
+        applyAttributeDisplay(ui, "#AttributeSorceryValue", "#AttributeSorceryLevel", emptyAttributeDisplay());
         applyAttributeDisplay(ui, "#AttributeDefenseValue", "#AttributeDefenseLevel", emptyAttributeDisplay());
         applyAttributeDisplay(ui, "#AttributeHasteValue", "#AttributeHasteLevel", emptyAttributeDisplay());
         applyAttributeDisplay(ui, "#AttributePrecisionValue", "#AttributePrecisionLevel", emptyAttributeDisplay());
@@ -288,6 +291,10 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                     case PRECISION -> {
                         SkillManager.PrecisionBreakdown breakdown = skillManager.getPrecisionBreakdown(data, level);
                         yield formatNumber(breakdown.totalPercent()) + "% Crit Chance";
+                    }
+                    case SORCERY -> {
+                        float bonus = skillManager.calculatePlayerSorcery(data);
+                        yield "+" + formatNumber(bonus) + "% Magic Damage";
                     }
                     case FEROCITY ->
                         "+" + formatNumber(level * skillManager.getSkillAttributeConfigValue(type)) + "% Crit Damage";
