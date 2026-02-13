@@ -119,6 +119,24 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         updateRaceDetailPanel(ui, playerData, activeRace, operatorBypass);
     }
 
+    private void refreshRaceUi(@Nonnull PlayerData playerData, boolean operatorBypass) {
+        if (raceManager == null || !raceManager.isEnabled()) {
+            return;
+        }
+
+        RaceDefinition activeRace = raceManager.getPlayerRace(playerData);
+        if (selectedRaceId == null && activeRace != null) {
+            selectedRaceId = activeRace.getId();
+        }
+
+        UICommandBuilder ui = new UICommandBuilder();
+        updateStatusCard(ui, activeRace);
+        updateCooldownCard(ui, playerData, operatorBypass);
+        refreshRaceList(ui, activeRace);
+        updateRaceDetailPanel(ui, playerData, activeRace, operatorBypass);
+        sendUpdate(ui, false);
+    }
+
     private void updateStatusCard(@Nonnull UICommandBuilder ui, RaceDefinition activeRace) {
         String current = activeRace != null ? activeRace.getDisplayName() : "None selected";
         ui.set("#CurrentRaceValue.Text", current);
@@ -186,6 +204,30 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             } else {
                 ui.set(baseSelector + " #ChooseRaceButton.Visible", false);
             }
+        }
+    }
+
+    private void refreshRaceList(@Nonnull UICommandBuilder ui,
+            RaceDefinition activeRace) {
+        List<RaceDefinition> races = getSortedRaces();
+        ui.set("#RaceCountLabel.Text", races.size() + (races.size() == 1 ? " race" : " races"));
+
+        for (int index = 0; index < races.size(); index++) {
+            RaceDefinition definition = races.get(index);
+            String baseSelector = "#RaceRows[" + index + "]";
+
+            String displayName = definition.getDisplayName();
+            boolean isCurrent = activeRace != null && activeRace.getId().equalsIgnoreCase(definition.getId());
+            boolean isSelected = selectedRaceMatches(definition.getId());
+
+            ui.set(baseSelector + " #RaceName.Text", displayName);
+
+            String selectionStatus = isCurrent ? "CURRENT" : (isSelected ? "VIEWING" : "");
+            boolean hasStatus = !selectionStatus.isEmpty();
+            ui.set(baseSelector + " #RaceSelectionStatus.Visible", hasStatus);
+            ui.set(baseSelector + " #RaceSelectionStatus.Text", selectionStatus);
+
+            ui.set(baseSelector + " #ChooseRaceButton.Visible", !isCurrent);
         }
     }
 
@@ -635,7 +677,7 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             String targetId = data.action.substring("race:view:".length());
             if (targetId != null && !targetId.isBlank()) {
                 this.selectedRaceId = targetId.trim();
-                rebuild();
+                refreshRaceUi(playerData, operatorBypass);
             }
             return;
         }
@@ -735,6 +777,6 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         }
 
         this.selectedRaceId = desired.getId();
-        rebuild();
+        refreshRaceUi(playerData, operatorBypass);
     }
 }

@@ -156,6 +156,44 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 operatorBypass);
     }
 
+    private void refreshClassUi(@Nonnull PlayerData playerData, boolean operatorBypass) {
+        if (classManager == null || !classManager.isEnabled()) {
+            return;
+        }
+
+        CharacterClassDefinition primary = classManager.getPlayerPrimaryClass(playerData);
+        CharacterClassDefinition secondary = classManager.getPlayerSecondaryClass(playerData);
+        if (selectedClassId == null && primary != null) {
+            selectedClassId = primary.getId();
+        }
+
+        long cooldownSeconds = classManager.getChooseClassCooldownSeconds();
+        long primaryCooldownRemaining = operatorBypass
+                ? 0L
+                : classManager.getClassCooldownRemaining(playerData, ClassAssignmentSlot.PRIMARY);
+        long secondaryCooldownRemaining = operatorBypass
+                ? 0L
+                : classManager.getClassCooldownRemaining(playerData, ClassAssignmentSlot.SECONDARY);
+
+        UICommandBuilder ui = new UICommandBuilder();
+        updateCooldownCard(ui,
+                cooldownSeconds,
+                primaryCooldownRemaining,
+                secondaryCooldownRemaining,
+                operatorBypass);
+        updateStatusCard(ui, primary, secondary);
+        refreshClassList(ui, primary, secondary);
+        updateClassDetailPanel(ui,
+                playerData,
+                primary,
+                secondary,
+                cooldownSeconds,
+                primaryCooldownRemaining,
+                secondaryCooldownRemaining,
+                operatorBypass);
+        sendUpdate(ui, false);
+    }
+
     private void updateCooldownCard(UICommandBuilder ui,
             long cooldownSeconds,
             long primaryCooldownRemaining,
@@ -223,6 +261,33 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                     of("Action", "class:view:" + definition.getId()),
                     false);
 
+        }
+    }
+
+    private void refreshClassList(UICommandBuilder ui,
+            CharacterClassDefinition primary,
+            CharacterClassDefinition secondary) {
+        List<CharacterClassDefinition> classes = new ArrayList<>(classManager.getLoadedClasses());
+        classes.sort(Comparator.comparing(def -> def.getDisplayName().toLowerCase(Locale.ROOT)));
+        ui.set("#ClassCountLabel.Text", classes.size() + (classes.size() == 1 ? " class" : " classes"));
+
+        for (int index = 0; index < classes.size(); index++) {
+            CharacterClassDefinition definition = classes.get(index);
+            String base = "#ClassRows[" + index + "]";
+
+            boolean isPrimary = primary != null && primary.getId().equalsIgnoreCase(definition.getId());
+            boolean isSecondary = secondary != null && secondary.getId().equalsIgnoreCase(definition.getId());
+            boolean isSelected = selectedClassMatches(definition.getId());
+
+            ui.set(base + " #ClassName.Text", definition.getDisplayName());
+            String status = isPrimary ? "PRIMARY" : (isSecondary ? "SECONDARY" : (isSelected ? "VIEWING" : ""));
+            boolean hasStatus = !status.isEmpty();
+            ui.set(base + " #ClassSelectionStatus.Visible", hasStatus);
+            if (hasStatus) {
+                ui.set(base + " #ClassSelectionStatus.Text", status);
+            }
+
+            applyClassIcon(ui, base, definition);
         }
     }
 
@@ -504,7 +569,7 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             String id = data.action.substring("class:view:".length());
             if (id != null && !id.isBlank()) {
                 this.selectedClassId = id.trim();
-                rebuild();
+                refreshClassUi(playerData, OperatorHelper.isOperator(playerRef));
             }
             return;
         }
@@ -561,7 +626,7 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 Message.raw("[Classes] ").color("#4fd7f7"),
                 Message.raw("Primary class set to ").color("#ffffff"),
                 Message.raw(applied.getDisplayName()).color("#ffc300")));
-        rebuild();
+        refreshClassUi(data, OperatorHelper.isOperator(playerRef));
     }
 
     private void handleSecondarySelection(String targetId,
@@ -605,7 +670,7 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 Message.raw("[Classes] ").color("#4fd7f7"),
                 Message.raw("Secondary class set to ").color("#ffffff"),
                 Message.raw(applied.getDisplayName()).color("#d4b5ff")));
-        rebuild();
+        refreshClassUi(data, OperatorHelper.isOperator(playerRef));
     }
 
     private void clearSecondary(PlayerData data,
@@ -623,7 +688,7 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         playerDataManager.save(data);
         reapplyBonuses(data, ref, store);
         playerRef.sendMessage(Message.raw("Secondary class cleared.").color("#4fd7f7"));
-        rebuild();
+        refreshClassUi(data, OperatorHelper.isOperator(playerRef));
     }
 
     private void reapplyBonuses(PlayerData data,
