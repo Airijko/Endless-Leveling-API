@@ -103,15 +103,39 @@ $C.@PageOverlay {
                             }
                         }
 
-                        Group {
+                        Group #RaceStatusCard {
                             LayoutMode: Top;
-                            Background: #0b141f(0.6);
-                            Padding: (Left: 14, Right: 14, Top: 10, Bottom: 10);
+                            Background: #0b141f(0.92);
+                            Padding: (Full: 10);
 
                             Label {
-                                Text: "View a race to inspect its stats, then choose it to commit your swap.";
-                                Style: (FontSize: 12, TextColor: #8aa1bf, Wrap: true);
-                                FlexWeight: 1;
+                                Text: "Current Race";
+                                Style: (FontSize: 12, TextColor: #8aa1bf, RenderBold: true, LetterSpacing: 1);
+                                Anchor: (Height: 12);
+                            }
+
+                            Group { Anchor: (Height: 8); }
+
+                            Group {
+                                LayoutMode: Left;
+                                Anchor: (Height: 20);
+                                Label {
+                                    Text: "Active";
+                                    Style: (FontSize: 11, TextColor: #6fe3ff, RenderBold: true);
+                                }
+                                Group { Anchor: (Width: 8); }
+                                Label #CurrentRaceValue {
+                                    Text: "--";
+                                    Style: (FontSize: 13, TextColor: #ffffff, RenderBold: true);
+                                    FlexWeight: 1;
+                                }
+                            }
+
+                            Group { Anchor: (Height: 6); }
+                            Label {
+                                Text: "Your active race sets identity and innate bonuses.";
+                                Style: (FontSize: 11, TextColor: #9fb6d3);
+                                Anchor: (Height: 14);
                             }
                         }
 

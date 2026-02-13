@@ -88,6 +88,7 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             ui.set("#RaceSwapCooldownValue.Text", "Disabled");
             ui.set("#RaceSwapCooldownHint.Text", "Enable races to manage identities.");
             ui.set("#RaceCountLabel.Text", "0 available");
+            ui.set("#CurrentRaceValue.Text", "--");
             ui.clear("#RaceRows");
             ui.clear("#RacePassiveEntries");
             return;
@@ -99,6 +100,7 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             ui.set("#SelectedRaceSubtitle.Text", "Unable to load your race information right now.");
             ui.set("#RaceSwapCooldownValue.Text", "--");
             ui.set("#RaceSwapCooldownHint.Text", "Try reopening this page in a few moments.");
+            ui.set("#CurrentRaceValue.Text", "--");
             ui.clear("#RaceRows");
             ui.clear("#RacePassiveEntries");
             return;
@@ -110,9 +112,15 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             selectedRaceId = activeRace.getId();
         }
 
+        updateStatusCard(ui, activeRace);
         updateCooldownCard(ui, playerData, operatorBypass);
         buildRaceList(ui, events, playerData, activeRace);
         updateRaceDetailPanel(ui, playerData, activeRace, operatorBypass);
+    }
+
+    private void updateStatusCard(@Nonnull UICommandBuilder ui, RaceDefinition activeRace) {
+        String current = activeRace != null ? activeRace.getDisplayName() : "None selected";
+        ui.set("#CurrentRaceValue.Text", current);
     }
 
     private void updateCooldownCard(@Nonnull UICommandBuilder ui,
