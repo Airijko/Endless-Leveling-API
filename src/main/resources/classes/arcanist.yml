@@ -18,8 +18,9 @@ passives:
     threshold: 0.2 # Only applies to targets already below 20% HP
     cooldown: 45 # Seconds between executioner procs
   - type: INNATE_ATTRIBUTE_GAIN
-    attribute: intelligence
+    attribute: flow
     value: 0.4
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: sorcery
     value: 1.40
+

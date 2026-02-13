@@ -24,7 +24,7 @@ profiles:
       PRECISION: 22
       FEROCITY: 14
       STAMINA: 8
-      INTELLIGENCE: 4
+      FLOW: 4
     race:
       id: Human
       name: Human
@@ -54,7 +54,7 @@ profiles:
       PRECISION: 95
       FEROCITY: 200
       STAMINA: 0
-      INTELLIGENCE: 0
+      FLOW: 0
     race:
       id: Golem
       name: Golem
@@ -84,7 +84,7 @@ profiles:
       PRECISION: 0
       FEROCITY: 0
       STAMINA: 0
-      INTELLIGENCE: 0
+      FLOW: 0
     race:
       id: Celestial
       name: Celestial

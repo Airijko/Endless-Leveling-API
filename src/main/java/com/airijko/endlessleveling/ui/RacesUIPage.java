@@ -53,7 +53,7 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         ATTRIBUTE_TAGLINES.put(SkillAttributeType.PRECISION, "Crit chance");
         ATTRIBUTE_TAGLINES.put(SkillAttributeType.FEROCITY, "Crit damage");
         ATTRIBUTE_TAGLINES.put(SkillAttributeType.STAMINA, "Base stamina");
-        ATTRIBUTE_TAGLINES.put(SkillAttributeType.INTELLIGENCE, "Base mana");
+        ATTRIBUTE_TAGLINES.put(SkillAttributeType.FLOW, "Base flow (mana)");
         ATTRIBUTE_TAGLINES.put(SkillAttributeType.DISCIPLINE, "XP gain");
     }
 
@@ -220,7 +220,7 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         applyAttributePreview(ui, selection, SkillAttributeType.PRECISION, "#RaceAttributePrecision");
         applyAttributePreview(ui, selection, SkillAttributeType.FEROCITY, "#RaceAttributeFerocity");
         applyAttributePreview(ui, selection, SkillAttributeType.STAMINA, "#RaceAttributeStamina");
-        applyAttributePreview(ui, selection, SkillAttributeType.INTELLIGENCE, "#RaceAttributeIntelligence");
+        applyAttributePreview(ui, selection, SkillAttributeType.FLOW, "#RaceAttributeFlow");
         applyAttributePreview(ui, selection, SkillAttributeType.DISCIPLINE, "#RaceAttributeDiscipline");
 
         List<RacePassiveDefinition> passives = selection.getPassiveDefinitions();
@@ -267,7 +267,7 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         ui.set("#RaceAttributePrecisionValue.Text", "--");
         ui.set("#RaceAttributeFerocityValue.Text", "--");
         ui.set("#RaceAttributeStaminaValue.Text", "--");
-        ui.set("#RaceAttributeIntelligenceValue.Text", "--");
+        ui.set("#RaceAttributeFlowValue.Text", "--");
         ui.set("#RaceAttributeDisciplineValue.Text", "--");
 
         ui.set("#RaceAttributeLifeForceNote.Text", "--");
@@ -278,7 +278,7 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         ui.set("#RaceAttributePrecisionNote.Text", "--");
         ui.set("#RaceAttributeFerocityNote.Text", "--");
         ui.set("#RaceAttributeStaminaNote.Text", "--");
-        ui.set("#RaceAttributeIntelligenceNote.Text", "--");
+        ui.set("#RaceAttributeFlowNote.Text", "--");
         ui.set("#RaceAttributeDisciplineNote.Text", "--");
     }
 
@@ -346,7 +346,7 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         return switch (type) {
             case LIFE_FORCE -> formatResourceBase(value);
             case STAMINA -> formatResourceBase(value);
-            case INTELLIGENCE -> formatResourceBase(value);
+            case FLOW -> formatResourceBase(value);
             case STRENGTH -> formatDeltaPercent(value);
             case DEFENSE -> formatDeltaPercent(value);
             case HASTE -> formatDeltaPercent(value);

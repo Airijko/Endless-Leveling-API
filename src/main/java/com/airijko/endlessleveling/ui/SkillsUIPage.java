@@ -41,7 +41,7 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                         new SkillBinding("Precision", "#PrecisionIcon", SkillAttributeType.PRECISION),
                         new SkillBinding("Ferocity", "#FerocityIcon", SkillAttributeType.FEROCITY),
                         new SkillBinding("Stamina", "#StaminaIcon", SkillAttributeType.STAMINA),
-                        new SkillBinding("Intelligence", "#IntelligenceIcon", SkillAttributeType.INTELLIGENCE),
+                        new SkillBinding("Flow", "#FlowIcon", SkillAttributeType.FLOW),
                         new SkillBinding("Discipline", "#DisciplineIcon", SkillAttributeType.DISCIPLINE) };
 
         private final EnumMap<SkillAttributeType, Integer> previewLevels = new EnumMap<>(SkillAttributeType.class);
@@ -68,8 +68,8 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 ATTRIBUTE_DESCRIPTIONS.put(SkillAttributeType.FEROCITY, "Adds bonus damage to each critical strike.");
                 ATTRIBUTE_DESCRIPTIONS.put(SkillAttributeType.STAMINA,
                                 "Expands stamina for dodges, blocks, and bursts.");
-                ATTRIBUTE_DESCRIPTIONS.put(SkillAttributeType.INTELLIGENCE,
-                                "Increases mana so spells and abilities stay online longer.");
+                ATTRIBUTE_DESCRIPTIONS.put(SkillAttributeType.FLOW,
+                                "Increases flow (mana) so spells and abilities stay online longer.");
                 ATTRIBUTE_DESCRIPTIONS.put(SkillAttributeType.DISCIPLINE,
                                 "Increases XP gain rate from all sources.");
 
@@ -81,8 +81,8 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 DEFAULT_ATTRIBUTE_ICONS.put(SkillAttributeType.PRECISION, "Weapon_Shortbow_Combat");
                 DEFAULT_ATTRIBUTE_ICONS.put(SkillAttributeType.FEROCITY, "Weapon_Battleaxe_Mithril");
                 DEFAULT_ATTRIBUTE_ICONS.put(SkillAttributeType.STAMINA, "Potion_Stamina");
-                DEFAULT_ATTRIBUTE_ICONS.put(SkillAttributeType.INTELLIGENCE, "Prototype_Tool_Book_Mana");
-                DEFAULT_ATTRIBUTE_ICONS.put(SkillAttributeType.DISCIPLINE, "Prototype_Tool_Scroll");
+                DEFAULT_ATTRIBUTE_ICONS.put(SkillAttributeType.FLOW, "Prototype_Tool_Book_Mana");
+                DEFAULT_ATTRIBUTE_ICONS.put(SkillAttributeType.DISCIPLINE, "Ingredient_Life_Essence");
         }
 
         public SkillsUIPage(@Nonnull PlayerRef playerRef, @Nonnull CustomPageLifetime lifetime) {
@@ -128,8 +128,8 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 ui.set("#FerocityDescription.Text", getDescription(SkillAttributeType.FEROCITY));
                 ui.set("#StaminaLabel.Text", "Stamina");
                 ui.set("#StaminaDescription.Text", getDescription(SkillAttributeType.STAMINA));
-                ui.set("#IntelligenceLabel.Text", "Intelligence");
-                ui.set("#IntelligenceDescription.Text", getDescription(SkillAttributeType.INTELLIGENCE));
+                ui.set("#FlowLabel.Text", "Flow");
+                ui.set("#FlowDescription.Text", getDescription(SkillAttributeType.FLOW));
                 ui.set("#DisciplineLabel.Text", "Discipline");
                 ui.set("#DisciplineDescription.Text", getDescription(SkillAttributeType.DISCIPLINE));
 
@@ -226,11 +226,11 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 ui.set("#StaminaLevel.Text", String.valueOf(stamLevel));
                 ui.set("#StaminaValue.Text", formatResourceDisplay(staminaTotal, "Stamina"));
 
-                int intLevel = getPreviewLevel(SkillAttributeType.INTELLIGENCE);
-                double intelligenceTotal = resolveResourcePreviewTotal(playerData, SkillAttributeType.INTELLIGENCE,
-                                intLevel);
-                ui.set("#IntelligenceLevel.Text", String.valueOf(intLevel));
-                ui.set("#IntelligenceValue.Text", formatResourceDisplay(intelligenceTotal, "Mana"));
+                int flowLevel = getPreviewLevel(SkillAttributeType.FLOW);
+                double flowTotal = resolveResourcePreviewTotal(playerData, SkillAttributeType.FLOW,
+                                flowLevel);
+                ui.set("#FlowLevel.Text", String.valueOf(flowLevel));
+                ui.set("#FlowValue.Text", formatResourceDisplay(flowTotal, "Flow"));
 
                 int discLevel = getPreviewLevel(SkillAttributeType.DISCIPLINE);
                 double discBonus = skillManager.getDisciplineXpBonusPercent(discLevel);
@@ -564,7 +564,7 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
         private String formatResourceDisplay(double total, String label) {
                 if (total <= 0.0D) {
-                        return "--";
+                        return "0 " + label;
                 }
                 return formatNumber(total) + " " + label;
         }

@@ -10,9 +10,11 @@ attributes:
   precision: 5.0
   ferocity: 75.0
   stamina: 12.5
-  intelligence: 10.0
+  flow: 10.0
   sorcery: 1.0
+  discipline: 0
 
 passives:
   - type: HEALING_BONUS
     value: 1.0 # +100% healing dealt/received
+

@@ -10,7 +10,8 @@ attributes:
   precision: 10.0
   ferocity: 50.0
   stamina: 10.0
-  intelligence: 20.0
+  flow: 20.0
+  discipline: 0
 
 passives:
   - type: XP_BONUS
@@ -22,3 +23,4 @@ passives:
     threshold: 0.2 # Trigger below 20% stamina
     duration: 3 # Seconds to spread stamina recovery over
     cooldown: 45 # Seconds between adrenaline bursts
+

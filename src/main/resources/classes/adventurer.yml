@@ -30,3 +30,4 @@ passives:
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: stamina
     value: 0.7
+

@@ -85,5 +85,6 @@ passives:
     attribute: stamina
     value: 2.0
   - type: INNATE_ATTRIBUTE_GAIN
-    attribute: intelligence
+    attribute: flow
     value: 2.0
+

@@ -18,8 +18,9 @@ passives:
   - type: SPECIAL_CHARGE_BONUS
     value: 0.75
   - type: INNATE_ATTRIBUTE_GAIN
-    attribute: intelligence
+    attribute: flow
     value: 1.25
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: sorcery
     value: 1.0
+

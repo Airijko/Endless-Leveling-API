@@ -11,8 +11,9 @@ attributes: # Base Values
   precision: 15.0
   ferocity: 40.0
   stamina: 10.0
-  intelligence: 30.0
+  flow: 30.0
   sorcery: 1.15
+  discipline: 0
 
 passives:
   - type: XP_BONUS
@@ -21,3 +22,4 @@ passives:
     value: 0.1 # Passive +10% movement speed applied after haste
     duration: 5 # Seconds after killing a target to maintain swiftness bonus
     max_stacks: 8 # Can stack up to 8 times after killing a target for a total of +80% movement speed
+

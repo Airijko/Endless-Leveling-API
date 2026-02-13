@@ -104,6 +104,65 @@ public class ConfigManager {
         configMap.put(path, value);
     }
 
+    /** Check whether a nested path exists in the loaded config map. */
+    public boolean hasPath(String path) {
+        if (configMap == null || path == null || path.isEmpty()) {
+            return false;
+        }
+        String[] keys = path.split("\\.");
+        Map<String, Object> currentMap = configMap;
+
+        for (int i = 0; i < keys.length; i++) {
+            String key = keys[i];
+            if (i == keys.length - 1) {
+                return currentMap.containsKey(key);
+            }
+            Object next = currentMap.get(key);
+            if (next instanceof Map<?, ?> map) {
+                // noinspection unchecked
+                currentMap = (Map<String, Object>) map;
+            } else {
+                return false;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Ensure a nested path exists; create intermediate maps if necessary. Returns
+     * true if the map was modified.
+     */
+    public boolean ensurePath(String path, Object defaultValue) {
+        if (configMap == null || path == null || path.isEmpty()) {
+            return false;
+        }
+        boolean modified = false;
+        String[] keys = path.split("\\.");
+        Map<String, Object> currentMap = configMap;
+
+        for (int i = 0; i < keys.length; i++) {
+            String key = keys[i];
+            if (i == keys.length - 1) {
+                if (!currentMap.containsKey(key)) {
+                    currentMap.put(key, defaultValue);
+                    modified = true;
+                }
+            } else {
+                Object next = currentMap.get(key);
+                if (next instanceof Map<?, ?> map) {
+                    // noinspection unchecked
+                    currentMap = (Map<String, Object>) map;
+                } else {
+                    Map<String, Object> child = new LinkedHashMap<>();
+                    currentMap.put(key, child);
+                    currentMap = child;
+                    modified = true;
+                }
+            }
+        }
+        return modified;
+    }
+
     private void ensureConfigFileExists() {
         if (configFile.exists()) {
             return;

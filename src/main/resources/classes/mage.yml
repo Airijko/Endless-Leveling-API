@@ -16,8 +16,9 @@ passives:
   - type: HEALTH_REGEN
     value: 0.02
   - type: INNATE_ATTRIBUTE_GAIN
-    attribute: intelligence
+    attribute: flow
     value: 1.50
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: sorcery
     value: 1.2
+

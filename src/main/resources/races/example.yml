@@ -13,7 +13,7 @@
 #   precision        -> Base crit chance (use percent values, e.g., 10 = 10%).
 #   ferocity         -> Base crit damage bonus (50 = +50%).
 #   stamina          -> Flat stamina pool.
-#   intelligence     -> Flat mana/intelligence pool.
+#   flow     -> Flat mana/flow pool.
 # ----------------------------------------------------------------------------
 # Passive Reference (declare under `passives:` using `- type: <PASSIVE>`)
 # Optional metadata for every passive entry:
@@ -72,7 +72,7 @@
 #   INNATE_ATTRIBUTE_GAIN
 #     -> `attribute`: which attribute gains bonus
 #     -> `value`: flat amount granted per player level (use the same units as skill_attributes)
-#     Valid attribute keys: life_force, strength, defense, haste, precision, ferocity, stamina, intelligence
+#     Valid attribute keys: life_force, strength, defense, haste, precision, ferocity, stamina, flow
 
 # ============================================================================
 
@@ -88,8 +88,9 @@ attributes: # Base Values
   precision: 10.0
   ferocity: 50.0
   stamina: 10.0
-  intelligence: 20.0
+  flow: 20.0
   sorcery: 1.0
+  discipline: 0
 
 passives:
   - type: XP_BONUS
@@ -130,3 +131,4 @@ passives:
     value: 0.1 # Passive +10% movement speed applied after haste
     duration: 5 # Seconds after killing a target to maintain swiftness bonus
     max_stacks: 8 # Can stack up to 8 times after killing a target for a total of +80% movement speed
+

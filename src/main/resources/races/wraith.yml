@@ -11,8 +11,9 @@ attributes:
   precision: 20.0
   ferocity: 75.0
   stamina: 10.0
-  intelligence: 20.0
+  flow: 20.0
   sorcery: 1.0
+  discipline: 0
 
 passives:
   - type: SWIFTNESS
@@ -22,3 +23,4 @@ passives:
   - type: FIRST_STRIKE
     value: 3.0 # +300% damage on first hit
     cooldown: 20 # seconds between first-strike windows
+

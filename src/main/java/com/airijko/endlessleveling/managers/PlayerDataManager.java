@@ -414,6 +414,9 @@ public class PlayerDataManager {
         if (attrs != null) {
             for (SkillAttributeType type : SkillAttributeType.values()) {
                 Object value = attrs.get(type.name());
+                if (value == null) {
+                    value = attrs.get(type.getConfigKey());
+                }
                 profile.getAttributes().put(type, parseInt(value, 0));
             }
         }

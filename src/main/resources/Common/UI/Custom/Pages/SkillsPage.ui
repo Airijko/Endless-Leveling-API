@@ -447,8 +447,8 @@ $C.@PageOverlay {
 
                             Group { Anchor: (Height: 12); }
 
-                            // ---------------- INTELLIGENCE ----------------
-                            Group #Intelligence {
+                            // ---------------- FLOW ----------------
+                            Group #Flow {
                                 LayoutMode: Top;
                                 Background: #0b141f(0.8);
                                 Padding: (Full: 12);
@@ -460,7 +460,7 @@ $C.@PageOverlay {
                                         Background: #050b16(0.85);
                                         LayoutMode: Middle;
                                         Padding: (Full: 8);
-                                        ItemIcon #IntelligenceIcon {
+                                        ItemIcon #FlowIcon {
                                             Anchor: (Width: 36, Height: 36);
                                             Visible: false;
                                         }
@@ -475,7 +475,7 @@ $C.@PageOverlay {
                                         Group {
                                             LayoutMode: Left;
 
-                                            Label #IntelligenceLabel { Style: (TextColor: #e1f4ff, FontSize: 16, RenderBold: true); FlexWeight: 1; }
+                                            Label #FlowLabel { Style: (TextColor: #e1f4ff, FontSize: 16, RenderBold: true); FlexWeight: 1; }
 
                                             Group {
                                                 LayoutMode: Left;
@@ -487,19 +487,19 @@ $C.@PageOverlay {
 
                                                 Group { Anchor: (Width: 2); }
 
-                                                Label #IntelligenceLevel { Style: (TextColor: #7edbff, FontSize: 13); }
+                                                Label #FlowLevel { Style: (TextColor: #7edbff, FontSize: 13); }
                                             }
                                         }
 
                                         Group {
                                             LayoutMode: Left;
 
-                                            Label #IntelligenceValue { Style: (TextColor: #60d2ff, FontSize: 13, RenderBold: true); FlexWeight: 1; }
+                                            Label #FlowValue { Style: (TextColor: #60d2ff, FontSize: 13, RenderBold: true); FlexWeight: 1; }
 
-                                            Group #IntelligenceButtons {
+                                            Group #FlowButtons {
                                                 LayoutMode: Left;
 
-                                                $C.@TextButton #IntelligenceMinus1 {
+                                                $C.@TextButton #FlowMinus1 {
                                                     Anchor: (Height: 28, Width: 46);
                                                     Padding: (Horizontal: 12, Vertical: 4);
                                                     Text: "-1";
@@ -508,7 +508,7 @@ $C.@PageOverlay {
 
                                                 Group { Anchor: (Width: 4); }
 
-                                                $C.@TextButton #IntelligencePlus1 {
+                                                $C.@TextButton #FlowPlus1 {
                                                     Anchor: (Height: 28, Width: 46);
                                                     Padding: (Horizontal: 12, Vertical: 4);
                                                     Text: "+1";
@@ -517,7 +517,7 @@ $C.@PageOverlay {
 
                                                 Group { Anchor: (Width: 4); }
 
-                                                $C.@TextButton #IntelligencePlus5 {
+                                                $C.@TextButton #FlowPlus5 {
                                                     Anchor: (Height: 28, Width: 46);
                                                     Padding: (Horizontal: 12, Vertical: 4);
                                                     Text: "+5";
@@ -530,7 +530,7 @@ $C.@PageOverlay {
 
                                 Group { Anchor: (Height: 4); }
 
-                                Label #IntelligenceDescription {
+                                Label #FlowDescription {
                                     Style: (TextColor: #c1dff5, FontSize: 12);
                                     Text: "Feeds mana for abilities and spells.";
                                 }

@@ -196,8 +196,8 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 getAttributeDisplay(data, profile, SkillAttributeType.FEROCITY, statMap));
         applyAttributeDisplay(ui, "#AttributeStaminaValue", "#AttributeStaminaLevel",
                 getAttributeDisplay(data, profile, SkillAttributeType.STAMINA, statMap));
-        applyAttributeDisplay(ui, "#AttributeIntelligenceValue", "#AttributeIntelligenceLevel",
-                getAttributeDisplay(data, profile, SkillAttributeType.INTELLIGENCE, statMap));
+        applyAttributeDisplay(ui, "#AttributeFlowValue", "#AttributeFlowLevel",
+                getAttributeDisplay(data, profile, SkillAttributeType.FLOW, statMap));
         applyAttributeDisplay(ui, "#AttributeDisciplineValue", "#AttributeDisciplineLevel",
                 getAttributeDisplay(data, profile, SkillAttributeType.DISCIPLINE, statMap));
 
@@ -249,7 +249,7 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         applyAttributeDisplay(ui, "#AttributePrecisionValue", "#AttributePrecisionLevel", emptyAttributeDisplay());
         applyAttributeDisplay(ui, "#AttributeFerocityValue", "#AttributeFerocityLevel", emptyAttributeDisplay());
         applyAttributeDisplay(ui, "#AttributeStaminaValue", "#AttributeStaminaLevel", emptyAttributeDisplay());
-        applyAttributeDisplay(ui, "#AttributeIntelligenceValue", "#AttributeIntelligenceLevel",
+        applyAttributeDisplay(ui, "#AttributeFlowValue", "#AttributeFlowLevel",
                 emptyAttributeDisplay());
         applyAttributeDisplay(ui, "#AttributeDisciplineValue", "#AttributeDisciplineLevel",
                 emptyAttributeDisplay());
@@ -535,14 +535,14 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     private boolean isResourceAttribute(@Nonnull SkillAttributeType type) {
         return type == SkillAttributeType.LIFE_FORCE
                 || type == SkillAttributeType.STAMINA
-                || type == SkillAttributeType.INTELLIGENCE;
+                || type == SkillAttributeType.FLOW;
     }
 
     private String resourceLabel(@Nonnull SkillAttributeType type) {
         return switch (type) {
             case LIFE_FORCE -> "Health";
             case STAMINA -> "Stamina";
-            case INTELLIGENCE -> "Mana";
+            case FLOW -> "Flow";
             default -> type.name();
         };
     }
@@ -570,7 +570,7 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         double skillBonus = switch (type) {
             case LIFE_FORCE -> skillManager.calculatePlayerHealth(playerData);
             case STAMINA -> skillManager.calculatePlayerStamina(playerData);
-            case INTELLIGENCE -> skillManager.calculatePlayerIntelligence(playerData);
+            case FLOW -> skillManager.calculatePlayerFlow(playerData);
             default -> 0.0D;
         };
 
@@ -583,7 +583,7 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         return switch (type) {
             case LIFE_FORCE -> PlayerAttributeManager.AttributeSlot.LIFE_FORCE;
             case STAMINA -> PlayerAttributeManager.AttributeSlot.STAMINA;
-            case INTELLIGENCE -> PlayerAttributeManager.AttributeSlot.INTELLIGENCE;
+            case FLOW -> PlayerAttributeManager.AttributeSlot.FLOW;
             default -> null;
         };
     }

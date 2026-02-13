@@ -11,11 +11,13 @@ attributes:
   precision: 5.0
   ferocity: 30.0
   stamina: 6.0
-  intelligence: 50.0
+  flow: 50.0
   sorcery: 1.1
+  discipline: 0
 
 passives:
   - type: MANA_REGEN
     value: 0.03 # Restore 3% of max mana every 5 seconds
   - type: XP_BONUS
     value: 0.4 # +40% XP gain
+

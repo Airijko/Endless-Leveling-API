@@ -15,7 +15,7 @@ skill_attributes:
   ferocity: 1.2 # Critical damage per level
   stamina: 0.2 # Stamina per level
   sorcery: 0.75 # Magic damage per level (staffs only)
-  intelligence: 0.5 # Mana per level
+  flow: 0.5 # Flow (mana) per level
   discipline: 0.5 # XP gain bonus percent per level
 
 # ------------------------------------------------------------
@@ -120,4 +120,4 @@ enable_logging: false # Enable detailed logging output
 # INTERNAL CONFIG VERSION
 # DO NOT MODIFY
 # ------------------------------------------------------------
-config_version: 12
+config_version: 13

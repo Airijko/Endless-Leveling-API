@@ -10,8 +10,9 @@ attributes:
   precision: 5.0
   ferocity: 60.0
   stamina: 15.0
-  intelligence: 15.0
+  flow: 15.0
   sorcery: 1.1
+  discipline: 0
 
 passives:
   - type: SWIFTNESS
@@ -23,3 +24,4 @@ passives:
     threshold: 0.2 # Trigger when below 20% HP
     duration: 10 # Lasts for 10 seconds
     cooldown: 60 # seconds between triggers
+

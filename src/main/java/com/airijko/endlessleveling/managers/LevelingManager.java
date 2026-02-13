@@ -100,12 +100,26 @@ public class LevelingManager {
             return;
 
         double adjustedXp = xpAmount;
+
+        // Combine additive XP bonuses: race/class passive XP_BONUS plus Discipline
+        // percent.
+        double disciplineBonusPercent = skillManager != null
+                ? skillManager.getDisciplineXpBonusPercent(
+                        player.getPlayerSkillAttributeLevel(
+                                com.airijko.endlessleveling.enums.SkillAttributeType.DISCIPLINE))
+                : 0.0D;
+        double totalBonus = 0.0D;
+
         if (archetypePassiveManager != null) {
             ArchetypePassiveSnapshot snapshot = archetypePassiveManager.getSnapshot(player);
-            double bonus = snapshot.getValue(ArchetypePassiveType.XP_BONUS);
-            if (bonus != 0.0D) {
-                adjustedXp *= Math.max(0.0D, 1.0D + bonus);
-            }
+            double passiveBonus = snapshot.getValue(ArchetypePassiveType.XP_BONUS); // e.g., 1.5 == +150%
+            totalBonus += passiveBonus;
+        }
+
+        totalBonus += (disciplineBonusPercent / 100.0D);
+
+        if (totalBonus != 0.0D) {
+            adjustedXp *= Math.max(0.0D, 1.0D + totalBonus);
         }
 
         if (adjustedXp <= 0) {
@@ -268,9 +282,8 @@ public class LevelingManager {
         if (globalXpMultiplier != 1.0d)
             adjustedXp *= globalXpMultiplier;
 
-        if (skillManager != null) {
-            adjustedXp *= skillManager.getXpGainMultiplier(player);
-        }
+        // Discipline bonus is now combined additively with passive XP_BONUS inside
+        // addXp.
 
         boolean blockedForBeingTooHigh = false;
         boolean blockedForBeingTooLow = false;

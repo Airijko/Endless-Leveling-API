@@ -246,11 +246,11 @@ $C.@PageOverlay {
                                     Group {
                                         LayoutMode: Left;
                                         Anchor: (Height: 20);
-                                        Label { Text: "Intelligence"; Style: (FontSize: 12, TextColor: #9be3ff); }
+                                        Label { Text: "Flow"; Style: (FontSize: 12, TextColor: #9be3ff); }
                                         Group { FlexWeight: 1; }
-                                        Label #AttributeIntelligenceValue { Text: "--"; Style: (FontSize: 12, TextColor: #7dd6ff, RenderBold: true); }
+                                        Label #AttributeFlowValue { Text: "--"; Style: (FontSize: 12, TextColor: #7dd6ff, RenderBold: true); }
                                         Group { Anchor: (Width: 8); }
-                                        Label #AttributeIntelligenceLevel { Text: "Lv --"; Style: (FontSize: 12, TextColor: #7dd6ff, RenderBold: true); }
+                                        Label #AttributeFlowLevel { Text: "Lv --"; Style: (FontSize: 12, TextColor: #7dd6ff, RenderBold: true); }
                                     }
                                     Group {
                                         LayoutMode: Left;

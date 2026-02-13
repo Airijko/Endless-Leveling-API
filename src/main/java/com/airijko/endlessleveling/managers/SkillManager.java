@@ -33,6 +33,7 @@ public class SkillManager {
     private static final double DEFENSE_MID_SEGMENT_SLOPE = 20.0 / 45.0;
     private static final double DEFENSE_FINAL_SEGMENT_SLOPE = 0.2;
     private static final double DEFAULT_DISCIPLINE_XP_BONUS_PER_LEVEL_PERCENT = 0.5D;
+    private static final double DEFAULT_FLOW_PER_LEVEL = 0.5D;
 
     private final LevelingConfigManager levelingConfig;
     private final ConfigManager config;
@@ -52,6 +53,7 @@ public class SkillManager {
         this.attributeManager = attributeManager;
         this.archetypePassiveManager = archetypePassiveManager;
         this.passiveManager = passiveManager;
+        ensureFlowConfigLine();
         loadConfigValues();
     }
 
@@ -97,6 +99,29 @@ public class SkillManager {
         } else {
             LOGGER.atWarning().log("getSkillAttributeConfigValue: Invalid value at path=%s, defaulting to 0", path);
             return 0.0;
+        }
+    }
+
+    /** Ensure flow config exists after renaming intelligence -> flow. */
+    private void ensureFlowConfigLine() {
+        try {
+            if (config.hasPath("skill_attributes.flow")) {
+                return;
+            }
+
+            Object legacyValue = config.get("skill_attributes.intelligence", null, false);
+            Object valueToUse = DEFAULT_FLOW_PER_LEVEL;
+            if (legacyValue instanceof Number number) {
+                valueToUse = number.doubleValue();
+            }
+
+            if (config.ensurePath("skill_attributes.flow", valueToUse)) {
+                config.save();
+                double loggedValue = valueToUse instanceof Number num ? num.doubleValue() : DEFAULT_FLOW_PER_LEVEL;
+                LOGGER.atInfo().log("Added missing config entry skill_attributes.flow with value %.2f", loggedValue);
+            }
+        } catch (Exception e) {
+            LOGGER.atWarning().log("Unable to ensure skill_attributes.flow exists: %s", e.getMessage());
         }
     }
 
@@ -249,18 +274,18 @@ public class SkillManager {
         }
     }
 
-    // Intelligence (mana) / skill modifiers
-    public float calculatePlayerIntelligence(PlayerData playerData) {
+    // Flow (mana) / skill modifiers
+    public float calculatePlayerFlow(PlayerData playerData) {
         if (playerData == null)
             return 0.0F;
 
-        int intelligenceLevel = playerData.getPlayerSkillAttributeLevel(SkillAttributeType.INTELLIGENCE);
-        double perPointValue = getSkillAttributeConfigValue(SkillAttributeType.INTELLIGENCE);
+        int flowLevel = playerData.getPlayerSkillAttributeLevel(SkillAttributeType.FLOW);
+        double perPointValue = getSkillAttributeConfigValue(SkillAttributeType.FLOW);
 
-        double innateBonus = getInnateAttributeBonus(playerData, SkillAttributeType.INTELLIGENCE);
-        float totalBonusIntelligence = (float) ((intelligenceLevel * perPointValue) + innateBonus);
+        double innateBonus = getInnateAttributeBonus(playerData, SkillAttributeType.FLOW);
+        float totalBonusFlow = (float) ((flowLevel * perPointValue) + innateBonus);
 
-        return totalBonusIntelligence;
+        return totalBonusFlow;
     }
 
     /**
@@ -282,10 +307,10 @@ public class SkillManager {
         return contribution > 0.0D ? contribution : 0.0D;
     }
 
-    public boolean applyIntelligenceModifiers(@Nonnull Ref<EntityStore> ref,
+    public boolean applyFlowModifiers(@Nonnull Ref<EntityStore> ref,
             @Nonnull ComponentAccessor<EntityStore> componentAccessor, PlayerData playerData) {
-        float skillBonus = calculatePlayerIntelligence(playerData);
-        return attributeManager.applyAttribute(PlayerAttributeManager.AttributeSlot.INTELLIGENCE, ref,
+        float skillBonus = calculatePlayerFlow(playerData);
+        return attributeManager.applyAttribute(PlayerAttributeManager.AttributeSlot.FLOW, ref,
                 componentAccessor, playerData, skillBonus);
     }
 
@@ -648,12 +673,12 @@ public class SkillManager {
         boolean healthApplied = applyHealthModifiers(ref, componentAccessor, playerData);
         boolean staminaApplied = applyStaminaModifiers(ref, componentAccessor, playerData);
         boolean movementApplied = applyMovementSpeedModifier(ref, componentAccessor, playerData);
-        boolean intelligenceApplied = applyIntelligenceModifiers(ref, componentAccessor, playerData);
-        boolean success = healthApplied && staminaApplied && movementApplied && intelligenceApplied;
+        boolean flowApplied = applyFlowModifiers(ref, componentAccessor, playerData);
+        boolean success = healthApplied && staminaApplied && movementApplied && flowApplied;
         if (!success) {
             LOGGER.atFine().log(
-                    "applyAllSkillModifiers: deferred or partial application for player %s (health=%s, stamina=%s, movement=%s, intelligence=%s)",
-                    playerData.getPlayerName(), healthApplied, staminaApplied, movementApplied, intelligenceApplied);
+                    "applyAllSkillModifiers: deferred or partial application for player %s (health=%s, stamina=%s, movement=%s, flow=%s)",
+                    playerData.getPlayerName(), healthApplied, staminaApplied, movementApplied, flowApplied);
         }
         return success;
     }

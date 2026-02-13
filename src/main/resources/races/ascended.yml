@@ -11,8 +11,9 @@ attributes:
   precision: 20.0
   ferocity: 10.0
   stamina: 15.0
-  intelligence: 20.0
+  flow: 20.0
   sorcery: 1.05
+  discipline: 0
 
 passives:
   - type: SPECIAL_CHARGE_BONUS
@@ -21,3 +22,4 @@ passives:
     value: 5.00 # +500% damage to targets below the threshold
     threshold: 0.2 # Only applies to targets already below 20% HP
     cooldown: 45 # Seconds between executioner procs
+

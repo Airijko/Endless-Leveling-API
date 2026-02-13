@@ -26,3 +26,4 @@ passives:
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: strength
     value: 1.25
+

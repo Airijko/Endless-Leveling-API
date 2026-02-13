@@ -30,8 +30,8 @@ public class PlayerAttributeManager {
                 SkillAttributeType.LIFE_FORCE, 100.0f, false),
         STAMINA("EL_RACE_BASE_STAMINA", "SKILL_BONUS_STAMINA", DefaultEntityStatTypes.getStamina(),
                 SkillAttributeType.STAMINA, 10.0f, false),
-        INTELLIGENCE("EL_RACE_BASE_INTELLIGENCE", "SKILL_BONUS_INTELLIGENCE", DefaultEntityStatTypes.getMana(),
-                SkillAttributeType.INTELLIGENCE, 0.0f, true);
+        FLOW("EL_RACE_BASE_FLOW", "SKILL_BONUS_FLOW", DefaultEntityStatTypes.getMana(),
+                SkillAttributeType.FLOW, 0.0f, true);
 
         private final String raceModifierKey;
         private final String skillModifierKey;
@@ -113,7 +113,7 @@ public class PlayerAttributeManager {
         statMap.removeModifier(slot.statIndex(), slot.skillModifierKey());
 
         // Remove old suppression modifier if present (for mana only)
-        if (slot == AttributeSlot.INTELLIGENCE) {
+        if (slot == AttributeSlot.FLOW) {
             statMap.removeModifier(slot.statIndex(), SUPPRESS_VANILLA_MANA_KEY);
         }
 
@@ -127,7 +127,7 @@ public class PlayerAttributeManager {
         applyStatModifier(statMap, slot.statIndex(), slot.skillModifierKey(), computation.skillBonus());
 
         // Apply suppression modifier for vanilla mana (subtract vanilla base)
-        if (slot == AttributeSlot.INTELLIGENCE) {
+        if (slot == AttributeSlot.FLOW) {
             float vanillaMana = slot.vanillaBase();
             if (Math.abs(vanillaMana) > 0.0001f) {
                 applyStatModifier(statMap, slot.statIndex(), SUPPRESS_VANILLA_MANA_KEY, -vanillaMana);

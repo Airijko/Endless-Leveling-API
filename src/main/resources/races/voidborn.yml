@@ -11,8 +11,9 @@ attributes:
   precision: 10.0
   ferocity: 50.0
   stamina: 12.0
-  intelligence: 40.0
+  flow: 40.0
   sorcery: 1.15
+  discipline: 0
 
 passives:
   - type: MANA_REGEN
@@ -23,3 +24,4 @@ passives:
     value: 0.25 # Reflect 25% of damage taken in the window
     window: 4 # Collect damage for 4 seconds before retaliating
     cooldown: 25 # Seconds between retaliations
+

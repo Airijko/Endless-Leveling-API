@@ -11,8 +11,9 @@ attributes:
   precision: 0.0
   ferocity: 0.0
   stamina: 20.0
-  intelligence: 5.0
+  flow: 5.0
   sorcery: 0.8
+  discipline: 0
 
 passives:
   - type: RETALIATION
@@ -24,3 +25,4 @@ passives:
     threshold: 0.2 # Trigger when below 20% HP
     duration: 15 # Lasts for 15 seconds
     cooldown: 60 # seconds between triggers
+

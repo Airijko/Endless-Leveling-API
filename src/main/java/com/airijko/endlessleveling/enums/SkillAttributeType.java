@@ -11,7 +11,7 @@ public enum SkillAttributeType {
     FEROCITY("ferocity"),
     STAMINA("stamina"),
     DISCIPLINE("discipline"),
-    INTELLIGENCE("intelligence"),
+    FLOW("flow"),
     SORCERY("sorcery");
 
     private final String configKey;

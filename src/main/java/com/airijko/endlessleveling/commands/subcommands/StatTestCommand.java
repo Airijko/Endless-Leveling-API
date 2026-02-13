@@ -107,8 +107,8 @@ public class StatTestCommand extends AbstractPlayerCommand {
                 PlayerAttributeManager.AttributeSlot.class);
         bonuses.put(PlayerAttributeManager.AttributeSlot.LIFE_FORCE, skillManager.calculatePlayerHealth(playerData));
         bonuses.put(PlayerAttributeManager.AttributeSlot.STAMINA, skillManager.calculatePlayerStamina(playerData));
-        bonuses.put(PlayerAttributeManager.AttributeSlot.INTELLIGENCE,
-                skillManager.calculatePlayerIntelligence(playerData));
+        bonuses.put(PlayerAttributeManager.AttributeSlot.FLOW,
+                skillManager.calculatePlayerFlow(playerData));
 
         for (Map.Entry<PlayerAttributeManager.AttributeSlot, Float> entry : bonuses.entrySet()) {
             attributeManager.applyAttribute(entry.getKey(), ref, store, playerData, entry.getValue());
@@ -171,10 +171,10 @@ public class StatTestCommand extends AbstractPlayerCommand {
         breakdowns.put("Stamina", new AttributeBreakdown(staminaRace, staminaSkill, staminaRace + staminaSkill, false,
                 false));
 
-        double intRace = attributeManager.getRaceAttribute(playerData,
-                PlayerAttributeManager.AttributeSlot.INTELLIGENCE.attributeType(), 0.0D);
-        double intSkill = skillManager.calculatePlayerIntelligence(playerData);
-        breakdowns.put("Intelligence", new AttributeBreakdown(intRace, intSkill, intRace + intSkill, false, false));
+        double flowRace = attributeManager.getRaceAttribute(playerData,
+                PlayerAttributeManager.AttributeSlot.FLOW.attributeType(), 0.0D);
+        double flowSkill = skillManager.calculatePlayerFlow(playerData);
+        breakdowns.put("Flow", new AttributeBreakdown(flowRace, flowSkill, flowRace + flowSkill, false, false));
 
         SkillManager.StrengthBreakdown strength = skillManager.getStrengthBreakdown(playerData);
         breakdowns.put("Strength",
