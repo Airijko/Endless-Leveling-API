@@ -9,9 +9,9 @@ import com.airijko.endlessleveling.enums.ClassWeaponType;
 import com.airijko.endlessleveling.managers.ClassManager;
 import com.airijko.endlessleveling.managers.LevelingManager;
 import com.airijko.endlessleveling.managers.PlayerDataManager;
+import com.airijko.endlessleveling.managers.SkillManager;
 import com.airijko.endlessleveling.races.RacePassiveDefinition;
 import com.airijko.endlessleveling.systems.PlayerRaceStatSystem;
-import com.airijko.endlessleveling.managers.SkillManager;
 import com.airijko.endlessleveling.util.OperatorHelper;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
@@ -47,6 +47,7 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     private final ClassManager classManager;
     private final PlayerDataManager playerDataManager;
     private final LevelingManager levelingManager;
+    private final SkillManager skillManager;
     private String selectedClassId;
 
     public ClassesUIPage(@Nonnull PlayerRef playerRef, @Nonnull CustomPageLifetime lifetime) {
@@ -55,6 +56,7 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         this.classManager = plugin != null ? plugin.getClassManager() : null;
         this.playerDataManager = plugin != null ? plugin.getPlayerDataManager() : null;
         this.levelingManager = plugin != null ? plugin.getLevelingManager() : null;
+        this.skillManager = plugin != null ? plugin.getSkillManager() : null;
         this.selectedClassId = null;
     }
 
@@ -262,6 +264,7 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             long primaryCooldownRemaining,
             long secondaryCooldownRemaining,
             boolean operatorBypass) {
+        updateSorceryDisplay(ui, data);
         CharacterClassDefinition selection = resolveSelection(primary);
         if (selection == null) {
             ui.set("#SelectedClassLabel.Text", "Select a Class");
@@ -338,6 +341,15 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                     .append(" cooldown.");
         }
         ui.set("#ClassDetailStatus.Text", statusBuilder.toString());
+    }
+
+    private void updateSorceryDisplay(@Nonnull UICommandBuilder ui, PlayerData data) {
+        if (skillManager == null || data == null) {
+            ui.set("#ClassSorceryValue.Text", "--");
+            return;
+        }
+        float sorcery = skillManager.calculatePlayerSorcery(data);
+        ui.set("#ClassSorceryValue.Text", "+" + formatNumber(sorcery) + "% Magic Damage");
     }
 
     private void buildWeaponList(UICommandBuilder ui, CharacterClassDefinition selection) {

@@ -32,6 +32,7 @@ public class SkillManager {
     private static final double DEFENSE_SHARP_CURVE_START = 70.0;
     private static final double DEFENSE_MID_SEGMENT_SLOPE = 20.0 / 45.0;
     private static final double DEFENSE_FINAL_SEGMENT_SLOPE = 0.2;
+    private static final double INTELLIGENCE_XP_BONUS_PER_LEVEL_PERCENT = 0.5D;
 
     private final LevelingConfigManager levelingConfig;
     private final ConfigManager config;
@@ -286,6 +287,22 @@ public class SkillManager {
         float skillBonus = calculatePlayerIntelligence(playerData);
         return attributeManager.applyAttribute(PlayerAttributeManager.AttributeSlot.INTELLIGENCE, ref,
                 componentAccessor, playerData, skillBonus);
+    }
+
+    public double getIntelligenceXpBonusPercent(int intelligenceLevel) {
+        if (intelligenceLevel <= 0) {
+            return 0.0D;
+        }
+        return Math.max(0.0D, intelligenceLevel * INTELLIGENCE_XP_BONUS_PER_LEVEL_PERCENT);
+    }
+
+    public double getXpGainMultiplier(PlayerData playerData) {
+        if (playerData == null) {
+            return 1.0D;
+        }
+        int intelligenceLevel = playerData.getPlayerSkillAttributeLevel(SkillAttributeType.INTELLIGENCE);
+        double bonusPercent = getIntelligenceXpBonusPercent(intelligenceLevel);
+        return 1.0D + (bonusPercent / 100.0D);
     }
 
     // Strength / skill modifiers

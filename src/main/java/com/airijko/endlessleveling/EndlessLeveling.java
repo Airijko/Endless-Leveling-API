@@ -18,6 +18,7 @@ import com.airijko.endlessleveling.managers.*;
 import com.airijko.endlessleveling.passives.ArchetypePassiveManager;
 import com.airijko.endlessleveling.systems.PassiveRegenSystem;
 import com.airijko.endlessleveling.systems.MobNameplateSystem;
+import com.airijko.endlessleveling.systems.PlayerNameplateSystem;
 import com.airijko.endlessleveling.systems.PlayerRaceStatSystem;
 import com.airijko.endlessleveling.systems.PeriodicSkillModifierSystem;
 import com.airijko.endlessleveling.systems.HudRefreshSystem;
@@ -166,6 +167,7 @@ public class EndlessLeveling extends JavaPlugin {
         this.getEntityStoreRegistry().registerSystem(new PeriodicSkillModifierSystem(playerDataManager, skillManager));
         playerRaceStatSystem = new PlayerRaceStatSystem(playerDataManager, skillManager);
         this.getEntityStoreRegistry().registerSystem(playerRaceStatSystem);
+        this.getEntityStoreRegistry().registerSystem(new PlayerNameplateSystem(playerDataManager));
         this.getEntityStoreRegistry().registerSystem(new MobNameplateSystem());
         this.getEntityStoreRegistry().registerSystem(new HudRefreshSystem());
         this.getEntityStoreRegistry().registerSystem(new com.airijko.endlessleveling.systems.MobHealthModifierSystem());

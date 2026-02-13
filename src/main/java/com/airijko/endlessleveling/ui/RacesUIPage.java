@@ -53,7 +53,7 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         ATTRIBUTE_TAGLINES.put(SkillAttributeType.PRECISION, "Crit chance");
         ATTRIBUTE_TAGLINES.put(SkillAttributeType.FEROCITY, "Crit damage");
         ATTRIBUTE_TAGLINES.put(SkillAttributeType.STAMINA, "Base stamina");
-        ATTRIBUTE_TAGLINES.put(SkillAttributeType.INTELLIGENCE, "Base mana");
+        ATTRIBUTE_TAGLINES.put(SkillAttributeType.INTELLIGENCE, "Base mana & XP gain");
     }
 
     private final RaceManager raceManager;

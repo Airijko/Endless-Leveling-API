@@ -268,6 +268,10 @@ public class LevelingManager {
         if (globalXpMultiplier != 1.0d)
             adjustedXp *= globalXpMultiplier;
 
+        if (skillManager != null) {
+            adjustedXp *= skillManager.getXpGainMultiplier(player);
+        }
+
         boolean blockedForBeingTooHigh = false;
         boolean blockedForBeingTooLow = false;
         boolean levelKnown = !skipLevelRangeChecks;

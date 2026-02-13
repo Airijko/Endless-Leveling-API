@@ -40,7 +40,7 @@ import java.lang.reflect.Method;
 public class RaceManager {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
-    private static final int BUILTIN_RACES_VERSION = 4;
+    private static final int BUILTIN_RACES_VERSION = 5;
     private static final String RACES_VERSION_FILE = "races.version";
     private final ConcurrentHashMap<UUID, Long> modelApplyTimestamps = new ConcurrentHashMap<>();
 

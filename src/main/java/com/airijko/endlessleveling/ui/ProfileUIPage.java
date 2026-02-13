@@ -271,7 +271,13 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         if (skillManager != null) {
             if (isResourceAttribute(type)) {
                 double total = resolveResourceTotal(type, data, statMap);
-                detail = Double.isNaN(total) ? "--" : formatNumber(total) + " " + resourceLabel(type);
+                if (type == SkillAttributeType.INTELLIGENCE) {
+                    double xpBonus = skillManager.getIntelligenceXpBonusPercent(level);
+                    String manaText = Double.isNaN(total) ? "--" : formatNumber(total) + " Mana";
+                    detail = manaText + (xpBonus > 0.0D ? ", +" + formatNumber(xpBonus) + "% XP Gain" : "");
+                } else {
+                    detail = Double.isNaN(total) ? "--" : formatNumber(total) + " " + resourceLabel(type);
+                }
             } else {
                 detail = switch (type) {
                     case STRENGTH -> {
