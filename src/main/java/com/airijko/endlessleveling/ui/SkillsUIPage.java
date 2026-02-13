@@ -149,9 +149,13 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                         events.addEventBinding(Activating, minus1Id, of("Action", "sub:" + attrName), false);
                 }
 
-                // Footer buttons
-                events.addEventBinding(Activating, "#ResetSkills", of("Action", "reset"), false);
+                // Bind footer actions (apply / undo)
                 events.addEventBinding(Activating, "#ApplySkills", of("Action", "apply"), false);
+                events.addEventBinding(Activating, "#ResetSkills", of("Action", "reset"), false);
+
+                // -----------------------------
+                // UI VALUES
+                // -----------------------------
 
                 // Get PlayerData
                 var player = Universe.get().getPlayer(playerRef.getUuid());
@@ -171,71 +175,7 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
                 ensurePreviewState(playerData);
 
-                // -----------------------------
-                // UI VALUES
-                // -----------------------------
-
-                ui.set("#SKILLPOINTS.Text", "SKILL POINTS: " + previewSkillPoints);
-
-                int lifeLevel = getPreviewLevel(SkillAttributeType.LIFE_FORCE);
-                double lifeTotal = resolveResourcePreviewTotal(playerData, SkillAttributeType.LIFE_FORCE, lifeLevel);
-                ui.set("#LifeForceLevel.Text", String.valueOf(lifeLevel));
-                ui.set("#LifeForceValue.Text", formatResourceDisplay(lifeTotal, "Health"));
-
-                int strLevel = getPreviewLevel(SkillAttributeType.STRENGTH);
-                SkillManager.StrengthBreakdown strengthPreview = skillManager.getStrengthBreakdown(playerData,
-                                strLevel);
-                ui.set("#StrengthLevel.Text", String.valueOf(strLevel));
-                ui.set("#StrengthValue.Text",
-                                "+" + formatNumber(strengthPreview.totalValue()) + "% Damage");
-
-                int sorcLevel = getPreviewLevel(SkillAttributeType.SORCERY);
-                double sorceryTotal = skillManager.calculateSkillAttributeBonus(playerData, SkillAttributeType.SORCERY,
-                                sorcLevel);
-                ui.set("#SorceryLevel.Text", String.valueOf(sorcLevel));
-                ui.set("#SorceryValue.Text", "+" + formatNumber(sorceryTotal) + "% Magic Damage");
-
-                int defLevel = getPreviewLevel(SkillAttributeType.DEFENSE);
-                SkillManager.DefenseBreakdown defensePreview = skillManager.getDefenseBreakdown(playerData, defLevel);
-                ui.set("#DefenseLevel.Text", String.valueOf(defLevel));
-                ui.set("#DefenseValue.Text", formatNumber(defensePreview.resistance() * 100) + "% Reduction");
-
-                int hasteLevel = getPreviewLevel(SkillAttributeType.HASTE);
-                SkillManager.HasteBreakdown hastePreview = skillManager.getHasteBreakdown(playerData, hasteLevel);
-                double hastePercent = (hastePreview.totalMultiplier() - 1.0f) * 100.0f;
-                ui.set("#HasteLevel.Text", String.valueOf(hasteLevel));
-                ui.set("#HasteValue.Text", "+" + formatNumber(hastePercent) + "% Speed");
-
-                int precLevel = getPreviewLevel(SkillAttributeType.PRECISION);
-                ui.set("#PrecisionLevel.Text", String.valueOf(precLevel));
-                SkillManager.PrecisionBreakdown precisionPreview = skillManager != null
-                                ? skillManager.getPrecisionBreakdown(playerData, precLevel)
-                                : null;
-                double precisionTotal = precisionPreview != null
-                                ? precisionPreview.totalPercent()
-                                : Math.min(100.0D, getPrecisionPreviewPercent(playerData, precLevel));
-                ui.set("#PrecisionValue.Text", formatNumber(precisionTotal) + "% Crit Chance");
-
-                int ferLevel = getPreviewLevel(SkillAttributeType.FEROCITY);
-                double ferPer = skillManager.getSkillAttributeConfigValue(SkillAttributeType.FEROCITY);
-                ui.set("#FerocityLevel.Text", String.valueOf(ferLevel));
-                ui.set("#FerocityValue.Text", "+" + formatNumber(ferLevel * ferPer) + "% Crit Damage");
-
-                int stamLevel = getPreviewLevel(SkillAttributeType.STAMINA);
-                double staminaTotal = resolveResourcePreviewTotal(playerData, SkillAttributeType.STAMINA, stamLevel);
-                ui.set("#StaminaLevel.Text", String.valueOf(stamLevel));
-                ui.set("#StaminaValue.Text", formatResourceDisplay(staminaTotal, "Stamina"));
-
-                int flowLevel = getPreviewLevel(SkillAttributeType.FLOW);
-                double flowTotal = resolveResourcePreviewTotal(playerData, SkillAttributeType.FLOW,
-                                flowLevel);
-                ui.set("#FlowLevel.Text", String.valueOf(flowLevel));
-                ui.set("#FlowValue.Text", formatResourceDisplay(flowTotal, "Flow"));
-
-                int discLevel = getPreviewLevel(SkillAttributeType.DISCIPLINE);
-                double discBonus = skillManager.getDisciplineXpBonusPercent(discLevel);
-                ui.set("#DisciplineLevel.Text", String.valueOf(discLevel));
-                ui.set("#DisciplineValue.Text", "+" + formatNumber(discBonus) + "% XP Gain");
+                applySkillValues(ui, playerData);
         }
 
         @Override
@@ -444,9 +384,89 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                         }
                 }
                 if (refreshUI) {
-                        rebuild();
-                        LOGGER.atInfo().log("UI rebuilt for player %s", playerRef.getUuid());
+                        PlayerData latestData = EndlessLeveling.getInstance()
+                                        .getPlayerDataManager()
+                                        .get(playerRef.getUuid());
+                        if (latestData != null) {
+                                ensurePreviewState(latestData);
+                                refreshSkillUi(latestData);
+                        }
+                        LOGGER.atInfo().log("UI updated without rebuild for player %s", playerRef.getUuid());
                 }
+        }
+
+        private void refreshSkillUi(PlayerData playerData) {
+                // Push only value changes to avoid scroll reset from full rebuilds.
+                if (playerData == null) {
+                        return;
+                }
+                UICommandBuilder ui = new UICommandBuilder();
+                applySkillValues(ui, playerData);
+                sendUpdate(ui, false);
+        }
+
+        private void applySkillValues(UICommandBuilder ui, PlayerData playerData) {
+                ui.set("#SKILLPOINTS.Text", "SKILL POINTS: " + previewSkillPoints);
+
+                int lifeLevel = getPreviewLevel(SkillAttributeType.LIFE_FORCE);
+                double lifeTotal = resolveResourcePreviewTotal(playerData, SkillAttributeType.LIFE_FORCE, lifeLevel);
+                ui.set("#LifeForceLevel.Text", String.valueOf(lifeLevel));
+                ui.set("#LifeForceValue.Text", formatResourceDisplay(lifeTotal, "Health"));
+
+                int strLevel = getPreviewLevel(SkillAttributeType.STRENGTH);
+                SkillManager.StrengthBreakdown strengthPreview = skillManager.getStrengthBreakdown(playerData,
+                                strLevel);
+                ui.set("#StrengthLevel.Text", String.valueOf(strLevel));
+                ui.set("#StrengthValue.Text",
+                                "+" + formatNumber(strengthPreview.totalValue()) + "% Damage");
+
+                int sorcLevel = getPreviewLevel(SkillAttributeType.SORCERY);
+                double sorceryTotal = skillManager.calculateSkillAttributeBonus(playerData, SkillAttributeType.SORCERY,
+                                sorcLevel);
+                ui.set("#SorceryLevel.Text", String.valueOf(sorcLevel));
+                ui.set("#SorceryValue.Text", "+" + formatNumber(sorceryTotal) + "% Magic Damage");
+
+                int defLevel = getPreviewLevel(SkillAttributeType.DEFENSE);
+                SkillManager.DefenseBreakdown defensePreview = skillManager.getDefenseBreakdown(playerData, defLevel);
+                ui.set("#DefenseLevel.Text", String.valueOf(defLevel));
+                ui.set("#DefenseValue.Text", formatNumber(defensePreview.resistance() * 100) + "% Reduction");
+
+                int hasteLevel = getPreviewLevel(SkillAttributeType.HASTE);
+                SkillManager.HasteBreakdown hastePreview = skillManager.getHasteBreakdown(playerData, hasteLevel);
+                double hastePercent = (hastePreview.totalMultiplier() - 1.0f) * 100.0f;
+                ui.set("#HasteLevel.Text", String.valueOf(hasteLevel));
+                ui.set("#HasteValue.Text", "+" + formatNumber(hastePercent) + "% Speed");
+
+                int precLevel = getPreviewLevel(SkillAttributeType.PRECISION);
+                ui.set("#PrecisionLevel.Text", String.valueOf(precLevel));
+                SkillManager.PrecisionBreakdown precisionPreview = skillManager != null
+                                ? skillManager.getPrecisionBreakdown(playerData, precLevel)
+                                : null;
+                double precisionTotal = precisionPreview != null
+                                ? precisionPreview.totalPercent()
+                                : Math.min(100.0D, getPrecisionPreviewPercent(playerData, precLevel));
+                ui.set("#PrecisionValue.Text", formatNumber(precisionTotal) + "% Crit Chance");
+
+                int ferLevel = getPreviewLevel(SkillAttributeType.FEROCITY);
+                double ferPer = skillManager.getSkillAttributeConfigValue(SkillAttributeType.FEROCITY);
+                ui.set("#FerocityLevel.Text", String.valueOf(ferLevel));
+                ui.set("#FerocityValue.Text", "+" + formatNumber(ferLevel * ferPer) + "% Crit Damage");
+
+                int stamLevel = getPreviewLevel(SkillAttributeType.STAMINA);
+                double staminaTotal = resolveResourcePreviewTotal(playerData, SkillAttributeType.STAMINA, stamLevel);
+                ui.set("#StaminaLevel.Text", String.valueOf(stamLevel));
+                ui.set("#StaminaValue.Text", formatResourceDisplay(staminaTotal, "Stamina"));
+
+                int flowLevel = getPreviewLevel(SkillAttributeType.FLOW);
+                double flowTotal = resolveResourcePreviewTotal(playerData, SkillAttributeType.FLOW,
+                                flowLevel);
+                ui.set("#FlowLevel.Text", String.valueOf(flowLevel));
+                ui.set("#FlowValue.Text", formatResourceDisplay(flowTotal, "Flow"));
+
+                int discLevel = getPreviewLevel(SkillAttributeType.DISCIPLINE);
+                double discBonus = skillManager.getDisciplineXpBonusPercent(discLevel);
+                ui.set("#DisciplineLevel.Text", String.valueOf(discLevel));
+                ui.set("#DisciplineValue.Text", "+" + formatNumber(discBonus) + "% XP Gain");
         }
 
         private void ensurePreviewState(PlayerData playerData) {
