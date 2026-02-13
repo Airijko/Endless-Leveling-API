@@ -45,6 +45,15 @@ public class PartyUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         NavUIHelper.applyNavVersion(ui);
         NavUIHelper.bindNavEvents(events);
 
+        if (partyManager == null) {
+            ui.set("#PartyTitleLabel.Text", "Party (disabled)");
+            ui.set("#PartyStatus.Text", "Party system is disabled.");
+            ui.set("#CreatePartyButton.Visible", false);
+            ui.set("#LeavePartyButton.Visible", false);
+            ui.set("#DisbandPartyButton.Visible", false);
+            return;
+        }
+
         // Party-specific buttons
         events.addEventBinding(Activating, "#CreatePartyButton", of("Action", "party:create"), false);
         events.addEventBinding(Activating, "#LeavePartyButton", of("Action", "party:leave"), false);
@@ -64,6 +73,10 @@ public class PartyUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
         if (data.action != null && !data.action.isEmpty()) {
             if (NavUIHelper.handleNavAction(data.action, ref, store, playerRef)) {
+                return;
+            }
+
+            if (partyManager == null) {
                 return;
             }
 

@@ -122,6 +122,8 @@ public class EndlessLeveling extends JavaPlugin {
         boolean enableLogging = toBoolean(configManager.get("enable_logging", Boolean.FALSE, false), false);
         LoggingManager.configure(enableLogging);
 
+        boolean enableParty = toBoolean(configManager.get("enable_party", Boolean.FALSE, false), true);
+
         raceManager = new RaceManager(configManager, filesManager);
         classManager = new ClassManager(configManager, filesManager);
         archetypePassiveManager = new ArchetypePassiveManager(raceManager, classManager);
@@ -132,7 +134,12 @@ public class EndlessLeveling extends JavaPlugin {
         levelingManager = new LevelingManager(playerDataManager, filesManager, skillManager, passiveManager,
                 archetypePassiveManager);
         mobLevelingManager = new MobLevelingManager(filesManager, playerDataManager);
-        partyManager = new PartyManager(playerDataManager, levelingManager, filesManager);
+        if (enableParty) {
+            partyManager = new PartyManager(playerDataManager, levelingManager, filesManager);
+        } else {
+            partyManager = null;
+            LOGGER.atInfo().log("Party system disabled via config; skipping party initialization.");
+        }
 
         // Register event listeners
         PlayerDataListener playerDataListener = new PlayerDataListener(playerDataManager, passiveManager, skillManager,
@@ -140,8 +147,10 @@ public class EndlessLeveling extends JavaPlugin {
         this.getEventRegistry().registerGlobal(PlayerReadyEvent.class, playerDataListener::onPlayerReady);
         this.getEventRegistry().registerGlobal(PlayerDisconnectEvent.class, playerDataListener::onPlayerDisconnect);
 
-        PartyListener partyListener = new PartyListener(partyManager);
-        this.getEventRegistry().registerGlobal(PlayerDisconnectEvent.class, partyListener::onPlayerDisconnect);
+        if (partyManager != null) {
+            PartyListener partyListener = new PartyListener(partyManager);
+            this.getEventRegistry().registerGlobal(PlayerDisconnectEvent.class, partyListener::onPlayerDisconnect);
+        }
 
         this.getEventRegistry().registerGlobal(PlayerReadyEvent.class, OpenPlayerHudListener::openGui);
         LuckDoubleDropSystem luckDoubleDropSystem = new LuckDoubleDropSystem(playerDataManager, passiveManager);
@@ -177,7 +186,9 @@ public class EndlessLeveling extends JavaPlugin {
         // Register commands
         this.getCommandRegistry().registerCommand(new EndlessLevelingCommand("skills", "Skills menu"));
         this.getCommandRegistry().registerCommand(new ProfileCommand());
-        this.getCommandRegistry().registerCommand(new PartyCommand());
+        if (partyManager != null) {
+            this.getCommandRegistry().registerCommand(new PartyCommand());
+        }
         this.getCommandRegistry().registerCommand(new RaceCommand(raceManager, playerDataManager));
         this.getCommandRegistry().registerCommand(new ClassCommand(classManager, playerDataManager));
 

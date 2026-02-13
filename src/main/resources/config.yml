@@ -84,7 +84,7 @@ passives:
 enable_races: true # Enable or disable the race system
 default_race: "Human" # Race assigned to new players
 choose_race_cooldown: 3600 # Cooldown (seconds) before changing race again
-race_max_switches: 1 # -1 = unlimited; 1 = one-time; any positive number caps total race swaps per player
+race_max_switches: -1 # -1 = unlimited; 1 = one-time; any positive number caps total race swaps per player
 global_race_visuals_setting: "off" # Default race model visuals for new players: on, off, or disabled (disables visuals globally)
 
 # IF YOU WANT TO CREATE CUSTOM RACES, SET THIS TO FALSE AND ADD YOUR RACE FILES TO /EndlessLeveling/races/
@@ -97,10 +97,15 @@ enable_classes: true # Enable or disable the class system
 default_primary_class: "Adventurer" # Class assigned to new players
 default_secondary_class: "" # Optional secondary class; leave blank for none
 choose_class_cooldown: 1800 # Cooldown (seconds) before changing class again
-class_max_switches: 1 # -1 = unlimited; 1 = one-time; any positive number caps total class swaps per player (primary/secondary combined)
+class_max_switches: -1 # -1 = unlimited; 1 = one-time; any positive number caps total class swaps per player (primary/secondary combined)
 
 # IF YOU WANT TO CREATE CUSTOM CLASSES, SET THIS TO FALSE AND ADD YOUR CLASS FILES TO /EndlessLeveling/races/
 force_builtin_classes: true # If true, ignore custom class files and keep bundled classes in sync with updates
+
+# ------------------------------------------------------------
+# PARTY SETTINGS
+# ------------------------------------------------------------
+enable_party: false # Enable or disable the party system (UI, commands, XP sharing)
 
 # ------------------------------------------------------------
 # UI SETTINGS
@@ -114,4 +119,4 @@ enable_logging: false # Enable detailed logging output
 # INTERNAL CONFIG VERSION
 # DO NOT MODIFY
 # ------------------------------------------------------------
-config_version: 10
+config_version: 11

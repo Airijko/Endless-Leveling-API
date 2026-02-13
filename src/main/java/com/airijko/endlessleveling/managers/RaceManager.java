@@ -393,24 +393,26 @@ public class RaceManager {
                 case "default":
                     return RaceModelDefaultMode.OFF;
                 default:
-
-    private int parseMaxSwitches(Object configValue) {
-        if (configValue == null)
-            return -1;
-        try {
-            if (configValue instanceof Number n)
-                return n.intValue();
-            return Integer.parseInt(configValue.toString().trim());
-        } catch (Exception ignored) {
-            return -1;
-        }
-    }
                     LOGGER.atWarning().log("Invalid global_race_visuals_setting '%s'; defaulting to OFF.", normalized);
                     return RaceModelDefaultMode.OFF;
             }
         }
 
         return RaceModelDefaultMode.OFF;
+    }
+
+    private int parseMaxSwitches(Object configValue) {
+        if (configValue == null) {
+            return -1;
+        }
+        try {
+            if (configValue instanceof Number n) {
+                return n.intValue();
+            }
+            return Integer.parseInt(configValue.toString().trim());
+        } catch (Exception ignored) {
+            return -1;
+        }
     }
 
     public enum RaceModelDefaultMode {
