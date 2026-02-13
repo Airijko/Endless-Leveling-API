@@ -24,6 +24,7 @@ import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntitySta
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.util.NotificationUtil;
+import com.hypixel.hytale.protocol.ItemWithAllMetadata;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 
@@ -577,43 +578,51 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
         if (!runtimeState.isSecondWindReadyNotified()
                 && runtimeState.getSecondWindCooldownExpiresAt() > 0
                 && now >= runtimeState.getSecondWindCooldownExpiresAt()) {
-            sendCooldownMessage(playerRef, "Second Wind is ready again!");
+            sendCooldownNotification(playerRef, "Second Wind is ready again!");
             runtimeState.setSecondWindReadyNotified(true);
         }
 
         if (!runtimeState.isFirstStrikeReadyNotified()
                 && runtimeState.getFirstStrikeCooldownExpiresAt() > 0
                 && now >= runtimeState.getFirstStrikeCooldownExpiresAt()) {
-            sendCooldownMessage(playerRef, "First Strike is ready again!");
+            sendCooldownNotification(playerRef, "First Strike is ready again!");
             runtimeState.setFirstStrikeReadyNotified(true);
         }
 
         if (!runtimeState.isAdrenalineReadyNotified()
                 && runtimeState.getAdrenalineCooldownExpiresAt() > 0
                 && now >= runtimeState.getAdrenalineCooldownExpiresAt()) {
-            sendCooldownMessage(playerRef, "Adrenaline is ready again!");
+            sendCooldownNotification(playerRef, "Adrenaline is ready again!");
             runtimeState.setAdrenalineReadyNotified(true);
         }
 
         if (!runtimeState.isExecutionerReadyNotified()
                 && runtimeState.getExecutionerCooldownExpiresAt() > 0
                 && now >= runtimeState.getExecutionerCooldownExpiresAt()) {
-            sendCooldownMessage(playerRef, "Executioner is ready again!");
+            sendCooldownNotification(playerRef, "Executioner is ready again!");
             runtimeState.setExecutionerReadyNotified(true);
         }
 
         if (!runtimeState.isRetaliationReadyNotified()
                 && runtimeState.getRetaliationCooldownExpiresAt() > 0
                 && now >= runtimeState.getRetaliationCooldownExpiresAt()) {
-            sendCooldownMessage(playerRef, "Retaliation is ready again!");
+            sendCooldownNotification(playerRef, "Retaliation is ready again!");
             runtimeState.setRetaliationReadyNotified(true);
         }
     }
 
-    private void sendCooldownMessage(PlayerRef playerRef, String text) {
+    private void sendCooldownNotification(PlayerRef playerRef, String text) {
         if (playerRef == null || !playerRef.isValid() || text == null || text.isBlank()) {
             return;
         }
+
+        var packetHandler = playerRef.getPacketHandler();
+        if (packetHandler != null) {
+            Message primary = Message.raw(text).color("#4fd7f7");
+            NotificationUtil.sendNotification(packetHandler, primary, null, (ItemWithAllMetadata) null);
+            return;
+        }
+
         playerRef.sendMessage(Message.raw(text).color("#4fd7f7"));
     }
 
