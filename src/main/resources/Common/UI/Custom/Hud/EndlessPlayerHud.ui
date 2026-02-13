@@ -34,13 +34,23 @@ Group {
 // Player level, race, class info
 Group #InfoPanel {
   LayoutMode: Top;
-  Anchor: (Bottom: 20, Left: 20, Width: 260, Height: 80);
+  Anchor: (Bottom: 15, Left: 15, Width: 260, Height: 80);
   Padding: (Full: 4);
 
-  Label #InfoLevel {
-    Anchor: (Height: 16);
-    Style: (FontSize: 12, TextColor: #ffffff);
-    Text: "Level --";
+  Group #InfoMobLevel {
+    LayoutMode: Left;
+    Anchor: (Height: 18, Top: 4);
+
+    Label #InfoMobLevelPrefix {
+      Style: (FontSize: 11, TextColor: #ffad42);
+      Text: "Local mobs: ";
+    }
+
+    Label #InfoMobLevelValue {
+      Anchor: (Left: 2);
+      Style: (FontSize: 11, TextColor: #dbe4e7);
+      Text: "--";
+    }
   }
 
   Group #InfoRace {

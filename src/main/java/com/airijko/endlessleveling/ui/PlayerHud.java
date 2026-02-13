@@ -4,12 +4,17 @@ import com.airijko.endlessleveling.compatibility.MultipleHudCompatibility;
 import com.airijko.endlessleveling.data.PlayerData;
 import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.managers.LevelingManager;
+import com.airijko.endlessleveling.managers.MobLevelingManager;
 import com.airijko.endlessleveling.managers.PlayerDataManager;
 import com.airijko.endlessleveling.managers.ClassManager;
 import com.airijko.endlessleveling.managers.RaceManager;
 import com.airijko.endlessleveling.classes.CharacterClassDefinition;
 import com.airijko.endlessleveling.races.RaceDefinition;
 import com.hypixel.hytale.logger.HytaleLogger;
+import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.entity.entities.player.hud.CustomUIHud;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
@@ -41,6 +46,7 @@ public class PlayerHud extends CustomUIHud {
 
     private final PlayerDataManager playerDataManager;
     private final LevelingManager levelingManager;
+    private final MobLevelingManager mobLevelingManager;
     private final RaceManager raceManager;
     private final ClassManager classManager;
     private final PlayerRef targetPlayerRef;
@@ -51,6 +57,7 @@ public class PlayerHud extends CustomUIHud {
         super(playerRef);
         this.playerDataManager = EndlessLeveling.getInstance().getPlayerDataManager();
         this.levelingManager = EndlessLeveling.getInstance().getLevelingManager();
+        this.mobLevelingManager = EndlessLeveling.getInstance().getMobLevelingManager();
         this.raceManager = EndlessLeveling.getInstance().getRaceManager();
         this.classManager = EndlessLeveling.getInstance().getClassManager();
         this.targetPlayerRef = playerRef;
@@ -77,8 +84,8 @@ public class PlayerHud extends CustomUIHud {
         double progress = resolveXpProgress();
         uiCommandBuilder.set("#ProgressBar.Value", progress);
         uiCommandBuilder.set("#ProgressBarEffect.Value", progress);
-        uiCommandBuilder.set("#InfoLevel.Text", "Level " + resolveLevelValue());
         uiCommandBuilder.set("#InfoRaceValue.Text", resolveRaceLabel());
+        uiCommandBuilder.set("#InfoMobLevelValue.Text", resolveMobLevelLabel());
         uiCommandBuilder.set("#PrimaryClass.Text", resolveClassLabel(true));
         uiCommandBuilder.set("#SecondaryClass.Text", resolveClassLabel(false));
         setClassIcon(uiCommandBuilder, "#PrimaryIcon", resolveClassIconId(true));
@@ -135,6 +142,27 @@ public class PlayerHud extends CustomUIHud {
         }
         String id = primary ? data.getPrimaryClassId() : data.getSecondaryClassId();
         return (id == null || id.isBlank()) ? "None" : id;
+    }
+
+    private String resolveMobLevelLabel() {
+        if (mobLevelingManager == null || !mobLevelingManager.isMobLevelingEnabled()) {
+            return "--";
+        }
+
+        Ref<EntityStore> ref = targetPlayerRef.getReference();
+        if (ref == null) {
+            return "--";
+        }
+
+        Store<EntityStore> store = ref.getStore();
+        TransformComponent transform = store != null ? store.getComponent(ref, TransformComponent.getComponentType())
+                : null;
+        if (transform == null || transform.getPosition() == null) {
+            return "--";
+        }
+
+        int level = mobLevelingManager.resolveMobLevel(store, transform.getPosition());
+        return level > 0 ? "Lv " + level : "--";
     }
 
     private void setClassIcon(UICommandBuilder uiCommandBuilder, String selector, String itemId) {
