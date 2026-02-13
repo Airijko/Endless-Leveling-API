@@ -689,9 +689,16 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             }
         }
 
-        long now = Instant.now().getEpochSecond();
+        if (!operatorBypass && raceManager != null && !raceManager.hasRaceSwitchesRemaining(playerData)) {
+            int remaining = raceManager.getRemainingRaceSwitches(playerData);
+            playerRef.sendMessage(Message.raw("No race changes remaining.").color("#ff6666"));
+            return;
+        }
+
         playerData.setRaceId(desired.getId());
-        playerData.setLastRaceChangeEpochSeconds(now);
+        if (raceManager != null) {
+            raceManager.markRaceChange(playerData);
+        }
         if (playerDataManager != null) {
             playerDataManager.save(playerData);
         }

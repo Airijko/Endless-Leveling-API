@@ -649,6 +649,10 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         if (OperatorHelper.isOperator(playerRef)) {
             return true;
         }
+        if (!classManager.hasClassSwitchesRemaining(data)) {
+            playerRef.sendMessage(Message.raw("You have no class changes remaining.").color("#ff6666"));
+            return false;
+        }
         long remaining = classManager.getClassCooldownRemaining(data, slot);
         if (remaining <= 0L) {
             return true;

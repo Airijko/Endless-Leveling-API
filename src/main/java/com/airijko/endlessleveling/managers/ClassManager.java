@@ -52,6 +52,7 @@ public class ClassManager {
     private final double secondaryPassiveScale = 0.5D;
     private final double secondaryWeaponScale = 0.5D;
     private final long chooseClassCooldownSeconds;
+    private final int maxClassSwitches;
 
     public ClassManager(ConfigManager configManager, PluginFilesManager filesManager) {
         Objects.requireNonNull(configManager, "ConfigManager is required");
@@ -71,6 +72,7 @@ public class ClassManager {
 
         Object classCooldownConfig = configManager.get("choose_class_cooldown", 0, false);
         this.chooseClassCooldownSeconds = parseCooldownSeconds(classCooldownConfig);
+        this.maxClassSwitches = parseMaxSwitches(configManager.get("class_max_switches", -1, false));
 
         if (!classesEnabled) {
             LOGGER.atInfo().log("Class system disabled via config.yml (enable_classes=false).");
@@ -206,6 +208,24 @@ public class ClassManager {
         return Math.max(0L, chooseClassCooldownSeconds);
     }
 
+    public int getMaxClassSwitches() {
+        return maxClassSwitches;
+    }
+
+    public boolean hasClassSwitchesRemaining(PlayerData data) {
+        if (data == null)
+            return false;
+        if (maxClassSwitches < 0)
+            return true;
+        return data.getClassSwitchCount() < maxClassSwitches;
+    }
+
+    public int getRemainingClassSwitches(PlayerData data) {
+        if (maxClassSwitches < 0 || data == null)
+            return Integer.MAX_VALUE;
+        return Math.max(0, maxClassSwitches - data.getClassSwitchCount());
+    }
+
     public long getClassCooldownRemaining(PlayerData data, ClassAssignmentSlot slot) {
         if (data == null || slot == null) {
             return 0L;
@@ -226,6 +246,7 @@ public class ClassManager {
         } else {
             data.setLastSecondaryClassChangeEpochSeconds(now);
         }
+        data.incrementClassSwitchCount();
     }
 
     private long calculateRemainingCooldown(long lastChangeEpochSeconds) {
@@ -239,6 +260,18 @@ public class ClassManager {
             return 0L;
         }
         return availableAt - now;
+    }
+
+    private int parseMaxSwitches(Object value) {
+        if (value == null)
+            return -1;
+        try {
+            if (value instanceof Number n)
+                return n.intValue();
+            return Integer.parseInt(value.toString().trim());
+        } catch (Exception ignored) {
+            return -1;
+        }
     }
 
     public String resolvePrimaryClassIdentifier(String requestedValue) {

@@ -380,6 +380,18 @@ public class PlayerData {
         getActiveProfile().setLastRaceChangeEpochSeconds(epochSeconds);
     }
 
+    public int getRaceSwitchCount() {
+        return getActiveProfile().getRaceSwitchCount();
+    }
+
+    public void setRaceSwitchCount(int count) {
+        getActiveProfile().setRaceSwitchCount(count);
+    }
+
+    public void incrementRaceSwitchCount() {
+        getActiveProfile().incrementRaceSwitchCount();
+    }
+
     public String getPrimaryClassId() {
         return getActiveProfile().getPrimaryClassId();
     }
@@ -410,6 +422,18 @@ public class PlayerData {
 
     public void setLastSecondaryClassChangeEpochSeconds(long epochSeconds) {
         getActiveProfile().setLastSecondaryClassChangeEpochSeconds(epochSeconds);
+    }
+
+    public int getClassSwitchCount() {
+        return getActiveProfile().getClassSwitchCount();
+    }
+
+    public void setClassSwitchCount(int count) {
+        getActiveProfile().setClassSwitchCount(count);
+    }
+
+    public void incrementClassSwitchCount() {
+        getActiveProfile().incrementClassSwitchCount();
     }
 
     /**
@@ -449,10 +473,12 @@ public class PlayerData {
         private final Map<PassiveType, Integer> passiveLevels;
         private String raceId;
         private long lastRaceChangeEpochSeconds;
+        private int raceSwitchCount;
         private String primaryClassId;
         private String secondaryClassId;
         private long lastPrimaryClassChangeEpochSeconds;
         private long lastSecondaryClassChangeEpochSeconds;
+        private int classSwitchCount;
 
         private String name;
 
@@ -470,10 +496,12 @@ public class PlayerData {
             }
             this.raceId = DEFAULT_RACE_ID;
             this.lastRaceChangeEpochSeconds = 0L;
+            this.raceSwitchCount = 0;
             this.primaryClassId = DEFAULT_PRIMARY_CLASS_ID;
             this.secondaryClassId = null;
             this.lastPrimaryClassChangeEpochSeconds = 0L;
             this.lastSecondaryClassChangeEpochSeconds = 0L;
+            this.classSwitchCount = 0;
             this.name = (name == null || name.isBlank()) ? "Profile" : name;
         }
 
@@ -549,6 +577,18 @@ public class PlayerData {
             this.lastRaceChangeEpochSeconds = Math.max(0L, epochSeconds);
         }
 
+        public int getRaceSwitchCount() {
+            return raceSwitchCount;
+        }
+
+        public void setRaceSwitchCount(int count) {
+            this.raceSwitchCount = Math.max(0, count);
+        }
+
+        public void incrementRaceSwitchCount() {
+            this.raceSwitchCount = Math.max(0, this.raceSwitchCount + 1);
+        }
+
         public String getPrimaryClassId() {
             return primaryClassId;
         }
@@ -596,6 +636,18 @@ public class PlayerData {
 
         public void setLastSecondaryClassChangeEpochSeconds(long epochSeconds) {
             this.lastSecondaryClassChangeEpochSeconds = Math.max(0L, epochSeconds);
+        }
+
+        public int getClassSwitchCount() {
+            return classSwitchCount;
+        }
+
+        public void setClassSwitchCount(int count) {
+            this.classSwitchCount = Math.max(0, count);
+        }
+
+        public void incrementClassSwitchCount() {
+            this.classSwitchCount = Math.max(0, this.classSwitchCount + 1);
         }
     }
 }

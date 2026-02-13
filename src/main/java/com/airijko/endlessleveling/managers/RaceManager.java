@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -50,6 +51,7 @@ public class RaceManager {
     private final Map<String, RaceDefinition> racesByKey = new HashMap<>();
     private final Yaml yaml = new Yaml();
     private final RaceModelDefaultMode raceModelDefaultMode;
+    private final int maxRaceSwitches;
     private final Map<UUID, Boolean> modelApplyGuard = new ConcurrentHashMap<>();
 
     private String defaultRaceId = PlayerData.DEFAULT_RACE_ID;
@@ -61,9 +63,10 @@ public class RaceManager {
         this.racesEnabled = parseBoolean(configManager.get("enable_races", Boolean.TRUE, false), true);
         this.forceBuiltinRaces = parseBoolean(configManager.get("force_builtin_races", Boolean.FALSE, false),
                 false);
-        Object raceModelDefaultConfig = configManager.get("race_model_default", "off", false);
+        Object raceModelDefaultConfig = configManager.get("global_race_visuals_setting", "off", false);
         this.raceModelDefaultMode = parseRaceModelDefault(raceModelDefaultConfig);
         Object defaultRaceConfig = configManager.get("default_race", PlayerData.DEFAULT_RACE_ID, false);
+        this.maxRaceSwitches = parseMaxSwitches(configManager.get("race_max_switches", -1, false));
         String configuredDefault = safeString(defaultRaceConfig);
         if (configuredDefault != null) {
             this.defaultRaceId = configuredDefault;
@@ -114,6 +117,24 @@ public class RaceManager {
 
     public boolean isRaceModelDefaultEnabled() {
         return raceModelDefaultMode.isEnabledByDefault();
+    }
+
+    public int getMaxRaceSwitches() {
+        return maxRaceSwitches;
+    }
+
+    public boolean hasRaceSwitchesRemaining(PlayerData data) {
+        if (data == null)
+            return false;
+        if (maxRaceSwitches < 0)
+            return true;
+        return data.getRaceSwitchCount() < maxRaceSwitches;
+    }
+
+    public int getRemainingRaceSwitches(PlayerData data) {
+        if (maxRaceSwitches < 0 || data == null)
+            return Integer.MAX_VALUE;
+        return Math.max(0, maxRaceSwitches - data.getRaceSwitchCount());
     }
 
     public boolean isRaceModelGloballyDisabled() {
@@ -193,6 +214,13 @@ public class RaceManager {
             data.setRaceId(PlayerData.DEFAULT_RACE_ID);
         }
         return resolved;
+    }
+
+    public void markRaceChange(PlayerData data) {
+        if (data == null)
+            return;
+        data.incrementRaceSwitchCount();
+        data.setLastRaceChangeEpochSeconds(Instant.now().getEpochSecond());
     }
 
     public Collection<RaceDefinition> getLoadedRaces() {
@@ -365,7 +393,19 @@ public class RaceManager {
                 case "default":
                     return RaceModelDefaultMode.OFF;
                 default:
-                    LOGGER.atWarning().log("Invalid race_model_default '%s'; defaulting to OFF.", normalized);
+
+    private int parseMaxSwitches(Object configValue) {
+        if (configValue == null)
+            return -1;
+        try {
+            if (configValue instanceof Number n)
+                return n.intValue();
+            return Integer.parseInt(configValue.toString().trim());
+        } catch (Exception ignored) {
+            return -1;
+        }
+    }
+                    LOGGER.atWarning().log("Invalid global_race_visuals_setting '%s'; defaulting to OFF.", normalized);
                     return RaceModelDefaultMode.OFF;
             }
         }

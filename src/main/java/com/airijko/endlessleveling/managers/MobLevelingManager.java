@@ -31,6 +31,7 @@ public class MobLevelingManager {
 
     private final Set<Integer> applied = new HashSet<>();
     private final Map<Integer, Integer> cachedPlayerDiffs = new ConcurrentHashMap<>();
+    private final Map<Long, Integer> cachedPosDiffs = new ConcurrentHashMap<>();
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
     private final ConfigManager configManager;
     private final PlayerDataManager playerDataManager;
@@ -261,13 +262,14 @@ public class MobLevelingManager {
 
     private int samplePlayerDiff(Integer entityId, Vector3d mobPos, int minDiff, int maxDiff) {
         int span = Math.max(1, (maxDiff - minDiff) + 1);
-        long seed = entityId != null ? entityId.longValue() : hashPosition(mobPos);
-        long scrambled = seed ^ (seed >>> 33) ^ (seed << 11);
+        long baseSeed = entityId != null ? entityId.longValue() : hashPosition(mobPos);
+        long scrambled = baseSeed ^ (baseSeed >>> 33) ^ (baseSeed << 11);
         int rolled = minDiff + (int) Math.floorMod(scrambled, span);
         if (entityId != null) {
             return cachedPlayerDiffs.computeIfAbsent(entityId, ignored -> rolled);
         }
-        return rolled;
+        long posKey = hashPosition(mobPos);
+        return cachedPosDiffs.computeIfAbsent(posKey, ignored -> rolled);
     }
 
     private long hashPosition(Vector3d pos) {
