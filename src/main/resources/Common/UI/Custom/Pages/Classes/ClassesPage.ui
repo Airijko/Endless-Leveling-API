@@ -244,6 +244,24 @@ $C.@PageOverlay {
                             Anchor: (Height: 16);
                         }
 
+                        Group {
+                            LayoutMode: Left;
+                            Anchor: (Height: 20);
+
+                            Label {
+                                Text: "Sorcery Bonus";
+                                Style: (FontSize: 12, TextColor: #d7baff, RenderBold: true);
+                            }
+
+                            Group { Anchor: (Width: 8); }
+
+                            Label #ClassSorceryValue {
+                                Text: "--";
+                                Style: (FontSize: 13, TextColor: #e8d5ff, RenderBold: true);
+                                FlexWeight: 1;
+                            }
+                        }
+
                         Group { Anchor: (Height: 8); }
                         Group { Anchor: (Height: 1); Background: #ffffff(0.08); }
                         Group { Anchor: (Height: 8); }

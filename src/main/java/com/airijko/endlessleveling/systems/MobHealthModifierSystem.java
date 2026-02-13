@@ -66,7 +66,7 @@ public class MobHealthModifierSystem extends HolderSystem<EntityStore> {
                 return;
 
             Vector3d position = resolvePosition(holder);
-            int mobLevel = mobLevelingManager.resolveMobLevel(store, position);
+            int mobLevel = mobLevelingManager.resolveMobLevel(store, position, System.identityHashCode(holder));
             applyHealthScaling(statMap, mobLevel);
         } catch (Throwable t) {
             LOGGER.atWarning().log("MobHealthModifierSystem: failed to scale mob health: %s", t.toString());

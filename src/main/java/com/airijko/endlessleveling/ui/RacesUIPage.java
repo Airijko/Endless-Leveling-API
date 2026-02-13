@@ -708,6 +708,10 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             }
         }
 
+        if (raceManager != null) {
+            raceManager.applyRaceModelIfEnabled(playerData);
+        }
+
         var player = Universe.get().getPlayer(playerRef.getUuid());
         if (player != null) {
             String display = desired.getDisplayName() == null ? desired.getId() : desired.getDisplayName();

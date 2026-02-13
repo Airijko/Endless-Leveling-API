@@ -19,8 +19,10 @@ import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import java.lang.reflect.Field;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Encapsulates mob leveling logic previously in `MobLevelingSystem`.
@@ -28,6 +30,7 @@ import java.util.UUID;
 public class MobLevelingManager {
 
     private final Set<Integer> applied = new HashSet<>();
+    private final Map<Integer, Integer> cachedPlayerDiffs = new ConcurrentHashMap<>();
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
     private final ConfigManager configManager;
     private final PlayerDataManager playerDataManager;
@@ -170,15 +173,20 @@ public class MobLevelingManager {
     public int resolveMobLevel(Ref<EntityStore> ref, CommandBuffer<EntityStore> commandBuffer) {
         Store<EntityStore> store = ref != null ? ref.getStore() : null;
         Vector3d position = getWorldPosition(ref, commandBuffer);
-        return resolveMobLevel(store, position);
+        Integer entityId = ref != null ? ref.getIndex() : null;
+        return resolveMobLevel(store, position, entityId);
     }
 
     public int resolveMobLevel(Store<EntityStore> store, Vector3d mobPosition) {
+        return resolveMobLevel(store, mobPosition, null);
+    }
+
+    public int resolveMobLevel(Store<EntityStore> store, Vector3d mobPosition, Integer entityId) {
         LevelSourceMode mode = getLevelSourceMode();
         int level;
         try {
             level = switch (mode) {
-                case PLAYER -> resolvePlayerBasedLevel(store, mobPosition);
+                case PLAYER -> resolvePlayerBasedLevel(store, mobPosition, entityId);
                 case DISTANCE -> resolveDistanceLevel(mobPosition);
                 case FIXED -> getFixedLevel();
             };
@@ -215,7 +223,7 @@ public class MobLevelingManager {
                 getConfigDouble("Mob_Leveling.Level_Source.Distance_Level.Blocks_Per_Level", 100.0));
         int startLevel = getConfigInt("Mob_Leveling.Level_Source.Distance_Level.Start_Level", 1);
         int minLevel = getConfigInt("Mob_Leveling.Level_Source.Distance_Level.Min_Level", 1);
-        int maxLevel = getConfigInt("Mob_Leveling.Level_Source.Distance_Level.Max_Level", 100);
+        int maxLevel = getConfigInt("Mob_Leveling.Level_Source.Distance_Level.Max_Level", 200);
 
         int computed = startLevel + (int) Math.floor(distance / blocksPerLevel);
         if (minLevel > maxLevel) {
@@ -226,7 +234,7 @@ public class MobLevelingManager {
         return Math.max(minLevel, Math.min(maxLevel, computed));
     }
 
-    private int resolvePlayerBasedLevel(Store<EntityStore> store, Vector3d mobPos) {
+    private int resolvePlayerBasedLevel(Store<EntityStore> store, Vector3d mobPos, Integer entityId) {
         if (mobPos == null)
             return getFixedLevel();
 
@@ -245,9 +253,34 @@ public class MobLevelingManager {
 
         int minAllowed = nearestPlayerLevel + minDiff;
         int maxAllowed = nearestPlayerLevel + maxDiff;
-        int target = nearestPlayerLevel + offset;
+        int rolledDiff = samplePlayerDiff(entityId, mobPos, minDiff, maxDiff);
+        int target = nearestPlayerLevel + offset + rolledDiff;
         int clamped = Math.max(minAllowed, Math.min(maxAllowed, target));
         return clamped;
+    }
+
+    private int samplePlayerDiff(Integer entityId, Vector3d mobPos, int minDiff, int maxDiff) {
+        int span = Math.max(1, (maxDiff - minDiff) + 1);
+        long seed = entityId != null ? entityId.longValue() : hashPosition(mobPos);
+        long scrambled = seed ^ (seed >>> 33) ^ (seed << 11);
+        int rolled = minDiff + (int) Math.floorMod(scrambled, span);
+        if (entityId != null) {
+            return cachedPlayerDiffs.computeIfAbsent(entityId, ignored -> rolled);
+        }
+        return rolled;
+    }
+
+    private long hashPosition(Vector3d pos) {
+        if (pos == null) {
+            return 0L;
+        }
+        long xBits = Double.doubleToLongBits(pos.getX());
+        long zBits = Double.doubleToLongBits(pos.getZ());
+        long hash = 31L * xBits + zBits;
+        hash ^= (hash >>> 33);
+        hash *= 0xff51afd7ed558ccdL;
+        hash ^= (hash >>> 33);
+        return hash;
     }
 
     private int findNearestPlayerLevel(Store<EntityStore> mobStore, Vector3d mobPos) {
@@ -439,7 +472,7 @@ public class MobLevelingManager {
 
     private int clampToConfiguredRange(int level) {
         int min = getConfigInt("Mob_Leveling.Level_Range.Min", 1);
-        int max = getConfigInt("Mob_Leveling.Level_Range.Max", 100);
+        int max = getConfigInt("Mob_Leveling.Level_Range.Max", 200);
         if (min > max) {
             int tmp = min;
             min = max;

@@ -282,19 +282,22 @@ public class LevelingManager {
             int diff = player.getLevel() - mobLvl;
             if (playerBasedMode)
                 diff += playerBasedOffset;
-            relativeDiff = diff;
+            int diffForScaling = diff;
 
             if (xpLevelRangeEnabled && xpMaxDifference >= 0) {
                 if (diff > xpMaxDifference) {
                     adjustedXp *= xpAboveRangeMultiplier;
                     blockedForBeingTooHigh = xpAboveRangeMultiplier <= 0.0;
-                    withinAllowedRange = false;
+                    withinAllowedRange = !blockedForBeingTooHigh;
+                    diffForScaling = Math.min(diff, xpMaxDifference);
                 } else if (diff < -xpMaxDifference) {
-                    adjustedXp *= xpBelowRangeMultiplier;
-                    blockedForBeingTooLow = xpBelowRangeMultiplier <= 0.0;
-                    withinAllowedRange = false;
+                    // If the mob is far above the player, clamp the diff for scaling instead of
+                    // zeroing XP so high-level mobs still award XP when over the Max_Difference.
+                    diffForScaling = -xpMaxDifference;
+                    withinAllowedRange = true;
                 }
             }
+            relativeDiff = diffForScaling;
         }
         if (adjustedXp <= 0.0) {
             if (blockedForBeingTooHigh)

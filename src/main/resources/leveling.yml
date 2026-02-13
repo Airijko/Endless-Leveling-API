@@ -78,7 +78,7 @@ Mob_Leveling:
   # -------------------------------------------------
   Level_Range:
     Min: 1
-    Max: 100
+    Max: 200
 
   # -------------------------------------------------
   # HOW MOB LEVELS ARE ASSIGNED
@@ -99,7 +99,7 @@ Mob_Leveling:
     Player_Based:
       Offset: 0 # Mob level = player level + offset
       Min_Difference: -5 # Mobs can be 5 levels lower
-      Max_Difference: 5 # Mobs can be 5 levels higher
+      Max_Difference: 10 # Mobs can be 10 levels higher
 
     # Used when Mode is FIXED
     Fixed_Level:

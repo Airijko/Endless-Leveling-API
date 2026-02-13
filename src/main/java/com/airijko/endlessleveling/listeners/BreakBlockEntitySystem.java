@@ -1,6 +1,5 @@
 package com.airijko.endlessleveling.listeners;
 
-import com.airijko.endlessleveling.listeners.LuckDoubleDropSystem;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
