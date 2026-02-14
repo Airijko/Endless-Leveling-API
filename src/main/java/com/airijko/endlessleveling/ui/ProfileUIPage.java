@@ -888,6 +888,9 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         if (!applied && playerRaceStatSystem != null) {
             playerRaceStatSystem.scheduleRetry(playerData.getUuid());
         }
+        if (raceManager != null) {
+            raceManager.applyRaceModelIfEnabled(playerData);
+        }
     }
 
     private ProfileActionOutcome handleDeletePrompt(@Nonnull PlayerData playerData,

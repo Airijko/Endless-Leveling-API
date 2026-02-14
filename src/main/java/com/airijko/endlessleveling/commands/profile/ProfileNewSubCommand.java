@@ -4,6 +4,7 @@ import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.data.PlayerData;
 import com.airijko.endlessleveling.managers.PassiveManager;
 import com.airijko.endlessleveling.managers.PlayerDataManager;
+import com.airijko.endlessleveling.managers.RaceManager;
 import com.airijko.endlessleveling.managers.SkillManager;
 import com.airijko.endlessleveling.systems.PlayerRaceStatSystem;
 import com.airijko.endlessleveling.ui.PlayerHud;
@@ -26,6 +27,7 @@ public class ProfileNewSubCommand extends AbstractPlayerCommand {
     private final SkillManager skillManager;
     private final PassiveManager passiveManager;
     private final PlayerRaceStatSystem playerRaceStatSystem;
+    private final RaceManager raceManager;
 
     private final RequiredArg<String> nameArg = this.withRequiredArg("name", "Display name for the profile",
             ArgTypes.STRING);
@@ -36,6 +38,7 @@ public class ProfileNewSubCommand extends AbstractPlayerCommand {
         this.skillManager = EndlessLeveling.getInstance().getSkillManager();
         this.passiveManager = EndlessLeveling.getInstance().getPassiveManager();
         this.playerRaceStatSystem = EndlessLeveling.getInstance().getPlayerRaceStatSystem();
+        this.raceManager = EndlessLeveling.getInstance().getRaceManager();
     }
 
     @Override
@@ -86,6 +89,9 @@ public class ProfileNewSubCommand extends AbstractPlayerCommand {
         }
 
         PlayerHud.refreshHud(playerData.getUuid());
+        if (raceManager != null) {
+            raceManager.applyRaceModelIfEnabled(playerData);
+        }
         String normalizedName = playerData.getProfileName(nextSlot);
         senderRef.sendMessage(Message
                 .raw("Created and activated profile slot " + nextSlot + " (" + normalizedName + ").")
