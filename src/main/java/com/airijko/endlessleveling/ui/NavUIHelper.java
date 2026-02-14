@@ -157,6 +157,8 @@ public final class NavUIHelper {
 
         private static boolean isPartyEnabled() {
                 EndlessLeveling plugin = EndlessLeveling.getInstance();
-                return plugin != null && plugin.getPartyManager() != null;
+                return plugin != null
+                                && plugin.getPartyManager() != null
+                                && plugin.getPartyManager().isAvailable();
         }
 }

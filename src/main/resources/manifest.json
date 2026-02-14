@@ -11,7 +11,10 @@
   ],
   "ServerVersion": "*",
   "Dependencies": {},
-  "OptionalDependencies": { "Buuz135:MultipleHUD": ">=1.0.1" },
+  "OptionalDependencies": {
+    "Buuz135:MultipleHUD": ">=1.0.1",
+    "tsumori:PartyPro": ">=0.8.0"
+  },
   "DisabledByDefault": false,
   "IncludesAssetPack": true,
   "Main": "com.airijko.endlessleveling.EndlessLeveling"

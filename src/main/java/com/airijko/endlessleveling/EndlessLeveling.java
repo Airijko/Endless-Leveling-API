@@ -135,7 +135,10 @@ public class EndlessLeveling extends JavaPlugin {
                 archetypePassiveManager);
         mobLevelingManager = new MobLevelingManager(filesManager, playerDataManager);
         if (enableParty) {
-            partyManager = new PartyManager(playerDataManager, levelingManager, filesManager);
+            partyManager = new PartyManager(playerDataManager, levelingManager);
+            if (!partyManager.isAvailable()) {
+                LOGGER.atWarning().log("PartyPro not detected; party features will stay disabled.");
+            }
         } else {
             partyManager = null;
             LOGGER.atInfo().log("Party system disabled via config; skipping party initialization.");
@@ -147,7 +150,7 @@ public class EndlessLeveling extends JavaPlugin {
         this.getEventRegistry().registerGlobal(PlayerReadyEvent.class, playerDataListener::onPlayerReady);
         this.getEventRegistry().registerGlobal(PlayerDisconnectEvent.class, playerDataListener::onPlayerDisconnect);
 
-        if (partyManager != null) {
+        if (partyManager != null && partyManager.isAvailable()) {
             PartyListener partyListener = new PartyListener(partyManager);
             this.getEventRegistry().registerGlobal(PlayerDisconnectEvent.class, partyListener::onPlayerDisconnect);
         }
@@ -186,7 +189,7 @@ public class EndlessLeveling extends JavaPlugin {
         // Register commands
         this.getCommandRegistry().registerCommand(new EndlessLevelingCommand("skills", "Skills menu"));
         this.getCommandRegistry().registerCommand(new ProfileCommand());
-        if (partyManager != null) {
+        if (partyManager != null && partyManager.isAvailable()) {
             this.getCommandRegistry().registerCommand(new PartyCommand());
         }
         this.getCommandRegistry().registerCommand(new RaceCommand(raceManager, playerDataManager));

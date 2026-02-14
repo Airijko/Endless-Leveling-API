@@ -20,10 +20,15 @@ public class PartyInfoCommand extends AbstractPartySubCommand {
 
     @Override
     protected void execute(@Nonnull CommandContext context,
-                           @Nonnull Store<EntityStore> store,
-                           @Nonnull Ref<EntityStore> ref,
-                           @Nonnull PlayerRef senderRef,
-                           @Nonnull World world) {
+            @Nonnull Store<EntityStore> store,
+            @Nonnull Ref<EntityStore> ref,
+            @Nonnull PlayerRef senderRef,
+            @Nonnull World world) {
+        if (partyManager == null || !partyManager.isAvailable()) {
+            senderRef.sendMessage(Message.raw("PartyPro is not available on this server.").color("#ff6666"));
+            return;
+        }
+
         UUID leaderUuid = partyManager.getPartyLeader(senderRef.getUuid());
         if (leaderUuid == null) {
             senderRef.sendMessage(Message.raw("You are not in a party.").color("#ff0000"));

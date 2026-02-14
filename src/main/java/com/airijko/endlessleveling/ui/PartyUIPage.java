@@ -18,9 +18,6 @@ import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
-import static com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType.Activating;
-import static com.hypixel.hytale.server.core.ui.builder.EventData.of;
-
 public class PartyUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
@@ -45,19 +42,19 @@ public class PartyUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         NavUIHelper.applyNavVersion(ui);
         NavUIHelper.bindNavEvents(events);
 
-        if (partyManager == null) {
-            ui.set("#PartyTitleLabel.Text", "Party (disabled)");
-            ui.set("#PartyStatus.Text", "Party system is disabled.");
+        if (partyManager == null || !partyManager.isAvailable()) {
+            ui.set("#PartyTitleLabel.Text", "Party (PartyPro required)");
+            ui.set("#PartyStatus.Text", "PartyPro is not installed or is disabled.");
             ui.set("#CreatePartyButton.Visible", false);
             ui.set("#LeavePartyButton.Visible", false);
             ui.set("#DisbandPartyButton.Visible", false);
             return;
         }
 
-        // Party-specific buttons
-        events.addEventBinding(Activating, "#CreatePartyButton", of("Action", "party:create"), false);
-        events.addEventBinding(Activating, "#LeavePartyButton", of("Action", "party:leave"), false);
-        events.addEventBinding(Activating, "#DisbandPartyButton", of("Action", "party:disband"), false);
+        // PartyPro manages creation/invites; hide unused controls in this UI
+        ui.set("#CreatePartyButton.Visible", false);
+        ui.set("#LeavePartyButton.Visible", false);
+        ui.set("#DisbandPartyButton.Visible", false);
 
         updatePartyStatus(ui);
 
@@ -76,7 +73,7 @@ public class PartyUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 return;
             }
 
-            if (partyManager == null) {
+            if (partyManager == null || !partyManager.isAvailable()) {
                 return;
             }
 
@@ -88,87 +85,9 @@ public class PartyUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     }
 
     private void handlePartyAction(@Nonnull String action) {
-        String payload = action.substring("party:".length());
-        String sub = payload.toLowerCase();
-        PlayerRef ref = playerRef;
-        switch (sub) {
-            case "create" -> {
-                if (partyManager.isInParty(ref.getUuid())) {
-                    ref.sendMessage(Message.raw("You are already in a party.").color("#ff9900"));
-                } else if (partyManager.createParty(ref.getUuid())) {
-                    ref.sendMessage(Message.raw("You created a new party.").color("#00ff00"));
-                } else {
-                    ref.sendMessage(Message.raw("Could not create party.").color("#ff0000"));
-                }
-            }
-            case "leave" -> {
-                if (partyManager.leaveParty(ref.getUuid())) {
-                    ref.sendMessage(Message.raw("You left your party.").color("#ff9900"));
-                } else {
-                    ref.sendMessage(Message.raw("You are not currently in a party.").color("#ff0000"));
-                }
-            }
-            case "disband" -> {
-                if (partyManager.disbandParty(ref.getUuid())) {
-                    ref.sendMessage(Message.raw("Your party has been disbanded.").color("#ff9900"));
-                } else {
-                    ref.sendMessage(Message.raw("You are not the leader of a party.").color("#ff0000"));
-                }
-            }
-            default -> {
-                if (sub.startsWith("invite:")) {
-                    String uuidPart = payload.substring("invite:".length());
-                    handleInviteAction(uuidPart);
-                } else {
-                    LOGGER.atWarning().log("Unknown party action: %s", action);
-                }
-            }
-        }
-    }
-
-    private void handleInviteAction(@Nonnull String uuidPart) {
-        PlayerRef sender = playerRef;
-        java.util.UUID targetUuid;
-        try {
-            targetUuid = java.util.UUID.fromString(uuidPart);
-        } catch (IllegalArgumentException ex) {
-            LOGGER.atWarning().withCause(ex).log("Invalid UUID in party invite action: %s", uuidPart);
-            sender.sendMessage(Message.raw("Could not send party invite.").color("#ff0000"));
-            return;
-        }
-
-        if (targetUuid.equals(sender.getUuid())) {
-            sender.sendMessage(Message.raw("You cannot invite yourself.").color("#ff0000"));
-            return;
-        }
-
-        // Must be party leader to invite
-        java.util.UUID leaderUuid = partyManager.getPartyLeader(sender.getUuid());
-        if (leaderUuid == null || !leaderUuid.equals(sender.getUuid())) {
-            sender.sendMessage(Message.raw("You must be the party leader to invite players.").color("#ff0000"));
-            return;
-        }
-
-        if (partyManager.isInParty(targetUuid)) {
-            sender.sendMessage(Message.raw("That player is already in a party.").color("#ff0000"));
-            return;
-        }
-
-        if (partyManager.invitePlayer(sender.getUuid(), targetUuid)) {
-            sender.sendMessage(
-                    Message.raw("You invited " + resolveName(targetUuid) + " to your party.").color("#00ff00"));
-
-            PlayerRef targetRef = Universe.get().getPlayer(targetUuid);
-            if (targetRef != null) {
-                targetRef.sendMessage(Message
-                        .raw(resolveName(sender.getUuid()) + " invited you to their party. Use /skills party join "
-                                + resolveName(sender.getUuid()) + " to accept.")
-                        .color("#4fd7f7"));
-            }
-        } else {
-            sender.sendMessage(
-                    Message.raw("Could not send party invite. Make sure you are the party leader.").color("#ff0000"));
-        }
+        playerRef.sendMessage(Message.raw(
+                "Party management is handled by PartyPro. Use PartyPro commands to create, invite, or leave parties.")
+                .color("#ff9900"));
     }
 
     private void updatePartyStatus(@Nonnull UICommandBuilder ui) {
@@ -179,18 +98,26 @@ public class PartyUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
         var leaderUuid = partyManager.getPartyLeader(ref.getUuid());
         if (leaderUuid == null) {
-            ui.set("#PartyStatus.Text", "You are not in a party.");
+            ui.set("#PartyStatus.Text", "You are not in a PartyPro party.");
             return;
         }
 
         String leaderName = resolveName(leaderUuid);
-        ui.set("#PartyStatus.Text", "Leader: " + leaderName);
+        String partyName = partyManager.getPartyName(ref.getUuid());
+        int memberCount = partyManager.getPartyMembers(ref.getUuid()).size();
+
+        StringBuilder status = new StringBuilder();
+        if (partyName != null && !partyName.isBlank()) {
+            status.append(partyName).append(" - ");
+        }
+        status.append("Leader: ").append(leaderName).append(" (" + memberCount + " players)");
+        ui.set("#PartyStatus.Text", status.toString());
     }
 
     private void buildMemberList(@Nonnull UICommandBuilder ui) {
         ui.clear("#MemberCards");
 
-        java.util.UUID leaderUuid = partyManager.getPartyLeader(playerRef.getUuid());
+        java.util.UUID leaderUuid = partyManager != null ? partyManager.getPartyLeader(playerRef.getUuid()) : null;
         if (leaderUuid == null) {
             return;
         }
@@ -213,6 +140,9 @@ public class PartyUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 displayName = resolveName(memberId);
             }
 
+            if (leaderUuid.equals(memberId)) {
+                displayName = displayName + " (Leader)";
+            }
             ui.set(base + " #MemberPlayerName.Text", displayName);
             index++;
         }

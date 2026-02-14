@@ -36,6 +36,8 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
 public class RaceManager {
@@ -661,7 +663,6 @@ public class RaceManager {
                 .append(modelId)
                 .append(' ')
                 .append(playerRef.getUsername());
-
         if (Double.isFinite(modelScale) && modelScale > 0.0 && Math.abs(modelScale - 1.0) > 1e-6) {
             String formattedScale = String.format(Locale.ROOT, "%.3f", modelScale);
             commandBuilder.append(" --scale=").append(formattedScale);
@@ -670,7 +671,6 @@ public class RaceManager {
         String baseCommand = commandBuilder.toString();
         LOGGER.atFine().log("RaceManager: applying model %s to %s using command '%s'", modelId,
                 playerRef.getUsername(), baseCommand);
-
         if (!dispatchModelCommand(playerRef, baseCommand)) {
             LOGGER.atWarning().log("RaceManager: failed to dispatch model command '%s' for %s", baseCommand,
                     data.getPlayerName());
@@ -699,13 +699,20 @@ public class RaceManager {
         if (!dispatched) {
             dispatched = runCommandAsConsole(commandNoSlash);
         }
+
+        // If we have a console sender, avoid falling back to player-executed paths to
+        // prevent
+        // permission failures for non-admins. Only use player fallbacks when console
+        // sender is
+        // unavailable so we at least attempt execution.
+        boolean consoleAvailable = findConsoleSender() != null;
         if (!dispatched) {
-            dispatched = runCommandViaCommandManager(playerRef, commandNoSlash);
+            dispatched = runCommandViaCommandManager(playerRef, commandNoSlash, consoleAvailable);
         }
-        if (!dispatched) {
+        if (!dispatched && !consoleAvailable) {
             dispatched = runCommandViaReflection(playerRef, "/" + commandNoSlash);
         }
-        if (!dispatched) {
+        if (!dispatched && !consoleAvailable) {
             dispatched = runCommandViaReflection(playerRef, commandNoSlash);
         }
         return dispatched;
@@ -719,12 +726,21 @@ public class RaceManager {
         if (universe == null) {
             return false;
         }
+        Object consoleSender = findConsoleSender();
         // Try universe command manager first
         Object commandManager = invokeNoArg(universe, "getCommandManager");
-        if (commandManager != null && invokeConsoleCommand(commandManager, command)) {
-            return true;
+        if (commandManager != null) {
+            if (consoleSender != null && invokeCommandAnySignature(commandManager, consoleSender, command)) {
+                return true;
+            }
+            if (invokeConsoleCommand(commandManager, command)) {
+                return true;
+            }
         }
         // Try universe directly in case it exposes command execution
+        if (consoleSender != null && invokeCommandAnySignature(universe, consoleSender, command)) {
+            return true;
+        }
         if (invokeConsoleCommand(universe, command)) {
             return true;
         }
@@ -733,7 +749,15 @@ public class RaceManager {
         Object plugin = EndlessLeveling.getInstance();
         if (plugin != null) {
             Object pluginCommandManager = invokeNoArg(plugin, "getCommandManager");
-            if (pluginCommandManager != null && invokeConsoleCommand(pluginCommandManager, command)) {
+            if (pluginCommandManager != null) {
+                if (consoleSender != null && invokeCommandAnySignature(pluginCommandManager, consoleSender, command)) {
+                    return true;
+                }
+                if (invokeConsoleCommand(pluginCommandManager, command)) {
+                    return true;
+                }
+            }
+            if (consoleSender != null && invokeCommandAnySignature(plugin, consoleSender, command)) {
                 return true;
             }
             if (invokeConsoleCommand(plugin, command)) {
@@ -812,7 +836,7 @@ public class RaceManager {
         }
     }
 
-    private boolean runCommandViaCommandManager(PlayerRef playerRef, String command) {
+    private boolean runCommandViaCommandManager(PlayerRef playerRef, String command, boolean consolePreferred) {
         if (playerRef == null || command == null || command.isBlank()) {
             return false;
         }
@@ -821,12 +845,82 @@ public class RaceManager {
             if (manager == null) {
                 return false;
             }
+            Object consoleSender = findConsoleSender();
+            if (consoleSender != null) {
+                manager.handleCommand((com.hypixel.hytale.server.core.command.system.CommandSender) consoleSender,
+                        command);
+                return true;
+            }
+            if (consolePreferred) {
+                return false; // console was expected; do not fall back to player to avoid permission blocks
+            }
             manager.handleCommand(playerRef, command);
             return true;
         } catch (Throwable ex) {
             LOGGER.atWarning().log("RaceManager: CommandManager handleCommand failed: %s", ex.getMessage());
             return false;
         }
+    }
+
+    private Object findConsoleSender() {
+        // cache not required; method is cheap and avoids stale state if server reloads
+        Object universe = Universe.get();
+        Object console = resolveConsoleSender(universe);
+        if (console != null) {
+            return console;
+        }
+
+        // Try ConsoleModule singleton:
+        // com.hypixel.hytale.server.core.console.ConsoleModule#get()
+        try {
+            Class<?> consoleModule = Class.forName("com.hypixel.hytale.server.core.console.ConsoleModule");
+            Method getMethod = consoleModule.getMethod("get");
+            Object moduleInstance = getMethod.invoke(null);
+            if (moduleInstance != null) {
+                Object maybeConsole = invokeNoArg(moduleInstance, "getConsoleSender");
+                if (maybeConsole != null) {
+                    return maybeConsole;
+                }
+            }
+        } catch (Exception ignored) {
+        }
+
+        // Last resort: instantiate ConsoleSender directly via reflection (constructor
+        // is protected)
+        try {
+            Class<?> consoleSenderClass = Class.forName("com.hypixel.hytale.server.core.console.ConsoleSender");
+            try {
+                Field instanceField = consoleSenderClass.getDeclaredField("instance");
+                instanceField.setAccessible(true);
+                Object existing = instanceField.get(null);
+                if (existing != null) {
+                    return existing;
+                }
+            } catch (Exception ignored) {
+            }
+
+            Constructor<?> ctor = consoleSenderClass.getDeclaredConstructor();
+            ctor.setAccessible(true);
+            Object newSender = ctor.newInstance();
+            return newSender;
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private Object resolveConsoleSender(Object universe) {
+        if (universe == null) {
+            return null;
+        }
+        String[] candidates = new String[] { "getConsole", "getConsoleSender", "getCommandSender",
+                "getConsoleCommandSource", "getCommandSource", "getSystemConsole", "getSystemSender" };
+        for (String name : candidates) {
+            Object sender = invokeNoArg(universe, name);
+            if (sender != null) {
+                return sender;
+            }
+        }
+        return null;
     }
 
     private boolean invokeConsoleCommand(Object target, String command) {
