@@ -1,13 +1,15 @@
 package com.airijko.endlessleveling.systems;
 
 import com.airijko.endlessleveling.ui.PlayerHud;
+import com.hypixel.hytale.component.ArchetypeChunk;
+import com.hypixel.hytale.component.CommandBuffer;
+import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.tick.TickingSystem;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
-import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
-import java.util.Collection;
 import java.util.UUID;
 
 /**
@@ -18,6 +20,7 @@ import java.util.UUID;
 public class HudRefreshSystem extends TickingSystem<EntityStore> {
 
     private static final float REFRESH_INTERVAL_SECONDS = 0.5f; // ~10 ticks at 20 TPS
+    private static final Query<EntityStore> PLAYER_QUERY = Query.any();
     private float timeSinceLastRefresh = 0f;
 
     public HudRefreshSystem() {
@@ -25,31 +28,45 @@ public class HudRefreshSystem extends TickingSystem<EntityStore> {
 
     @Override
     public void tick(float deltaSeconds, int tickCount, Store<EntityStore> store) {
+        if (store == null || store.isShutdown()) {
+            return;
+        }
+
         timeSinceLastRefresh += deltaSeconds;
         if (timeSinceLastRefresh < REFRESH_INTERVAL_SECONDS) {
             return;
         }
         timeSinceLastRefresh = 0f;
 
-        Universe universe = Universe.get();
-        if (universe == null) {
-            return;
-        }
+        // Refresh only players that belong to the current store/thread to avoid
+        // cross-store thread assertions when resolving components.
+        store.forEachChunk(PLAYER_QUERY, (ArchetypeChunk<EntityStore> chunk,
+                CommandBuffer<EntityStore> commandBuffer) -> {
+            for (int i = 0; i < chunk.size(); i++) {
+                Ref<EntityStore> ref = chunk.getReferenceTo(i);
+                if (ref == null) {
+                    continue;
+                }
 
-        Collection<PlayerRef> players = universe.getPlayers();
-        if (players == null || players.isEmpty()) {
-            return;
-        }
+                PlayerRef playerRef = commandBuffer.getComponent(ref, PlayerRef.getComponentType());
+                if (playerRef == null || !playerRef.isValid()) {
+                    continue;
+                }
 
-        for (PlayerRef playerRef : players) {
-            if (playerRef == null || !playerRef.isValid()) {
-                continue;
+                UUID uuid = playerRef.getUuid();
+                if (uuid == null) {
+                    continue;
+                }
+
+                // Only refresh HUD for players whose entity store matches the current thread's
+                // store to avoid cross-store component access.
+                Ref<EntityStore> playerEntityRef = playerRef.getReference();
+                if (playerEntityRef == null || playerEntityRef.getStore() != store) {
+                    continue;
+                }
+
+                PlayerHud.refreshHud(uuid);
             }
-            UUID uuid = playerRef.getUuid();
-            if (uuid == null) {
-                continue;
-            }
-            PlayerHud.refreshHud(uuid);
-        }
+        });
     }
 }
