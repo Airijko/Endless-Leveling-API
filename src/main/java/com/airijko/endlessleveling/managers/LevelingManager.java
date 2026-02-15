@@ -289,6 +289,18 @@ public class LevelingManager {
         return levelCap;
     }
 
+    /**
+     * Check if two player levels are within the configured XP share/suppression
+     * range. When disabled, all levels are allowed.
+     */
+    public boolean isWithinXpShareRange(int recipientLevel, int sourceLevel) {
+        if (!xpLevelRangeEnabled) {
+            return true;
+        }
+        int diff = Math.abs(recipientLevel - sourceLevel);
+        return diff <= xpMaxDifference;
+    }
+
     public double applyMobKillXpRules(PlayerData player, int mobLevel, double baseXpAmount,
             boolean skipLevelRangeChecks) {
         if (player == null || baseXpAmount <= 0)

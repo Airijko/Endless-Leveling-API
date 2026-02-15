@@ -5,8 +5,10 @@ import com.airijko.endlessleveling.managers.ClassManager;
 import com.airijko.endlessleveling.managers.ConfigManager;
 import com.airijko.endlessleveling.managers.LevelingManager;
 import com.airijko.endlessleveling.managers.LoggingManager;
+import com.airijko.endlessleveling.managers.MobLevelingManager;
 import com.airijko.endlessleveling.managers.RaceManager;
 import com.airijko.endlessleveling.managers.SkillManager;
+import com.airijko.endlessleveling.ui.PlayerHud;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.Message;
@@ -26,6 +28,7 @@ public class ReloadCommand extends AbstractPlayerCommand {
 
     private final ConfigManager configManager;
     private final LevelingManager levelingManager;
+    private final MobLevelingManager mobLevelingManager;
     private final RaceManager raceManager;
     private final ClassManager classManager;
     private final SkillManager skillManager;
@@ -35,6 +38,7 @@ public class ReloadCommand extends AbstractPlayerCommand {
         EndlessLeveling plugin = EndlessLeveling.getInstance();
         this.configManager = plugin != null ? plugin.getConfigManager() : null;
         this.levelingManager = plugin != null ? plugin.getLevelingManager() : null;
+        this.mobLevelingManager = plugin != null ? plugin.getMobLevelingManager() : null;
         this.raceManager = plugin != null ? plugin.getRaceManager() : null;
         this.classManager = plugin != null ? plugin.getClassManager() : null;
         this.skillManager = plugin != null ? plugin.getSkillManager() : null;
@@ -58,6 +62,10 @@ public class ReloadCommand extends AbstractPlayerCommand {
             levelingManager.reloadConfig();
         }
 
+        if (mobLevelingManager != null) {
+            mobLevelingManager.reloadConfig();
+        }
+
         if (skillManager != null) {
             skillManager.reload();
         }
@@ -72,6 +80,9 @@ public class ReloadCommand extends AbstractPlayerCommand {
 
         senderRef.sendMessage(
                 Message.raw("EndlessLeveling configuration, classes, and races reloaded.").color("#6cff78"));
+
+        // Refresh HUDs to reflect any mode/range changes.
+        PlayerHud.refreshAll();
     }
 
     private boolean toBoolean(Object value, boolean defaultValue) {

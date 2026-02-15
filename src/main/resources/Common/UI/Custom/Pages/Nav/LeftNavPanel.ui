@@ -92,10 +92,6 @@
 
     Group { Anchor: (Height: 24); }
 
-    @LeftNavButton #NavParty {
-      Text: "PARTY";
-    }
-
     @LeftNavButton #NavLeaderboards {
       Text: "LEADERBOARDS";
     }

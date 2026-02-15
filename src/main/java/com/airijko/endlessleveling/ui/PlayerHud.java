@@ -154,6 +154,22 @@ public class PlayerHud extends CustomUIHud {
             return "--";
         }
 
+        // When player-based mob leveling is enabled, show the expected range for this
+        // player instead of a single level sample.
+        if (mobLevelingManager.isPlayerBasedMode()) {
+            PlayerData data = getPlayerData();
+            if (data == null) {
+                return "--";
+            }
+            var range = mobLevelingManager.getPlayerBasedLevelRange(data.getLevel());
+            if (range != null) {
+                if (range.min() == range.max()) {
+                    return "Lv. " + range.min();
+                }
+                return "Lv. " + range.min() + "-" + range.max();
+            }
+        }
+
         Store<EntityStore> store = ref.getStore();
         try {
             TransformComponent transform = store != null
@@ -301,6 +317,13 @@ public class PlayerHud extends CustomUIHud {
         }
 
         hud.refreshHud();
+    }
+
+    /** Refresh all active HUDs (used after config reloads). */
+    public static void refreshAll() {
+        for (UUID uuid : ACTIVE_HUDS.keySet()) {
+            refreshHud(uuid);
+        }
     }
 
     public static void unregister(UUID uuid) {

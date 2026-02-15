@@ -64,6 +64,13 @@ public class MobLevelingManager {
         this.playerDataManager = playerDataManager;
     }
 
+    /** Reload mob leveling config and clear cached diffs. */
+    public void reloadConfig() {
+        configManager.load();
+        cachedPlayerDiffs.clear();
+        cachedPosDiffs.clear();
+    }
+
     /**
      * Attempts to apply mob-leveling (health scaling) to the entity referenced by
      * {@code ref}.
@@ -204,6 +211,35 @@ public class MobLevelingManager {
             level = getFixedLevel();
         }
         return clampToConfiguredRange(level);
+    }
+
+    /** True when mob levels are derived from nearby player levels. */
+    public boolean isPlayerBasedMode() {
+        return getLevelSourceMode() == LevelSourceMode.PLAYER;
+    }
+
+    /**
+     * Expected mob level range for the provided player level in player-based mode.
+     */
+    public LevelRange getPlayerBasedLevelRange(int playerLevel) {
+        int level = Math.max(1, playerLevel);
+        int offset = getConfigInt("Mob_Leveling.Level_Source.Player_Based.Offset", 0);
+        int minDiff = getConfigInt("Mob_Leveling.Level_Source.Player_Based.Min_Difference", -3);
+        int maxDiff = getConfigInt("Mob_Leveling.Level_Source.Player_Based.Max_Difference", 3);
+        if (minDiff > maxDiff) {
+            int tmp = minDiff;
+            minDiff = maxDiff;
+            maxDiff = tmp;
+        }
+
+        int min = clampToConfiguredRange(level + minDiff + offset);
+        int max = clampToConfiguredRange(level + maxDiff + offset);
+        if (min > max) {
+            int tmp = min;
+            min = max;
+            max = tmp;
+        }
+        return new LevelRange(min, max);
     }
 
     private Integer resolveExternalOverride(Store<EntityStore> store, Vector3d mobPosition, Integer entityId) {
@@ -566,6 +602,10 @@ public class MobLevelingManager {
             max = tmp;
         }
         return Math.max(min, Math.min(max, level));
+    }
+
+    /** Inclusive mob level range. */
+    public record LevelRange(int min, int max) {
     }
 
     private int getConfigInt(String path, int defaultValue) {

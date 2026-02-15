@@ -217,20 +217,12 @@ public class PartyManager {
 
         String levelText = "Lv. " + data.getLevel();
         String race = safeLabel(data.getRaceId());
-        String primaryClass = safeLabel(data.getPrimaryClassId());
 
-        String text2;
-        if (race.isEmpty() && primaryClass.isEmpty()) {
-            text2 = null;
-        } else if (race.isEmpty()) {
-            text2 = primaryClass;
-        } else if (primaryClass.isEmpty()) {
-            text2 = race;
-        } else {
-            text2 = race + " • " + primaryClass;
-        }
+        // Line 1: level plus race if present; classes are intentionally omitted.
+        String text1 = race.isEmpty() ? levelText : levelText + " | " + race;
 
-        partyPro.setCustomText(uuid, levelText, text2);
+        // No secondary line when classes are hidden.
+        partyPro.setCustomText(uuid, text1, null);
     }
 
     /**
@@ -244,11 +236,20 @@ public class PartyManager {
         }
 
         PlayerData killerData = playerDataManager.get(killerUuid);
+        List<UUID> eligible = new ArrayList<>(recipients.size());
         double totalWeight = 0.0D;
         List<Share> shares = new ArrayList<>(recipients.size());
 
         for (UUID member : recipients) {
             PlayerData memberData = playerDataManager.get(member);
+
+            // Respect anti-exploit XP level window from config.yml.
+            if (killerData != null && memberData != null
+                    && !levelingManager.isWithinXpShareRange(memberData.getLevel(), killerData.getLevel())) {
+                continue;
+            }
+
+            eligible.add(member);
             double weight = 1.0D;
 
             if (killerUuid.equals(member)) {
@@ -264,9 +265,14 @@ public class PartyManager {
             totalWeight += weight;
         }
 
+        if (eligible.isEmpty()) {
+            levelingManager.addXp(killerUuid, totalXp);
+            return;
+        }
+
         if (totalWeight <= 0.0D) {
-            double equalShare = totalXp / recipients.size();
-            for (UUID member : recipients) {
+            double equalShare = totalXp / eligible.size();
+            for (UUID member : eligible) {
                 levelingManager.addXp(member, equalShare);
             }
             return;
