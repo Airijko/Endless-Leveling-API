@@ -1,14 +1,17 @@
 package com.airijko.endlessleveling.systems;
 
+import com.airijko.endlessleveling.augments.AugmentRuntimeManager;
+import com.airijko.endlessleveling.augments.AugmentRuntimeManager.AugmentRuntimeState;
+import com.airijko.endlessleveling.augments.AugmentRuntimeManager.CooldownState;
 import com.airijko.endlessleveling.data.PlayerData;
 import com.airijko.endlessleveling.enums.ArchetypePassiveType;
 import com.airijko.endlessleveling.managers.PassiveManager;
 import com.airijko.endlessleveling.managers.PassiveManager.PassiveRuntimeState;
 import com.airijko.endlessleveling.managers.PlayerDataManager;
 import com.airijko.endlessleveling.managers.SkillManager;
-import com.airijko.endlessleveling.passives.AdrenalineSettings;
-import com.airijko.endlessleveling.passives.ArchetypePassiveManager;
-import com.airijko.endlessleveling.passives.ArchetypePassiveSnapshot;
+import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveManager;
+import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveSnapshot;
+import com.airijko.endlessleveling.passives.settings.AdrenalineSettings;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
@@ -41,15 +44,18 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
     private final PassiveManager passiveManager;
     private final ArchetypePassiveManager archetypePassiveManager;
     private final SkillManager skillManager;
+    private final AugmentRuntimeManager augmentRuntimeManager;
 
     public PassiveRegenSystem(@Nonnull PlayerDataManager playerDataManager,
             @Nonnull PassiveManager passiveManager,
             ArchetypePassiveManager archetypePassiveManager,
-            SkillManager skillManager) {
+            SkillManager skillManager,
+            AugmentRuntimeManager augmentRuntimeManager) {
         this.playerDataManager = playerDataManager;
         this.passiveManager = passiveManager;
         this.archetypePassiveManager = archetypePassiveManager;
         this.skillManager = skillManager;
+        this.augmentRuntimeManager = augmentRuntimeManager;
     }
 
     @Override
@@ -97,6 +103,7 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
                         applyHealingBonus(statMap, archetypeSnapshot, runtimeState);
                         applySecondWindHealing(statMap, runtimeState, deltaSeconds);
                         notifyPassiveCooldowns(playerRef, runtimeState);
+                        notifyAugmentCooldowns(playerRef, playerData);
                     }
                 });
     }
@@ -139,6 +146,48 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
             return;
         }
         playerRef.sendMessage(Message.raw("Swiftness has faded.").color("#4fd7f7"));
+    }
+
+    private void notifyAugmentCooldowns(PlayerRef playerRef, PlayerData playerData) {
+        if (augmentRuntimeManager == null || playerRef == null || playerData == null) {
+            return;
+        }
+        AugmentRuntimeState state = augmentRuntimeManager.getRuntimeState(playerData.getUuid());
+        if (state == null) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        for (CooldownState cooldown : state.getCooldowns()) {
+            if (cooldown == null || cooldown.getExpiresAt() <= 0L || cooldown.isReadyNotified()) {
+                continue;
+            }
+            if (now >= cooldown.getExpiresAt()) {
+                sendCooldownNotification(playerRef, formatAugmentReady(cooldown));
+                cooldown.setReadyNotified(true);
+            }
+        }
+    }
+
+    private String formatAugmentReady(CooldownState cooldown) {
+        String label = cooldown.getDisplayName();
+        if (label == null || label.isBlank()) {
+            label = cooldown.getAugmentId();
+        }
+        if (label == null) {
+            label = "Augment";
+        }
+        return capitalizeFirst(label) + " is ready again!";
+    }
+
+    private String capitalizeFirst(String text) {
+        if (text == null || text.isEmpty()) {
+            return "";
+        }
+        char first = text.charAt(0);
+        if (Character.isUpperCase(first)) {
+            return text;
+        }
+        return Character.toUpperCase(first) + text.substring(1);
     }
 
     private void applyHealthRegeneration(@Nonnull PlayerRef playerRef,

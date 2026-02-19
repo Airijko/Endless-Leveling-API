@@ -1,36 +1,30 @@
-package com.airijko.endlessleveling.passives;
+package com.airijko.endlessleveling.passives.settings;
 
 import com.airijko.endlessleveling.enums.ArchetypePassiveType;
+import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveSnapshot;
 import com.airijko.endlessleveling.races.RacePassiveDefinition;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Represents executioner-style bonus damage entries applied against low-health
- * targets.
+ * Holds the configured Berzerker entries that boost damage when the player is
+ * at low health.
  */
-public record ExecutionerSettings(List<Entry> entries, double cooldownSeconds) {
-
-    private static final double DEFAULT_COOLDOWN = 12.0D;
+public record BerzerkerSettings(List<Entry> entries) {
 
     public record Entry(double thresholdPercent, double bonusPercent) {
-        public boolean isExecute() {
-            return bonusPercent >= 1.0D;
-        }
     }
 
-    public static ExecutionerSettings fromSnapshot(ArchetypePassiveSnapshot snapshot) {
+    public static BerzerkerSettings fromSnapshot(ArchetypePassiveSnapshot snapshot) {
         List<Entry> entries = new ArrayList<>();
-        double cooldownSum = 0.0D;
-        int cooldownSources = 0;
         if (snapshot == null) {
-            return new ExecutionerSettings(List.of(), DEFAULT_COOLDOWN);
+            return new BerzerkerSettings(List.of());
         }
 
-        List<RacePassiveDefinition> definitions = snapshot.getDefinitions(ArchetypePassiveType.EXECUTIONER);
+        List<RacePassiveDefinition> definitions = snapshot.getDefinitions(ArchetypePassiveType.BERZERKER);
         if (definitions.isEmpty()) {
-            return new ExecutionerSettings(List.of(), DEFAULT_COOLDOWN);
+            return new BerzerkerSettings(List.of());
         }
 
         for (RacePassiveDefinition definition : definitions) {
@@ -47,23 +41,12 @@ public record ExecutionerSettings(List<Entry> entries, double cooldownSeconds) {
                 continue;
             }
             entries.add(new Entry(threshold, bonusPercent));
-
-            double cooldownCandidate = parsePositiveDouble(props, "cooldown", 0.0D);
-            if (cooldownCandidate > 0.0D) {
-                cooldownSum += cooldownCandidate;
-                cooldownSources++;
-            }
         }
-        double cooldown = cooldownSources > 0 ? cooldownSum / cooldownSources : DEFAULT_COOLDOWN;
-        return new ExecutionerSettings(List.copyOf(entries), cooldown);
+        return new BerzerkerSettings(List.copyOf(entries));
     }
 
     public boolean enabled() {
         return !entries.isEmpty();
-    }
-
-    public long cooldownMillis() {
-        return (long) Math.max(0L, Math.round(Math.max(0.0D, cooldownSeconds) * 1000.0D));
     }
 
     private static double parsePositiveDouble(Map<String, Object> props, String key, double fallback) {

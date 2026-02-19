@@ -1,6 +1,7 @@
-package com.airijko.endlessleveling.passives;
+package com.airijko.endlessleveling.passives.settings;
 
 import com.airijko.endlessleveling.enums.ArchetypePassiveType;
+import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveSnapshot;
 import com.airijko.endlessleveling.races.RacePassiveDefinition;
 import java.util.List;
 import java.util.Map;

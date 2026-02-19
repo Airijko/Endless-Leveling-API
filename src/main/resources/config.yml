@@ -31,33 +31,25 @@ skill_attributes:
 #   tier_interval    -> Player levels required per passive level
 # ------------------------------------------------------------
 passives:
-  life_steal:
-    enabled: true
-    unlock_level: 25
-    base_value: 1.0
-    value_per_level: 1.0
-    max_level: 10
-    tier_interval: 7
-
   regeneration:
     enabled: true
     unlock_level: 20
     base_value: 3.0
     value_per_level: 1.5
     max_level: 10
-    tier_interval: 6
+    tier_interval: 8
 
   signature_gain:
     enabled: true
-    unlock_level: 15
+    unlock_level: 20
     base_value: 40.0
     value_per_level: 40.0
     max_level: 10
-    tier_interval: 6
+    tier_interval: 7
 
   luck:
     enabled: true
-    unlock_level: 10
+    unlock_level: 15
     base_value: 10.0
     value_per_level: 10.0
     max_level: 10
@@ -69,7 +61,7 @@ passives:
     base_value: 1.0
     value_per_level: 0.5
     max_level: 10
-    tier_interval: 5
+    tier_interval: 6
 
   stamina_gain_bonus:
     enabled: true

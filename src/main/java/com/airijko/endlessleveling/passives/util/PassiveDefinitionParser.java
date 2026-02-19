@@ -1,4 +1,4 @@
-package com.airijko.endlessleveling.passives;
+package com.airijko.endlessleveling.passives.util;
 
 import com.airijko.endlessleveling.enums.ArchetypePassiveType;
 import com.airijko.endlessleveling.enums.DamageLayer;
@@ -7,10 +7,6 @@ import com.airijko.endlessleveling.enums.PassiveStackingStyle;
 import java.util.Locale;
 import java.util.Map;
 
-/**
- * Shared helpers for parsing passive metadata (tags, stacking, damage layers)
- * out of YAML definitions.
- */
 public final class PassiveDefinitionParser {
 
     private PassiveDefinitionParser() {

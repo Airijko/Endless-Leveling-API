@@ -9,7 +9,6 @@ import com.airijko.endlessleveling.systems.PassiveRegenSystem;
  * config.yml.
  */
 public enum PassiveType {
-    LIFE_STEAL("life_steal", "Life Steal"),
     REGENERATION("regeneration", "Regeneration"),
     SIGNATURE_GAIN("signature_gain", "Signature Gain"),
     LUCK("luck", "Luck"),
@@ -34,7 +33,7 @@ public enum PassiveType {
 
     public String formatValue(double value) {
         return switch (this) {
-            case LIFE_STEAL, SIGNATURE_GAIN -> formatNumber(value) + "%";
+            case SIGNATURE_GAIN -> formatNumber(value) + "%";
             case REGENERATION -> formatNumber(value) + " Health/sec";
             case LUCK -> formatNumber(value) + "% Luck";
             case MANA_REGENERATION -> formatNumber(value * PassiveRegenSystem.RESOURCE_REGEN_DIVISOR) + " Mana/5s";

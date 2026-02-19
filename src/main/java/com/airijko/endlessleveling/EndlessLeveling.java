@@ -7,6 +7,7 @@ import com.airijko.endlessleveling.commands.PartyCommand;
 import com.airijko.endlessleveling.commands.RaceCommand;
 import com.airijko.endlessleveling.commands.classes.ClassCommand;
 import com.airijko.endlessleveling.commands.profile.ProfileCommand;
+import com.airijko.endlessleveling.augments.AugmentRuntimeManager;
 import com.airijko.endlessleveling.listeners.LuckDoubleDropSystem;
 import com.airijko.endlessleveling.listeners.OpenPlayerHudListener;
 import com.airijko.endlessleveling.listeners.PartyListener;
@@ -17,7 +18,7 @@ import com.airijko.endlessleveling.listeners.SwiftnessKillSystem;
 import com.airijko.endlessleveling.listeners.XpEventListener;
 import com.airijko.endlessleveling.listeners.BreakBlockEntitySystem;
 import com.airijko.endlessleveling.managers.*;
-import com.airijko.endlessleveling.passives.ArchetypePassiveManager;
+import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveManager;
 import com.airijko.endlessleveling.systems.PassiveRegenSystem;
 import com.airijko.endlessleveling.systems.MobNameplateSystem;
 import com.airijko.endlessleveling.systems.PlayerNameplateSystem;
@@ -54,6 +55,7 @@ public class EndlessLeveling extends JavaPlugin {
     private ArchetypePassiveManager archetypePassiveManager;
     private PlayerAttributeManager playerAttributeManager;
     private PlayerRaceStatSystem playerRaceStatSystem;
+    private AugmentRuntimeManager augmentRuntimeManager;
 
     // Getter for SkillManager
     public SkillManager getSkillManager() {
@@ -101,6 +103,10 @@ public class EndlessLeveling extends JavaPlugin {
         return playerRaceStatSystem;
     }
 
+    public AugmentRuntimeManager getAugmentRuntimeManager() {
+        return augmentRuntimeManager;
+    }
+
     public ArchetypePassiveManager getArchetypePassiveManager() {
         return archetypePassiveManager;
     }
@@ -132,9 +138,11 @@ public class EndlessLeveling extends JavaPlugin {
         archetypePassiveManager = new ArchetypePassiveManager(raceManager, classManager);
         playerAttributeManager = new PlayerAttributeManager(raceManager);
         passiveManager = new PassiveManager(configManager);
+        augmentRuntimeManager = new AugmentRuntimeManager();
         skillManager = new SkillManager(filesManager, playerAttributeManager, archetypePassiveManager, passiveManager);
         playerDataManager = new PlayerDataManager(filesManager, skillManager, raceManager, classManager);
-        levelingManager = new LevelingManager(playerDataManager, filesManager, skillManager, archetypePassiveManager);
+        levelingManager = new LevelingManager(playerDataManager, filesManager, skillManager, archetypePassiveManager,
+                passiveManager);
         mobLevelingManager = new MobLevelingManager(filesManager, playerDataManager);
         partyManager = new PartyManager(playerDataManager, levelingManager);
         if (!partyManager.isAvailable()) {
@@ -172,7 +180,7 @@ public class EndlessLeveling extends JavaPlugin {
                         archetypePassiveManager));
         this.getEntityStoreRegistry()
                 .registerSystem(new PassiveRegenSystem(playerDataManager, passiveManager, archetypePassiveManager,
-                        skillManager));
+                        skillManager, augmentRuntimeManager));
         // Register periodic skill modifier reapplication system
         this.getEntityStoreRegistry().registerSystem(new PeriodicSkillModifierSystem(playerDataManager, skillManager));
         playerRaceStatSystem = new PlayerRaceStatSystem(playerDataManager, skillManager);

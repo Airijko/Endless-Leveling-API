@@ -352,6 +352,20 @@ public class PlayerData {
         return getActiveProfile().getAttributes();
     }
 
+    // Augment tracking lives on the profile; passives now come from class/race
+    // sources.
+    public int getAugmentLevel(String augmentId) {
+        return getActiveProfile().getAugmentLevel(augmentId);
+    }
+
+    public void setAugmentLevel(String augmentId, int level) {
+        getActiveProfile().setAugmentLevel(augmentId, level);
+    }
+
+    public Map<String, Integer> getAugmentLevelsSnapshot() {
+        return Collections.unmodifiableMap(new LinkedHashMap<>(getActiveProfile().getAugments()));
+    }
+
     public int getPassiveLevel(PassiveType type) {
         return getActiveProfile().getPassiveLevel(type);
     }
@@ -471,6 +485,7 @@ public class PlayerData {
         private int skillPoints;
         private final Map<SkillAttributeType, Integer> attributes;
         private final Map<PassiveType, Integer> passiveLevels;
+        private final Map<String, Integer> augments;
         private String raceId;
         private long lastRaceChangeEpochSeconds;
         private int raceSwitchCount;
@@ -494,6 +509,7 @@ public class PlayerData {
             for (PassiveType passiveType : PassiveType.values()) {
                 this.passiveLevels.put(passiveType, 0);
             }
+            this.augments = new LinkedHashMap<>();
             this.raceId = DEFAULT_RACE_ID;
             this.lastRaceChangeEpochSeconds = 0L;
             this.raceSwitchCount = 0;
@@ -555,6 +571,42 @@ public class PlayerData {
 
         public Map<PassiveType, Integer> getPassiveLevels() {
             return passiveLevels;
+        }
+
+        public int getAugmentLevel(String augmentId) {
+            String key = normalizeAugmentId(augmentId);
+            if (key == null) {
+                return 0;
+            }
+            return augments.getOrDefault(key, 0);
+        }
+
+        public void setAugmentLevel(String augmentId, int level) {
+            String key = normalizeAugmentId(augmentId);
+            if (key == null) {
+                return;
+            }
+            int clamped = Math.max(0, level);
+            if (clamped <= 0) {
+                augments.remove(key);
+                return;
+            }
+            augments.put(key, clamped);
+        }
+
+        public Map<String, Integer> getAugments() {
+            return augments;
+        }
+
+        private String normalizeAugmentId(String augmentId) {
+            if (augmentId == null) {
+                return null;
+            }
+            String trimmed = augmentId.trim();
+            if (trimmed.isEmpty()) {
+                return null;
+            }
+            return trimmed.toLowerCase();
         }
 
         public String getRaceId() {

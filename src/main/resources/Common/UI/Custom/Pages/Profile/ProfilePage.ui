@@ -266,28 +266,6 @@ $C.@PageOverlay {
                                 Group { Anchor: (Height: 16); }
 
                                 Label {
-                                    Text: "Skill Passives";
-                                    Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
-                                    Anchor: (Height: 20);
-                                }
-
-                                Group #SkillPassiveList {
-                                    LayoutMode: Top;
-
-                                    Label #SkillPassiveSummary {
-                                        Text: "No skill passives selected";
-                                        Style: (FontSize: 12, TextColor: #9fb6d3, RenderBold: true);
-                                        Anchor: (Height: 18);
-                                    }
-
-                                    Group #SkillPassiveEntries {
-                                        LayoutMode: Top;
-                                    }
-                                }
-
-                                Group { Anchor: (Height: 16); }
-
-                                Label {
                                     Text: "Passives";
                                     Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
                                     Anchor: (Height: 20);
@@ -303,6 +281,44 @@ $C.@PageOverlay {
                                     }
 
                                     Group #PassiveEntries {
+                                        LayoutMode: Top;
+                                    }
+                                }
+
+                                Group { Anchor: (Height: 8); }
+
+                                Group #InnatePassiveList {
+                                    LayoutMode: Top;
+
+                                    Label #InnatePassiveSummary {
+                                        Text: "No innate passives active";
+                                        Style: (FontSize: 12, TextColor: #9fb6d3, RenderBold: true);
+                                        Anchor: (Height: 18);
+                                    }
+
+                                    Group #InnatePassiveEntries {
+                                        LayoutMode: Top;
+                                    }
+                                }
+
+                                Group { Anchor: (Height: 16); }
+
+                                Label {
+                                    Text: "Innate Bonuses";
+                                    Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
+                                    Anchor: (Height: 20);
+                                }
+
+                                Group #InnateAttributeList {
+                                    LayoutMode: Top;
+
+                                    Label #InnateAttributeSummary {
+                                        Text: "No innate attribute bonuses";
+                                        Style: (FontSize: 12, TextColor: #9fb6d3, RenderBold: true);
+                                        Anchor: (Height: 18);
+                                    }
+
+                                    Group #InnateAttributeEntries {
                                         LayoutMode: Top;
                                     }
                                 }
@@ -325,28 +341,6 @@ $C.@PageOverlay {
                                     }
 
                                     Group #AugmentEntries {
-                                        LayoutMode: Top;
-                                    }
-                                }
-
-                                Group { Anchor: (Height: 16); }
-
-                                Label {
-                                    Text: "Innate Bonuses";
-                                    Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
-                                    Anchor: (Height: 20);
-                                }
-
-                                Group #InnatePassiveList {
-                                    LayoutMode: Top;
-
-                                    Label #InnatePassiveSummary {
-                                        Text: "Select a profile to view innate bonuses";
-                                        Style: (FontSize: 12, TextColor: #9fb6d3, RenderBold: true);
-                                        Anchor: (Height: 18);
-                                    }
-
-                                    Group #InnatePassiveEntries {
                                         LayoutMode: Top;
                                     }
                                 }

@@ -3,8 +3,8 @@ package com.airijko.endlessleveling.managers;
 import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.data.PlayerData;
 import com.airijko.endlessleveling.enums.ArchetypePassiveType;
-import com.airijko.endlessleveling.passives.ArchetypePassiveManager;
-import com.airijko.endlessleveling.passives.ArchetypePassiveSnapshot;
+import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveManager;
+import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveSnapshot;
 import com.airijko.endlessleveling.ui.PlayerHud;
 import com.airijko.endlessleveling.systems.PlayerRaceStatSystem;
 import com.hypixel.hytale.logger.HytaleLogger;
@@ -26,6 +26,7 @@ public class LevelingManager {
     private final SkillManager skillManager;
     private final ConfigManager configManager;
     private final ArchetypePassiveManager archetypePassiveManager;
+    private final PassiveManager passiveManager;
 
     private double baseXp;
     private double multiplier;
@@ -43,11 +44,13 @@ public class LevelingManager {
     private int playerBasedOffset;
 
     public LevelingManager(PlayerDataManager playerDataManager, PluginFilesManager filesManager,
-            SkillManager skillManager, ArchetypePassiveManager archetypePassiveManager) {
+            SkillManager skillManager, ArchetypePassiveManager archetypePassiveManager,
+            PassiveManager passiveManager) {
         this.playerDataManager = playerDataManager;
         this.configManager = new ConfigManager(filesManager.getLevelingFile(), false);
         this.skillManager = skillManager;
         this.archetypePassiveManager = archetypePassiveManager;
+        this.passiveManager = passiveManager;
 
         loadConfigValues();
     }
@@ -185,6 +188,11 @@ public class LevelingManager {
 
         LOGGER.atInfo().log("Player %s leveled up to %d! Total skill points: %d",
                 player.getPlayerName(), player.getLevel(), skillManager.calculateTotalSkillPoints(player.getLevel()));
+
+        if (passiveManager != null) {
+            PassiveManager.PassiveSyncResult passiveResult = passiveManager.syncPassives(player);
+            passiveManager.notifyPassiveChanges(player, passiveResult);
+        }
 
         notifyLevelUp(player);
         refreshHudIfEnabled(player);

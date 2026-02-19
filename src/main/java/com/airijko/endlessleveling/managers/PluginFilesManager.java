@@ -21,6 +21,7 @@ public class PluginFilesManager {
     private static final String PARTYDATA_FOLDER_NAME = "partydata";
     private static final String RACES_FOLDER_NAME = "races";
     private static final String CLASSES_FOLDER_NAME = "classes";
+    private static final String AUGMENTS_FOLDER_NAME = "augments";
     private static final String WEAPONS_FILE_NAME = "weapons.yml";
     private static final String PARTYDATA_FILE_NAME = "parties.json";
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
@@ -31,6 +32,7 @@ public class PluginFilesManager {
     private final File partyDataFolder;
     private final File racesFolder;
     private final File classesFolder;
+    private final File augmentsFolder;
 
     private final File weaponsFile;
 
@@ -49,6 +51,7 @@ public class PluginFilesManager {
         this.partyDataFolder = new File(pluginFolder, PARTYDATA_FOLDER_NAME);
         this.racesFolder = new File(pluginFolder, RACES_FOLDER_NAME);
         this.classesFolder = new File(pluginFolder, CLASSES_FOLDER_NAME);
+        this.augmentsFolder = new File(pluginFolder, AUGMENTS_FOLDER_NAME);
 
         createFolders();
 
@@ -59,6 +62,7 @@ public class PluginFilesManager {
 
         exportResourceDirectory("races", racesFolder, false);
         exportResourceDirectory("classes", classesFolder, false);
+        exportResourceDirectory("augments", augmentsFolder, false);
     }
 
     /** Create the plugin folder and player data folder */
@@ -69,6 +73,7 @@ public class PluginFilesManager {
             Files.createDirectories(partyDataFolder.toPath());
             Files.createDirectories(racesFolder.toPath());
             Files.createDirectories(classesFolder.toPath());
+            Files.createDirectories(augmentsFolder.toPath());
             LOGGER.atInfo().log("Plugin folders initialized at: %s", pluginFolder.getAbsolutePath());
         } catch (IOException e) {
             throw new IllegalStateException("Unable to create EndlessLeveling folders", e);
@@ -94,6 +99,10 @@ public class PluginFilesManager {
 
     public File getClassesFolder() {
         return classesFolder;
+    }
+
+    public File getAugmentsFolder() {
+        return augmentsFolder;
     }
 
     public File getWeaponsFile() {

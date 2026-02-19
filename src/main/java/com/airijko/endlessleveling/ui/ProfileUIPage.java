@@ -14,14 +14,14 @@ import com.airijko.endlessleveling.data.PlayerData.PlayerProfile;
 import com.airijko.endlessleveling.enums.ArchetypePassiveType;
 import com.airijko.endlessleveling.enums.PassiveType;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
-import com.airijko.endlessleveling.managers.PassiveManager;
 import com.airijko.endlessleveling.managers.PlayerAttributeManager;
 import com.airijko.endlessleveling.managers.PlayerDataManager;
 import com.airijko.endlessleveling.managers.PartyManager;
+import com.airijko.endlessleveling.managers.PassiveManager;
 import com.airijko.endlessleveling.managers.RaceManager;
 import com.airijko.endlessleveling.managers.SkillManager;
-import com.airijko.endlessleveling.passives.ArchetypePassiveManager;
-import com.airijko.endlessleveling.passives.ArchetypePassiveSnapshot;
+import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveManager;
+import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveSnapshot;
 import com.airijko.endlessleveling.races.RaceDefinition;
 import com.airijko.endlessleveling.races.RacePassiveDefinition;
 import com.airijko.endlessleveling.systems.PlayerRaceStatSystem;
@@ -47,10 +47,10 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
     private final PlayerDataManager playerDataManager;
     private final RaceManager raceManager;
-    private final PassiveManager passiveManager;
     private final SkillManager skillManager;
     private final PlayerAttributeManager attributeManager;
     private final ArchetypePassiveManager archetypePassiveManager;
+    private final PassiveManager passiveManager;
     private final PlayerRaceStatSystem playerRaceStatSystem;
     private final PartyManager partyManager;
     private Integer pendingDeleteSlot;
@@ -61,10 +61,10 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         EndlessLeveling plugin = EndlessLeveling.getInstance();
         this.playerDataManager = plugin != null ? plugin.getPlayerDataManager() : null;
         this.raceManager = plugin != null ? plugin.getRaceManager() : null;
-        this.passiveManager = plugin != null ? plugin.getPassiveManager() : null;
         this.skillManager = plugin != null ? plugin.getSkillManager() : null;
         this.attributeManager = plugin != null ? plugin.getPlayerAttributeManager() : null;
         this.archetypePassiveManager = plugin != null ? plugin.getArchetypePassiveManager() : null;
+        this.passiveManager = plugin != null ? plugin.getPassiveManager() : null;
         this.playerRaceStatSystem = plugin != null ? plugin.getPlayerRaceStatSystem() : null;
         this.partyManager = plugin != null ? plugin.getPartyManager() : null;
         this.pendingDeleteSlot = null;
@@ -204,15 +204,6 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         applyAttributeDisplay(ui, "#AttributeDisciplineValue", "#AttributeDisciplineLevel",
                 getAttributeDisplay(data, profile, SkillAttributeType.DISCIPLINE, statMap));
 
-        List<SkillPassiveEntry> skillEntries = collectSkillPassiveEntries(data, profile);
-        if (skillEntries.isEmpty()) {
-            ui.set("#SkillPassiveSummary.Text", "No skill passives selected");
-            ui.set("#SkillPassiveSummary.Visible", true);
-        } else {
-            ui.set("#SkillPassiveSummary.Visible", false);
-        }
-        populateSkillPassiveEntries(ui, skillEntries);
-
         AggregatedPassiveSections passiveSections = buildAggregatedPassiveSections(data, profile);
         renderPassiveSection(ui,
                 "#PassiveSummary",
@@ -222,8 +213,13 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         renderPassiveSection(ui,
                 "#InnatePassiveSummary",
                 "#InnatePassiveEntries",
-                passiveSections.innateSummary(),
-                passiveSections.innateEntries());
+                passiveSections.innatePassiveSummary(),
+                passiveSections.innatePassiveEntries());
+        renderPassiveSection(ui,
+                "#InnateAttributeSummary",
+                "#InnateAttributeEntries",
+                passiveSections.innateAttributeSummary(),
+                passiveSections.innateAttributeEntries());
 
         renderAugmentSection(ui, buildAugmentEntries(data));
     }
@@ -249,22 +245,16 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         applyAttributeDisplay(ui, "#AttributeLifeForceValue", "#AttributeLifeForceLevel", emptyAttributeDisplay());
         applyAttributeDisplay(ui, "#AttributeStrengthValue", "#AttributeStrengthLevel", emptyAttributeDisplay());
         applyAttributeDisplay(ui, "#AttributeSorceryValue", "#AttributeSorceryLevel", emptyAttributeDisplay());
-        applyAttributeDisplay(ui, "#AttributeDefenseValue", "#AttributeDefenseLevel", emptyAttributeDisplay());
-        applyAttributeDisplay(ui, "#AttributeHasteValue", "#AttributeHasteLevel", emptyAttributeDisplay());
         applyAttributeDisplay(ui, "#AttributePrecisionValue", "#AttributePrecisionLevel", emptyAttributeDisplay());
         applyAttributeDisplay(ui, "#AttributeFerocityValue", "#AttributeFerocityLevel", emptyAttributeDisplay());
         applyAttributeDisplay(ui, "#AttributeStaminaValue", "#AttributeStaminaLevel", emptyAttributeDisplay());
-        applyAttributeDisplay(ui, "#AttributeFlowValue", "#AttributeFlowLevel",
-                emptyAttributeDisplay());
+        applyAttributeDisplay(ui, "#AttributeFlowValue", "#AttributeFlowLevel", emptyAttributeDisplay());
         applyAttributeDisplay(ui, "#AttributeDisciplineValue", "#AttributeDisciplineLevel",
                 emptyAttributeDisplay());
-        ui.set("#SkillPassiveSummary.Text", "No skill passives unlocked");
-        ui.set("#SkillPassiveSummary.Visible", true);
         ui.set("#PassiveSummary.Text", "Select a profile to view passive bonuses");
         ui.set("#PassiveSummary.Visible", true);
         ui.set("#InnatePassiveSummary.Text", "Select a profile to view innate bonuses");
         ui.set("#InnatePassiveSummary.Visible", true);
-        ui.clear("#SkillPassiveEntries");
         ui.clear("#PassiveEntries");
         ui.clear("#InnatePassiveEntries");
     }
@@ -334,72 +324,53 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         return raceId == null || raceId.isBlank() ? raceManager.getDefaultRaceId() : raceId;
     }
 
-    private List<SkillPassiveEntry> collectSkillPassiveEntries(@Nonnull PlayerData data,
-            @Nonnull PlayerProfile profile) {
-        List<SkillPassiveEntry> entries = new ArrayList<>();
-        for (PassiveType type : PassiveType.values()) {
-            int level = profile.getPassiveLevel(type);
-            if (level <= 0) {
-                continue;
-            }
-            String formattedValue = formatSkillPassiveValue(data, type);
-            String effectText = formattedValue.isBlank() ? "--" : formattedValue;
-            entries.add(new SkillPassiveEntry(type.getDisplayName(), effectText, "Lv " + level));
-        }
-        return entries;
-    }
-
-    private String formatSkillPassiveValue(@Nonnull PlayerData data, @Nonnull PassiveType type) {
-        if (passiveManager == null) {
-            return "";
-        }
-        PassiveManager.PassiveSnapshot snapshot = passiveManager.getSnapshot(data, type);
-        if (snapshot == null || snapshot.value() <= 0.0D) {
-            return "";
-        }
-        return type.formatValue(snapshot.value());
-    }
-
     private AggregatedPassiveSections buildAggregatedPassiveSections(@Nonnull PlayerData playerData,
             @Nonnull PlayerProfile profile) {
-        if (archetypePassiveManager == null) {
-            return new AggregatedPassiveSections(List.of(), List.of(),
-                    "Passive bonuses unavailable",
-                    "Innate bonuses unavailable");
-        }
-        ArchetypePassiveSnapshot snapshot = archetypePassiveManager.getSnapshot(playerData);
-        if (snapshot == null || snapshot.isEmpty()) {
-            return new AggregatedPassiveSections(List.of(), List.of(),
-                    "No passive bonuses active",
-                    "No innate bonuses active");
-        }
-
         List<PassiveEntry> passiveEntries = new ArrayList<>();
-        for (ArchetypePassiveType type : ArchetypePassiveType.values()) {
-            if (type == null || type == ArchetypePassiveType.INNATE_ATTRIBUTE_GAIN) {
-                continue;
-            }
-            double totalValue = snapshot.getValue(type);
-            if (Math.abs(totalValue) <= 1.0E-6D) {
-                continue;
-            }
-            AggregatedPassiveProps props = aggregatePassiveProperties(snapshot.getDefinitions(type));
-            String label = toDisplay(type.name());
-            String valueText = formatAggregatedPassiveValue(type, totalValue, props);
-            passiveEntries.add(new PassiveEntry(label, valueText));
-        }
+        List<PassiveEntry> innatePassiveEntries = new ArrayList<>();
+        List<PassiveEntry> innateAttributeEntries = new ArrayList<>();
 
-        List<PassiveEntry> innateEntries = buildInnateEntries(
-                snapshot.getDefinitions(ArchetypePassiveType.INNATE_ATTRIBUTE_GAIN),
-                profile);
+        ArchetypePassiveSnapshot snapshot = archetypePassiveManager != null
+                ? archetypePassiveManager.getSnapshot(playerData)
+                : null;
+
+        if (snapshot != null && !snapshot.isEmpty()) {
+            for (ArchetypePassiveType type : ArchetypePassiveType.values()) {
+                if (type == null) {
+                    continue;
+                }
+                double totalValue = snapshot.getValue(type);
+                if (Math.abs(totalValue) <= 1.0E-6D) {
+                    continue;
+                }
+                if (type == ArchetypePassiveType.INNATE_ATTRIBUTE_GAIN) {
+                    innateAttributeEntries.addAll(buildInnateAttributeEntries(
+                            snapshot.getDefinitions(type),
+                            profile));
+                    continue;
+                }
+                AggregatedPassiveProps props = aggregatePassiveProperties(snapshot.getDefinitions(type));
+                String label = toDisplay(type.name());
+                String valueText = formatAggregatedPassiveValue(type, totalValue, props);
+                passiveEntries.add(new PassiveEntry(label, valueText));
+            }
+        }
+        innatePassiveEntries.addAll(buildInnatePlayerPassiveEntries(playerData));
+
+        passiveEntries.sort(Comparator.comparing(PassiveEntry::label));
+        innatePassiveEntries.sort(Comparator.comparing(PassiveEntry::label));
+        innateAttributeEntries.sort(Comparator.comparing(PassiveEntry::label));
 
         String passiveSummary = passiveEntries.isEmpty() ? "No passive bonuses active" : "";
-        String innateSummary = innateEntries.isEmpty() ? "No innate bonuses active" : "";
+        String innatePassiveSummary = innatePassiveEntries.isEmpty() ? "No innate passives active" : "";
+        String innateAttributeSummary = innateAttributeEntries.isEmpty() ? "No innate attribute bonuses" : "";
 
         return new AggregatedPassiveSections(List.copyOf(passiveEntries),
-                List.copyOf(innateEntries),
+                List.copyOf(innatePassiveEntries),
+                List.copyOf(innateAttributeEntries),
                 passiveSummary,
-                innateSummary);
+                innatePassiveSummary,
+                innateAttributeSummary);
     }
 
     private List<AugmentEntry> buildAugmentEntries(@Nonnull PlayerData playerData) {
@@ -409,7 +380,31 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         return List.of();
     }
 
-    private List<PassiveEntry> buildInnateEntries(@Nonnull List<RacePassiveDefinition> definitions,
+    private List<PassiveEntry> buildInnatePlayerPassiveEntries(@Nonnull PlayerData playerData) {
+        if (passiveManager == null) {
+            return List.of();
+        }
+
+        PassiveManager.PassiveSyncResult syncResult = passiveManager.syncPassives(playerData);
+        if (syncResult == null || syncResult.snapshots() == null || syncResult.snapshots().isEmpty()) {
+            return List.of();
+        }
+
+        List<PassiveEntry> entries = new ArrayList<>();
+        for (PassiveType type : PassiveType.values()) {
+            PassiveManager.PassiveSnapshot snapshot = syncResult.snapshots().get(type);
+            if (snapshot == null || !snapshot.isUnlocked()) {
+                continue;
+            }
+            String label = type.getDisplayName() + " (Lv " + snapshot.level() + ")";
+            String valueText = type.formatValue(snapshot.value());
+            entries.add(new PassiveEntry(label, valueText));
+        }
+        entries.sort(Comparator.comparing(PassiveEntry::label));
+        return entries;
+    }
+
+    private List<PassiveEntry> buildInnateAttributeEntries(@Nonnull List<RacePassiveDefinition> definitions,
             @Nonnull PlayerProfile profile) {
         if (definitions.isEmpty()) {
             return List.of();
@@ -539,19 +534,6 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         }
     }
 
-    private void populateSkillPassiveEntries(@Nonnull UICommandBuilder ui,
-            @Nonnull List<SkillPassiveEntry> entries) {
-        ui.clear("#SkillPassiveEntries");
-        for (int i = 0; i < entries.size(); i++) {
-            SkillPassiveEntry entry = entries.get(i);
-            ui.append("#SkillPassiveEntries", "Pages/Profile/ProfileSkillPassiveEntry.ui");
-            String base = "#SkillPassiveEntries[" + i + "]";
-            ui.set(base + " #PassiveName.Text", entry.label());
-            ui.set(base + " #PassiveValue.Text", entry.value());
-            ui.set(base + " #PassiveLevel.Text", entry.level());
-        }
-    }
-
     private void applyAttributeDisplay(@Nonnull UICommandBuilder ui,
             @Nonnull String valueSelector,
             @Nonnull String levelSelector,
@@ -656,13 +638,12 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     private record AugmentEntry(String id, String tier, String value, String source) {
     }
 
-    private record SkillPassiveEntry(String label, String value, String level) {
-    }
-
     private record AggregatedPassiveSections(List<PassiveEntry> passiveEntries,
-            List<PassiveEntry> innateEntries,
+            List<PassiveEntry> innatePassiveEntries,
+            List<PassiveEntry> innateAttributeEntries,
             String passiveSummary,
-            String innateSummary) {
+            String innatePassiveSummary,
+            String innateAttributeSummary) {
     }
 
     private record AggregatedPassiveProps(Double threshold,

@@ -165,6 +165,7 @@ public class PlayerDataManager {
                         .replace("\noptions:", "\n\noptions:")
                         .replace("\nprofiles:", "\n\nprofiles:")
                         .replace("\nrace:", "\n\nrace:")
+                        .replace("\naugments:", "\n\naugments:")
                         .replace("\npassives:", "\n\npassives:");
 
                 if (!isYamlRoundTripSafe(yamlContent)) {
@@ -421,11 +422,21 @@ public class PlayerDataManager {
             }
         }
 
-        Map<String, Object> passives = castToStringObjectMap(source.get("passives"));
-        if (passives != null) {
-            for (PassiveType passiveType : PassiveType.values()) {
-                Object value = passives.get(passiveType.name());
-                profile.setPassiveLevel(passiveType, parseInt(value, 0));
+        Map<String, Object> augments = castToStringObjectMap(source.get("augments"));
+
+        Map<String, Object> passivesNode = castToStringObjectMap(source.get("passives"));
+        boolean loadedPassives = false;
+        if (passivesNode != null) {
+            loadedPassives = loadPassiveLevels(profile, passivesNode);
+        }
+
+        if (augments == null && passivesNode != null && !loadedPassives) {
+            // Legacy fallback: previously stored augments under "passives".
+            augments = passivesNode;
+        }
+        if (augments != null) {
+            for (Map.Entry<String, Object> entry : augments.entrySet()) {
+                profile.setAugmentLevel(entry.getKey(), parseInt(entry.getValue(), 0));
             }
         }
 
@@ -468,6 +479,36 @@ public class PlayerDataManager {
             return 1;
         }
         return parsed;
+    }
+
+    private boolean loadPassiveLevels(PlayerProfile profile, Map<String, Object> node) {
+        boolean loaded = false;
+        for (Map.Entry<String, Object> entry : node.entrySet()) {
+            PassiveType type = resolvePassiveType(entry.getKey());
+            if (type == null) {
+                continue;
+            }
+            int level = parseInt(entry.getValue(), profile.getPassiveLevel(type));
+            profile.setPassiveLevel(type, level);
+            loaded = true;
+        }
+        return loaded;
+    }
+
+    private PassiveType resolvePassiveType(Object rawKey) {
+        if (!(rawKey instanceof String key)) {
+            return null;
+        }
+        String normalized = key.trim();
+        for (PassiveType type : PassiveType.values()) {
+            if (type.getConfigKey().equalsIgnoreCase(normalized)) {
+                return type;
+            }
+            if (type.name().equalsIgnoreCase(normalized)) {
+                return type;
+            }
+        }
+        return null;
     }
 
     private String parseString(Object value) {
@@ -753,11 +794,20 @@ public class PlayerDataManager {
                     classesSection.put("lastChangedEpochSeconds", Math.max(primaryChanged, secondaryChanged));
                     profileMap.put("classes", classesSection);
 
+                    Map<String, Integer> profileAugments = new LinkedHashMap<>();
+                    profile.getAugments().forEach((id, level) -> profileAugments.put(id, Math.max(0, level)));
+                    profileMap.put("augments", profileAugments);
+
                     Map<String, Integer> profilePassives = new LinkedHashMap<>();
-                    for (PassiveType type : PassiveType.values()) {
-                        profilePassives.put(type.name(), profile.getPassiveLevel(type));
+                    profile.getPassiveLevels().forEach((type, level) -> {
+                        int normalized = Math.max(0, level);
+                        if (normalized > 0) {
+                            profilePassives.put(type.getConfigKey(), normalized);
+                        }
+                    });
+                    if (!profilePassives.isEmpty()) {
+                        profileMap.put("passives", profilePassives);
                     }
-                    profileMap.put("passives", profilePassives);
 
                     profilesSection.put(String.valueOf(index), profileMap);
                 });

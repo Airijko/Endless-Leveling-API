@@ -53,6 +53,7 @@ public class PlayerDataListener {
 
         if (passiveManager != null) {
             passiveManager.resetRuntimeState(uuid);
+            passiveManager.syncPassives(playerData);
             playerDataManager.save(playerData);
         }
 

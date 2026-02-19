@@ -1,4 +1,4 @@
-package com.airijko.endlessleveling.passives;
+package com.airijko.endlessleveling.passives.archetype;
 
 import com.airijko.endlessleveling.classes.CharacterClassDefinition;
 import com.airijko.endlessleveling.data.PlayerData;

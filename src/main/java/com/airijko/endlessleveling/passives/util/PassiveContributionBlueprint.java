@@ -1,4 +1,4 @@
-package com.airijko.endlessleveling.passives;
+package com.airijko.endlessleveling.passives.util;
 
 import com.airijko.endlessleveling.enums.ArchetypePassiveType;
 import com.airijko.endlessleveling.enums.DamageLayer;
@@ -9,10 +9,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
-/**
- * Lightweight descriptor linking an archetype passive to the layer/tag/stacking
- * metadata required by the combat pipeline.
- */
 public record PassiveContributionBlueprint(DamageLayer layer,
         String tag,
         PassiveStackingStyle stackingStyle) {

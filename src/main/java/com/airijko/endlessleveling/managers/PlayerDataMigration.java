@@ -198,7 +198,10 @@ public final class PlayerDataMigration {
         moveIfPresent(migrated, profile, "level");
         moveIfPresent(migrated, profile, "skillPoints");
         moveIfPresent(migrated, profile, "attributes");
-        moveIfPresent(migrated, profile, "passives");
+        moveIfPresent(migrated, profile, "augments");
+        if (!profile.containsKey("augments")) {
+            moveIfPresent(migrated, profile, "passives");
+        }
         moveIfPresent(migrated, profile, "race");
         profile.put("name", PlayerData.defaultProfileName(1));
 

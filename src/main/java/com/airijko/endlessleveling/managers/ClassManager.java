@@ -11,7 +11,7 @@ import com.airijko.endlessleveling.enums.PassiveStackingStyle;
 import com.airijko.endlessleveling.enums.PassiveTier;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.airijko.endlessleveling.races.RacePassiveDefinition;
-import com.airijko.endlessleveling.passives.PassiveDefinitionParser;
+import com.airijko.endlessleveling.passives.util.PassiveDefinitionParser;
 import com.airijko.endlessleveling.managers.ConfigManager;
 import com.hypixel.hytale.logger.HytaleLogger;
 import org.yaml.snakeyaml.Yaml;
