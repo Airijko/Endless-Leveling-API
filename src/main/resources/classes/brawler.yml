@@ -1,0 +1,26 @@
+class_name: "Brawler"
+description: "A fierce fist-fighter who thrives in close-quarters combat, using raw power and relentless aggression to overwhelm opponents."
+role: "Brawler"
+enabled: true
+icon: "Armor_Prisma_Hands"
+
+weapons:
+  - type: GAUNTLET
+    damage: 1.35
+  - type: DAGGER
+    damage: 1.05
+
+passives:
+  - type: SWIFTNESS
+    value: 0.075
+    duration: 5
+    max_stacks: 8
+  - type: BERZERKER
+    value: 0.35
+    threshold: 0.3
+  - type: INNATE_ATTRIBUTE_GAIN
+    attribute: life_force
+    value: 2.0
+  - type: INNATE_ATTRIBUTE_GAIN
+    attribute: strength
+    value: 1.2

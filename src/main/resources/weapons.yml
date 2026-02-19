@@ -23,6 +23,17 @@ types:
       - hatchet
       - battleaxe
 
+  gauntlet:
+    keywords:
+      - gauntlet
+      - gauntlets
+      - glove
+      - gloves
+      - knuckle
+      - knuckles
+      - bracer
+      - bracers
+
   bow:
     keywords:
       - bow
