@@ -6,15 +6,16 @@ icon: "Armor_Prisma_Hands"
 
 weapons:
   - type: GAUNTLET
-    damage: 1.35
+    damage: 1.25
   - type: DAGGER
     damage: 1.05
 
 passives:
-  - type: SWIFTNESS
-    value: 0.075
-    duration: 5
-    max_stacks: 8
+  - type: SECOND_WIND
+    value: 0.5
+    threshold: 0.25
+    duration: 10
+    cooldown: 60
   - type: BERZERKER
     value: 0.35
     threshold: 0.3
