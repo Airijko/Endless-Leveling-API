@@ -63,6 +63,8 @@ $C.@PageOverlay {
                             Visible: false;
                         }
 
+                        Group { Anchor: (Height: 6); }
+
                         Label #AugmentCard1Duration {
                             Text: "Duration: -";
                             Style: (FontSize: 14, TextColor: #b7c6d9, Wrap: true, HorizontalAlignment: Center);
@@ -130,6 +132,8 @@ $C.@PageOverlay {
                             Visible: false;
                         }
 
+                        Group { Anchor: (Height: 6); }
+
                         Label #AugmentCard2Duration {
                             Text: "Duration: -";
                             Style: (FontSize: 14, TextColor: #b7c6d9, Wrap: true, HorizontalAlignment: Center);
@@ -196,6 +200,8 @@ $C.@PageOverlay {
                             Style: (FontSize: 14, TextColor: #ffb3b3, Wrap: true, HorizontalAlignment: Center);
                             Visible: false;
                         }
+
+                        Group { Anchor: (Height: 6); }
 
                         Label #AugmentCard3Duration {
                             Text: "Duration: -";

@@ -98,7 +98,7 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         if (cooldownText == null) {
             ui.set(cooldownSelector + ".Visible", false);
         } else {
-            ui.set(cooldownSelector + ".Text", "Cooldown: " + cooldownText);
+            ui.set(cooldownSelector + ".Text", cooldownText);
             ui.set(cooldownSelector + ".Visible", true);
         }
 
@@ -106,7 +106,7 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         if (durationText == null) {
             ui.set(durationSelector + ".Visible", false);
         } else {
-            ui.set(durationSelector + ".Text", "Duration: " + durationText);
+            ui.set(durationSelector + ".Text", durationText);
             ui.set(durationSelector + ".Visible", true);
         }
 
@@ -148,6 +148,7 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         map.put("mana", "Mana");
         map.put("mana_from_sorcery", "Mana");
         map.put("sorcery_from_mana", "Sorcery");
+        map.put("max_distance", "Max distance (full bonus)");
         return map;
     }
 
@@ -156,15 +157,19 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         if (value == null) {
             return null;
         }
-        return formatSeconds(value);
+        return "Cooldown: " + formatSeconds(value);
     }
 
     private String formatDuration(Map<String, Object> passives) {
+        Double perStack = findNumericField(passives, "duration_per_stack");
+        if (perStack != null) {
+            return "Duration per stack: " + formatSeconds(perStack);
+        }
         Double value = findNumericField(passives, "duration", "effect_duration");
         if (value == null) {
             return null;
         }
-        return formatSeconds(value);
+        return "Duration: " + formatSeconds(value);
     }
 
     private Double findNumericField(Map<String, Object> passives, String... keys) {
@@ -193,6 +198,14 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
     private String formatDebuffs(Map<String, Object> passives) {
         return formatEffects(passives, false);
+    }
+
+    private boolean isTimingKey(String key) {
+        if (key == null) {
+            return false;
+        }
+        String lower = key.toLowerCase(Locale.ROOT);
+        return lower.contains("duration") || lower.contains("cooldown");
     }
 
     private String formatEffects(Map<String, Object> passives, boolean positives) {
@@ -247,7 +260,7 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 if (key == null) {
                     continue;
                 }
-                if (key.equalsIgnoreCase("duration") || key.toLowerCase(Locale.ROOT).contains("cooldown")) {
+                if (isTimingKey(key)) {
                     continue; // skip timing fields
                 }
                 Object val = entry.getValue();
@@ -275,6 +288,10 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             }
             Object val = entry.getValue();
 
+            if (isTimingKey(key)) {
+                continue; // timing belongs in footer
+            }
+
             // Capture standalone max_stacks entries.
             if (key.equalsIgnoreCase("max_stacks")) {
                 Integer stacks = toInteger(val);
@@ -301,6 +318,10 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     }
 
     private void collectEffect(List<String> parts, String key, Object val, boolean positives, String fallbackLabel) {
+        if (isTimingKey(key)) {
+            return; // timing values render in the footer, not the buff list
+        }
+
         Double scalar = toDouble(val);
         if (scalar != null) {
             if ((positives && scalar > 0) || (!positives && scalar < 0)) {
@@ -314,18 +335,10 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             return;
         }
 
-        Double chosen = firstNumber(nested, "value_percent", "value", "max_value", "max_value_percent",
-                "value_per_stack");
+        Double chosen = firstNumber(nested, "value", "max_value", "value_per_stack", key);
         String forcedSuffix = null;
         if (chosen == null) {
-            chosen = firstNumber(nested, key != null && key.toLowerCase(Locale.ROOT).contains("percent") ? key : null);
-        }
-        if (chosen == null) {
             return;
-        }
-
-        if (nested.containsKey("value_percent") || (key != null && key.toLowerCase(Locale.ROOT).contains("percent"))) {
-            forcedSuffix = "%";
         }
 
         if ((positives && chosen > 0) || (!positives && chosen < 0)) {
@@ -355,8 +368,8 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         String label = BUFF_NAME_OVERRIDES.getOrDefault(normalizedKey, key == null ? "" : key.replace('_', ' '));
 
         // If the key is generic, prefer the parent/fallback label.
-        if ((normalizedKey.isBlank() || normalizedKey.equals("value") || normalizedKey.equals("value_percent")
-                || normalizedKey.equals("max_value") || normalizedKey.equals("max_value_percent")
+        if ((normalizedKey.isBlank() || normalizedKey.equals("value")
+                || normalizedKey.equals("max_value")
                 || normalizedKey.equals("value_per_stack")) && fallbackLabel != null && !fallbackLabel.isBlank()) {
             label = fallbackLabel.replace('_', ' ');
         }
@@ -365,9 +378,12 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         double displayValue = value;
 
         if (suffix == null) {
-            if (normalizedKey.contains("percent") || Math.abs(value) <= 1.0) {
+            if (normalizedKey.contains("percent") || normalizedKey.contains("max_value") || Math.abs(value) <= 1.0) {
                 suffix = "%";
                 displayValue = value * 100.0;
+            } else if (normalizedKey.contains("ratio")) {
+                suffix = "x";
+                displayValue = Math.abs(value);
             } else {
                 suffix = "";
             }
@@ -375,7 +391,17 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             displayValue = value * 100.0; // ensure forced percent shows human-friendly scale
         }
 
-        String sign = displayValue > 0 ? "+" : "";
+        // Display decay-related values as losses.
+        if (normalizedKey.contains("decay")) {
+            displayValue = -Math.abs(displayValue);
+        }
+
+        String sign;
+        if ("x".equals(suffix)) {
+            sign = displayValue < 0 ? "-" : ""; // ratios show magnitude without leading plus
+        } else {
+            sign = displayValue > 0 ? "+" : "";
+        }
         return capitalize(label) + ": " + sign + formatNumber(displayValue) + suffix;
     }
 
