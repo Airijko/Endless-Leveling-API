@@ -5,14 +5,16 @@ description: "Gain 50% Sorcery while above 75% Mana. Lose 25% Sorcery when below
 category: PASSIVE_STAT
 
 passives:
-  sorcery_bonus_high:
-    value: 0.50 # +50% Sorcery
-    condition:
-      resource: MANA
-      min_percent: 0.75 # active above 75% Mana
+  buffs:
+    sorcery_bonus_high:
+      value_percent: 0.50 # +50% Sorcery
+      condition:
+        resource: MANA
+        min_percent: 0.75 # active above 75% Mana
 
-  sorcery_penalty_low:
-    value: -0.25 # -25% Sorcery
-    condition:
-      resource: MANA
-      max_percent: 0.25 # active below 25% Mana
+  debuffs:
+    sorcery_penalty_low:
+      value: -0.25 # -25% Sorcery
+      condition:
+        resource: MANA
+        max_percent: 0.25 # active below 25% Mana

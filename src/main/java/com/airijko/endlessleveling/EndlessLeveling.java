@@ -7,6 +7,7 @@ import com.airijko.endlessleveling.commands.PartyCommand;
 import com.airijko.endlessleveling.commands.RaceCommand;
 import com.airijko.endlessleveling.commands.classes.ClassCommand;
 import com.airijko.endlessleveling.commands.profile.ProfileCommand;
+import com.airijko.endlessleveling.augments.AugmentManager;
 import com.airijko.endlessleveling.augments.AugmentRuntimeManager;
 import com.airijko.endlessleveling.listeners.LuckDoubleDropSystem;
 import com.airijko.endlessleveling.listeners.OpenPlayerHudListener;
@@ -55,6 +56,7 @@ public class EndlessLeveling extends JavaPlugin {
     private ArchetypePassiveManager archetypePassiveManager;
     private PlayerAttributeManager playerAttributeManager;
     private PlayerRaceStatSystem playerRaceStatSystem;
+    private AugmentManager augmentManager;
     private AugmentRuntimeManager augmentRuntimeManager;
 
     // Getter for SkillManager
@@ -107,6 +109,10 @@ public class EndlessLeveling extends JavaPlugin {
         return augmentRuntimeManager;
     }
 
+    public AugmentManager getAugmentManager() {
+        return augmentManager;
+    }
+
     public ArchetypePassiveManager getArchetypePassiveManager() {
         return archetypePassiveManager;
     }
@@ -138,6 +144,7 @@ public class EndlessLeveling extends JavaPlugin {
         archetypePassiveManager = new ArchetypePassiveManager(raceManager, classManager);
         playerAttributeManager = new PlayerAttributeManager(raceManager);
         passiveManager = new PassiveManager(configManager);
+        augmentManager = new AugmentManager(filesManager.getAugmentsFolder().toPath());
         augmentRuntimeManager = new AugmentRuntimeManager();
         skillManager = new SkillManager(filesManager, playerAttributeManager, archetypePassiveManager, passiveManager);
         playerDataManager = new PlayerDataManager(filesManager, skillManager, raceManager, classManager);
@@ -200,6 +207,10 @@ public class EndlessLeveling extends JavaPlugin {
         }
         this.getCommandRegistry().registerCommand(new RaceCommand(raceManager, playerDataManager));
         this.getCommandRegistry().registerCommand(new ClassCommand(classManager, playerDataManager));
+
+        if (augmentManager != null) {
+            augmentManager.load();
+        }
 
         LOGGER.atInfo().log("Plugin initialized! Plugin folder: %s",
                 filesManager.getPluginFolder().getAbsolutePath());

@@ -7,6 +7,7 @@ category: PASSIVE_STAT
 passives:
   taunt_radius:
     value: 20 # 20 block radius
-  resistance_bonus:
-    value: 0.25 # +25% damage reduction against taunted enemies
+  buffs:
+    resistance:
+      value: 0.25 # +25% damage reduction against taunted enemies
   pve_only: true # only applies in PvE

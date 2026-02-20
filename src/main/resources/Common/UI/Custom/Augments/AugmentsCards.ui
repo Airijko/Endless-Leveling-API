@@ -1,6 +1,7 @@
 $C = "../Common.ui";
 
-// Augments page showing three hard-coded cards side by side, each using DecoratedContainer.
+// Augments page showing three randomly selected augment cards. Title/description
+// are filled in by AugmentsUIPage at runtime.
 @ButtonClusterWidth = 180;
 
 $C.@PageOverlay {
@@ -12,63 +13,201 @@ $C.@PageOverlay {
             Anchor: (Width: 924);
             Padding: (Full: 12);
 
-        // Card 1
-        $C.@DecoratedContainer {
-            Anchor: (Width: 300, Height: 480);
+            // Card 1
+            $C.@DecoratedContainer {
+                Anchor: (Width: 300, Height: 480);
 
-            #Title {
-                Group { $C.@Title { @Text = "AUGMENT ONE"; } }
-            }
+                #Title {
+                    Group {
+                        $C.@Title #AugmentCard1Title { @Text = "AUGMENT"; }
+                    }
+                }
 
-            #Content {
-                LayoutMode: Middle;
-                Padding: (Full: 14);
+                #Content {
+                    LayoutMode: Top;
+                    Padding: (Full: 14);
 
-                Label {
-                    Text: "Augment One";
-                    Style: (FontSize: 16, TextColor: #e6edf5, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
+                    Group {
+                        LayoutMode: Top;
+                        Anchor: (Width: 240);
+
+                        Group {
+                            Anchor: (Width: 100, Height: 100);
+                            LayoutMode: Middle;
+                            Background: #050b16(0.65);
+
+                            ItemIcon #AugmentCard1Icon {
+                                Anchor: (Width: 90, Height: 90);
+                                Visible: false;
+                            }
+                        }
+
+                        Group { Anchor: (Height: 10); }
+
+                        Label #AugmentCard1Description {
+                            Text: "Loading augment...";
+                            Style: (FontSize: 16, TextColor: #e6edf5, RenderBold: true, Wrap: true, HorizontalAlignment: Center, VerticalAlignment: Center);
+                        }
+
+                        Group { Anchor: (Height: 8); }
+
+                        Label #AugmentCard1Cooldown {
+                            Text: "Cooldown: -";
+                            Style: (FontSize: 14, TextColor: #b7c6d9, Wrap: true, HorizontalAlignment: Center);
+                            Visible: false;
+                        }
+
+                        Label #AugmentCard1Duration {
+                            Text: "Duration: -";
+                            Style: (FontSize: 14, TextColor: #b7c6d9, Wrap: true, HorizontalAlignment: Center);
+                            Visible: false;
+                        }
+
+                        Label #AugmentCard1Buffs {
+                            Text: "Buffs: -";
+                            Style: (FontSize: 14, TextColor: #cdd9ec, Wrap: true, HorizontalAlignment: Center);
+                            Visible: false;
+                        }
+
+                        Label #AugmentCard1Debuffs {
+                            Text: "Debuffs: -";
+                            Style: (FontSize: 14, TextColor: #ffb3b3, Wrap: true, HorizontalAlignment: Center);
+                            Visible: false;
+                        }
+                    }
                 }
             }
-        }
 
-        Group { Anchor: (Width: 12); }
+            Group { Anchor: (Width: 12); }
 
-        // Card 2
-        $C.@DecoratedContainer {
-            Anchor: (Width: 300, Height: 480);
+            // Card 2
+            $C.@DecoratedContainer {
+                Anchor: (Width: 300, Height: 480);
 
-            #Title {
-                Group { $C.@Title { @Text = "AUGMENT TWO"; } }
-            }
+                #Title {
+                    Group {
+                        $C.@Title #AugmentCard2Title { @Text = "AUGMENT"; }
+                    }
+                }
 
-            #Content {
-                LayoutMode: Middle;
-                Padding: (Full: 14);
+                #Content {
+                    LayoutMode: Top;
+                    Padding: (Full: 14);
 
-                Label {
-                    Text: "Augment Two";
-                    Style: (FontSize: 16, TextColor: #e6edf5, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
+                    Group {
+                        LayoutMode: Top;
+                        Anchor: (Width: 240);
+
+                        Group {
+                            Anchor: (Width: 100, Height: 100);
+                            LayoutMode: Middle;
+                            Background: #050b16(0.65);
+
+                            ItemIcon #AugmentCard2Icon {
+                                Anchor: (Width: 90, Height: 90);
+                                Visible: false;
+                            }
+                        }
+
+                        Group { Anchor: (Height: 10); }
+
+                        Label #AugmentCard2Description {
+                            Text: "Loading augment...";
+                            Style: (FontSize: 16, TextColor: #e6edf5, RenderBold: true, Wrap: true, HorizontalAlignment: Center, VerticalAlignment: Center);
+                        }
+
+                        Group { Anchor: (Height: 8); }
+
+                        Label #AugmentCard2Cooldown {
+                            Text: "Cooldown: -";
+                            Style: (FontSize: 14, TextColor: #b7c6d9, Wrap: true, HorizontalAlignment: Center);
+                            Visible: false;
+                        }
+
+                        Label #AugmentCard2Duration {
+                            Text: "Duration: -";
+                            Style: (FontSize: 14, TextColor: #b7c6d9, Wrap: true, HorizontalAlignment: Center);
+                            Visible: false;
+                        }
+
+                        Label #AugmentCard2Buffs {
+                            Text: "Buffs: -";
+                            Style: (FontSize: 14, TextColor: #cdd9ec, Wrap: true, HorizontalAlignment: Center);
+                            Visible: false;
+                        }
+
+                        Label #AugmentCard2Debuffs {
+                            Text: "Debuffs: -";
+                            Style: (FontSize: 14, TextColor: #ffb3b3, Wrap: true, HorizontalAlignment: Center);
+                            Visible: false;
+                        }
+                    }
                 }
             }
-        }
 
-        Group { Anchor: (Width: 12); }
+            Group { Anchor: (Width: 12); }
 
             // Card 3
             $C.@DecoratedContainer {
                 Anchor: (Width: 300, Height: 480);
 
                 #Title {
-                    Group { $C.@Title { @Text = "AUGMENT THREE"; } }
+                    Group {
+                        $C.@Title #AugmentCard3Title { @Text = "AUGMENT"; }
+                    }
                 }
 
                 #Content {
-                    LayoutMode: Middle;
+                    LayoutMode: Top;
                     Padding: (Full: 14);
 
-                    Label {
-                        Text: "Augment Three";
-                        Style: (FontSize: 16, TextColor: #e6edf5, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
+                    Group {
+                        LayoutMode: Top;
+                        Anchor: (Width: 240);
+
+                        Group {
+                            Anchor: (Width: 100, Height: 100);
+                            LayoutMode: Middle;
+                            Background: #050b16(0.65);
+
+                            ItemIcon #AugmentCard3Icon {
+                                Anchor: (Width: 90, Height: 90);
+                                Visible: false;
+                            }
+                        }
+
+                        Group { Anchor: (Height: 10); }
+
+                        Label #AugmentCard3Description {
+                            Text: "Loading augment...";
+                            Style: (FontSize: 16, TextColor: #e6edf5, RenderBold: true, Wrap: true, HorizontalAlignment: Center, VerticalAlignment: Center);
+                        }
+
+                        Group { Anchor: (Height: 8); }
+
+                        Label #AugmentCard3Cooldown {
+                            Text: "Cooldown: -";
+                            Style: (FontSize: 14, TextColor: #b7c6d9, Wrap: true, HorizontalAlignment: Center);
+                            Visible: false;
+                        }
+
+                        Label #AugmentCard3Duration {
+                            Text: "Duration: -";
+                            Style: (FontSize: 14, TextColor: #b7c6d9, Wrap: true, HorizontalAlignment: Center);
+                            Visible: false;
+                        }
+
+                        Label #AugmentCard3Buffs {
+                            Text: "Buffs: -";
+                            Style: (FontSize: 14, TextColor: #cdd9ec, Wrap: true, HorizontalAlignment: Center);
+                            Visible: false;
+                        }
+
+                        Label #AugmentCard3Debuffs {
+                            Text: "Debuffs: -";
+                            Style: (FontSize: 14, TextColor: #ffb3b3, Wrap: true, HorizontalAlignment: Center);
+                            Visible: false;
+                        }
                     }
                 }
             }

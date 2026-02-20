@@ -4,7 +4,7 @@ tier: ELITE
 description: "Strike first to deal overwhelming opening damage."
 
 passives:
-  first_strike:
+  bonus_damage_on_hit:
     value: 3.0 # +300% damage on first hit
     cooldown: 20 # seconds between first-strike windows
     category: ON_HIT

@@ -5,7 +5,10 @@ description: "Gain 50% Haste but lose 10% Strength."
 category: PASSIVE_STAT
 
 passives:
-  haste:
-    value: 0.50 # +50% Haste
-  strength_penalty:
-    value: -0.10 # -10% Strength
+  buffs:
+    haste:
+      value: 0.50 # +50% Haste
+
+  debuffs:
+    strength:
+      value: -0.10 # -10% Strength

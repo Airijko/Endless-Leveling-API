@@ -5,10 +5,11 @@ description: "Gain 0–50% Life Steal based on missing health (up to 25% HP miss
 category: ON_HIT
 
 passives:
-  life_steal_scaling:
-    max_value: 0.50 # 50% life steal at max missing HP
-    max_missing_health_percent: 0.25 # scales only up to 25% missing HP
-    scaling_stat: missing_health_percent
+  buffs:
+    life_steal_scaling:
+      max_value: 0.50 # 50% life steal at max missing HP
+      max_missing_health_percent: 0.25 # scales only up to 25% missing HP
+      scaling_stat: missing_health_percent
 
   heal_to_damage:
     value: 0.10 # 10% of healed HP added to next attack as bonus damage
