@@ -3,6 +3,7 @@ package com.airijko.endlessleveling.listeners;
 import com.airijko.endlessleveling.data.PlayerData;
 import com.airijko.endlessleveling.managers.PlayerDataManager;
 import com.airijko.endlessleveling.managers.PassiveManager;
+import com.airijko.endlessleveling.enums.PassiveType;
 import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveManager;
 import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveSnapshot;
 import com.airijko.endlessleveling.enums.ArchetypePassiveType;
@@ -107,7 +108,7 @@ public class LuckDoubleDropSystem {
                 ? archetypePassiveManager.getSnapshot(playerData)
                 : ArchetypePassiveSnapshot.empty();
 
-        double luckValue = snapshot.getValue(ArchetypePassiveType.LUCK);
+        double luckValue = getLuckValue(playerData, snapshot);
         if (luckValue <= 0.0D) {
             return;
         }
@@ -252,5 +253,15 @@ public class LuckDoubleDropSystem {
     private String formatDropName(@Nonnull ItemStack stack) {
         String itemId = stack.getItemId();
         return itemId == null || itemId.isBlank() ? "loot" : itemId;
+    }
+
+    private double getLuckValue(PlayerData playerData, ArchetypePassiveSnapshot snapshot) {
+        double archetypeLuck = snapshot == null ? 0.0D : snapshot.getValue(ArchetypePassiveType.LUCK);
+        if (passiveManager == null || playerData == null) {
+            return archetypeLuck;
+        }
+        PassiveManager.PassiveSnapshot passiveSnapshot = passiveManager.getSnapshot(playerData, PassiveType.LUCK);
+        double innateLuck = passiveSnapshot != null && passiveSnapshot.isUnlocked() ? passiveSnapshot.value() : 0.0D;
+        return archetypeLuck + innateLuck;
     }
 }

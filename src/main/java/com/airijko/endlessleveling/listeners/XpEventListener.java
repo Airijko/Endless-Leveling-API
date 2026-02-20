@@ -5,6 +5,8 @@ import com.airijko.endlessleveling.managers.PartyManager;
 import com.airijko.endlessleveling.managers.PassiveManager;
 import com.airijko.endlessleveling.managers.PlayerDataManager;
 import com.airijko.endlessleveling.managers.MobLevelingManager;
+import com.airijko.endlessleveling.data.PlayerData;
+import com.airijko.endlessleveling.enums.PassiveType;
 import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveManager;
 import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveSnapshot;
 import com.airijko.endlessleveling.enums.ArchetypePassiveType;
@@ -115,8 +117,19 @@ public class XpEventListener extends DeathSystems.OnDeathSystem {
         ArchetypePassiveSnapshot snapshot = archetypePassiveManager != null
                 ? archetypePassiveManager.getSnapshot(playerData)
                 : ArchetypePassiveSnapshot.empty();
-        if (passiveManager != null && snapshot.getValue(ArchetypePassiveType.LUCK) > 0.0D) {
+        double totalLuck = getLuckValue(playerData, snapshot);
+        if (passiveManager != null && totalLuck > 0.0D) {
             passiveManager.openMobDropWindow(playerUuid);
         }
+    }
+
+    private double getLuckValue(PlayerData playerData, ArchetypePassiveSnapshot snapshot) {
+        double archetypeLuck = snapshot == null ? 0.0D : snapshot.getValue(ArchetypePassiveType.LUCK);
+        if (passiveManager == null || playerData == null) {
+            return archetypeLuck;
+        }
+        var passiveSnapshot = passiveManager.getSnapshot(playerData, PassiveType.LUCK);
+        double innateLuck = passiveSnapshot != null && passiveSnapshot.isUnlocked() ? passiveSnapshot.value() : 0.0D;
+        return archetypeLuck + innateLuck;
     }
 }
