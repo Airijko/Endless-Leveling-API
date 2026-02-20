@@ -1,0 +1,79 @@
+$C = "../Common.ui";
+
+// Augments page showing three hard-coded cards side by side, each using DecoratedContainer.
+@ButtonClusterWidth = 180;
+
+$C.@PageOverlay {
+    Group {
+        LayoutMode: Middle;
+
+        Group {
+            LayoutMode: Left;
+            Anchor: (Width: 924);
+            Padding: (Full: 12);
+
+        // Card 1
+        $C.@DecoratedContainer {
+            Anchor: (Width: 300, Height: 480);
+
+            #Title {
+                Group { $C.@Title { @Text = "AUGMENT ONE"; } }
+            }
+
+            #Content {
+                LayoutMode: Middle;
+                Padding: (Full: 14);
+
+                Label {
+                    Text: "Augment One";
+                    Style: (FontSize: 16, TextColor: #e6edf5, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
+                }
+            }
+        }
+
+        Group { Anchor: (Width: 12); }
+
+        // Card 2
+        $C.@DecoratedContainer {
+            Anchor: (Width: 300, Height: 480);
+
+            #Title {
+                Group { $C.@Title { @Text = "AUGMENT TWO"; } }
+            }
+
+            #Content {
+                LayoutMode: Middle;
+                Padding: (Full: 14);
+
+                Label {
+                    Text: "Augment Two";
+                    Style: (FontSize: 16, TextColor: #e6edf5, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
+                }
+            }
+        }
+
+        Group { Anchor: (Width: 12); }
+
+            // Card 3
+            $C.@DecoratedContainer {
+                Anchor: (Width: 300, Height: 480);
+
+                #Title {
+                    Group { $C.@Title { @Text = "AUGMENT THREE"; } }
+                }
+
+                #Content {
+                    LayoutMode: Middle;
+                    Padding: (Full: 14);
+
+                    Label {
+                        Text: "Augment Three";
+                        Style: (FontSize: 16, TextColor: #e6edf5, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
+                    }
+                }
+            }
+        }
+    }
+}
+
+$C.@BackButton {}

@@ -1,9 +1,0 @@
-$C = "../../Common.ui";
-
-$C.@PageOverlay {
-	$C.@DecoratedContainer {
-		Anchor: (Width: 800, Height: 500);
-
-
-	}
-}

@@ -19,7 +19,10 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.util.NotificationUtil;
 
 import javax.annotation.Nonnull;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Handles all skill points and modifiers.
@@ -101,13 +104,47 @@ public class SkillManager {
         String path = "skill_attributes." + type.getConfigKey();
         Object value = config.get(path, 0.0);
 
-        if (value instanceof Number number) {
-            double result = number.doubleValue();
-            return result;
-        } else {
-            LOGGER.atWarning().log("getSkillAttributeConfigValue: Invalid value at path=%s, defaulting to 0", path);
+        AttributeConfig parsed = parseAttributeConfig(type, value, path);
+        if (!parsed.enabled()) {
             return 0.0;
         }
+        return parsed.perLevel();
+    }
+
+    private AttributeConfig parseAttributeConfig(SkillAttributeType type, Object rawValue, String path) {
+        // Support legacy scalar values
+        if (rawValue instanceof Number number) {
+            return new AttributeConfig(true, number.doubleValue());
+        }
+
+        if (rawValue instanceof Map<?, ?> map) {
+            boolean enabled = true;
+            double perLevel = 0.0;
+
+            Object enabledNode = map.get("enabled");
+            if (enabledNode instanceof Boolean bool) {
+                enabled = bool;
+            }
+
+            Object perLevelNode = map.get("per_level");
+            if (!(perLevelNode instanceof Number)) {
+                perLevelNode = map.get("value"); // fallback key
+            }
+            if (perLevelNode instanceof Number num) {
+                perLevel = num.doubleValue();
+            }
+
+            if (perLevelNode == null) {
+                LOGGER.atWarning().log("parseAttributeConfig: Missing per_level/value for %s", path);
+            }
+            return new AttributeConfig(enabled, perLevel);
+        }
+
+        LOGGER.atWarning().log("parseAttributeConfig: Invalid node at %s; defaulting to enabled=false", path);
+        return new AttributeConfig(false, 0.0);
+    }
+
+    private record AttributeConfig(boolean enabled, double perLevel) {
     }
 
     /** Ensure flow config exists after renaming intelligence -> flow. */

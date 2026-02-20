@@ -7,16 +7,36 @@
 # Values applied PER PLAYER LEVEL
 # ------------------------------------------------------------
 skill_attributes:
-  life_force: 2.0 # Health gained per level
-  strength: 0.5 # Damage bonus per level
-  defense: 0.5 # Damage reduction per level
-  haste: 0.75 # Movement speed per level
-  precision: 0.8 # Critical chance per level
-  ferocity: 1.2 # Critical damage per level
-  stamina: 0.2 # Stamina per level
-  sorcery: 0.75 # Magic damage per level (staffs only)
-  flow: 0.5 # Flow (mana) per level
-  discipline: 0.5 # XP gain bonus percent per level
+  life_force:
+    enabled: true
+    per_level: 2.0 # Health gained per level
+  strength:
+    enabled: true
+    per_level: 0.5 # Damage bonus per level
+  defense:
+    enabled: true
+    per_level: 0.5 # Damage reduction per level
+  haste:
+    enabled: true
+    per_level: 0.75 # Movement speed per level
+  precision:
+    enabled: true
+    per_level: 0.8 # Critical chance per level
+  ferocity:
+    enabled: true
+    per_level: 1.2 # Critical damage per level
+  stamina:
+    enabled: true
+    per_level: 0.2 # Stamina per level
+  sorcery:
+    enabled: true
+    per_level: 0.75 # Magic damage per level (staffs only)
+  flow:
+    enabled: true
+    per_level: 0.5 # Flow (mana) per level
+  discipline:
+    enabled: true
+    per_level: 0.5 # XP gain bonus percent per level
 
 # ------------------------------------------------------------
 # PASSIVE SKILLS
@@ -107,4 +127,4 @@ enable_logging: false # Enable detailed logging output
 # INTERNAL CONFIG VERSION
 # DO NOT MODIFY
 # ------------------------------------------------------------
-config_version: 14
+config_version: 17

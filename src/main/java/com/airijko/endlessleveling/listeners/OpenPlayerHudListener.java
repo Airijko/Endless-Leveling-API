@@ -18,21 +18,26 @@ public class OpenPlayerHudListener {
     public static void openGui(PlayerReadyEvent event) {
         Player player = event.getPlayer();
         Ref<EntityStore> ref = event.getPlayerRef();
-        Store<EntityStore> store = ref.getStore();
-        PlayerRef playerRef = store.getComponent(ref, PlayerRef.getComponentType());
         World world = player.getWorld();
 
         assert world != null;
-        assert playerRef != null;
 
-        PlayerData data = EndlessLeveling.getInstance()
-                .getPlayerDataManager()
-                .get(playerRef.getUuid());
+        CompletableFuture.runAsync(() -> {
+            Store<EntityStore> store = ref.getStore();
+            PlayerRef playerRef = store.getComponent(ref, PlayerRef.getComponentType());
+            if (playerRef == null) {
+                return;
+            }
 
-        if (data == null || !data.isPlayerHudEnabled()) {
-            return;
-        }
+            PlayerData data = EndlessLeveling.getInstance()
+                    .getPlayerDataManager()
+                    .get(playerRef.getUuid());
 
-        CompletableFuture.runAsync(() -> PlayerHud.open(player, playerRef), world);
+            if (data == null || !data.isPlayerHudEnabled()) {
+                return;
+            }
+
+            PlayerHud.open(player, playerRef);
+        }, world);
     }
 }
