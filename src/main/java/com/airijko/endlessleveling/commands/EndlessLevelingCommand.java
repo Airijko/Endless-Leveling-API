@@ -9,6 +9,7 @@ import com.airijko.endlessleveling.commands.subcommands.ResetSkillPointsCommand;
 import com.airijko.endlessleveling.commands.subcommands.ReloadCommand;
 import com.airijko.endlessleveling.commands.subcommands.SetLevelCommand;
 import com.airijko.endlessleveling.commands.subcommands.StatTestCommand;
+import com.airijko.endlessleveling.ui.AugmentsUIPage;
 import com.airijko.endlessleveling.ui.SkillsUIPage;
 import com.airijko.endlessleveling.ui.LeaderboardsUIPage;
 import com.airijko.endlessleveling.ui.ProfileUIPage;
@@ -48,6 +49,8 @@ public class EndlessLevelingCommand extends AbstractPlayerCommand {
                                 playerRef -> new ProfileUIPage(playerRef, CustomPageLifetime.CanDismiss));
                 addGuiShortcut("attributes", "Open the EndlessLeveling Skills page",
                                 playerRef -> new SkillsUIPage(playerRef, CustomPageLifetime.CanDismiss));
+                addGuiShortcut("augments", "Open the EndlessLeveling Augments page",
+                                playerRef -> new AugmentsUIPage(playerRef, CustomPageLifetime.CanDismiss));
         }
 
         @Override
