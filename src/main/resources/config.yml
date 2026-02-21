@@ -59,19 +59,19 @@ passives:
     max_level: 10
     tier_interval: 8
 
-  signature_gain:
+  luck:
     enabled: true
     unlock_level: 20
-    base_value: 40.0
-    value_per_level: 40.0
+    base_value: 10.0
+    value_per_level: 10.0
     max_level: 10
     tier_interval: 7
 
-  luck:
+  signature_gain:
     enabled: true
     unlock_level: 15
-    base_value: 10.0
-    value_per_level: 10.0
+    base_value: 40.0
+    value_per_level: 40.0
     max_level: 10
     tier_interval: 7
 
