@@ -197,6 +197,7 @@ public interface AugmentHooks {
     }
 
     public static final class KillContext extends BaseContext {
+        private final Ref<EntityStore> killerRef;
         private final Ref<EntityStore> victimRef;
         private final CommandBuffer<EntityStore> commandBuffer;
         private final EntityStatMap victimStats;
@@ -204,13 +205,19 @@ public interface AugmentHooks {
         public KillContext(PlayerData playerData,
                 AugmentRuntimeManager.AugmentRuntimeState runtimeState,
                 SkillManager skillManager,
+                Ref<EntityStore> killerRef,
                 Ref<EntityStore> victimRef,
                 CommandBuffer<EntityStore> commandBuffer,
                 EntityStatMap victimStats) {
             super(playerData, runtimeState, skillManager);
+            this.killerRef = killerRef;
             this.victimRef = victimRef;
             this.commandBuffer = commandBuffer;
             this.victimStats = victimStats;
+        }
+
+        public Ref<EntityStore> getKillerRef() {
+            return killerRef;
         }
 
         public Ref<EntityStore> getVictimRef() {

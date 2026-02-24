@@ -1,8 +1,14 @@
 package com.airijko.endlessleveling.augments;
 
+import com.airijko.endlessleveling.augments.AugmentRuntimeManager.AugmentRuntimeState;
+import com.hypixel.hytale.component.CommandBuffer;
+import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
 import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import java.util.Map;
 
@@ -99,8 +105,18 @@ public final class AugmentUtils {
     public static boolean consumeCooldown(AugmentRuntimeManager.AugmentRuntimeState runtimeState,
             String augmentId,
             long cooldownMillis) {
+        return consumeCooldown(runtimeState, augmentId, augmentId, cooldownMillis);
+    }
+
+    public static boolean consumeCooldown(AugmentRuntimeManager.AugmentRuntimeState runtimeState,
+            String augmentId,
+            String displayName,
+            long cooldownMillis) {
         if (!isCooldownReady(runtimeState, augmentId, cooldownMillis)) {
             return false;
+        }
+        if (runtimeState != null && cooldownMillis > 0L) {
+            runtimeState.setCooldown(augmentId, displayName, System.currentTimeMillis() + cooldownMillis);
         }
         markProc(runtimeState, augmentId, cooldownMillis);
         return true;
@@ -126,6 +142,47 @@ public final class AugmentUtils {
         }
         double healAmount = damageDealt * (lifeStealPercent / 100.0D);
         heal(attackerStats, healAmount);
+    }
+
+    public static PlayerRef getPlayerRef(CommandBuffer<EntityStore> commandBuffer, Ref<EntityStore> ref) {
+        if (commandBuffer == null || ref == null) {
+            return null;
+        }
+        return commandBuffer.getComponent(ref, PlayerRef.getComponentType());
+    }
+
+    public static void sendAugmentMessage(PlayerRef playerRef, String text) {
+        if (playerRef == null || !playerRef.isValid() || text == null || text.isBlank()) {
+            return;
+        }
+        playerRef.sendMessage(Message.raw(text).color("#f7c74f"));
+    }
+
+    public static int setStacksWithNotify(AugmentRuntimeState runtimeState,
+            String augmentId,
+            int desiredStacks,
+            int maxStacks,
+            PlayerRef playerRef,
+            String displayName) {
+        if (runtimeState == null || augmentId == null) {
+            return 0;
+        }
+        int clampedMax = Math.max(1, maxStacks);
+        int current = runtimeState.getState(augmentId).getStacks();
+        int newStacks = Math.max(0, Math.min(clampedMax, desiredStacks));
+        if (newStacks == current) {
+            return newStacks;
+        }
+        runtimeState.getState(augmentId).setStacks(newStacks);
+        if (playerRef != null && playerRef.isValid()) {
+            String name = displayName != null && !displayName.isBlank() ? displayName : augmentId;
+            if (newStacks >= clampedMax) {
+                sendAugmentMessage(playerRef, String.format("%s at max stacks (%d).", name, newStacks));
+            } else if (newStacks > current) {
+                sendAugmentMessage(playerRef, String.format("%s: %d/%d stacks.", name, newStacks, clampedMax));
+            }
+        }
+        return newStacks;
     }
 
     public static float applyMultiplier(float baseDamage, double bonusMultiplier) {

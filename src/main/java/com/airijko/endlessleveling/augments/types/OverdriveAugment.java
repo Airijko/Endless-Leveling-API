@@ -3,6 +3,7 @@ package com.airijko.endlessleveling.augments.types;
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentHooks;
 import com.airijko.endlessleveling.augments.AugmentRuntimeManager.AugmentRuntimeState;
+import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
 import com.airijko.endlessleveling.augments.YamlAugment;
 
@@ -30,8 +31,12 @@ public final class OverdriveAugment extends YamlAugment
             return context.getDamage();
         }
         var state = runtime.getState(ID);
-        int stacks = Math.min(maxStacks, state.getStacks() + 1);
-        state.setStacks(stacks);
+        int stacks = AugmentUtils.setStacksWithNotify(runtime,
+                ID,
+                state.getStacks() + 1,
+                maxStacks,
+                AugmentUtils.getPlayerRef(context.getCommandBuffer(), context.getAttackerRef()),
+                getName());
         double bonus = stacks * critDamagePerStack;
         return (float) (context.getDamage() * (1.0D + bonus));
     }

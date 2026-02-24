@@ -34,8 +34,12 @@ public final class PredatorAugment extends YamlAugment
             return;
         }
         var state = runtime.getState(ID);
-        int stacks = Math.min(maxStacks, state.getStacks() + 1);
-        state.setStacks(stacks);
+        int stacks = AugmentUtils.setStacksWithNotify(runtime,
+                ID,
+                state.getStacks() + 1,
+                maxStacks,
+                AugmentUtils.getPlayerRef(context.getCommandBuffer(), context.getKillerRef()),
+                getName());
         state.setExpiresAt(System.currentTimeMillis() + durationMillis);
     }
 

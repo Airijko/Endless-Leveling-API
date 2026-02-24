@@ -41,8 +41,12 @@ public final class RagingMomentumAugment extends YamlAugment implements AugmentH
 
         int stacks = Math.max(0, state.getStacks());
         if (stacks < maxStacks) {
-            stacks += 1;
-            state.setStacks(stacks);
+            stacks = AugmentUtils.setStacksWithNotify(runtime,
+                    ID,
+                    stacks + 1,
+                    maxStacks,
+                    AugmentUtils.getPlayerRef(context.getCommandBuffer(), context.getAttackerRef()),
+                    getName());
         }
 
         // Refresh stack duration window

@@ -85,7 +85,7 @@ public class SwiftnessKillSystem extends DeathSystems.OnDeathSystem {
 
         EntityStatMap statMap = store.getComponent(ref, EntityStatMap.getComponentType());
         if (augmentExecutor != null) {
-            augmentExecutor.handleKill(playerData, ref, commandBuffer, statMap);
+            augmentExecutor.handleKill(playerData, attackerRef, ref, commandBuffer, statMap);
         }
 
         ArchetypePassiveSnapshot snapshot = archetypePassiveManager != null

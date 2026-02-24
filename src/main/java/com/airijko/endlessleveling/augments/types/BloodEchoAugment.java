@@ -36,8 +36,12 @@ public final class BloodEchoAugment extends YamlAugment
         }
         double healAmount = context.getDamage() * percent;
         var state = runtime.getState(ID);
-        int stacks = Math.min(maxStacks, state.getStacks() + 1);
-        state.setStacks(stacks);
+        int stacks = AugmentUtils.setStacksWithNotify(runtime,
+                ID,
+                state.getStacks() + 1,
+                maxStacks,
+                AugmentUtils.getPlayerRef(context.getCommandBuffer(), context.getAttackerRef()),
+                getName());
         state.setStoredValue(state.getStoredValue() + healAmount);
         state.setExpiresAt(System.currentTimeMillis() + AugmentUtils.secondsToMillis(durationSeconds));
         return context.getDamage();

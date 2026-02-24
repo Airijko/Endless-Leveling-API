@@ -16,7 +16,9 @@ import com.airijko.endlessleveling.enums.ClassWeaponType;
 import com.airijko.endlessleveling.managers.SkillManager;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import javax.annotation.Nonnull;
@@ -58,6 +60,7 @@ public final class AugmentExecutor {
             return startingDamage;
         }
         var runtime = runtimeManager.getRuntimeState(playerData.getUuid());
+        notifyCooldowns(playerData, runtime, commandBuffer, attackerRef, augments);
         HitContext context = new HitContext(playerData, runtime, skillManager, attackerRef, targetRef, commandBuffer,
                 attackerStats, targetStats, startingDamage, critical, ranged, weaponType);
         for (Augment augment : augments) {
@@ -87,6 +90,7 @@ public final class AugmentExecutor {
             return incomingDamage;
         }
         var runtime = runtimeManager.getRuntimeState(defender.getUuid());
+        notifyCooldowns(defender, runtime, commandBuffer, defenderRef, augments);
         DamageTakenContext context = new DamageTakenContext(defender, runtime, skillManager, defenderRef, attackerRef,
                 commandBuffer, statMap, incomingDamage);
         float damage = incomingDamage;
@@ -104,6 +108,7 @@ public final class AugmentExecutor {
     }
 
     public void handleKill(@Nonnull PlayerData killer,
+            Ref<EntityStore> killerRef,
             Ref<EntityStore> victimRef,
             CommandBuffer<EntityStore> commandBuffer,
             EntityStatMap victimStats) {
@@ -112,7 +117,9 @@ public final class AugmentExecutor {
             return;
         }
         var runtime = runtimeManager.getRuntimeState(killer.getUuid());
-        KillContext context = new KillContext(killer, runtime, skillManager, victimRef, commandBuffer, victimStats);
+        notifyCooldowns(killer, runtime, commandBuffer, killerRef, augments);
+        KillContext context = new KillContext(killer, runtime, skillManager, killerRef, victimRef, commandBuffer,
+                victimStats);
         for (Augment augment : augments) {
             if (augment instanceof OnKillAugment handler) {
                 handler.onKill(context);
@@ -130,6 +137,7 @@ public final class AugmentExecutor {
             return;
         }
         var runtime = runtimeManager.getRuntimeState(playerData.getUuid());
+        notifyCooldowns(playerData, runtime, commandBuffer, playerRef, augments);
         PassiveStatContext context = new PassiveStatContext(playerData, runtime, skillManager, playerRef, commandBuffer,
                 statMap, deltaSeconds);
         for (Augment augment : augments) {
@@ -137,6 +145,43 @@ public final class AugmentExecutor {
                 handler.applyPassive(context);
             }
         }
+    }
+
+    private void notifyCooldowns(@Nonnull PlayerData playerData,
+            AugmentRuntimeManager.AugmentRuntimeState runtime,
+            CommandBuffer<EntityStore> commandBuffer,
+            Ref<EntityStore> entityRef,
+            List<Augment> augments) {
+        if (runtime == null || commandBuffer == null || entityRef == null) {
+            return;
+        }
+        PlayerRef playerRef = AugmentUtils.getPlayerRef(commandBuffer, entityRef);
+        if (playerRef == null) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        Map<String, String> names = new java.util.HashMap<>();
+        for (Augment augment : augments) {
+            names.put(augment.getId().toLowerCase(), augment.getName());
+        }
+        for (var cooldown : runtime.getCooldowns()) {
+            if (cooldown == null || cooldown.isReadyNotified()) {
+                continue;
+            }
+            if (cooldown.getExpiresAt() > 0L && now >= cooldown.getExpiresAt()) {
+                String display = names.getOrDefault(cooldown.getAugmentId(), cooldown.getDisplayName());
+                sendAugmentMessage(playerRef,
+                        String.format("%s is ready.", display != null ? display : "Augment"));
+                cooldown.setReadyNotified(true);
+            }
+        }
+    }
+
+    private void sendAugmentMessage(PlayerRef playerRef, String text) {
+        if (playerRef == null || !playerRef.isValid() || text == null || text.isBlank()) {
+            return;
+        }
+        playerRef.sendMessage(Message.raw(text).color("#f7c74f"));
     }
 
     private List<Augment> resolve(@Nonnull PlayerData playerData) {
