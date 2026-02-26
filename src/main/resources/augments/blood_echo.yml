@@ -1,12 +1,13 @@
 id: blood_echo
 name: "Blood Echo"
 tier: MYTHIC
-description: "Damage dealt is stored as Bleed on you; you heal over time from a percentage of stored Bleed, and kill cleanses the Bleed pool."
-category: ON_HIT
+description: "A portion of incoming damage is deferred as Bleed and applied over time. Killing a target cleanses all Bleed and heals you for a percentage of the execute damage dealt."
+category: ON_DAMAGE_TAKEN
 
 passives:
   heal_over_time:
-    value: 0.20 # each second, heal for 20% of currently stored Bleed
-    duration: 3 # Bleed pool expires if no new hits occur for this long
-    max_stacks: 5 # stack counter for UI/feedback
+    value: 0.30 # 30% of incoming damage is deferred as Bleed
+    duration: 3 # deferred Bleed is applied over this duration
     reset_on_kill: true # cleanse stored Bleed on kill
+  heal_on_kill:
+    value: 0.5 # heal for 50% of execute damage dealt on kill

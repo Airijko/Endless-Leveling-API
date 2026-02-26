@@ -7,43 +7,60 @@ import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
 import com.airijko.endlessleveling.augments.YamlAugment;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
+import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue;
+import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
 
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public final class BloodEchoAugment extends YamlAugment
-        implements AugmentHooks.OnHitAugment, AugmentHooks.OnKillAugment, AugmentHooks.PassiveStatAugment {
+        implements AugmentHooks.OnDamageTakenAugment, AugmentHooks.OnHitAugment, AugmentHooks.OnKillAugment,
+        AugmentHooks.PassiveStatAugment {
     public static final String ID = "blood_echo";
+    private static final Map<UUID, Double> LAST_HIT_DAMAGE = new ConcurrentHashMap<>();
 
-    private final double bleedHealPercent;
+    private final double bleedPercent;
     private final double durationSeconds;
-    private final int maxStacks;
+    private final double healOnKillPercent;
     private final boolean resetOnKill;
 
     public BloodEchoAugment(AugmentDefinition definition) {
         super(definition);
         Map<String, Object> passives = definition.getPassives();
         Map<String, Object> heal = AugmentValueReader.getMap(passives, "heal_over_time");
-        this.bleedHealPercent = AugmentValueReader.getDouble(heal, "value", 0.0D);
+        Map<String, Object> healOnKill = AugmentValueReader.getMap(passives, "heal_on_kill");
+        this.bleedPercent = Math.max(0.0D, Math.min(1.0D, AugmentValueReader.getDouble(heal, "value", 0.0D)));
         this.durationSeconds = AugmentValueReader.getDouble(heal, "duration", 3.0D);
-        this.maxStacks = AugmentValueReader.getInt(heal, "max_stacks", 5);
+        this.healOnKillPercent = Math.max(0.0D,
+                Math.min(1.0D, AugmentValueReader.getDouble(healOnKill, "value", 0.25D)));
         this.resetOnKill = AugmentValueReader.getBoolean(heal, "reset_on_kill", true);
     }
 
     @Override
-    public float onHit(AugmentHooks.HitContext context) {
+    public float onDamageTaken(AugmentHooks.DamageTakenContext context) {
         AugmentRuntimeState runtime = context.getRuntimeState();
-        if (runtime == null || bleedHealPercent <= 0.0D || context.getDamage() <= 0f) {
-            return context.getDamage();
+        float incoming = context.getIncomingDamage();
+        if (runtime == null || bleedPercent <= 0.0D || durationSeconds <= 0.0D || incoming <= 0f) {
+            return incoming;
         }
         var state = runtime.getState(ID);
-        AugmentUtils.setStacksWithNotify(runtime,
-                ID,
-                state.getStacks() + 1,
-                maxStacks,
-                AugmentUtils.getPlayerRef(context.getCommandBuffer(), context.getAttackerRef()),
-                getName());
-        state.setStoredValue(state.getStoredValue() + context.getDamage());
+        double deferred = incoming * bleedPercent;
+        float immediate = (float) Math.max(0.0D, incoming - deferred);
+        state.setStoredValue(state.getStoredValue() + deferred);
         state.setExpiresAt(System.currentTimeMillis() + AugmentUtils.secondsToMillis(durationSeconds));
+        return immediate;
+    }
+
+    @Override
+    public float onHit(AugmentHooks.HitContext context) {
+        if (context == null || context.getPlayerData() == null) {
+            return context != null ? context.getDamage() : 0f;
+        }
+        UUID playerId = context.getPlayerData().getUuid();
+        if (playerId != null && context.getDamage() > 0f) {
+            LAST_HIT_DAMAGE.put(playerId, (double) context.getDamage());
+        }
         return context.getDamage();
     }
 
@@ -53,17 +70,22 @@ public final class BloodEchoAugment extends YamlAugment
         if (!resetOnKill || runtime == null) {
             return;
         }
+
+        UUID playerId = context.getPlayerData() != null ? context.getPlayerData().getUuid() : null;
+        double executeDamage = playerId != null ? LAST_HIT_DAMAGE.getOrDefault(playerId, 0.0D) : 0.0D;
+
         var state = runtime.getState(ID);
-        if (state.getStoredValue() <= 0.0D && state.getStacks() <= 0) {
-            return;
+
+        EntityStatMap killerStats = context.getCommandBuffer() != null && context.getKillerRef() != null
+                ? context.getCommandBuffer().getComponent(context.getKillerRef(), EntityStatMap.getComponentType())
+                : null;
+        if (killerStats != null) {
+            AugmentUtils.heal(killerStats, executeDamage * healOnKillPercent);
         }
-        AugmentUtils.setStacksWithNotify(runtime,
-                ID,
-                0,
-                maxStacks,
-                AugmentUtils.getPlayerRef(context.getCommandBuffer(), context.getKillerRef()),
-                getName());
         state.clear();
+        if (playerId != null) {
+            LAST_HIT_DAMAGE.remove(playerId);
+        }
     }
 
     @Override
@@ -79,31 +101,35 @@ public final class BloodEchoAugment extends YamlAugment
         }
         long now = System.currentTimeMillis();
         if (state.isExpired(now)) {
-            AugmentUtils.setStacksWithNotify(runtime,
-                    ID,
-                    0,
-                    maxStacks,
-                    AugmentUtils.getPlayerRef(context.getCommandBuffer(), context.getPlayerRef()),
-                    getName());
             state.clear();
             return;
         }
-        double consumeAmount = state.getStoredValue()
-                * Math.max(0.0D, bleedHealPercent)
-                * Math.max(0.0D, context.getDeltaSeconds());
-        consumeAmount = Math.min(state.getStoredValue(), consumeAmount);
-        if (consumeAmount <= 0.0D) {
+
+        EntityStatValue health = stats.get(DefaultEntityStatTypes.getHealth());
+        if (health == null || health.get() <= 0f) {
             return;
         }
-        AugmentUtils.heal(stats, consumeAmount);
-        state.setStoredValue(Math.max(0.0D, state.getStoredValue() - consumeAmount));
+
+        long remainingMillis = Math.max(1L, state.getExpiresAt() - now);
+        double tickMillis = Math.max(0.0D, context.getDeltaSeconds() * 1000.0D);
+        if (tickMillis <= 0.0D) {
+            return;
+        }
+
+        double bleedDamageThisTick = state.getStoredValue() * Math.min(1.0D, tickMillis / remainingMillis);
+        if (bleedDamageThisTick <= 0.0D) {
+            return;
+        }
+
+        float currentHp = health.get();
+        float updatedHp = Math.max(0f, (float) (currentHp - bleedDamageThisTick));
+        float applied = currentHp - updatedHp;
+        if (applied <= 0f) {
+            return;
+        }
+        stats.setStatValue(DefaultEntityStatTypes.getHealth(), updatedHp);
+        state.setStoredValue(Math.max(0.0D, state.getStoredValue() - applied));
         if (state.getStoredValue() <= 0.0001D) {
-            AugmentUtils.setStacksWithNotify(runtime,
-                    ID,
-                    0,
-                    maxStacks,
-                    AugmentUtils.getPlayerRef(context.getCommandBuffer(), context.getPlayerRef()),
-                    getName());
             state.clear();
         }
     }
