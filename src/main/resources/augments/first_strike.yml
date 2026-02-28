@@ -8,8 +8,3 @@ passives:
     value: 3.0 # +300% damage on first hit
     cooldown: 20 # seconds between first-strike windows
     category: ON_HIT
-    class_values:
-      assassin:
-        value: 3.0
-      marksman:
-        value: 2.5

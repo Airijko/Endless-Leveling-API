@@ -11,6 +11,7 @@ public final class TitansMightAugment extends YamlAugment implements AugmentHook
     public static final String ID = "titans_might";
 
     private final double percentOfHealthToStrength;
+    private final double hasteDebuff;
 
     public TitansMightAugment(AugmentDefinition definition) {
         super(definition);
@@ -18,6 +19,8 @@ public final class TitansMightAugment extends YamlAugment implements AugmentHook
         var buffs = AugmentValueReader.getMap(passives, "buffs");
         this.percentOfHealthToStrength = AugmentValueReader
                 .getNestedDouble(buffs, 0.0D, "strength_from_max_health", "value");
+        var debuffs = AugmentValueReader.getMap(passives, "debuffs");
+        this.hasteDebuff = AugmentValueReader.getNestedDouble(debuffs, 0.0D, "haste", "value");
     }
 
     @Override
@@ -33,6 +36,11 @@ public final class TitansMightAugment extends YamlAugment implements AugmentHook
                 ID + "_str",
                 SkillAttributeType.STRENGTH,
                 strengthBonus,
+                0L);
+        AugmentUtils.setAttributeBonus(runtime,
+                ID + "_haste",
+                SkillAttributeType.HASTE,
+                hasteDebuff * 100.0D,
                 0L);
     }
 }

@@ -9,4 +9,3 @@ passives:
     value: 0.80 # heals 80% of max HP
     min_health_percent: 0.01 # triggers at 1% HP
     cooldown: 360 # 360 seconds cooldown
-    prevent_death: true # player cannot die if triggered

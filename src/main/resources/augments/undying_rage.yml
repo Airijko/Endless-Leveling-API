@@ -5,8 +5,16 @@ description: "For a short window you cannot drop below a sliver of health and hi
 category: ON_LOW_HP
 
 passives:
-  rage_damage:
+  rage:
     duration: 10 # lasts 10 seconds
-    min_health_percent: 0.01 # can't drop below 1% HP
-    max_bonus_damage: 1.0 # 100% bonus damage at 0% HP
-    scaling_stat: missing_health_percent # scales bonus damage based on missing HP
+    health_threshold: 0.01 # 1% HP floor trigger; if ready, you won't go below this when it procs
+    cooldown: 100 # seconds before it can trigger again after ending
+
+  bonus_damage:
+    scaling_stat: missing_health_percent # scales with missing HP
+    max_bonus_ferocity: 150 # up to 150% bonus critical damage at full missing HP
+    full_value_at_health_percent: 0.05 # full bonus damage when player health is at or below 5%
+
+  buffs:
+    precision:
+      value: 0.15 # 15% increased critical hit chance

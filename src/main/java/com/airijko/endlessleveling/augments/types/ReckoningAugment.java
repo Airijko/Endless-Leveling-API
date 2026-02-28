@@ -20,6 +20,8 @@ public final class ReckoningAugment extends YamlAugment implements AugmentHooks.
     private static final Map<UUID, Map<String, Long>> EXECUTION_HEAL_COOLDOWNS = new ConcurrentHashMap<>();
 
     private final double maxBonus;
+    private final String bonusScalingStat;
+    private final double fullValueAtHealthPercent;
     private final double selfDamagePercent;
     private final double executionThreshold;
     private final double executionHealPercent;
@@ -30,6 +32,11 @@ public final class ReckoningAugment extends YamlAugment implements AugmentHooks.
         Map<String, Object> passives = definition.getPassives();
         Map<String, Object> bonus = AugmentValueReader.getMap(passives, "bonus_damage");
         this.maxBonus = AugmentValueReader.getDouble(bonus, "max_bonus_damage", 0.0D);
+        this.bonusScalingStat = String.valueOf(bonus.getOrDefault("scaling_stat", "missing_health_percent"))
+                .trim()
+                .toLowerCase();
+        this.fullValueAtHealthPercent = clamp01(
+                AugmentValueReader.getDouble(bonus, "full_value_at_health_percent", 0.0D));
 
         Map<String, Object> selfDamage = AugmentValueReader.getMap(passives, "self_damage");
         this.selfDamagePercent = AugmentValueReader.getDouble(selfDamage, "percent_of_current_hp", 0.0D);
@@ -49,16 +56,40 @@ public final class ReckoningAugment extends YamlAugment implements AugmentHooks.
             return context.getDamage();
         }
 
-        double missing = (hp.getMax() - hp.get()) / hp.getMax();
-        double bonus = maxBonus * Math.max(0.0D, missing);
+        double bonus = resolveBonusDamageMultiplier(hp);
         float updatedDamage = (float) (context.getDamage() * (1.0D + bonus));
 
         // Always pay the health cost on any resolved hit.
         applySelfDamage(attackerStats, hp);
 
         // Attempt execution heal when target is low, respecting per-target cooldown.
-        applyExecutionHeal(context, attackerStats, hp);
+        applyExecutionHeal(context, attackerStats, hp, updatedDamage);
         return updatedDamage;
+    }
+
+    private double resolveBonusDamageMultiplier(EntityStatValue hp) {
+        if (hp == null || hp.getMax() <= 0f || maxBonus <= 0.0D) {
+            return 0.0D;
+        }
+        double healthRatio = clamp01(hp.get() / hp.getMax());
+
+        if (!"missing_health_percent".equals(bonusScalingStat)) {
+            LOGGER.atFine().log("Reckoning unknown scaling_stat '%s', defaulting to missing_health_percent",
+                    bonusScalingStat);
+        }
+
+        double normalized;
+        if (fullValueAtHealthPercent > 0.0D && fullValueAtHealthPercent < 1.0D) {
+            if (healthRatio <= fullValueAtHealthPercent) {
+                normalized = 1.0D;
+            } else {
+                normalized = (1.0D - healthRatio) / (1.0D - fullValueAtHealthPercent);
+            }
+        } else {
+            normalized = 1.0D - healthRatio;
+        }
+
+        return maxBonus * clamp01(normalized);
     }
 
     private void applySelfDamage(EntityStatMap attackerStats, EntityStatValue hp) {
@@ -104,7 +135,10 @@ public final class ReckoningAugment extends YamlAugment implements AugmentHooks.
         return null;
     }
 
-    private void applyExecutionHeal(AugmentHooks.HitContext context, EntityStatMap attackerStats, EntityStatValue hp) {
+    private void applyExecutionHeal(AugmentHooks.HitContext context,
+            EntityStatMap attackerStats,
+            EntityStatValue hp,
+            float hitDamage) {
         if (attackerStats == null || hp == null) {
             return;
         }
@@ -114,9 +148,12 @@ public final class ReckoningAugment extends YamlAugment implements AugmentHooks.
             return;
         }
 
-        // Require target under threshold.
-        double targetRatio = targetHp.get() / targetHp.getMax();
-        if (executionThreshold <= 0.0D || targetRatio > executionThreshold) {
+        double targetCurrentHp = targetHp.get();
+        double targetRatio = targetCurrentHp / targetHp.getMax();
+        double projectedTargetHp = targetCurrentHp - Math.max(0.0D, hitDamage);
+        boolean targetUnderThreshold = executionThreshold > 0.0D && targetRatio <= executionThreshold;
+        boolean lethalHit = projectedTargetHp <= 0.0D;
+        if (!targetUnderThreshold && !lethalHit) {
             return;
         }
 
@@ -186,5 +223,9 @@ public final class ReckoningAugment extends YamlAugment implements AugmentHooks.
             }
         }
         return 0L;
+    }
+
+    private double clamp01(double value) {
+        return Math.max(0.0D, Math.min(1.0D, value));
     }
 }

@@ -302,8 +302,10 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                         float bonus = skillManager.calculatePlayerSorcery(data);
                         yield "+" + formatNumber(bonus) + "% Magic Damage";
                     }
-                    case FEROCITY ->
-                        "+" + formatNumber(level * skillManager.getSkillAttributeConfigValue(type)) + "% Crit Damage";
+                    case FEROCITY -> {
+                        SkillManager.FerocityBreakdown breakdown = skillManager.getFerocityBreakdown(data);
+                        yield "+" + formatNumber(breakdown.totalValue()) + "% Crit Damage";
+                    }
                     case DISCIPLINE -> {
                         double xpBonus = skillManager.getDisciplineXpBonusPercent(level);
                         yield "+" + formatNumber(xpBonus) + "% XP Gain";

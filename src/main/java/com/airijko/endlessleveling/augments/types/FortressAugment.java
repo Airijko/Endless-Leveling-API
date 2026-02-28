@@ -117,12 +117,18 @@ public final class FortressAugment extends YamlAugment
         if (state.getStoredValue() > 0L && now > (long) state.getStoredValue()) {
             clearAttributeBonuses(context.getRuntimeState());
             state.setStoredValue(0.0D);
+            PlayerRef playerRef = AugmentUtils.getPlayerRef(context.getCommandBuffer(), context.getPlayerRef());
+            AugmentUtils.sendAugmentMessage(playerRef,
+                    String.format("%s buff ended.", getName()));
         }
 
         if (!shieldActive && state.getStacks() > 0) {
             state.setStacks(0);
             state.setExpiresAt(0L);
             applyMovementLock(context.getPlayerRef(), context.getCommandBuffer(), false);
+            PlayerRef playerRef = AugmentUtils.getPlayerRef(context.getCommandBuffer(), context.getPlayerRef());
+            AugmentUtils.sendAugmentMessage(playerRef,
+                    String.format("%s stasis shield ended.", getName()));
         }
     }
 

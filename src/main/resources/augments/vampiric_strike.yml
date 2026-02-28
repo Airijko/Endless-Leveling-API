@@ -8,3 +8,7 @@ passives:
   heal_on_crit:
     value: 0.50 # 50% of damage dealt as healing
     trigger_cooldown: 1 # triggers only once per second
+
+  buffs:
+    precision:
+      value: 0.15 # 15% increased critical hit chance

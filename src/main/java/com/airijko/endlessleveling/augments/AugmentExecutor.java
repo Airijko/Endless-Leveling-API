@@ -208,7 +208,7 @@ public final class AugmentExecutor {
             if (cooldown.getExpiresAt() > 0L && now >= cooldown.getExpiresAt()) {
                 String display = names.getOrDefault(cooldown.getAugmentId(), cooldown.getDisplayName());
                 sendAugmentMessage(playerRef,
-                        String.format("%s is ready.", display != null ? display : "Augment"));
+                        String.format("%s is ready again!", display != null ? display : "Augment"));
                 cooldown.setReadyNotified(true);
             }
         }

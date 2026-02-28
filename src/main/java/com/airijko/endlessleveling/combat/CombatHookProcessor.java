@@ -216,7 +216,7 @@ public final class CombatHookProcessor {
 
         float originalAmount = damage.getAmount();
         float resistance = skillManager != null ? skillManager.calculatePlayerDefense(defender) : 0f;
-        resistance = Math.max(0f, Math.min(0.95f, resistance));
+        resistance = Math.max(-0.95f, Math.min(0.95f, resistance));
         float defenseReducedAmount = originalAmount * (1.0f - resistance);
 
         float postAugmentAmount = defenseReducedAmount;

@@ -85,6 +85,9 @@ public class StatTestCommand extends AbstractPlayerCommand {
                 attributeBreakdowns.forEach((label, breakdown) -> addAttributeLine(lines, label, breakdown));
                 lines.add(sectionHeader("Totals"));
                 attributeBreakdowns.forEach((label, breakdown) -> lines.add(totalLine(label, breakdown)));
+                SkillManager.DefenseBreakdown defenseBreakdown = skillManager.getDefenseBreakdown(playerData);
+                lines.add(infoLine(String.format("Defense resistance: %s%%",
+                        formatDouble(defenseBreakdown.resistance() * 100.0D))));
             }
 
             lines.add(sectionHeader("Life Steal"));
@@ -278,6 +281,15 @@ public class StatTestCommand extends AbstractPlayerCommand {
         if (ragingState != null && ragingState.getStacks() > 0) {
             lines.add(infoLine(String.format("Raging Momentum stacks=%d expiresInMs=%d", ragingState.getStacks(),
                     Math.max(0L, ragingState.getExpiresAt() - System.currentTimeMillis()))));
+        }
+
+        var predatorState = runtime.getState(com.airijko.endlessleveling.augments.types.PredatorAugment.ID);
+        if (predatorState != null && predatorState.getStacks() > 0) {
+            double predatorDefenseBonus = runtime.getAttributeBonus(SkillAttributeType.DEFENSE, now);
+            lines.add(infoLine(String.format("Predator stacks=%d defenseAug=%s expiresInMs=%d",
+                    predatorState.getStacks(),
+                    formatDouble(predatorDefenseBonus),
+                    Math.max(0L, predatorState.getExpiresAt() - now))));
         }
     }
 

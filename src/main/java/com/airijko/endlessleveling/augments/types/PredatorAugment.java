@@ -11,7 +11,7 @@ import com.airijko.endlessleveling.enums.SkillAttributeType;
 import java.util.Map;
 
 public final class PredatorAugment extends YamlAugment
-        implements AugmentHooks.OnKillAugment, AugmentHooks.OnHitAugment {
+        implements AugmentHooks.OnKillAugment, AugmentHooks.OnHitAugment, AugmentHooks.PassiveStatAugment {
     public static final String ID = "predator";
 
     private final int maxStacks;
@@ -19,6 +19,7 @@ public final class PredatorAugment extends YamlAugment
     private final double strengthPerStack;
     private final double hastePerStack;
     private final double defensePenalty;
+    private final boolean defensePenaltyActiveUntilMaxStacks;
 
     public PredatorAugment(AugmentDefinition definition) {
         super(definition);
@@ -31,6 +32,10 @@ public final class PredatorAugment extends YamlAugment
         this.hastePerStack = AugmentValueReader.getNestedDouble(buffs, 0.0D, "haste", "value");
         Map<String, Object> debuffs = AugmentValueReader.getMap(passives, "debuffs");
         this.defensePenalty = AugmentValueReader.getNestedDouble(debuffs, 0.0D, "defense", "value");
+        Map<String, Object> defenseDebuff = AugmentValueReader.getMap(debuffs, "defense");
+        this.defensePenaltyActiveUntilMaxStacks = AugmentValueReader.getBoolean(defenseDebuff,
+                "active_until_max_stacks",
+                true);
     }
 
     @Override
@@ -77,17 +82,42 @@ public final class PredatorAugment extends YamlAugment
         return (float) (context.getDamage() * (1.0D + bonus));
     }
 
+    @Override
+    public void applyPassive(AugmentHooks.PassiveStatContext context) {
+        AugmentRuntimeState runtime = context != null ? context.getRuntimeState() : null;
+        if (runtime == null) {
+            return;
+        }
+
+        var state = runtime.getState(ID);
+        long now = System.currentTimeMillis();
+        if (state.isExpired(now)) {
+            state.clear();
+            applyAttributeBonuses(runtime, 0, 0L);
+            return;
+        }
+
+        if (state.getStacks() <= 0) {
+            applyAttributeBonuses(runtime, 0, 0L);
+            return;
+        }
+
+        applyAttributeBonuses(runtime, state.getStacks(), state.getExpiresAt());
+    }
+
     private void applyAttributeBonuses(AugmentRuntimeState runtime, int stacks, long expiresAt) {
         if (runtime == null) {
             return;
         }
         long duration = expiresAt > 0L ? Math.max(0L, expiresAt - System.currentTimeMillis()) : 0L;
+        long expiresAtMillis = duration > 0L ? expiresAt : 0L;
         double hasteBonus = stacks * hastePerStack * 100.0D;
         double strengthBonus = stacks * strengthPerStack * 100.0D;
-        runtime.setAttributeBonus(SkillAttributeType.HASTE, ID + "_haste", hasteBonus, duration);
-        runtime.setAttributeBonus(SkillAttributeType.STRENGTH, ID + "_str", strengthBonus, duration);
+        runtime.setAttributeBonus(SkillAttributeType.HASTE, ID + "_haste", hasteBonus, expiresAtMillis);
+        runtime.setAttributeBonus(SkillAttributeType.STRENGTH, ID + "_str", strengthBonus, expiresAtMillis);
 
-        double defenseValue = stacks >= maxStacks ? 0.0D : defensePenalty * 100.0D;
-        runtime.setAttributeBonus(SkillAttributeType.DEFENSE, ID + "_def", defenseValue, duration);
+        boolean removeAtMaxStacks = defensePenaltyActiveUntilMaxStacks && maxStacks > 0 && stacks >= maxStacks;
+        double defenseValue = stacks <= 0 || removeAtMaxStacks ? 0.0D : defensePenalty * 100.0D;
+        runtime.setAttributeBonus(SkillAttributeType.DEFENSE, ID + "_def", defenseValue, expiresAtMillis);
     }
 }

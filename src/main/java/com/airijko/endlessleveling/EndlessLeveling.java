@@ -30,6 +30,7 @@ import com.airijko.endlessleveling.systems.PlayerNameplateSystem;
 import com.airijko.endlessleveling.systems.PlayerRaceStatSystem;
 import com.airijko.endlessleveling.systems.PeriodicSkillModifierSystem;
 import com.airijko.endlessleveling.systems.HudRefreshSystem;
+import com.airijko.endlessleveling.systems.WitherEffectSystem;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.event.events.entity.LivingEntityInventoryChangeEvent;
 import com.hypixel.hytale.server.core.event.events.player.PlayerDisconnectEvent;
@@ -210,6 +211,7 @@ public class EndlessLeveling extends JavaPlugin {
         this.getEntityStoreRegistry().registerSystem(new PlayerNameplateSystem(playerDataManager));
         this.getEntityStoreRegistry().registerSystem(new MobNameplateSystem());
         this.getEntityStoreRegistry().registerSystem(new HudRefreshSystem());
+        this.getEntityStoreRegistry().registerSystem(new WitherEffectSystem());
         this.getEntityStoreRegistry().registerSystem(new MobHealthModifierSystem());
         this.getEntityStoreRegistry().registerSystem(new MobDamageScalingSystem(mobLevelingManager));
 

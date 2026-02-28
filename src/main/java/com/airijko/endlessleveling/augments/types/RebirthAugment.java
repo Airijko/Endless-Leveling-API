@@ -5,7 +5,6 @@ import com.airijko.endlessleveling.augments.AugmentHooks;
 import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
 import com.airijko.endlessleveling.augments.YamlAugment;
-import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue;
 import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
 
 import java.util.Map;
@@ -28,22 +27,36 @@ public final class RebirthAugment extends YamlAugment implements AugmentHooks.On
 
     @Override
     public float onLowHp(AugmentHooks.DamageTakenContext context) {
+        if (context == null) {
+            return 0f;
+        }
+        var runtime = context.getRuntimeState();
+        if (runtime == null) {
+            return context.getIncomingDamage();
+        }
         var hp = context.getStatMap() == null ? null
                 : context.getStatMap().get(DefaultEntityStatTypes.getHealth());
         if (hp == null || hp.getMax() <= 0f) {
             return context.getIncomingDamage();
         }
-        double minHp = hp.getMax() * minHealthPercent;
-        if (hp.get() - context.getIncomingDamage() > minHp) {
+
+        double thresholdHp = hp.getMax() * minHealthPercent;
+        double projectedHp = hp.get() - context.getIncomingDamage();
+        if (projectedHp > thresholdHp) {
             return context.getIncomingDamage();
         }
-        if (!AugmentUtils.consumeCooldown(context.getRuntimeState(), ID, cooldownMillis)) {
+
+        if (!AugmentUtils.consumeCooldown(runtime, ID, getName(), cooldownMillis)) {
             return context.getIncomingDamage();
         }
+
         double healAmount = hp.getMax() * healPercent;
         context.getStatMap().setStatValue(
                 DefaultEntityStatTypes.getHealth(),
                 (float) Math.min(hp.getMax(), hp.get() + healAmount));
+        var playerRef = AugmentUtils.getPlayerRef(context.getCommandBuffer(), context.getDefenderRef());
+        AugmentUtils.sendAugmentMessage(playerRef,
+                String.format("%s activated! Restored %.0f%% of max health.", getName(), healPercent * 100.0D));
         return 0f;
     }
 }
