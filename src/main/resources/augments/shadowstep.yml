@@ -8,9 +8,9 @@ passives:
   invisibility_on_kill:
     duration: 2 # invis + movement buff lasts 2 seconds
     trigger_cooldown: 10 # 10 second cooldown
-    effect: INVISIBLE # becomes invisible
+    effect: invisibility # canonical invisibility effect id
     break_conditions:
       attack: true # invisibility breaks if player attacks
     buffs:
       movement_speed:
-        value: 0.50 # +50% movement
+        value: 1 # +100% movement
