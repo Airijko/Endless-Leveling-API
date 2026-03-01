@@ -144,9 +144,6 @@ Mob_Leveling:
       # This exists for optional future logic.
       Max_Internal_Level_Gap: 999
 
-      # If true, mob level is locked at spawn and never recalculated
-      Lock_Level_On_Spawn: true
-
     # Used when Mode is FIXED
     Fixed_Level:
       Level: 10
@@ -217,4 +214,4 @@ Mob_Leveling:
     Show_Mob_Level: true
 
 # DON'T EDIT THIS LINE BELOW
-config_version: 5
+config_version: 6
