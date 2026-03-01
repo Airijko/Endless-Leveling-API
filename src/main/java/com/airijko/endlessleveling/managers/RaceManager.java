@@ -500,6 +500,7 @@ public class RaceManager {
             return; // up to date
         }
 
+        filesManager.archivePathIfExists(racesFolder.toPath(), "races", "races.version:" + storedVersion);
         clearDirectory(racesFolder.toPath());
         filesManager.exportResourceDirectory("races", racesFolder, true);
         writeRacesVersion(racesFolder, BUILTIN_RACES_VERSION);

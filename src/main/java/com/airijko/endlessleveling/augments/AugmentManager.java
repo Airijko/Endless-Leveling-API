@@ -104,6 +104,7 @@ public class AugmentManager {
             return;
         }
 
+        filesManager.archivePathIfExists(augmentsFolder.toPath(), "augments", "augments.version:" + storedVersion);
         clearDirectory(augmentsFolder.toPath());
         filesManager.exportResourceDirectory("augments", augmentsFolder, true);
         writeAugmentsVersion(augmentsFolder, BUILTIN_AUGMENTS_VERSION);

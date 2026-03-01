@@ -6,8 +6,8 @@ category: ON_CRIT
 
 passives:
   heal_on_crit:
-    value: 0.50 # 50% of damage dealt as healing
-    trigger_cooldown: 1 # triggers only once per second
+    value: 0.30 # 30% of damage dealt as healing
+    trigger_cooldown: 2 # triggers only once per 2 seconds
 
   buffs:
     precision:

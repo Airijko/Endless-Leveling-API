@@ -450,6 +450,7 @@ public class ClassManager {
             return; // up to date
         }
 
+        filesManager.archivePathIfExists(classesFolder.toPath(), "classes", "classes.version:" + storedVersion);
         clearDirectory(classesFolder.toPath());
         filesManager.exportResourceDirectory("classes", classesFolder, true);
         writeClassesVersion(classesFolder, BUILTIN_CLASSES_VERSION);

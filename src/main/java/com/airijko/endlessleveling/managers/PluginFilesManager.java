@@ -8,10 +8,16 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.security.CodeSource;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 public class PluginFilesManager {
@@ -25,6 +31,9 @@ public class PluginFilesManager {
     private static final String LANG_FOLDER_NAME = "lang";
     private static final String WEAPONS_FILE_NAME = "weapons.yml";
     private static final String PARTYDATA_FILE_NAME = "parties.json";
+    private static final String OLD_FOLDER_NAME = "old";
+    private static final DateTimeFormatter ARCHIVE_TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss");
+    private static final Pattern MANIFEST_VERSION_PATTERN = Pattern.compile("\"Version\"\\s*:\\s*\"([^\"]+)\"");
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
 
     private final JavaPlugin plugin;
@@ -41,6 +50,8 @@ public class PluginFilesManager {
     private final File configFile;
     private final File levelingFile;
     private final File partyDataFile;
+    private final Object archiveLock = new Object();
+    private Path currentArchiveSession;
 
     public PluginFilesManager(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -133,6 +144,125 @@ public class PluginFilesManager {
 
     public File getPartyDataFile() {
         return partyDataFile;
+    }
+
+    public Path archiveFileIfExists(File sourceFile, String archiveRelativePath, String priorVersionTag) {
+        if (sourceFile == null) {
+            return null;
+        }
+        return archivePathIfExists(sourceFile.toPath(), archiveRelativePath, priorVersionTag);
+    }
+
+    public Path archivePathIfExists(Path sourcePath, String archiveRelativePath, String priorVersionTag) {
+        if (sourcePath == null || !Files.exists(sourcePath)) {
+            return null;
+        }
+        synchronized (archiveLock) {
+            Path archiveRoot = getOrCreateArchiveSession();
+            Path targetPath = archiveRelativePath == null || archiveRelativePath.isBlank()
+                    ? archiveRoot.resolve(sourcePath.getFileName().toString())
+                    : archiveRoot.resolve(archiveRelativePath);
+            try {
+                copyRecursively(sourcePath, targetPath);
+                appendArchiveIndexLine(archiveRoot, sourcePath, targetPath, priorVersionTag);
+                LOGGER.atInfo().log("Archived %s to %s", sourcePath, targetPath);
+                return targetPath;
+            } catch (IOException e) {
+                LOGGER.atWarning().log("Failed to archive %s: %s", sourcePath, e.getMessage());
+                return null;
+            }
+        }
+    }
+
+    private Path getOrCreateArchiveSession() {
+        if (currentArchiveSession != null) {
+            return currentArchiveSession;
+        }
+        String timestamp = LocalDateTime.now().format(ARCHIVE_TIMESTAMP_FORMAT);
+        String pluginVersion = sanitizeForPath(resolvePluginVersion());
+        if (pluginVersion.isBlank()) {
+            pluginVersion = "unknown";
+        }
+        Path sessionPath = pluginFolder.toPath()
+                .resolve(OLD_FOLDER_NAME)
+                .resolve(timestamp + "_v" + pluginVersion);
+        try {
+            Files.createDirectories(sessionPath);
+        } catch (IOException e) {
+            throw new IllegalStateException("Unable to create centralized backup folder", e);
+        }
+        currentArchiveSession = sessionPath;
+        return currentArchiveSession;
+    }
+
+    private void appendArchiveIndexLine(Path archiveRoot, Path sourcePath, Path targetPath, String priorVersionTag)
+            throws IOException {
+        String versionText = (priorVersionTag == null || priorVersionTag.isBlank()) ? "unknown" : priorVersionTag;
+        Path indexPath = archiveRoot.resolve("index.txt");
+        String line = String.format("%s | from=%s | prior=%s%n", targetPath.getFileName(), sourcePath, versionText);
+        Files.writeString(indexPath, line, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+    }
+
+    private void copyRecursively(Path sourcePath, Path destinationPath) throws IOException {
+        if (Files.isDirectory(sourcePath)) {
+            try (Stream<Path> stream = Files.walk(sourcePath)) {
+                stream.forEach(path -> {
+                    Path relative = sourcePath.relativize(path);
+                    Path target = destinationPath.resolve(relative.toString());
+                    try {
+                        if (Files.isDirectory(path)) {
+                            Files.createDirectories(target);
+                        } else {
+                            Path parent = target.getParent();
+                            if (parent != null) {
+                                Files.createDirectories(parent);
+                            }
+                            Files.copy(path, target, StandardCopyOption.REPLACE_EXISTING);
+                        }
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
+                });
+            } catch (UncheckedIOException e) {
+                throw e.getCause();
+            }
+            return;
+        }
+
+        Path parent = destinationPath.getParent();
+        if (parent != null) {
+            Files.createDirectories(parent);
+        }
+        Files.copy(sourcePath, destinationPath, StandardCopyOption.REPLACE_EXISTING);
+    }
+
+    private String resolvePluginVersion() {
+        try (InputStream in = plugin.getClassLoader().getResourceAsStream("manifest.json")) {
+            if (in != null) {
+                String json = new String(in.readAllBytes());
+                Matcher matcher = MANIFEST_VERSION_PATTERN.matcher(json);
+                if (matcher.find()) {
+                    return matcher.group(1).trim();
+                }
+            }
+        } catch (IOException ignored) {
+        }
+
+        Package pkg = plugin.getClass().getPackage();
+        if (pkg != null) {
+            String implementationVersion = pkg.getImplementationVersion();
+            if (implementationVersion != null && !implementationVersion.isBlank()) {
+                return implementationVersion.trim();
+            }
+        }
+        return "unknown";
+    }
+
+    private String sanitizeForPath(String value) {
+        if (value == null) {
+            return "unknown";
+        }
+        return value.trim().replaceAll("[^a-zA-Z0-9._-]", "_");
     }
 
     public void exportResourceDirectory(String resourceRoot, File destination, boolean overwriteExisting) {

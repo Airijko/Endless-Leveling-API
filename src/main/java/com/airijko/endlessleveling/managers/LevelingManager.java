@@ -51,7 +51,7 @@ public class LevelingManager {
             SkillManager skillManager, ArchetypePassiveManager archetypePassiveManager,
             PassiveManager passiveManager, AugmentUnlockManager augmentUnlockManager) {
         this.playerDataManager = playerDataManager;
-        this.configManager = new ConfigManager(filesManager.getLevelingFile(), false);
+        this.configManager = new ConfigManager(filesManager, filesManager.getLevelingFile());
         this.skillManager = skillManager;
         this.archetypePassiveManager = archetypePassiveManager;
         this.passiveManager = passiveManager;

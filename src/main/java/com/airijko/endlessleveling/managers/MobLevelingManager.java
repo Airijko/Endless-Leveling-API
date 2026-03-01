@@ -55,7 +55,7 @@ public class MobLevelingManager {
     }
 
     public MobLevelingManager(PluginFilesManager filesManager, PlayerDataManager playerDataManager) {
-        this.configManager = new ConfigManager(filesManager.getLevelingFile(), false);
+        this.configManager = new ConfigManager(filesManager, filesManager.getLevelingFile());
         this.playerDataManager = playerDataManager;
     }
 

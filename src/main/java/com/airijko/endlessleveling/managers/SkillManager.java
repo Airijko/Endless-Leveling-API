@@ -53,8 +53,8 @@ public class SkillManager {
             ArchetypePassiveManager archetypePassiveManager,
             PassiveManager passiveManager,
             AugmentRuntimeManager augmentRuntimeManager) {
-        this.levelingConfig = new LevelingConfigManager(filesManager.getLevelingFile());
-        this.config = new ConfigManager(filesManager.getConfigFile());
+        this.levelingConfig = new LevelingConfigManager(filesManager, filesManager.getLevelingFile());
+        this.config = new ConfigManager(filesManager, filesManager.getConfigFile());
         this.attributeManager = attributeManager;
         this.archetypePassiveManager = archetypePassiveManager;
         this.passiveManager = passiveManager;

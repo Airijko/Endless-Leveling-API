@@ -2,6 +2,7 @@ package com.airijko.endlessleveling.commands.subcommands;
 
 import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.augments.AugmentManager;
+import com.airijko.endlessleveling.augments.AugmentUnlockManager;
 import com.airijko.endlessleveling.managers.ClassManager;
 import com.airijko.endlessleveling.managers.ConfigManager;
 import com.airijko.endlessleveling.managers.LevelingManager;
@@ -38,6 +39,7 @@ public class ReloadCommand extends AbstractPlayerCommand {
     private final PlayerDataManager playerDataManager;
     private final SkillManager skillManager;
     private final AugmentManager augmentManager;
+    private final AugmentUnlockManager augmentUnlockManager;
 
     public ReloadCommand() {
         super("reload", "Reload EndlessLeveling configs, races, and classes");
@@ -51,6 +53,7 @@ public class ReloadCommand extends AbstractPlayerCommand {
         this.playerDataManager = plugin != null ? plugin.getPlayerDataManager() : null;
         this.skillManager = plugin != null ? plugin.getSkillManager() : null;
         this.augmentManager = plugin != null ? plugin.getAugmentManager() : null;
+        this.augmentUnlockManager = plugin != null ? plugin.getAugmentUnlockManager() : null;
     }
 
     @Override
@@ -98,6 +101,15 @@ public class ReloadCommand extends AbstractPlayerCommand {
 
         if (augmentManager != null) {
             augmentManager.load();
+        }
+
+        if (augmentUnlockManager != null) {
+            augmentUnlockManager.reload();
+            if (playerDataManager != null) {
+                for (var data : playerDataManager.getAllCached()) {
+                    augmentUnlockManager.ensureUnlocks(data);
+                }
+            }
         }
 
         senderRef.sendMessage(

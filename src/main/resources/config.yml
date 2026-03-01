@@ -151,14 +151,9 @@ logging:
 augments:
   unlocks:
     - tier: ELITE
-      levels: [10]
-    - tier: ELITE
-      levels: [25]
+      levels: [10, 25]
     - tier: MYTHIC
       levels: [50]
 
-# ------------------------------------------------------------
-# INTERNAL CONFIG VERSION
-# DO NOT MODIFY
-# ------------------------------------------------------------
-config_version: 21
+# DON'T EDIT THIS LINE BELOW
+config_version: 22

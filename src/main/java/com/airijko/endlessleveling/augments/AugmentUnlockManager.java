@@ -38,7 +38,7 @@ public class AugmentUnlockManager {
     private final AugmentManager augmentManager;
     private final PlayerDataManager playerDataManager;
     private final ArchetypePassiveManager archetypePassiveManager;
-    private final List<UnlockRule> unlockRules;
+    private volatile List<UnlockRule> unlockRules;
 
     public AugmentUnlockManager(@Nonnull ConfigManager configManager,
             @Nonnull AugmentManager augmentManager,
@@ -48,11 +48,18 @@ public class AugmentUnlockManager {
         this.augmentManager = Objects.requireNonNull(augmentManager, "augmentManager");
         this.playerDataManager = Objects.requireNonNull(playerDataManager, "playerDataManager");
         this.archetypePassiveManager = archetypePassiveManager;
-        this.unlockRules = parseRules();
-        if (this.unlockRules.isEmpty()) {
+        this.unlockRules = List.of();
+        reload();
+    }
+
+    /** Reload unlock milestone rules from config.yml. */
+    public synchronized void reload() {
+        List<UnlockRule> parsed = parseRules();
+        this.unlockRules = parsed;
+        if (parsed.isEmpty()) {
             LOGGER.atWarning().log("No augment unlock rules parsed. Check config augments.unlocks for tiers/levels.");
         } else {
-            LOGGER.atInfo().log("Loaded %d augment unlock rules", this.unlockRules.size());
+            LOGGER.atInfo().log("Loaded %d augment unlock rules", parsed.size());
         }
     }
 
