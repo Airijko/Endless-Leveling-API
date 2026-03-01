@@ -95,7 +95,7 @@ passives:
 # RACE SETTINGS
 # ------------------------------------------------------------
 enable_races: true # Enable or disable the race system
-default_race: "None" # Use built-in fallback default race
+default_race: "Human" # Use built-in fallback default race
 choose_race_cooldown: 3600 # Cooldown (seconds) before changing race again
 race_max_switches: -1 # -1 = unlimited; 1 = one-time; any positive number caps total race swaps per player
 global_race_visuals_setting: "off" # Default race model visuals for new players: on, off, or disabled (disables visuals globally)
@@ -107,7 +107,7 @@ force_builtin_races: true # If true, ignore custom race files and keep bundled r
 # CLASS SETTINGS
 # ------------------------------------------------------------
 enable_classes: true # Enable or disable the class system
-default_primary_class: "None" # Use built-in fallback default primary class
+default_primary_class: "Adventurer" # Use built-in fallback default primary class
 default_secondary_class: "None" # Optional secondary class default (None disables it)
 choose_class_cooldown: 1800 # Cooldown (seconds) before changing class again
 class_max_switches: -1 # -1 = unlimited; 1 = one-time; any positive number caps total class swaps per player (primary/secondary combined)

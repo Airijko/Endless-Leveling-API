@@ -661,12 +661,7 @@ public class PlayerDataManager {
             return;
         }
 
-        boolean noDefaultRaceConfigured = !raceManager.hasConfiguredDefaultRace();
-
         data.getProfiles().values().forEach(profile -> {
-            if (noDefaultRaceConfigured) {
-                profile.setRaceId(null);
-            }
             String resolved = raceManager.resolveRaceIdentifier(profile.getRaceId());
             profile.setRaceId(resolved);
         });
@@ -688,12 +683,7 @@ public class PlayerDataManager {
             return;
         }
 
-        boolean noDefaultPrimaryConfigured = !classManager.hasConfiguredDefaultPrimaryClass();
-
         data.getProfiles().values().forEach(profile -> {
-            if (noDefaultPrimaryConfigured) {
-                profile.setPrimaryClassId(null);
-            }
             String resolvedPrimary = classManager.resolvePrimaryClassIdentifier(profile.getPrimaryClassId());
             profile.setPrimaryClassId(resolvedPrimary);
             String resolvedSecondary = classManager.resolveSecondaryClassIdentifier(profile.getSecondaryClassId());
