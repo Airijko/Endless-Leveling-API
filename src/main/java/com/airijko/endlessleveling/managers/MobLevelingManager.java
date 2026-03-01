@@ -1,5 +1,6 @@
 package com.airijko.endlessleveling.managers;
 
+import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.data.PlayerData;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Component;
@@ -20,6 +21,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -39,6 +41,7 @@ public class MobLevelingManager {
     private final Map<Long, Integer> cachedPosDiffs = new ConcurrentHashMap<>();
     private final Map<String, AreaOverride> areaOverrides = new ConcurrentHashMap<>();
     private final Map<Integer, Integer> entityLevelOverrides = new ConcurrentHashMap<>();
+    private final Map<Integer, UUID> entityPartyOverrides = new ConcurrentHashMap<>();
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
     private final ConfigManager configManager;
     private final PlayerDataManager playerDataManager;
@@ -47,6 +50,7 @@ public class MobLevelingManager {
 
     private enum LevelSourceMode {
         PLAYER,
+        MIXED,
         DISTANCE,
         FIXED
     }
@@ -153,6 +157,9 @@ public class MobLevelingManager {
 
     public void forgetEntity(int entityIndex) {
         applied.remove(entityIndex);
+        entityLevelOverrides.remove(entityIndex);
+        entityPartyOverrides.remove(entityIndex);
+        cachedPlayerDiffs.remove(entityIndex);
     }
 
     private boolean setHpMax(EntityStatValue hp, float newMax) {
@@ -207,6 +214,7 @@ public class MobLevelingManager {
         try {
             level = switch (mode) {
                 case PLAYER -> resolvePlayerBasedLevel(store, mobPosition, entityId);
+                case MIXED -> resolveMixedLevel(store, mobPosition, entityId);
                 case DISTANCE -> resolveDistanceLevel(mobPosition);
                 case FIXED -> getFixedLevel();
             };
@@ -219,7 +227,8 @@ public class MobLevelingManager {
 
     /** True when mob levels are derived from nearby player levels. */
     public boolean isPlayerBasedMode() {
-        return getLevelSourceMode() == LevelSourceMode.PLAYER;
+        LevelSourceMode mode = getLevelSourceMode();
+        return mode == LevelSourceMode.PLAYER || mode == LevelSourceMode.MIXED;
     }
 
     /**
@@ -227,9 +236,9 @@ public class MobLevelingManager {
      */
     public LevelRange getPlayerBasedLevelRange(int playerLevel) {
         int level = Math.max(1, playerLevel);
-        int offset = getConfigInt("Mob_Leveling.Level_Source.Player_Based.Offset", 0);
-        int minDiff = getConfigInt("Mob_Leveling.Level_Source.Player_Based.Min_Difference", -3);
-        int maxDiff = getConfigInt("Mob_Leveling.Level_Source.Player_Based.Max_Difference", 3);
+        int offset = getPlayerBasedOffset();
+        int minDiff = getPlayerBasedMinDifference();
+        int maxDiff = getPlayerBasedMaxDifference();
         if (minDiff > maxDiff) {
             int tmp = minDiff;
             minDiff = maxDiff;
@@ -341,13 +350,42 @@ public class MobLevelingManager {
         if (mobPos == null)
             return getFixedLevel();
 
+        int resolved = resolvePlayerBasedLevelWithoutFallback(store, mobPos, entityId, true);
+        if (resolved > 0) {
+            return resolved;
+        }
+        return fallbackPlayerSourceLevel(mobPos);
+    }
+
+    private int resolvePlayerBasedLevelWithoutFallback(Store<EntityStore> store, Vector3d mobPos, Integer entityId,
+            boolean allowPartyLock) {
+        if (mobPos == null)
+            return -1;
+
+        if (isPartyPlayerSourceEnabled()) {
+            int partyResolved = resolvePlayerBasedLevelWithPartySystem(store, mobPos, entityId, allowPartyLock);
+            if (partyResolved > 0) {
+                return partyResolved;
+            }
+            return resolveClassicPlayerBasedLevelWithoutFallback(store, mobPos, entityId);
+        }
+
+        return resolveClassicPlayerBasedLevelWithoutFallback(store, mobPos, entityId);
+    }
+
+    private int resolveClassicPlayerBasedLevelWithoutFallback(Store<EntityStore> store, Vector3d mobPos,
+            Integer entityId) {
+        if (mobPos == null) {
+            return -1;
+        }
+
         int nearestPlayerLevel = findNearestPlayerLevel(store, mobPos);
         if (nearestPlayerLevel <= 0)
-            return getFixedLevel();
+            return -1;
 
-        int offset = getConfigInt("Mob_Leveling.Level_Source.Player_Based.Offset", 0);
-        int minDiff = getConfigInt("Mob_Leveling.Level_Source.Player_Based.Min_Difference", -3);
-        int maxDiff = getConfigInt("Mob_Leveling.Level_Source.Player_Based.Max_Difference", 3);
+        int offset = getPlayerBasedOffset();
+        int minDiff = getPlayerBasedMinDifference();
+        int maxDiff = getPlayerBasedMaxDifference();
         if (minDiff > maxDiff) {
             int tmp = minDiff;
             minDiff = maxDiff;
@@ -360,6 +398,491 @@ public class MobLevelingManager {
         int target = nearestPlayerLevel + offset + rolledDiff;
         int clamped = Math.max(minAllowed, Math.min(maxAllowed, target));
         return clamped;
+    }
+
+    private int resolveMixedLevel(Store<EntityStore> store, Vector3d mobPos, Integer entityId) {
+        if (mobPos == null) {
+            return getFixedLevel();
+        }
+
+        int distanceLevel = resolveDistanceLevel(mobPos);
+        int playerLevel = resolvePlayerBasedLevelWithoutFallback(store, mobPos, entityId, false);
+        if (playerLevel <= 0) {
+            return distanceLevel;
+        }
+
+        int playerLowerBound = resolvePlayerLowerBoundForMixed(store, mobPos);
+        if (playerLowerBound > 0 && distanceLevel < playerLowerBound) {
+            return playerLevel;
+        }
+
+        double playerWeight = getMixedPlayerWeight();
+        double distanceWeight = 1.0D - playerWeight;
+        double blended = (playerLevel * playerWeight) + (distanceLevel * distanceWeight);
+        return (int) Math.round(blended);
+    }
+
+    private int resolvePlayerLowerBoundForMixed(Store<EntityStore> store, Vector3d mobPos) {
+        if (mobPos == null) {
+            return -1;
+        }
+
+        int minDiff = getPlayerBasedMinDifference();
+        int maxDiff = getPlayerBasedMaxDifference();
+        if (minDiff > maxDiff) {
+            int tmp = minDiff;
+            minDiff = maxDiff;
+            maxDiff = tmp;
+        }
+
+        if (isPartyPlayerSourceEnabled()) {
+            double radius = Math.max(0.0D, getPlayerPartyInfluenceRadius());
+            List<PlayerContext> nearbyPlayers = getPlayersWithinRadius(store, mobPos, radius);
+            if (nearbyPlayers.isEmpty()) {
+                return -1;
+            }
+            PartyContext dominant = resolveDominantPartyContext(nearbyPlayers);
+            if (dominant == null || dominant.members().isEmpty()) {
+                return -1;
+            }
+            int vpl = computeVirtualPartyLevel(dominant.members());
+            int floor = vpl + getPlayerBasedOffset() + minDiff;
+            return clampToConfiguredRange(floor);
+        }
+
+        int nearestPlayerLevel = findNearestPlayerLevel(store, mobPos);
+        if (nearestPlayerLevel <= 0) {
+            return -1;
+        }
+        int floor = nearestPlayerLevel + minDiff;
+        return clampToConfiguredRange(floor);
+    }
+
+    private int resolvePlayerBasedLevelWithPartySystem(Store<EntityStore> store, Vector3d mobPos, Integer entityId,
+            boolean applyLock) {
+        double radius = Math.max(0.0D, getPlayerPartyInfluenceRadius());
+        List<PlayerContext> nearbyPlayers = getPlayersWithinRadius(store, mobPos, radius);
+        if (nearbyPlayers.isEmpty()) {
+            return -1;
+        }
+
+        PartyContext dominant = resolveDominantPartyContext(nearbyPlayers);
+        if (dominant == null || dominant.members().isEmpty()) {
+            return -1;
+        }
+
+        int vpl = computeVirtualPartyLevel(dominant.members());
+        int offset = getPlayerBasedOffset();
+        int minDiff = getPlayerBasedMinDifference();
+        int maxDiff = getPlayerBasedMaxDifference();
+        if (minDiff > maxDiff) {
+            int tmp = minDiff;
+            minDiff = maxDiff;
+            maxDiff = tmp;
+        }
+
+        int minLevel = clampToConfiguredRange(vpl + offset + minDiff);
+        int maxLevel = clampToConfiguredRange(vpl + offset + maxDiff);
+        if (minLevel > maxLevel) {
+            int tmp = minLevel;
+            minLevel = maxLevel;
+            maxLevel = tmp;
+        }
+
+        int resolvedLevel = sampleLevel(minLevel, maxLevel, entityId, mobPos);
+        if (applyLock && isPartyLockLevelOnSpawnEnabled() && entityId != null) {
+            setEntityLevelOverride(entityId, resolvedLevel);
+            if (dominant.partyId() != null) {
+                entityPartyOverrides.put(entityId, dominant.partyId());
+            }
+        }
+        return resolvedLevel;
+    }
+
+    private int fallbackPlayerSourceLevel(Vector3d mobPos) {
+        if (mobPos != null) {
+            return resolveDistanceLevel(mobPos);
+        }
+        return getFixedLevel();
+    }
+
+    private List<PlayerContext> getPlayersWithinRadius(Store<EntityStore> mobStore, Vector3d mobPos, double radius) {
+        Universe universe = Universe.get();
+        if (universe == null || mobPos == null) {
+            return List.of();
+        }
+
+        double radiusSq = radius <= 0.0D ? 0.0D : radius * radius;
+        PartyManager partyManager = resolvePartyManager();
+
+        List<PlayerContext> nearby = new ArrayList<>();
+        for (PlayerRef playerRef : universe.getPlayers()) {
+            if (playerRef == null || !playerRef.isValid()) {
+                continue;
+            }
+            Ref<EntityStore> playerEntityRef = playerRef.getReference();
+            if (playerEntityRef == null) {
+                continue;
+            }
+
+            Store<EntityStore> playerStore = playerEntityRef.getStore();
+            if (mobStore != null && playerStore != null && mobStore != playerStore) {
+                continue;
+            }
+
+            Vector3d playerPos = getWorldPosition(playerEntityRef, null);
+            if (playerPos == null) {
+                continue;
+            }
+
+            double distSq = horizontalDistanceSquared(mobPos, playerPos);
+            if (radiusSq > 0.0D && distSq > radiusSq) {
+                continue;
+            }
+
+            UUID uuid = playerRef.getUuid();
+            int level = getPlayerLevel(uuid);
+            UUID partyId = resolvePartyId(partyManager, uuid);
+            nearby.add(new PlayerContext(uuid, level, distSq, partyId));
+        }
+        return nearby;
+    }
+
+    private PartyContext resolveDominantPartyContext(List<PlayerContext> nearbyPlayers) {
+        if (nearbyPlayers == null || nearbyPlayers.isEmpty()) {
+            return null;
+        }
+
+        Map<UUID, List<PlayerContext>> groupedParties = new HashMap<>();
+        List<PlayerContext> soloPlayers = new ArrayList<>();
+        for (PlayerContext ctx : nearbyPlayers) {
+            if (ctx == null) {
+                continue;
+            }
+            if (ctx.partyId() != null) {
+                groupedParties.computeIfAbsent(ctx.partyId(), ignored -> new ArrayList<>()).add(ctx);
+            } else {
+                soloPlayers.add(ctx);
+            }
+        }
+
+        List<PartyContext> partyContexts = new ArrayList<>();
+        if (!groupedParties.isEmpty()) {
+            for (Map.Entry<UUID, List<PlayerContext>> entry : groupedParties.entrySet()) {
+                List<PlayerContext> members = entry.getValue();
+                if (members == null || members.isEmpty()) {
+                    continue;
+                }
+                partyContexts.add(new PartyContext(entry.getKey(), members));
+            }
+        } else {
+            for (PlayerContext solo : soloPlayers) {
+                if (solo == null) {
+                    continue;
+                }
+                partyContexts.add(new PartyContext(solo.playerId(), List.of(solo)));
+            }
+        }
+
+        if (partyContexts.isEmpty()) {
+            return null;
+        }
+
+        DominantPartyMode mode = getDominantPartyResolutionMode();
+        PartyContext selected = null;
+        for (PartyContext candidate : partyContexts) {
+            if (candidate == null || candidate.members().isEmpty()) {
+                continue;
+            }
+            if (selected == null) {
+                selected = candidate;
+                continue;
+            }
+            if (isBetterDominantParty(candidate, selected, mode)) {
+                selected = candidate;
+            }
+        }
+        return selected;
+    }
+
+    private boolean isBetterDominantParty(PartyContext candidate, PartyContext current, DominantPartyMode mode) {
+        if (candidate == null || current == null) {
+            return false;
+        }
+
+        return switch (mode) {
+            case MOST_MEMBERS -> {
+                int candidateSize = candidate.members().size();
+                int currentSize = current.members().size();
+                if (candidateSize != currentSize) {
+                    yield candidateSize > currentSize;
+                }
+                double candidateClosest = minDistanceSq(candidate.members());
+                double currentClosest = minDistanceSq(current.members());
+                if (Math.abs(candidateClosest - currentClosest) > 0.000001D) {
+                    yield candidateClosest < currentClosest;
+                }
+                yield comparePartyId(candidate.partyId(), current.partyId()) < 0;
+            }
+            case CLOSEST_MEMBER -> {
+                double candidateClosest = minDistanceSq(candidate.members());
+                double currentClosest = minDistanceSq(current.members());
+                if (Math.abs(candidateClosest - currentClosest) > 0.000001D) {
+                    yield candidateClosest < currentClosest;
+                }
+                int candidateSize = candidate.members().size();
+                int currentSize = current.members().size();
+                if (candidateSize != currentSize) {
+                    yield candidateSize > currentSize;
+                }
+                yield comparePartyId(candidate.partyId(), current.partyId()) < 0;
+            }
+            case HIGHEST_AVERAGE -> {
+                double candidateAverage = averageLevel(candidate.members());
+                double currentAverage = averageLevel(current.members());
+                if (Math.abs(candidateAverage - currentAverage) > 0.000001D) {
+                    yield candidateAverage > currentAverage;
+                }
+                double candidateClosest = minDistanceSq(candidate.members());
+                double currentClosest = minDistanceSq(current.members());
+                if (Math.abs(candidateClosest - currentClosest) > 0.000001D) {
+                    yield candidateClosest < currentClosest;
+                }
+                yield comparePartyId(candidate.partyId(), current.partyId()) < 0;
+            }
+        };
+    }
+
+    private int computeVirtualPartyLevel(List<PlayerContext> members) {
+        if (members == null || members.isEmpty()) {
+            return 1;
+        }
+
+        PartyLevelCalculation calculation = getPartyLevelCalculationMode();
+        return switch (calculation) {
+            case MEDIAN -> medianLevel(members);
+            case AVERAGE -> (int) Math.round(averageLevel(members));
+        };
+    }
+
+    private double averageLevel(List<PlayerContext> members) {
+        if (members == null || members.isEmpty()) {
+            return 1.0D;
+        }
+        double total = 0.0D;
+        int count = 0;
+        for (PlayerContext member : members) {
+            if (member == null) {
+                continue;
+            }
+            total += Math.max(1, member.level());
+            count++;
+        }
+        if (count <= 0) {
+            return 1.0D;
+        }
+        return total / count;
+    }
+
+    private int medianLevel(List<PlayerContext> members) {
+        if (members == null || members.isEmpty()) {
+            return 1;
+        }
+        List<Integer> levels = new ArrayList<>(members.size());
+        for (PlayerContext member : members) {
+            if (member == null) {
+                continue;
+            }
+            levels.add(Math.max(1, member.level()));
+        }
+        if (levels.isEmpty()) {
+            return 1;
+        }
+        Collections.sort(levels);
+        int size = levels.size();
+        int mid = size / 2;
+        if (size % 2 == 1) {
+            return levels.get(mid);
+        }
+        double median = (levels.get(mid - 1) + levels.get(mid)) / 2.0D;
+        return (int) Math.round(median);
+    }
+
+    private double minDistanceSq(List<PlayerContext> members) {
+        if (members == null || members.isEmpty()) {
+            return Double.MAX_VALUE;
+        }
+        double min = Double.MAX_VALUE;
+        for (PlayerContext member : members) {
+            if (member == null) {
+                continue;
+            }
+            min = Math.min(min, Math.max(0.0D, member.distanceSq()));
+        }
+        return min;
+    }
+
+    private int comparePartyId(UUID a, UUID b) {
+        if (a == null && b == null) {
+            return 0;
+        }
+        if (a == null) {
+            return 1;
+        }
+        if (b == null) {
+            return -1;
+        }
+        return a.toString().compareToIgnoreCase(b.toString());
+    }
+
+    private UUID resolvePartyId(PartyManager partyManager, UUID playerId) {
+        if (partyManager == null || playerId == null || !partyManager.isAvailable()) {
+            return null;
+        }
+        if (!partyManager.isInParty(playerId)) {
+            return null;
+        }
+        UUID leader = partyManager.getPartyLeader(playerId);
+        return leader != null ? leader : playerId;
+    }
+
+    private PartyManager resolvePartyManager() {
+        EndlessLeveling plugin = EndlessLeveling.getInstance();
+        return plugin != null ? plugin.getPartyManager() : null;
+    }
+
+    private boolean isPartyPlayerSourceEnabled() {
+        return getPlayerBasedBoolean("Party_System.Enabled", false);
+    }
+
+    private double getPlayerPartyInfluenceRadius() {
+        return Math.max(0.0D, getPlayerBasedDouble("Party_System.Influence_Radius", 25.0D));
+    }
+
+    private PartyLevelCalculation getPartyLevelCalculationMode() {
+        String raw = getPlayerBasedString("Party_System.Level_Calculation", "AVERAGE");
+        if (raw == null) {
+            return PartyLevelCalculation.AVERAGE;
+        }
+        String normalized = raw.trim().toUpperCase(Locale.ROOT);
+        if ("MEDIAN".equals(normalized)) {
+            return PartyLevelCalculation.MEDIAN;
+        }
+        return PartyLevelCalculation.AVERAGE;
+    }
+
+    private DominantPartyMode getDominantPartyResolutionMode() {
+        String raw = getPlayerBasedString("Party_System.Dominant_Party_Resolution.Mode", "MOST_MEMBERS");
+        if (raw == null) {
+            return DominantPartyMode.MOST_MEMBERS;
+        }
+        String normalized = raw.trim().toUpperCase(Locale.ROOT);
+        return switch (normalized) {
+            case "CLOSEST_MEMBER" -> DominantPartyMode.CLOSEST_MEMBER;
+            case "HIGHEST_AVERAGE" -> DominantPartyMode.HIGHEST_AVERAGE;
+            default -> DominantPartyMode.MOST_MEMBERS;
+        };
+    }
+
+    private boolean isPartyLockLevelOnSpawnEnabled() {
+        return getPlayerBasedBoolean("Party_System.Lock_Level_On_Spawn", true);
+    }
+
+    private int getPlayerBasedOffset() {
+        return getPlayerBasedInt("Offset", 0);
+    }
+
+    private int getPlayerBasedMinDifference() {
+        return getPlayerBasedInt("Min_Difference", -3);
+    }
+
+    private int getPlayerBasedMaxDifference() {
+        return getPlayerBasedInt("Max_Difference", 3);
+    }
+
+    private String getPlayerBasedString(String suffix, String defaultValue) {
+        String primary = "Mob_Leveling.Level_Source.Player_Based." + suffix;
+        String fallback = "Mob_Leveling.Player_Based." + suffix;
+        if (configManager.hasPath(primary)) {
+            Object raw = configManager.get(primary, defaultValue, false);
+            return raw != null ? raw.toString() : defaultValue;
+        }
+        Object raw = configManager.get(fallback, defaultValue, false);
+        return raw != null ? raw.toString() : defaultValue;
+    }
+
+    private int getPlayerBasedInt(String suffix, int defaultValue) {
+        String raw = getPlayerBasedString(suffix, String.valueOf(defaultValue));
+        try {
+            return Integer.parseInt(raw.trim());
+        } catch (Exception ignored) {
+            return defaultValue;
+        }
+    }
+
+    private double getPlayerBasedDouble(String suffix, double defaultValue) {
+        String raw = getPlayerBasedString(suffix, String.valueOf(defaultValue));
+        try {
+            return Double.parseDouble(raw.trim());
+        } catch (Exception ignored) {
+            return defaultValue;
+        }
+    }
+
+    private boolean getPlayerBasedBoolean(String suffix, boolean defaultValue) {
+        String raw = getPlayerBasedString(suffix, String.valueOf(defaultValue));
+        if (raw == null) {
+            return defaultValue;
+        }
+        return Boolean.parseBoolean(raw.trim());
+    }
+
+    private double getMixedPlayerWeight() {
+        return clampWeight(getMixedDouble("Player_Weight", 0.5D));
+    }
+
+    private String getMixedString(String suffix, String defaultValue) {
+        String primary = "Mob_Leveling.Level_Source.Mixed." + suffix;
+        String fallback = "Mob_Leveling.Mixed." + suffix;
+        if (configManager.hasPath(primary)) {
+            Object raw = configManager.get(primary, defaultValue, false);
+            return raw != null ? raw.toString() : defaultValue;
+        }
+        Object raw = configManager.get(fallback, defaultValue, false);
+        return raw != null ? raw.toString() : defaultValue;
+    }
+
+    private double getMixedDouble(String suffix, double defaultValue) {
+        String raw = getMixedString(suffix, String.valueOf(defaultValue));
+        try {
+            return Double.parseDouble(raw.trim());
+        } catch (Exception ignored) {
+            return defaultValue;
+        }
+    }
+
+    private double clampWeight(double value) {
+        if (Double.isNaN(value) || Double.isInfinite(value)) {
+            return 0.0D;
+        }
+        return Math.max(0.0D, Math.min(1.0D, value));
+    }
+
+    private enum PartyLevelCalculation {
+        AVERAGE,
+        MEDIAN
+    }
+
+    private enum DominantPartyMode {
+        MOST_MEMBERS,
+        CLOSEST_MEMBER,
+        HIGHEST_AVERAGE
+    }
+
+    private record PlayerContext(UUID playerId, int level, double distanceSq, UUID partyId) {
+    }
+
+    private record PartyContext(UUID partyId, List<PlayerContext> members) {
     }
 
     private int samplePlayerDiff(Integer entityId, Vector3d mobPos, int minDiff, int maxDiff) {
@@ -974,11 +1497,15 @@ public class MobLevelingManager {
     /** Remove a specific entity override. */
     public void clearEntityLevelOverride(int entityIndex) {
         entityLevelOverrides.remove(entityIndex);
+        entityPartyOverrides.remove(entityIndex);
+        cachedPlayerDiffs.remove(entityIndex);
     }
 
     /** Clear all per-entity overrides. */
     public void clearAllEntityLevelOverrides() {
         entityLevelOverrides.clear();
+        entityPartyOverrides.clear();
+        cachedPlayerDiffs.clear();
     }
 
     private record AreaOverride(String id, String worldId,
