@@ -143,6 +143,8 @@ logging:
 augments:
   unlocks:
     - tier: ELITE
+      levels: [10]
+    - tier: ELITE
       levels: [25]
     - tier: MYTHIC
       levels: [50]

@@ -16,62 +16,68 @@ player_level_cap: 100
 Mob_Leveling:
   Enabled: true
 
-  # Mobs listed here will NEVER be leveled
+  # Mobs listed here will NEVER be leveled.
+  # Supports either exact IDs under ids, keyword matching under keywords, and wildcard '*' in both.
+  # Examples: "Undead_*", "*_Horse", "*fish*"
   Blacklist_Mob_Types:
-    - "Antelope"
-    - "Bat"
-    - "Jackalope"
-    - "Camel"
-    - "Cat"
-    - "Catfish"
-    - "Cattle"
-    - "Chicken"
-    - "Clownfish"
-    - "Crab"
-    - "Crow"
-    - "Deer"
-    - "Dog"
-    - "Duck"
-    - "Feran"
-    - "Flamingo"
-    - "Fox"
-    - "Frog"
-    - "Horse"
-    - "Human"
-    - "Klop"
-    - "Lobster"
-    - "Macaque"
-    - "Meerkat"
-    - "Moose"
-    - "Mouse"
-    - "Owl"
-    - "Parrot"
-    - "Penguin"
-    - "Pigeon"
-    - "Pike"
-    - "Pufferfish"
-    - "Rainbow_Trout"
-    - "Ram"
-    - "Regal_Tang"
-    - "Skeleton_Horse"
-    - "Undead_Cow"
-    - "Snail"
-    - "Snake"
-    - "Sparrow"
-    - "Vulture"
-    - "Woodpecker"
-    - "Sheep"
-    - "Gecko"
-    - "Chick"
-    - "Pig"
-    - "Rabbit"
-    - "Turtle"
-    - "Goat"
-    - "Squirrel"
-    - "Raccoon"
-    - "Badger"
-    - "Lamb"
-    - "Camel"
+    ids: []
+    keywords:
+      [
+        "Citizen",
+        "Antelope",
+        "Bat",
+        "Jackalope",
+        "Camel",
+        "Cat",
+        "Catfish",
+        "Cattle",
+        "Chicken",
+        "Clownfish",
+        "Crab",
+        "Crow",
+        "Deer",
+        "Dog",
+        "Duck",
+        "Feran",
+        "Flamingo",
+        "Fox",
+        "Frog",
+        "Horse",
+        "Human",
+        "Klop",
+        "Lobster",
+        "Macaque",
+        "Meerkat",
+        "Moose",
+        "Mouse",
+        "Owl",
+        "Parrot",
+        "Penguin",
+        "Pigeon",
+        "Pike",
+        "Pufferfish",
+        "Rainbow_Trout",
+        "Ram",
+        "Regal_Tang",
+        "Cow",
+        "Snail",
+        "Snake",
+        "Sparrow",
+        "Vulture",
+        "Woodpecker",
+        "Sheep",
+        "Gecko",
+        "Chick",
+        "Pig",
+        "Rabbit",
+        "Turtle",
+        "Goat",
+        "Squirrel",
+        "Raccoon",
+        "Badger",
+        "Lamb",
+        "Camel",
+      ]
 
   # -------------------------------------------------
   # GLOBAL MOB LEVEL RANGE

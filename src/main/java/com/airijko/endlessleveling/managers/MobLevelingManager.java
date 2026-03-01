@@ -19,7 +19,11 @@ import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -499,23 +503,200 @@ public class MobLevelingManager {
     public boolean isMobTypeBlacklisted(String mobType) {
         if (mobType == null || mobType.isBlank())
             return false;
+
+        String normalizedMob = normalizeMobIdentifier(mobType);
+        if (normalizedMob == null)
+            return false;
+
         Object raw = configManager.get("Mob_Leveling.Blacklist_Mob_Types", null, false);
         if (raw == null)
             return false;
 
+        if (raw instanceof Map<?, ?> map) {
+            List<String> idRules = readStringList(map.get("ids"));
+            List<String> keywordRules = readStringList(map.get("keywords"));
+
+            if (matchesAnyIdRule(normalizedMob, idRules)) {
+                return true;
+            }
+            return matchesAnyKeywordRule(normalizedMob, keywordRules);
+        }
+
         if (raw instanceof Iterable<?> iterable) {
-            for (Object entry : iterable) {
-                if (entry == null)
+            return matchesAnyIdRule(normalizedMob, readStringList(iterable));
+        }
+
+        return matchesAnyIdRule(normalizedMob, Collections.singletonList(raw.toString()));
+    }
+
+    private static List<String> readStringList(Object node) {
+        if (node == null) {
+            return Collections.emptyList();
+        }
+
+        List<String> values = new ArrayList<>();
+        if (node instanceof Iterable<?> iterable) {
+            for (Object value : iterable) {
+                if (value == null) {
                     continue;
-                if (mobType.equalsIgnoreCase(entry.toString())) {
-                    return true;
+                }
+                String text = value.toString().trim();
+                if (!text.isEmpty()) {
+                    values.add(text);
                 }
             }
+            return values;
+        }
+
+        String single = node.toString().trim();
+        if (!single.isEmpty()) {
+            values.add(single);
+        }
+        return values;
+    }
+
+    private static boolean matchesAnyIdRule(String normalizedMob, List<String> idRules) {
+        if (normalizedMob == null || idRules == null || idRules.isEmpty()) {
             return false;
         }
 
-        String single = raw.toString();
-        return mobType.equalsIgnoreCase(single);
+        for (String rule : idRules) {
+            String normalizedRule = normalizeMobIdentifier(rule);
+            if (normalizedRule == null) {
+                continue;
+            }
+            if (matchesWildcard(normalizedMob, normalizedRule)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean matchesAnyKeywordRule(String normalizedMob, List<String> keywordRules) {
+        if (normalizedMob == null || keywordRules == null || keywordRules.isEmpty()) {
+            return false;
+        }
+
+        List<String> tokens = tokenizeIdentifier(normalizedMob);
+        for (String keyword : keywordRules) {
+            String normalizedKeyword = normalizeKeyword(keyword);
+            if (normalizedKeyword == null) {
+                continue;
+            }
+
+            if (normalizedKeyword.indexOf('*') >= 0) {
+                if (matchesWildcard(normalizedMob, normalizedKeyword)) {
+                    return true;
+                }
+                for (String token : tokens) {
+                    if (matchesWildcard(token, normalizedKeyword)) {
+                        return true;
+                    }
+                }
+                continue;
+            }
+
+            if (normalizedMob.equals(normalizedKeyword) || normalizedMob.contains(normalizedKeyword)) {
+                return true;
+            }
+
+            for (String token : tokens) {
+                if (token.equals(normalizedKeyword)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static String normalizeMobIdentifier(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        if (trimmed.isEmpty()) {
+            return null;
+        }
+        int namespaceIndex = trimmed.lastIndexOf(':');
+        if (namespaceIndex >= 0 && namespaceIndex < trimmed.length() - 1) {
+            trimmed = trimmed.substring(namespaceIndex + 1);
+        }
+        return trimmed.replace('-', '_')
+                .replace('.', '_')
+                .replace(' ', '_')
+                .toUpperCase(Locale.ROOT);
+    }
+
+    private static String normalizeKeyword(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        if (trimmed.isEmpty()) {
+            return null;
+        }
+        return trimmed.replace('-', '_')
+                .replace('.', '_')
+                .replace(' ', '_')
+                .toUpperCase(Locale.ROOT);
+    }
+
+    private static List<String> tokenizeIdentifier(String normalizedIdentifier) {
+        if (normalizedIdentifier == null || normalizedIdentifier.isBlank()) {
+            return Collections.emptyList();
+        }
+
+        String[] rawParts = normalizedIdentifier.split("[^A-Z0-9]+");
+        if (rawParts.length == 0) {
+            return Collections.emptyList();
+        }
+
+        List<String> parts = new ArrayList<>(rawParts.length);
+        for (String part : rawParts) {
+            if (part == null || part.isBlank()) {
+                continue;
+            }
+            parts.add(part);
+        }
+        return parts;
+    }
+
+    private static boolean matchesWildcard(String text, String pattern) {
+        if (text == null || pattern == null) {
+            return false;
+        }
+        if ("*".equals(pattern)) {
+            return true;
+        }
+
+        int textIndex = 0;
+        int patternIndex = 0;
+        int starIndex = -1;
+        int matchIndex = 0;
+
+        while (textIndex < text.length()) {
+            if (patternIndex < pattern.length()
+                    && pattern.charAt(patternIndex) == text.charAt(textIndex)) {
+                patternIndex++;
+                textIndex++;
+            } else if (patternIndex < pattern.length() && pattern.charAt(patternIndex) == '*') {
+                starIndex = patternIndex;
+                matchIndex = textIndex;
+                patternIndex++;
+            } else if (starIndex != -1) {
+                patternIndex = starIndex + 1;
+                matchIndex++;
+                textIndex = matchIndex;
+            } else {
+                return false;
+            }
+        }
+
+        while (patternIndex < pattern.length() && pattern.charAt(patternIndex) == '*') {
+            patternIndex++;
+        }
+
+        return patternIndex == pattern.length();
     }
 
     /** Returns true if the referenced entity matches a blacklisted mob type */
