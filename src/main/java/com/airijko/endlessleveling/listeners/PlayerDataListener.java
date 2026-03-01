@@ -134,7 +134,7 @@ public class PlayerDataListener {
         var secondaryMessage = Message.join(
                 Message.raw(Lang.tr(playerRef.getUuid(), "notify.skills.unspent.secondary.open", "Open "))
                         .color("#ff9d00"),
-                Message.raw(Lang.tr(playerRef.getUuid(), "notify.skills.command", "/skills")).color("#4fd7f7"),
+                Message.raw(Lang.tr(playerRef.getUuid(), "notify.skills.command", "/el")).color("#4fd7f7"),
                 Message.raw(Lang.tr(playerRef.getUuid(), "notify.skills.unspent.secondary.close", " to invest them"))
                         .color("#ff9d00"));
         var icon = new ItemStack("Ingredient_Ice_Essence", 1).toPacket();
@@ -147,7 +147,7 @@ public class PlayerDataListener {
                 Message.raw(String.valueOf(skillPoints)).color("#4fd7f7"),
                 Message.raw(Lang.tr(playerRef.getUuid(), "notify.skills.chat.use", " skill points. Use "))
                         .color("#ffc300"),
-                Message.raw(Lang.tr(playerRef.getUuid(), "notify.skills.command", "/skills")).color("#4fd7f7"),
+                Message.raw(Lang.tr(playerRef.getUuid(), "notify.skills.command", "/el")).color("#4fd7f7"),
                 Message.raw(Lang.tr(playerRef.getUuid(), "notify.skills.chat.end", " to spend them."))
                         .color("#ffc300"));
         playerRef.sendMessage(chatMessage);

@@ -4,7 +4,7 @@ meta:
 notify:
   prefix: "[EndlessLeveling] "
   skills:
-    command: "/skills"
+    command: "/el"
     unspent:
       primary: "You have {0} unspent skill points!"
       secondary:
