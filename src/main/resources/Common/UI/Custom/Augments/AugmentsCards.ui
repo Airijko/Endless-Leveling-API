@@ -21,6 +21,19 @@ $C.@PageOverlay {
             Anchor: (Width: 980);
             Padding: (Full: 12);
 
+            // Single tier title row (ELITE / MYTHIC)
+            Group {
+                LayoutMode: Middle;
+                Anchor: (Width: 980);
+
+                $C.@Title #AugmentsTierTitle {
+                    @Text = "AUGMENTS";
+                    Style: (FontSize: 24, TextColor: #e6edf5, RenderBold: true, Wrap: true, HorizontalAlignment: Center, VerticalAlignment: Center);
+                }
+            }
+
+            Group { Anchor: (Height: 12); }
+
             // Cards row (centered)
             Group {
                 LayoutMode: Middle;
@@ -76,6 +89,24 @@ $C.@PageOverlay {
                                 Label #AugmentCard1Debuffs {
                                     Text: "Debuffs: -";
                                     Style: (FontSize: 14, TextColor: #ffb3b3, Wrap: true, HorizontalAlignment: Center);
+                                    Visible: false;
+                                }
+
+                                Label #AugmentCard1SelfDamage {
+                                    Text: "";
+                                    Style: (FontSize: 14, TextColor: #ffb86b, Wrap: true, HorizontalAlignment: Center);
+                                    Visible: false;
+                                }
+
+                                Label #AugmentCard1Neutral {
+                                    Text: "";
+                                    Style: (FontSize: 14, TextColor: #e6edf5, Wrap: true, HorizontalAlignment: Center);
+                                    Visible: false;
+                                }
+
+                                Label #AugmentCard1Notes {
+                                    Text: "";
+                                    Style: (FontSize: 13, TextColor: #c9d2de, Wrap: true, HorizontalAlignment: Center);
                                     Visible: false;
                                 }
 
@@ -149,6 +180,24 @@ $C.@PageOverlay {
                                     Visible: false;
                                 }
 
+                                Label #AugmentCard2SelfDamage {
+                                    Text: "";
+                                    Style: (FontSize: 14, TextColor: #ffb86b, Wrap: true, HorizontalAlignment: Center);
+                                    Visible: false;
+                                }
+
+                                Label #AugmentCard2Neutral {
+                                    Text: "";
+                                    Style: (FontSize: 14, TextColor: #e6edf5, Wrap: true, HorizontalAlignment: Center);
+                                    Visible: false;
+                                }
+
+                                Label #AugmentCard2Notes {
+                                    Text: "";
+                                    Style: (FontSize: 13, TextColor: #c9d2de, Wrap: true, HorizontalAlignment: Center);
+                                    Visible: false;
+                                }
+
                                 Group { Anchor: (Height: 6); }
 
                                 Label #AugmentCard2Duration {
@@ -216,6 +265,24 @@ $C.@PageOverlay {
                                 Label #AugmentCard3Debuffs {
                                     Text: "Debuffs: -";
                                     Style: (FontSize: 14, TextColor: #ffb3b3, Wrap: true, HorizontalAlignment: Center);
+                                    Visible: false;
+                                }
+
+                                Label #AugmentCard3SelfDamage {
+                                    Text: "";
+                                    Style: (FontSize: 14, TextColor: #ffb86b, Wrap: true, HorizontalAlignment: Center);
+                                    Visible: false;
+                                }
+
+                                Label #AugmentCard3Neutral {
+                                    Text: "";
+                                    Style: (FontSize: 14, TextColor: #e6edf5, Wrap: true, HorizontalAlignment: Center);
+                                    Visible: false;
+                                }
+
+                                Label #AugmentCard3Notes {
+                                    Text: "";
+                                    Style: (FontSize: 13, TextColor: #c9d2de, Wrap: true, HorizontalAlignment: Center);
                                     Visible: false;
                                 }
 

@@ -46,6 +46,7 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
     private static final String PASSIVE_ENTRY_TEMPLATE = "Pages/Profile/ProfileRacePassiveEntry.ui";
+    private static final String NO_RACE_LABEL = "No Race";
     private static final String TIER_COLOR_MYTHIC = "#7851a9";
     private static final String TIER_COLOR_ELITE = "#89cff0";
     private static final String TIER_COLOR_DEFAULT = "#ffc300";
@@ -323,14 +324,22 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
     private String getRaceDisplay(@Nonnull PlayerProfile profile) {
         String raceId = profile.getRaceId();
+        if (raceId == null || raceId.isBlank() || raceId.equalsIgnoreCase("none")) {
+            return NO_RACE_LABEL;
+        }
         if (raceManager == null) {
-            return raceId == null || raceId.isBlank() ? PlayerData.DEFAULT_RACE_ID : raceId;
+            return raceId;
         }
         RaceDefinition definition = raceManager.getRace(raceId);
         if (definition != null) {
-            return definition.getDisplayName();
+            String displayName = definition.getDisplayName();
+            if (displayName != null && !displayName.isBlank()) {
+                return displayName;
+            }
+            String id = definition.getId();
+            return id != null && !id.isBlank() ? id : NO_RACE_LABEL;
         }
-        return raceId == null || raceId.isBlank() ? raceManager.getDefaultRaceId() : raceId;
+        return raceId;
     }
 
     private AggregatedPassiveSections buildAggregatedPassiveSections(@Nonnull PlayerData playerData,

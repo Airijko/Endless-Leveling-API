@@ -3,6 +3,7 @@ package com.airijko.endlessleveling.listeners;
 import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.augments.AugmentUnlockManager;
 import com.airijko.endlessleveling.data.PlayerData;
+import com.airijko.endlessleveling.enums.PassiveTier;
 import com.airijko.endlessleveling.managers.PassiveManager;
 import com.airijko.endlessleveling.managers.PlayerDataManager;
 import com.airijko.endlessleveling.managers.RaceManager;
@@ -20,6 +21,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.util.NotificationUtil;
 
 import java.util.UUID;
+import java.util.List;
 
 public class PlayerDataListener {
 
@@ -82,6 +84,7 @@ public class PlayerDataListener {
 
         if (augmentUnlockManager != null) {
             augmentUnlockManager.ensureUnlocks(playerData);
+            notifyAvailableAugments(playerRef, playerData);
         }
 
         var partyManager = EndlessLeveling.getInstance().getPartyManager();
@@ -139,5 +142,23 @@ public class PlayerDataListener {
                 Message.raw("/skills").color("#4fd7f7"),
                 Message.raw(" to spend them.").color("#ffc300"));
         playerRef.sendMessage(chatMessage);
+    }
+
+    private void notifyAvailableAugments(PlayerRef playerRef, PlayerData playerData) {
+        if (playerRef == null || playerData == null || augmentUnlockManager == null) {
+            return;
+        }
+        List<PassiveTier> tiers = augmentUnlockManager.getPendingOfferTiers(playerData);
+        if (tiers.isEmpty()) {
+            return;
+        }
+
+        StringBuilder builder = new StringBuilder();
+        builder.append("[EndlessLeveling] You have augments available to choose from:\n");
+        for (PassiveTier tier : tiers) {
+            builder.append("- ").append(tier.name()).append("\n");
+        }
+        builder.append("Use /el augments to choose.");
+        playerRef.sendMessage(Message.raw(builder.toString()).color("#4fd7f7"));
     }
 }

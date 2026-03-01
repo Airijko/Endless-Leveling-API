@@ -12,7 +12,6 @@ import java.util.function.Function;
 public final class AugmentRegistry {
 
     private static final Map<String, Function<AugmentDefinition, Augment>> FACTORIES = Map.ofEntries(
-            Map.entry(AmbushAugment.ID, AmbushAugment::new),
             Map.entry(ArcaneInstabilityAugment.ID, ArcaneInstabilityAugment::new),
             Map.entry(ArcaneMasteryAugment.ID, ArcaneMasteryAugment::new),
             Map.entry(BloodEchoAugment.ID, BloodEchoAugment::new),
@@ -30,7 +29,6 @@ public final class AugmentRegistry {
             Map.entry(RagingMomentumAugment.ID, RagingMomentumAugment::new),
             Map.entry(RebirthAugment.ID, RebirthAugment::new),
             Map.entry(ReckoningAugment.ID, ReckoningAugment::new),
-            Map.entry(ShadowstepAugment.ID, ShadowstepAugment::new),
             Map.entry(SnipersReachAugment.ID, SnipersReachAugment::new),
             Map.entry(SoulReaverAugment.ID, SoulReaverAugment::new),
             Map.entry(SupersonicAugment.ID, SupersonicAugment::new),

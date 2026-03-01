@@ -52,6 +52,7 @@ public class ClassManager {
     private final Yaml yaml = new Yaml();
 
     private String defaultPrimaryClassId = PlayerData.DEFAULT_PRIMARY_CLASS_ID;
+    private boolean hasConfiguredDefaultPrimaryClass = true;
     private String defaultSecondaryClassId = null;
     private final double secondaryPassiveScale = 0.5D;
     private final double secondaryWeaponScale = 0.5D;
@@ -63,15 +64,25 @@ public class ClassManager {
             return;
         }
 
-        String configuredPrimary = safeString(
-                configManager.get("default_primary_class", defaultPrimaryClassId, false));
-        if (configuredPrimary != null) {
-            defaultPrimaryClassId = configuredPrimary;
+        Object primaryNode = configManager.get("default_primary_class", defaultPrimaryClassId, false);
+        if (isNoneLiteral(primaryNode)) {
+            defaultPrimaryClassId = null;
+            hasConfiguredDefaultPrimaryClass = false;
+        } else {
+            String configuredPrimary = parseConfiguredDefaultClass(primaryNode);
+            if (configuredPrimary != null) {
+                defaultPrimaryClassId = configuredPrimary;
+                hasConfiguredDefaultPrimaryClass = true;
+            }
         }
 
-        String configuredSecondary = safeString(configManager.get("default_secondary_class", defaultSecondaryClassId,
-                false));
-        defaultSecondaryClassId = configuredSecondary;
+        Object secondaryNode = configManager.get("default_secondary_class", defaultSecondaryClassId, false);
+        if (isNoneLiteral(secondaryNode)) {
+            defaultSecondaryClassId = null;
+        } else {
+            String configuredSecondary = parseConfiguredDefaultClass(secondaryNode);
+            defaultSecondaryClassId = configuredSecondary;
+        }
     }
 
     public ClassManager(ConfigManager configManager, PluginFilesManager filesManager) {
@@ -83,13 +94,21 @@ public class ClassManager {
                 false);
 
         Object primaryConfig = configManager.get("default_primary_class", PlayerData.DEFAULT_PRIMARY_CLASS_ID, false);
-        String configuredPrimary = safeString(primaryConfig);
-        if (configuredPrimary != null) {
-            this.defaultPrimaryClassId = configuredPrimary;
+        if (isNoneLiteral(primaryConfig)) {
+            this.defaultPrimaryClassId = null;
+            this.hasConfiguredDefaultPrimaryClass = false;
+        } else {
+            String configuredPrimary = parseConfiguredDefaultClass(primaryConfig);
+            if (configuredPrimary != null) {
+                this.defaultPrimaryClassId = configuredPrimary;
+                this.hasConfiguredDefaultPrimaryClass = true;
+            }
         }
 
         Object secondaryConfig = configManager.get("default_secondary_class", null, false);
-        this.defaultSecondaryClassId = safeString(secondaryConfig);
+        this.defaultSecondaryClassId = isNoneLiteral(secondaryConfig)
+                ? null
+                : parseConfiguredDefaultClass(secondaryConfig);
 
         Object classCooldownConfig = configManager.get("choose_class_cooldown", 0, false);
         this.chooseClassCooldownSeconds = parseCooldownSeconds(classCooldownConfig);
@@ -179,7 +198,7 @@ public class ClassManager {
         if (resolved != null) {
             data.setPrimaryClassId(resolved.getId());
         } else {
-            data.setPrimaryClassId(PlayerData.DEFAULT_PRIMARY_CLASS_ID);
+            data.setPrimaryClassId(null);
         }
         return resolved;
     }
@@ -207,6 +226,12 @@ public class ClassManager {
     }
 
     public CharacterClassDefinition getDefaultPrimaryClass() {
+        if (!hasConfiguredDefaultPrimaryClass) {
+            return null;
+        }
+        if (defaultPrimaryClassId == null || defaultPrimaryClassId.isBlank()) {
+            return null;
+        }
         CharacterClassDefinition configured = getClass(defaultPrimaryClassId);
         if (configured != null) {
             return configured;
@@ -310,18 +335,25 @@ public class ClassManager {
 
     public String resolvePrimaryClassIdentifier(String requestedValue) {
         if (!isEnabled()) {
-            return PlayerData.DEFAULT_PRIMARY_CLASS_ID;
+            return null;
         }
         if (requestedValue == null || requestedValue.isBlank()) {
+            if (!hasConfiguredDefaultPrimaryClass) {
+                return null;
+            }
             CharacterClassDefinition fallback = getDefaultPrimaryClass();
-            return fallback != null ? fallback.getId() : PlayerData.DEFAULT_PRIMARY_CLASS_ID;
+            return fallback != null ? fallback.getId() : null;
         }
         CharacterClassDefinition byId = findClassByUserInput(requestedValue);
         if (byId != null) {
             return byId.getId();
         }
         CharacterClassDefinition fallback = getDefaultPrimaryClass();
-        return fallback != null ? fallback.getId() : PlayerData.DEFAULT_PRIMARY_CLASS_ID;
+        return fallback != null ? fallback.getId() : null;
+    }
+
+    public boolean hasConfiguredDefaultPrimaryClass() {
+        return hasConfiguredDefaultPrimaryClass;
     }
 
     public String resolveSecondaryClassIdentifier(String requestedValue) {
@@ -735,6 +767,21 @@ public class ClassManager {
             return trimmed.isEmpty() ? null : trimmed;
         }
         return null;
+    }
+
+    private String parseConfiguredDefaultClass(Object value) {
+        String parsed = safeString(value);
+        if (parsed == null) {
+            return null;
+        }
+        return "none".equalsIgnoreCase(parsed) ? null : parsed;
+    }
+
+    private boolean isNoneLiteral(Object value) {
+        if (!(value instanceof String text)) {
+            return false;
+        }
+        return "none".equalsIgnoreCase(text.trim());
     }
 
     private Map<String, Object> castToStringObjectMap(Object node) {

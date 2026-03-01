@@ -533,10 +533,10 @@ public class PlayerData {
             }
             this.augmentOffers = new LinkedHashMap<>();
             this.selectedAugments = new LinkedHashMap<>();
-            this.raceId = DEFAULT_RACE_ID;
+            this.raceId = null;
             this.lastRaceChangeEpochSeconds = 0L;
             this.raceSwitchCount = 0;
-            this.primaryClassId = DEFAULT_PRIMARY_CLASS_ID;
+            this.primaryClassId = null;
             this.secondaryClassId = null;
             this.lastPrimaryClassChangeEpochSeconds = 0L;
             this.lastSecondaryClassChangeEpochSeconds = 0L;
@@ -668,7 +668,7 @@ public class PlayerData {
 
         public void setRaceId(String raceId) {
             if (raceId == null || raceId.isBlank()) {
-                this.raceId = DEFAULT_RACE_ID;
+                this.raceId = null;
                 return;
             }
             this.raceId = raceId.trim();
@@ -700,11 +700,11 @@ public class PlayerData {
 
         public void setPrimaryClassId(String classId) {
             if (classId == null || classId.isBlank()) {
-                this.primaryClassId = DEFAULT_PRIMARY_CLASS_ID;
+                this.primaryClassId = null;
                 return;
             }
             this.primaryClassId = classId.trim();
-            if (secondaryClassId != null
+            if (secondaryClassId != null && this.primaryClassId != null
                     && secondaryClassId.equalsIgnoreCase(this.primaryClassId)) {
                 this.secondaryClassId = null;
             }
@@ -720,7 +720,7 @@ public class PlayerData {
                 return;
             }
             String trimmed = classId.trim();
-            if (trimmed.equalsIgnoreCase(primaryClassId)) {
+            if (primaryClassId != null && trimmed.equalsIgnoreCase(primaryClassId)) {
                 this.secondaryClassId = null;
                 return;
             }

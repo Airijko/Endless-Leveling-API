@@ -28,6 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class PlayerHud extends CustomUIHud {
 
     public static final String ID = "EndlessLeveling:PlayerHud";
+    private static final String NO_RACE_LABEL = "No Race";
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
     private static final Map<UUID, PlayerHud> ACTIVE_HUDS = new ConcurrentHashMap<>();
     private static final Map<String, String> DEFAULT_CLASS_ICONS = Map.ofEntries(
@@ -106,11 +107,13 @@ public class PlayerHud extends CustomUIHud {
         if (data == null) {
             return "--";
         }
+        String raceId = data.getRaceId();
+        if (raceId == null || raceId.isBlank() || raceId.equalsIgnoreCase("none")) {
+            return NO_RACE_LABEL;
+        }
+
         if (raceManager != null && raceManager.isEnabled()) {
-            RaceDefinition race = raceManager.getRace(data.getRaceId());
-            if (race == null) {
-                race = raceManager.getDefaultRace();
-            }
+            RaceDefinition race = raceManager.getRace(raceId);
             if (race != null) {
                 String display = race.getDisplayName();
                 if (display != null && !display.isBlank()) {
@@ -119,8 +122,7 @@ public class PlayerHud extends CustomUIHud {
                 return race.getId();
             }
         }
-        String id = data.getRaceId();
-        return (id == null || id.isBlank()) ? "Unknown" : id;
+        return raceId;
     }
 
     private String resolveClassLabel(boolean primary) {

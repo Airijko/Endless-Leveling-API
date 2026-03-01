@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -92,6 +91,21 @@ public class AugmentUnlockManager {
         playerData.clearSelectedAugments();
         playerData.clearAugmentOffers();
         ensureUnlocks(playerData);
+    }
+
+    /**
+     * Returns tiers that currently have unclaimed augment offers for the player.
+     */
+    public List<PassiveTier> getPendingOfferTiers(@Nonnull PlayerData playerData) {
+        Map<String, List<String>> offers = playerData.getAugmentOffersSnapshot();
+        List<PassiveTier> tiers = new ArrayList<>();
+        PassiveTier[] priority = { PassiveTier.MYTHIC, PassiveTier.ELITE, PassiveTier.COMMON };
+        for (PassiveTier tier : priority) {
+            if (!offers.getOrDefault(tier.name(), List.of()).isEmpty()) {
+                tiers.add(tier);
+            }
+        }
+        return tiers;
     }
 
     private List<String> rollOffers(PassiveTier tier) {

@@ -11,6 +11,7 @@ import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
 import com.hypixel.hytale.server.core.entity.entities.player.pages.InteractiveCustomUIPage;
+import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
 import static com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType.Activating;
@@ -21,11 +22,12 @@ import com.hypixel.hytale.server.core.Message;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Augments page that displays three random augment definitions.
@@ -33,6 +35,13 @@ import java.util.Map;
 public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
     private static final int CARD_COUNT = 3;
+    private static final String COLOR_BUFF = "#8adf9e";
+    private static final String COLOR_DEBUFF = "#ff9a9a";
+    private static final String COLOR_COOLDOWN = "#ffd56b";
+    private static final String COLOR_DURATION = "#9ecbff";
+    private static final String COLOR_BRACKET_NOTES = "#c9d2de";
+    private static final String COLOR_SELF_DAMAGE = "#ffb86b";
+    private static final String COLOR_NEUTRAL = "#e6edf5";
 
     private static final Map<String, String> BUFF_NAME_OVERRIDES = createBuffNameOverrides();
 
@@ -57,7 +66,12 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             @Nonnull Store<EntityStore> store) {
         ui.append("Augments/AugmentsCards.ui");
 
-        List<AugmentDefinition> augments = pickPlayerAugments();
+        PlayerData playerData = playerDataManager != null ? playerDataManager.get(playerRef.getUuid()) : null;
+        List<AugmentDefinition> augments = pickPlayerAugments(playerData);
+        String tierTitle = resolveTierTitle(playerData, augments);
+        ui.set("#AugmentsTierTitle.Text", tierTitle);
+        ui.set("#AugmentsTierTitle.Visible", true);
+
         for (int i = 0; i < CARD_COUNT; i++) {
             AugmentDefinition augment = i < augments.size() ? augments.get(i) : null;
             applyCard(ui, i + 1, augment);
@@ -68,12 +82,35 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         events.addEventBinding(Activating, "#AugmentCard3Choose", of("Action", "augment:choose:2"), false);
     }
 
-    private List<AugmentDefinition> pickPlayerAugments() {
+    private String resolveTierTitle(PlayerData playerData, List<AugmentDefinition> augments) {
+        if (playerData != null) {
+            Map<String, List<String>> offers = playerData.getAugmentOffersSnapshot();
+            if (!offers.getOrDefault(PassiveTier.MYTHIC.name(), List.of()).isEmpty()) {
+                return PassiveTier.MYTHIC.name();
+            }
+            if (!offers.getOrDefault(PassiveTier.ELITE.name(), List.of()).isEmpty()) {
+                return PassiveTier.ELITE.name();
+            }
+            if (!offers.getOrDefault(PassiveTier.COMMON.name(), List.of()).isEmpty()) {
+                return PassiveTier.COMMON.name();
+            }
+        }
+
+        if (augments == null || augments.isEmpty()) {
+            return "AUGMENTS";
+        }
+        AugmentDefinition first = augments.get(0);
+        if (first == null || first.getTier() == null) {
+            return "AUGMENTS";
+        }
+        return first.getTier().name();
+    }
+
+    private List<AugmentDefinition> pickPlayerAugments(PlayerData playerData) {
         if (augmentManager == null) {
             return List.of();
         }
 
-        PlayerData playerData = playerDataManager != null ? playerDataManager.get(playerRef.getUuid()) : null;
         if (playerData != null && augmentUnlockManager != null) {
             augmentUnlockManager.ensureUnlocks(playerData);
         }
@@ -150,6 +187,23 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         playerDataManager.save(playerData);
 
         playerRef.sendMessage(Message.raw("Selected augment: " + choice.id + " (" + tierKey + ")").color("#4fd7f7"));
+
+        List<PassiveTier> remainingTiers = augmentUnlockManager.getPendingOfferTiers(playerData);
+        if (!remainingTiers.isEmpty()) {
+            StringBuilder builder = new StringBuilder();
+            builder.append("[EndlessLeveling] You still have more augments to choose from:\n");
+            for (PassiveTier remainingTier : remainingTiers) {
+                builder.append("- ").append(remainingTier.name()).append("\n");
+            }
+            builder.append("Choose again now.");
+            playerRef.sendMessage(Message.raw(builder.toString()).color("#4fd7f7"));
+        }
+
+        Player player = store.getComponent(ref, Player.getComponentType());
+        if (player != null) {
+            player.getPageManager().openCustomPage(ref, store,
+                    new AugmentsUIPage(playerRef, CustomPageLifetime.CanDismiss));
+        }
     }
 
     private List<AugmentChoice> collectChoices(PlayerData playerData) {
@@ -168,6 +222,9 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     private record AugmentChoice(String id, PassiveTier tier) {
     }
 
+    private record FormattedSection(String body, List<String> notes) {
+    }
+
     private void applyCard(@Nonnull UICommandBuilder ui, int slotIndex, AugmentDefinition augment) {
         String titleSelector = "#AugmentCard" + slotIndex + "Title";
         String descriptionSelector = "#AugmentCard" + slotIndex + "Description";
@@ -176,6 +233,9 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         String durationSelector = "#AugmentCard" + slotIndex + "Duration";
         String buffsSelector = "#AugmentCard" + slotIndex + "Buffs";
         String debuffsSelector = "#AugmentCard" + slotIndex + "Debuffs";
+        String selfDamageSelector = "#AugmentCard" + slotIndex + "SelfDamage";
+        String neutralSelector = "#AugmentCard" + slotIndex + "Neutral";
+        String notesSelector = "#AugmentCard" + slotIndex + "Notes";
 
         // Temporary placeholder icon until augments supply their own.
         ui.set(iconSelector + ".ItemId", "Ingredient_Ice_Essence");
@@ -188,6 +248,9 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             ui.set(durationSelector + ".Visible", false);
             ui.set(buffsSelector + ".Visible", false);
             ui.set(debuffsSelector + ".Visible", false);
+            ui.set(selfDamageSelector + ".Visible", false);
+            ui.set(neutralSelector + ".Visible", false);
+            ui.set(notesSelector + ".Visible", false);
             return;
         }
 
@@ -200,38 +263,171 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         ui.set(descriptionSelector + ".Text", description);
 
         Map<String, Object> passives = augment.getPassives();
+        List<String> bracketNotes = new ArrayList<>();
+        List<String> allSelfDamageLines = new ArrayList<>();
+        List<String> allNeutralLines = new ArrayList<>();
 
         String cooldownText = formatCooldown(passives);
         if (cooldownText == null) {
             ui.set(cooldownSelector + ".Visible", false);
         } else {
-            ui.set(cooldownSelector + ".Text", cooldownText);
-            ui.set(cooldownSelector + ".Visible", true);
+            FormattedSection formatted = splitBracketNotes(cooldownText);
+            if (formatted.body().isBlank()) {
+                ui.set(cooldownSelector + ".Visible", false);
+            } else {
+                ui.set(cooldownSelector + ".Text", formatted.body());
+                ui.set(cooldownSelector + ".Style.TextColor", COLOR_COOLDOWN);
+                ui.set(cooldownSelector + ".Visible", true);
+            }
+            bracketNotes.addAll(formatted.notes());
         }
 
         String durationText = formatDuration(passives);
         if (durationText == null) {
             ui.set(durationSelector + ".Visible", false);
         } else {
-            ui.set(durationSelector + ".Text", durationText);
-            ui.set(durationSelector + ".Visible", true);
+            FormattedSection formatted = splitBracketNotes(durationText);
+            if (formatted.body().isBlank()) {
+                ui.set(durationSelector + ".Visible", false);
+            } else {
+                ui.set(durationSelector + ".Text", formatted.body());
+                ui.set(durationSelector + ".Style.TextColor", COLOR_DURATION);
+                ui.set(durationSelector + ".Visible", true);
+            }
+            bracketNotes.addAll(formatted.notes());
         }
 
         String buffsText = formatBuffs(passives);
         if (buffsText == null || buffsText.isBlank()) {
             ui.set(buffsSelector + ".Visible", false);
         } else {
-            ui.set(buffsSelector + ".Text", buffsText);
-            ui.set(buffsSelector + ".Visible", true);
+            List<String> buffLines = new ArrayList<>();
+            List<String> selfDamageLines = new ArrayList<>();
+            List<String> neutralLines = new ArrayList<>();
+            splitSpecialLines(buffsText, buffLines, selfDamageLines, neutralLines);
+            allSelfDamageLines.addAll(selfDamageLines);
+            allNeutralLines.addAll(neutralLines);
+
+            String filteredBuffText = String.join("\n", buffLines);
+            FormattedSection filtered = splitBracketNotes(filteredBuffText);
+
+            if (filtered.body().isBlank()) {
+                ui.set(buffsSelector + ".Visible", false);
+            } else {
+                ui.set(buffsSelector + ".Text", filtered.body());
+                ui.set(buffsSelector + ".Style.TextColor", COLOR_BUFF);
+                ui.set(buffsSelector + ".Visible", true);
+            }
+            bracketNotes.addAll(filtered.notes());
         }
 
         String debuffsText = formatDebuffs(passives);
         if (debuffsText == null || debuffsText.isBlank()) {
             ui.set(debuffsSelector + ".Visible", false);
         } else {
-            ui.set(debuffsSelector + ".Text", debuffsText);
-            ui.set(debuffsSelector + ".Visible", true);
+            List<String> debuffLines = new ArrayList<>();
+            List<String> selfDamageLines = new ArrayList<>();
+            List<String> neutralLines = new ArrayList<>();
+            splitSpecialLines(debuffsText, debuffLines, selfDamageLines, neutralLines);
+            allSelfDamageLines.addAll(selfDamageLines);
+            allNeutralLines.addAll(neutralLines);
+
+            String filteredDebuffText = String.join("\n", debuffLines);
+            FormattedSection formatted = splitBracketNotes(filteredDebuffText);
+            if (formatted.body().isBlank()) {
+                ui.set(debuffsSelector + ".Visible", false);
+            } else {
+                ui.set(debuffsSelector + ".Text", formatted.body());
+                ui.set(debuffsSelector + ".Style.TextColor", COLOR_DEBUFF);
+                ui.set(debuffsSelector + ".Visible", true);
+            }
+            bracketNotes.addAll(formatted.notes());
         }
+
+        applySpecialRows(ui, selfDamageSelector, neutralSelector, allSelfDamageLines, allNeutralLines);
+
+        if (bracketNotes.isEmpty()) {
+            ui.set(notesSelector + ".Visible", false);
+        } else {
+            ui.set(notesSelector + ".Text", String.join("\n", bracketNotes));
+            ui.set(notesSelector + ".Style.TextColor", COLOR_BRACKET_NOTES);
+            ui.set(notesSelector + ".Visible", true);
+        }
+    }
+
+    private void splitSpecialLines(String source,
+            List<String> normalLines,
+            List<String> selfDamageLines,
+            List<String> neutralLines) {
+        if (source == null || source.isBlank()) {
+            return;
+        }
+        for (String line : source.split("\\n")) {
+            String trimmed = line == null ? "" : line.trim();
+            if (trimmed.isBlank()) {
+                continue;
+            }
+            String lowered = trimmed.toLowerCase(Locale.ROOT);
+            if (lowered.startsWith("self damage:")) {
+                selfDamageLines.add(trimmed);
+            } else if (lowered.startsWith("trigger threshold:")) {
+                neutralLines.add(trimmed);
+            } else {
+                normalLines.add(trimmed);
+            }
+        }
+    }
+
+    private void applySpecialRows(UICommandBuilder ui,
+            String selfDamageSelector,
+            String neutralSelector,
+            List<String> selfDamageLines,
+            List<String> neutralLines) {
+        if (selfDamageLines == null || selfDamageLines.isEmpty()) {
+            ui.set(selfDamageSelector + ".Visible", false);
+        } else {
+            ui.set(selfDamageSelector + ".Text", String.join("\n", selfDamageLines));
+            ui.set(selfDamageSelector + ".Style.TextColor", COLOR_SELF_DAMAGE);
+            ui.set(selfDamageSelector + ".Visible", true);
+        }
+
+        if (neutralLines == null || neutralLines.isEmpty()) {
+            ui.set(neutralSelector + ".Visible", false);
+        } else {
+            ui.set(neutralSelector + ".Text", String.join("\n", neutralLines));
+            ui.set(neutralSelector + ".Style.TextColor", COLOR_NEUTRAL);
+            ui.set(neutralSelector + ".Visible", true);
+        }
+    }
+
+    private FormattedSection splitBracketNotes(String text) {
+        if (text == null || text.isBlank()) {
+            return new FormattedSection("", List.of());
+        }
+
+        List<String> bodyLines = new ArrayList<>();
+        List<String> noteLines = new ArrayList<>();
+        for (String rawLine : text.split("\\n")) {
+            String working = rawLine == null ? "" : rawLine.trim();
+            while (true) {
+                int open = working.indexOf('(');
+                int close = open >= 0 ? working.indexOf(')', open + 1) : -1;
+                if (open < 0 || close < 0) {
+                    break;
+                }
+                String note = working.substring(open, close + 1).trim();
+                if (!note.isBlank()) {
+                    noteLines.add(note);
+                }
+                working = (working.substring(0, open) + working.substring(close + 1))
+                        .replaceAll("\\s{2,}", " ")
+                        .trim();
+            }
+            if (!working.isBlank()) {
+                bodyLines.add(working);
+            }
+        }
+        return new FormattedSection(String.join("\n", bodyLines), noteLines);
     }
 
     private static Map<String, String> createBuffNameOverrides() {
@@ -247,14 +443,38 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         map.put("critical_chance", "Critical Chance");
         map.put("life_steal", "Life Steal");
         map.put("life_steal_scaling", "Life Steal");
+        map.put("heal_on_crit", "Life Steal (Crit)");
+        map.put("heal_on_kill", "Heal on Kill");
+        map.put("heal_over_time", "Deferred Damage");
+        map.put("heal_to_damage", "Heal to Damage");
+        map.put("bonus_damage_on_hit", "Bonus Damage");
+        map.put("bonus_damage", "Bonus Damage");
+        map.put("max_bonus_damage", "Bonus Damage");
+        map.put("max_bonus_ferocity", "Ferocity");
+        map.put("strength_from_max_health", "Strength");
+        map.put("sorcery_bonus_high", "Sorcery");
+        map.put("sorcery_penalty_low", "Sorcery");
+        map.put("crit_defense", "Damage Reduction");
+        map.put("taunt_radius", "Taunt Radius");
+        map.put("bonus_damage_by_distance", "Bonus Damage");
+        map.put("bonus_damage_vs_hp_ratio", "Bonus Damage");
+        map.put("execution_heal", "Execute Heal");
+        map.put("self_damage", "Self Damage");
+        map.put("percent_of_current_hp", "Self Damage");
         map.put("movement_speed_bonus", "Move Speed");
         map.put("movement_speed", "Move Speed");
         map.put("resistance_bonus", "Resistance");
+        map.put("resistance", "Resistance");
+        map.put("precision", "Critical Chance");
+        map.put("defense", "Defense");
         map.put("wither", "Wither");
         map.put("slow_percent", "Slow");
         map.put("mana", "Mana");
         map.put("mana_from_sorcery", "Mana");
         map.put("sorcery_from_mana", "Sorcery");
+        map.put("health_threshold", "Health Threshold");
+        map.put("trigger_threshold", "Trigger Threshold");
+        map.put("full_value_at_health_percent", "Full Value Threshold");
         map.put("max_distance", "Max distance (full bonus)");
         return map;
     }
@@ -315,10 +535,42 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         return lower.contains("duration") || lower.contains("cooldown");
     }
 
+    private boolean isMetadataOnlyKey(String key) {
+        if (key == null || key.isBlank()) {
+            return true;
+        }
+        String lower = key.toLowerCase(Locale.ROOT);
+        return lower.equals("full_value_at_health_percent")
+                || lower.equals("max_ratio")
+                || lower.equals("min_distance")
+                || lower.equals("max_distance")
+                || lower.equals("scaling_stat")
+                || lower.equals("reference_stat")
+                || lower.equals("scaling_type")
+                || lower.equals("calculation")
+                || lower.equals("attack_type")
+                || lower.equals("target_stat")
+                || lower.equals("resource")
+                || lower.equals("condition")
+                || lower.equals("category")
+                || lower.equals("pve_only")
+                || lower.equals("reset_on_kill")
+                || lower.equals("active_until_max_stacks")
+                || lower.equals("trigger_cooldown")
+                || lower.equals("cooldown_per_target")
+                || lower.equals("target_debuff")
+                || lower.equals("heal_to_damage")
+                || lower.equals("break_conditions")
+                || lower.equals("on_miss")
+                || lower.equals("on_damage_taken");
+    }
+
     private String formatEffects(Map<String, Object> passives, boolean positives) {
         if (passives == null || passives.isEmpty()) {
             return null;
         }
+
+        Set<String> uniqueLines = new LinkedHashSet<>();
 
         // Directly handle top-level buffs/debuffs maps if present.
         String directKey = positives ? "buffs" : "debuffs";
@@ -326,12 +578,16 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         if (direct != null && !direct.isEmpty()) {
             String rendered = renderBuffMap(direct, positives);
             if (!rendered.isBlank()) {
-                return rendered;
+                for (String line : rendered.split("\\n")) {
+                    if (!line.isBlank()) {
+                        uniqueLines.add(line);
+                    }
+                }
             }
         }
 
         // Priority: explicit buffs/debuffs map on any passive (use passive name as
-        // fallback label).
+        // fallback label), but aggregate across ALL passives.
         for (Map.Entry<String, Object> passiveEntry : passives.entrySet()) {
             String passiveName = passiveEntry.getKey();
             Object passiveObj = passiveEntry.getValue();
@@ -347,14 +603,17 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             if (effects != null && !effects.isEmpty()) {
                 String rendered = renderBuffMap(effects, positives, passiveName);
                 if (!rendered.isBlank()) {
-                    return rendered;
+                    for (String line : rendered.split("\\n")) {
+                        if (!line.isBlank()) {
+                            uniqueLines.add(line);
+                        }
+                    }
                 }
             }
         }
 
         // Fallback: collect numeric fields that look like effects, using passive name
         // as label when needed.
-        List<String> parts = new ArrayList<>();
         for (Map.Entry<String, Object> passiveEntry : passives.entrySet()) {
             String passiveName = passiveEntry.getKey();
             Object passiveObj = passiveEntry.getValue();
@@ -371,14 +630,14 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                     continue; // skip timing fields
                 }
                 Object val = entry.getValue();
-                collectEffect(parts, key, val, positives, passiveName);
+                collectEffect(uniqueLines, key, val, positives, passiveName, passive);
             }
         }
 
-        if (parts.isEmpty()) {
+        if (uniqueLines.isEmpty()) {
             return null;
         }
-        return String.join("\n", parts);
+        return String.join("\n", uniqueLines);
     }
 
     private String renderBuffMap(Map<String, Object> buffs, boolean positives) {
@@ -386,7 +645,7 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     }
 
     private String renderBuffMap(Map<String, Object> buffs, boolean positives, String fallbackLabel) {
-        List<String> parts = new ArrayList<>();
+        Set<String> parts = new LinkedHashSet<>();
         Integer maxStacks = null;
         for (Map.Entry<String, Object> entry : buffs.entrySet()) {
             String key = entry.getKey();
@@ -415,7 +674,12 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                     maxStacks = maxStacks == null ? stacks : Math.max(maxStacks, stacks);
                 }
             }
-            collectEffect(parts, key, val, positives, fallbackLabel == null ? key : fallbackLabel);
+            collectEffect(parts,
+                    key,
+                    val,
+                    positives,
+                    fallbackLabel == null ? key : fallbackLabel,
+                    nested != null ? nested : buffs);
         }
 
         if (maxStacks != null) {
@@ -424,21 +688,49 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         return String.join("\n", parts);
     }
 
-    private void collectEffect(List<String> parts, String key, Object val, boolean positives, String fallbackLabel) {
-        if (isTimingKey(key)) {
+    private void collectEffect(Set<String> parts,
+            String key,
+            Object val,
+            boolean positives,
+            String fallbackLabel,
+            Map<String, Object> parentPassive) {
+        if (isTimingKey(key) || isMetadataOnlyKey(key)) {
             return; // timing values render in the footer, not the buff list
         }
 
+        String normalizedKey = key == null ? "" : key.toLowerCase(Locale.ROOT);
+        String thresholdSuffix = resolveThresholdSuffix(parentPassive);
+
         Double scalar = toDouble(val);
         if (scalar != null) {
+            if (normalizedKey.startsWith("max_")) {
+                if ((positives && scalar > 0) || (!positives && scalar < 0)) {
+                    parts.add(formatRangeEntry(normalizedKey, scalar, fallbackLabel, thresholdSuffix));
+                }
+                return;
+            }
             if ((positives && scalar > 0) || (!positives && scalar < 0)) {
-                parts.add(formatBuffEntry(key, scalar, null, fallbackLabel));
+                parts.add(formatBuffEntry(key, scalar, null, fallbackLabel, thresholdSuffix));
             }
             return;
         }
 
         Map<String, Object> nested = asMap(val);
         if (nested == null) {
+            return;
+        }
+
+        String nestedThresholdSuffix = resolveThresholdSuffix(nested);
+        if (nestedThresholdSuffix == null || nestedThresholdSuffix.isBlank()) {
+            nestedThresholdSuffix = thresholdSuffix;
+        }
+
+        Double maxValue = toDouble(nested.get("max_value"));
+        Double baseValue = toDouble(nested.get("value"));
+        if (maxValue != null && (baseValue == null || Math.abs(baseValue) < 0.0001D)) {
+            if ((positives && maxValue > 0) || (!positives && maxValue < 0)) {
+                parts.add(formatRangeEntry(key, maxValue, fallbackLabel, nestedThresholdSuffix));
+            }
             return;
         }
 
@@ -449,8 +741,57 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         }
 
         if ((positives && chosen > 0) || (!positives && chosen < 0)) {
-            parts.add(formatBuffEntry(key, chosen, forcedSuffix, fallbackLabel));
+            parts.add(formatBuffEntry(key, chosen, forcedSuffix, fallbackLabel, nestedThresholdSuffix));
         }
+    }
+
+    private String resolveThresholdSuffix(Map<String, Object> context) {
+        if (context == null || context.isEmpty()) {
+            return null;
+        }
+
+        Double fullValueAtHealth = toDouble(context.get("full_value_at_health_percent"));
+        if (fullValueAtHealth != null) {
+            return " (full at <= " + formatNumber(fullValueAtHealth * 100.0D) + "% health)";
+        }
+
+        Double maxRatio = toDouble(context.get("max_ratio"));
+        if (maxRatio != null) {
+            return " (full at " + formatNumber(maxRatio) + "x ratio)";
+        }
+
+        Double maxDistance = toDouble(context.get("max_distance"));
+        if (maxDistance != null) {
+            Double minDistance = toDouble(context.get("min_distance"));
+            if (minDistance != null) {
+                return " (range " + formatNumber(minDistance) + "-" + formatNumber(maxDistance) + ")";
+            }
+            return " (full at " + formatNumber(maxDistance) + " distance)";
+        }
+
+        return null;
+    }
+
+    private String formatRangeEntry(String key, double maxValue, String fallbackLabel, String suffixNote) {
+        String normalizedKey = key == null ? "" : key.toLowerCase(Locale.ROOT);
+        String baseKey = normalizedKey.startsWith("max_") ? normalizedKey.substring(4) : normalizedKey;
+        String canonicalBaseKey = baseKey.replace(' ', '_');
+        String label = BUFF_NAME_OVERRIDES.getOrDefault(canonicalBaseKey, key == null ? "" : key.replace('_', ' '));
+        String semanticKeyForUnit = canonicalBaseKey;
+        if ((baseKey.isBlank() || baseKey.equals("value") || baseKey.equals("value_per_stack"))
+                && fallbackLabel != null && !fallbackLabel.isBlank()) {
+            label = fallbackLabel.replace('_', ' ');
+            semanticKeyForUnit = fallbackLabel.toLowerCase(Locale.ROOT).replace(' ', '_');
+        }
+
+        String unit = inferSuffix(semanticKeyForUnit, maxValue);
+        double displayMax = "%".equals(unit) ? toDisplayPercent(maxValue) : maxValue;
+        String rangePrefix = displayMax > 0 ? "+" : (displayMax < 0 ? "-" : "");
+        String rendered = capitalize(label) + ": " + rangePrefix + "0-" + formatNumber(Math.abs(displayMax)) + unit;
+        if (suffixNote != null && !suffixNote.isBlank()) {
+            rendered += suffixNote;
+        }
+        return rendered;
     }
 
     private Double firstNumber(Map<String, Object> map, String... keys) {
@@ -470,9 +811,14 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         return null;
     }
 
-    private String formatBuffEntry(String key, double value, String forcedSuffix, String fallbackLabel) {
+    private String formatBuffEntry(String key,
+            double value,
+            String forcedSuffix,
+            String fallbackLabel,
+            String suffixNote) {
         String normalizedKey = key == null ? "" : key.toLowerCase(Locale.ROOT);
-        String label = BUFF_NAME_OVERRIDES.getOrDefault(normalizedKey, key == null ? "" : key.replace('_', ' '));
+        String canonicalKey = normalizedKey.replace(' ', '_');
+        String label = BUFF_NAME_OVERRIDES.getOrDefault(canonicalKey, key == null ? "" : key.replace('_', ' '));
 
         // If the key is generic, prefer the parent/fallback label.
         if ((normalizedKey.isBlank() || normalizedKey.equals("value")
@@ -485,17 +831,15 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         double displayValue = value;
 
         if (suffix == null) {
-            if (normalizedKey.contains("percent") || normalizedKey.contains("max_value") || Math.abs(value) <= 1.0) {
-                suffix = "%";
-                displayValue = value * 100.0;
+            suffix = inferSuffix(canonicalKey, value);
+            if ("%".equals(suffix)) {
+                displayValue = toDisplayPercent(value);
             } else if (normalizedKey.contains("ratio")) {
                 suffix = "x";
                 displayValue = Math.abs(value);
-            } else {
-                suffix = "";
             }
         } else if ("%".equals(suffix)) {
-            displayValue = value * 100.0; // ensure forced percent shows human-friendly scale
+            displayValue = toDisplayPercent(value); // support both fractional and whole-number percent inputs
         }
 
         // Display decay-related values as losses.
@@ -509,7 +853,42 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         } else {
             sign = displayValue > 0 ? "+" : "";
         }
-        return capitalize(label) + ": " + sign + formatNumber(displayValue) + suffix;
+        String rendered = capitalize(label) + ": " + sign + formatNumber(displayValue) + suffix;
+        if (suffixNote != null && !suffixNote.isBlank()) {
+            rendered += suffixNote;
+        }
+        return rendered;
+    }
+
+    private double toDisplayPercent(double value) {
+        return Math.abs(value) >= 10.0D ? value : value * 100.0D;
+    }
+
+    private String inferSuffix(String normalizedKey, double value) {
+        if (normalizedKey == null) {
+            return "";
+        }
+        if (normalizedKey.contains("ratio")) {
+            return "x";
+        }
+        if (normalizedKey.contains("percent")
+                || normalizedKey.contains("max_value")
+                || normalizedKey.contains("chance")
+                || normalizedKey.contains("crit")
+                || normalizedKey.contains("ferocity")
+                || normalizedKey.contains("life_steal")
+                || normalizedKey.contains("heal")
+                || normalizedKey.contains("damage")
+                || normalizedKey.contains("strength")
+                || normalizedKey.contains("sorcery")
+                || normalizedKey.contains("haste")
+                || normalizedKey.contains("resistance")
+                || normalizedKey.contains("defense")
+                || normalizedKey.contains("precision")
+                || Math.abs(value) <= 1.0D) {
+            return "%";
+        }
+        return "";
     }
 
     private Double toDouble(Object val) {

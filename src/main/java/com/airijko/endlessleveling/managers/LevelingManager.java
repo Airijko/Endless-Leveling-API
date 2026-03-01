@@ -3,6 +3,7 @@ package com.airijko.endlessleveling.managers;
 import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.data.PlayerData;
 import com.airijko.endlessleveling.enums.ArchetypePassiveType;
+import com.airijko.endlessleveling.enums.PassiveTier;
 import com.airijko.endlessleveling.augments.AugmentUnlockManager;
 import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveManager;
 import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveSnapshot;
@@ -16,6 +17,7 @@ import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.util.EventTitleUtil;
 import com.hypixel.hytale.server.core.util.NotificationUtil;
 
+import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
@@ -151,8 +153,15 @@ public class LevelingManager {
         notifyXpGain(player, adjustedXp);
 
         // Handle level-ups
+        boolean leveledUp = false;
         while (player.getLevel() < levelCap && player.getXp() >= getXpForNextLevel(player.getLevel())) {
             levelUp(player);
+            leveledUp = true;
+        }
+
+        if (leveledUp && augmentUnlockManager != null) {
+            augmentUnlockManager.ensureUnlocks(player);
+            notifyAvailableAugments(player);
         }
 
         if (player.getLevel() >= levelCap && player.getXp() != 0) {
@@ -197,14 +206,33 @@ public class LevelingManager {
             passiveManager.notifyPassiveChanges(player, passiveResult);
         }
 
-        if (augmentUnlockManager != null) {
-            augmentUnlockManager.ensureUnlocks(player);
-        }
-
         notifyLevelUp(player);
         refreshHudIfEnabled(player);
         pushPartyProHudText(player);
         requestAttributeResync(player);
+    }
+
+    private void notifyAvailableAugments(PlayerData player) {
+        if (player == null || augmentUnlockManager == null) {
+            return;
+        }
+        List<PassiveTier> tiers = augmentUnlockManager.getPendingOfferTiers(player);
+        if (tiers.isEmpty()) {
+            return;
+        }
+
+        PlayerRef playerRef = Universe.get().getPlayer(player.getUuid());
+        if (playerRef == null) {
+            return;
+        }
+
+        StringBuilder builder = new StringBuilder();
+        builder.append("[EndlessLeveling] You have augments available to choose from:\n");
+        for (PassiveTier tier : tiers) {
+            builder.append("- ").append(tier.name()).append("\n");
+        }
+        builder.append("Use /el augments to choose.");
+        playerRef.sendMessage(Message.raw(builder.toString()).color("#4fd7f7"));
     }
 
     private void notifyXpGain(PlayerData player, double xpAmount) {

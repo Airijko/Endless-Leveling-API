@@ -573,7 +573,7 @@ public class PlayerDataManager {
 
         Map<String, Object> raceMap = castToStringObjectMap(raceNode);
         if (raceMap == null) {
-            return PlayerData.DEFAULT_RACE_ID;
+            return null;
         }
 
         String idValue = coerceRaceString(raceMap.get("id"));
@@ -591,7 +591,7 @@ public class PlayerDataManager {
             return legacyValue;
         }
 
-        return PlayerData.DEFAULT_RACE_ID;
+        return null;
     }
 
     private long parseRaceLastChanged(Object raceNode) {
@@ -655,12 +655,17 @@ public class PlayerDataManager {
             return;
         }
         if (raceManager == null) {
-            data.getProfiles().values().forEach(profile -> profile.setRaceId(PlayerData.DEFAULT_RACE_ID));
-            data.setRaceId(PlayerData.DEFAULT_RACE_ID);
+            data.getProfiles().values().forEach(profile -> profile.setRaceId(null));
+            data.setRaceId(null);
             return;
         }
 
+        boolean noDefaultRaceConfigured = !raceManager.hasConfiguredDefaultRace();
+
         data.getProfiles().values().forEach(profile -> {
+            if (noDefaultRaceConfigured) {
+                profile.setRaceId(null);
+            }
             String resolved = raceManager.resolveRaceIdentifier(profile.getRaceId());
             profile.setRaceId(resolved);
         });
@@ -674,15 +679,20 @@ public class PlayerDataManager {
         }
         if (classManager == null || !classManager.isEnabled()) {
             data.getProfiles().values().forEach(profile -> {
-                profile.setPrimaryClassId(PlayerData.DEFAULT_PRIMARY_CLASS_ID);
+                profile.setPrimaryClassId(null);
                 profile.setSecondaryClassId(null);
             });
-            data.setPrimaryClassId(PlayerData.DEFAULT_PRIMARY_CLASS_ID);
+            data.setPrimaryClassId(null);
             data.setSecondaryClassId(null);
             return;
         }
 
+        boolean noDefaultPrimaryConfigured = !classManager.hasConfiguredDefaultPrimaryClass();
+
         data.getProfiles().values().forEach(profile -> {
+            if (noDefaultPrimaryConfigured) {
+                profile.setPrimaryClassId(null);
+            }
             String resolvedPrimary = classManager.resolvePrimaryClassIdentifier(profile.getPrimaryClassId());
             profile.setPrimaryClassId(resolvedPrimary);
             String resolvedSecondary = classManager.resolveSecondaryClassIdentifier(profile.getSecondaryClassId());

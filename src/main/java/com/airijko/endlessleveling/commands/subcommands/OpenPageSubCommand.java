@@ -29,6 +29,11 @@ public class OpenPageSubCommand extends AbstractPlayerCommand {
     }
 
     @Override
+    protected boolean canGeneratePermission() {
+        return false;
+    }
+
+    @Override
     protected void execute(@Nonnull CommandContext commandContext,
             @Nonnull Store<EntityStore> store,
             @Nonnull Ref<EntityStore> ref,

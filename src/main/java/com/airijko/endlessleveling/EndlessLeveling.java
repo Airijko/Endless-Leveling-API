@@ -158,7 +158,7 @@ public class EndlessLeveling extends JavaPlugin {
         archetypePassiveManager = new ArchetypePassiveManager(raceManager, classManager);
         playerAttributeManager = new PlayerAttributeManager(raceManager);
         passiveManager = new PassiveManager(configManager);
-        augmentManager = new AugmentManager(filesManager.getAugmentsFolder().toPath());
+        augmentManager = new AugmentManager(filesManager.getAugmentsFolder().toPath(), filesManager, configManager);
         augmentRuntimeManager = new AugmentRuntimeManager();
         skillManager = new SkillManager(filesManager, playerAttributeManager, archetypePassiveManager, passiveManager,
                 augmentRuntimeManager);

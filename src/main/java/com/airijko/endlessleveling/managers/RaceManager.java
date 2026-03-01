@@ -60,6 +60,7 @@ public class RaceManager {
     private final Map<UUID, Boolean> modelApplyGuard = new ConcurrentHashMap<>();
 
     private String defaultRaceId = PlayerData.DEFAULT_RACE_ID;
+    private boolean hasConfiguredDefaultRace = true;
     private final long chooseRaceCooldownSeconds;
 
     public RaceManager(ConfigManager configManager, PluginFilesManager filesManager) {
@@ -73,9 +74,15 @@ public class RaceManager {
         this.raceModelDefaultMode = parseRaceModelDefault(raceModelDefaultConfig);
         Object defaultRaceConfig = configManager.get("default_race", PlayerData.DEFAULT_RACE_ID, false);
         this.maxRaceSwitches = parseMaxSwitches(configManager.get("race_max_switches", -1, false));
-        String configuredDefault = safeString(defaultRaceConfig);
-        if (configuredDefault != null) {
-            this.defaultRaceId = configuredDefault;
+        if (isNoneLiteral(defaultRaceConfig)) {
+            this.defaultRaceId = null;
+            this.hasConfiguredDefaultRace = false;
+        } else {
+            String configuredDefault = parseConfiguredDefaultIdentifier(defaultRaceConfig);
+            if (configuredDefault != null) {
+                this.defaultRaceId = configuredDefault;
+                this.hasConfiguredDefaultRace = true;
+            }
         }
         Object cooldownConfig = configManager.get("choose_race_cooldown", 0, false);
         this.chooseRaceCooldownSeconds = parseCooldownSeconds(cooldownConfig);
@@ -93,9 +100,16 @@ public class RaceManager {
         if (configManager == null) {
             return;
         }
-        String configuredDefault = safeString(configManager.get("default_race", defaultRaceId, false));
+        Object configuredNode = configManager.get("default_race", defaultRaceId, false);
+        if (isNoneLiteral(configuredNode)) {
+            defaultRaceId = null;
+            hasConfiguredDefaultRace = false;
+            return;
+        }
+        String configuredDefault = parseConfiguredDefaultIdentifier(configuredNode);
         if (configuredDefault != null) {
-            defaultRaceId = configuredDefault;
+            this.defaultRaceId = configuredDefault;
+            this.hasConfiguredDefaultRace = true;
         }
     }
 
@@ -124,6 +138,12 @@ public class RaceManager {
     }
 
     public RaceDefinition getDefaultRace() {
+        if (!hasConfiguredDefaultRace) {
+            return null;
+        }
+        if (defaultRaceId == null || defaultRaceId.isBlank()) {
+            return null;
+        }
         RaceDefinition configuredDefault = racesByKey.get(normalizeKey(defaultRaceId));
         if (configuredDefault != null) {
             return configuredDefault;
@@ -137,7 +157,11 @@ public class RaceManager {
 
     public String getDefaultRaceId() {
         RaceDefinition defaultRace = getDefaultRace();
-        return defaultRace != null ? defaultRace.getId() : PlayerData.DEFAULT_RACE_ID;
+        return defaultRace != null ? defaultRace.getId() : null;
+    }
+
+    public boolean hasConfiguredDefaultRace() {
+        return hasConfiguredDefaultRace;
     }
 
     public RaceModelDefaultMode getRaceModelDefaultMode() {
@@ -176,11 +200,14 @@ public class RaceManager {
 
     public String resolveRaceIdentifier(String requestedValue) {
         if (!isEnabled()) {
-            return PlayerData.DEFAULT_RACE_ID;
+            return null;
         }
         if (requestedValue == null || requestedValue.isBlank()) {
+            if (!hasConfiguredDefaultRace) {
+                return null;
+            }
             RaceDefinition fallback = getDefaultRace();
-            return fallback != null ? fallback.getId() : PlayerData.DEFAULT_RACE_ID;
+            return fallback != null ? fallback.getId() : null;
         }
 
         RaceDefinition requested = findRaceByUserInput(requestedValue);
@@ -189,7 +216,7 @@ public class RaceManager {
         }
 
         RaceDefinition fallback = getDefaultRace();
-        return fallback != null ? fallback.getId() : PlayerData.DEFAULT_RACE_ID;
+        return fallback != null ? fallback.getId() : null;
     }
 
     public RaceDefinition getPlayerRace(PlayerData data) {
@@ -213,7 +240,7 @@ public class RaceManager {
             return fallback;
         }
 
-        data.setRaceId(PlayerData.DEFAULT_RACE_ID);
+        data.setRaceId(null);
         return null;
     }
 
@@ -231,7 +258,7 @@ public class RaceManager {
         }
         String resolvedId = resolveRaceIdentifier(requestedValue);
         RaceDefinition resolved = getRace(resolvedId);
-        if (resolved == null) {
+        if (resolved == null && hasConfiguredDefaultRace) {
             resolved = getDefaultRace();
         }
         if (resolved != null) {
@@ -240,7 +267,7 @@ public class RaceManager {
                 applyRaceModelIfEnabled(data);
             }
         } else {
-            data.setRaceId(PlayerData.DEFAULT_RACE_ID);
+            data.setRaceId(null);
         }
         return resolved;
     }
@@ -1239,6 +1266,21 @@ public class RaceManager {
             return trimmed.isEmpty() ? null : trimmed;
         }
         return null;
+    }
+
+    private String parseConfiguredDefaultIdentifier(Object value) {
+        String parsed = safeString(value);
+        if (parsed == null) {
+            return null;
+        }
+        return "none".equalsIgnoreCase(parsed) ? null : parsed;
+    }
+
+    private boolean isNoneLiteral(Object value) {
+        if (!(value instanceof String text)) {
+            return false;
+        }
+        return "none".equalsIgnoreCase(text.trim());
     }
 
     private boolean parseBoolean(Object value, boolean defaultValue) {
