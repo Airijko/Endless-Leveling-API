@@ -344,13 +344,6 @@ public class MobLevelingManager {
     }
 
     private int resolvePlayerBasedLevel(Store<EntityStore> store, Vector3d mobPos, Integer entityId) {
-        if (entityId != null) {
-            Integer locked = entityLevelOverrides.get(entityId);
-            if (locked != null && locked > 0) {
-                return clampToConfiguredRange(locked);
-            }
-        }
-
         int computed = computePlayerModeLevelFromNearestPlayer(store, mobPos, entityId);
         if (computed > 0) {
             return clampToConfiguredRange(computed);

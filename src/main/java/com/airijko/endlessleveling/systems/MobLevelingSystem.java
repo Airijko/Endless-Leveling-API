@@ -83,6 +83,9 @@ public class MobLevelingSystem extends TickingSystem<EntityStore> {
                         Integer appliedLevel = previouslyAppliedLevel;
                         if (appliedLevel == null || appliedLevel <= 0) {
                             appliedLevel = mobLevelingManager.resolveMobLevelForEntity(ref, store, commandBuffer);
+                            if (appliedLevel != null && appliedLevel > 0) {
+                                mobLevelingManager.setEntityLevelOverride(entityId, appliedLevel);
+                            }
                         }
                         if (appliedLevel == null || appliedLevel <= 0) {
                             if (isAtOrBelowZeroHealth(ref, commandBuffer)) {
@@ -320,6 +323,14 @@ public class MobLevelingSystem extends TickingSystem<EntityStore> {
             label = "[Lv." + appliedLevel + "] " + baseName;
         } else {
             label = baseName;
+        }
+
+        EntityStatMap statMap = commandBuffer.getComponent(ref, EntityStatMap.getComponentType());
+        EntityStatValue hp = statMap == null ? null : statMap.get(DefaultEntityStatTypes.getHealth());
+        if (hp != null && Float.isFinite(hp.get()) && Float.isFinite(hp.getMax()) && hp.getMax() > 0.0f) {
+            int currentHp = Math.max(0, Math.round(hp.get()));
+            int maxHp = Math.max(1, Math.round(hp.getMax()));
+            label = label + " " + currentHp + "/" + maxHp + "]";
         }
 
         nameplate.setText(label);
