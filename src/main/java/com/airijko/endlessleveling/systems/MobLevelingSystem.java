@@ -113,7 +113,7 @@ public class MobLevelingSystem extends TickingSystem<EntityStore> {
                         if (commandBuffer.getComponent(ref, DeathComponent.getComponentType()) != null) {
                             if (deathHandledEntityKeys.add(entityKey)) {
                                 handleDeadEntity(ref, commandBuffer);
-                                healthAppliedLevel.remove(entityKey);
+                                clearLevelingStateOnDeath(ref, entityId, entityKey);
                                 forcedDeathLoggedEntityKeys.remove(entityKey);
                                 lastResetReasonByEntityKey.put(entityKey, "death-component");
                             }
@@ -322,6 +322,20 @@ public class MobLevelingSystem extends TickingSystem<EntityStore> {
                 maxBefore);
 
         clearOrRemoveNameplate(ref, commandBuffer);
+    }
+
+    private void clearLevelingStateOnDeath(Ref<EntityStore> ref, int entityId, long entityKey) {
+        if (ref == null || entityId < 0) {
+            return;
+        }
+
+        healthAppliedLevel.remove(entityKey);
+        loggedHealthLevelByEntityKey.remove(entityKey);
+        loggedNameplateLevelByEntityKey.remove(entityKey);
+        levelResolveAttemptCountByEntityKey.remove(entityKey);
+        levelResolveAssignmentCountByEntityKey.remove(entityKey);
+
+        mobLevelingManager.forgetEntity(ref.getStore(), entityId);
     }
 
     private boolean isAtOrBelowZeroHealth(Ref<EntityStore> ref, CommandBuffer<EntityStore> commandBuffer) {
