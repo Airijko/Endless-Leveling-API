@@ -1,0 +1,36 @@
+meta:
+  locale_name: "日本語 (JP)"
+
+notify:
+  prefix: "[EndlessLeveling] "
+
+ui:
+  common:
+    toggle:
+      on: "オン"
+      off: "オフ"
+      disabled: "無効"
+    state:
+      enabled: "有効"
+      disabled: "無効"
+
+  settings:
+    player_hud:
+      label: "プレイヤーHUD"
+      toggled: "プレイヤーHUD {0}"
+    critical_notif:
+      label: "クリティカル通知"
+    xp_notif:
+      label: "XP通知"
+
+  skills:
+    unknown: "不明"
+    points: "スキルポイント: {0}"
+
+command:
+  language:
+    usage: "使い方: /el lang list | /el lang set <locale>"
+    current: "現在の言語: {0}"
+    available: "利用可能な言語: {0}"
+    invalid: "不明な言語 '{0}'。利用可能: {1}"
+    updated: "言語を {0} に設定しました。"

@@ -1,0 +1,32 @@
+meta:
+  locale_name: "العربية (SA)"
+
+notify:
+  prefix: "[EndlessLeveling] "
+
+ui:
+  common:
+    toggle:
+      on: "تشغيل"
+      off: "إيقاف"
+      disabled: "معطل"
+    state:
+      enabled: "مفعل"
+      disabled: "معطل"
+
+  settings:
+    player_hud:
+      label: "واجهة اللاعب"
+      toggled: "واجهة اللاعب {0}"
+
+  skills:
+    unknown: "غير معروف"
+    points: "نقاط المهارة: {0}"
+
+command:
+  language:
+    usage: "الاستخدام: /el lang list | /el lang set <locale>"
+    current: "اللغة الحالية: {0}"
+    available: "اللغات المتاحة: {0}"
+    invalid: "لغة غير معروفة '{0}'. اللغات المتاحة: {1}"
+    updated: "تم تعيين اللغة إلى {0}."

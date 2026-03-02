@@ -1,0 +1,36 @@
+meta:
+  locale_name: "Русский (RU)"
+
+notify:
+  prefix: "[EndlessLeveling] "
+
+ui:
+  common:
+    toggle:
+      on: "ВКЛ"
+      off: "ВЫКЛ"
+      disabled: "ОТКЛЮЧЕНО"
+    state:
+      enabled: "включено"
+      disabled: "выключено"
+
+  settings:
+    player_hud:
+      label: "HUD Игрока"
+      toggled: "HUD игрока {0}"
+    critical_notif:
+      label: "Уведомления о критических ударах"
+    xp_notif:
+      label: "Уведомления об опыте"
+
+  skills:
+    unknown: "Неизвестно"
+    points: "ОЧКИ НАВЫКОВ: {0}"
+
+command:
+  language:
+    usage: "Использование: /el lang list | /el lang set <locale>"
+    current: "Текущий язык: {0}"
+    available: "Доступные языки: {0}"
+    invalid: "Неизвестный язык '{0}'. Доступные языки: {1}"
+    updated: "Язык установлен: {0}."

@@ -1,0 +1,32 @@
+meta:
+  locale_name: "Italiano (IT)"
+
+notify:
+  prefix: "[EndlessLeveling] "
+
+ui:
+  common:
+    toggle:
+      on: "ATTIVO"
+      off: "DISATTIVO"
+      disabled: "DISABILITATO"
+    state:
+      enabled: "attivo"
+      disabled: "disattivo"
+
+  settings:
+    player_hud:
+      label: "HUD Giocatore"
+      toggled: "HUD giocatore {0}"
+
+  skills:
+    unknown: "Sconosciuto"
+    points: "PUNTI ABILITÀ: {0}"
+
+command:
+  language:
+    usage: "Uso: /el lang list | /el lang set <locale>"
+    current: "Lingua attuale: {0}"
+    available: "Lingue disponibili: {0}"
+    invalid: "Lingua sconosciuta '{0}'. Lingue disponibili: {1}"
+    updated: "Lingua impostata su {0}."

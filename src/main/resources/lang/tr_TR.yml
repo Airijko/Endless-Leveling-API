@@ -1,0 +1,32 @@
+meta:
+  locale_name: "Türkçe (TR)"
+
+notify:
+  prefix: "[EndlessLeveling] "
+
+ui:
+  common:
+    toggle:
+      on: "AÇIK"
+      off: "KAPALI"
+      disabled: "DEVRE DIŞI"
+    state:
+      enabled: "açık"
+      disabled: "kapalı"
+
+  settings:
+    player_hud:
+      label: "Oyuncu HUD"
+      toggled: "Oyuncu HUD {0}"
+
+  skills:
+    unknown: "Bilinmiyor"
+    points: "YETENEK PUANI: {0}"
+
+command:
+  language:
+    usage: "Kullanım: /el lang list | /el lang set <locale>"
+    current: "Geçerli dil: {0}"
+    available: "Kullanılabilir diller: {0}"
+    invalid: "Bilinmeyen dil '{0}'. Kullanılabilir diller: {1}"
+    updated: "Dil {0} olarak ayarlandı."

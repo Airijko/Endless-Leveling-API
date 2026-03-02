@@ -1,0 +1,32 @@
+meta:
+  locale_name: "Polski (PL)"
+
+notify:
+  prefix: "[EndlessLeveling] "
+
+ui:
+  common:
+    toggle:
+      on: "WŁĄCZONE"
+      off: "WYŁĄCZONE"
+      disabled: "WYŁĄCZONE"
+    state:
+      enabled: "włączone"
+      disabled: "wyłączone"
+
+  settings:
+    player_hud:
+      label: "HUD Gracza"
+      toggled: "HUD gracza {0}"
+
+  skills:
+    unknown: "Nieznane"
+    points: "PUNKTY UMIEJĘTNOŚCI: {0}"
+
+command:
+  language:
+    usage: "Użycie: /el lang list | /el lang set <locale>"
+    current: "Aktualny język: {0}"
+    available: "Dostępne języki: {0}"
+    invalid: "Nieznany język '{0}'. Dostępne języki: {1}"
+    updated: "Ustawiono język: {0}."

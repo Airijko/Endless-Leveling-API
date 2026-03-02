@@ -1,0 +1,32 @@
+meta:
+  locale_name: "简体中文 (CN)"
+
+notify:
+  prefix: "[EndlessLeveling] "
+
+ui:
+  common:
+    toggle:
+      on: "开启"
+      off: "关闭"
+      disabled: "禁用"
+    state:
+      enabled: "启用"
+      disabled: "禁用"
+
+  settings:
+    player_hud:
+      label: "玩家HUD"
+      toggled: "玩家HUD {0}"
+
+  skills:
+    unknown: "未知"
+    points: "技能点: {0}"
+
+command:
+  language:
+    usage: "用法: /el lang list | /el lang set <locale>"
+    current: "当前语言: {0}"
+    available: "可用语言: {0}"
+    invalid: "未知语言 '{0}'。可用语言: {1}"
+    updated: "语言已设置为 {0}。"

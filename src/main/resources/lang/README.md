@@ -27,6 +27,25 @@ EndlessLeveling supports language packs in this folder.
 ## Player language selection
 
 - Players can set their own language with:
+  - `/el lang list`
+  - `/el lang set <locale>`
+- Legacy shorthand still works:
   - `/el language <locale>`
 - Example:
-  - `/el language en_US`
+  - `/el lang set en_US`
+
+## Included locale packs
+
+- `en_US`
+- `es_ES`
+- `fr_FR`
+- `de_DE`
+- `pt_BR`
+- `ja_JP`
+- `ru_RU`
+- `it_IT`
+- `pl_PL`
+- `tr_TR`
+- `zh_CN`
+- `ko_KR`
+- `ar_SA`

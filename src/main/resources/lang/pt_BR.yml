@@ -1,0 +1,36 @@
+meta:
+  locale_name: "Português (BR)"
+
+notify:
+  prefix: "[EndlessLeveling] "
+
+ui:
+  common:
+    toggle:
+      on: "LIGADO"
+      off: "DESLIGADO"
+      disabled: "DESATIVADO"
+    state:
+      enabled: "ativado"
+      disabled: "desativado"
+
+  settings:
+    player_hud:
+      label: "HUD do Jogador"
+      toggled: "HUD do jogador {0}"
+    critical_notif:
+      label: "Notificações de Acerto Crítico"
+    xp_notif:
+      label: "Notificações de XP"
+
+  skills:
+    unknown: "Desconhecido"
+    points: "PONTOS DE HABILIDADE: {0}"
+
+command:
+  language:
+    usage: "Uso: /el lang list | /el lang set <locale>"
+    current: "Idioma atual: {0}"
+    available: "Idiomas disponíveis: {0}"
+    invalid: "Idioma desconhecido '{0}'. Idiomas disponíveis: {1}"
+    updated: "Idioma definido para {0}."
