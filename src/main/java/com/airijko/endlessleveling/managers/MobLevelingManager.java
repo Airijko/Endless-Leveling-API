@@ -184,7 +184,7 @@ public class MobLevelingManager {
             level = switch (mode) {
                 case PLAYER -> resolvePlayerBasedLevel(store, mobPosition, entityId);
                 case MIXED -> resolveMixedLevel(store, mobPosition, entityId);
-                case DISTANCE -> resolveDistanceLevel(mobPosition);
+                case DISTANCE -> resolveDistanceLevel(store, mobPosition);
                 case FIXED -> getFixedLevel();
             };
         } catch (Throwable t) {
@@ -300,7 +300,7 @@ public class MobLevelingManager {
         }
     }
 
-    private int resolveDistanceLevel(Vector3d position) {
+    private int resolveDistanceLevel(Store<EntityStore> store, Vector3d position) {
         if (position == null)
             return getFixedLevel();
 
@@ -308,13 +308,35 @@ public class MobLevelingManager {
         double centerZ = 0.0;
 
         try {
-            Object centerRaw = configManager.get("Mob_Leveling.Level_Source.Distance_Level.Center_Coordinates", "0,0",
+            Object centerRaw = configManager.get("Mob_Leveling.Level_Source.Distance_Level.Center_Coordinates", "SPAWN",
                     false);
-            String centerStr = centerRaw != null ? centerRaw.toString() : "0,0";
-            String[] parts = centerStr.split(",");
-            if (parts.length >= 2) {
-                centerX = Double.parseDouble(parts[0].trim());
-                centerZ = Double.parseDouble(parts[1].trim());
+            String centerStr = centerRaw != null ? centerRaw.toString().trim() : "SPAWN";
+
+            if (centerStr.equalsIgnoreCase("SPAWN")) {
+                String worldName = resolveWorldId(store);
+                if (worldName != null) {
+                    try {
+                        // Attempt to resolve world spawn via Universe
+                        Method getWorld = Universe.get().getClass().getMethod("getWorld", String.class);
+                        Object world = getWorld.invoke(Universe.get(), worldName);
+                        if (world != null) {
+                            Method getSpawnPoint = world.getClass().getMethod("getSpawnPoint");
+                            Object spawnPoint = getSpawnPoint.invoke(world);
+                            if (spawnPoint instanceof Vector3d v) {
+                                centerX = v.getX();
+                                centerZ = v.getZ();
+                            }
+                        }
+                    } catch (Exception ignored) {
+                        // Fallback to 0,0 if reflection fails or world not found
+                    }
+                }
+            } else {
+                String[] parts = centerStr.split(",");
+                if (parts.length >= 2) {
+                    centerX = Double.parseDouble(parts[0].trim());
+                    centerZ = Double.parseDouble(parts[1].trim());
+                }
             }
         } catch (Exception ignored) {
             // fallback to 0,0
@@ -458,7 +480,7 @@ public class MobLevelingManager {
             return getFixedLevel();
         }
 
-        int distanceLevel = resolveDistanceLevel(mobPos);
+        int distanceLevel = resolveDistanceLevel(store, mobPos);
         int playerLevel = resolvePlayerBasedLevelWithoutFallback(store, mobPos, entityId, false);
         if (playerLevel <= 0) {
             return distanceLevel;
@@ -560,9 +582,9 @@ public class MobLevelingManager {
         return resolvedLevel;
     }
 
-    private int fallbackPlayerSourceLevel(Vector3d mobPos) {
+    private int fallbackPlayerSourceLevel(Store<EntityStore> store, Vector3d mobPos) {
         if (mobPos != null) {
-            return resolveDistanceLevel(mobPos);
+            return resolveDistanceLevel(store, mobPos);
         }
         return getFixedLevel();
     }

@@ -1,6 +1,6 @@
 # This is the leveling formula for the server. It is used to calculate the amount of experience required to level up.
 default:
-  expression: "base * ((log(level)+1) * (sqrt(level)))^2"
+  expression: "base * ((log(level)+1) * (sqrt(level)))^1.75"
   base: 50
 
 # If you change these values, make sure to reset everyone to sync the skill points by do "/el resetskillpointsall"
@@ -105,7 +105,8 @@ Mob_Leveling:
       Blocks_Per_Level: 100
       Max_Level: 110
       Min_Level: 1
-      Center_Coordinates: "0,0"
+      # Set to "SPAWN" to use the world spawn point, or "x,z" for specific coordinates.
+      Center_Coordinates: "SPAWN"
 
     # MIXED blends PLAYER and DISTANCE.
     # Player_Weight is 0.0 to 1.0:
