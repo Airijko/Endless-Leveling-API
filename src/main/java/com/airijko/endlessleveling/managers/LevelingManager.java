@@ -267,7 +267,7 @@ public class LevelingManager {
                 .color("#ffc300");
         var notifSecondary = Message.join(
                 Message.raw("Use ").color("#ff9d00"),
-                Message.raw("/skills").color("#4fd7f7"),
+                Message.raw("/el").color("#4fd7f7"),
                 Message.raw(" to allocate your points").color("#ff9d00"));
         var icon = new ItemStack("Ingredient_Ice_Essence", 1).toPacket();
         NotificationUtil.sendNotification(playerRef.getPacketHandler(), notifPrimary, notifSecondary, icon);

@@ -17,7 +17,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import javax.annotation.Nonnull;
 
 /**
- * /skills resetcooldowns - admin utility that clears passive + augment cooldown
+ * /el resetcooldowns - admin utility that clears passive + augment cooldown
  * runtime state for cached players.
  */
 public class ResetCooldownsCommand extends AbstractPlayerCommand {

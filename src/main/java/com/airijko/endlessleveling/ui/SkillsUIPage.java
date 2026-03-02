@@ -6,6 +6,7 @@ import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.airijko.endlessleveling.managers.PlayerAttributeManager;
 import com.airijko.endlessleveling.managers.PlayerDataManager;
 import com.airijko.endlessleveling.managers.SkillManager;
+import com.airijko.endlessleveling.util.Lang;
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
@@ -112,25 +113,25 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 // UI EVENT BINDINGS (CRITICAL)
                 // -----------------------------
 
-                ui.set("#LifeForceLabel.Text", "Life Force");
+                ui.set("#LifeForceLabel.Text", getLabel(SkillAttributeType.LIFE_FORCE, "Life Force"));
                 ui.set("#LifeForceDescription.Text", getDescription(SkillAttributeType.LIFE_FORCE));
-                ui.set("#StrengthLabel.Text", "Strength");
+                ui.set("#StrengthLabel.Text", getLabel(SkillAttributeType.STRENGTH, "Strength"));
                 ui.set("#StrengthDescription.Text", getDescription(SkillAttributeType.STRENGTH));
-                ui.set("#SorceryLabel.Text", "Sorcery");
+                ui.set("#SorceryLabel.Text", getLabel(SkillAttributeType.SORCERY, "Sorcery"));
                 ui.set("#SorceryDescription.Text", getDescription(SkillAttributeType.SORCERY));
-                ui.set("#DefenseLabel.Text", "Defense");
+                ui.set("#DefenseLabel.Text", getLabel(SkillAttributeType.DEFENSE, "Defense"));
                 ui.set("#DefenseDescription.Text", getDescription(SkillAttributeType.DEFENSE));
-                ui.set("#HasteLabel.Text", "Haste");
+                ui.set("#HasteLabel.Text", getLabel(SkillAttributeType.HASTE, "Haste"));
                 ui.set("#HasteDescription.Text", getDescription(SkillAttributeType.HASTE));
-                ui.set("#PrecisionLabel.Text", "Precision");
+                ui.set("#PrecisionLabel.Text", getLabel(SkillAttributeType.PRECISION, "Precision"));
                 ui.set("#PrecisionDescription.Text", getDescription(SkillAttributeType.PRECISION));
-                ui.set("#FerocityLabel.Text", "Ferocity");
+                ui.set("#FerocityLabel.Text", getLabel(SkillAttributeType.FEROCITY, "Ferocity"));
                 ui.set("#FerocityDescription.Text", getDescription(SkillAttributeType.FEROCITY));
-                ui.set("#StaminaLabel.Text", "Stamina");
+                ui.set("#StaminaLabel.Text", getLabel(SkillAttributeType.STAMINA, "Stamina"));
                 ui.set("#StaminaDescription.Text", getDescription(SkillAttributeType.STAMINA));
-                ui.set("#FlowLabel.Text", "Flow");
+                ui.set("#FlowLabel.Text", getLabel(SkillAttributeType.FLOW, "Flow"));
                 ui.set("#FlowDescription.Text", getDescription(SkillAttributeType.FLOW));
-                ui.set("#DisciplineLabel.Text", "Discipline");
+                ui.set("#DisciplineLabel.Text", getLabel(SkillAttributeType.DISCIPLINE, "Discipline"));
                 ui.set("#DisciplineDescription.Text", getDescription(SkillAttributeType.DISCIPLINE));
 
                 applySkillIcons(ui);
@@ -160,7 +161,7 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 // Get PlayerData
                 var player = Universe.get().getPlayer(playerRef.getUuid());
                 if (player == null) {
-                        ui.set("#SKILLPOINTS.Text", "Unknown");
+                        ui.set("#SKILLPOINTS.Text", tr("ui.skills.unknown", "Unknown"));
                         return;
                 }
 
@@ -169,7 +170,7 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                                 .get(playerRef.getUuid());
 
                 if (playerData == null) {
-                        ui.set("#SKILLPOINTS.Text", "Unknown");
+                        ui.set("#SKILLPOINTS.Text", tr("ui.skills.unknown", "Unknown"));
                         return;
                 }
 
@@ -218,7 +219,8 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                                         try {
                                                 if ("grant".equalsIgnoreCase(act)) {
                                                         skillManager.addSkillPoints(playerData);
-                                                        player.sendMessage(Message.raw("You were granted skill points!")
+                                                        player.sendMessage(Message.raw(tr("ui.skills.message.granted",
+                                                                        "You were granted skill points!"))
                                                                         .color("#ffc300"));
                                                         LOGGER.atInfo().log("Granted skill points to player %s",
                                                                         playerRef.getUuid());
@@ -226,14 +228,18 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                                                         refreshUI = true;
                                                 } else if ("reset".equalsIgnoreCase(act)) {
                                                         syncPreviewFromPlayerData(playerData);
-                                                        player.sendMessage(Message.raw("Pending changes reset.")
+                                                        player.sendMessage(Message
+                                                                        .raw(tr("ui.skills.message.reset",
+                                                                                        "Pending changes reset."))
                                                                         .color("#ff9900"));
                                                         LOGGER.atInfo().log("Pending skill changes reset for %s",
                                                                         playerRef.getUuid());
                                                         refreshUI = true;
                                                 } else if ("apply".equalsIgnoreCase(act)) {
                                                         applyPreviewChanges(ref, store, playerData);
-                                                        player.sendMessage(Message.raw("Skills applied!")
+                                                        player.sendMessage(Message
+                                                                        .raw(tr("ui.skills.message.applied",
+                                                                                        "Skills applied!"))
                                                                         .color("#00ff00"));
                                                         LOGGER.atInfo().log("Applied previewed skills for %s",
                                                                         playerRef.getUuid());
@@ -274,14 +280,17 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                                                                                 previewLevels.put(type,
                                                                                                 current + toAdd);
                                                                                 previewSkillPoints -= toAdd;
-                                                                                player.sendMessage(Message.raw("Added "
-                                                                                                + toAdd
-                                                                                                + " point(s) to "
-                                                                                                + type.name())
+                                                                                player.sendMessage(Message.raw(tr(
+                                                                                                "ui.skills.message.added",
+                                                                                                "Added {0} point(s) to {1}",
+                                                                                                toAdd,
+                                                                                                type.name()))
                                                                                                 .color("#00ff00"));
                                                                                 if (precisionCapped) {
-                                                                                        player.sendMessage(Message.raw(
-                                                                                                        "Precision crit chance capped at 100%; excess points not applied.")
+                                                                                        player.sendMessage(Message
+                                                                                                        .raw(tr(
+                                                                                                                        "ui.skills.message.precision_capped",
+                                                                                                                        "Precision crit chance capped at 100%; excess points not applied."))
                                                                                                         .color("#ffc300"));
                                                                                 }
                                                                                 LOGGER.atInfo().log(
@@ -297,11 +306,13 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                                                                                                                 playerData,
                                                                                                                 current);
                                                                                 Message response = atCap
-                                                                                                ? Message.raw(
-                                                                                                                "Precision crit chance is already 100%; remove other bonuses first.")
+                                                                                                ? Message.raw(tr(
+                                                                                                                "ui.skills.error.precision_at_cap",
+                                                                                                                "Precision crit chance is already 100%; remove other bonuses first."))
                                                                                                                 .color("#ff0000")
-                                                                                                : Message.raw(
-                                                                                                                "Not enough skill points")
+                                                                                                : Message.raw(tr(
+                                                                                                                "ui.skills.error.not_enough_points",
+                                                                                                                "Not enough skill points"))
                                                                                                                 .color("#ff0000");
                                                                                 player.sendMessage(response);
                                                                                 LOGGER.atSevere().log(
@@ -334,9 +345,11 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                                                                                                 current - toSub);
                                                                                 previewSkillPoints += toSub;
                                                                                 player.sendMessage(Message
-                                                                                                .raw("Removed " + toSub
-                                                                                                                + " point(s) from "
-                                                                                                                + type.name())
+                                                                                                .raw(tr(
+                                                                                                                "ui.skills.message.removed",
+                                                                                                                "Removed {0} point(s) from {1}",
+                                                                                                                toSub,
+                                                                                                                type.name()))
                                                                                                 .color("#ff9900"));
                                                                                 LOGGER.atInfo().log(
                                                                                                 "Subtracted %d from %s for player %s",
@@ -347,11 +360,13 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                                                                                 boolean precisionBlocked = type == SkillAttributeType.PRECISION
                                                                                                 && overflowRefund <= 0;
                                                                                 Message response = precisionBlocked
-                                                                                                ? Message.raw(
-                                                                                                                "Precision crit chance is already 100% or lower; no excess points to refund.")
+                                                                                                ? Message.raw(tr(
+                                                                                                                "ui.skills.error.precision_no_refund",
+                                                                                                                "Precision crit chance is already 100% or lower; no excess points to refund."))
                                                                                                                 .color("#ff0000")
-                                                                                                : Message.raw(
-                                                                                                                "Cannot go below original level")
+                                                                                                : Message.raw(tr(
+                                                                                                                "ui.skills.error.below_original",
+                                                                                                                "Cannot go below original level"))
                                                                                                                 .color("#ff0000");
                                                                                 player.sendMessage(response);
                                                                                 LOGGER.atSevere().log(
@@ -363,14 +378,18 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                                                                 }
                                                         } catch (IllegalArgumentException iae) {
                                                                 player.sendMessage(Message
-                                                                                .raw("Invalid attribute: " + attrName)
+                                                                                .raw(tr("ui.skills.error.invalid_attribute",
+                                                                                                "Invalid attribute: {0}",
+                                                                                                attrName))
                                                                                 .color("#ff0000"));
                                                                 LOGGER.atSevere().log("Invalid attribute: %s",
                                                                                 attrName);
                                                         }
                                                 }
                                         } catch (Exception e) {
-                                                player.sendMessage(Message.raw("Error handling skill action")
+                                                player.sendMessage(Message
+                                                                .raw(tr("ui.skills.error.action_failed",
+                                                                                "Error handling skill action"))
                                                                 .color("#ff0000"));
                                                 LOGGER.atSevere().withCause(e).log(
                                                                 "Exception handling skill action: %s",
@@ -406,7 +425,7 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         }
 
         private void applySkillValues(UICommandBuilder ui, PlayerData playerData) {
-                ui.set("#SKILLPOINTS.Text", "SKILL POINTS: " + previewSkillPoints);
+                ui.set("#SKILLPOINTS.Text", tr("ui.skills.points", "SKILL POINTS: {0}", previewSkillPoints));
 
                 int lifeLevel = getPreviewLevel(SkillAttributeType.LIFE_FORCE);
                 double lifeTotal = resolveResourcePreviewTotal(playerData, SkillAttributeType.LIFE_FORCE, lifeLevel);
@@ -418,24 +437,27 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                                 strLevel);
                 ui.set("#StrengthLevel.Text", String.valueOf(strLevel));
                 ui.set("#StrengthValue.Text",
-                                "+" + formatNumber(strengthPreview.totalValue()) + "% Damage");
+                                tr("ui.skills.value.strength", "+{0}% Damage",
+                                                formatNumber(strengthPreview.totalValue())));
 
                 int sorcLevel = getPreviewLevel(SkillAttributeType.SORCERY);
                 double sorceryTotal = skillManager.calculateSkillAttributeBonus(playerData, SkillAttributeType.SORCERY,
                                 sorcLevel);
                 ui.set("#SorceryLevel.Text", String.valueOf(sorcLevel));
-                ui.set("#SorceryValue.Text", "+" + formatNumber(sorceryTotal) + "% Magic Damage");
+                ui.set("#SorceryValue.Text",
+                                tr("ui.skills.value.sorcery", "+{0}% Magic Damage", formatNumber(sorceryTotal)));
 
                 int defLevel = getPreviewLevel(SkillAttributeType.DEFENSE);
                 SkillManager.DefenseBreakdown defensePreview = skillManager.getDefenseBreakdown(playerData, defLevel);
                 ui.set("#DefenseLevel.Text", String.valueOf(defLevel));
-                ui.set("#DefenseValue.Text", formatNumber(defensePreview.resistance() * 100) + "% Reduction");
+                ui.set("#DefenseValue.Text", tr("ui.skills.value.defense", "{0}% Reduction",
+                                formatNumber(defensePreview.resistance() * 100)));
 
                 int hasteLevel = getPreviewLevel(SkillAttributeType.HASTE);
                 SkillManager.HasteBreakdown hastePreview = skillManager.getHasteBreakdown(playerData, hasteLevel);
                 double hastePercent = (hastePreview.totalMultiplier() - 1.0f) * 100.0f;
                 ui.set("#HasteLevel.Text", String.valueOf(hasteLevel));
-                ui.set("#HasteValue.Text", "+" + formatNumber(hastePercent) + "% Speed");
+                ui.set("#HasteValue.Text", tr("ui.skills.value.haste", "+{0}% Speed", formatNumber(hastePercent)));
 
                 int precLevel = getPreviewLevel(SkillAttributeType.PRECISION);
                 ui.set("#PrecisionLevel.Text", String.valueOf(precLevel));
@@ -445,12 +467,14 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 double precisionTotal = precisionPreview != null
                                 ? precisionPreview.totalPercent()
                                 : Math.min(100.0D, getPrecisionPreviewPercent(playerData, precLevel));
-                ui.set("#PrecisionValue.Text", formatNumber(precisionTotal) + "% Crit Chance");
+                ui.set("#PrecisionValue.Text",
+                                tr("ui.skills.value.precision", "{0}% Crit Chance", formatNumber(precisionTotal)));
 
                 int ferLevel = getPreviewLevel(SkillAttributeType.FEROCITY);
                 double ferPer = skillManager.getSkillAttributeConfigValue(SkillAttributeType.FEROCITY);
                 ui.set("#FerocityLevel.Text", String.valueOf(ferLevel));
-                ui.set("#FerocityValue.Text", "+" + formatNumber(ferLevel * ferPer) + "% Crit Damage");
+                ui.set("#FerocityValue.Text",
+                                tr("ui.skills.value.ferocity", "+{0}% Crit Damage", formatNumber(ferLevel * ferPer)));
 
                 int stamLevel = getPreviewLevel(SkillAttributeType.STAMINA);
                 double staminaTotal = resolveResourcePreviewTotal(playerData, SkillAttributeType.STAMINA, stamLevel);
@@ -466,7 +490,8 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 int discLevel = getPreviewLevel(SkillAttributeType.DISCIPLINE);
                 double discBonus = skillManager.getDisciplineXpBonusPercent(discLevel);
                 ui.set("#DisciplineLevel.Text", String.valueOf(discLevel));
-                ui.set("#DisciplineValue.Text", "+" + formatNumber(discBonus) + "% XP Gain");
+                ui.set("#DisciplineValue.Text",
+                                tr("ui.skills.value.discipline", "+{0}% XP Gain", formatNumber(discBonus)));
         }
 
         private void ensurePreviewState(PlayerData playerData) {
@@ -584,9 +609,9 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
         private String formatResourceDisplay(double total, String label) {
                 if (total <= 0.0D) {
-                        return "0 " + label;
+                        return tr("ui.skills.value.resource", "{0} {1}", 0, label);
                 }
-                return formatNumber(total) + " " + label;
+                return tr("ui.skills.value.resource", "{0} {1}", formatNumber(total), label);
         }
 
         private String formatNumber(double value) {
@@ -598,7 +623,16 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         }
 
         private String getDescription(SkillAttributeType type) {
-                return ATTRIBUTE_DESCRIPTIONS.getOrDefault(type, "");
+                String fallback = ATTRIBUTE_DESCRIPTIONS.getOrDefault(type, "");
+                return tr("ui.skills.description." + type.name().toLowerCase(java.util.Locale.ROOT), fallback);
+        }
+
+        private String getLabel(SkillAttributeType type, String fallback) {
+                return tr("ui.skills.label." + type.name().toLowerCase(java.util.Locale.ROOT), fallback);
+        }
+
+        private String tr(String key, String fallback, Object... args) {
+                return Lang.tr(playerRef.getUuid(), key, fallback, args);
         }
 
         private void applySkillIcons(UICommandBuilder ui) {

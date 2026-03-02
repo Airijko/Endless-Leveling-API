@@ -10,7 +10,7 @@ import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
-import com.hypixel.hytale.server.core.command.system.arguments.system.RequiredArg;
+import com.hypixel.hytale.server.core.command.system.arguments.system.OptionalArg;
 import com.hypixel.hytale.server.core.command.system.arguments.types.ArgTypes;
 import com.hypixel.hytale.server.core.command.system.basecommands.AbstractPlayerCommand;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
@@ -19,17 +19,20 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import javax.annotation.Nonnull;
 import java.util.List;
+import java.util.Locale;
 
 public class LanguageCommand extends AbstractPlayerCommand {
 
-    private final RequiredArg<String> localeArg = this.withRequiredArg("locale", "Language locale (example: en_US)",
+    private final OptionalArg<String> actionArg = this.withOptionalArg("action", "list | set", ArgTypes.STRING);
+    private final OptionalArg<String> localeArg = this.withOptionalArg("locale", "Language locale (example: en_US)",
             ArgTypes.STRING);
 
     private final PlayerDataManager playerDataManager;
     private final LanguageManager languageManager;
 
     public LanguageCommand() {
-        super("language", "Set your personal EndlessLeveling language");
+        super("lang", "Manage your personal EndlessLeveling language (list, set)");
+        this.addAliases("language, translate, translation");
         EndlessLeveling plugin = EndlessLeveling.getInstance();
         this.playerDataManager = plugin != null ? plugin.getPlayerDataManager() : null;
         this.languageManager = plugin != null ? plugin.getLanguageManager() : null;
@@ -57,9 +60,58 @@ public class LanguageCommand extends AbstractPlayerCommand {
             return;
         }
 
-        String requestedLocale = localeArg.get(commandContext);
+        if (!actionArg.provided(commandContext)) {
+            sendUsage(senderRef);
+            return;
+        }
+
+        String actionRaw = actionArg.get(commandContext);
+        String action = actionRaw == null ? "" : actionRaw.trim().toLowerCase(Locale.ROOT);
+
+        if ("list".equals(action)) {
+            sendLocaleList(senderRef, data);
+            return;
+        }
+
+        if ("set".equals(action)) {
+            if (!localeArg.provided(commandContext)) {
+                sendUsage(senderRef);
+                return;
+            }
+            applyLocaleChange(senderRef, data, localeArg.get(commandContext));
+            return;
+        }
+
+        if (!localeArg.provided(commandContext)) {
+            applyLocaleChange(senderRef, data, actionRaw);
+            return;
+        }
+
+        sendUsage(senderRef);
+    }
+
+    private void sendLocaleList(PlayerRef senderRef, PlayerData data) {
+        List<String> available = languageManager.getAvailableLocales();
+        senderRef.sendMessage(Message.raw(Lang.tr(senderRef.getUuid(),
+                "command.language.current",
+                "Current language: {0}",
+                data.getLanguage())).color("#4fd7f7"));
+
+        senderRef.sendMessage(Message.raw(Lang.tr(senderRef.getUuid(),
+                "command.language.available",
+                "Available locales: {0}",
+                String.join(", ", available))).color("#4fd7f7"));
+    }
+
+    private void sendUsage(PlayerRef senderRef) {
+        senderRef.sendMessage(Message.raw(Lang.tr(senderRef.getUuid(),
+                "command.language.usage",
+                "Usage: /el language list | /el language set <locale>")).color("#ffcc66"));
+    }
+
+    private void applyLocaleChange(PlayerRef senderRef, PlayerData data, String requestedLocale) {
         if (requestedLocale == null || requestedLocale.isBlank()) {
-            senderRef.sendMessage(Message.raw("Usage: /skills language <locale>").color("#ffcc66"));
+            sendUsage(senderRef);
             return;
         }
 

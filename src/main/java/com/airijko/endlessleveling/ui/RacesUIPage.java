@@ -8,6 +8,7 @@ import com.airijko.endlessleveling.managers.PlayerDataManager;
 import com.airijko.endlessleveling.managers.RaceManager;
 import com.airijko.endlessleveling.races.RaceDefinition;
 import com.airijko.endlessleveling.races.RacePassiveDefinition;
+import com.airijko.endlessleveling.util.Lang;
 import com.airijko.endlessleveling.util.OperatorHelper;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
@@ -84,11 +85,12 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 false);
 
         if (raceManager == null || !raceManager.isEnabled()) {
-            ui.set("#SelectedRaceLabel.Text", "Races Offline");
-            ui.set("#SelectedRaceSubtitle.Text", "Races are currently disabled in config.yml.");
-            ui.set("#RaceSwapCooldownValue.Text", "Disabled");
-            ui.set("#RaceSwapCooldownHint.Text", "Enable races to manage identities.");
-            ui.set("#RaceCountLabel.Text", "0 available");
+            ui.set("#SelectedRaceLabel.Text", tr("ui.races.offline.title", "Races Offline"));
+            ui.set("#SelectedRaceSubtitle.Text",
+                    tr("ui.races.offline.subtitle", "Races are currently disabled in config.yml."));
+            ui.set("#RaceSwapCooldownValue.Text", tr("ui.races.cooldown.disabled", "Disabled"));
+            ui.set("#RaceSwapCooldownHint.Text", tr("ui.races.offline.hint", "Enable races to manage identities."));
+            ui.set("#RaceCountLabel.Text", tr("ui.races.count.none", "0 available"));
             ui.set("#CurrentRaceValue.Text", "--");
             ui.clear("#RaceRows");
             ui.clear("#RacePassiveEntries");
@@ -97,10 +99,12 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
         PlayerData playerData = resolvePlayerData();
         if (playerData == null) {
-            ui.set("#SelectedRaceLabel.Text", "Player data unavailable");
-            ui.set("#SelectedRaceSubtitle.Text", "Unable to load your race information right now.");
+            ui.set("#SelectedRaceLabel.Text", tr("ui.races.playerdata.title", "Player data unavailable"));
+            ui.set("#SelectedRaceSubtitle.Text",
+                    tr("ui.races.playerdata.subtitle", "Unable to load your race information right now."));
             ui.set("#RaceSwapCooldownValue.Text", "--");
-            ui.set("#RaceSwapCooldownHint.Text", "Try reopening this page in a few moments.");
+            ui.set("#RaceSwapCooldownHint.Text",
+                    tr("ui.races.playerdata.hint", "Try reopening this page in a few moments."));
             ui.set("#CurrentRaceValue.Text", "--");
             ui.clear("#RaceRows");
             ui.clear("#RacePassiveEntries");
@@ -147,21 +151,23 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             boolean operatorBypass) {
         if (operatorBypass) {
             ui.set("#RaceSwapCooldownValue.Text", "Bypassed");
-            ui.set("#RaceSwapCooldownHint.Text", "Operator bypass active.");
+            ui.set("#RaceSwapCooldownHint.Text", tr("ui.races.cooldown.bypassed_hint", "Operator bypass active."));
             return;
         }
         long cooldownSeconds = raceManager.getChooseRaceCooldownSeconds();
         long remaining = computeCooldownRemaining(data, cooldownSeconds);
         if (remaining > 0) {
             ui.set("#RaceSwapCooldownValue.Text", formatDuration(remaining));
-            ui.set("#RaceSwapCooldownHint.Text", "Swap in cooldown");
+            ui.set("#RaceSwapCooldownHint.Text", tr("ui.races.cooldown.in_cooldown", "Swap in cooldown"));
         } else {
-            ui.set("#RaceSwapCooldownValue.Text", "Ready");
+            ui.set("#RaceSwapCooldownValue.Text", tr("ui.races.cooldown.ready", "Ready"));
             if (cooldownSeconds > 0) {
                 ui.set("#RaceSwapCooldownHint.Text",
-                        "Swapping will trigger a " + formatDuration(cooldownSeconds) + " cooldown.");
+                        tr("ui.races.cooldown.swap_triggers", "Swapping will trigger a {0} cooldown.",
+                                formatDuration(cooldownSeconds)));
             } else {
-                ui.set("#RaceSwapCooldownHint.Text", "Race swapping is unrestricted right now.");
+                ui.set("#RaceSwapCooldownHint.Text",
+                        tr("ui.races.cooldown.unrestricted", "Race swapping is unrestricted right now."));
             }
         }
     }
@@ -173,7 +179,8 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         ui.clear("#RaceRows");
 
         List<RaceDefinition> races = getSortedRaces();
-        ui.set("#RaceCountLabel.Text", races.size() + (races.size() == 1 ? " race" : " races"));
+        ui.set("#RaceCountLabel.Text",
+                tr("ui.races.count", "{0} {1}", races.size(), races.size() == 1 ? "race" : "races"));
 
         for (int index = 0; index < races.size(); index++) {
             RaceDefinition definition = races.get(index);
@@ -210,7 +217,8 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     private void refreshRaceList(@Nonnull UICommandBuilder ui,
             RaceDefinition activeRace) {
         List<RaceDefinition> races = getSortedRaces();
-        ui.set("#RaceCountLabel.Text", races.size() + (races.size() == 1 ? " race" : " races"));
+        ui.set("#RaceCountLabel.Text",
+                tr("ui.races.count", "{0} {1}", races.size(), races.size() == 1 ? "race" : "races"));
 
         for (int index = 0; index < races.size(); index++) {
             RaceDefinition definition = races.get(index);
@@ -238,11 +246,12 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         RaceDefinition selection = resolveSelection(activeRace);
         if (selection == null) {
             ui.set("#SelectedRaceLabel.Text", "Select a Race");
-            ui.set("#SelectedRaceSubtitle.Text", "Choose a race on the left to preview its identity.");
-            ui.set("#RaceLoreText.Text", "Lore unavailable.");
+            ui.set("#SelectedRaceSubtitle.Text",
+                    tr("ui.races.select.subtitle", "Choose a race on the left to preview its identity."));
+            ui.set("#RaceLoreText.Text", tr("ui.races.lore.unavailable", "Lore unavailable."));
             ui.clear("#RacePassiveEntries");
             ui.set("#RacePassiveSummary.Visible", true);
-            ui.set("#RacePassiveSummary.Text", "No race selected.");
+            ui.set("#RacePassiveSummary.Text", tr("ui.races.passives.none_selected", "No race selected."));
             clearAttributePreview(ui);
             return;
         }
@@ -268,7 +277,8 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         List<RacePassiveDefinition> passives = selection.getPassiveDefinitions();
         if (passives == null || passives.isEmpty()) {
             ui.set("#RacePassiveSummary.Visible", true);
-            ui.set("#RacePassiveSummary.Text", "This race does not define passive bonuses.");
+            ui.set("#RacePassiveSummary.Text",
+                    tr("ui.races.passives.none_defined", "This race does not define passive bonuses."));
             ui.clear("#RacePassiveEntries");
         } else {
             ui.set("#RacePassiveSummary.Visible", false);
@@ -283,7 +293,8 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         }
 
         if (operatorBypass) {
-            ui.set("#RaceDetailCooldownWarning.Text", "Operator bypass active. Swapping is immediate.");
+            ui.set("#RaceDetailCooldownWarning.Text",
+                    tr("ui.races.cooldown.bypassed_detail", "Operator bypass active. Swapping is immediate."));
             return;
         }
 
@@ -296,7 +307,8 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             ui.set("#RaceDetailCooldownWarning.Text",
                     "Swapping will trigger a " + formatDuration(cooldownSeconds) + " cooldown.");
         } else {
-            ui.set("#RaceDetailCooldownWarning.Text", "Swapping is unrestricted right now.");
+            ui.set("#RaceDetailCooldownWarning.Text",
+                    tr("ui.races.cooldown.unrestricted", "Swapping is unrestricted right now."));
         }
     }
 
@@ -705,7 +717,8 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
         PlayerData playerData = resolvePlayerData();
         if (playerData == null) {
-            playerRef.sendMessage(Message.raw("Unable to load your race info right now.").color("#ff6666"));
+            playerRef.sendMessage(Message
+                    .raw(tr("ui.races.error.playerdata", "Unable to load your race info right now.")).color("#ff6666"));
             return;
         }
 
@@ -722,7 +735,8 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
         if (data.action.equals("race:confirm")) {
             if (selectedRaceId == null || selectedRaceId.isBlank()) {
-                playerRef.sendMessage(Message.raw("Select a race to swap into.").color("#ff9900"));
+                playerRef.sendMessage(
+                        Message.raw(tr("ui.races.error.select_first", "Select a race to swap into.")).color("#ff9900"));
                 return;
             }
             handleRaceChoose(selectedRaceId, playerData, ref, store, operatorBypass);
@@ -744,19 +758,21 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             return;
         }
         if (raceManager == null || !raceManager.isEnabled()) {
-            playerRef.sendMessage(Message.raw("Races are disabled.").color("#ff6666"));
+            playerRef.sendMessage(Message.raw(tr("ui.races.error.disabled", "Races are disabled.")).color("#ff6666"));
             return;
         }
 
         RaceDefinition desired = raceManager.findRaceByUserInput(targetRaceId);
         if (desired == null) {
-            playerRef.sendMessage(Message.raw("Unknown race: " + targetRaceId).color("#ff6666"));
+            playerRef.sendMessage(
+                    Message.raw(tr("ui.races.error.unknown", "Unknown race: {0}", targetRaceId)).color("#ff6666"));
             return;
         }
 
         RaceDefinition current = raceManager.getPlayerRace(playerData);
         if (current != null && current.getId().equalsIgnoreCase(desired.getId())) {
-            playerRef.sendMessage(Message.raw("You already belong to that race.").color("#ff9900"));
+            playerRef.sendMessage(Message.raw(tr("ui.races.error.already_selected", "You already belong to that race."))
+                    .color("#ff9900"));
             this.selectedRaceId = current.getId();
             rebuild();
             return;
@@ -767,7 +783,8 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             long remaining = computeCooldownRemaining(playerData, cooldownSeconds);
             if (remaining > 0) {
                 playerRef.sendMessage(Message.join(
-                        Message.raw("You can swap again in ").color("#ffffff"),
+                        Message.raw(tr("ui.races.cooldown.try_again_prefix", "You can swap again in "))
+                                .color("#ffffff"),
                         Message.raw(formatDuration(remaining)).color("#ffc300"),
                         Message.raw(".").color("#ffffff")));
                 return;
@@ -775,8 +792,8 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         }
 
         if (!operatorBypass && raceManager != null && !raceManager.hasRaceSwitchesRemaining(playerData)) {
-            int remaining = raceManager.getRemainingRaceSwitches(playerData);
-            playerRef.sendMessage(Message.raw("No race changes remaining.").color("#ff6666"));
+            playerRef.sendMessage(Message.raw(tr("ui.races.error.no_changes_remaining", "No race changes remaining."))
+                    .color("#ff6666"));
             return;
         }
 
@@ -813,13 +830,17 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         if (player != null) {
             String display = desired.getDisplayName() == null ? desired.getId() : desired.getDisplayName();
             player.sendMessage(Message.join(
-                    Message.raw("[Races] ").color("#4fd7f7"),
-                    Message.raw("You are now a ").color("#ffffff"),
+                    Message.raw(tr("ui.races.chat.prefix", "[Races] ")).color("#4fd7f7"),
+                    Message.raw(tr("ui.races.chat.changed_prefix", "You are now a ")).color("#ffffff"),
                     Message.raw(display).color("#ffc300"),
                     Message.raw("!").color("#ffffff")));
         }
 
         this.selectedRaceId = desired.getId();
         refreshRaceUi(playerData, operatorBypass);
+    }
+
+    private String tr(String key, String fallback, Object... args) {
+        return Lang.tr(playerRef.getUuid(), key, fallback, args);
     }
 }

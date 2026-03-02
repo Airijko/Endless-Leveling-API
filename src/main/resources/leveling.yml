@@ -3,7 +3,7 @@ default:
   expression: "base * ((log(level)+1) * (sqrt(level)))^2"
   base: 50
 
-# If you change these values, make sure to reset everyone to sync the skill points by do "/skills resetskillpointsall"
+# If you change these values, make sure to reset everyone to sync the skill points by do "/el resetskillpointsall"
 baseSkillPoints: 12
 skillPointsPerLevel: 6
 

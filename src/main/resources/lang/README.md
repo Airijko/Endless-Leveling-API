@@ -16,7 +16,7 @@ EndlessLeveling supports language packs in this folder.
 2. Translate the values (right side), keep the keys unchanged.
 3. Keep placeholders like `{0}`, `{1}` exactly as-is.
 4. Set `language.locale` in `config.yml` to your locale file name (without `.yml`).
-5. Run plugin reload (`/skills reload`) or restart server.
+5. Run plugin reload (`/el reload`) or restart server.
 
 ## Notes
 
@@ -27,6 +27,6 @@ EndlessLeveling supports language packs in this folder.
 ## Player language selection
 
 - Players can set their own language with:
-  - `/skills language <locale>`
+  - `/el language <locale>`
 - Example:
-  - `/skills language en_US`
+  - `/el language en_US`

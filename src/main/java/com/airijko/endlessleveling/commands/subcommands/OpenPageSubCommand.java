@@ -15,7 +15,7 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Generic /skills subcommand that opens a specific EndlessLeveling UI page.
+ * Generic /el subcommand that opens a specific EndlessLeveling UI page.
  */
 public class OpenPageSubCommand extends AbstractPlayerCommand {
 

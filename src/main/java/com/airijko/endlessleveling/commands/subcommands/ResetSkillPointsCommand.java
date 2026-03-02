@@ -22,7 +22,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import javax.annotation.Nonnull;
 
 /**
- * /skills resetskillpoints - resets the caller's allocated attributes back to
+ * /el resetskillpoints - resets the caller's allocated attributes back to
  * the baseline.
  */
 public class ResetSkillPointsCommand extends AbstractPlayerCommand {

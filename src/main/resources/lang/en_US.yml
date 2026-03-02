@@ -67,7 +67,170 @@ ui:
       enabled: "Race model visuals enabled"
       disabled: "Race model visuals disabled"
 
+  augments:
+    tier:
+      default: "AUGMENTS"
+    selected: "Selected augment: {0} ({1})"
+    no_description: "No description provided."
+    no_augment:
+      title: "NO AUGMENT"
+      body: "No augments are currently available."
+    no_augments_yet:
+      title: "NO AUGMENTS YET"
+      body: "No augments available yet. Next unlock at level {0}."
+    no_augments:
+      title: "NO AUGMENTS"
+      body: "No augment unlock milestones are configured."
+    all_claimed:
+      title: "ALL CLAIMED"
+      next_unlock: "You have claimed all currently unlocked augments. Next unlock at level {0}."
+      done: "You have already claimed all configured augment unlocks."
+    remaining:
+      header: "[EndlessLeveling] You still have more augments to choose from:"
+      footer: "Choose again now."
+    error:
+      title: "AUGMENT ERROR"
+      data_unavailable: "Augment data unavailable."
+      tier_unresolved: "Unable to resolve augment tier."
+      playerdata_unavailable: "Unable to load your player data. Try reopening this page."
+      system_unavailable: "Augment system is unavailable right now. Please contact an admin."
+      definitions_missing: "No augment definitions are loaded. Check /mods/EndlessLeveling/augments."
+      offers_missing: "Unlocked augments are missing from your offers. Ask an admin to run /el augment refresh <player>."
+      slot_empty: "No augment in that slot."
+
+  races:
+    count: "{0} {1}"
+    offline:
+      title: "Races Offline"
+      subtitle: "Races are currently disabled in config.yml."
+      hint: "Enable races to manage identities."
+    playerdata:
+      title: "Player data unavailable"
+      subtitle: "Unable to load your race information right now."
+      hint: "Try reopening this page in a few moments."
+    select:
+      subtitle: "Choose a race on the left to preview its identity."
+    lore:
+      unavailable: "Lore unavailable."
+    passives:
+      none_selected: "No race selected."
+      none_defined: "This race does not define passive bonuses."
+    cooldown:
+      disabled: "Disabled"
+      bypassed_hint: "Operator bypass active."
+      bypassed_detail: "Operator bypass active. Swapping is immediate."
+      in_cooldown: "Swap in cooldown"
+      ready: "Ready"
+      swap_triggers: "Swapping will trigger a {0} cooldown."
+      unrestricted: "Race swapping is unrestricted right now."
+      try_again_prefix: "You can swap again in "
+    chat:
+      prefix: "[Races] "
+      changed_prefix: "You are now a "
+    error:
+      playerdata: "Unable to load your race info right now."
+      select_first: "Select a race to swap into."
+      disabled: "Races are disabled."
+      unknown: "Unknown race: {0}"
+      already_selected: "You already belong to that race."
+      no_changes_remaining: "No race changes remaining."
+
+  classes:
+    count: "{0} {1}"
+    none_selected: "No class selected."
+    offline:
+      title: "Classes Offline"
+      subtitle: "Classes are currently disabled in config.yml."
+      lore: "Enable classes to browse archetypes."
+      hint: "Enable classes to manage archetypes."
+      weapons: "Weapon bonuses unavailable."
+      passives: "Passive bonuses unavailable."
+    playerdata:
+      title: "Player data unavailable"
+      subtitle: "Unable to load your class information right now."
+      lore: "Try reopening this page in a few moments."
+      hint: "Try reopening this page in a few moments."
+    select:
+      subtitle: "Choose a class on the left to preview its role and passives."
+    lore:
+      unavailable: "Lore unavailable."
+    subtitle:
+      primary: "Currently your primary class"
+      secondary: "Currently your secondary class (50% effect)"
+      preview: "Preview only"
+    weapons:
+      none_defined: "This class does not define weapon bonuses."
+    cooldown:
+      bypassed_hint: "Operator bypass active; cooldowns ignored."
+      each_swap: "Each swap triggers a {0} cooldown per slot."
+      unrestricted: "Class swapping is unrestricted right now."
+    secondary_cleared: "Secondary class cleared."
+    error:
+      disabled: "Classes are currently disabled."
+      playerdata: "Unable to load your class info right now."
+      select_primary: "Select a class to set as primary."
+      primary_already: "That is already your primary class."
+      secondary_disabled: "Secondary classes are currently disabled."
+      select_secondary: "Select a class to set as secondary."
+      secondary_matches_primary: "Your secondary class cannot match your primary."
+      secondary_already: "That is already your secondary class."
+      secondary_set_failed: "Unable to set that as your secondary class."
+      secondary_none: "You do not have a secondary class assigned."
+      no_changes_remaining: "You have no class changes remaining."
+
+  skills:
+    unknown: "Unknown"
+    points: "SKILL POINTS: {0}"
+    label:
+      life_force: "Life Force"
+      strength: "Strength"
+      sorcery: "Sorcery"
+      defense: "Defense"
+      haste: "Haste"
+      precision: "Precision"
+      ferocity: "Ferocity"
+      stamina: "Stamina"
+      flow: "Flow"
+      discipline: "Discipline"
+    description:
+      life_force: "Boosts your total health so you can tank more hits."
+      strength: "Boosts physical damage for melee and ranged weapons."
+      sorcery: "Boosts magic damage for staff weapons."
+      defense: "Cuts down incoming damage through resistances."
+      haste: "Increases movement speed"
+      precision: "Raises critical hit chance for every attack."
+      ferocity: "Adds bonus damage to each critical strike."
+      stamina: "Expands stamina for dodges, blocks, and bursts."
+      flow: "Increases flow (mana) so spells and abilities stay online longer."
+      discipline: "Increases XP gain rate from all sources."
+    value:
+      resource: "{0} {1}"
+      strength: "+{0}% Damage"
+      sorcery: "+{0}% Magic Damage"
+      defense: "{0}% Reduction"
+      haste: "+{0}% Speed"
+      precision: "{0}% Crit Chance"
+      ferocity: "+{0}% Crit Damage"
+      discipline: "+{0}% XP Gain"
+    message:
+      granted: "You were granted skill points!"
+      reset: "Pending changes reset."
+      applied: "Skills applied!"
+      added: "Added {0} point(s) to {1}"
+      removed: "Removed {0} point(s) from {1}"
+      precision_capped: "Precision crit chance capped at 100%; excess points not applied."
+    error:
+      precision_at_cap: "Precision crit chance is already 100%; remove other bonuses first."
+      not_enough_points: "Not enough skill points"
+      precision_no_refund: "Precision crit chance is already 100% or lower; no excess points to refund."
+      below_original: "Cannot go below original level"
+      invalid_attribute: "Invalid attribute: {0}"
+      action_failed: "Error handling skill action"
+
 command:
   language:
+    usage: "Usage: /el lang list | /el lang set <locale>"
+    current: "Current language: {0}"
+    available: "Available locales: {0}"
     invalid: "Unknown locale '{0}'. Available locales: {1}"
     updated: "Language set to {0}."
