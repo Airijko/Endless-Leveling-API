@@ -39,6 +39,7 @@ public class MobLevelingManager {
     private final Map<Long, Integer> cachedPosDiffs = new ConcurrentHashMap<>();
     private final Map<String, AreaOverride> areaOverrides = new ConcurrentHashMap<>();
     private final Map<Integer, Integer> entityLevelOverrides = new ConcurrentHashMap<>();
+    private final Map<Long, Integer> entityLevelOverridesScoped = new ConcurrentHashMap<>();
     private final Map<Integer, UUID> entityPartyOverrides = new ConcurrentHashMap<>();
     private final Map<Integer, Float> entityMaxHealthSnapshots = new ConcurrentHashMap<>();
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
@@ -127,6 +128,18 @@ public class MobLevelingManager {
         entityPartyOverrides.remove(entityIndex);
         cachedPlayerDiffs.remove(entityIndex);
         entityMaxHealthSnapshots.remove(entityIndex);
+    }
+
+    public void forgetEntity(Store<EntityStore> store, int entityIndex) {
+        if (entityIndex < 0) {
+            return;
+        }
+        entityLevelOverridesScoped.remove(toEntityKey(store, entityIndex));
+        forgetEntity(entityIndex);
+    }
+
+    public void forgetEntityByKey(long entityKey) {
+        entityLevelOverridesScoped.remove(entityKey);
     }
 
     public void recordEntityMaxHealth(int entityIndex, float maxHealth) {
@@ -232,6 +245,12 @@ public class MobLevelingManager {
 
     private Integer resolveExternalOverride(Store<EntityStore> store, Vector3d mobPosition, Integer entityId) {
         if (entityId != null) {
+            if (store != null) {
+                Integer scoped = entityLevelOverridesScoped.get(toEntityKey(store, entityId));
+                if (scoped != null) {
+                    return Math.max(1, scoped);
+                }
+            }
             Integer direct = entityLevelOverrides.get(entityId);
             if (direct != null) {
                 return Math.max(1, direct);
@@ -1589,6 +1608,13 @@ public class MobLevelingManager {
         entityLevelOverrides.put(entityIndex, level);
     }
 
+    public void setEntityLevelOverride(Store<EntityStore> store, int entityIndex, int level) {
+        if (store == null || entityIndex < 0 || level <= 0) {
+            return;
+        }
+        entityLevelOverridesScoped.put(toEntityKey(store, entityIndex), level);
+    }
+
     /** Remove a specific entity override. */
     public void clearEntityLevelOverride(int entityIndex) {
         entityLevelOverrides.remove(entityIndex);
@@ -1597,12 +1623,27 @@ public class MobLevelingManager {
         entityMaxHealthSnapshots.remove(entityIndex);
     }
 
+    public void clearEntityLevelOverride(Store<EntityStore> store, int entityIndex) {
+        if (store == null || entityIndex < 0) {
+            return;
+        }
+        entityLevelOverridesScoped.remove(toEntityKey(store, entityIndex));
+        clearEntityLevelOverride(entityIndex);
+    }
+
     /** Clear all per-entity overrides. */
     public void clearAllEntityLevelOverrides() {
         entityLevelOverrides.clear();
+        entityLevelOverridesScoped.clear();
         entityPartyOverrides.clear();
         cachedPlayerDiffs.clear();
         entityMaxHealthSnapshots.clear();
+    }
+
+    private long toEntityKey(Store<EntityStore> store, int entityId) {
+        long storePart = store == null ? 0L : Integer.toUnsignedLong(System.identityHashCode(store));
+        long entityPart = Integer.toUnsignedLong(entityId);
+        return (storePart << 32) | entityPart;
     }
 
     private record AreaOverride(String id, String worldId,

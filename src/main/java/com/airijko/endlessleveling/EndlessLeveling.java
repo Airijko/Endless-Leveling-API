@@ -62,6 +62,7 @@ public class EndlessLeveling extends JavaPlugin {
     private ArchetypePassiveManager archetypePassiveManager;
     private PlayerAttributeManager playerAttributeManager;
     private PlayerRaceStatSystem playerRaceStatSystem;
+    private MobLevelingSystem mobLevelingSystem;
     private AugmentManager augmentManager;
     private AugmentRuntimeManager augmentRuntimeManager;
     private AugmentUnlockManager augmentUnlockManager;
@@ -115,6 +116,10 @@ public class EndlessLeveling extends JavaPlugin {
 
     public PlayerRaceStatSystem getPlayerRaceStatSystem() {
         return playerRaceStatSystem;
+    }
+
+    public MobLevelingSystem getMobLevelingSystem() {
+        return mobLevelingSystem;
     }
 
     public AugmentRuntimeManager getAugmentRuntimeManager() {
@@ -219,7 +224,8 @@ public class EndlessLeveling extends JavaPlugin {
         playerRaceStatSystem = new PlayerRaceStatSystem(playerDataManager, skillManager);
         this.getEntityStoreRegistry().registerSystem(playerRaceStatSystem);
         this.getEntityStoreRegistry().registerSystem(new PlayerNameplateSystem(playerDataManager));
-        this.getEntityStoreRegistry().registerSystem(new MobLevelingSystem());
+        mobLevelingSystem = new MobLevelingSystem();
+        this.getEntityStoreRegistry().registerSystem(mobLevelingSystem);
         this.getEntityStoreRegistry().registerSystem(new HudRefreshSystem());
         this.getEntityStoreRegistry().registerSystem(new WitherEffectSystem());
         this.getEntityStoreRegistry().registerSystem(new MobDamageScalingSystem(mobLevelingManager));

@@ -12,6 +12,7 @@ import com.airijko.endlessleveling.managers.MobLevelingManager;
 import com.airijko.endlessleveling.managers.PlayerDataManager;
 import com.airijko.endlessleveling.managers.RaceManager;
 import com.airijko.endlessleveling.managers.SkillManager;
+import com.airijko.endlessleveling.systems.MobLevelingSystem;
 import com.airijko.endlessleveling.ui.PlayerHud;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
@@ -40,6 +41,7 @@ public class ReloadCommand extends AbstractPlayerCommand {
     private final SkillManager skillManager;
     private final AugmentManager augmentManager;
     private final AugmentUnlockManager augmentUnlockManager;
+    private final MobLevelingSystem mobLevelingSystem;
 
     public ReloadCommand() {
         super("reload", "Reload EndlessLeveling configs, races, and classes");
@@ -54,6 +56,7 @@ public class ReloadCommand extends AbstractPlayerCommand {
         this.skillManager = plugin != null ? plugin.getSkillManager() : null;
         this.augmentManager = plugin != null ? plugin.getAugmentManager() : null;
         this.augmentUnlockManager = plugin != null ? plugin.getAugmentUnlockManager() : null;
+        this.mobLevelingSystem = plugin != null ? plugin.getMobLevelingSystem() : null;
     }
 
     @Override
@@ -79,6 +82,9 @@ public class ReloadCommand extends AbstractPlayerCommand {
 
         if (mobLevelingManager != null) {
             mobLevelingManager.reloadConfig();
+        }
+        if (mobLevelingSystem != null) {
+            mobLevelingSystem.requestFullMobRescale();
         }
 
         if (skillManager != null) {
@@ -113,7 +119,8 @@ public class ReloadCommand extends AbstractPlayerCommand {
         }
 
         senderRef.sendMessage(
-                Message.raw("EndlessLeveling configuration, classes, and races reloaded.").color("#6cff78"));
+                Message.raw("EndlessLeveling reloaded; mob levels and modifiers are being reapplied.")
+                        .color("#6cff78"));
 
         // Refresh HUDs to reflect any mode/range changes.
         PlayerHud.refreshAll();

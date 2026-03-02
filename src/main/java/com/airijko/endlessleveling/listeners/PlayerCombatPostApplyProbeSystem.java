@@ -91,41 +91,10 @@ public class PlayerCombatPostApplyProbeSystem extends DamageEventSystem {
         }
 
         boolean dead = commandBuffer.getComponent(targetRef, DeathComponent.getComponentType()) != null;
-        boolean shouldBeDead = Float.isFinite(hp) && hp <= 0.0001f;
         int targetId = targetRef.getIndex();
         int mobLevel = -1;
         if (mobLevelingManager != null && mobLevelingManager.isMobLevelingEnabled()) {
             mobLevel = mobLevelingManager.resolveMobLevel(targetRef, commandBuffer);
-        }
-
-        if (shouldBeDead && !dead) {
-            int streak = lethalWithoutDeathStreak.getOrDefault(targetId, 0) + 1;
-            lethalWithoutDeathStreak.put(targetId, streak);
-            lastObservedHpByTarget.remove(targetId);
-
-            LOGGER.atWarning().log(
-                    "PlayerHitPostApply target=%d attacker=%d finalDamage=%.3f hp=%.3f max=%.3f shouldBeDead=%s dead=%s streak=%d mobLevel=%d",
-                    targetId,
-                    attackerRef.getIndex(),
-                    damage.getAmount(),
-                    hp,
-                    max,
-                    shouldBeDead,
-                    dead,
-                    streak,
-                    mobLevel);
-
-            if (streak >= 2) {
-                LOGGER.atWarning().log(
-                        "UnkillableCandidate target=%d streak=%d hp=%.3f max=%.3f dead=%s mobLevel=%d",
-                        targetId,
-                        streak,
-                        hp,
-                        max,
-                        dead,
-                        mobLevel);
-            }
-            return;
         }
 
         if (dead) {
@@ -162,14 +131,12 @@ public class PlayerCombatPostApplyProbeSystem extends DamageEventSystem {
         }
 
         LOGGER.atInfo().log(
-                "PlayerHitPostApply target=%d attacker=%d finalDamage=%.3f hp=%.3f max=%.3f shouldBeDead=%s dead=%s mobLevel=%d",
+                "PlayerHitPostApply target=%d attacker=%d finalDamage=%.3f hp=%.3f max=%.3f mobLevel=%d",
                 targetId,
                 attackerRef.getIndex(),
                 damage.getAmount(),
                 hp,
                 max,
-                shouldBeDead,
-                dead,
                 mobLevel);
     }
 }
