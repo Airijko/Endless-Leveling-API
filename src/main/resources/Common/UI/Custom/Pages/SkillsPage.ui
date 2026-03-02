@@ -41,7 +41,7 @@ $C.@PageOverlay {
                     Anchor: (Height: 60);
                     Padding: (Horizontal: 16, Vertical: 10);
 
-                    Label {
+                    Label #SkillsTitleLabel {
                         Text: "Skill Attributes";
                         Anchor: (Height: 60);
                         Style: (FontSize: 22, TextColor: #ffffff, RenderBold: true, VerticalAlignment: Center);
@@ -55,7 +55,7 @@ $C.@PageOverlay {
                         Anchor: (Height: 40);
                         Padding: (Full: 8);
 
-                        Label {
+                        Label #SkillsIntroText {
                             Style: (TextColor: #aaccff, FontSize: 14, VerticalAlignment: Center);
                             Text: "Allocate points to shape your combat identity.";
                         }
@@ -112,7 +112,7 @@ $C.@PageOverlay {
                                             Group {
                                                 LayoutMode: Left;
 
-                                                Label {
+                                                Label #LifeForceLevelPrefix {
                                                     Text: "Lv.";
                                                     Style: (TextColor: #94b2ff, FontSize: 13);
                                                 }
@@ -203,7 +203,7 @@ $C.@PageOverlay {
                                             Group {
                                                 LayoutMode: Left;
 
-                                                Label {
+                                                Label #StrengthLevelPrefix {
                                                     Text: "Lv.";
                                                     Style: (TextColor: #ffc49c, FontSize: 13);
                                                 }
@@ -296,7 +296,7 @@ $C.@PageOverlay {
                                             Group {
                                                 LayoutMode: Left;
 
-                                                Label {
+                                                Label #PrecisionLevelPrefix {
                                                     Text: "Lv.";
                                                     Style: (TextColor: #87dfff, FontSize: 13);
                                                 }
@@ -388,7 +388,7 @@ $C.@PageOverlay {
                                             Group {
                                                 LayoutMode: Left;
 
-                                                Label {
+                                                Label #HasteLevelPrefix {
                                                     Text: "Lv.";
                                                     Style: (TextColor: #e0b8ff, FontSize: 13);
                                                 }
@@ -480,7 +480,7 @@ $C.@PageOverlay {
                                             Group {
                                                 LayoutMode: Left;
 
-                                                Label {
+                                                Label #FlowLevelPrefix {
                                                     Text: "Lv.";
                                                     Style: (TextColor: #7edbff, FontSize: 13);
                                                 }
@@ -577,7 +577,7 @@ $C.@PageOverlay {
                                             Group {
                                                 LayoutMode: Left;
 
-                                                Label {
+                                                Label #DefenseLevelPrefix {
                                                     Text: "Lv.";
                                                     Style: (TextColor: #94ffe3, FontSize: 13);
                                                 }
@@ -668,7 +668,7 @@ $C.@PageOverlay {
                                             Group {
                                                 LayoutMode: Left;
 
-                                                Label {
+                                                Label #SorceryLevelPrefix {
                                                     Text: "Lv.";
                                                     Style: (TextColor: #bfaaff, FontSize: 13);
                                                 }
@@ -759,7 +759,7 @@ $C.@PageOverlay {
                                             Group {
                                                 LayoutMode: Left;
 
-                                                Label {
+                                                Label #FerocityLevelPrefix {
                                                     Text: "Lv.";
                                                     Style: (TextColor: #ff9ac0, FontSize: 13);
                                                 }
@@ -851,7 +851,7 @@ $C.@PageOverlay {
                                             Group {
                                                 LayoutMode: Left;
 
-                                                Label {
+                                                Label #StaminaLevelPrefix {
                                                     Text: "Lv.";
                                                     Style: (TextColor: #d2ff8f, FontSize: 13);
                                                 }
@@ -943,7 +943,7 @@ $C.@PageOverlay {
                                             Group {
                                                 LayoutMode: Left;
 
-                                                Label {
+                                                Label #DisciplineLevelPrefix {
                                                     Text: "Lv.";
                                                     Style: (TextColor: #d5dfff, FontSize: 13);
                                                 }
@@ -1029,7 +1029,7 @@ $C.@PageOverlay {
                                 FlexWeight: 1;
                             }
 
-                            Label {
+                            Label #SkillsFooterHint {
                                 Text: "Undo to revert pending tweaks, apply to lock them in.";
                                 Style: (TextColor: #c0cee5, FontSize: 12, VerticalAlignment: Center);
                                 FlexWeight: 1;

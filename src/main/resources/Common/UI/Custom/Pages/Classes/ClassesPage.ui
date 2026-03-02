@@ -63,7 +63,7 @@ $C.@PageOverlay {
                             LayoutMode: Top;
                             Anchor: (Height: 26, Width: 300);
                         
-                            Label {
+                            Label #ClassSwapCooldownCardTitle {
                                 Text: "Class Swap Cooldown";
                                 Style: (FontSize: 12, TextColor: #8aa1bf, RenderBold: true, LetterSpacing: 1);
                                 Anchor: (Height: 14);
@@ -87,7 +87,7 @@ $C.@PageOverlay {
                                 Anchor: (Height: 22);
                                 FlexWeight: 1;
 
-                                Label {
+                                Label #ClassPrimaryCooldownLabel {
                                     Text: "Primary";
                                     Style: (FontSize: 11, TextColor: #6fe3ff, RenderBold: true, VerticalAlignment: Center);
                                 } 
@@ -107,7 +107,7 @@ $C.@PageOverlay {
                                 Anchor: (Height: 26);
                                 FlexWeight: 1;
 
-                                Label {
+                                Label #ClassSecondaryCooldownLabel {
                                     Text: "Secondary";
                                     Style: (FontSize: 11, TextColor: #d4b5ff, RenderBold: true, VerticalAlignment: Center);
                                 }
@@ -138,7 +138,7 @@ $C.@PageOverlay {
                             LayoutMode: Left;
                             Anchor: (Height: 32);
 
-                            Label {
+                            Label #ClassListTitle {
                                 Text: "Available Classes";
                                 Style: (FontSize: 16, TextColor: #ffffff, RenderBold: true);
                             }
@@ -157,7 +157,7 @@ $C.@PageOverlay {
                             Background: #0b141f(0.92);
                             Padding: (Full: 10);
 
-                            Label {
+                            Label #ClassAssignmentsTitle {
                                 Text: "Class Assignments";
                                 Style: (FontSize: 12, TextColor: #8aa1bf, RenderBold: true, LetterSpacing: 1);
                                 Anchor: (Height: 12);
@@ -168,7 +168,7 @@ $C.@PageOverlay {
                             Group {
                                 LayoutMode: Left;
                                 Anchor: (Height: 20);
-                                Label {
+                                Label #ClassPrimaryStatusLabel {
                                     Text: "Primary";
                                     Style: (FontSize: 11, TextColor: #6fe3ff, RenderBold: true);
                                 }
@@ -183,7 +183,7 @@ $C.@PageOverlay {
                             Group {
                                 LayoutMode: Left;
                                 Anchor: (Height: 20);
-                                Label {
+                                Label #ClassSecondaryStatusLabel {
                                     Text: "Secondary";
                                     Style: (FontSize: 11, TextColor: #d4b5ff, RenderBold: true);
                                 }
@@ -196,7 +196,7 @@ $C.@PageOverlay {
                             }
 
                             Group { Anchor: (Height: 6); }
-                            Label {
+                            Label #ClassSecondaryShareHint {
                                 Text: "Secondary classes share 50% of bonuses.";
                                 Style: (FontSize: 11, TextColor: #9fb6d3);
                                 Anchor: (Height: 14);
@@ -248,7 +248,7 @@ $C.@PageOverlay {
                             LayoutMode: Left;
                             Anchor: (Height: 20);
 
-                            Label {
+                            Label #ClassSorceryLabel {
                                 Text: "Sorcery Bonus";
                                 Style: (FontSize: 12, TextColor: #d7baff, RenderBold: true);
                             }
@@ -274,7 +274,7 @@ $C.@PageOverlay {
                             Group #ClassDetailScrollContent {
                                 LayoutMode: Top;
 
-                                Label {
+                                Label #ClassLoreTitle {
                                     Text: "Lore Preview";
                                     Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
                                     Anchor: (Height: 20);
@@ -289,7 +289,7 @@ $C.@PageOverlay {
 
                                 Group { Anchor: (Height: 16); }
 
-                                Label {
+                                Label #ClassWeaponsTitle {
                                     Text: "Weapon Affinities";
                                     Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
                                     Anchor: (Height: 20);
@@ -307,7 +307,7 @@ $C.@PageOverlay {
 
                                 Group { Anchor: (Height: 16); }
 
-                                Label {
+                                Label #ClassInnateTitle {
                                     Text: "Innate Attribute Gains";
                                     Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
                                     Anchor: (Height: 20);
@@ -325,7 +325,7 @@ $C.@PageOverlay {
 
                                 Group { Anchor: (Height: 16); }
 
-                                Label {
+                                Label #ClassPassivesTitle {
                                     Text: "Passives";
                                     Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
                                     Anchor: (Height: 20);

@@ -103,7 +103,7 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
                 // Load UI
                 ui.append("Pages/SkillsPage.ui");
-                NavUIHelper.applyNavVersion(ui);
+                NavUIHelper.applyNavVersion(ui, playerRef);
 
                 // Bind left navigation events (Profile / Skills / Party / Leaderboards /
                 // Settings)
@@ -112,6 +112,8 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 // -----------------------------
                 // UI EVENT BINDINGS (CRITICAL)
                 // -----------------------------
+
+                applyStaticLabels(ui);
 
                 ui.set("#LifeForceLabel.Text", getLabel(SkillAttributeType.LIFE_FORCE, "Life Force"));
                 ui.set("#LifeForceDescription.Text", getDescription(SkillAttributeType.LIFE_FORCE));
@@ -430,7 +432,8 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 int lifeLevel = getPreviewLevel(SkillAttributeType.LIFE_FORCE);
                 double lifeTotal = resolveResourcePreviewTotal(playerData, SkillAttributeType.LIFE_FORCE, lifeLevel);
                 ui.set("#LifeForceLevel.Text", String.valueOf(lifeLevel));
-                ui.set("#LifeForceValue.Text", formatResourceDisplay(lifeTotal, "Health"));
+                ui.set("#LifeForceValue.Text",
+                                formatResourceDisplay(lifeTotal, tr("ui.skills.resource.health", "Health")));
 
                 int strLevel = getPreviewLevel(SkillAttributeType.STRENGTH);
                 SkillManager.StrengthBreakdown strengthPreview = skillManager.getStrengthBreakdown(playerData,
@@ -479,13 +482,14 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 int stamLevel = getPreviewLevel(SkillAttributeType.STAMINA);
                 double staminaTotal = resolveResourcePreviewTotal(playerData, SkillAttributeType.STAMINA, stamLevel);
                 ui.set("#StaminaLevel.Text", String.valueOf(stamLevel));
-                ui.set("#StaminaValue.Text", formatResourceDisplay(staminaTotal, "Stamina"));
+                ui.set("#StaminaValue.Text",
+                                formatResourceDisplay(staminaTotal, tr("ui.skills.resource.stamina", "Stamina")));
 
                 int flowLevel = getPreviewLevel(SkillAttributeType.FLOW);
                 double flowTotal = resolveResourcePreviewTotal(playerData, SkillAttributeType.FLOW,
                                 flowLevel);
                 ui.set("#FlowLevel.Text", String.valueOf(flowLevel));
-                ui.set("#FlowValue.Text", formatResourceDisplay(flowTotal, "Flow"));
+                ui.set("#FlowValue.Text", formatResourceDisplay(flowTotal, tr("ui.skills.resource.flow", "Flow")));
 
                 int discLevel = getPreviewLevel(SkillAttributeType.DISCIPLINE);
                 double discBonus = skillManager.getDisciplineXpBonusPercent(discLevel);
@@ -633,6 +637,29 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
         private String tr(String key, String fallback, Object... args) {
                 return Lang.tr(playerRef.getUuid(), key, fallback, args);
+        }
+
+        private void applyStaticLabels(@Nonnull UICommandBuilder ui) {
+                ui.set("#SkillsTitleLabel.Text", tr("ui.skills.page.title", "Skill Attributes"));
+                ui.set("#SkillsIntroText.Text",
+                                tr("ui.skills.page.subtitle", "Allocate points to shape your combat identity."));
+                ui.set("#SkillsFooterHint.Text",
+                                tr("ui.skills.page.footer_hint",
+                                                "Undo to revert pending tweaks, apply to lock them in."));
+                ui.set("#ResetSkills.Text", tr("ui.skills.page.undo", "UNDO"));
+                ui.set("#ApplySkills.Text", tr("ui.skills.page.apply", "APPLY"));
+
+                String lv = tr("ui.skills.level_prefix", "Lv.");
+                ui.set("#LifeForceLevelPrefix.Text", lv);
+                ui.set("#StrengthLevelPrefix.Text", lv);
+                ui.set("#PrecisionLevelPrefix.Text", lv);
+                ui.set("#HasteLevelPrefix.Text", lv);
+                ui.set("#FlowLevelPrefix.Text", lv);
+                ui.set("#DefenseLevelPrefix.Text", lv);
+                ui.set("#SorceryLevelPrefix.Text", lv);
+                ui.set("#FerocityLevelPrefix.Text", lv);
+                ui.set("#StaminaLevelPrefix.Text", lv);
+                ui.set("#DisciplineLevelPrefix.Text", lv);
         }
 
         private void applySkillIcons(UICommandBuilder ui) {

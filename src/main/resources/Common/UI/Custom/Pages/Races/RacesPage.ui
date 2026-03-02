@@ -48,7 +48,7 @@ $C.@PageOverlay {
                             LayoutMode: Top;
                             Anchor: (Height: 26);
 
-                            Label {
+                            Label #RaceSwapCooldownCardTitle {
                                 Text: "Race Swap Cooldown";
                                 Style: (FontSize: 12, TextColor: #8aa1bf, RenderBold: true, LetterSpacing: 1);
                                 Anchor: (Height: 14);
@@ -89,7 +89,7 @@ $C.@PageOverlay {
                             LayoutMode: Left;
                             Anchor: (Height: 32);
 
-                            Label {
+                            Label #RaceListTitle {
                                 Text: "Available Races";
                                 Style: (FontSize: 16, TextColor: #ffffff, RenderBold: true);
                             }
@@ -108,7 +108,7 @@ $C.@PageOverlay {
                             Background: #0b141f(0.92);
                             Padding: (Full: 10);
 
-                            Label {
+                            Label #RaceCurrentTitle {
                                 Text: "Current Race";
                                 Style: (FontSize: 12, TextColor: #8aa1bf, RenderBold: true, LetterSpacing: 1);
                                 Anchor: (Height: 12);
@@ -119,7 +119,7 @@ $C.@PageOverlay {
                             Group {
                                 LayoutMode: Left;
                                 Anchor: (Height: 20);
-                                Label {
+                                Label #RaceCurrentBadge {
                                     Text: "Active";
                                     Style: (FontSize: 11, TextColor: #6fe3ff, RenderBold: true);
                                 }
@@ -132,7 +132,7 @@ $C.@PageOverlay {
                             }
 
                             Group { Anchor: (Height: 6); }
-                            Label {
+                            Label #RaceCurrentHint {
                                 Text: "Your active race sets identity and innate bonuses.";
                                 Style: (FontSize: 11, TextColor: #9fb6d3);
                                 Anchor: (Height: 14);
@@ -186,7 +186,7 @@ $C.@PageOverlay {
                             Group #RaceDetailScrollContent {
                                 LayoutMode: Top;
 
-                                Label {
+                                Label #RaceLoreTitle {
                                     Text: "Lore Preview";
                                     Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
                                     Anchor: (Height: 20);
@@ -201,7 +201,7 @@ $C.@PageOverlay {
 
                                 Group { Anchor: (Height: 16); }
 
-                                Label {
+                                Label #RaceStatsTitle {
                                     Text: "Race Stats";
                                     Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
                                     Anchor: (Height: 20);
@@ -215,7 +215,7 @@ $C.@PageOverlay {
                                     Group {
                                         LayoutMode: Left;
                                         Anchor: (Height: 20);
-                                        Label { Text: "Life Force"; Style: (FontSize: 12, TextColor: #7be0ff); }
+                                        Label #RaceAttributeLifeForceLabel { Text: "Life Force"; Style: (FontSize: 12, TextColor: #7be0ff); }
                                         Group { FlexWeight: 1; }
                                         Label #RaceAttributeLifeForceValue { Text: "--"; Style: (FontSize: 12, TextColor: #4fd7f7, RenderBold: true); }
                                         Group { Anchor: (Width: 8); }
@@ -224,7 +224,7 @@ $C.@PageOverlay {
                                     Group {
                                         LayoutMode: Left;
                                         Anchor: (Height: 20);
-                                        Label { Text: "Strength"; Style: (FontSize: 12, TextColor: #ffb347); }
+                                        Label #RaceAttributeStrengthLabel { Text: "Strength"; Style: (FontSize: 12, TextColor: #ffb347); }
                                         Group { FlexWeight: 1; }
                                         Label #RaceAttributeStrengthValue { Text: "--"; Style: (FontSize: 12, TextColor: #ffdf8f, RenderBold: true); }
                                         Group { Anchor: (Width: 8); }
@@ -233,7 +233,7 @@ $C.@PageOverlay {
                                     Group {
                                         LayoutMode: Left;
                                         Anchor: (Height: 20);
-                                        Label { Text: "Sorcery"; Style: (FontSize: 12, TextColor: #d7baff); }
+                                        Label #RaceAttributeSorceryLabel { Text: "Sorcery"; Style: (FontSize: 12, TextColor: #d7baff); }
                                         Group { FlexWeight: 1; }
                                         Label #RaceAttributeSorceryValue { Text: "--"; Style: (FontSize: 12, TextColor: #e8d5ff, RenderBold: true); }
                                         Group { Anchor: (Width: 8); }
@@ -242,7 +242,7 @@ $C.@PageOverlay {
                                     Group {
                                         LayoutMode: Left;
                                         Anchor: (Height: 20);
-                                        Label { Text: "Defense"; Style: (FontSize: 12, TextColor: #8be0b2); }
+                                        Label #RaceAttributeDefenseLabel { Text: "Defense"; Style: (FontSize: 12, TextColor: #8be0b2); }
                                         Group { FlexWeight: 1; }
                                         Label #RaceAttributeDefenseValue { Text: "--"; Style: (FontSize: 12, TextColor: #6ee7b7, RenderBold: true); }
                                         Group { Anchor: (Width: 8); }
@@ -251,7 +251,7 @@ $C.@PageOverlay {
                                     Group {
                                         LayoutMode: Left;
                                         Anchor: (Height: 20);
-                                        Label { Text: "Haste"; Style: (FontSize: 12, TextColor: #f2a2e8); }
+                                        Label #RaceAttributeHasteLabel { Text: "Haste"; Style: (FontSize: 12, TextColor: #f2a2e8); }
                                         Group { FlexWeight: 1; }
                                         Label #RaceAttributeHasteValue { Text: "--"; Style: (FontSize: 12, TextColor: #f78bd9, RenderBold: true); }
                                         Group { Anchor: (Width: 8); }
@@ -260,7 +260,7 @@ $C.@PageOverlay {
                                     Group {
                                         LayoutMode: Left;
                                         Anchor: (Height: 20);
-                                        Label { Text: "Precision"; Style: (FontSize: 12, TextColor: #9ad4ff); }
+                                        Label #RaceAttributePrecisionLabel { Text: "Precision"; Style: (FontSize: 12, TextColor: #9ad4ff); }
                                         Group { FlexWeight: 1; }
                                         Label #RaceAttributePrecisionValue { Text: "--"; Style: (FontSize: 12, TextColor: #7cb8ff, RenderBold: true); }
                                         Group { Anchor: (Width: 8); }
@@ -269,7 +269,7 @@ $C.@PageOverlay {
                                     Group {
                                         LayoutMode: Left;
                                         Anchor: (Height: 20);
-                                        Label { Text: "Ferocity"; Style: (FontSize: 12, TextColor: #ff7b7b); }
+                                        Label #RaceAttributeFerocityLabel { Text: "Ferocity"; Style: (FontSize: 12, TextColor: #ff7b7b); }
                                         Group { FlexWeight: 1; }
                                         Label #RaceAttributeFerocityValue { Text: "--"; Style: (FontSize: 12, TextColor: #ff5555, RenderBold: true); }
                                         Group { Anchor: (Width: 8); }
@@ -278,7 +278,7 @@ $C.@PageOverlay {
                                     Group {
                                         LayoutMode: Left;
                                         Anchor: (Height: 20);
-                                        Label { Text: "Stamina"; Style: (FontSize: 12, TextColor: #ffc56f); }
+                                        Label #RaceAttributeStaminaLabel { Text: "Stamina"; Style: (FontSize: 12, TextColor: #ffc56f); }
                                         Group { FlexWeight: 1; }
                                         Label #RaceAttributeStaminaValue { Text: "--"; Style: (FontSize: 12, TextColor: #ffad42, RenderBold: true); }
                                         Group { Anchor: (Width: 8); }
@@ -287,7 +287,7 @@ $C.@PageOverlay {
                                     Group {
                                         LayoutMode: Left;
                                         Anchor: (Height: 20);
-                                        Label { Text: "Flow"; Style: (FontSize: 12, TextColor: #9be3ff); }
+                                        Label #RaceAttributeFlowLabel { Text: "Flow"; Style: (FontSize: 12, TextColor: #9be3ff); }
                                         Group { FlexWeight: 1; }
                                         Label #RaceAttributeFlowValue { Text: "--"; Style: (FontSize: 12, TextColor: #7dd6ff, RenderBold: true); }
                                         Group { Anchor: (Width: 8); }
@@ -296,7 +296,7 @@ $C.@PageOverlay {
                                     Group {
                                         LayoutMode: Left;
                                         Anchor: (Height: 20);
-                                        Label { Text: "Discipline"; Style: (FontSize: 12, TextColor: #d5dfff); }
+                                        Label #RaceAttributeDisciplineLabel { Text: "Discipline"; Style: (FontSize: 12, TextColor: #d5dfff); }
                                         Group { FlexWeight: 1; }
                                         Label #RaceAttributeDisciplineValue { Text: "--"; Style: (FontSize: 12, TextColor: #9fe0ff, RenderBold: true); }
                                         Group { Anchor: (Width: 8); }
@@ -306,7 +306,7 @@ $C.@PageOverlay {
 
                                 Group { Anchor: (Height: 16); }
 
-                                Label {
+                                Label #RacePassivesTitle {
                                     Text: "Passives";
                                     Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
                                     Anchor: (Height: 20);

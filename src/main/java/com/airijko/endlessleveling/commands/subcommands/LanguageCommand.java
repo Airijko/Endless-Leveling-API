@@ -10,7 +10,7 @@ import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
-import com.hypixel.hytale.server.core.command.system.arguments.system.OptionalArg;
+import com.hypixel.hytale.server.core.command.system.arguments.system.RequiredArg;
 import com.hypixel.hytale.server.core.command.system.arguments.types.ArgTypes;
 import com.hypixel.hytale.server.core.command.system.basecommands.AbstractPlayerCommand;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
@@ -23,19 +23,17 @@ import java.util.Locale;
 
 public class LanguageCommand extends AbstractPlayerCommand {
 
-    private final OptionalArg<String> actionArg = this.withOptionalArg("action", "list | set", ArgTypes.STRING);
-    private final OptionalArg<String> localeArg = this.withOptionalArg("locale", "Language locale (example: en_US)",
-            ArgTypes.STRING);
-
     private final PlayerDataManager playerDataManager;
     private final LanguageManager languageManager;
 
     public LanguageCommand() {
         super("lang", "Manage your personal EndlessLeveling language (list, set)");
-        this.addAliases("language, translate, translation");
+        this.addAliases("language", "translate", "translation");
         EndlessLeveling plugin = EndlessLeveling.getInstance();
         this.playerDataManager = plugin != null ? plugin.getPlayerDataManager() : null;
         this.languageManager = plugin != null ? plugin.getLanguageManager() : null;
+        this.addSubCommand(new ListSubCommand());
+        this.addSubCommand(new SetSubCommand());
     }
 
     @Override
@@ -49,44 +47,6 @@ public class LanguageCommand extends AbstractPlayerCommand {
             @Nonnull Ref<EntityStore> ref,
             @Nonnull PlayerRef senderRef,
             @Nonnull World world) {
-        if (playerDataManager == null || languageManager == null) {
-            senderRef.sendMessage(Message.raw("Language manager is unavailable.").color("#ff6666"));
-            return;
-        }
-
-        PlayerData data = playerDataManager.get(senderRef.getUuid());
-        if (data == null) {
-            senderRef.sendMessage(Message.raw("Your player data is not loaded yet.").color("#ff6666"));
-            return;
-        }
-
-        if (!actionArg.provided(commandContext)) {
-            sendUsage(senderRef);
-            return;
-        }
-
-        String actionRaw = actionArg.get(commandContext);
-        String action = actionRaw == null ? "" : actionRaw.trim().toLowerCase(Locale.ROOT);
-
-        if ("list".equals(action)) {
-            sendLocaleList(senderRef, data);
-            return;
-        }
-
-        if ("set".equals(action)) {
-            if (!localeArg.provided(commandContext)) {
-                sendUsage(senderRef);
-                return;
-            }
-            applyLocaleChange(senderRef, data, localeArg.get(commandContext));
-            return;
-        }
-
-        if (!localeArg.provided(commandContext)) {
-            applyLocaleChange(senderRef, data, actionRaw);
-            return;
-        }
-
         sendUsage(senderRef);
     }
 
@@ -128,12 +88,88 @@ public class LanguageCommand extends AbstractPlayerCommand {
 
         data.setLanguage(normalizedRequested);
         playerDataManager.save(data);
+        languageManager.invalidateLocaleCache(normalizedRequested);
         PlayerHud.refreshAll();
 
         senderRef.sendMessage(Message.raw(Lang.tr(senderRef.getUuid(),
                 "command.language.updated",
                 "Language set to {0}.",
                 data.getLanguage())).color("#6cff78"));
+    }
+
+    private boolean ensureManagersReady(PlayerRef senderRef) {
+        if (playerDataManager != null && languageManager != null) {
+            return true;
+        }
+        senderRef.sendMessage(Message.raw("Language manager is unavailable.").color("#ff6666"));
+        return false;
+    }
+
+    private PlayerData requirePlayerData(PlayerRef senderRef) {
+        PlayerData data = playerDataManager.get(senderRef.getUuid());
+        if (data != null) {
+            return data;
+        }
+        senderRef.sendMessage(Message.raw("Your player data is not loaded yet.").color("#ff6666"));
+        return null;
+    }
+
+    private final class ListSubCommand extends AbstractPlayerCommand {
+        private ListSubCommand() {
+            super("list", "List available language locales");
+        }
+
+        @Override
+        protected boolean canGeneratePermission() {
+            return false;
+        }
+
+        @Override
+        protected void execute(@Nonnull CommandContext commandContext,
+                @Nonnull Store<EntityStore> store,
+                @Nonnull Ref<EntityStore> ref,
+                @Nonnull PlayerRef senderRef,
+                @Nonnull World world) {
+            if (!ensureManagersReady(senderRef)) {
+                return;
+            }
+            PlayerData data = requirePlayerData(senderRef);
+            if (data == null) {
+                return;
+            }
+            sendLocaleList(senderRef, data);
+        }
+    }
+
+    private final class SetSubCommand extends AbstractPlayerCommand {
+        private final RequiredArg<String> localeArg = this.withRequiredArg("locale",
+                "Language locale (example: en_US)",
+                ArgTypes.STRING);
+
+        private SetSubCommand() {
+            super("set", "Set your personal language locale");
+        }
+
+        @Override
+        protected boolean canGeneratePermission() {
+            return false;
+        }
+
+        @Override
+        protected void execute(@Nonnull CommandContext commandContext,
+                @Nonnull Store<EntityStore> store,
+                @Nonnull Ref<EntityStore> ref,
+                @Nonnull PlayerRef senderRef,
+                @Nonnull World world) {
+            if (!ensureManagersReady(senderRef)) {
+                return;
+            }
+            PlayerData data = requirePlayerData(senderRef);
+            if (data == null) {
+                return;
+            }
+            applyLocaleChange(senderRef, data, localeArg.get(commandContext));
+        }
     }
 
     private String normalizeLocale(String raw) {

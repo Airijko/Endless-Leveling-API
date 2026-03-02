@@ -6,6 +6,7 @@ import com.airijko.endlessleveling.data.PlayerData;
 import com.airijko.endlessleveling.enums.ArchetypePassiveType;
 import com.airijko.endlessleveling.enums.ClassAssignmentSlot;
 import com.airijko.endlessleveling.enums.ClassWeaponType;
+import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.airijko.endlessleveling.managers.ClassManager;
 import com.airijko.endlessleveling.managers.LevelingManager;
 import com.airijko.endlessleveling.managers.PlayerDataManager;
@@ -82,7 +83,8 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             @Nonnull UIEventBuilder events,
             @Nonnull Store<EntityStore> store) {
         ui.append("Pages/Classes/ClassesPage.ui");
-        NavUIHelper.applyNavVersion(ui);
+        NavUIHelper.applyNavVersion(ui, playerRef);
+        applyStaticLabels(ui);
         NavUIHelper.bindNavEvents(events);
 
         events.addEventBinding(Activating, "#ConfirmPrimaryButton", of("Action", "class:confirm_primary"), false);
@@ -93,11 +95,11 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             ui.set("#SelectedClassSubtitle.Text",
                     tr("ui.classes.offline.subtitle", "Classes are currently disabled in config.yml."));
             ui.set("#ClassLoreText.Text", tr("ui.classes.offline.lore", "Enable classes to browse archetypes."));
-            ui.set("#ClassCountLabel.Text", tr("ui.classes.count.none", "0 available"));
+            ui.set("#ClassCountLabel.Text", tr("ui.classes.count_none", "0 available"));
             ui.set("#ClassSwapCooldownHint.Text",
                     tr("ui.classes.offline.hint", "Enable classes to manage archetypes."));
-            ui.set("#ClassPrimaryCooldownValue.Text", "--");
-            ui.set("#ClassSecondaryCooldownValue.Text", "--");
+            ui.set("#ClassPrimaryCooldownValue.Text", tr("hud.common.unavailable", "--"));
+            ui.set("#ClassSecondaryCooldownValue.Text", tr("hud.common.unavailable", "--"));
             ui.clear("#ClassRows");
             ui.clear("#ClassWeaponEntries");
             ui.clear("#ClassPassiveEntries");
@@ -113,11 +115,11 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                     tr("ui.classes.playerdata.subtitle", "Unable to load your class information right now."));
             ui.set("#ClassLoreText.Text",
                     tr("ui.classes.playerdata.lore", "Try reopening this page in a few moments."));
-            ui.set("#ClassCountLabel.Text", tr("ui.classes.count.none", "0 available"));
+            ui.set("#ClassCountLabel.Text", tr("ui.classes.count_none", "0 available"));
             ui.set("#ClassSwapCooldownHint.Text",
                     tr("ui.classes.playerdata.hint", "Try reopening this page in a few moments."));
-            ui.set("#ClassPrimaryCooldownValue.Text", "--");
-            ui.set("#ClassSecondaryCooldownValue.Text", "--");
+            ui.set("#ClassPrimaryCooldownValue.Text", tr("hud.common.unavailable", "--"));
+            ui.set("#ClassSecondaryCooldownValue.Text", tr("hud.common.unavailable", "--"));
             ui.clear("#ClassRows");
             ui.clear("#ClassWeaponEntries");
             ui.clear("#ClassPassiveEntries");
@@ -208,8 +210,8 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         if (operatorBypass) {
             ui.set("#ClassSwapCooldownHint.Text",
                     tr("ui.classes.cooldown.bypassed_hint", "Operator bypass active; cooldowns ignored."));
-            ui.set("#ClassPrimaryCooldownValue.Text", "Bypassed");
-            ui.set("#ClassSecondaryCooldownValue.Text", "Bypassed");
+            ui.set("#ClassPrimaryCooldownValue.Text", tr("ui.classes.cooldown.bypassed", "Bypassed"));
+            ui.set("#ClassSecondaryCooldownValue.Text", tr("ui.classes.cooldown.bypassed", "Bypassed"));
             return;
         }
         ui.set("#ClassPrimaryCooldownValue.Text", formatSlotAvailability(primaryCooldownRemaining));
@@ -227,8 +229,9 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     private void updateStatusCard(UICommandBuilder ui,
             CharacterClassDefinition primary,
             CharacterClassDefinition secondary) {
-        String primaryText = primary != null ? primary.getDisplayName() : "Unassigned";
-        String secondaryText = secondary != null ? secondary.getDisplayName() : "None";
+        String primaryText = primary != null ? primary.getDisplayName()
+                : tr("ui.classes.current.primary_none", "Unassigned");
+        String secondaryText = secondary != null ? secondary.getDisplayName() : tr("hud.class.none", "None");
         ui.set("#CurrentPrimaryValue.Text", primaryText);
         ui.set("#CurrentSecondaryValue.Text", secondaryText);
     }
@@ -245,7 +248,9 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         List<CharacterClassDefinition> classes = new ArrayList<>(classManager.getLoadedClasses());
         classes.sort(Comparator.comparing(def -> def.getDisplayName().toLowerCase(Locale.ROOT)));
         ui.set("#ClassCountLabel.Text",
-                tr("ui.classes.count", "{0} {1}", classes.size(), classes.size() == 1 ? "class" : "classes"));
+                tr("ui.classes.count", "{0} {1}", classes.size(), classes.size() == 1
+                        ? tr("ui.classes.count_word.singular", "class")
+                        : tr("ui.classes.count_word.plural", "classes")));
 
         for (int index = 0; index < classes.size(); index++) {
             CharacterClassDefinition definition = classes.get(index);
@@ -257,12 +262,16 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             boolean isSelected = selectedClassMatches(definition.getId());
 
             ui.set(base + " #ClassName.Text", definition.getDisplayName());
-            String status = isPrimary ? "PRIMARY" : (isSecondary ? "SECONDARY" : (isSelected ? "VIEWING" : ""));
+            String status = isPrimary ? tr("ui.classes.status.primary", "PRIMARY")
+                    : (isSecondary ? tr("ui.classes.status.secondary", "SECONDARY")
+                            : (isSelected ? tr("ui.classes.status.viewing", "VIEWING") : ""));
             boolean hasStatus = !status.isEmpty();
             ui.set(base + " #ClassSelectionStatus.Visible", hasStatus);
             if (hasStatus) {
                 ui.set(base + " #ClassSelectionStatus.Text", status);
             }
+
+            ui.set(base + " #ViewClassButton.Text", tr("ui.classes.actions.view", "VIEW"));
 
             applyClassIcon(ui, base, definition);
 
@@ -280,7 +289,9 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         List<CharacterClassDefinition> classes = new ArrayList<>(classManager.getLoadedClasses());
         classes.sort(Comparator.comparing(def -> def.getDisplayName().toLowerCase(Locale.ROOT)));
         ui.set("#ClassCountLabel.Text",
-                tr("ui.classes.count", "{0} {1}", classes.size(), classes.size() == 1 ? "class" : "classes"));
+                tr("ui.classes.count", "{0} {1}", classes.size(), classes.size() == 1
+                        ? tr("ui.classes.count_word.singular", "class")
+                        : tr("ui.classes.count_word.plural", "classes")));
 
         for (int index = 0; index < classes.size(); index++) {
             CharacterClassDefinition definition = classes.get(index);
@@ -291,12 +302,16 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             boolean isSelected = selectedClassMatches(definition.getId());
 
             ui.set(base + " #ClassName.Text", definition.getDisplayName());
-            String status = isPrimary ? "PRIMARY" : (isSecondary ? "SECONDARY" : (isSelected ? "VIEWING" : ""));
+            String status = isPrimary ? tr("ui.classes.status.primary", "PRIMARY")
+                    : (isSecondary ? tr("ui.classes.status.secondary", "SECONDARY")
+                            : (isSelected ? tr("ui.classes.status.viewing", "VIEWING") : ""));
             boolean hasStatus = !status.isEmpty();
             ui.set(base + " #ClassSelectionStatus.Visible", hasStatus);
             if (hasStatus) {
                 ui.set(base + " #ClassSelectionStatus.Text", status);
             }
+
+            ui.set(base + " #ViewClassButton.Text", tr("ui.classes.actions.view", "VIEW"));
 
             applyClassIcon(ui, base, definition);
         }
@@ -311,6 +326,26 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         }
         ui.set(selector + ".ItemId", iconId);
         ui.set(selector + ".Visible", true);
+    }
+
+    private void applyStaticLabels(@Nonnull UICommandBuilder ui) {
+        ui.set("#ClassesTitleLabel.Text", tr("ui.classes.page.title", "Class Codex"));
+        ui.set("#ClassSwapCooldownCardTitle.Text", tr("ui.classes.page.cooldown_title", "Class Swap Cooldown"));
+        ui.set("#ClassPrimaryCooldownLabel.Text", tr("ui.classes.detail.primary_slot", "Primary"));
+        ui.set("#ClassSecondaryCooldownLabel.Text", tr("ui.classes.detail.secondary_slot", "Secondary"));
+        ui.set("#ClassListTitle.Text", tr("ui.classes.page.available", "Available Classes"));
+        ui.set("#ClassAssignmentsTitle.Text", tr("ui.classes.page.assignments", "Class Assignments"));
+        ui.set("#ClassPrimaryStatusLabel.Text", tr("ui.classes.detail.primary_slot", "Primary"));
+        ui.set("#ClassSecondaryStatusLabel.Text", tr("ui.classes.detail.secondary_slot", "Secondary"));
+        ui.set("#ClassSecondaryShareHint.Text",
+                tr("ui.classes.page.secondary_share_hint", "Secondary classes share 50% of bonuses."));
+        ui.set("#ClassSorceryLabel.Text", tr("ui.classes.page.sorcery_label", "Sorcery Bonus"));
+        ui.set("#ClassLoreTitle.Text", tr("ui.classes.page.lore_title", "Lore Preview"));
+        ui.set("#ClassWeaponsTitle.Text", tr("ui.classes.page.weapons_title", "Weapon Affinities"));
+        ui.set("#ClassInnateTitle.Text", tr("ui.classes.page.innate_title", "Innate Attribute Gains"));
+        ui.set("#ClassPassivesTitle.Text", tr("ui.classes.page.passives_title", "Passives"));
+        ui.set("#ConfirmPrimaryButton.Text", tr("ui.classes.actions.set_primary", "SET PRIMARY"));
+        ui.set("#ConfirmSecondaryButton.Text", tr("ui.classes.actions.set_secondary", "SET SECONDARY"));
     }
 
     private String resolveClassIcon(CharacterClassDefinition definition) {
@@ -344,11 +379,11 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         updateSorceryDisplay(ui, data);
         CharacterClassDefinition selection = resolveSelection(primary);
         if (selection == null) {
-            ui.set("#SelectedClassLabel.Text", "Select a Class");
+            ui.set("#SelectedClassLabel.Text", tr("ui.classes.select.title", "Select a Class"));
             ui.set("#SelectedClassSubtitle.Text",
                     tr("ui.classes.select.subtitle", "Choose a class on the left to preview its role and passives."));
             ui.set("#ClassLoreText.Text", tr("ui.classes.lore.unavailable", "Lore unavailable."));
-            ui.set("#ClassRoleValue.Text", "Role: --");
+            ui.set("#ClassRoleValue.Text", tr("ui.classes.role.empty", "Role: --"));
             ui.set("#ClassWeaponSummary.Visible", true);
             ui.set("#ClassWeaponSummary.Text", tr("ui.classes.none_selected", "No class selected."));
             ui.clear("#ClassWeaponEntries");
@@ -361,17 +396,21 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             ui.set("#ConfirmPrimaryButton.Visible", false);
             ui.set("#ConfirmSecondaryButton.Visible", false);
 
-            String status = "Select a class to preview bonuses.";
+            String status = tr("ui.classes.detail.select_prompt", "Select a class to preview bonuses.");
             if (operatorBypass) {
-                status += " Operator bypass active; swapping is immediate.";
+                status += " "
+                        + tr("ui.classes.cooldown.bypassed_detail", "Operator bypass active; swapping is immediate.");
             } else if (primaryCooldownRemaining > 0L || (secondaryEnabled && secondaryCooldownRemaining > 0L)) {
-                status += " Primary " + formatSlotAvailability(primaryCooldownRemaining);
+                status += " " + tr("ui.classes.detail.primary_slot", "Primary") + " "
+                        + formatSlotAvailability(primaryCooldownRemaining);
                 if (secondaryEnabled) {
-                    status += ", Secondary " + formatSlotAvailability(secondaryCooldownRemaining);
+                    status += ", " + tr("ui.classes.detail.secondary_slot", "Secondary") + " "
+                            + formatSlotAvailability(secondaryCooldownRemaining);
                 }
                 status += ".";
             } else if (cooldownSeconds > 0L) {
-                status += " Changing classes triggers a " + formatDuration(cooldownSeconds) + " cooldown.";
+                status += " " + tr("ui.classes.detail.swap_triggers", "Changing classes triggers a {0} cooldown.",
+                        formatDuration(cooldownSeconds));
             }
             ui.set("#ClassDetailStatus.Text", status);
             return;
@@ -388,10 +427,13 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         }
 
         String role = selection.getRole();
-        ui.set("#ClassRoleValue.Text", role == null || role.isBlank() ? "Role: Unspecified" : "Role: " + role);
+        ui.set("#ClassRoleValue.Text", role == null || role.isBlank()
+                ? tr("ui.classes.role.unspecified", "Role: Unspecified")
+                : tr("ui.classes.role.value", "Role: {0}", role));
         String lore = selection.getDescription();
         ui.set("#ClassLoreText.Text",
-                lore == null || lore.isBlank() ? "No lore provided for this class." : lore);
+                lore == null || lore.isBlank() ? tr("ui.classes.lore.missing", "No lore provided for this class.")
+                        : lore);
 
         buildWeaponList(ui, selection);
         buildPassiveList(ui, selection, data);
@@ -405,39 +447,46 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         ui.set("#ConfirmPrimaryButton.Visible", canPrimary && canModifyPrimary);
         ui.set("#ConfirmSecondaryButton.Visible", secondaryEnabled && canSecondary && canModifySecondary);
 
-        StringBuilder statusBuilder = new StringBuilder("Primary classes grant 100% of bonuses.");
+        StringBuilder statusBuilder = new StringBuilder(
+                tr("ui.classes.detail.primary_bonus", "Primary classes grant 100% of bonuses."));
         if (secondaryEnabled) {
-            statusBuilder.append(' ').append("Secondary classes grant 50% of weapon + passive effects.");
+            statusBuilder.append(' ').append(
+                    tr("ui.classes.detail.secondary_bonus",
+                            "Secondary classes grant 50% of weapon + passive effects."));
         } else {
-            statusBuilder.append(' ').append("Secondary classes are disabled in config.");
+            statusBuilder.append(' ')
+                    .append(tr("ui.classes.detail.secondary_disabled", "Secondary classes are disabled in config."));
         }
         if (operatorBypass) {
-            statusBuilder.append(' ').append("Operator bypass active; swapping is immediate.");
+            statusBuilder.append(' ').append(
+                    tr("ui.classes.cooldown.bypassed_detail", "Operator bypass active; swapping is immediate."));
         } else if (primaryCooldownRemaining > 0L || (secondaryEnabled && secondaryCooldownRemaining > 0L)) {
             statusBuilder.append(' ')
-                    .append("Primary ")
+                    .append(tr("ui.classes.detail.primary_slot", "Primary"))
+                    .append(' ')
                     .append(formatSlotAvailability(primaryCooldownRemaining));
             if (secondaryEnabled) {
-                statusBuilder.append(", Secondary ")
+                statusBuilder.append(", ")
+                        .append(tr("ui.classes.detail.secondary_slot", "Secondary"))
+                        .append(' ')
                         .append(formatSlotAvailability(secondaryCooldownRemaining));
             }
             statusBuilder.append('.');
         } else if (cooldownSeconds > 0L) {
-            statusBuilder.append(' ')
-                    .append("Changing classes triggers a ")
-                    .append(formatDuration(cooldownSeconds))
-                    .append(" cooldown.");
+            statusBuilder.append(' ').append(
+                    tr("ui.classes.detail.swap_triggers", "Changing classes triggers a {0} cooldown.",
+                            formatDuration(cooldownSeconds)));
         }
         ui.set("#ClassDetailStatus.Text", statusBuilder.toString());
     }
 
     private void updateSorceryDisplay(@Nonnull UICommandBuilder ui, PlayerData data) {
         if (skillManager == null || data == null) {
-            ui.set("#ClassSorceryValue.Text", "--");
+            ui.set("#ClassSorceryValue.Text", tr("hud.common.unavailable", "--"));
             return;
         }
         float sorcery = skillManager.calculatePlayerSorcery(data);
-        ui.set("#ClassSorceryValue.Text", "+" + formatNumber(sorcery) + "% Magic Damage");
+        ui.set("#ClassSorceryValue.Text", tr("ui.skills.value.sorcery", "+{0}% Magic Damage", formatNumber(sorcery)));
     }
 
     private void buildWeaponList(UICommandBuilder ui, CharacterClassDefinition selection) {
@@ -456,7 +505,7 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             Map.Entry<ClassWeaponType, Double> entry = entries.get(i);
             ui.append("#ClassWeaponEntries", "Pages/Classes/ClassWeaponRow.ui");
             String base = "#ClassWeaponEntries[" + i + "]";
-            ui.set(base + " #WeaponName.Text", toDisplay(entry.getKey().name()));
+            ui.set(base + " #WeaponName.Text", localizeWeaponType(entry.getKey()));
             ui.set(base + " #WeaponMultiplier.Text", formatWeaponMultiplier(entry.getValue()));
         }
     }
@@ -469,13 +518,13 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                     data,
                     "#ClassPassiveSummary",
                     "#ClassPassiveEntries",
-                    "This class does not define passive bonuses.");
+                    tr("ui.classes.passives.none_defined", "This class does not define passive bonuses."));
             populatePassiveSection(ui,
                     List.of(),
                     data,
                     "#ClassInnateSummary",
                     "#ClassInnateEntries",
-                    "This class does not grant innate attribute bonuses.");
+                    tr("ui.classes.passives.none_innate", "This class does not grant innate attribute bonuses."));
             return;
         }
 
@@ -494,13 +543,13 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 data,
                 "#ClassPassiveSummary",
                 "#ClassPassiveEntries",
-                "This class does not define passive bonuses.");
+                tr("ui.classes.passives.none_defined", "This class does not define passive bonuses."));
         populatePassiveSection(ui,
                 innate,
                 data,
                 "#ClassInnateSummary",
                 "#ClassInnateEntries",
-                "This class does not grant innate attribute bonuses.");
+                tr("ui.classes.passives.none_innate", "This class does not grant innate attribute bonuses."));
     }
 
     private void populatePassiveSection(UICommandBuilder ui,
@@ -631,10 +680,8 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         }
         CharacterClassDefinition desired = classManager.findClassByUserInput(targetId);
         if (desired == null) {
-            playerRef.sendMessage(Message.join(
-                    Message.raw("[Classes] ").color("#ff6666"),
-                    Message.raw("Unknown class: ").color("#ffffff"),
-                    Message.raw(targetId).color("#ffc300")));
+            playerRef.sendMessage(
+                    Message.raw(tr("ui.classes.error.unknown", "Unknown class: {0}", targetId)).color("#ff6666"));
             return;
         }
         CharacterClassDefinition current = classManager.getPlayerPrimaryClass(data);
@@ -656,10 +703,9 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             partyManager.updatePartyHudCustomText(data);
         }
         this.selectedClassId = applied.getId();
-        playerRef.sendMessage(Message.join(
-                Message.raw("[Classes] ").color("#4fd7f7"),
-                Message.raw("Primary class set to ").color("#ffffff"),
-                Message.raw(applied.getDisplayName()).color("#ffc300")));
+        playerRef.sendMessage(
+                Message.raw(tr("ui.classes.info.primary_set", "Primary class set to {0}.", applied.getDisplayName()))
+                        .color("#4fd7f7"));
         refreshClassUi(data, OperatorHelper.isOperator(playerRef));
     }
 
@@ -688,10 +734,8 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         }
         CharacterClassDefinition desired = classManager.findClassByUserInput(targetId);
         if (desired == null) {
-            playerRef.sendMessage(Message.join(
-                    Message.raw("[Classes] ").color("#ff6666"),
-                    Message.raw("Unknown class: ").color("#ffffff"),
-                    Message.raw(targetId).color("#ffc300")));
+            playerRef.sendMessage(
+                    Message.raw(tr("ui.classes.error.unknown", "Unknown class: {0}", targetId)).color("#ff6666"));
             return;
         }
         CharacterClassDefinition primary = classManager.getPlayerPrimaryClass(data);
@@ -725,10 +769,9 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         if (partyManager != null) {
             partyManager.updatePartyHudCustomText(data);
         }
-        playerRef.sendMessage(Message.join(
-                Message.raw("[Classes] ").color("#4fd7f7"),
-                Message.raw("Secondary class set to ").color("#ffffff"),
-                Message.raw(applied.getDisplayName()).color("#d4b5ff")));
+        playerRef.sendMessage(Message
+                .raw(tr("ui.classes.info.secondary_set", "Secondary class set to {0}.", applied.getDisplayName()))
+                .color("#4fd7f7"));
         refreshClassUi(data, OperatorHelper.isOperator(playerRef));
     }
 
@@ -803,14 +846,14 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         if (remaining <= 0L) {
             return true;
         }
-        String slotLabel = slot == ClassAssignmentSlot.PRIMARY ? "primary" : "secondary";
-        playerRef.sendMessage(Message.join(
-                Message.raw("[Classes] ").color("#ff6666"),
-                Message.raw("You can change your ").color("#ffffff"),
-                Message.raw(slotLabel).color("#ffc300"),
-                Message.raw(" class again in ").color("#ffffff"),
-                Message.raw(formatDuration(remaining)).color("#ffc300"),
-                Message.raw(".").color("#ffffff")));
+        String slotLabel = slot == ClassAssignmentSlot.PRIMARY
+                ? tr("ui.classes.slot.primary", "primary")
+                : tr("ui.classes.slot.secondary", "secondary");
+        playerRef.sendMessage(
+                Message.raw(tr("ui.classes.error.cooldown_remaining",
+                        "You can change your {0} class again in {1}.",
+                        slotLabel,
+                        formatDuration(remaining))).color("#ff6666"));
         return false;
     }
 
@@ -821,15 +864,18 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     private String buildPassiveLabel(RacePassiveDefinition passive) {
         ArchetypePassiveType type = passive.type();
         if (type == null) {
-            return "Passive";
+            return tr("ui.races.passive.default_name", "Passive");
         }
         if (type == ArchetypePassiveType.INNATE_ATTRIBUTE_GAIN && passive.attributeType() != null) {
-            return toDisplay(passive.attributeType().name());
+            return localizeAttributeName(passive.attributeType());
         }
         if (passive.attributeType() != null) {
-            return toDisplay(type.name()) + " (" + toDisplay(passive.attributeType().name()) + ")";
+            return tr("ui.races.passive.label.with_attribute",
+                    "{0} ({1})",
+                    localizePassiveType(type),
+                    localizeAttributeName(passive.attributeType()));
         }
-        return toDisplay(type.name());
+        return localizePassiveType(type);
     }
 
     private String formatPassiveDescription(RacePassiveDefinition passive, PlayerData playerData) {
@@ -846,55 +892,57 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         String scalingStat = getStringProp(props, "scaling_stat");
 
         if (type == null) {
-            return value == 0.0D ? "Passive" : formatSigned(value);
+            return value == 0.0D ? tr("ui.races.passive.default_name", "Passive") : formatSigned(value);
         }
 
         return switch (type) {
-            case XP_BONUS -> formatPercentValue(value) + " XP gain";
-            case HEALTH_REGEN -> formatPercentValue(value) + " HP/5s";
-            case MANA_REGEN -> formatPercentValue(value) + " mana/5s";
-            case MANA_REGEN_FLAT -> formatSigned(value) + " mana/s";
-            case REGENERATION -> formatSigned(value) + " HP/s";
-            case HEALING_BONUS -> formatPercentValue(value) + " healing";
-            case LIFE_STEAL -> formatPercentValue(value) + " life steal";
-            case SPECIAL_CHARGE_BONUS -> formatPercentValue(value) + " charge rate";
-            case STAMINA_GAIN_BONUS -> formatPercentValue(value) + " stamina gain";
-            case LUCK -> formatPercentValue(value) + " luck";
+            case XP_BONUS -> tr("ui.races.passive.desc.xp_bonus", "{0} XP gain", formatPercentValue(value));
+            case HEALTH_REGEN -> tr("ui.races.passive.desc.health_regen", "{0} HP/5s", formatPercentValue(value));
+            case MANA_REGEN -> tr("ui.races.passive.desc.mana_regen", "{0} mana/5s", formatPercentValue(value));
+            case MANA_REGEN_FLAT -> tr("ui.races.passive.desc.mana_regen_flat", "{0} mana/s", formatSigned(value));
+            case REGENERATION -> tr("ui.races.passive.desc.regeneration", "{0} HP/s", formatSigned(value));
+            case HEALING_BONUS -> tr("ui.races.passive.desc.healing_bonus", "{0} healing", formatPercentValue(value));
+            case LIFE_STEAL -> tr("ui.races.passive.desc.life_steal", "{0} life steal", formatPercentValue(value));
+            case SPECIAL_CHARGE_BONUS ->
+                tr("ui.races.passive.desc.charge_bonus", "{0} charge rate", formatPercentValue(value));
+            case STAMINA_GAIN_BONUS ->
+                tr("ui.races.passive.desc.stamina_gain", "{0} stamina gain", formatPercentValue(value));
+            case LUCK -> tr("ui.races.passive.desc.luck", "{0} luck", formatPercentValue(value));
             case SECOND_WIND -> appendDetails(
-                    formatPercentValue(value) + " heal",
-                    formatThresholdDetail(threshold, "HP"),
+                    tr("ui.races.passive.desc.second_wind", "{0} heal", formatPercentValue(value)),
+                    formatThresholdDetail(threshold, tr("ui.races.passive.scope.hp", "HP")),
                     formatDurationDetail(duration),
                     formatCooldownDetail(cooldown));
             case FIRST_STRIKE -> appendDetails(
-                    formatPercentValue(value) + " opener",
+                    tr("ui.races.passive.desc.first_strike", "{0} opener", formatPercentValue(value)),
                     formatCooldownDetail(cooldown));
             case INNATE_ATTRIBUTE_GAIN -> formatInnatePreview(passive);
             case ADRENALINE -> appendDetails(
-                    formatPercentValue(value) + " stamina",
-                    formatThresholdDetail(threshold, "stamina"),
+                    tr("ui.races.passive.desc.adrenaline", "{0} stamina", formatPercentValue(value)),
+                    formatThresholdDetail(threshold, tr("ui.races.passive.scope.stamina", "stamina")),
                     formatDurationDetail(duration),
                     formatCooldownDetail(cooldown));
             case BERZERKER -> appendDetails(
-                    formatPercentValue(value) + " damage",
-                    formatThresholdDetail(threshold, "HP"));
+                    tr("ui.races.passive.desc.berzerker", "{0} damage", formatPercentValue(value)),
+                    formatThresholdDetail(threshold, tr("ui.races.passive.scope.hp", "HP")));
             case RETALIATION -> appendDetails(
-                    formatPercentValue(value) + " reflect",
+                    tr("ui.races.passive.desc.retaliation", "{0} reflect", formatPercentValue(value)),
                     formatWindowDetail(window),
                     formatCooldownDetail(cooldown));
             case EXECUTIONER -> appendDetails(
-                    formatPercentValue(value) + " finisher",
-                    formatThresholdDetail(threshold, "target HP"),
+                    tr("ui.races.passive.desc.executioner", "{0} finisher", formatPercentValue(value)),
+                    formatThresholdDetail(threshold, tr("ui.races.passive.scope.target_hp", "target HP")),
                     formatCooldownDetail(cooldown));
             case SWIFTNESS -> appendDetails(
-                    formatPercentValue(value) + " speed",
+                    tr("ui.races.passive.desc.swiftness", "{0} speed", formatPercentValue(value)),
                     formatDurationDetail(duration),
                     formatStacksDetail(stacks));
             case WITHER -> appendDetails(
-                    formatPercentValue(value) + " max HP/sec",
+                    tr("ui.races.passive.desc.wither", "{0} max HP/sec", formatPercentValue(value)),
                     formatDurationDetail(duration),
                     formatSlowDetail(slowPercent));
             case CRIT_DEFENSE -> appendDetails(
-                    formatPercentValue(value) + " dmg reduction",
+                    tr("ui.races.passive.desc.crit_defense", "{0} dmg reduction", formatPercentValue(value)),
                     formatScalingDetail(scalingStat));
             default -> formatSigned(value);
         };
@@ -904,14 +952,14 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         if (slowPercent == null) {
             return null;
         }
-        return formatPercentValue(slowPercent) + " slow";
+        return tr("ui.races.passive.detail.slow", "{0} slow", formatPercentValue(slowPercent));
     }
 
     private String formatScalingDetail(String scalingStat) {
         if (scalingStat == null || scalingStat.isBlank()) {
             return null;
         }
-        return "scales with " + toDisplay(scalingStat);
+        return tr("ui.races.passive.detail.scales_with", "scales with {0}", localizeAttributeName(scalingStat));
     }
 
     private String getStringProp(Map<String, Object> props, String key) {
@@ -925,11 +973,12 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
     private String formatInnatePreview(RacePassiveDefinition passive) {
         double perLevel = passive.value();
-        String perLevelText = formatSigned(perLevel) + " per level";
+        String perLevelText = tr("ui.races.passive.detail.per_level", "{0} per level", formatSigned(perLevel));
         int cap = levelingManager != null ? Math.max(1, levelingManager.getLevelCap()) : 1;
         double total = perLevel * cap;
         String totalText = formatSigned(total);
-        return perLevelText + " (Total " + totalText + " @ Lv " + cap + ")";
+        return tr("ui.races.passive.detail.total_at_level", "{0} (Total {1} @ Lv {2})", perLevelText, totalText,
+                cap);
     }
 
     private Double getDoubleProp(Map<String, Object> props, String key) {
@@ -970,7 +1019,7 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
     private String formatSlotAvailability(long remainingSeconds) {
         if (remainingSeconds <= 0L) {
-            return "Ready";
+            return tr("ui.classes.cooldown.ready", "Ready");
         }
         return formatDuration(remainingSeconds);
     }
@@ -988,44 +1037,46 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         if (ratio == null) {
             return null;
         }
-        return "<" + formatNumber(ratio * 100.0D) + "% " + scope;
+        return tr("ui.classes.passive.detail.threshold", "<{0}% {1}", formatNumber(ratio * 100.0D), scope);
     }
 
     private String formatDurationDetail(Double seconds) {
         if (seconds == null) {
             return null;
         }
-        return formatNumber(seconds) + "s duration";
+        return tr("ui.races.passive.detail.duration", "{0}s duration", formatNumber(seconds));
     }
 
     private String formatCooldownDetail(Double seconds) {
         if (seconds == null) {
             return null;
         }
-        return formatNumber(seconds) + "s cd";
+        return tr("ui.races.passive.detail.cooldown", "{0}s cd", formatNumber(seconds));
     }
 
     private String formatWindowDetail(Double seconds) {
         if (seconds == null) {
             return null;
         }
-        return formatNumber(seconds) + "s window";
+        return tr("ui.races.passive.detail.window", "{0}s window", formatNumber(seconds));
     }
 
     private String formatStacksDetail(Double stacks) {
         if (stacks == null) {
             return null;
         }
-        return formatNumber(stacks) + " stacks";
+        return tr("ui.races.passive.detail.stacks", "{0} stacks", formatNumber(stacks));
     }
 
     private String formatWeaponMultiplier(double multiplier) {
         double delta = (multiplier - 1.0D) * 100.0D;
         if (Math.abs(delta) < 0.0001D) {
-            return "+0% dmg";
+            return tr("ui.classes.value.weapon_damage", "+{0}% dmg", 0);
         }
-        String prefix = delta > 0 ? "+" : "-";
-        return prefix + formatNumber(Math.abs(delta)) + "% dmg";
+        if (delta > 0) {
+            return tr("ui.classes.value.weapon_damage", "+{0}% dmg", formatNumber(delta));
+        }
+        return tr("ui.classes.value.weapon_damage_negative", "-{0}% dmg", formatNumber(Math.abs(delta)));
     }
 
     private String formatNumber(double value) {
@@ -1038,7 +1089,7 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
     private String formatDuration(long seconds) {
         if (seconds <= 0) {
-            return "0s";
+            return tr("ui.time.seconds", "{0}s", 0);
         }
         long hours = seconds / 3600;
         long minutes = (seconds % 3600) / 60;
@@ -1046,19 +1097,19 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
         StringBuilder builder = new StringBuilder();
         if (hours > 0) {
-            builder.append(hours).append("h");
+            builder.append(tr("ui.time.hours", "{0}h", hours));
         }
         if (minutes > 0) {
             if (builder.length() > 0) {
                 builder.append(' ');
             }
-            builder.append(minutes).append("m");
+            builder.append(tr("ui.time.minutes", "{0}m", minutes));
         }
         if (remainingSeconds > 0 || builder.length() == 0) {
             if (builder.length() > 0) {
                 builder.append(' ');
             }
-            builder.append(remainingSeconds).append("s");
+            builder.append(tr("ui.time.seconds", "{0}s", remainingSeconds));
         }
         return builder.toString();
     }
@@ -1079,5 +1130,39 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             builder.append(Character.toUpperCase(part.charAt(0))).append(part.substring(1));
         }
         return builder.toString();
+    }
+
+    private String localizeWeaponType(ClassWeaponType type) {
+        if (type == null) {
+            return tr("hud.class.none", "None");
+        }
+        String keySuffix = type.name().toLowerCase(Locale.ROOT);
+        return tr("ui.classes.weapon." + keySuffix, toDisplay(type.name()));
+    }
+
+    private String localizePassiveType(ArchetypePassiveType type) {
+        if (type == null) {
+            return tr("ui.races.passive.default_name", "Passive");
+        }
+        String keySuffix = type.name().toLowerCase(Locale.ROOT);
+        return tr("ui.races.passive.type." + keySuffix, toDisplay(type.name()));
+    }
+
+    private String localizeAttributeName(SkillAttributeType type) {
+        if (type == null) {
+            return tr("ui.races.passive.default_name", "Passive");
+        }
+        return tr("ui.skills.label." + type.getConfigKey(), toDisplay(type.name()));
+    }
+
+    private String localizeAttributeName(String rawAttribute) {
+        if (rawAttribute == null || rawAttribute.isBlank()) {
+            return "";
+        }
+        SkillAttributeType attributeType = SkillAttributeType.fromConfigKey(rawAttribute);
+        if (attributeType != null) {
+            return localizeAttributeName(attributeType);
+        }
+        return toDisplay(rawAttribute);
     }
 }

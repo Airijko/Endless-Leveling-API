@@ -107,6 +107,11 @@ public class LanguageManager {
         return langFile.exists() && langFile.isFile();
     }
 
+    public void invalidateLocaleCache(String locale) {
+        String normalized = normalizeLocale(locale);
+        localeCache.remove(normalized);
+    }
+
     public String tr(String key, String fallback, Object... args) {
         String template = resolveTemplate(key, fallback);
         return format(template, args);

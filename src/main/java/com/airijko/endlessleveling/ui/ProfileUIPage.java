@@ -27,6 +27,7 @@ import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveSnapshot;
 import com.airijko.endlessleveling.races.RaceDefinition;
 import com.airijko.endlessleveling.races.RacePassiveDefinition;
 import com.airijko.endlessleveling.systems.PlayerRaceStatSystem;
+import com.airijko.endlessleveling.util.Lang;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.logger.HytaleLogger;
@@ -46,7 +47,6 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
     private static final String PASSIVE_ENTRY_TEMPLATE = "Pages/Profile/ProfileRacePassiveEntry.ui";
-    private static final String NO_RACE_LABEL = "No Race";
     private static final String TIER_COLOR_MYTHIC = "#7851a9";
     private static final String TIER_COLOR_ELITE = "#89cff0";
     private static final String TIER_COLOR_DEFAULT = "#ffc300";
@@ -86,13 +86,15 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
         ui.append("Pages/Profile/ProfilePage.ui");
         NavUIHelper.bindNavEvents(events);
-        NavUIHelper.applyNavVersion(ui);
+        NavUIHelper.applyNavVersion(ui, playerRef);
 
         PlayerData playerData = resolvePlayerData();
         if (playerData == null) {
-            ui.set("#ProfilesSummary.Text", "Player data unavailable.");
+            ui.set("#ProfilesSummary.Text", tr("ui.profile.playerdata.unavailable", "Player data unavailable."));
             return;
         }
+
+        applyStaticLabels(ui);
 
         events.addEventBinding(Activating, "#NewProfileButton", of("Action", "profile:new"), false);
 
@@ -119,7 +121,23 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
     private void updateSummary(@Nonnull UICommandBuilder ui, @Nonnull PlayerData data) {
         ui.set("#ProfileTitleLabel.Text",
-                "Profiles " + data.getProfileCount() + "/" + PlayerData.MAX_PROFILES);
+                tr("ui.profile.list.title", "Profiles {0}/{1}", data.getProfileCount(), PlayerData.MAX_PROFILES));
+    }
+
+    private void applyStaticLabels(@Nonnull UICommandBuilder ui) {
+        ui.set("#DetailTitleLabel.Text", tr("ui.profile.detail.title", "Selected Profile"));
+        ui.set("#DetailSubtitleLabel.Text", tr("ui.profile.detail.subtitle.default", "Select a profile to view stats"));
+
+        ui.set("#AttributeLifeForceLabel.Text", tr("ui.skills.label.life_force", "Life Force"));
+        ui.set("#AttributeStrengthLabel.Text", tr("ui.skills.label.strength", "Strength"));
+        ui.set("#AttributeSorceryLabel.Text", tr("ui.skills.label.sorcery", "Sorcery"));
+        ui.set("#AttributeDefenseLabel.Text", tr("ui.skills.label.defense", "Defense"));
+        ui.set("#AttributeHasteLabel.Text", tr("ui.skills.label.haste", "Haste"));
+        ui.set("#AttributePrecisionLabel.Text", tr("ui.skills.label.precision", "Precision"));
+        ui.set("#AttributeFerocityLabel.Text", tr("ui.skills.label.ferocity", "Ferocity"));
+        ui.set("#AttributeStaminaLabel.Text", tr("ui.skills.label.stamina", "Stamina"));
+        ui.set("#AttributeFlowLabel.Text", tr("ui.skills.label.flow", "Flow"));
+        ui.set("#AttributeDisciplineLabel.Text", tr("ui.skills.label.discipline", "Discipline"));
     }
 
     private void buildProfileList(@Nonnull UICommandBuilder ui,
@@ -147,17 +165,19 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             ui.append("#ProfileCards", "Pages/Profile/ProfileRow.ui");
             String base = "#ProfileCards[" + index + "]";
 
-            ui.set(base + " #SlotLabel.Text", "Slot " + slot);
+            ui.set(base + " #SlotLabel.Text", tr("ui.profile.list.slot", "Slot {0}", slot));
             ui.set(base + " #ProfileName.Text", profile.getName());
-            ui.set(base + " #LevelValue.Text", "Level " + profile.getLevel());
-            ui.set(base + " #XpValue.Text", formatNumber(profile.getXp()) + " XP");
-            ui.set(base + " #StatusBadge.Text", active ? "ACTIVE" : "");
-            ui.set(base + " #ConfirmDeleteLabel.Text", "Delete " + profile.getName() + "?");
+            ui.set(base + " #LevelValue.Text", tr("ui.profile.list.level", "Level {0}", profile.getLevel()));
+            ui.set(base + " #XpValue.Text", tr("ui.profile.list.xp", "{0} XP", formatNumber(profile.getXp())));
+            ui.set(base + " #StatusBadge.Text", active ? tr("ui.profile.list.status.active", "ACTIVE") : "");
+            ui.set(base + " #ConfirmDeleteLabel.Text",
+                    tr("ui.profile.list.delete.confirm", "Delete {0}?", profile.getName()));
             ui.set(base + " #ActionButtons.Visible", !pending);
             ui.set(base + " #ConfirmButtons.Visible", pending);
             ui.set(base + " #DeleteButton.Visible", canDelete);
 
-            ui.set(base + " #SelectButton.Text", active ? "ACTIVE" : "SELECT");
+            ui.set(base + " #SelectButton.Text", active ? tr("ui.profile.list.status.active", "ACTIVE")
+                    : tr("ui.profile.list.select", "SELECT"));
             if (!active) {
                 events.addEventBinding(Activating, base + " #SelectButton",
                         of("Action", "profile:select:" + slot), false);
@@ -180,15 +200,15 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             EntityStatMap statMap) {
         PlayerProfile profile = resolveActiveProfile(data);
         if (profile == null) {
-            clearDetailPanel(ui, "Select a profile to view stats");
+            clearDetailPanel(ui, tr("ui.profile.detail.subtitle.default", "Select a profile to view stats"));
             return;
         }
 
         int slot = data.getActiveProfileIndex();
         ui.set("#DetailTitleLabel.Text", profile.getName());
-        ui.set("#DetailSubtitleLabel.Text", "Slot " + slot);
+        ui.set("#DetailSubtitleLabel.Text", tr("ui.profile.list.slot", "Slot {0}", slot));
         ui.set("#DetailLevelValue.Text", String.valueOf(profile.getLevel()));
-        ui.set("#DetailXpValue.Text", formatNumber(profile.getXp()) + " XP");
+        ui.set("#DetailXpValue.Text", tr("ui.profile.list.xp", "{0} XP", formatNumber(profile.getXp())));
         ui.set("#DetailRaceValue.Text", getRaceDisplay(profile));
 
         applyAttributeDisplay(ui, "#AttributeLifeForceValue", "#AttributeLifeForceLevel",
@@ -245,11 +265,11 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     }
 
     private void clearDetailPanel(@Nonnull UICommandBuilder ui, @Nonnull String subtitle) {
-        ui.set("#DetailTitleLabel.Text", "Selected Profile");
+        ui.set("#DetailTitleLabel.Text", tr("ui.profile.detail.title", "Selected Profile"));
         ui.set("#DetailSubtitleLabel.Text", subtitle);
-        ui.set("#DetailLevelValue.Text", "--");
-        ui.set("#DetailXpValue.Text", "--");
-        ui.set("#DetailRaceValue.Text", "--");
+        ui.set("#DetailLevelValue.Text", tr("hud.common.unavailable", "--"));
+        ui.set("#DetailXpValue.Text", tr("hud.common.unavailable", "--"));
+        ui.set("#DetailRaceValue.Text", tr("hud.common.unavailable", "--"));
         applyAttributeDisplay(ui, "#AttributeLifeForceValue", "#AttributeLifeForceLevel", emptyAttributeDisplay());
         applyAttributeDisplay(ui, "#AttributeStrengthValue", "#AttributeStrengthLevel", emptyAttributeDisplay());
         applyAttributeDisplay(ui, "#AttributeSorceryValue", "#AttributeSorceryLevel", emptyAttributeDisplay());
@@ -259,9 +279,11 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         applyAttributeDisplay(ui, "#AttributeFlowValue", "#AttributeFlowLevel", emptyAttributeDisplay());
         applyAttributeDisplay(ui, "#AttributeDisciplineValue", "#AttributeDisciplineLevel",
                 emptyAttributeDisplay());
-        ui.set("#PassiveSummary.Text", "Select a profile to view passive bonuses");
+        ui.set("#PassiveSummary.Text",
+                tr("ui.profile.passives.select_prompt", "Select a profile to view passive bonuses"));
         ui.set("#PassiveSummary.Visible", true);
-        ui.set("#InnatePassiveSummary.Text", "Select a profile to view innate bonuses");
+        ui.set("#InnatePassiveSummary.Text",
+                tr("ui.profile.passives.select_innate_prompt", "Select a profile to view innate bonuses"));
         ui.set("#InnatePassiveSummary.Visible", true);
         ui.clear("#PassiveEntries");
         ui.clear("#InnatePassiveEntries");
@@ -272,52 +294,55 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             @Nonnull SkillAttributeType type,
             EntityStatMap statMap) {
         int level = profile.getAttributes().getOrDefault(type, 0);
-        String levelText = "Lv " + level;
+        String levelText = tr("ui.profile.level.short", "Lv {0}", level);
         String detail = "";
 
         if (skillManager != null) {
             if (isResourceAttribute(type)) {
                 double total = resolveResourceTotal(type, data, statMap);
-                detail = Double.isNaN(total) ? "--" : formatNumber(total) + " " + resourceLabel(type);
+                detail = Double.isNaN(total)
+                        ? tr("hud.common.unavailable", "--")
+                        : tr("ui.skills.value.resource", "{0} {1}", formatNumber(total), resourceLabel(type));
             } else {
                 detail = switch (type) {
                     case STRENGTH -> {
                         SkillManager.StrengthBreakdown breakdown = skillManager.getStrengthBreakdown(data, level);
-                        yield "+" + formatNumber(breakdown.totalValue()) + "% Damage";
+                        yield tr("ui.skills.value.strength", "+{0}% Damage", formatNumber(breakdown.totalValue()));
                     }
                     case DEFENSE -> {
                         SkillManager.DefenseBreakdown breakdown = skillManager.getDefenseBreakdown(data, level);
                         double reduction = breakdown.resistance() * 100.0f;
-                        yield formatNumber(reduction) + "% Reduction";
+                        yield tr("ui.skills.value.defense", "{0}% Reduction", formatNumber(reduction));
                     }
                     case HASTE -> {
                         SkillManager.HasteBreakdown breakdown = skillManager.getHasteBreakdown(data, level);
                         double percent = (breakdown.totalMultiplier() - 1.0f) * 100.0f;
-                        yield "+" + formatNumber(percent) + "% Speed";
+                        yield tr("ui.skills.value.haste", "+{0}% Speed", formatNumber(percent));
                     }
                     case PRECISION -> {
                         SkillManager.PrecisionBreakdown breakdown = skillManager.getPrecisionBreakdown(data, level);
-                        yield formatNumber(breakdown.totalPercent()) + "% Crit Chance";
+                        yield tr("ui.skills.value.precision", "{0}% Crit Chance",
+                                formatNumber(breakdown.totalPercent()));
                     }
                     case SORCERY -> {
                         float bonus = skillManager.calculatePlayerSorcery(data);
-                        yield "+" + formatNumber(bonus) + "% Magic Damage";
+                        yield tr("ui.skills.value.sorcery", "+{0}% Magic Damage", formatNumber(bonus));
                     }
                     case FEROCITY -> {
                         SkillManager.FerocityBreakdown breakdown = skillManager.getFerocityBreakdown(data);
-                        yield "+" + formatNumber(breakdown.totalValue()) + "% Crit Damage";
+                        yield tr("ui.skills.value.ferocity", "+{0}% Crit Damage", formatNumber(breakdown.totalValue()));
                     }
                     case DISCIPLINE -> {
                         double xpBonus = skillManager.getDisciplineXpBonusPercent(level);
-                        yield "+" + formatNumber(xpBonus) + "% XP Gain";
+                        yield tr("ui.skills.value.discipline", "+{0}% XP Gain", formatNumber(xpBonus));
                     }
-                    default -> "--";
+                    default -> tr("hud.common.unavailable", "--");
                 };
             }
         }
 
         if (detail == null || detail.isBlank()) {
-            detail = "--";
+            detail = tr("hud.common.unavailable", "--");
         }
         return new AttributeDisplay(detail, levelText);
     }
@@ -325,7 +350,7 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     private String getRaceDisplay(@Nonnull PlayerProfile profile) {
         String raceId = profile.getRaceId();
         if (raceId == null || raceId.isBlank() || raceId.equalsIgnoreCase("none")) {
-            return NO_RACE_LABEL;
+            return tr("hud.race.none", "No Race");
         }
         if (raceManager == null) {
             return raceId;
@@ -337,7 +362,7 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 return displayName;
             }
             String id = definition.getId();
-            return id != null && !id.isBlank() ? id : NO_RACE_LABEL;
+            return id != null && !id.isBlank() ? id : tr("hud.race.none", "No Race");
         }
         return raceId;
     }
@@ -379,9 +404,14 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         innatePassiveEntries.sort(Comparator.comparing(PassiveEntry::label));
         innateAttributeEntries.sort(Comparator.comparing(PassiveEntry::label));
 
-        String passiveSummary = passiveEntries.isEmpty() ? "No passive bonuses active" : "";
-        String innatePassiveSummary = innatePassiveEntries.isEmpty() ? "No innate passives active" : "";
-        String innateAttributeSummary = innateAttributeEntries.isEmpty() ? "No innate attribute bonuses" : "";
+        String passiveSummary = passiveEntries.isEmpty() ? tr("ui.profile.passives.none", "No passive bonuses active")
+                : "";
+        String innatePassiveSummary = innatePassiveEntries.isEmpty()
+                ? tr("ui.profile.passives.innate_none", "No innate passives active")
+                : "";
+        String innateAttributeSummary = innateAttributeEntries.isEmpty()
+                ? tr("ui.profile.passives.innate_attr_none", "No innate attribute bonuses")
+                : "";
 
         return new AggregatedPassiveSections(List.copyOf(passiveEntries),
                 List.copyOf(innatePassiveEntries),
@@ -433,7 +463,8 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             if (snapshot == null || !snapshot.isUnlocked()) {
                 continue;
             }
-            String label = type.getDisplayName() + " (Lv " + snapshot.level() + ")";
+            String label = tr("ui.profile.passives.level_label", "{0} (Lv {1})", type.getDisplayName(),
+                    snapshot.level());
             String valueText = type.formatValue(snapshot.value());
             entries.add(new PassiveEntry(label, valueText));
         }
@@ -540,7 +571,7 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         String entriesSelector = "#AugmentEntries";
         if (augments.isEmpty()) {
             ui.set(summarySelector + ".Visible", true);
-            ui.set(summarySelector + ".Text", "No augments active");
+            ui.set(summarySelector + ".Text", tr("ui.profile.augments.none", "No augments active"));
             ui.clear(entriesSelector);
             return;
         }
@@ -591,7 +622,8 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     }
 
     private AttributeDisplay emptyAttributeDisplay() {
-        return new AttributeDisplay("--", "--");
+        String unavailable = tr("hud.common.unavailable", "--");
+        return new AttributeDisplay(unavailable, unavailable);
     }
 
     private String toDisplay(String raw) {
@@ -620,9 +652,9 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
     private String resourceLabel(@Nonnull SkillAttributeType type) {
         return switch (type) {
-            case LIFE_FORCE -> "Health";
-            case STAMINA -> "Stamina";
-            case FLOW -> "Flow";
+            case LIFE_FORCE -> tr("ui.skills.resource.health", "Health");
+            case STAMINA -> tr("ui.skills.resource.stamina", "Stamina");
+            case FLOW -> tr("ui.skills.resource.flow", "Flow");
             default -> type.name();
         };
     }
@@ -710,50 +742,52 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             double value,
             @Nonnull AggregatedPassiveProps props) {
         return switch (type) {
-            case XP_BONUS -> formatPercentValue(value) + " XP gain";
-            case HEALTH_REGEN -> formatPercentValue(value) + " HP/5s";
-            case MANA_REGEN -> formatPercentValue(value) + " max mana/5s";
-            case MANA_REGEN_FLAT -> formatSigned(value) + " mana/s";
-            case REGENERATION -> formatSigned(value) + " HP/s";
-            case HEALING_BONUS -> formatPercentValue(value) + " healing";
-            case LIFE_STEAL -> formatPercentValue(value) + " life steal";
-            case SPECIAL_CHARGE_BONUS -> formatPercentValue(value) + " charge rate";
-            case STAMINA_GAIN_BONUS -> formatPercentValue(value) + " stamina gain";
-            case LUCK -> formatPercentValue(value) + " luck";
+            case XP_BONUS -> tr("ui.races.passive.desc.xp_bonus", "{0} XP gain", formatPercentValue(value));
+            case HEALTH_REGEN -> tr("ui.races.passive.desc.health_regen", "{0} HP/5s", formatPercentValue(value));
+            case MANA_REGEN -> tr("ui.races.passive.desc.mana_regen", "{0} mana/5s", formatPercentValue(value));
+            case MANA_REGEN_FLAT -> tr("ui.races.passive.desc.mana_regen_flat", "{0} mana/s", formatSigned(value));
+            case REGENERATION -> tr("ui.races.passive.desc.regeneration", "{0} HP/s", formatSigned(value));
+            case HEALING_BONUS -> tr("ui.races.passive.desc.healing_bonus", "{0} healing", formatPercentValue(value));
+            case LIFE_STEAL -> tr("ui.races.passive.desc.life_steal", "{0} life steal", formatPercentValue(value));
+            case SPECIAL_CHARGE_BONUS ->
+                tr("ui.races.passive.desc.charge_bonus", "{0} charge rate", formatPercentValue(value));
+            case STAMINA_GAIN_BONUS ->
+                tr("ui.races.passive.desc.stamina_gain", "{0} stamina gain", formatPercentValue(value));
+            case LUCK -> tr("ui.races.passive.desc.luck", "{0} luck", formatPercentValue(value));
             case SECOND_WIND -> appendDetails(
-                    formatPercentValue(value) + " heal",
-                    formatThresholdDetail(props.threshold(), "HP"),
+                    tr("ui.races.passive.desc.second_wind", "{0} heal", formatPercentValue(value)),
+                    formatThresholdDetail(props.threshold(), tr("ui.races.passive.scope.hp", "HP")),
                     formatDurationDetail(props.duration()),
                     formatCooldownDetail(props.cooldown()));
             case FIRST_STRIKE -> appendDetails(
-                    formatPercentValue(value) + " first hit",
+                    tr("ui.races.passive.desc.first_strike", "{0} opener", formatPercentValue(value)),
                     formatCooldownDetail(props.cooldown()));
             case ADRENALINE -> appendDetails(
-                    formatPercentValue(value) + " stamina",
-                    formatThresholdDetail(props.threshold(), "stamina"),
+                    tr("ui.races.passive.desc.adrenaline", "{0} stamina", formatPercentValue(value)),
+                    formatThresholdDetail(props.threshold(), tr("ui.races.passive.scope.stamina", "stamina")),
                     formatDurationDetail(props.duration()),
                     formatCooldownDetail(props.cooldown()));
             case BERZERKER -> appendDetails(
-                    formatPercentValue(value) + " damage",
-                    formatThresholdDetail(props.threshold(), "HP"));
+                    tr("ui.races.passive.desc.berzerker", "{0} damage", formatPercentValue(value)),
+                    formatThresholdDetail(props.threshold(), tr("ui.races.passive.scope.hp", "HP")));
             case RETALIATION -> appendDetails(
-                    formatPercentValue(value) + " reflect",
+                    tr("ui.races.passive.desc.retaliation", "{0} reflect", formatPercentValue(value)),
                     formatWindowDetail(props.window()),
                     formatCooldownDetail(props.cooldown()));
             case EXECUTIONER -> appendDetails(
-                    formatPercentValue(value) + " finisher",
-                    formatThresholdDetail(props.threshold(), "target HP"),
+                    tr("ui.races.passive.desc.executioner", "{0} finisher", formatPercentValue(value)),
+                    formatThresholdDetail(props.threshold(), tr("ui.races.passive.scope.target_hp", "target HP")),
                     formatCooldownDetail(props.cooldown()));
             case SWIFTNESS -> appendDetails(
-                    formatPercentValue(value) + " speed",
+                    tr("ui.races.passive.desc.swiftness", "{0} speed", formatPercentValue(value)),
                     formatDurationDetail(props.duration()),
                     formatStacksDetail(props.stacks()));
             case WITHER -> appendDetails(
-                    formatPercentValue(value) + " max HP/sec",
+                    tr("ui.races.passive.desc.wither", "{0} max HP/sec", formatPercentValue(value)),
                     formatDurationDetail(props.duration()),
                     formatSlowDetail(props.slowPercent()));
             case CRIT_DEFENSE -> appendDetails(
-                    formatPercentValue(value) + " dmg reduction",
+                    tr("ui.races.passive.desc.crit_defense", "{0} dmg reduction", formatPercentValue(value)),
                     formatScalingDetail(props.scalingStat()));
             case INNATE_ATTRIBUTE_GAIN -> formatSigned(value);
             default -> formatSigned(value);
@@ -764,24 +798,25 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         if (slowPercent == null) {
             return null;
         }
-        return formatPercentValue(slowPercent) + " slow";
+        return tr("ui.races.passive.detail.slow", "{0} slow", formatPercentValue(slowPercent));
     }
 
     private String formatScalingDetail(String scalingStat) {
         if (scalingStat == null || scalingStat.isBlank()) {
             return null;
         }
-        return "scales with " + toDisplay(scalingStat);
+        return tr("ui.races.passive.detail.scales_with", "scales with {0}", toDisplay(scalingStat));
     }
 
     private String formatInnateAttributeValue(SkillAttributeType attributeType,
             double perLevelGain,
             @Nonnull PlayerProfile profile) {
-        String perLevelText = formatSigned(perLevelGain) + " per level";
+        String perLevelText = tr("ui.races.passive.detail.per_level", "{0} per level", formatSigned(perLevelGain));
         int level = Math.max(1, profile.getLevel());
         double totalGain = perLevelGain * level;
         String totalText = formatSigned(totalGain);
-        return perLevelText + " (Total " + totalText + " @ Lv " + level + ")";
+        return tr("ui.races.passive.detail.total_at_level", "{0} (Total {1} @ Lv {2})", perLevelText, totalText,
+                level);
     }
 
     private Double getDoubleProp(@Nonnull Map<String, Object> props, @Nonnull String key) {
@@ -811,35 +846,35 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         if (ratio == null) {
             return null;
         }
-        return "<" + formatNumber(ratio * 100.0D) + "% " + scope;
+        return tr("ui.classes.passive.detail.threshold", "<{0}% {1}", formatNumber(ratio * 100.0D), scope);
     }
 
     private String formatDurationDetail(Double seconds) {
         if (seconds == null) {
             return null;
         }
-        return formatNumber(seconds) + "s duration";
+        return tr("ui.races.passive.detail.duration", "{0}s duration", formatNumber(seconds));
     }
 
     private String formatCooldownDetail(Double seconds) {
         if (seconds == null) {
             return null;
         }
-        return formatNumber(seconds) + "s cd";
+        return tr("ui.races.passive.detail.cooldown", "{0}s cd", formatNumber(seconds));
     }
 
     private String formatWindowDetail(Double seconds) {
         if (seconds == null) {
             return null;
         }
-        return formatNumber(seconds) + "s window";
+        return tr("ui.races.passive.detail.window", "{0}s window", formatNumber(seconds));
     }
 
     private String formatStacksDetail(Double stacks) {
         if (stacks == null) {
             return null;
         }
-        return formatNumber(stacks) + " stacks";
+        return tr("ui.races.passive.detail.stacks", "{0} stacks", formatNumber(stacks));
     }
 
     private String appendDetails(String base, String... extra) {
@@ -882,7 +917,9 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
         PlayerData playerData = resolvePlayerData();
         if (playerData == null) {
-            playerRef.sendMessage(Message.raw("Unable to load your profiles right now.").color("#ff0000"));
+            playerRef.sendMessage(
+                    Message.raw(tr("ui.profile.error.load", "Unable to load your profiles right now."))
+                            .color("#ff0000"));
             return;
         }
 
@@ -919,7 +956,9 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             }
         } catch (Exception ex) {
             LOGGER.atSevere().withCause(ex).log("ProfileUIPage: error handling action %s", action);
-            playerRef.sendMessage(Message.raw("Something went wrong handling that request.").color("#ff0000"));
+            playerRef.sendMessage(
+                    Message.raw(tr("ui.profile.error.generic", "Something went wrong handling that request."))
+                            .color("#ff0000"));
         }
 
         return new ProfileActionOutcome(false, false);
@@ -929,25 +968,31 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             @Nonnull Store<EntityStore> store,
             @Nonnull PlayerData playerData) {
         if (playerData.getProfileCount() >= PlayerData.MAX_PROFILES) {
-            playerRef.sendMessage(Message.raw("All profile slots are already in use. Delete one first.")
+            playerRef.sendMessage(Message
+                    .raw(tr("ui.profile.error.max_slots", "All profile slots are already in use. Delete one first."))
                     .color("#ff9900"));
             return new ProfileActionOutcome(false, false);
         }
 
         int nextSlot = playerData.findNextAvailableProfileSlot();
         if (!PlayerData.isValidProfileIndex(nextSlot)) {
-            playerRef.sendMessage(Message.raw("Unable to find an open slot right now.").color("#ff0000"));
+            playerRef.sendMessage(
+                    Message.raw(tr("ui.profile.error.no_open_slot", "Unable to find an open slot right now."))
+                            .color("#ff0000"));
             return new ProfileActionOutcome(false, false);
         }
 
         boolean created = playerData.createProfile(nextSlot, PlayerData.defaultProfileName(nextSlot), false, true);
         if (!created) {
-            playerRef.sendMessage(Message.raw("Could not create that profile slot.").color("#ff0000"));
+            playerRef.sendMessage(
+                    Message.raw(tr("ui.profile.error.create_failed", "Could not create that profile slot."))
+                            .color("#ff0000"));
             return new ProfileActionOutcome(false, false);
         }
 
-        playerRef.sendMessage(Message.raw("Created and activated profile slot " + nextSlot + ".")
-                .color("#4fd7f7"));
+        playerRef.sendMessage(
+                Message.raw(tr("ui.profile.info.created", "Created and activated profile slot {0}.", nextSlot))
+                        .color("#4fd7f7"));
         PlayerHud.refreshHud(playerData.getUuid());
         if (partyManager != null && partyManager.isAvailable()) {
             partyManager.updatePartyHudCustomText(playerData);
@@ -962,26 +1007,32 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             @Nonnull String payload) {
         int slot = parseSlot(payload, "select:");
         if (!PlayerData.isValidProfileIndex(slot)) {
-            playerRef.sendMessage(Message.raw("Profile slot must be between 1 and " + PlayerData.MAX_PROFILES + ".")
+            playerRef.sendMessage(Message
+                    .raw(tr("ui.profile.error.slot_range", "Profile slot must be between 1 and {0}.",
+                            PlayerData.MAX_PROFILES))
                     .color("#ff0000"));
             return new ProfileActionOutcome(false, false);
         }
 
         if (!playerData.hasProfile(slot)) {
-            playerRef.sendMessage(Message.raw("Profile slot " + slot + " has not been created yet.")
-                    .color("#ff9900"));
+            playerRef.sendMessage(
+                    Message.raw(tr("ui.profile.error.slot_missing", "Profile slot {0} has not been created yet.", slot))
+                            .color("#ff9900"));
             return new ProfileActionOutcome(false, false);
         }
 
         if (playerData.isProfileActive(slot)) {
-            playerRef.sendMessage(Message.raw("Profile slot " + slot + " is already active.").color("#4fd7f7"));
+            playerRef.sendMessage(
+                    Message.raw(tr("ui.profile.info.already_active", "Profile slot {0} is already active.", slot))
+                            .color("#4fd7f7"));
             return new ProfileActionOutcome(false, false);
         }
 
         PlayerData.ProfileSwitchResult result = playerData.switchProfile(slot);
         if (result == PlayerData.ProfileSwitchResult.SWITCHED_EXISTING) {
             playerRef.sendMessage(Message.raw(
-                    "Switched to profile slot " + slot + " (" + playerData.getProfileName(slot) + ").")
+                    tr("ui.profile.info.switched", "Switched to profile slot {0} ({1}).", slot,
+                            playerData.getProfileName(slot)))
                     .color("#00ff00"));
             PlayerHud.refreshHud(playerData.getUuid());
             if (partyManager != null && partyManager.isAvailable()) {
@@ -991,7 +1042,9 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             return new ProfileActionOutcome(true, true);
         }
 
-        playerRef.sendMessage(Message.raw("Unable to switch to that slot right now.").color("#ff0000"));
+        playerRef.sendMessage(
+                Message.raw(tr("ui.profile.error.switch_failed", "Unable to switch to that slot right now."))
+                        .color("#ff0000"));
         return new ProfileActionOutcome(false, false);
     }
 
@@ -1018,8 +1071,9 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         }
 
         pendingDeleteSlot = slot;
-        playerRef.sendMessage(Message.raw("Press CONFIRM to delete profile slot " + slot + ".")
-                .color("#ff9900"));
+        playerRef.sendMessage(
+                Message.raw(tr("ui.profile.info.delete_prompt", "Press CONFIRM to delete profile slot {0}.", slot))
+                        .color("#ff9900"));
         return new ProfileActionOutcome(false, true);
     }
 
@@ -1030,19 +1084,23 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             return new ProfileActionOutcome(false, false);
         }
         if (pendingDeleteSlot == null || pendingDeleteSlot != slot) {
-            playerRef.sendMessage(Message.raw("Please confirm the deletion of slot " + slot + " first.")
+            playerRef.sendMessage(Message
+                    .raw(tr("ui.profile.error.confirm_first", "Please confirm the deletion of slot {0} first.", slot))
                     .color("#ff9900"));
             return new ProfileActionOutcome(false, false);
         }
 
         boolean deleted = playerData.deleteProfile(slot);
         if (!deleted) {
-            playerRef.sendMessage(Message.raw("Could not delete that profile slot right now.").color("#ff0000"));
+            playerRef.sendMessage(
+                    Message.raw(tr("ui.profile.error.delete_failed", "Could not delete that profile slot right now."))
+                            .color("#ff0000"));
             return new ProfileActionOutcome(false, false);
         }
 
         clearPendingDelete();
-        playerRef.sendMessage(Message.raw("Deleted profile slot " + slot + ".").color("#4fd7f7"));
+        playerRef.sendMessage(
+                Message.raw(tr("ui.profile.info.deleted", "Deleted profile slot {0}.", slot)).color("#4fd7f7"));
         return new ProfileActionOutcome(true, true);
     }
 
@@ -1051,30 +1109,43 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             return new ProfileActionOutcome(false, false);
         }
         clearPendingDelete();
-        playerRef.sendMessage(Message.raw("Profile deletion canceled.").color("#4fd7f7"));
+        playerRef.sendMessage(
+                Message.raw(tr("ui.profile.info.delete_canceled", "Profile deletion canceled.")).color("#4fd7f7"));
         return new ProfileActionOutcome(false, true);
     }
 
     private boolean canDeleteSlot(@Nonnull PlayerData playerData, int slot) {
         if (!PlayerData.isValidProfileIndex(slot)) {
-            playerRef.sendMessage(Message.raw("Profile slot must be between 1 and " + PlayerData.MAX_PROFILES + ".")
+            playerRef.sendMessage(Message
+                    .raw(tr("ui.profile.error.slot_range", "Profile slot must be between 1 and {0}.",
+                            PlayerData.MAX_PROFILES))
                     .color("#ff0000"));
             return false;
         }
         if (!playerData.hasProfile(slot)) {
-            playerRef.sendMessage(Message.raw("Profile slot " + slot + " is already empty.").color("#ff9900"));
+            playerRef.sendMessage(
+                    Message.raw(tr("ui.profile.error.slot_empty", "Profile slot {0} is already empty.", slot))
+                            .color("#ff9900"));
             return false;
         }
         if (playerData.isProfileActive(slot)) {
-            playerRef.sendMessage(Message.raw("Switch to a different profile before deleting slot " + slot + ".")
+            playerRef.sendMessage(Message
+                    .raw(tr("ui.profile.error.delete_active", "Switch to a different profile before deleting slot {0}.",
+                            slot))
                     .color("#ff9900"));
             return false;
         }
         if (playerData.getProfileCount() <= 1) {
-            playerRef.sendMessage(Message.raw("You must keep at least one profile slot.").color("#ff0000"));
+            playerRef.sendMessage(
+                    Message.raw(tr("ui.profile.error.keep_one", "You must keep at least one profile slot."))
+                            .color("#ff0000"));
             return false;
         }
         return true;
+    }
+
+    private String tr(String key, String fallback, Object... args) {
+        return Lang.tr(playerRef.getUuid(), key, fallback, args);
     }
 
     private void clearPendingDelete() {

@@ -97,11 +97,8 @@ passives:
 enable_races: true # Enable or disable the race system
 default_race: "Human" # Use built-in fallback default race
 choose_race_cooldown: 3600 # Cooldown (seconds) before changing race again
-race_max_switches: -1 # -1 = unlimited; 1 = one-time; any positive number caps total race swaps per player
+race_max_switches: 1 # -1 = unlimited; 1 = one-time; any positive number caps total race swaps per player
 global_race_visuals_setting: "off" # Default race model visuals for new players: on, off, or disabled (disables visuals globally)
-
-# IF YOU WANT TO CREATE CUSTOM RACES, SET THIS TO FALSE AND ADD YOUR RACE FILES TO /EndlessLeveling/races/
-force_builtin_races: true # If true, ignore custom race files and keep bundled races in sync with updates
 
 # ------------------------------------------------------------
 # CLASS SETTINGS
@@ -111,13 +108,7 @@ enable_secondary_class: true # Enable or disable secondary class assignments glo
 default_primary_class: "Adventurer" # Use built-in fallback default primary class
 default_secondary_class: "None" # Optional secondary class default (None disables it)
 choose_class_cooldown: 1800 # Cooldown (seconds) before changing class again
-class_max_switches: -1 # -1 = unlimited; 1 = one-time; any positive number caps total class swaps per player (primary/secondary combined)
-
-# IF YOU WANT TO CREATE CUSTOM CLASSES, SET THIS TO FALSE AND ADD YOUR CLASS FILES TO /EndlessLeveling/races/
-force_builtin_classes: true # If true, ignore custom class files and keep bundled classes in sync with updates
-
-# IF YOU WANT TO CREATE CUSTOM AUGMENTS, SET THIS TO FALSE AND ADD YOUR AUGMENT FILES TO /EndlessLeveling/augments/
-force_builtin_augments: true # If true, ignore custom augment files and keep bundled augments in sync with updates
+class_max_switches: 1 # -1 = unlimited; 1 = one-time; any positive number caps total class swaps per player (primary/secondary combined)
 
 # ------------------------------------------------------------
 # LANGUAGE / LOCALIZATION
@@ -125,22 +116,6 @@ force_builtin_augments: true # If true, ignore custom augment files and keep bun
 language:
   locale: "en_US" # Active locale file from /EndlessLeveling/lang/<locale>.yml
   fallback_locale: "en_US" # Fallback locale when a key is missing
-
-# ------------------------------------------------------------
-# UI SETTINGS
-# ------------------------------------------------------------
-# ------------------------------------------------------------
-# DEBUG / LOGGING
-# ------------------------------------------------------------
-enable_logging: false # Master toggle: true enables ALL mod logs (debug + info + warnings)
-logging:
-  base_level: WARNING # When enable_logging is false, base level is clamped to WARNING/SEVERE (INFO suppressed unless enable_logging is true or a debug section is enabled).
-  debug_sections: [] # Inline list of package prefixes to fully enable debug logging for. Examples (uncomment to use):
-    # [augments]
-    # [augments, managers.AugmentRuntimeManager]
-    # [listeners, systems]
-    # [commands, commands.subcommands]
-    # [managers.PlayerDataManager, managers.AugmentManager]
 
 # ------------------------------------------------------------
 # AUGMENT UNLOCKS
@@ -155,5 +130,26 @@ augments:
     - tier: MYTHIC
       levels: [50]
 
+# ------------------------------------------------------------
+# BALANCING / CUSTOMIZATION SETTINGS
+# ------------------------------------------------------------
+# IF YOU WANT TO CREATE CUSTOM CLASSES, RACES, SET THIS TO FALSE AND ADD YOUR FILES
+force_builtin_races: true # If true, ignore custom race files and keep bundled races in sync with updates
+force_builtin_classes: true # If true, ignore custom class files and keep bundled classes in sync with updates
+force_builtin_augments: true # If true, ignore custom augment files and keep bundled augments in sync with updates
+
+# ------------------------------------------------------------
+# DEBUG / LOGGING
+# ------------------------------------------------------------
+enable_logging: false # Master toggle: true enables ALL mod logs (debug + info + warnings)
+logging:
+  base_level: WARNING # When enable_logging is false, base level is clamped to WARNING/SEVERE (INFO suppressed unless enable_logging is true or a debug section is enabled).
+  debug_sections: [] # Inline list of package prefixes to fully enable debug logging for. Examples (uncomment to use):
+    # [augments]
+    # [augments, managers.AugmentRuntimeManager]
+    # [listeners, systems]
+    # [commands, commands.subcommands]
+    # [managers.PlayerDataManager, managers.AugmentManager]
+
 # DON'T EDIT THIS LINE BELOW
-config_version: 22
+config_version: 23

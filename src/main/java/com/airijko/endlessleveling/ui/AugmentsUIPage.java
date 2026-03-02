@@ -79,6 +79,11 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             applyCard(ui, i + 1, augment, noAugmentState);
         }
 
+        String chooseText = tr("ui.augments.actions.choose", "Choose");
+        ui.set("#AugmentCard1Choose.Text", chooseText);
+        ui.set("#AugmentCard2Choose.Text", chooseText);
+        ui.set("#AugmentCard3Choose.Text", chooseText);
+
         events.addEventBinding(Activating, "#AugmentCard1Choose", of("Action", "augment:choose:0"), false);
         events.addEventBinding(Activating, "#AugmentCard2Choose", of("Action", "augment:choose:1"), false);
         events.addEventBinding(Activating, "#AugmentCard3Choose", of("Action", "augment:choose:2"), false);
@@ -398,15 +403,20 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             if (trimmed.isBlank()) {
                 continue;
             }
-            String lowered = trimmed.toLowerCase(Locale.ROOT);
-            if (lowered.startsWith("self damage:")) {
+            if (startsWithLabel(trimmed, "self_damage", "Self Damage")) {
                 selfDamageLines.add(trimmed);
-            } else if (lowered.startsWith("trigger threshold:")) {
+            } else if (startsWithLabel(trimmed, "trigger_threshold", "Trigger Threshold")) {
                 neutralLines.add(trimmed);
             } else {
                 normalLines.add(trimmed);
             }
         }
+    }
+
+    private boolean startsWithLabel(String line, String labelKey, String fallback) {
+        String translated = tr("ui.augments.effect.label." + labelKey, fallback);
+        return line.toLowerCase(Locale.ROOT)
+                .startsWith((translated + ":").toLowerCase(Locale.ROOT));
     }
 
     private void applySpecialRows(UICommandBuilder ui,
@@ -582,19 +592,19 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         if (value == null) {
             return null;
         }
-        return "Cooldown: " + formatSeconds(value);
+        return tr("ui.augments.effect.cooldown", "Cooldown: {0}", formatSeconds(value));
     }
 
     private String formatDuration(Map<String, Object> passives) {
         Double perStack = findNumericField(passives, "duration_per_stack");
         if (perStack != null) {
-            return "Duration per stack: " + formatSeconds(perStack);
+            return tr("ui.augments.effect.duration_per_stack", "Duration per stack: {0}", formatSeconds(perStack));
         }
         Double value = findNumericField(passives, "duration", "effect_duration");
         if (value == null) {
             return null;
         }
-        return "Duration: " + formatSeconds(value);
+        return tr("ui.augments.effect.duration", "Duration: {0}", formatSeconds(value));
     }
 
     private Double findNumericField(Map<String, Object> passives, String... keys) {
@@ -781,7 +791,7 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         }
 
         if (maxStacks != null) {
-            parts.add("Max stacks: " + maxStacks);
+            parts.add(tr("ui.augments.effect.max_stacks", "Max stacks: {0}", maxStacks));
         }
         return String.join("\n", parts);
     }
@@ -850,21 +860,26 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
         Double fullValueAtHealth = toDouble(context.get("full_value_at_health_percent"));
         if (fullValueAtHealth != null) {
-            return " (full at <= " + formatNumber(fullValueAtHealth * 100.0D) + "% health)";
+            return tr("ui.augments.effect.note.full_at_health", " (full at <= {0}% health)",
+                    formatNumber(fullValueAtHealth * 100.0D));
         }
 
         Double maxRatio = toDouble(context.get("max_ratio"));
         if (maxRatio != null) {
-            return " (full at " + formatNumber(maxRatio) + "x ratio)";
+            return tr("ui.augments.effect.note.full_at_ratio", " (full at {0}x ratio)",
+                    formatNumber(maxRatio));
         }
 
         Double maxDistance = toDouble(context.get("max_distance"));
         if (maxDistance != null) {
             Double minDistance = toDouble(context.get("min_distance"));
             if (minDistance != null) {
-                return " (range " + formatNumber(minDistance) + "-" + formatNumber(maxDistance) + ")";
+                return tr("ui.augments.effect.note.range", " (range {0}-{1})",
+                        formatNumber(minDistance),
+                        formatNumber(maxDistance));
             }
-            return " (full at " + formatNumber(maxDistance) + " distance)";
+            return tr("ui.augments.effect.note.full_at_distance", " (full at {0} distance)",
+                    formatNumber(maxDistance));
         }
 
         return null;
@@ -874,11 +889,14 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         String normalizedKey = key == null ? "" : key.toLowerCase(Locale.ROOT);
         String baseKey = normalizedKey.startsWith("max_") ? normalizedKey.substring(4) : normalizedKey;
         String canonicalBaseKey = baseKey.replace(' ', '_');
-        String label = BUFF_NAME_OVERRIDES.getOrDefault(canonicalBaseKey, key == null ? "" : key.replace('_', ' '));
+        String fallbackName = BUFF_NAME_OVERRIDES.getOrDefault(canonicalBaseKey,
+                key == null ? "" : key.replace('_', ' '));
+        String label = translateEffectLabel(canonicalBaseKey, fallbackName);
         String semanticKeyForUnit = canonicalBaseKey;
         if ((baseKey.isBlank() || baseKey.equals("value") || baseKey.equals("value_per_stack"))
                 && fallbackLabel != null && !fallbackLabel.isBlank()) {
-            label = fallbackLabel.replace('_', ' ');
+            String normalizedFallbackKey = fallbackLabel.toLowerCase(Locale.ROOT).replace(' ', '_');
+            label = translateEffectLabel(normalizedFallbackKey, fallbackLabel.replace('_', ' '));
             semanticKeyForUnit = fallbackLabel.toLowerCase(Locale.ROOT).replace(' ', '_');
         }
 
@@ -917,13 +935,15 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         String normalizedKey = key == null ? "" : key.toLowerCase(Locale.ROOT);
         String canonicalKey = normalizedKey.replace(' ', '_');
         String semanticKeyForUnit = canonicalKey;
-        String label = BUFF_NAME_OVERRIDES.getOrDefault(canonicalKey, key == null ? "" : key.replace('_', ' '));
+        String fallbackName = BUFF_NAME_OVERRIDES.getOrDefault(canonicalKey, key == null ? "" : key.replace('_', ' '));
+        String label = translateEffectLabel(canonicalKey, fallbackName);
 
         // If the key is generic, prefer the parent/fallback label.
         if ((normalizedKey.isBlank() || normalizedKey.equals("value")
                 || normalizedKey.equals("max_value")
                 || normalizedKey.equals("value_per_stack")) && fallbackLabel != null && !fallbackLabel.isBlank()) {
-            label = fallbackLabel.replace('_', ' ');
+            String normalizedFallbackKey = fallbackLabel.toLowerCase(Locale.ROOT).replace(' ', '_');
+            label = translateEffectLabel(normalizedFallbackKey, fallbackLabel.replace('_', ' '));
             semanticKeyForUnit = fallbackLabel.toLowerCase(Locale.ROOT).replace(' ', '_');
         }
 
@@ -962,6 +982,13 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
     private double toDisplayPercent(double value) {
         return Math.abs(value) >= 10.0D ? value : value * 100.0D;
+    }
+
+    private String translateEffectLabel(String key, String fallback) {
+        if (key == null || key.isBlank()) {
+            return fallback;
+        }
+        return tr("ui.augments.effect.label." + key, fallback);
     }
 
     private String inferSuffix(String normalizedKey, double value) {
@@ -1032,7 +1059,7 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     }
 
     private String formatSeconds(double seconds) {
-        return formatNumber(seconds) + "s";
+        return tr("ui.time.seconds", "{0}s", formatNumber(seconds));
     }
 
     private String formatNumber(double value) {

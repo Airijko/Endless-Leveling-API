@@ -27,7 +27,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.EnumMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -41,22 +40,6 @@ import static com.hypixel.hytale.server.core.ui.builder.EventData.of;
 public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
-
-    private static final EnumMap<SkillAttributeType, String> ATTRIBUTE_TAGLINES = new EnumMap<>(
-            SkillAttributeType.class);
-
-    static {
-        ATTRIBUTE_TAGLINES.put(SkillAttributeType.LIFE_FORCE, "Base health");
-        ATTRIBUTE_TAGLINES.put(SkillAttributeType.STRENGTH, "Damage scaling");
-        ATTRIBUTE_TAGLINES.put(SkillAttributeType.SORCERY, "Magic damage");
-        ATTRIBUTE_TAGLINES.put(SkillAttributeType.DEFENSE, "Damage reduction");
-        ATTRIBUTE_TAGLINES.put(SkillAttributeType.HASTE, "Movement speed");
-        ATTRIBUTE_TAGLINES.put(SkillAttributeType.PRECISION, "Crit chance");
-        ATTRIBUTE_TAGLINES.put(SkillAttributeType.FEROCITY, "Crit damage");
-        ATTRIBUTE_TAGLINES.put(SkillAttributeType.STAMINA, "Base stamina");
-        ATTRIBUTE_TAGLINES.put(SkillAttributeType.FLOW, "Base flow (mana)");
-        ATTRIBUTE_TAGLINES.put(SkillAttributeType.DISCIPLINE, "XP gain");
-    }
 
     private final RaceManager raceManager;
     private final PlayerDataManager playerDataManager;
@@ -77,8 +60,9 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             @Nonnull Store<EntityStore> store) {
 
         ui.append("Pages/Races/RacesPage.ui");
-        NavUIHelper.applyNavVersion(ui);
+        NavUIHelper.applyNavVersion(ui, playerRef);
         NavUIHelper.bindNavEvents(events);
+        applyStaticLabels(ui);
         events.addEventBinding(Activating,
                 "#ConfirmRaceButton",
                 of("Action", "race:confirm"),
@@ -90,8 +74,8 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                     tr("ui.races.offline.subtitle", "Races are currently disabled in config.yml."));
             ui.set("#RaceSwapCooldownValue.Text", tr("ui.races.cooldown.disabled", "Disabled"));
             ui.set("#RaceSwapCooldownHint.Text", tr("ui.races.offline.hint", "Enable races to manage identities."));
-            ui.set("#RaceCountLabel.Text", tr("ui.races.count.none", "0 available"));
-            ui.set("#CurrentRaceValue.Text", "--");
+            ui.set("#RaceCountLabel.Text", tr("ui.races.count_none", "0 available"));
+            ui.set("#CurrentRaceValue.Text", tr("hud.common.unavailable", "--"));
             ui.clear("#RaceRows");
             ui.clear("#RacePassiveEntries");
             return;
@@ -102,10 +86,10 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             ui.set("#SelectedRaceLabel.Text", tr("ui.races.playerdata.title", "Player data unavailable"));
             ui.set("#SelectedRaceSubtitle.Text",
                     tr("ui.races.playerdata.subtitle", "Unable to load your race information right now."));
-            ui.set("#RaceSwapCooldownValue.Text", "--");
+            ui.set("#RaceSwapCooldownValue.Text", tr("hud.common.unavailable", "--"));
             ui.set("#RaceSwapCooldownHint.Text",
                     tr("ui.races.playerdata.hint", "Try reopening this page in a few moments."));
-            ui.set("#CurrentRaceValue.Text", "--");
+            ui.set("#CurrentRaceValue.Text", tr("hud.common.unavailable", "--"));
             ui.clear("#RaceRows");
             ui.clear("#RacePassiveEntries");
             return;
@@ -142,7 +126,8 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     }
 
     private void updateStatusCard(@Nonnull UICommandBuilder ui, RaceDefinition activeRace) {
-        String current = activeRace != null ? activeRace.getDisplayName() : "None selected";
+        String current = activeRace != null ? activeRace.getDisplayName()
+                : tr("ui.races.current.none", "None selected");
         ui.set("#CurrentRaceValue.Text", current);
     }
 
@@ -150,7 +135,7 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             @Nonnull PlayerData data,
             boolean operatorBypass) {
         if (operatorBypass) {
-            ui.set("#RaceSwapCooldownValue.Text", "Bypassed");
+            ui.set("#RaceSwapCooldownValue.Text", tr("ui.races.cooldown.bypassed", "Bypassed"));
             ui.set("#RaceSwapCooldownHint.Text", tr("ui.races.cooldown.bypassed_hint", "Operator bypass active."));
             return;
         }
@@ -180,7 +165,9 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
         List<RaceDefinition> races = getSortedRaces();
         ui.set("#RaceCountLabel.Text",
-                tr("ui.races.count", "{0} {1}", races.size(), races.size() == 1 ? "race" : "races"));
+                tr("ui.races.count", "{0} {1}", races.size(), races.size() == 1
+                        ? tr("ui.races.count_word.singular", "race")
+                        : tr("ui.races.count_word.plural", "races")));
 
         for (int index = 0; index < races.size(); index++) {
             RaceDefinition definition = races.get(index);
@@ -193,10 +180,13 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
             ui.set(baseSelector + " #RaceName.Text", displayName);
 
-            String selectionStatus = isCurrent ? "CURRENT" : (isSelected ? "VIEWING" : "");
+            String selectionStatus = isCurrent ? tr("ui.races.status.current", "CURRENT")
+                    : (isSelected ? tr("ui.races.status.viewing", "VIEWING") : "");
             boolean hasStatus = !selectionStatus.isEmpty();
             ui.set(baseSelector + " #RaceSelectionStatus.Visible", hasStatus);
             ui.set(baseSelector + " #RaceSelectionStatus.Text", selectionStatus);
+            ui.set(baseSelector + " #ViewRaceButton.Text", tr("ui.races.actions.view", "VIEW"));
+            ui.set(baseSelector + " #ChooseRaceButton.Text", tr("ui.races.actions.choose", "CHOOSE"));
 
             events.addEventBinding(Activating,
                     baseSelector + " #ViewRaceButton",
@@ -218,7 +208,9 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             RaceDefinition activeRace) {
         List<RaceDefinition> races = getSortedRaces();
         ui.set("#RaceCountLabel.Text",
-                tr("ui.races.count", "{0} {1}", races.size(), races.size() == 1 ? "race" : "races"));
+                tr("ui.races.count", "{0} {1}", races.size(), races.size() == 1
+                        ? tr("ui.races.count_word.singular", "race")
+                        : tr("ui.races.count_word.plural", "races")));
 
         for (int index = 0; index < races.size(); index++) {
             RaceDefinition definition = races.get(index);
@@ -230,13 +222,46 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
             ui.set(baseSelector + " #RaceName.Text", displayName);
 
-            String selectionStatus = isCurrent ? "CURRENT" : (isSelected ? "VIEWING" : "");
+            String selectionStatus = isCurrent ? tr("ui.races.status.current", "CURRENT")
+                    : (isSelected ? tr("ui.races.status.viewing", "VIEWING") : "");
             boolean hasStatus = !selectionStatus.isEmpty();
             ui.set(baseSelector + " #RaceSelectionStatus.Visible", hasStatus);
             ui.set(baseSelector + " #RaceSelectionStatus.Text", selectionStatus);
+            ui.set(baseSelector + " #ViewRaceButton.Text", tr("ui.races.actions.view", "VIEW"));
+            ui.set(baseSelector + " #ChooseRaceButton.Text", tr("ui.races.actions.choose", "CHOOSE"));
 
             ui.set(baseSelector + " #ChooseRaceButton.Visible", !isCurrent);
         }
+    }
+
+    private void applyStaticLabels(@Nonnull UICommandBuilder ui) {
+        ui.set("#RacesTitleLabel.Text", tr("ui.races.page.title", "Race Archive"));
+        ui.set("#RaceSwapCooldownCardTitle.Text", tr("ui.races.cooldown.card_title", "Race Swap Cooldown"));
+        ui.set("#RaceSwapCooldownHint.Text",
+                tr("ui.races.cooldown.card_hint", "Swapping again becomes available once the timer hits zero."));
+        ui.set("#RaceListTitle.Text", tr("ui.races.page.available", "Available Races"));
+        ui.set("#RaceCurrentTitle.Text", tr("ui.races.page.current_title", "Current Race"));
+        ui.set("#RaceCurrentBadge.Text", tr("ui.races.page.current_badge", "Active"));
+        ui.set("#RaceCurrentHint.Text",
+                tr("ui.races.page.current_hint", "Your active race sets identity and innate bonuses."));
+        ui.set("#RaceLoreTitle.Text", tr("ui.races.page.lore_title", "Lore Preview"));
+        ui.set("#RaceStatsTitle.Text", tr("ui.races.page.stats_title", "Race Stats"));
+        ui.set("#RacePassivesTitle.Text", tr("ui.races.page.passives_title", "Passives"));
+        ui.set("#RaceDetailCooldownWarning.Text",
+                tr("ui.races.cooldown.default_warning",
+                        "You will be locked for the remaining cooldown after swapping."));
+        ui.set("#ConfirmRaceButton.Text", tr("ui.races.actions.swap", "SWAP"));
+
+        ui.set("#RaceAttributeLifeForceLabel.Text", tr("ui.skills.label.life_force", "Life Force"));
+        ui.set("#RaceAttributeStrengthLabel.Text", tr("ui.skills.label.strength", "Strength"));
+        ui.set("#RaceAttributeSorceryLabel.Text", tr("ui.skills.label.sorcery", "Sorcery"));
+        ui.set("#RaceAttributeDefenseLabel.Text", tr("ui.skills.label.defense", "Defense"));
+        ui.set("#RaceAttributeHasteLabel.Text", tr("ui.skills.label.haste", "Haste"));
+        ui.set("#RaceAttributePrecisionLabel.Text", tr("ui.skills.label.precision", "Precision"));
+        ui.set("#RaceAttributeFerocityLabel.Text", tr("ui.skills.label.ferocity", "Ferocity"));
+        ui.set("#RaceAttributeStaminaLabel.Text", tr("ui.skills.label.stamina", "Stamina"));
+        ui.set("#RaceAttributeFlowLabel.Text", tr("ui.skills.label.flow", "Flow"));
+        ui.set("#RaceAttributeDisciplineLabel.Text", tr("ui.skills.label.discipline", "Discipline"));
     }
 
     private void updateRaceDetailPanel(@Nonnull UICommandBuilder ui,
@@ -245,7 +270,7 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             boolean operatorBypass) {
         RaceDefinition selection = resolveSelection(activeRace);
         if (selection == null) {
-            ui.set("#SelectedRaceLabel.Text", "Select a Race");
+            ui.set("#SelectedRaceLabel.Text", tr("ui.races.select.title", "Select a Race"));
             ui.set("#SelectedRaceSubtitle.Text",
                     tr("ui.races.select.subtitle", "Choose a race on the left to preview its identity."));
             ui.set("#RaceLoreText.Text", tr("ui.races.lore.unavailable", "Lore unavailable."));
@@ -258,10 +283,11 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
         ui.set("#SelectedRaceLabel.Text", selection.getDisplayName());
         ui.set("#SelectedRaceSubtitle.Text",
-                selection == activeRace ? "Currently active" : "Preview only");
+                selection == activeRace ? tr("ui.races.subtitle.current", "Currently active")
+                        : tr("ui.races.subtitle.preview", "Preview only"));
         String lore = selection.getDescription();
         ui.set("#RaceLoreText.Text",
-                lore == null || lore.isBlank() ? "No lore provided for this race." : lore);
+                lore == null || lore.isBlank() ? tr("ui.races.lore.missing", "No lore provided for this race.") : lore);
 
         applyAttributePreview(ui, selection, SkillAttributeType.LIFE_FORCE, "#RaceAttributeLifeForce");
         applyAttributePreview(ui, selection, SkillAttributeType.STRENGTH, "#RaceAttributeStrength");
@@ -302,10 +328,11 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         long remaining = computeCooldownRemaining(data, cooldownSeconds);
         if (remaining > 0) {
             ui.set("#RaceDetailCooldownWarning.Text",
-                    "Swap unlocks in " + formatDuration(remaining) + ".");
+                    tr("ui.races.cooldown.unlocks_in", "Swap unlocks in {0}.", formatDuration(remaining)));
         } else if (cooldownSeconds > 0) {
             ui.set("#RaceDetailCooldownWarning.Text",
-                    "Swapping will trigger a " + formatDuration(cooldownSeconds) + " cooldown.");
+                    tr("ui.races.cooldown.swap_triggers", "Swapping will trigger a {0} cooldown.",
+                            formatDuration(cooldownSeconds)));
         } else {
             ui.set("#RaceDetailCooldownWarning.Text",
                     tr("ui.races.cooldown.unrestricted", "Swapping is unrestricted right now."));
@@ -313,27 +340,28 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     }
 
     private void clearAttributePreview(@Nonnull UICommandBuilder ui) {
-        ui.set("#RaceAttributeLifeForceValue.Text", "--");
-        ui.set("#RaceAttributeStrengthValue.Text", "--");
-        ui.set("#RaceAttributeSorceryValue.Text", "--");
-        ui.set("#RaceAttributeDefenseValue.Text", "--");
-        ui.set("#RaceAttributeHasteValue.Text", "--");
-        ui.set("#RaceAttributePrecisionValue.Text", "--");
-        ui.set("#RaceAttributeFerocityValue.Text", "--");
-        ui.set("#RaceAttributeStaminaValue.Text", "--");
-        ui.set("#RaceAttributeFlowValue.Text", "--");
-        ui.set("#RaceAttributeDisciplineValue.Text", "--");
+        String unavailable = tr("hud.common.unavailable", "--");
+        ui.set("#RaceAttributeLifeForceValue.Text", unavailable);
+        ui.set("#RaceAttributeStrengthValue.Text", unavailable);
+        ui.set("#RaceAttributeSorceryValue.Text", unavailable);
+        ui.set("#RaceAttributeDefenseValue.Text", unavailable);
+        ui.set("#RaceAttributeHasteValue.Text", unavailable);
+        ui.set("#RaceAttributePrecisionValue.Text", unavailable);
+        ui.set("#RaceAttributeFerocityValue.Text", unavailable);
+        ui.set("#RaceAttributeStaminaValue.Text", unavailable);
+        ui.set("#RaceAttributeFlowValue.Text", unavailable);
+        ui.set("#RaceAttributeDisciplineValue.Text", unavailable);
 
-        ui.set("#RaceAttributeLifeForceNote.Text", "--");
-        ui.set("#RaceAttributeStrengthNote.Text", "--");
-        ui.set("#RaceAttributeSorceryNote.Text", "--");
-        ui.set("#RaceAttributeDefenseNote.Text", "--");
-        ui.set("#RaceAttributeHasteNote.Text", "--");
-        ui.set("#RaceAttributePrecisionNote.Text", "--");
-        ui.set("#RaceAttributeFerocityNote.Text", "--");
-        ui.set("#RaceAttributeStaminaNote.Text", "--");
-        ui.set("#RaceAttributeFlowNote.Text", "--");
-        ui.set("#RaceAttributeDisciplineNote.Text", "--");
+        ui.set("#RaceAttributeLifeForceNote.Text", unavailable);
+        ui.set("#RaceAttributeStrengthNote.Text", unavailable);
+        ui.set("#RaceAttributeSorceryNote.Text", unavailable);
+        ui.set("#RaceAttributeDefenseNote.Text", unavailable);
+        ui.set("#RaceAttributeHasteNote.Text", unavailable);
+        ui.set("#RaceAttributePrecisionNote.Text", unavailable);
+        ui.set("#RaceAttributeFerocityNote.Text", unavailable);
+        ui.set("#RaceAttributeStaminaNote.Text", unavailable);
+        ui.set("#RaceAttributeFlowNote.Text", unavailable);
+        ui.set("#RaceAttributeDisciplineNote.Text", unavailable);
     }
 
     private void applyAttributePreview(@Nonnull UICommandBuilder ui,
@@ -342,10 +370,25 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             @Nonnull String selectorPrefix) {
         boolean hasAttribute = race.getBaseAttributes().containsKey(type);
         double value = race.getBaseAttribute(type, 0.0D);
-        String formatted = hasAttribute ? formatRaceAttributeValue(type, value) : "--";
+        String formatted = hasAttribute ? formatRaceAttributeValue(type, value) : tr("hud.common.unavailable", "--");
         ui.set(selectorPrefix + "Value.Text", formatted);
         ui.set(selectorPrefix + "Note.Text",
-                ATTRIBUTE_TAGLINES.getOrDefault(type, toDisplay(type.name())));
+                getAttributeTagline(type));
+    }
+
+    private String getAttributeTagline(@Nonnull SkillAttributeType type) {
+        return switch (type) {
+            case LIFE_FORCE -> tr("ui.races.attribute_tagline.life_force", "Base health");
+            case STRENGTH -> tr("ui.races.attribute_tagline.strength", "Damage scaling");
+            case SORCERY -> tr("ui.races.attribute_tagline.sorcery", "Magic damage");
+            case DEFENSE -> tr("ui.races.attribute_tagline.defense", "Damage reduction");
+            case HASTE -> tr("ui.races.attribute_tagline.haste", "Movement speed");
+            case PRECISION -> tr("ui.races.attribute_tagline.precision", "Crit chance");
+            case FEROCITY -> tr("ui.races.attribute_tagline.ferocity", "Crit damage");
+            case STAMINA -> tr("ui.races.attribute_tagline.stamina", "Base stamina");
+            case FLOW -> tr("ui.races.attribute_tagline.flow", "Base flow (mana)");
+            case DISCIPLINE -> tr("ui.races.attribute_tagline.discipline", "XP gain");
+        };
     }
 
     private RaceDefinition resolveSelection(RaceDefinition activeRace) {
@@ -394,7 +437,7 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
     private String formatRaceAttributeValue(@Nonnull SkillAttributeType type, double value) {
         if (Double.isNaN(value)) {
-            return "--";
+            return tr("hud.common.unavailable", "--");
         }
 
         return switch (type) {
@@ -452,15 +495,18 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     private String buildPassiveLabel(@Nonnull RacePassiveDefinition passive) {
         ArchetypePassiveType type = passive.type();
         if (type == null) {
-            return "Passive";
+            return tr("ui.races.passive.default_name", "Passive");
         }
         if (type == ArchetypePassiveType.INNATE_ATTRIBUTE_GAIN && passive.attributeType() != null) {
-            return toDisplay(passive.attributeType().name());
+            return localizeAttributeName(passive.attributeType());
         }
         if (passive.attributeType() != null) {
-            return toDisplay(type.name()) + " (" + toDisplay(passive.attributeType().name()) + ")";
+            return tr("ui.races.passive.label.with_attribute",
+                    "{0} ({1})",
+                    localizePassiveType(type),
+                    localizeAttributeName(passive.attributeType()));
         }
-        return toDisplay(type.name());
+        return localizePassiveType(type);
     }
 
     private String formatPassiveDescription(@Nonnull RacePassiveDefinition passive,
@@ -478,55 +524,57 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         String scalingStat = getStringProp(props, "scaling_stat");
 
         if (type == null) {
-            return value == 0.0D ? "Passive" : formatSigned(value);
+            return value == 0.0D ? tr("ui.races.passive.default_name", "Passive") : formatSigned(value);
         }
 
         return switch (type) {
-            case XP_BONUS -> formatPercentValue(value) + " XP gain";
-            case HEALTH_REGEN -> formatPercentValue(value) + " HP/5s";
-            case MANA_REGEN -> formatPercentValue(value) + " mana/5s";
-            case MANA_REGEN_FLAT -> formatSigned(value) + " mana/s";
-            case REGENERATION -> formatSigned(value) + " HP/s";
-            case HEALING_BONUS -> formatPercentValue(value) + " healing";
-            case LIFE_STEAL -> formatPercentValue(value) + " life steal";
-            case SPECIAL_CHARGE_BONUS -> formatPercentValue(value) + " charge rate";
-            case STAMINA_GAIN_BONUS -> formatPercentValue(value) + " stamina gain";
-            case LUCK -> formatPercentValue(value) + " luck";
+            case XP_BONUS -> tr("ui.races.passive.desc.xp_bonus", "{0} XP gain", formatPercentValue(value));
+            case HEALTH_REGEN -> tr("ui.races.passive.desc.health_regen", "{0} HP/5s", formatPercentValue(value));
+            case MANA_REGEN -> tr("ui.races.passive.desc.mana_regen", "{0} mana/5s", formatPercentValue(value));
+            case MANA_REGEN_FLAT -> tr("ui.races.passive.desc.mana_regen_flat", "{0} mana/s", formatSigned(value));
+            case REGENERATION -> tr("ui.races.passive.desc.regeneration", "{0} HP/s", formatSigned(value));
+            case HEALING_BONUS -> tr("ui.races.passive.desc.healing_bonus", "{0} healing", formatPercentValue(value));
+            case LIFE_STEAL -> tr("ui.races.passive.desc.life_steal", "{0} life steal", formatPercentValue(value));
+            case SPECIAL_CHARGE_BONUS ->
+                tr("ui.races.passive.desc.charge_bonus", "{0} charge rate", formatPercentValue(value));
+            case STAMINA_GAIN_BONUS ->
+                tr("ui.races.passive.desc.stamina_gain", "{0} stamina gain", formatPercentValue(value));
+            case LUCK -> tr("ui.races.passive.desc.luck", "{0} luck", formatPercentValue(value));
             case SECOND_WIND -> appendDetails(
-                    formatPercentValue(value) + " heal",
-                    formatThresholdDetail(threshold, "HP"),
+                    tr("ui.races.passive.desc.second_wind", "{0} heal", formatPercentValue(value)),
+                    formatThresholdDetail(threshold, tr("ui.races.passive.scope.hp", "HP")),
                     formatDurationDetail(duration),
                     formatCooldownDetail(cooldown));
             case FIRST_STRIKE -> appendDetails(
-                    formatPercentValue(value) + " opener",
+                    tr("ui.races.passive.desc.first_strike", "{0} opener", formatPercentValue(value)),
                     formatCooldownDetail(cooldown));
             case INNATE_ATTRIBUTE_GAIN -> formatInnatePreview(passive, playerData);
             case ADRENALINE -> appendDetails(
-                    formatPercentValue(value) + " stamina",
-                    formatThresholdDetail(threshold, "stamina"),
+                    tr("ui.races.passive.desc.adrenaline", "{0} stamina", formatPercentValue(value)),
+                    formatThresholdDetail(threshold, tr("ui.races.passive.scope.stamina", "stamina")),
                     formatDurationDetail(duration),
                     formatCooldownDetail(cooldown));
             case BERZERKER -> appendDetails(
-                    formatPercentValue(value) + " damage",
-                    formatThresholdDetail(threshold, "HP"));
+                    tr("ui.races.passive.desc.berzerker", "{0} damage", formatPercentValue(value)),
+                    formatThresholdDetail(threshold, tr("ui.races.passive.scope.hp", "HP")));
             case RETALIATION -> appendDetails(
-                    formatPercentValue(value) + " reflect",
+                    tr("ui.races.passive.desc.retaliation", "{0} reflect", formatPercentValue(value)),
                     formatWindowDetail(window),
                     formatCooldownDetail(cooldown));
             case EXECUTIONER -> appendDetails(
-                    formatPercentValue(value) + " finisher",
-                    formatThresholdDetail(threshold, "target HP"),
+                    tr("ui.races.passive.desc.executioner", "{0} finisher", formatPercentValue(value)),
+                    formatThresholdDetail(threshold, tr("ui.races.passive.scope.target_hp", "target HP")),
                     formatCooldownDetail(cooldown));
             case SWIFTNESS -> appendDetails(
-                    formatPercentValue(value) + " speed",
+                    tr("ui.races.passive.desc.swiftness", "{0} speed", formatPercentValue(value)),
                     formatDurationDetail(duration),
                     formatStacksDetail(stacks));
             case WITHER -> appendDetails(
-                    formatPercentValue(value) + " max HP/sec",
+                    tr("ui.races.passive.desc.wither", "{0} max HP/sec", formatPercentValue(value)),
                     formatDurationDetail(duration),
                     formatSlowDetail(slowPercent));
             case CRIT_DEFENSE -> appendDetails(
-                    formatPercentValue(value) + " dmg reduction",
+                    tr("ui.races.passive.desc.crit_defense", "{0} dmg reduction", formatPercentValue(value)),
                     formatScalingDetail(scalingStat));
             default -> formatSigned(value);
         };
@@ -536,14 +584,14 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         if (slowPercent == null) {
             return null;
         }
-        return formatPercentValue(slowPercent) + " slow";
+        return tr("ui.races.passive.detail.slow", "{0} slow", formatPercentValue(slowPercent));
     }
 
     private String formatScalingDetail(String scalingStat) {
         if (scalingStat == null || scalingStat.isBlank()) {
             return null;
         }
-        return "scales with " + toDisplay(scalingStat);
+        return tr("ui.races.passive.detail.scales_with", "scales with {0}", localizeAttributeName(scalingStat));
     }
 
     private String getStringProp(Map<String, Object> props, String key) {
@@ -558,12 +606,13 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     private String formatInnatePreview(@Nonnull RacePassiveDefinition passive,
             @Nonnull PlayerData playerData) {
         double perLevel = passive.value();
-        String perLevelText = formatSigned(perLevel) + " per level";
+        String perLevelText = tr("ui.races.passive.detail.per_level", "{0} per level", formatSigned(perLevel));
 
         int level = playerData == null ? 1 : Math.max(1, playerData.getLevel());
         double total = perLevel * level;
         String totalText = formatSigned(total);
-        return perLevelText + " (Total " + totalText + " @ Lv " + level + ")";
+        return tr("ui.races.passive.detail.total_at_level", "{0} (Total {1} @ Lv {2})", perLevelText, totalText,
+                level);
     }
 
     private Double getDoubleProp(@Nonnull Map<String, Object> props, @Nonnull String key) {
@@ -593,35 +642,35 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         if (ratio == null) {
             return null;
         }
-        return "<" + formatNumber(ratio * 100.0D) + "% " + scope;
+        return tr("ui.races.passive.detail.threshold", "<{0}% {1}", formatNumber(ratio * 100.0D), scope);
     }
 
     private String formatDurationDetail(Double seconds) {
         if (seconds == null) {
             return null;
         }
-        return formatNumber(seconds) + "s duration";
+        return tr("ui.races.passive.detail.duration", "{0}s duration", formatNumber(seconds));
     }
 
     private String formatCooldownDetail(Double seconds) {
         if (seconds == null) {
             return null;
         }
-        return formatNumber(seconds) + "s cd";
+        return tr("ui.races.passive.detail.cooldown", "{0}s cd", formatNumber(seconds));
     }
 
     private String formatWindowDetail(Double seconds) {
         if (seconds == null) {
             return null;
         }
-        return formatNumber(seconds) + "s window";
+        return tr("ui.races.passive.detail.window", "{0}s window", formatNumber(seconds));
     }
 
     private String formatStacksDetail(Double stacks) {
         if (stacks == null) {
             return null;
         }
-        return formatNumber(stacks) + " stacks";
+        return tr("ui.races.passive.detail.stacks", "{0} stacks", formatNumber(stacks));
     }
 
     private String appendDetails(String base, String... extra) {
@@ -656,7 +705,7 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
     private String formatDuration(long seconds) {
         if (seconds <= 0) {
-            return "0s";
+            return tr("ui.time.seconds", "{0}s", 0);
         }
         long hours = seconds / 3600;
         long minutes = (seconds % 3600) / 60;
@@ -664,19 +713,19 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
         StringBuilder builder = new StringBuilder();
         if (hours > 0) {
-            builder.append(hours).append("h");
+            builder.append(tr("ui.time.hours", "{0}h", hours));
         }
         if (minutes > 0) {
             if (builder.length() > 0) {
                 builder.append(' ');
             }
-            builder.append(minutes).append("m");
+            builder.append(tr("ui.time.minutes", "{0}m", minutes));
         }
         if (remainingSeconds > 0 || builder.length() == 0) {
             if (builder.length() > 0) {
                 builder.append(' ');
             }
-            builder.append(remainingSeconds).append("s");
+            builder.append(tr("ui.time.seconds", "{0}s", remainingSeconds));
         }
         return builder.toString();
     }
@@ -697,6 +746,32 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             builder.append(Character.toUpperCase(part.charAt(0))).append(part.substring(1));
         }
         return builder.toString();
+    }
+
+    private String localizePassiveType(ArchetypePassiveType type) {
+        if (type == null) {
+            return tr("ui.races.passive.default_name", "Passive");
+        }
+        String keySuffix = type.name().toLowerCase(Locale.ROOT);
+        return tr("ui.races.passive.type." + keySuffix, toDisplay(type.name()));
+    }
+
+    private String localizeAttributeName(SkillAttributeType type) {
+        if (type == null) {
+            return tr("ui.races.passive.default_name", "Passive");
+        }
+        return tr("ui.skills.label." + type.getConfigKey(), toDisplay(type.name()));
+    }
+
+    private String localizeAttributeName(String rawAttribute) {
+        if (rawAttribute == null || rawAttribute.isBlank()) {
+            return "";
+        }
+        SkillAttributeType attributeType = SkillAttributeType.fromConfigKey(rawAttribute);
+        if (attributeType != null) {
+            return localizeAttributeName(attributeType);
+        }
+        return toDisplay(rawAttribute);
     }
 
     @Override

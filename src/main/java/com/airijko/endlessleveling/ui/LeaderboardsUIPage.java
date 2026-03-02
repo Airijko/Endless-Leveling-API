@@ -35,7 +35,7 @@ public class LeaderboardsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Dat
             @Nonnull Store<EntityStore> store) {
 
         ui.append("Pages/Leaderboards/LeaderboardsPage.ui");
-        NavUIHelper.applyNavVersion(ui);
+        NavUIHelper.applyNavVersion(ui, playerRef);
         NavUIHelper.bindNavEvents(events);
 
         PlayerDataManager dataManager = EndlessLeveling.getInstance().getPlayerDataManager();
