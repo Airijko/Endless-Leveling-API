@@ -1,34 +1,34 @@
 meta:
   locale_name: العربية (SA)
 notify:
-  prefix: '[EndlessLeveling] '
+  prefix: '[التسوية التي لا نهاية لها]'
   skills:
     command: /el
     unspent:
-      primary: You have {0} unspent skill points!
+      primary: لديك {0} من نقاط المهارة غير المنفقة!
       secondary:
-        open: 'Open '
-        close: ' to invest them'
+        open: 'يفتح '
+        close: ' لاستثمارها'
     chat:
-      have: 'You still have '
-      use: ' skill points. Use '
-      end: ' to spend them.'
+      have: 'لا يزال لديك '
+      use: ' نقاط المهارة. يستخدم '
+      end: ' لقضاءهم.'
   augments:
     available:
-      header: '[EndlessLeveling] You have augments available to choose from:'
-      footer: Use /el augments to choose.
+      header: '[EndlessLeveling] لديك التعزيزات المتاحة للاختيار من بينها:'
+      footer: استخدم /el augments to choose.
 hud:
   common:
     unavailable: --
   race:
-    none: No Race
+    none: لا سباق
   class:
-    none: None
+    none: لا أحد
   mob:
     level:
-      single: Lv. {0}
-      single_compact: Lv {0}
-      range: Lv. {0}-{1}
+      single: المستوى. {0}
+      single_compact: المستوى {0}
+      range: المستوى. {0}-{1}
 ui:
   common:
     toggle:
@@ -43,483 +43,483 @@ ui:
       label: واجهة اللاعب
       toggled: واجهة اللاعب {0}
     critical_notif:
-      label: Critical Hit Notifications
-      toggled: Critical hit notifications {0}
+      label: إخطارات الضربة الحرجة
+      toggled: إشعارات النتائج الحرجة {0}
     xp_notif:
-      label: XP Gain Notifications
-      toggled: XP gain notifications {0}
+      label: XP الحصول على الإشعارات
+      toggled: XP الحصول على الإشعارات {0}
     passive_levelup_notif:
-      label: Passive Level-Up Notifications
-      toggled: Passive level-up notifications {0}
+      label: إخطارات المستوى الأعلى السلبية
+      toggled: إشعارات المستوى الأعلى السلبية {0}
     luck_double_notif:
-      label: Luck Double-Drop Notifications
-      toggled: Luck double-drop notifications {0}
+      label: إشعارات الحظ المزدوج
+      toggled: إشعارات الحظ ذات الإسقاط المزدوج {0}
     health_regen_notif:
-      label: Health Regen Notifications
-      toggled: Health regen notifications {0}
+      label: إشعارات الصحة ريجين
+      toggled: إشعارات تجديد الصحة {0}
     race_model:
-      label: Race Model Visuals
-      globally_disabled: Race model visuals are disabled by the server configuration.
-      enabled: Race model visuals enabled
-      disabled: Race model visuals disabled
+      label: صور لنماذج السباق
+      globally_disabled: تم تعطيل صور نموذج السباق من خلال تكوين الخادم.
+      enabled: تم تمكين صور نموذج السباق
+      disabled: تم تعطيل صور نموذج السباق
   augments:
     tier:
-      default: AUGMENTS
+      default: الزيادات
     actions:
-      choose: Choose
-    selected: 'Selected augment: {0} ({1})'
-    no_description: No description provided.
+      choose: يختار
+    selected: 'الزيادة المحددة: {0} ({1})'
+    no_description: لم يتم تقديم أي وصف.
     no_augment:
-      title: NO AUGMENT
-      body: No augments are currently available.
+      title: لا زيادة
+      body: لا توجد زيادات متاحة حاليا.
     no_augments_yet:
-      title: NO AUGMENTS YET
-      body: No augments available yet. Next unlock at level {0}.
+      title: لا توجد زيادات حتى الآن
+      body: لا توجد زيادات متاحة حتى الآن. فتح القفل التالي عند المستوى {0}.
     no_augments:
-      title: NO AUGMENTS
-      body: No augment unlock milestones are configured.
+      title: لا زيادات
+      body: لم يتم تكوين أي مراحل رئيسية لإلغاء القفل المعزز.
     all_claimed:
-      title: ALL CLAIMED
-      next_unlock: You have claimed all currently unlocked augments. Next unlock at level {0}.
-      done: You have already claimed all configured augment unlocks.
+      title: تم المطالبة بكل شيء
+      next_unlock: لقد طالبت بجميع التعزيزات غير المؤمنة حاليًا. فتح القفل التالي عند المستوى {0}.
+      done: لقد طالبت بالفعل بجميع عمليات إلغاء القفل الإضافية التي تم تكوينها.
     remaining:
-      header: '[EndlessLeveling] You still have more augments to choose from:'
-      footer: Choose again now.
+      header: '[EndlessLeveling] لا يزال لديك المزيد من التعزيزات للاختيار من بينها:'
+      footer: اختر مرة أخرى الآن.
     error:
-      title: AUGMENT ERROR
-      data_unavailable: Augment data unavailable.
-      tier_unresolved: Unable to resolve augment tier.
-      playerdata_unavailable: Unable to load your player data. Try reopening this page.
-      system_unavailable: Augment system is unavailable right now. Please contact an admin.
-      definitions_missing: No augment definitions are loaded. Check /mods/EndlessLeveling/augments.
-      offers_missing: Unlocked augments are missing from your offers. Ask an admin to run /el augment refresh <player>.
-      slot_empty: No augment in that slot.
+      title: خطأ إضافي
+      data_unavailable: بيانات الزيادة غير متاحة.
+      tier_unresolved: غير قادر على حل الطبقة الإضافية.
+      playerdata_unavailable: غير قادر على تحميل بيانات المشغل الخاص بك. حاول إعادة فتح هذه الصفحة.
+      system_unavailable: نظام التعزيز غير متوفر في الوقت الحالي. يرجى الاتصال بالمسؤول.
+      definitions_missing: لم يتم تحميل أي تعريفات إضافية. تحقق من /mods/EndlessLeveling/augments.
+      offers_missing: التعزيزات غير المؤمنة مفقودة من عروضك. اطلب من المسؤول تشغيل /el augment refresh <player>.
+      slot_empty: لا زيادة في تلك الفتحة.
     effect:
-      cooldown: 'Cooldown: {0}'
-      duration_per_stack: 'Duration per stack: {0}'
-      duration: 'Duration: {0}'
-      max_stacks: 'Max stacks: {0}'
+      cooldown: 'فترة التهدئة: {0}'
+      duration_per_stack: 'المدة لكل مكدس: {0}'
+      duration: 'المدة: {0}'
+      max_stacks: 'الحد الأقصى للأكوام: {0}'
       note:
-        full_at_health: ' (full at <= {0}% health)'
-        full_at_ratio: ' (full at {0}x ratio)'
-        range: ' (range {0}-{1})'
-        full_at_distance: ' (full at {0} distance)'
+        full_at_health: ' (كامل عند <= {0}% صحة)'
+        full_at_ratio: ' (كامل بنسبة {0}x)'
+        range: ' (النطاق {0}-{1})'
+        full_at_distance: ' (كامل على مسافة {0})'
       label:
-        strength: Strength
-        sorcery: Sorcery
-        haste: Haste
-        haste_bonus: Haste
-        crit_damage: Critical Damage
-        crit_damage_bonus: Critical Damage
-        critical_damage: Critical Damage
-        crit_chance: Critical Chance
-        critical_chance: Critical Chance
-        life_steal: Life Steal
-        life_steal_scaling: Life Steal
-        heal_on_crit: Life Steal (Crit)
-        heal_on_kill: Heal on Kill
-        heal_over_time: Deferred Damage
-        heal_to_damage: Heal to Damage
-        bonus_damage_on_hit: Bonus Damage
-        bonus_damage: Bonus Damage
-        max_bonus_damage: Bonus Damage
-        max_bonus_ferocity: Ferocity
-        strength_from_max_health: Strength
-        sorcery_bonus_high: Sorcery
-        sorcery_penalty_low: Sorcery
-        crit_defense: Damage Reduction
-        taunt_radius: Taunt Radius
-        bonus_damage_by_distance: Bonus Damage
-        bonus_damage_vs_hp_ratio: Bonus Damage
-        execution_heal: Execute Heal
-        self_damage: Self Damage
-        percent_of_current_hp: Self Damage
-        movement_speed_bonus: Move Speed
-        movement_speed: Move Speed
-        resistance_bonus: Resistance
-        resistance: Resistance
-        precision: Critical Chance
-        defense: Defense
-        wither: Wither
-        slow_percent: Slow
-        mana: Mana
-        mana_from_sorcery: Mana
-        sorcery_from_mana: Sorcery
-        health_threshold: Health Threshold
-        trigger_threshold: Trigger Threshold
-        full_value_at_health_percent: Full Value Threshold
-        max_distance: Max distance (full bonus)
+        strength: قوة
+        sorcery: شعوذة
+        haste: تسرع
+        haste_bonus: تسرع
+        crit_damage: أضرار جسيمة
+        crit_damage_bonus: أضرار جسيمة
+        critical_damage: أضرار جسيمة
+        crit_chance: فرصة حرجة
+        critical_chance: فرصة حرجة
+        life_steal: سرقة الحياة
+        life_steal_scaling: سرقة الحياة
+        heal_on_crit: سرقة الحياة (الحرج)
+        heal_on_kill: الشفاء عند القتل
+        heal_over_time: الضرر المؤجل
+        heal_to_damage: شفاء للضرر
+        bonus_damage_on_hit: ضرر المكافأة
+        bonus_damage: ضرر المكافأة
+        max_bonus_damage: ضرر المكافأة
+        max_bonus_ferocity: شراسة
+        strength_from_max_health: قوة
+        sorcery_bonus_high: شعوذة
+        sorcery_penalty_low: شعوذة
+        crit_defense: تقليل الأضرار
+        taunt_radius: تهكم الشعاع
+        bonus_damage_by_distance: ضرر المكافأة
+        bonus_damage_vs_hp_ratio: ضرر المكافأة
+        execution_heal: تنفيذ الشفاء
+        self_damage: الضرر الذاتي
+        percent_of_current_hp: الضرر الذاتي
+        movement_speed_bonus: سرعة التحرك
+        movement_speed: سرعة التحرك
+        resistance_bonus: مقاومة
+        resistance: مقاومة
+        precision: فرصة حرجة
+        defense: الدفاع
+        wither: يذبل
+        slow_percent: بطيء
+        mana: مانا
+        mana_from_sorcery: مانا
+        sorcery_from_mana: شعوذة
+        health_threshold: عتبة الصحة
+        trigger_threshold: عتبة الزناد
+        full_value_at_health_percent: عتبة القيمة الكاملة
+        max_distance: المسافة القصوى (مكافأة كاملة)
   races:
     count: '{0} {1}'
-    count_none: 0 available
+    count_none: 0 متاح
     count_word:
-      singular: race
-      plural: races
+      singular: سباق
+      plural: السباقات
     current:
-      none: None selected
+      none: لم يتم تحديد أي شيء
     status:
-      current: CURRENT
-      viewing: VIEWING
+      current: حاضِر
+      viewing: المشاهدة
     page:
-      title: Race Archive
-      available: Available Races
-      current_title: Current Race
-      current_badge: Active
-      current_hint: Your active race sets identity and innate bonuses.
-      lore_title: Lore Preview
-      stats_title: Race Stats
-      passives_title: Passives
+      title: أرشيف السباق
+      available: السباقات المتاحة
+      current_title: السباق الحالي
+      current_badge: نشيط
+      current_hint: عرقك النشط يحدد الهوية والمكافآت الفطرية.
+      lore_title: معاينة المعرفة
+      stats_title: إحصائيات السباق
+      passives_title: السلبيات
     offline:
-      title: Races Offline
-      subtitle: Races are currently disabled in config.yml.
-      hint: Enable races to manage identities.
+      title: سباقات غير متصل
+      subtitle: السباقات معطلة حاليًا في config.yml.
+      hint: تمكين السباقات لإدارة الهويات.
     playerdata:
-      title: Player data unavailable
-      subtitle: Unable to load your race information right now.
-      hint: Try reopening this page in a few moments.
+      title: بيانات اللاعب غير متوفرة
+      subtitle: غير قادر على تحميل معلومات السباق الخاصة بك الآن.
+      hint: حاول إعادة فتح هذه الصفحة خلال لحظات قليلة.
     select:
-      title: Select a Race
-      subtitle: Choose a race on the left to preview its identity.
+      title: حدد السباق
+      subtitle: اختر سباقًا على اليسار لمعاينة هويته.
     subtitle:
-      current: Currently active
-      preview: Preview only
+      current: نشطة حاليا
+      preview: معاينة فقط
     lore:
-      unavailable: Lore unavailable.
-      missing: No lore provided for this race.
+      unavailable: المعرفة غير متوفرة.
+      missing: لم يتم توفير أي تقاليد لهذا السباق.
     actions:
-      view: VIEW
-      choose: CHOOSE
-      swap: SWAP
+      view: منظر
+      choose: يختار
+      swap: تبديل
     passives:
-      none_selected: No race selected.
-      none_defined: This race does not define passive bonuses.
+      none_selected: لم يتم تحديد أي سباق.
+      none_defined: هذا السباق لا يحدد المكافآت السلبية.
     cooldown:
-      disabled: Disabled
-      card_title: Race Swap Cooldown
-      card_hint: Swapping again becomes available once the timer hits zero.
-      default_warning: You will be locked for the remaining cooldown after swapping.
-      bypassed: Bypassed
-      bypassed_hint: Operator bypass active.
-      bypassed_detail: Operator bypass active. Swapping is immediate.
-      in_cooldown: Swap in cooldown
-      ready: Ready
-      swap_triggers: Swapping will trigger a {0} cooldown.
-      unrestricted: Race swapping is unrestricted right now.
-      try_again_prefix: 'You can swap again in '
-      unlocks_in: Swap unlocks in {0}.
+      disabled: عاجز
+      card_title: سباق مبادلة التهدئة
+      card_hint: يصبح التبديل متاحًا مرة أخرى بمجرد وصول المؤقت إلى الصفر.
+      default_warning: سيتم قفلك لفترة التهدئة المتبقية بعد التبديل.
+      bypassed: تم تجاوزه
+      bypassed_hint: تجاوز المشغل نشط.
+      bypassed_detail: تجاوز المشغل نشط. المبادلة فورية.
+      in_cooldown: مبادلة في فترة التهدئة
+      ready: مستعد
+      swap_triggers: سيؤدي التبديل إلى تشغيل فترة تباطؤ {0}.
+      unrestricted: تبديل السباق غير مقيد في الوقت الحالي.
+      try_again_prefix: 'يمكنك التبديل مرة أخرى '
+      unlocks_in: يتم فتح المبادلة في {0}.
     chat:
-      prefix: '[Races] '
-      changed_prefix: 'You are now a '
+      prefix: '[السباقات]'
+      changed_prefix: 'أنت الآن أ '
     error:
-      playerdata: Unable to load your race info right now.
-      select_first: Select a race to swap into.
-      disabled: Races are disabled.
-      unknown: 'Unknown race: {0}'
-      already_selected: You already belong to that race.
-      no_changes_remaining: No race changes remaining.
+      playerdata: غير قادر على تحميل معلومات السباق الخاصة بك الآن.
+      select_first: اختر سباقًا للتبديل إليه.
+      disabled: السباقات معطلة.
+      unknown: 'سباق غير معروف: {0}'
+      already_selected: أنت تنتمي بالفعل إلى هذا السباق.
+      no_changes_remaining: لم يتبق أي تغييرات في السباق.
     attribute_tagline:
-      life_force: Base health
-      strength: Damage scaling
-      sorcery: Magic damage
-      defense: Damage reduction
-      haste: Movement speed
-      precision: Crit chance
-      ferocity: Crit damage
-      stamina: Base stamina
-      flow: Base flow (mana)
-      discipline: XP gain
+      life_force: صحة القاعدة
+      strength: تحجيم الضرر
+      sorcery: الضرر السحري
+      defense: تقليل الضرر
+      haste: سرعة الحركة
+      precision: فرصة حرجة
+      ferocity: ضرر بالغ
+      stamina: القدرة على التحمل الأساسية
+      flow: التدفق الأساسي (مانا)
+      discipline: XP الربح
     passive:
-      default_name: Passive
+      default_name: سلبي
       label:
         with_attribute: '{0} ({1})'
       type:
-        xp_bonus: XP Bonus
-        health_regen: Health Regen
-        mana_regen: Mana Regen
-        mana_regen_flat: Mana Regen Flat
-        regeneration: Regeneration
-        healing_bonus: Healing Bonus
-        life_steal: Life Steal
-        special_charge_bonus: Special Charge Bonus
-        stamina_gain_bonus: Stamina Gain Bonus
-        luck: Luck
-        second_wind: Second Wind
-        first_strike: First Strike
-        innate_attribute_gain: Innate Attribute Gain
-        adrenaline: Adrenaline
-        berzerker: Berzerker
-        retaliation: Retaliation
-        executioner: Executioner
-        swiftness: Swiftness
-        wither: Wither
-        crit_defense: Critical Defense
+        xp_bonus: XP مكافأة
+        health_regen: الصحة ريجين
+        mana_regen: مانا ريجين
+        mana_regen_flat: شقة مانا ريجين
+        regeneration: تجديد
+        healing_bonus: مكافأة الشفاء
+        life_steal: سرقة الحياة
+        special_charge_bonus: مكافأة الرسوم الخاصة
+        stamina_gain_bonus: مكافأة اكتساب القدرة على التحمل
+        luck: حظ
+        second_wind: الريح الثانية
+        first_strike: الضربة الأولى
+        innate_attribute_gain: كسب السمة الفطرية
+        adrenaline: الأدرينالين
+        berzerker: بيرزركر
+        retaliation: الانتقام
+        executioner: جلاد
+        swiftness: سرعة
+        wither: يذبل
+        crit_defense: الدفاع النقدي
       scope:
-        hp: HP
-        stamina: stamina
-        target_hp: target HP
+        hp: __كيلو_0__
+        stamina: قوة تحمل
+        target_hp: الهدف HP
       desc:
-        xp_bonus: '{0} XP gain'
-        health_regen: '{0} HP/5s'
-        mana_regen: '{0} mana/5s'
-        mana_regen_flat: '{0} mana/s'
-        regeneration: '{0} HP/s'
-        healing_bonus: '{0} healing'
-        life_steal: '{0} life steal'
-        charge_bonus: '{0} charge rate'
-        stamina_gain: '{0} stamina gain'
-        luck: '{0} luck'
-        second_wind: '{0} heal'
-        first_strike: '{0} opener'
-        adrenaline: '{0} stamina'
-        berzerker: '{0} damage'
-        retaliation: '{0} reflect'
-        executioner: '{0} finisher'
-        swiftness: '{0} speed'
-        wither: '{0} max HP/sec'
-        crit_defense: '{0} dmg reduction'
+        xp_bonus: '{0} XP الربح'
+        health_regen: '{0} HP/5ث'
+        mana_regen: '{0} مانا/5ث'
+        mana_regen_flat: '{0} مانا/ثانية'
+        regeneration: '{0} HP/ث'
+        healing_bonus: '{0} الشفاء'
+        life_steal: '{0} سرقة الحياة'
+        charge_bonus: '{0} معدل الشحن'
+        stamina_gain: '{0} اكتساب القدرة على التحمل'
+        luck: '{0} الحظ'
+        second_wind: '{0} شفاء'
+        first_strike: '{0} الافتتاحية'
+        adrenaline: '{0} القدرة على التحمل'
+        berzerker: '{0} الضرر'
+        retaliation: '{0} تعكس'
+        executioner: '{0} التشطيب'
+        swiftness: '{0} السرعة'
+        wither: '{0} الحد الأقصى HP/ثانية'
+        crit_defense: '{0} تقليل الأضرار'
       detail:
         threshold: <{0}% {1}
-        slow: '{0} slow'
-        scales_with: scales with {0}
-        per_level: '{0} per level'
-        total_at_level: '{0} (Total {1} @ Lv {2})'
-        duration: '{0}s duration'
-        cooldown: '{0}s cd'
-        window: '{0}s window'
-        stacks: '{0} stacks'
+        slow: '{0} بطيء'
+        scales_with: موازين ذات {0}
+        per_level: '{0} لكل مستوى'
+        total_at_level: '{0} (الإجمالي {1} @ Lv {2})'
+        duration: مدة {0}
+        cooldown: '{0}s القرص المضغوط'
+        window: نافذة {0}s
+        stacks: '{0} مكدسات'
   classes:
     count: '{0} {1}'
-    count_none: 0 available
+    count_none: 0 متاح
     count_word:
-      singular: class
-      plural: classes
+      singular: فصل
+      plural: الطبقات
     current:
-      primary_none: Unassigned
+      primary_none: غير معين
     status:
-      primary: PRIMARY
-      secondary: SECONDARY
-      viewing: VIEWING
+      primary: أساسي
+      secondary: ثانوية
+      viewing: المشاهدة
     slot:
-      primary: primary
-      secondary: secondary
+      primary: أساسي
+      secondary: ثانوي
     page:
-      title: Class Codex
-      cooldown_title: Class Swap Cooldown
-      available: Available Classes
-      assignments: Class Assignments
-      secondary_share_hint: Secondary classes share 50% of bonuses.
-      sorcery_label: Sorcery Bonus
-      lore_title: Lore Preview
-      weapons_title: Weapon Affinities
-      innate_title: Innate Attribute Gains
-      passives_title: Passives
-    none_selected: No class selected.
+      title: فئة الدستور الغذائي
+      cooldown_title: فترة تهدئة مبادلة الفصل
+      available: الفئات المتاحة
+      assignments: الواجبات الصفية
+      secondary_share_hint: تتقاسم الصفوف الثانوية 50% من المكافآت.
+      sorcery_label: مكافأة السحر
+      lore_title: معاينة المعرفة
+      weapons_title: ارتباطات الأسلحة
+      innate_title: مكاسب السمة الفطرية
+      passives_title: السلبيات
+    none_selected: لم يتم تحديد فئة.
     offline:
-      title: Classes Offline
-      subtitle: Classes are currently disabled in config.yml.
-      lore: Enable classes to browse archetypes.
-      hint: Enable classes to manage archetypes.
-      weapons: Weapon bonuses unavailable.
-      passives: Passive bonuses unavailable.
+      title: فصول غير متصل
+      subtitle: تم تعطيل الفئات حاليًا في config.yml.
+      lore: تمكين الطبقات لتصفح النماذج الأولية.
+      hint: تمكين الطبقات لإدارة النماذج الأولية.
+      weapons: مكافآت الأسلحة غير متوفرة.
+      passives: المكافآت السلبية غير متوفرة.
     playerdata:
-      title: Player data unavailable
-      subtitle: Unable to load your class information right now.
-      lore: Try reopening this page in a few moments.
-      hint: Try reopening this page in a few moments.
+      title: بيانات اللاعب غير متوفرة
+      subtitle: غير قادر على تحميل معلومات صفك الآن.
+      lore: حاول إعادة فتح هذه الصفحة خلال لحظات قليلة.
+      hint: حاول إعادة فتح هذه الصفحة خلال لحظات قليلة.
     select:
-      title: Select a Class
-      subtitle: Choose a class on the left to preview its role and passives.
+      title: اختر فئة
+      subtitle: اختر فئة على اليسار لمعاينة دورها وعناصرها السلبية.
     role:
-      unspecified: 'Role: Unspecified'
-      value: 'Role: {0}'
-      empty: 'Role: --'
+      unspecified: 'الدور: غير محدد'
+      value: 'الدور: {0}'
+      empty: 'دور: --'
     lore:
-      unavailable: Lore unavailable.
-      missing: No lore provided for this class.
+      unavailable: المعرفة غير متوفرة.
+      missing: لم يتم توفير أي تقاليد لهذه الفئة.
     subtitle:
-      primary: Currently your primary class
-      secondary: Currently your secondary class (50% effect)
-      preview: Preview only
+      primary: حاليا صفك الابتدائي
+      secondary: صفك الثانوي حاليًا (تأثير 50٪)
+      preview: معاينة فقط
     weapons:
-      none_defined: This class does not define weapon bonuses.
+      none_defined: لا تحدد هذه الفئة مكافآت الأسلحة.
     weapon:
-      sword: Sword
-      axe: Axe
-      bow: Bow
-      staff: Staff
-      dagger: Dagger
-      gauntlet: Gauntlet
-      mace: Mace
-      spear: Spear
-      crossbow: Crossbow
-      wand: Wand
-      unarmed: Unarmed
-      generic: Generic
+      sword: سيف
+      axe: الفأس
+      bow: قَوس
+      staff: طاقم عمل
+      dagger: خنجر
+      gauntlet: القفاز
+      mace: صولجان
+      spear: حربة
+      crossbow: القوس والنشاب
+      wand: عصا
+      unarmed: غير مسلح
+      generic: نوعي
     cooldown:
-      bypassed: Bypassed
-      bypassed_hint: Operator bypass active; cooldowns ignored.
-      bypassed_detail: Operator bypass active; swapping is immediate.
-      each_swap: Each swap triggers a {0} cooldown per slot.
-      unrestricted: Class swapping is unrestricted right now.
-      ready: Ready
+      bypassed: تم تجاوزه
+      bypassed_hint: تجاوز المشغل نشط؛ تم تجاهل فترات التهدئة.
+      bypassed_detail: تجاوز المشغل نشط؛ المبادلة فورية.
+      each_swap: تؤدي كل عملية مبادلة إلى تشغيل {0} من فترة التباطؤ لكل فتحة.
+      unrestricted: تبديل الفصل غير مقيد في الوقت الحالي.
+      ready: مستعد
     actions:
-      view: VIEW
-      set_primary: SET PRIMARY
-      set_secondary: SET SECONDARY
+      view: منظر
+      set_primary: تعيين الابتدائية
+      set_secondary: تعيين الثانوية
     detail:
-      select_prompt: Select a class to preview bonuses.
-      primary_slot: Primary
-      secondary_slot: Secondary
-      swap_triggers: Changing classes triggers a {0} cooldown.
-      primary_bonus: Primary classes grant 100% of bonuses.
-      secondary_bonus: Secondary classes grant 50% of weapon + passive effects.
-      secondary_disabled: Secondary classes are disabled in config.
+      select_prompt: حدد فئة لمعاينة المكافآت.
+      primary_slot: أساسي
+      secondary_slot: ثانوي
+      swap_triggers: يؤدي تغيير الفئات إلى تشغيل فترة تباطؤ {0}.
+      primary_bonus: تمنح الصفوف الابتدائية 100% من المكافآت.
+      secondary_bonus: تمنح الصفوف الثانوية 50% من السلاح + التأثيرات السلبية.
+      secondary_disabled: تم تعطيل الفصول الثانوية في التكوين.
     passives:
-      none_defined: This class does not define passive bonuses.
-      none_innate: This class does not grant innate attribute bonuses.
-    secondary_cleared: Secondary class cleared.
+      none_defined: لا تحدد هذه الفئة المكافآت السلبية.
+      none_innate: لا تمنح هذه الفئة مكافآت للسمات الفطرية.
+    secondary_cleared: تم تطهير الصف الثانوي.
     info:
-      primary_set: Primary class set to {0}.
-      secondary_set: Secondary class set to {0}.
+      primary_set: تم ضبط الصف الأساسي على {0}.
+      secondary_set: تم ضبط الصف الثانوي على {0}.
     value:
-      weapon_damage: +{0}% dmg
-      weapon_damage_negative: -{0}% dmg
+      weapon_damage: +{0}% ضرر
+      weapon_damage_negative: -{0}% ضرر
     passive:
       detail:
         threshold: <{0}% {1}
     error:
-      disabled: Classes are currently disabled.
-      playerdata: Unable to load your class info right now.
-      select_primary: Select a class to set as primary.
-      primary_already: That is already your primary class.
-      secondary_disabled: Secondary classes are currently disabled.
-      select_secondary: Select a class to set as secondary.
-      secondary_matches_primary: Your secondary class cannot match your primary.
-      secondary_already: That is already your secondary class.
-      secondary_set_failed: Unable to set that as your secondary class.
-      secondary_none: You do not have a secondary class assigned.
-      unknown: 'Unknown class: {0}'
-      cooldown_remaining: You can change your {0} class again in {1}.
-      no_changes_remaining: You have no class changes remaining.
+      disabled: الفصول معطلة حاليا.
+      playerdata: غير قادر على تحميل معلومات صفك الآن.
+      select_primary: حدد فصلًا لتعيينه كصف أساسي.
+      primary_already: هذا هو بالفعل صفك الأساسي.
+      secondary_disabled: الصفوف الثانوية معطلة حاليا.
+      select_secondary: حدد فصلًا لتعيينه كفصل ثانوي.
+      secondary_matches_primary: صفك الثانوي لا يمكن أن يطابق صفك الابتدائي.
+      secondary_already: هذا هو بالفعل صفك الثانوي.
+      secondary_set_failed: غير قادر على تعيين ذلك كصفك الثانوي.
+      secondary_none: ليس لديك فصل ثانوي معين.
+      unknown: 'فئة غير معروفة: {0}'
+      cooldown_remaining: يمكنك تغيير صفك {0} مرة أخرى في {1}.
+      no_changes_remaining: لم يتبق لديك أي تغييرات في الفصل.
   skills:
     unknown: غير معروف
     points: 'نقاط المهارة: {0}'
     page:
-      title: Skill Attributes
-      subtitle: Allocate points to shape your combat identity.
-      footer_hint: Undo to revert pending tweaks, apply to lock them in.
-      undo: UNDO
-      apply: APPLY
-    level_prefix: Lv.
+      title: سمات المهارة
+      subtitle: خصص النقاط لتشكيل هويتك القتالية.
+      footer_hint: قم بالتراجع للرجوع إلى التعديلات المعلقة، ثم قم بتطبيق قفلها.
+      undo: تراجع
+      apply: يتقدم
+    level_prefix: المستوى.
     label:
-      life_force: Life Force
-      strength: Strength
-      sorcery: Sorcery
-      defense: Defense
-      haste: Haste
-      precision: Precision
-      ferocity: Ferocity
-      stamina: Stamina
-      flow: Flow
-      discipline: Discipline
+      life_force: قوة الحياة
+      strength: قوة
+      sorcery: شعوذة
+      defense: الدفاع
+      haste: تسرع
+      precision: دقة
+      ferocity: شراسة
+      stamina: قوة تحمل
+      flow: تدفق
+      discipline: تأديب
     description:
-      life_force: Boosts your total health so you can tank more hits.
-      strength: Boosts physical damage for melee and ranged weapons.
-      sorcery: Boosts magic damage for staff weapons.
-      defense: Cuts down incoming damage through resistances.
-      haste: Increases movement speed
-      precision: Raises critical hit chance for every attack.
-      ferocity: Adds bonus damage to each critical strike.
-      stamina: Expands stamina for dodges, blocks, and bursts.
-      flow: Increases flow (mana) so spells and abilities stay online longer.
-      discipline: Increases XP gain rate from all sources.
+      life_force: يعزز صحتك الإجمالية حتى تتمكن من تسجيل المزيد من الضربات.
+      strength: يعزز الضرر الجسدي للأسلحة المشاجرة والأسلحة بعيدة المدى.
+      sorcery: يعزز الضرر السحري لأسلحة الموظفين.
+      defense: يقلل من الأضرار الواردة من خلال المقاومة.
+      haste: يزيد من سرعة الحركة
+      precision: يزيد من فرصة الضربة الحاسمة لكل هجوم.
+      ferocity: يضيف ضررًا إضافيًا لكل ضربة حاسمة.
+      stamina: يوسع القدرة على التحمل للمراوغات والكتل والانفجارات.
+      flow: يزيد من التدفق (المانا) بحيث تبقى التعويذات والقدرات على الإنترنت لفترة أطول.
+      discipline: يزيد معدل الكسب XP من جميع المصادر.
     value:
       resource: '{0} {1}'
-      strength: +{0}% Damage
-      sorcery: +{0}% Magic Damage
-      defense: '{0}% Reduction'
-      haste: +{0}% Speed
-      precision: '{0}% Crit Chance'
-      ferocity: +{0}% Crit Damage
-      discipline: +{0}% XP Gain
+      strength: +{0}% الضرر
+      sorcery: +{0}% الضرر السحري
+      defense: '{0}% تخفيض'
+      haste: +{0}% السرعة
+      precision: '{0}% فرصة حرجة'
+      ferocity: +{0}% ضرر جسيم
+      discipline: +{0}% XP الربح
     message:
-      granted: You were granted skill points!
-      reset: Pending changes reset.
-      applied: Skills applied!
-      added: Added {0} point(s) to {1}
-      removed: Removed {0} point(s) from {1}
-      precision_capped: Precision crit chance capped at 100%; excess points not applied.
+      granted: لقد تم منحك نقاط المهارة!
+      reset: إعادة تعيين التغييرات المعلقة.
+      applied: المهارات المطبقة!
+      added: تمت إضافة {0} نقطة (نقاط) إلى {1}
+      removed: تمت إزالة {0} نقطة (نقاط) من {1}
+      precision_capped: الحد الأقصى لفرصة الدقة الحرجة هو 100%؛ النقاط الزائدة لم يتم تطبيقها.
     error:
-      precision_at_cap: Precision crit chance is already 100%; remove other bonuses first.
-      not_enough_points: Not enough skill points
-      precision_no_refund: Precision crit chance is already 100% or lower; no excess points to refund.
-      below_original: Cannot go below original level
-      invalid_attribute: 'Invalid attribute: {0}'
-      action_failed: Error handling skill action
+      precision_at_cap: فرصة الدقة الحرجة هي بالفعل 100%؛ قم بإزالة المكافآت الأخرى أولاً.
+      not_enough_points: لا توجد نقاط مهارة كافية
+      precision_no_refund: فرصة الدقة الحرجة تبلغ بالفعل 100% أو أقل؛ لا توجد نقاط زائدة لاستردادها.
+      below_original: لا يمكن أن ينخفض ​​عن المستوى الأصلي
+      invalid_attribute: 'سمة غير صالحة: {0}'
+      action_failed: خطأ في التعامل مع عمل المهارة
     resource:
-      health: Health
-      stamina: Stamina
-      flow: Flow
+      health: صحة
+      stamina: قوة تحمل
+      flow: تدفق
   time:
-    hours: '{0}h'
-    minutes: '{0}m'
+    hours: '{0}ح'
+    minutes: '{0}م'
     seconds: '{0}s'
   nav:
-    profile: PROFILE
-    skills: SKILLS
-    races: RACES
-    classes: CLASSES
-    leaderboards: LEADERBOARDS
-    settings: SETTINGS
+    profile: حساب تعريفي
+    skills: مهارات
+    races: السباقات
+    classes: فصول
+    leaderboards: المتصدرين
+    settings: إعدادات
   profile:
     playerdata:
-      unavailable: Player data unavailable.
+      unavailable: بيانات اللاعب غير متوفرة.
     detail:
-      title: Selected Profile
+      title: الملف الشخصي المحدد
       subtitle:
-        default: Select a profile to view stats
+        default: حدد ملفًا شخصيًا لعرض الإحصائيات
     level:
-      short: Lv {0}
+      short: المستوى {0}
     list:
-      title: Profiles {0}/{1}
-      slot: Slot {0}
-      level: Level {0}
+      title: الملفات الشخصية {0}/{1}
+      slot: الفتحة {0}
+      level: المستوى {0}
       xp: '{0} XP'
-      select: SELECT
+      select: يختار
       status:
-        active: ACTIVE
+        active: نشيط
       delete:
-        confirm: Delete {0}?
+        confirm: هل تريد حذف {0}؟
     passives:
-      none: No passive bonuses active
-      innate_none: No innate passives active
-      innate_attr_none: No innate attribute bonuses
-      select_prompt: Select a profile to view passive bonuses
-      select_innate_prompt: Select a profile to view innate bonuses
-      level_label: '{0} (Lv {1})'
+      none: لا توجد مكافآت سلبية نشطة
+      innate_none: لا يوجد سلبيات فطرية نشطة
+      innate_attr_none: لا توجد مكافآت سمة فطرية
+      select_prompt: حدد ملفًا شخصيًا لعرض المكافآت السلبية
+      select_innate_prompt: حدد ملفًا شخصيًا لعرض المكافآت الفطرية
+      level_label: '{0} (المستوى {1})'
     augments:
-      none: No augments active
+      none: لا توجد زيادات نشطة
     error:
-      load: Unable to load your profiles right now.
-      generic: Something went wrong handling that request.
-      max_slots: All profile slots are already in use. Delete one first.
-      no_open_slot: Unable to find an open slot right now.
-      create_failed: Could not create that profile slot.
-      slot_range: Profile slot must be between 1 and {0}.
-      slot_missing: Profile slot {0} has not been created yet.
-      switch_failed: Unable to switch to that slot right now.
-      confirm_first: Please confirm the deletion of slot {0} first.
-      delete_failed: Could not delete that profile slot right now.
-      slot_empty: Profile slot {0} is already empty.
-      delete_active: Switch to a different profile before deleting slot {0}.
-      keep_one: You must keep at least one profile slot.
+      load: غير قادر على تحميل ملفات التعريف الخاصة بك الآن.
+      generic: حدث خطأ أثناء التعامل مع هذا الطلب.
+      max_slots: جميع فتحات الملف الشخصي قيد الاستخدام بالفعل. احذف واحدًا أولاً.
+      no_open_slot: غير قادر على العثور على فتحة مفتوحة الآن.
+      create_failed: تعذر إنشاء فتحة الملف الشخصي هذه.
+      slot_range: يجب أن تكون فتحة الملف الشخصي بين 1 و{0}.
+      slot_missing: لم يتم إنشاء فتحة الملف الشخصي {0} بعد.
+      switch_failed: غير قادر على التبديل إلى تلك الفتحة الآن.
+      confirm_first: الرجاء تأكيد حذف الخانة {0} أولاً.
+      delete_failed: تعذر حذف فتحة الملف الشخصي هذه الآن.
+      slot_empty: فتحة الملف الشخصي {0} فارغة بالفعل.
+      delete_active: قم بالتبديل إلى ملف تعريف مختلف قبل حذف الفتحة {0}.
+      keep_one: يجب عليك الاحتفاظ بفتحة ملف تعريف واحدة على الأقل.
     info:
-      created: Created and activated profile slot {0}.
-      already_active: Profile slot {0} is already active.
-      switched: Switched to profile slot {0} ({1}).
-      delete_prompt: Press CONFIRM to delete profile slot {0}.
-      deleted: Deleted profile slot {0}.
-      delete_canceled: Profile deletion canceled.
+      created: تم إنشاء وتنشيط فتحة الملف الشخصي {0}.
+      already_active: فتحة الملف الشخصي {0} نشطة بالفعل.
+      switched: تم التبديل إلى فتحة الملف الشخصي {0} ({1}).
+      delete_prompt: اضغط على تأكيد لحذف فتحة الملف الشخصي {0}.
+      deleted: فتحة الملف الشخصي المحذوفة {0}.
+      delete_canceled: تم إلغاء حذف الملف الشخصي.
 command:
   language:
     usage: 'الاستخدام: /el lang list | /el lang set <locale>'

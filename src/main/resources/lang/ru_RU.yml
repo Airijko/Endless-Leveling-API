@@ -21,13 +21,13 @@ hud:
   common:
     unavailable: --
   race:
-    none: No Race
+    none: Нет Расы
   class:
-    none: None
+    none: Нет
   mob:
     level:
       single: Lv. {0}
-      single_compact: Lv {0}
+      single_compact: Ур {0}
       range: Lv. {0}-{1}
 ui:
   common:
@@ -80,7 +80,8 @@ ui:
       body: No augment unlock milestones are configured.
     all_claimed:
       title: ALL CLAIMED
-      next_unlock: You have claimed all currently unlocked augments. Next unlock at level {0}.
+      next_unlock: You have claimed all currently unlocked augments. Next unlock at
+        level {0}.
       done: You have already claimed all configured augment unlocks.
     remaining:
       header: '[EndlessLeveling] You still have more augments to choose from:'
@@ -89,10 +90,13 @@ ui:
       title: AUGMENT ERROR
       data_unavailable: Augment data unavailable.
       tier_unresolved: Unable to resolve augment tier.
-      playerdata_unavailable: Unable to load your player data. Try reopening this page.
-      system_unavailable: Augment system is unavailable right now. Please contact an admin.
+      playerdata_unavailable: Unable to load your player data. Try reopening this
+        page.
+      system_unavailable: Augment system is unavailable right now. Please contact
+        an admin.
       definitions_missing: No augment definitions are loaded. Check /mods/EndlessLeveling/augments.
-      offers_missing: Unlocked augments are missing from your offers. Ask an admin to run /el augment refresh <player>.
+      offers_missing: Unlocked augments are missing from your offers. Ask an admin
+        to run /el augment refresh <player>.
       slot_empty: No augment in that slot.
     effect:
       cooldown: 'Cooldown: {0}'
@@ -161,16 +165,16 @@ ui:
       current: CURRENT
       viewing: VIEWING
     page:
-      title: Race Archive
-      available: Available Races
-      current_title: Current Race
-      current_badge: Active
-      current_hint: Your active race sets identity and innate bonuses.
-      lore_title: Lore Preview
-      stats_title: Race Stats
-      passives_title: Passives
+      title: Архив Рас
+      available: Доступные Расы
+      current_title: Текущая Раса
+      current_badge: Активно
+      current_hint: Ваша активная раса определяет бонусы.
+      lore_title: Краткое Описание
+      stats_title: Характеристики Расы
+      passives_title: Пассивные умения
     offline:
-      title: Races Offline
+      title: Расы Оффлайн
       subtitle: Races are currently disabled in config.yml.
       hint: Enable races to manage identities.
     playerdata:
@@ -178,40 +182,40 @@ ui:
       subtitle: Unable to load your race information right now.
       hint: Try reopening this page in a few moments.
     select:
-      title: Select a Race
-      subtitle: Choose a race on the left to preview its identity.
+      title: Выберите Расу
+      subtitle: Выберите расу слева для просмотра.
     subtitle:
-      current: Currently active
-      preview: Preview only
+      current: Текущая
+      preview: Предпросмотр
     lore:
-      unavailable: Lore unavailable.
-      missing: No lore provided for this race.
+      unavailable: Описание недоступно.
+      missing: Нет описания для этой расы.
     actions:
-      view: VIEW
-      choose: CHOOSE
-      swap: SWAP
+      view: ПРОСМОТР
+      choose: ВЫБРАТЬ
+      swap: СМЕНИТЬ
     passives:
-      none_selected: No race selected.
-      none_defined: This race does not define passive bonuses.
+      none_selected: Раса не выбрана.
+      none_defined: У этой расы нет пассивных бонусов.
     cooldown:
-      disabled: Disabled
-      card_title: Race Swap Cooldown
-      card_hint: Swapping again becomes available once the timer hits zero.
-      default_warning: You will be locked for the remaining cooldown after swapping.
+      disabled: Отключено
+      card_title: Перезарядка смены расы
+      card_hint: Смена снова станет доступна, когда таймер истечет.
+      default_warning: Вы будете заблокированы на оставшееся время перезарядки.
       bypassed: Bypassed
       bypassed_hint: Operator bypass active.
       bypassed_detail: Operator bypass active. Swapping is immediate.
       in_cooldown: Swap in cooldown
-      ready: Ready
-      swap_triggers: Swapping will trigger a {0} cooldown.
-      unrestricted: Race swapping is unrestricted right now.
-      try_again_prefix: 'You can swap again in '
-      unlocks_in: Swap unlocks in {0}.
+      ready: Готово
+      swap_triggers: Смена вызовет перезарядку {0}.
+      unrestricted: Смена расы сейчас не ограничена.
+      try_again_prefix: 'Вы сможете сменить через '
+      unlocks_in: Смена разблокируется через {0}.
     chat:
       prefix: '[Races] '
       changed_prefix: 'You are now a '
     error:
-      playerdata: Unable to load your race info right now.
+      playerdata: Не удалось загрузить информацию о расе.
       select_first: Select a race to swap into.
       disabled: Races are disabled.
       unknown: 'Unknown race: {0}'
@@ -309,13 +313,13 @@ ui:
       assignments: Class Assignments
       secondary_share_hint: Secondary classes share 50% of bonuses.
       sorcery_label: Sorcery Bonus
-      lore_title: Lore Preview
+      lore_title: Краткое Описание
       weapons_title: Weapon Affinities
       innate_title: Innate Attribute Gains
-      passives_title: Passives
+      passives_title: Пассивные умения
     none_selected: No class selected.
     offline:
-      title: Classes Offline
+      title: Классы Оффлайн
       subtitle: Classes are currently disabled in config.yml.
       lore: Enable classes to browse archetypes.
       hint: Enable classes to manage archetypes.
@@ -327,19 +331,19 @@ ui:
       lore: Try reopening this page in a few moments.
       hint: Try reopening this page in a few moments.
     select:
-      title: Select a Class
+      title: Выберите Класс
       subtitle: Choose a class on the left to preview its role and passives.
     role:
       unspecified: 'Role: Unspecified'
       value: 'Role: {0}'
       empty: 'Role: --'
     lore:
-      unavailable: Lore unavailable.
+      unavailable: Описание недоступно.
       missing: No lore provided for this class.
     subtitle:
       primary: Currently your primary class
       secondary: Currently your secondary class (50% effect)
-      preview: Preview only
+      preview: Предпросмотр
     weapons:
       none_defined: This class does not define weapon bonuses.
     weapon:
@@ -361,15 +365,15 @@ ui:
       bypassed_detail: Operator bypass active; swapping is immediate.
       each_swap: Each swap triggers a {0} cooldown per slot.
       unrestricted: Class swapping is unrestricted right now.
-      ready: Ready
+      ready: Готово
     actions:
-      view: VIEW
+      view: ПРОСМОТР
       set_primary: SET PRIMARY
       set_secondary: SET SECONDARY
     detail:
       select_prompt: Select a class to preview bonuses.
-      primary_slot: Primary
-      secondary_slot: Secondary
+      primary_slot: Основной
+      secondary_slot: Вторичный
       swap_triggers: Changing classes triggers a {0} cooldown.
       primary_bonus: Primary classes grant 100% of bonuses.
       secondary_bonus: Secondary classes grant 50% of weapon + passive effects.
@@ -405,11 +409,11 @@ ui:
     unknown: Неизвестно
     points: 'ОЧКИ НАВЫКОВ: {0}'
     page:
-      title: Skill Attributes
-      subtitle: Allocate points to shape your combat identity.
-      footer_hint: Undo to revert pending tweaks, apply to lock them in.
-      undo: UNDO
-      apply: APPLY
+      title: Атрибуты Навыков
+      subtitle: Распределите очки для улучшения характеристик.
+      footer_hint: Отменить, чтобы сбросить, Применить, чтобы сохранить.
+      undo: ОТМЕНА
+      apply: ПРИМЕНИТЬ
     level_prefix: Lv.
     label:
       life_force: Life Force
@@ -450,9 +454,11 @@ ui:
       removed: Removed {0} point(s) from {1}
       precision_capped: Precision crit chance capped at 100%; excess points not applied.
     error:
-      precision_at_cap: Precision crit chance is already 100%; remove other bonuses first.
+      precision_at_cap: Precision crit chance is already 100%; remove other bonuses
+        first.
       not_enough_points: Not enough skill points
-      precision_no_refund: Precision crit chance is already 100% or lower; no excess points to refund.
+      precision_no_refund: Precision crit chance is already 100% or lower; no excess
+        points to refund.
       below_original: Cannot go below original level
       invalid_attribute: 'Invalid attribute: {0}'
       action_failed: Error handling skill action
@@ -465,40 +471,40 @@ ui:
     minutes: '{0}m'
     seconds: '{0}s'
   nav:
-    profile: PROFILE
-    skills: SKILLS
-    races: RACES
-    classes: CLASSES
-    leaderboards: LEADERBOARDS
-    settings: SETTINGS
+    profile: ПРОФИЛЬ
+    skills: НАВЫКИ
+    races: РАСЫ
+    classes: КЛАССЫ
+    leaderboards: РЕЙТИНГ
+    settings: НАСТРОЙКИ
   profile:
     playerdata:
       unavailable: Player data unavailable.
     detail:
       title: Selected Profile
       subtitle:
-        default: Select a profile to view stats
+        default: Выберите профиль для просмотра статистики
     level:
-      short: Lv {0}
+      short: Ур {0}
     list:
       title: Profiles {0}/{1}
-      slot: Slot {0}
-      level: Level {0}
+      slot: Слот {0}
+      level: Уровень {0}
       xp: '{0} XP'
-      select: SELECT
+      select: ВЫБРАТЬ
       status:
-        active: ACTIVE
+        active: АКТИВЕН
       delete:
-        confirm: Delete {0}?
+        confirm: Удалить {0}?
     passives:
-      none: No passive bonuses active
-      innate_none: No innate passives active
-      innate_attr_none: No innate attribute bonuses
-      select_prompt: Select a profile to view passive bonuses
-      select_innate_prompt: Select a profile to view innate bonuses
+      none: Нет активных пассивных бонусов
+      innate_none: Нет активных врожденных пассивок
+      innate_attr_none: Нет врожденных бонусов атрибутов
+      select_prompt: Выберите профиль для просмотра пассивных бонусов
+      select_innate_prompt: Выберите профиль для просмотра врожденных бонусов
       level_label: '{0} (Lv {1})'
     augments:
-      none: No augments active
+      none: Нет активных улучшений
     error:
       load: Unable to load your profiles right now.
       generic: Something went wrong handling that request.

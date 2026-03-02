@@ -9,6 +9,8 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -18,14 +20,18 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 
 public class LanguageManager {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
     private static final String DEFAULT_LOCALE = "en_US";
+    private static final int BUILTIN_LANG_VERSION = 1;
+    private static final String LANG_VERSION_FILE = "lang.version";
 
     private final PluginFilesManager filesManager;
     private final ConfigManager configManager;
+    private final boolean forceBuiltinLanguages;
     private final Yaml yaml = new Yaml();
 
     private volatile String activeLocale = DEFAULT_LOCALE;
@@ -37,6 +43,10 @@ public class LanguageManager {
     public LanguageManager(PluginFilesManager filesManager, ConfigManager configManager) {
         this.filesManager = filesManager;
         this.configManager = configManager;
+        Object forceFlag = configManager != null
+                ? configManager.get("force_builtin_languages", Boolean.TRUE, false)
+                : Boolean.TRUE;
+        this.forceBuiltinLanguages = parseBoolean(forceFlag, true);
         reload();
     }
 
@@ -44,6 +54,8 @@ public class LanguageManager {
         String configuredLocale = normalizeLocale(Objects.toString(
                 configManager != null ? configManager.get("language.locale", DEFAULT_LOCALE, false) : DEFAULT_LOCALE,
                 DEFAULT_LOCALE));
+        syncBuiltinLanguagesIfNeeded();
+
         String configuredFallback = normalizeLocale(Objects.toString(
                 configManager != null ? configManager.get("language.fallback_locale", DEFAULT_LOCALE, false)
                         : DEFAULT_LOCALE,
@@ -275,5 +287,84 @@ public class LanguageManager {
             formatted = formatted.replace("{" + i + "}", replacement);
         }
         return formatted;
+    }
+
+    private void syncBuiltinLanguagesIfNeeded() {
+        if (!forceBuiltinLanguages) {
+            return;
+        }
+
+        File langFolder = filesManager.getLangFolder();
+        if (langFolder == null) {
+            LOGGER.atWarning().log("Language folder is null; cannot sync built-in languages.");
+            return;
+        }
+
+        int storedVersion = readLangVersion(langFolder);
+        if (storedVersion == BUILTIN_LANG_VERSION) {
+            return;
+        }
+
+        filesManager.archivePathIfExists(langFolder.toPath(), "lang", "lang.version:" + storedVersion);
+        clearDirectory(langFolder.toPath());
+        filesManager.exportResourceDirectory("lang", langFolder, true);
+        writeLangVersion(langFolder, BUILTIN_LANG_VERSION);
+        LOGGER.atInfo().log("Synced built-in language files to version %d (force_builtin_languages=true)",
+                BUILTIN_LANG_VERSION);
+    }
+
+    private int readLangVersion(File langFolder) {
+        Path versionPath = langFolder.toPath().resolve(LANG_VERSION_FILE);
+        if (!Files.exists(versionPath)) {
+            return -1;
+        }
+        try {
+            String text = Files.readString(versionPath).trim();
+            return Integer.parseInt(text);
+        } catch (Exception e) {
+            LOGGER.atWarning().log("Failed to read language version file: %s", e.getMessage());
+            return -1;
+        }
+    }
+
+    private void writeLangVersion(File langFolder, int version) {
+        Path versionPath = langFolder.toPath().resolve(LANG_VERSION_FILE);
+        try {
+            Files.writeString(versionPath, Integer.toString(version));
+        } catch (IOException e) {
+            LOGGER.atWarning().log("Failed to write language version file: %s", e.getMessage());
+        }
+    }
+
+    private void clearDirectory(Path folder) {
+        if (folder == null || !Files.exists(folder)) {
+            return;
+        }
+        try (Stream<Path> stream = Files.walk(folder)) {
+            stream.sorted(Comparator.reverseOrder())
+                    .filter(path -> !path.equals(folder))
+                    .forEach(path -> {
+                        try {
+                            Files.deleteIfExists(path);
+                        } catch (IOException e) {
+                            LOGGER.atWarning().log("Failed to delete %s: %s", path, e.getMessage());
+                        }
+                    });
+        } catch (IOException e) {
+            LOGGER.atWarning().log("Failed to clear language directory: %s", e.getMessage());
+        }
+    }
+
+    private boolean parseBoolean(Object value, boolean defaultValue) {
+        if (value instanceof Boolean bool) {
+            return bool;
+        }
+        if (value instanceof String str) {
+            return Boolean.parseBoolean(str.trim());
+        }
+        if (value instanceof Number number) {
+            return number.intValue() != 0;
+        }
+        return defaultValue;
     }
 }
