@@ -103,7 +103,7 @@ Mob_Leveling:
     Distance_Level:
       Start_Level: 1
       Blocks_Per_Level: 100
-      Max_Level: 110
+      Max_Level: 200
       Min_Level: 1
       # Set to "SPAWN" to use the world spawn point, or "x,z" for specific coordinates.
       Center_Coordinates: "SPAWN"
