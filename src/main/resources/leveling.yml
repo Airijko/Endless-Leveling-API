@@ -134,10 +134,12 @@ Mob_Leveling:
       # Set to "SPAWN" to use the world spawn point, or "x,z" for specific coordinates.
       Center_Coordinates: "SPAWN"
 
-    # MIXED blends PLAYER and DISTANCE.
+    # MIXED chooses ONE source per mob (PLAYER or DISTANCE) using Player_Weight,
+    # then keeps that source locked for the mob lifecycle.
+    # Exception: if DISTANCE resolves below the player-floor guardrail,
+    # the mob is switched to PLAYER source.
     # Player_Weight is 0.0 to 1.0:
-    # 0.0 = pure DISTANCE, 1.0 = pure PLAYER
-    # DISTANCE weight is derived as (1 - Player_Weight).
+    # 0.0 = always DISTANCE, 1.0 = always PLAYER
     Mixed:
       Player_Weight: 0.75
 

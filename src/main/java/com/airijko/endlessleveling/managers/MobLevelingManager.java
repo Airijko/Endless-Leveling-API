@@ -40,6 +40,8 @@ public class MobLevelingManager {
     private final Map<String, AreaOverride> areaOverrides = new ConcurrentHashMap<>();
     private final Map<Integer, Integer> entityLevelOverrides = new ConcurrentHashMap<>();
     private final Map<Long, Integer> entityLevelOverridesScoped = new ConcurrentHashMap<>();
+    private final Map<Long, MixedSourceChoice> mixedSourceChoiceByEntityKey = new ConcurrentHashMap<>();
+    private final Map<String, String> loggedDistanceCentersByWorldKey = new ConcurrentHashMap<>();
     private final Map<Integer, UUID> entityPartyOverrides = new ConcurrentHashMap<>();
     private final Map<Integer, Float> entityMaxHealthSnapshots = new ConcurrentHashMap<>();
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
@@ -53,6 +55,11 @@ public class MobLevelingManager {
         FIXED
     }
 
+    private enum MixedSourceChoice {
+        PLAYER,
+        DISTANCE
+    }
+
     public MobLevelingManager(PluginFilesManager filesManager, PlayerDataManager playerDataManager) {
         this.configManager = new ConfigManager(filesManager, filesManager.getLevelingFile());
         this.playerDataManager = playerDataManager;
@@ -63,6 +70,8 @@ public class MobLevelingManager {
         configManager.load();
         cachedPlayerDiffs.clear();
         cachedPosDiffs.clear();
+        mixedSourceChoiceByEntityKey.clear();
+        loggedDistanceCentersByWorldKey.clear();
     }
 
     /**
@@ -240,18 +249,22 @@ public class MobLevelingManager {
         entityPartyOverrides.remove(entityIndex);
         cachedPlayerDiffs.remove(entityIndex);
         entityMaxHealthSnapshots.remove(entityIndex);
+        clearMixedChoicesByEntityIndex(entityIndex);
     }
 
     public void forgetEntity(Store<EntityStore> store, int entityIndex) {
         if (entityIndex < 0) {
             return;
         }
-        entityLevelOverridesScoped.remove(toEntityKey(store, entityIndex));
+        long entityKey = toEntityKey(store, entityIndex);
+        entityLevelOverridesScoped.remove(entityKey);
+        mixedSourceChoiceByEntityKey.remove(entityKey);
         forgetEntity(entityIndex);
     }
 
     public void forgetEntityByKey(long entityKey) {
         entityLevelOverridesScoped.remove(entityKey);
+        mixedSourceChoiceByEntityKey.remove(entityKey);
     }
 
     public void recordEntityMaxHealth(int entityIndex, float maxHealth) {
@@ -435,6 +448,8 @@ public class MobLevelingManager {
 
         double centerX = 0.0;
         double centerZ = 0.0;
+        boolean usingSpawnCenter = false;
+        boolean spawnResolved = false;
 
         try {
             Object centerRaw = configManager.get("Mob_Leveling.Level_Source.Distance_Level.Center_Coordinates", "SPAWN",
@@ -442,23 +457,12 @@ public class MobLevelingManager {
             String centerStr = centerRaw != null ? centerRaw.toString().trim() : "SPAWN";
 
             if (centerStr.equalsIgnoreCase("SPAWN")) {
-                String worldName = resolveWorldId(store);
-                if (worldName != null) {
-                    try {
-                        // Attempt to resolve world spawn via Universe
-                        Method getWorld = Universe.get().getClass().getMethod("getWorld", String.class);
-                        Object world = getWorld.invoke(Universe.get(), worldName);
-                        if (world != null) {
-                            Method getSpawnPoint = world.getClass().getMethod("getSpawnPoint");
-                            Object spawnPoint = getSpawnPoint.invoke(world);
-                            if (spawnPoint instanceof Vector3d v) {
-                                centerX = v.getX();
-                                centerZ = v.getZ();
-                            }
-                        }
-                    } catch (Exception ignored) {
-                        // Fallback to 0,0 if reflection fails or world not found
-                    }
+                usingSpawnCenter = true;
+                Vector3d spawnCenter = resolveWorldSpawnCenter(store);
+                if (spawnCenter != null) {
+                    centerX = spawnCenter.getX();
+                    centerZ = spawnCenter.getZ();
+                    spawnResolved = true;
                 }
             } else {
                 String[] parts = centerStr.split(",");
@@ -470,6 +474,11 @@ public class MobLevelingManager {
         } catch (Exception ignored) {
             // fallback to 0,0
         }
+
+        if (usingSpawnCenter) {
+            logDistanceCenterIfChanged(store, centerX, centerZ, spawnResolved);
+        }
+
         double x = position.getX();
         double z = position.getZ();
         double dx = x - centerX;
@@ -489,6 +498,232 @@ public class MobLevelingManager {
             maxLevel = tmp;
         }
         return Math.max(minLevel, Math.min(maxLevel, computed));
+    }
+
+    public String describeDistanceCenter(Store<EntityStore> store) {
+        return describeDistanceCenter(store, null);
+    }
+
+    public String describeDistanceCenter(Store<EntityStore> store, Object worldHint) {
+        String worldId = resolveWorldId(store, worldHint);
+        String world = (worldId == null || worldId.isBlank()) ? "unknown-world" : worldId;
+
+        Object centerRaw = configManager.get("Mob_Leveling.Level_Source.Distance_Level.Center_Coordinates", "SPAWN",
+                false);
+        String centerStr = centerRaw != null ? centerRaw.toString().trim() : "SPAWN";
+        if (centerStr.isBlank()) {
+            centerStr = "SPAWN";
+        }
+
+        double centerX = 0.0D;
+        double centerZ = 0.0D;
+        boolean usingSpawn = centerStr.equalsIgnoreCase("SPAWN");
+        boolean resolvedSpawn = false;
+        String resolution = "ok";
+
+        try {
+            if (usingSpawn) {
+                Vector3d spawnCenter = resolveWorldSpawnCenter(store, worldHint);
+                if (spawnCenter != null) {
+                    centerX = spawnCenter.getX();
+                    centerZ = spawnCenter.getZ();
+                    resolvedSpawn = true;
+                } else {
+                    resolution = "spawn-unresolved";
+                }
+            } else {
+                String[] parts = centerStr.split(",");
+                if (parts.length >= 2) {
+                    centerX = Double.parseDouble(parts[0].trim());
+                    centerZ = Double.parseDouble(parts[1].trim());
+                } else {
+                    resolution = "invalid-manual-center";
+                }
+            }
+        } catch (Exception ex) {
+            resolution = "center-parse-error:" + ex.getClass().getSimpleName();
+        }
+
+        return String.format(
+                Locale.ROOT,
+                "mode=%s world=%s source=%s center=(%.2f, %.2f) spawnResolved=%s resolution=%s",
+                getLevelSourceMode(),
+                world,
+                usingSpawn ? "SPAWN" : centerStr,
+                centerX,
+                centerZ,
+                resolvedSpawn ? "true" : "false",
+                resolution);
+    }
+
+    private void logDistanceCenterIfChanged(Store<EntityStore> store, double centerX, double centerZ,
+            boolean spawnResolved) {
+        String worldId = resolveWorldId(store, null);
+        String worldKey = (worldId == null || worldId.isBlank()) ? "unknown-world" : worldId;
+        String state = String.format(Locale.ROOT, "x=%.2f|z=%.2f|resolved=%s", centerX, centerZ,
+                spawnResolved ? "true" : "false");
+
+        String previous = loggedDistanceCentersByWorldKey.put(worldKey, state);
+        if (state.equals(previous)) {
+            return;
+        }
+
+        if (spawnResolved) {
+            LOGGER.atInfo().log("DistanceCenterResolved world=%s center=(%.2f, %.2f) source=SPAWN", worldKey, centerX,
+                    centerZ);
+        } else {
+            LOGGER.atWarning().log(
+                    "DistanceCenterFallback world=%s center=(%.2f, %.2f) source=SPAWN reason=spawn-unresolved",
+                    worldKey,
+                    centerX,
+                    centerZ);
+        }
+    }
+
+    private Vector3d resolveWorldSpawnCenter(Store<EntityStore> store) {
+        return resolveWorldSpawnCenter(store, null);
+    }
+
+    private Vector3d resolveWorldSpawnCenter(Store<EntityStore> store, Object worldHint) {
+        Object world = worldHint != null ? worldHint : resolveWorldObject(store);
+        Vector3d fromWorld = extractSpawnFromWorld(world);
+        if (fromWorld != null) {
+            return fromWorld;
+        }
+
+        Universe universe = Universe.get();
+        if (universe == null) {
+            return null;
+        }
+
+        String worldId = resolveWorldId(store, worldHint);
+        if (worldId == null || worldId.isBlank()) {
+            return null;
+        }
+
+        try {
+            Method getWorldByName = universe.getClass().getMethod("getWorld", String.class);
+            Object worldByName = getWorldByName.invoke(universe, worldId);
+            return extractSpawnFromWorld(worldByName);
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private Object resolveWorldObject(Store<EntityStore> store) {
+        if (store == null) {
+            return null;
+        }
+
+        Object directWorld = invokeNoArg(store, "getWorld");
+        if (directWorld != null) {
+            return directWorld;
+        }
+
+        Object externalData = invokeNoArg(store, "getExternalData");
+        Object externalWorld = invokeNoArg(externalData, "getWorld");
+        if (externalWorld != null) {
+            return externalWorld;
+        }
+
+        Object nestedStore = invokeNoArg(store, "getStore");
+        if (nestedStore instanceof Store<?> nested && nested != store) {
+            @SuppressWarnings("unchecked")
+            Store<EntityStore> casted = (Store<EntityStore>) nested;
+            Object nestedWorld = resolveWorldObject(casted);
+            if (nestedWorld != null) {
+                return nestedWorld;
+            }
+        }
+
+        return null;
+    }
+
+    private Vector3d extractSpawnFromWorld(Object world) {
+        if (world == null) {
+            return null;
+        }
+
+        Object spawnCandidate = invokeNoArg(world, "getSpawnPoint");
+        Vector3d extracted = asVector3d(spawnCandidate);
+        if (extracted != null) {
+            return extracted;
+        }
+
+        Object worldConfig = invokeNoArg(world, "getWorldConfig");
+        Object spawnProvider = invokeNoArg(worldConfig, "getSpawnProvider");
+        if (spawnProvider != null) {
+            Object providerSpawn = invokeSpawnProviderGetSpawnPoint(spawnProvider, world, new UUID(0L, 0L));
+            Vector3d providerVector = asVector3d(providerSpawn);
+            if (providerVector != null) {
+                return providerVector;
+            }
+        }
+
+        return null;
+    }
+
+    private Object invokeSpawnProviderGetSpawnPoint(Object spawnProvider, Object world, UUID sampleUuid) {
+        if (spawnProvider == null || world == null || sampleUuid == null) {
+            return null;
+        }
+
+        Method bestMethod = null;
+        for (Method method : spawnProvider.getClass().getMethods()) {
+            if (!"getSpawnPoint".equals(method.getName())) {
+                continue;
+            }
+            Class<?>[] parameterTypes = method.getParameterTypes();
+            if (parameterTypes.length != 2) {
+                continue;
+            }
+            if (!parameterTypes[0].isAssignableFrom(world.getClass())) {
+                continue;
+            }
+            if (!parameterTypes[1].isAssignableFrom(UUID.class)) {
+                continue;
+            }
+            bestMethod = method;
+            break;
+        }
+
+        if (bestMethod == null) {
+            return null;
+        }
+
+        try {
+            return bestMethod.invoke(spawnProvider, world, sampleUuid);
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private Object invokeNoArg(Object target, String methodName) {
+        if (target == null || methodName == null || methodName.isBlank()) {
+            return null;
+        }
+        try {
+            Method method = target.getClass().getMethod(methodName);
+            return method.invoke(target);
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private Vector3d asVector3d(Object candidate) {
+        if (candidate == null) {
+            return null;
+        }
+        if (candidate instanceof Vector3d vector3d) {
+            return vector3d;
+        }
+
+        Object position = invokeNoArg(candidate, "getPosition");
+        if (position instanceof Vector3d vector3d) {
+            return vector3d;
+        }
+
+        return null;
     }
 
     private int resolvePlayerBasedLevel(Store<EntityStore> store, Vector3d mobPos, Integer entityId) {
@@ -517,11 +752,18 @@ public class MobLevelingManager {
     }
 
     private int computePlayerModeLevelFromNearestPlayer(Store<EntityStore> store, Vector3d mobPos, Integer entityId) {
+        return computePlayerModeLevelFromNearestPlayerWithinRadius(store, mobPos, entityId, -1.0D);
+    }
+
+    private int computePlayerModeLevelFromNearestPlayerWithinRadius(Store<EntityStore> store,
+            Vector3d mobPos,
+            Integer entityId,
+            double radiusBlocks) {
         if (mobPos == null) {
             return -1;
         }
 
-        int nearestPlayerLevel = findNearestPlayerLevel(store, mobPos);
+        int nearestPlayerLevel = findNearestPlayerLevelWithinRadius(store, mobPos, radiusBlocks);
         if (nearestPlayerLevel <= 0) {
             return -1;
         }
@@ -591,20 +833,78 @@ public class MobLevelingManager {
         }
 
         int distanceLevel = resolveDistanceLevel(store, mobPos);
-        int playerLevel = resolvePlayerBasedLevelWithoutFallback(store, mobPos, entityId);
-        if (playerLevel <= 0) {
-            return distanceLevel;
+        int nearbyPlayerLevel = computePlayerModeLevelFromNearestPlayerWithinRadius(
+                store,
+                mobPos,
+                entityId,
+                PLAYER_LEVEL_LOCK_RADIUS_BLOCKS);
+        if (nearbyPlayerLevel > 0 && distanceLevel < nearbyPlayerLevel) {
+            rememberMixedSourceChoice(store, entityId, MixedSourceChoice.PLAYER);
+            return nearbyPlayerLevel;
         }
 
+        int playerLevel = resolvePlayerBasedLevelWithoutFallback(store, mobPos, entityId);
         int playerLowerBound = resolvePlayerLowerBoundForMixed(store, mobPos);
-        if (playerLowerBound > 0 && distanceLevel < playerLowerBound) {
+
+        if (playerLevel > 0 && playerLowerBound > 0 && distanceLevel < playerLowerBound) {
+            rememberMixedSourceChoice(store, entityId, MixedSourceChoice.PLAYER);
             return playerLevel;
         }
 
+        MixedSourceChoice choice = resolveMixedSourceChoice(store, mobPos, entityId);
+        if (choice == MixedSourceChoice.PLAYER) {
+            if (playerLevel > 0) {
+                return playerLevel;
+            }
+            return -1;
+        }
+
+        return distanceLevel;
+    }
+
+    private MixedSourceChoice resolveMixedSourceChoice(Store<EntityStore> store, Vector3d mobPos, Integer entityId) {
+        if (store != null && entityId != null) {
+            long entityKey = toEntityKey(store, entityId);
+            MixedSourceChoice existing = mixedSourceChoiceByEntityKey.get(entityKey);
+            if (existing != null) {
+                return existing;
+            }
+        }
+
+        MixedSourceChoice rolled = rollMixedSourceChoice(entityId, mobPos);
+        rememberMixedSourceChoice(store, entityId, rolled);
+        return rolled;
+    }
+
+    private MixedSourceChoice rollMixedSourceChoice(Integer entityId, Vector3d mobPos) {
         double playerWeight = getMixedPlayerWeight();
-        double distanceWeight = 1.0D - playerWeight;
-        double blended = (playerLevel * playerWeight) + (distanceLevel * distanceWeight);
-        return (int) Math.round(blended);
+        if (playerWeight <= 0.0D) {
+            return MixedSourceChoice.DISTANCE;
+        }
+        if (playerWeight >= 1.0D) {
+            return MixedSourceChoice.PLAYER;
+        }
+
+        long seed = entityId != null ? entityId.longValue() : hashPosition(mobPos);
+        long scrambled = seed ^ (seed >>> 33) ^ (seed << 11);
+        long bucket = Math.floorMod(scrambled, 10_000L);
+        double rolled = bucket / 10_000.0D;
+        return rolled < playerWeight ? MixedSourceChoice.PLAYER : MixedSourceChoice.DISTANCE;
+    }
+
+    private void rememberMixedSourceChoice(Store<EntityStore> store, Integer entityId, MixedSourceChoice choice) {
+        if (store == null || entityId == null || entityId < 0 || choice == null) {
+            return;
+        }
+        mixedSourceChoiceByEntityKey.put(toEntityKey(store, entityId), choice);
+    }
+
+    private void clearMixedChoicesByEntityIndex(int entityIndex) {
+        if (entityIndex < 0 || mixedSourceChoiceByEntityKey.isEmpty()) {
+            return;
+        }
+        long idPart = Integer.toUnsignedLong(entityIndex);
+        mixedSourceChoiceByEntityKey.keySet().removeIf(key -> (key & 0xFFFFFFFFL) == idPart);
     }
 
     private int resolvePlayerLowerBoundForMixed(Store<EntityStore> store, Vector3d mobPos) {
@@ -800,9 +1100,12 @@ public class MobLevelingManager {
                 if (Math.abs(candidateClosest - currentClosest) > 0.000001D) {
                     yield candidateClosest < currentClosest;
                 }
+
                 yield comparePartyId(candidate.partyId(), current.partyId()) < 0;
             }
-            case CLOSEST_MEMBER -> {
+            case CLOSEST_MEMBER ->
+
+            {
                 double candidateClosest = minDistanceSq(candidate.members());
                 double currentClosest = minDistanceSq(current.members());
                 if (Math.abs(candidateClosest - currentClosest) > 0.000001D) {
@@ -813,9 +1116,12 @@ public class MobLevelingManager {
                 if (candidateSize != currentSize) {
                     yield candidateSize > currentSize;
                 }
+
                 yield comparePartyId(candidate.partyId(), current.partyId()) < 0;
             }
-            case HIGHEST_AVERAGE -> {
+            case HIGHEST_AVERAGE ->
+
+            {
                 double candidateAverage = averageLevel(candidate.members());
                 double currentAverage = averageLevel(current.members());
                 if (Math.abs(candidateAverage - currentAverage) > 0.000001D) {
@@ -826,8 +1132,10 @@ public class MobLevelingManager {
                 if (Math.abs(candidateClosest - currentClosest) > 0.000001D) {
                     yield candidateClosest < currentClosest;
                 }
+
                 yield comparePartyId(candidate.partyId(), current.partyId()) < 0;
             }
+
         };
     }
 
@@ -1148,27 +1456,29 @@ public class MobLevelingManager {
         return transform != null ? transform.getPosition() : null;
     }
 
-    private String resolveWorldId(Store<EntityStore> store) {
-        if (store == null) {
+    private String resolveWorldId(Store<EntityStore> store, Object worldHint) {
+        Object world = worldHint != null ? worldHint : resolveWorldObject(store);
+        if (world == null) {
             return null;
         }
-        try {
-            Method getWorld = store.getClass().getMethod("getWorld");
-            Object world = getWorld.invoke(store);
-            if (world != null) {
-                try {
-                    Method getName = world.getClass().getMethod("getName");
-                    Object name = getName.invoke(world);
-                    if (name != null) {
-                        return name.toString();
-                    }
-                } catch (Exception ignored) {
-                }
-                return world.toString();
+
+        String[] idMethods = new String[] { "getName", "getId", "getIdentifier" };
+        for (String methodName : idMethods) {
+            Object value = invokeNoArg(world, methodName);
+            if (value == null) {
+                continue;
             }
-        } catch (Exception ignored) {
+            String text = value.toString();
+            if (!text.isBlank()) {
+                return text;
+            }
         }
-        return null;
+
+        return world.toString();
+    }
+
+    private String resolveWorldId(Store<EntityStore> store) {
+        return resolveWorldId(store, null);
     }
 
     private boolean isSameWorld(Store<EntityStore> mobStore, Store<EntityStore> playerStore) {
@@ -1749,13 +2059,16 @@ public class MobLevelingManager {
         entityPartyOverrides.remove(entityIndex);
         cachedPlayerDiffs.remove(entityIndex);
         entityMaxHealthSnapshots.remove(entityIndex);
+        clearMixedChoicesByEntityIndex(entityIndex);
     }
 
     public void clearEntityLevelOverride(Store<EntityStore> store, int entityIndex) {
         if (store == null || entityIndex < 0) {
             return;
         }
-        entityLevelOverridesScoped.remove(toEntityKey(store, entityIndex));
+        long entityKey = toEntityKey(store, entityIndex);
+        entityLevelOverridesScoped.remove(entityKey);
+        mixedSourceChoiceByEntityKey.remove(entityKey);
         clearEntityLevelOverride(entityIndex);
     }
 
@@ -1763,6 +2076,7 @@ public class MobLevelingManager {
     public void clearAllEntityLevelOverrides() {
         entityLevelOverrides.clear();
         entityLevelOverridesScoped.clear();
+        mixedSourceChoiceByEntityKey.clear();
         entityPartyOverrides.clear();
         cachedPlayerDiffs.clear();
         entityMaxHealthSnapshots.clear();
