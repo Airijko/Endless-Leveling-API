@@ -15,8 +15,13 @@ notify:
       end: ' to spend them.'
   augments:
     available:
-      header: '[EndlessLeveling] You have augments available to choose from:'
-      footer: Use /el augments to choose.
+      header: '[EndlessLeveling] Hai potenziamenti disponibili da scegliere:'
+      footer: Usa /el augments per scegliere.
+  xp_suppressed:
+    mob_label: "questo mob"
+    mob_label_level: "questo mob (livello {0})"
+    player_too_high: "Nessun XP: il tuo livello ({0}) è troppo alto per {1}."
+    player_too_low: "Nessun XP: {0} è troppo sopra il tuo livello ({1})."
 hud:
   common:
     unavailable: --
@@ -534,3 +539,44 @@ command:
     available: 'Lingue disponibili: {0}'
     invalid: 'Lingua sconosciuta ''{0}''. Lingue disponibili: {1}'
     updated: Lingua impostata su {0}.
+
+augments:
+  stacks:
+    max: "{0} a stack massimi ({1})."
+    update: "{0}: {1}/{2} stack."
+    expired: "{0} stack scaduti."
+    remaining: "{0}: {1}/{2} stack rimanenti."
+  executioner:
+    triggered: "{0} attivato! +{1}% danni."
+  fortress:
+    activated: "{0} attivato! Scudo per {1}s, buff per {2}s."
+    buff_ended: "{0} buff terminato."
+    shield_ended: "{0} scudo stasi terminato."
+  undying_rage:
+    active: "{0} è attivo per {1}s."
+    ended: "{0} durata terminata."
+  rebirth:
+    activated: "{0} attivato! Ripristinato {1}% salute max."
+  first_strike:
+    triggered: "{0} attivato! +{1}% danni."
+    lost: "{0} perso: colpito prima di attaccare. Cooldown avviato."
+
+command:
+  language:
+    unavailable: "Gestore lingua non disponibile."
+    data_not_loaded: "Dati giocatore non ancora caricati."
+    current: "Lingua attuale: {0}"
+    available: "Lingue disponibili: {0}"
+    usage: "Uso: /el language list | /el language set <locale>"
+    invalid: "Lingua sconosciuta '{0}'. Disponibili: {1}"
+    updated: "Lingua impostata a {0}."
+  reset_cooldowns:
+    unavailable: "Gestori passivi e augments non disponibili."
+    success: "Cooldown passivi resettati per {0} giocatori e stato augments cancellato."
+  reset_skillpoints:
+    system_unavailable: "Sistema abilità non inizializzato. Contatta un admin."
+    player_not_found: "Giocatore non trovato: {0}"
+    no_data: "Nessun dato salvato. Prova a riconnetterti."
+    success_target: "Punti abilità resettati per {0}."
+    notify_target: "Un admin ha resettato i tuoi punti abilità."
+    success_self: "I tuoi punti abilità sono stati resettati al default."

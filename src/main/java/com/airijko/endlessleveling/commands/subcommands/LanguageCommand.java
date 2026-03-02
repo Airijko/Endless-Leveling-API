@@ -101,7 +101,10 @@ public class LanguageCommand extends AbstractPlayerCommand {
         if (playerDataManager != null && languageManager != null) {
             return true;
         }
-        senderRef.sendMessage(Message.raw("Language manager is unavailable.").color("#ff6666"));
+        senderRef.sendMessage(Message.raw(Lang.tr(senderRef.getUuid(),
+                "command.language.unavailable",
+                "Language manager is unavailable."))
+                .color("#ff6666"));
         return false;
     }
 
@@ -110,7 +113,10 @@ public class LanguageCommand extends AbstractPlayerCommand {
         if (data != null) {
             return data;
         }
-        senderRef.sendMessage(Message.raw("Your player data is not loaded yet.").color("#ff6666"));
+        senderRef.sendMessage(Message.raw(Lang.tr(senderRef.getUuid(),
+                "command.language.data_not_loaded",
+                "Your player data is not loaded yet."))
+                .color("#ff6666"));
         return null;
     }
 

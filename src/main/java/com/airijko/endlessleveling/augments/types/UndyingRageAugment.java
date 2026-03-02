@@ -1,6 +1,7 @@
 package com.airijko.endlessleveling.augments.types;
 
 import com.airijko.endlessleveling.augments.AugmentDefinition;
+import com.airijko.endlessleveling.util.Lang;
 import com.airijko.endlessleveling.augments.AugmentHooks;
 import com.airijko.endlessleveling.augments.AugmentRuntimeManager.AugmentRuntimeState;
 import com.airijko.endlessleveling.augments.AugmentUtils;
@@ -101,10 +102,14 @@ public final class UndyingRageAugment extends YamlAugment
         state.setExpiresAt(now + durationMillis);
         state.setStacks(1);
         context.getStatMap().setStatValue(DefaultEntityStatTypes.getHealth(), thresholdHp);
-        AugmentUtils.sendAugmentMessage(playerRef,
-                String.format("%s is active for %.0fs.",
-                        getName(),
-                        durationMillis / 1000.0D));
+        if (playerRef != null && playerRef.isValid()) {
+            AugmentUtils.sendAugmentMessage(playerRef,
+                    Lang.tr(playerRef.getUuid(),
+                            "augments.undying_rage.active",
+                            "{0} is active for {1}s.",
+                            getName(),
+                            durationMillis / 1000.0D));
+        }
         return 0f;
     }
 
@@ -119,8 +124,13 @@ public final class UndyingRageAugment extends YamlAugment
             state.setStacks(0);
             state.setExpiresAt(0L);
             var playerRef = AugmentUtils.getPlayerRef(context.getCommandBuffer(), context.getPlayerRef());
-            AugmentUtils.sendAugmentMessage(playerRef,
-                    String.format("%s duration ended.", getName()));
+            if (playerRef != null && playerRef.isValid()) {
+                AugmentUtils.sendAugmentMessage(playerRef,
+                        Lang.tr(playerRef.getUuid(),
+                                "augments.undying_rage.ended",
+                                "{0} duration ended.",
+                                getName()));
+            }
         }
 
         EntityStatValue hp = context.getStatMap() == null

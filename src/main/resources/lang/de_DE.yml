@@ -1,22 +1,23 @@
 meta:
   locale_name: Deutsch (DE)
 notify:
-  prefix: '[EndlessLeveling]'
+  prefix: "[EndlessLeveling] "
   skills:
     command: /el
     unspent:
       primary: Du hast {0} nicht ausgegebene Fertigkeitspunkte!
       secondary:
-        open: 'Offen '
-        close: ' sie zu investieren'
+        open: "Öffne das "
+        close: " Menü zum Investieren"
     chat:
-      have: 'Das hast du immer noch '
-      use: ' Fertigkeitspunkte. Verwenden '
-      end: ' sie auszugeben.'
+      have: "Du hast noch "
+      use: " Fertigkeitspunkte. Verwende "
+      end: " zum Investieren."
   augments:
     available:
-      header: '[EndlessLeveling] Es stehen Ihnen Erweiterungen zur Auswahl:'
-      footer: Verwenden Sie /el augments to choose.
+      header: "[EndlessLeveling] Es stehen Erweiterungen zur Auswahl:"
+      footer: Verwende /el augments zum Auswählen.
+  xp_suppressed: "Spielerlevel zu hoch: Keine EP erhalten (Mob: {0} / Spieler: {1} / Differenz: {2})"
 hud:
   common:
     unavailable: --
@@ -59,7 +60,8 @@ ui:
       toggled: Benachrichtigungen zur Gesundheitsregeneration {0}
     race_model:
       label: Visuals des Rennmodells
-      globally_disabled: Die visuelle Darstellung des Rennmodells ist durch die Serverkonfiguration
+      globally_disabled:
+        Die visuelle Darstellung des Rennmodells ist durch die Serverkonfiguration
         deaktiviert.
       enabled: Visualisierung des Rennmodells aktiviert
       disabled: Die visuelle Darstellung des Rennmodells ist deaktiviert
@@ -68,7 +70,7 @@ ui:
       default: ERWEITERUNGEN
     actions:
       choose: Wählen
-    selected: 'Ausgewählte Erweiterung: {0} ({1})'
+    selected: "Ausgewählte Erweiterung: {0} ({1})"
     no_description: Keine Beschreibung verfügbar.
     no_augment:
       title: KEINE ERWEITERUNG
@@ -81,35 +83,40 @@ ui:
       body: Es sind keine Meilensteine ​​für die Augment-Freischaltung konfiguriert.
     all_claimed:
       title: ALLES BEHAUPTIGT
-      next_unlock: Sie haben alle derzeit freigeschalteten Erweiterungen beansprucht.
+      next_unlock:
+        Sie haben alle derzeit freigeschalteten Erweiterungen beansprucht.
         Nächste Freischaltung auf Level {0}.
       done: Sie haben bereits alle konfigurierten Augment-Freischaltungen beansprucht.
     remaining:
-      header: '[EndlessLeveling] Sie haben noch weitere Erweiterungen zur Auswahl:'
+      header: "[EndlessLeveling] Sie haben noch weitere Erweiterungen zur Auswahl:"
       footer: Wählen Sie jetzt noch einmal.
     error:
       title: AUGMENT-FEHLER
       data_unavailable: Erweiterungsdaten nicht verfügbar.
       tier_unresolved: Die Erweiterungsstufe kann nicht aufgelöst werden.
-      playerdata_unavailable: Ihre Spielerdaten können nicht geladen werden. Versuchen
+      playerdata_unavailable:
+        Ihre Spielerdaten können nicht geladen werden. Versuchen
         Sie, diese Seite erneut zu öffnen.
-      system_unavailable: Das Augment-System ist derzeit nicht verfügbar. Bitte wenden
+      system_unavailable:
+        Das Augment-System ist derzeit nicht verfügbar. Bitte wenden
         Sie sich an einen Administrator.
-      definitions_missing: Es werden keine Erweiterungsdefinitionen geladen. Überprüfen
+      definitions_missing:
+        Es werden keine Erweiterungsdefinitionen geladen. Überprüfen
         Sie /mods/EndlessLeveling/augments.
-      offers_missing: Freigeschaltete Erweiterungen fehlen. Bitte einen Admin /el
+      offers_missing:
+        Freigeschaltete Erweiterungen fehlen. Bitte einen Admin /el
         augment refresh <player> auszuführen.
       slot_empty: Keine Verstärkung in diesem Slot.
     effect:
-      cooldown: 'Abklingzeit: {0}'
-      duration_per_stack: 'Dauer pro Stapel: {0}'
-      duration: 'Dauer: {0}'
-      max_stacks: 'Max. Stapel: {0}'
+      cooldown: "Abklingzeit: {0}"
+      duration_per_stack: "Dauer pro Stapel: {0}"
+      duration: "Dauer: {0}"
+      max_stacks: "Max. Stapel: {0}"
       note:
-        full_at_health: ' (voll bei <= {0} % Gesundheit)'
-        full_at_ratio: ' (voll bei {0}x Verhältnis)'
-        range: ' (Bereich {0}-{1})'
-        full_at_distance: ' (voll bei {0} Entfernung)'
+        full_at_health: " (voll bei <= {0} % Gesundheit)"
+        full_at_ratio: " (voll bei {0}x Verhältnis)"
+        range: " (Bereich {0}-{1})"
+        full_at_distance: " (voll bei {0} Entfernung)"
       label:
         strength: Stärke
         sorcery: Zauberei
@@ -156,7 +163,7 @@ ui:
         full_value_at_health_percent: Voller Wertschwellenwert
         max_distance: Maximale Distanz (voller Bonus)
   races:
-    count: '{0} {1}'
+    count: "{0} {1}"
     count_none: 0 verfügbar
     count_word:
       singular: Wettrennen
@@ -185,7 +192,8 @@ ui:
       hint: Versuchen Sie, diese Seite in ein paar Augenblicken erneut zu öffnen.
     select:
       title: Wählen Sie ein Rennen aus
-      subtitle: Wählen Sie links eine Rasse aus, um eine Vorschau ihrer Identität
+      subtitle:
+        Wählen Sie links eine Rasse aus, um eine Vorschau ihrer Identität
         anzuzeigen.
     subtitle:
       current: Derzeit aktiv
@@ -204,7 +212,8 @@ ui:
       disabled: Deaktiviert
       card_title: Abklingzeit des Rassenwechsels
       card_hint: Der Austausch ist wieder möglich, sobald der Timer Null erreicht.
-      default_warning: Nach dem Tauschen bleibst du für die verbleibende Abklingzeit
+      default_warning:
+        Nach dem Tauschen bleibst du für die verbleibende Abklingzeit
         gesperrt.
       bypassed: Umgangen
       bypassed_hint: Bedienerbypass aktiv.
@@ -213,16 +222,16 @@ ui:
       ready: Bereit
       swap_triggers: Das Tauschen löst eine Abklingzeit von {0} aus.
       unrestricted: Der Rassentausch ist derzeit uneingeschränkt möglich.
-      try_again_prefix: 'Sie können wieder eintauschen '
+      try_again_prefix: "Sie können wieder eintauschen "
       unlocks_in: Tauschen Sie die Freischaltungen in {0} aus.
     chat:
-      prefix: '[Rennen]'
-      changed_prefix: 'Du bist jetzt ein '
+      prefix: "[Rennen]"
+      changed_prefix: "Du bist jetzt ein "
     error:
       playerdata: Deine Renninformationen können derzeit nicht geladen werden.
       select_first: Wählen Sie ein Rennen aus, in das Sie wechseln möchten.
       disabled: Rennen sind deaktiviert.
-      unknown: 'Unbekannte Rasse: {0}'
+      unknown: "Unbekannte Rasse: {0}"
       already_selected: Du gehörst bereits zu dieser Rasse.
       no_changes_remaining: Es sind keine Rassenänderungen mehr übrig.
     attribute_tagline:
@@ -239,7 +248,7 @@ ui:
     passive:
       default_name: Passiv
       label:
-        with_attribute: '{0} ({1})'
+        with_attribute: "{0} ({1})"
       type:
         xp_bonus: XP-Bonus
         health_regen: Gesundheitsregeneration
@@ -266,37 +275,37 @@ ui:
         stamina: Ausdauer
         target_hp: Ziel HP
       desc:
-        xp_bonus: '{0} XP Gewinn'
-        health_regen: '{0} HP/5s'
-        mana_regen: '{0} Mana/5s'
-        mana_regen_flat: '{0} Mana/s'
-        regeneration: '{0} PS/s'
-        healing_bonus: '{0} Heilung'
-        life_steal: '{0} Lebensraub'
-        charge_bonus: '{0} Gebührensatz'
-        stamina_gain: '{0} Ausdauergewinn'
-        luck: '{0} Glück'
-        second_wind: '{0} heilen'
-        first_strike: '{0} Öffner'
-        adrenaline: '{0} Ausdauer'
-        berzerker: '{0} Schaden'
-        retaliation: '{0} reflektieren'
-        executioner: '{0} Finisher'
-        swiftness: '{0} Geschwindigkeit'
-        wither: '{0} max. HP/Sek'
-        crit_defense: '{0} Schadensreduzierung'
+        xp_bonus: "{0} XP Gewinn"
+        health_regen: "{0} HP/5s"
+        mana_regen: "{0} Mana/5s"
+        mana_regen_flat: "{0} Mana/s"
+        regeneration: "{0} PS/s"
+        healing_bonus: "{0} Heilung"
+        life_steal: "{0} Lebensraub"
+        charge_bonus: "{0} Gebührensatz"
+        stamina_gain: "{0} Ausdauergewinn"
+        luck: "{0} Glück"
+        second_wind: "{0} heilen"
+        first_strike: "{0} Öffner"
+        adrenaline: "{0} Ausdauer"
+        berzerker: "{0} Schaden"
+        retaliation: "{0} reflektieren"
+        executioner: "{0} Finisher"
+        swiftness: "{0} Geschwindigkeit"
+        wither: "{0} max. HP/Sek"
+        crit_defense: "{0} Schadensreduzierung"
       detail:
         threshold: <{0}% {1}
-        slow: '{0} langsam'
+        slow: "{0} langsam"
         scales_with: skaliert mit {0}
-        per_level: '{0} pro Ebene'
-        total_at_level: '{0} (Gesamt {1} bei Lv {2})'
-        duration: '{0}s Dauer'
-        cooldown: '{0}s CD'
-        window: '{0}s Fenster'
-        stacks: '{0} Stapel'
+        per_level: "{0} pro Ebene"
+        total_at_level: "{0} (Gesamt {1} bei Lv {2})"
+        duration: "{0}s Dauer"
+        cooldown: "{0}s CD"
+        window: "{0}s Fenster"
+        stacks: "{0} Stapel"
   classes:
-    count: '{0} {1}'
+    count: "{0} {1}"
     count_none: 0 verfügbar
     count_word:
       singular: Klasse
@@ -336,12 +345,13 @@ ui:
       hint: Versuchen Sie, diese Seite in ein paar Augenblicken erneut zu öffnen.
     select:
       title: Wählen Sie eine Klasse aus
-      subtitle: Wählen Sie links eine Klasse aus, um eine Vorschau ihrer Rolle und
+      subtitle:
+        Wählen Sie links eine Klasse aus, um eine Vorschau ihrer Rolle und
         Passiven anzuzeigen.
     role:
-      unspecified: 'Rolle: Nicht spezifiziert'
-      value: 'Rolle: {0}'
-      empty: 'Rolle: --'
+      unspecified: "Rolle: Nicht spezifiziert"
+      value: "Rolle: {0}"
+      empty: "Rolle: --"
     lore:
       unavailable: Überlieferung nicht verfügbar.
       missing: Für diese Klasse sind keine Überlieferungen vorgesehen.
@@ -402,23 +412,26 @@ ui:
       select_primary: Wählen Sie eine Klasse aus, die Sie als primär festlegen möchten.
       primary_already: Das ist bereits Ihre Hauptklasse.
       secondary_disabled: Der Sekundarunterricht ist derzeit deaktiviert.
-      select_secondary: Wählen Sie eine Klasse aus, die Sie als sekundäre Klasse festlegen
+      select_secondary:
+        Wählen Sie eine Klasse aus, die Sie als sekundäre Klasse festlegen
         möchten.
-      secondary_matches_primary: Ihre sekundäre Klasse kann nicht mit Ihrer primären
+      secondary_matches_primary:
+        Ihre sekundäre Klasse kann nicht mit Ihrer primären
         Klasse übereinstimmen.
       secondary_already: Das ist schon deine Zweitklasse.
       secondary_set_failed: Das kann nicht als sekundäre Klasse festgelegt werden.
       secondary_none: Ihnen ist keine Nebenklasse zugewiesen.
-      unknown: 'Unbekannte Klasse: {0}'
+      unknown: "Unbekannte Klasse: {0}"
       cooldown_remaining: Sie können Ihre {0}-Klasse erneut in {1} ändern.
       no_changes_remaining: Es sind keine Klassenänderungen mehr vorhanden.
   skills:
     unknown: Unbekannt
-    points: 'FERTIGKEITSPUNKTE: {0}'
+    points: "FERTIGKEITSPUNKTE: {0}"
     page:
       title: Fähigkeitsattribute
       subtitle: Verteilen Sie Punkte, um Ihre Kampfidentität zu formen.
-      footer_hint: Rückgängig machen, um ausstehende Optimierungen rückgängig zu machen,
+      footer_hint:
+        Rückgängig machen, um ausstehende Optimierungen rückgängig zu machen,
         und anwenden, um sie zu sperren.
       undo: RÜCKGÄNGIG MACHEN
       apply: ANWENDEN
@@ -435,7 +448,8 @@ ui:
       flow: Fließen
       discipline: Disziplin
     description:
-      life_force: Steigert Ihre Gesamtgesundheit, sodass Sie mehr Treffer einstecken
+      life_force:
+        Steigert Ihre Gesamtgesundheit, sodass Sie mehr Treffer einstecken
         können.
       strength: Erhöht den physischen Schaden für Nahkampf- und Fernkampfwaffen.
       sorcery: Erhöht den magischen Schaden für Stabwaffen.
@@ -447,39 +461,42 @@ ui:
       flow: Erhöht den Manafluss, sodass Zauber und Fähigkeiten länger online bleiben.
       discipline: Erhöht die Gewinnrate aus allen Quellen um XP.
     value:
-      resource: '{0} {1}'
+      resource: "{0} {1}"
       strength: +{0}% Schaden
       sorcery: +{0}% Magieschaden
-      defense: '{0} % Reduzierung'
+      defense: "{0} % Reduzierung"
       haste: +{0}% Geschwindigkeit
-      precision: '{0} % Chance auf kritische Treffer'
+      precision: "{0} % Chance auf kritische Treffer"
       ferocity: +{0} % kritischer Schaden
       discipline: +{0}% XP Gewinn
     message:
       granted: Dir wurden Fertigkeitspunkte gutgeschrieben!
       reset: Ausstehende Änderungen zurückgesetzt.
       applied: Fähigkeiten angewendet!
-      added: '{0} Punkt(e) zu {1} hinzugefügt'
-      removed: '{0} Punkt(e) von {1} entfernt'
-      precision_capped: Die Chance auf einen präzisen kritischen Treffer ist auf 100
+      added: "{0} Punkt(e) zu {1} hinzugefügt"
+      removed: "{0} Punkt(e) von {1} entfernt"
+      precision_capped:
+        Die Chance auf einen präzisen kritischen Treffer ist auf 100
         % begrenzt; überschüssige Punkte werden nicht berücksichtigt.
     error:
-      precision_at_cap: Die Chance auf einen präzisen kritischen Treffer liegt bereits
+      precision_at_cap:
+        Die Chance auf einen präzisen kritischen Treffer liegt bereits
         bei 100 %; Entfernen Sie zuerst andere Boni.
       not_enough_points: Nicht genügend Fertigkeitspunkte
-      precision_no_refund: Die Chance auf einen präzisen kritischen Treffer liegt
+      precision_no_refund:
+        Die Chance auf einen präzisen kritischen Treffer liegt
         bereits bei 100 % oder niedriger; keine Rückerstattung überschüssiger Punkte.
       below_original: Das ursprüngliche Niveau kann nicht unterschritten werden
-      invalid_attribute: 'Ungültiges Attribut: {0}'
+      invalid_attribute: "Ungültiges Attribut: {0}"
       action_failed: Fehlerbehandlungs-Skill-Aktion
     resource:
       health: Gesundheit
       stamina: Ausdauer
       flow: Fließen
   time:
-    hours: '{0}h'
-    minutes: '{0}m'
-    seconds: '{0}s'
+    hours: "{0}h"
+    minutes: "{0}m"
+    seconds: "{0}s"
   nav:
     profile: PROFIL
     skills: FÄHIGKEITEN
@@ -500,19 +517,19 @@ ui:
       title: Profile {0}/{1}
       slot: Steckplatz {0}
       level: Stufe {0}
-      xp: '{0} XP'
+      xp: "{0} XP"
       select: WÄHLEN
       status:
         active: AKTIV
       delete:
-        confirm: '{0} löschen?'
+        confirm: "{0} löschen?"
     passives:
       none: Keine passiven Boni aktiv
       innate_none: Keine angeborenen passiven Fähigkeiten aktiv
       innate_attr_none: Keine angeborenen Attributboni
       select_prompt: Wählen Sie ein Profil aus, um passive Boni anzuzeigen
       select_innate_prompt: Wählen Sie ein Profil aus, um angeborene Boni anzuzeigen
-      level_label: '{0} (Stufe {1})'
+      level_label: "{0} (Stufe {1})"
     augments:
       none: Keine Erweiterungen aktiv
     error:
@@ -538,8 +555,82 @@ ui:
       delete_canceled: Profillöschung abgebrochen.
 command:
   language:
-    usage: 'Verwendung: /el lang list | /el lang set <locale>'
-    current: 'Aktuelle Sprache: {0}'
-    available: 'Verfügbare Sprachen: {0}'
-    invalid: 'Unbekannte Sprache ''{0}''. Verfügbare Sprachen: {1}'
-    updated: Sprache auf {0} gesetzt.
+    unavailable: "Sprachmanager ist nicht verfügbar."
+    data_not_loaded: "Ihre Spielerdaten sind noch nicht geladen."
+    current: "Aktuelle Sprache: {0}"
+    available: "Verfügbare Sprachen: {0}"
+    usage: "Verwendung: /el language list | /el language set <locale>"
+    invalid: "Unbekannte Sprache '{0}'. Verfügbare Sprachen: {1}"
+    updated: "Sprache auf {0} gesetzt."
+  reset_cooldowns:
+    unavailable: "Passiv- und Augment-Manager sind nicht verfügbar."
+    success: "Passive Abklingzeiten für {0} Spieler zurückgesetzt und alle Augment-Zustände gelöscht."
+  reset_skillpoints:
+    system_unavailable: "Fertigkeitssystem ist nicht initialisiert. Bitte kontaktieren Sie einen Admin."
+    player_not_found: "Spieler nicht gefunden: {0}"
+    no_data: "Keine gespeicherten Daten gefunden. Versuchen Sie, erneut beizutreten."
+    success_target: "Fertigkeitspunkte für {0} zurückgesetzt."
+    notify_target: "Ein Admin hat Ihre Fertigkeitspunkte zurückgesetzt."
+    success_self: "Ihre Fertigkeitspunkte wurden auf das Standardlayout zurückgesetzt."
+
+augments:
+  stacks:
+    max: "{0} bei maximalen Stapeln ({1})."
+    update: "{0}: {1}/{2} Stapel."
+    expired: "{0} Stapel abgelaufen."
+    remaining: "{0}: {1}/{2} Stapel verbleibend."
+  executioner:
+    triggered: "{0} ausgelöst! +{1}% Schaden."
+  fortress:
+    activated: "{0} aktiviert! Schild für {1}s, Buffs für {2}s."
+    buff_ended: "{0} Buff beendet."
+    shield_ended: "{0} Stasis-Schild beendet."
+  undying_rage:
+    active: "{0} ist aktiv für {1}s."
+    ended: "{0} Dauer beendet."
+  rebirth:
+    activated: "{0} aktiviert! {1}% der maximalen Gesundheit wiederhergestellt."
+  first_strike:
+    triggered: "{0} ausgelöst! +{1}% Schaden."
+    lost: "{0} verloren: Sie wurden getroffen, bevor Sie zuschlagen konnten. Abklingzeit gestartet."
+
+augments:
+  stacks:
+    max: "{0} (Max. Stapel {1})."
+    update: "{0}: {1}/{2} Stapel."
+    expired: "{0} Stapel abgelaufen."
+    remaining: "{0}: verbleibend {1}/{2} Stapel."
+  executioner:
+    triggered: "{0} ausgelöst! +{1}% Schaden."
+  fortress:
+    activated: "{0} aktiviert! {1}s Schild, {2}s Buff."
+    buff_ended: "{0} Buff beendet."
+    shield_ended: "{0} Stasis-Schild beendet."
+  undying_rage:
+    active: "{0} aktiv für {1}s."
+    ended: "{0} Effekt beendet."
+  rebirth:
+    activated: "{0} ausgelöst! {1}% max HP wiederhergestellt."
+  first_strike:
+    triggered: "{0} ausgelöst! +{1}% Schaden."
+    lost: "{0} verloren: Schaden vor Angriff erhalten. Abklingzeit."
+
+command:
+  language:
+    unavailable: "Sprachmanager nicht verfügbar."
+    data_not_loaded: "Spielerdaten nicht geladen."
+    current: "Aktuelle Sprache: {0}"
+    available: "Verfügbar: {0}"
+    usage: "Verwendung: /el language list | /el language set <Code>"
+    invalid: "Unbekannter Code '{0}'. Verfügbar: {1}"
+    updated: "Sprache auf {0} gesetzt."
+  reset_cooldowns:
+    unavailable: "Passiv/Erweiterungs-Manager nicht verfügbar."
+    success: "Passive Abklingzeiten und Erweiterungsstatus für {0} Spieler zurückgesetzt."
+  reset_skillpoints:
+    system_unavailable: "Skill-System nicht initialisiert. Kontaktieren Sie den Administrator."
+    player_not_found: "Spieler nicht gefunden: {0}"
+    no_data: "Keine gespeicherten Daten. Bitte neu beitreten."
+    success_target: "Skillpunkte für {0} zurückgesetzt."
+    notify_target: "Administrator hat deine Skillpunkte zurückgesetzt."
+    success_self: "Skillpunkte auf Standard zurückgesetzt."

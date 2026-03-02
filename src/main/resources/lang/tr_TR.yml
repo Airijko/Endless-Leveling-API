@@ -5,18 +5,19 @@ notify:
   skills:
     command: /el
     unspent:
-      primary: You have {0} unspent skill points!
+      primary: '{0} harcanmamış yetenek puanınız var!'
       secondary:
-        open: 'Open '
-        close: ' to invest them'
+        open: 'Aç '
+        close: ' harcamak için'
     chat:
-      have: 'You still have '
-      use: ' skill points. Use '
-      end: ' to spend them.'
+      have: 'Hala '
+      use: ' yetenek puanınız var. Harcamak için '
+      end: ' kullanın.'
   augments:
     available:
-      header: '[EndlessLeveling] You have augments available to choose from:'
-      footer: Use /el augments to choose.
+      header: '[EndlessLeveling] Seçebileceğiniz güçlendirmeler var:'
+      footer: Seçmek için /el augments kullanın.
+  xp_suppressed: 'Oyuncu seviyesi çok yüksek: XP verilmedi (Yaratık: {0} / Oyuncu: {1} / Fark: {2})'
 hud:
   common:
     unavailable: --
@@ -533,3 +534,44 @@ command:
     available: 'Kullanılabilir diller: {0}'
     invalid: 'Bilinmeyen dil ''{0}''. Kullanılabilir diller: {1}'
     updated: Dil {0} olarak ayarlandı.
+
+augments:
+  stacks:
+    max: "{0} (maks yük {1})."
+    update: "{0}: {1}/{2} yük."
+    expired: "{0} yükleri sona erdi."
+    remaining: "{0}: {1}/{2} yük kaldı."
+  executioner:
+    triggered: "{0} tetiklendi! +{1}% hasar."
+  fortress:
+    activated: "{0} aktif! {1}sn kalkan, {2}sn güçlendirme."
+    buff_ended: "{0} güçlendirme bitti."
+    shield_ended: "{0} durgunluk kalkanı bitti."
+  undying_rage:
+    active: "{0} {1}sn aktif."
+    ended: "{0} etki bitti."
+  rebirth:
+    activated: "{0} tetiklendi! %{1} maks can yenilendi."
+  first_strike:
+    triggered: "{0} tetiklendi! +{1}% hasar."
+    lost: "{0} kayıp: Saldırıdan önce hasar alındı. Bekleme süresi."
+
+command:
+  language:
+    unavailable: "Dil yöneticisi kullanılamıyor."
+    data_not_loaded: "Oyuncu verisi yüklenmedi."
+    current: "Şu anki dil: {0}"
+    available: "Kullanılabilir: {0}"
+    usage: "Kullanım: /el language list | /el language set <dil>"
+    invalid: "Geçersiz dil kodu '{0}'. Kullanılabilir: {1}"
+    updated: "Dil {0} olarak ayarlandı."
+  reset_cooldowns:
+    unavailable: "Pasif/Güçlendirme yöneticisi kullanılamıyor."
+    success: "{0} oyuncunun pasif beklemeleri sıfırlandı ve güçlendirme durumu temizlendi."
+  reset_skillpoints:
+    system_unavailable: "Yetenek sistemi başlatılmadı. Yönetici ile iletişime geçin."
+    player_not_found: "Oyuncu bulunamadı: {0}"
+    no_data: "Kaydedilmiş veri yok. Tekrar katılın."
+    success_target: "{0} için yetenek puanları sıfırlandı."
+    notify_target: "Yönetici yetenek puanlarınızı sıfırladı."
+    success_self: "Yetenek puanları varsayılana sıfırlandı."

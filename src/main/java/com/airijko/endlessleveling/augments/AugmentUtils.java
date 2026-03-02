@@ -1,6 +1,7 @@
 package com.airijko.endlessleveling.augments;
 
 import com.airijko.endlessleveling.augments.AugmentRuntimeManager.AugmentRuntimeState;
+import com.airijko.endlessleveling.util.Lang;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
@@ -178,15 +179,20 @@ public final class AugmentUtils {
         if (playerRef != null && playerRef.isValid()) {
             String name = displayName != null && !displayName.isBlank() ? displayName : augmentId;
             if (newStacks >= clampedMax) {
-                sendAugmentMessage(playerRef, String.format("%s at max stacks (%d).", name, newStacks));
+                sendAugmentMessage(playerRef, Lang.tr(playerRef.getUuid(),
+                        "augments.stacks.max", "{0} at max stacks ({1}).",
+                        name, newStacks));
             } else if (newStacks > current) {
-                sendAugmentMessage(playerRef, String.format("%s: %d/%d stacks.", name, newStacks, clampedMax));
+                sendAugmentMessage(playerRef, Lang.tr(playerRef.getUuid(), "augments.stacks.update",
+                        "{0}: {1}/{2} stacks.", name, newStacks, clampedMax));
             } else {
                 if (newStacks <= 0) {
-                    sendAugmentMessage(playerRef, String.format("%s stacks expired.", name));
+                    sendAugmentMessage(playerRef, Lang.tr(playerRef.getUuid(),
+                            "augments.stacks.expired", "{0} stacks expired.", name));
                 } else {
-                    sendAugmentMessage(playerRef,
-                            String.format("%s: %d/%d stacks remaining.", name, newStacks, clampedMax));
+                    sendAugmentMessage(playerRef, Lang.tr(playerRef.getUuid(),
+                            "augments.stacks.remaining", "{0}: {1}/{2} stacks remaining.",
+                            name, newStacks, clampedMax));
                 }
             }
         }

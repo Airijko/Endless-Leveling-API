@@ -2,6 +2,7 @@ package com.airijko.endlessleveling.managers;
 
 import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.data.PlayerData;
+import com.airijko.endlessleveling.util.Lang;
 import com.airijko.endlessleveling.enums.ArchetypePassiveType;
 import com.airijko.endlessleveling.enums.PassiveTier;
 import com.airijko.endlessleveling.augments.AugmentUnlockManager;
@@ -227,11 +228,13 @@ public class LevelingManager {
         }
 
         StringBuilder builder = new StringBuilder();
-        builder.append("[EndlessLeveling] You have augments available to choose from:\n");
+        builder.append(Lang.tr(playerRef.getUuid(), "notify.augments.available.header",
+                "[EndlessLeveling] You have augments available to choose from:")).append("\n");
         for (PassiveTier tier : tiers) {
             builder.append("- ").append(tier.name()).append("\n");
         }
-        builder.append("Use /el augments to choose.");
+        builder.append(Lang.tr(playerRef.getUuid(), "notify.augments.available.footer",
+                "Use /el augments to choose."));
         playerRef.sendMessage(Message.raw(builder.toString()).color("#4fd7f7"));
     }
 
@@ -395,15 +398,19 @@ public class LevelingManager {
         if (playerRef == null)
             return;
 
+        UUID uuid = playerRef.getUuid();
         String mobLabel = levelKnown
-                ? String.format("this mob (level %d)", Math.max(1, mobLevel))
-                : "this mob";
+                ? Lang.tr(uuid, "notify.xp_suppressed.mob_label_level",
+                        "this mob (level {0})", Math.max(1, mobLevel))
+                : Lang.tr(uuid, "notify.xp_suppressed.mob_label", "this mob");
         String messageText = switch (reason) {
-            case PLAYER_TOO_HIGH -> String.format(
-                    "No XP awarded: your level (%d) is too high for %s.",
+            case PLAYER_TOO_HIGH -> Lang.tr(uuid,
+                    "notify.xp_suppressed.player_too_high",
+                    "No XP awarded: your level ({0}) is too high for {1}.",
                     player.getLevel(), mobLabel);
-            case PLAYER_TOO_LOW -> String.format(
-                    "No XP awarded: %s is too far above your level (%d).",
+            case PLAYER_TOO_LOW -> Lang.tr(uuid,
+                    "notify.xp_suppressed.player_too_low",
+                    "No XP awarded: {0} is too far above your level ({1}).",
                     mobLabel, player.getLevel());
         };
         playerRef.sendMessage(Message.raw(messageText).color("#ff6666"));

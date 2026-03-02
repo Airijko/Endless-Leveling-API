@@ -5,18 +5,19 @@ notify:
   skills:
     command: /el
     unspent:
-      primary: You have {0} unspent skill points!
+      primary: Masz {0} niewydanych punktów umiejętności!
       secondary:
-        open: 'Open '
-        close: ' to invest them'
+        open: 'Otwórz '
+        close: ' aby je wydać'
     chat:
-      have: 'You still have '
-      use: ' skill points. Use '
-      end: ' to spend them.'
+      have: 'Wciąż masz '
+      use: ' punktów umiejętności. Użyj '
+      end: ' aby je wydać.'
   augments:
     available:
-      header: '[EndlessLeveling] You have augments available to choose from:'
-      footer: Use /el augments to choose.
+      header: '[EndlessLeveling] Masz dostępne ulepszenia do wyboru:'
+      footer: Użyj /el augments aby wybrać.
+  xp_suppressed: Poziom gracza jest zbyt wysoki: brak PD (Mob: {0} / Gracz: {1} / Różnica: {2})
 hud:
   common:
     unavailable: --
@@ -533,3 +534,44 @@ command:
     available: 'Dostępne języki: {0}'
     invalid: 'Nieznany język ''{0}''. Dostępne języki: {1}'
     updated: 'Ustawiono język: {0}.'
+
+augments:
+  stacks:
+    max: "{0} (maks. stosów {1})."
+    update: "{0}: {1}/{2} stosów."
+    expired: "{0} stosy wygasły."
+    remaining: "{0}: pozostało {1}/{2} stosów."
+  executioner:
+    triggered: "{0} aktywowane! +{1}% obrażeń."
+  fortress:
+    activated: "{0} aktywowane! {1}s tarcza, {2}s wzmocnienie."
+    buff_ended: "{0} wzmocnienie zakończone."
+    shield_ended: "{0} tarcza zastoju zakończona."
+  undying_rage:
+    active: "{0} aktywne przez {1}s."
+    ended: "{0} efekt zakończony."
+  rebirth:
+    activated: "{0} aktywowane! Przywrócono {1}% max PŻ."
+  first_strike:
+    triggered: "{0} aktywowane! +{1}% obrażeń."
+    lost: "{0} utracone: Otrzymano obrażenia przed atakiem. Odnowienie."
+
+command:
+  language:
+    unavailable: "Menedżer języków niedostępny."
+    data_not_loaded: "Dane gracza nie załadowane."
+    current: "Obecny język: {0}"
+    available: "Dostępne: {0}"
+    usage: "Użycie: /el language list | /el language set <kod>"
+    invalid: "Nieznany kod '{0}'. Dostępne: {1}"
+    updated: "Język ustawiony na {0}."
+  reset_cooldowns:
+    unavailable: "Menedżer pasywnych/ulepszeń niedostępny."
+    success: "Zresetowano odnowienia pasywne i wyczyszczono stan ulepszeń dla {0} graczy."
+  reset_skillpoints:
+    system_unavailable: "System umiejętności niezainicjalizowany. Skontaktuj się z administratorem."
+    player_not_found: "Nie znaleziono gracza: {0}"
+    no_data: "Brak zapisanych danych. Dołącz ponownie."
+    success_target: "Zresetowano punkty umiejętności dla {0}."
+    notify_target: "Administrator zresetował twoje punkty umiejętności."
+    success_self: "Zresetowano punkty umiejętności do domyślnych."

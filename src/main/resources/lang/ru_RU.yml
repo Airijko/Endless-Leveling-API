@@ -5,18 +5,19 @@ notify:
   skills:
     command: /el
     unspent:
-      primary: You have {0} unspent skill points!
+      primary: У вас {0} нераспределенных очков навыков!
       secondary:
-        open: 'Open '
-        close: ' to invest them'
+        open: 'Откройте '
+        close: ' чтобы распределить их'
     chat:
-      have: 'You still have '
-      use: ' skill points. Use '
-      end: ' to spend them.'
+      have: 'У вас все еще есть '
+      use: ' очков навыков. Используйте '
+      end: ' чтобы распределить их.'
   augments:
     available:
-      header: '[EndlessLeveling] You have augments available to choose from:'
-      footer: Use /el augments to choose.
+      header: '[EndlessLeveling] Вам доступны улучшения на выбор:'
+      footer: Используйте /el augments для выбора.
+  xp_suppressed: Уровень игрока слишком высок: опыт заблокирован (Моб: {0} / Игрок: {1} / Разница: {2})
 hud:
   common:
     unavailable: --
@@ -533,3 +534,44 @@ command:
     available: 'Доступные языки: {0}'
     invalid: 'Неизвестный язык ''{0}''. Доступные языки: {1}'
     updated: 'Язык установлен: {0}.'
+
+augments:
+  stacks:
+    max: "{0} (макс. {1})."
+    update: "{0}: {1}/{2} стаков."
+    expired: "{0} стаков истекло."
+    remaining: "{0}: осталось {1}/{2} стаков."
+  executioner:
+    triggered: "{0} сработало! +{1}% урона."
+  fortress:
+    activated: "{0} активировано! {1}с щит, {2}с бафф."
+    buff_ended: "{0} бафф закончился."
+    shield_ended: "{0} стазис-щит закончился."
+  undying_rage:
+    active: "{0} активно {1}с."
+    ended: "{0} эффект закончился."
+  rebirth:
+    activated: "{0} сработало! Восстановлено {1}% макс ХП."
+  first_strike:
+    triggered: "{0} сработало! +{1}% урона."
+    lost: "{0} потеряно: Урон получен до удара. Кулдаун."
+
+command:
+  language:
+    unavailable: "Менеджер языков недоступен."
+    data_not_loaded: "Данные игрока не загружены."
+    current: "Текущий язык: {0}"
+    available: "Доступно: {0}"
+    usage: "Использование: /el language list | /el language set <язык>"
+    invalid: "Неизвестный код '{0}'. Доступно: {1}"
+    updated: "Язык установлен на {0}."
+  reset_cooldowns:
+    unavailable: "Менеджер пассивок/улучшений недоступен."
+    success: "Сброшены кулдауны и улучшения для {0} игроков."
+  reset_skillpoints:
+    system_unavailable: "Система навыков не инициализирована. Свяжитесь с администратором."
+    player_not_found: "Игрок не найден: {0}"
+    no_data: "Нет сохраненных данных. Перезайдите."
+    success_target: "Сброшены очки навыков для {0}."
+    notify_target: "Администратор сбросил ваши очки навыков."
+    success_self: "Очки навыков сброшены по умолчанию."

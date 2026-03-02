@@ -1,6 +1,7 @@
 package com.airijko.endlessleveling.augments.types;
 
 import com.airijko.endlessleveling.augments.AugmentDefinition;
+import com.airijko.endlessleveling.util.Lang;
 import com.airijko.endlessleveling.augments.AugmentHooks;
 import com.airijko.endlessleveling.augments.AugmentRuntimeManager.AugmentState;
 import com.airijko.endlessleveling.augments.AugmentRuntimeManager.AugmentRuntimeState;
@@ -92,11 +93,15 @@ public final class FortressAugment extends YamlAugment
         applyMovementLock(context.getDefenderRef(), context.getCommandBuffer(), true);
 
         PlayerRef playerRef = AugmentUtils.getPlayerRef(context.getCommandBuffer(), context.getDefenderRef());
-        AugmentUtils.sendAugmentMessage(playerRef,
-                String.format("%s activated! Shielded for %.0fs, buffs for %.0fs.",
-                        getName(),
-                        shieldDuration / 1000.0D,
-                        buffDuration / 1000.0D));
+        if (playerRef != null && playerRef.isValid()) {
+            AugmentUtils.sendAugmentMessage(playerRef,
+                    Lang.tr(playerRef.getUuid(),
+                            "augments.fortress.activated",
+                            "{0} activated! Shielded for {1}s, buffs for {2}s.",
+                            getName(),
+                            shieldDuration / 1000.0D,
+                            buffDuration / 1000.0D));
+        }
 
         return 0f;
     }
@@ -118,8 +123,13 @@ public final class FortressAugment extends YamlAugment
             clearAttributeBonuses(context.getRuntimeState());
             state.setStoredValue(0.0D);
             PlayerRef playerRef = AugmentUtils.getPlayerRef(context.getCommandBuffer(), context.getPlayerRef());
-            AugmentUtils.sendAugmentMessage(playerRef,
-                    String.format("%s buff ended.", getName()));
+            if (playerRef != null && playerRef.isValid()) {
+                AugmentUtils.sendAugmentMessage(playerRef,
+                        Lang.tr(playerRef.getUuid(),
+                                "augments.fortress.buff_ended",
+                                "{0} buff ended.",
+                                getName()));
+            }
         }
 
         if (!shieldActive && state.getStacks() > 0) {
@@ -127,8 +137,13 @@ public final class FortressAugment extends YamlAugment
             state.setExpiresAt(0L);
             applyMovementLock(context.getPlayerRef(), context.getCommandBuffer(), false);
             PlayerRef playerRef = AugmentUtils.getPlayerRef(context.getCommandBuffer(), context.getPlayerRef());
-            AugmentUtils.sendAugmentMessage(playerRef,
-                    String.format("%s stasis shield ended.", getName()));
+            if (playerRef != null && playerRef.isValid()) {
+                AugmentUtils.sendAugmentMessage(playerRef,
+                        Lang.tr(playerRef.getUuid(),
+                                "augments.fortress.shield_ended",
+                                "{0} stasis shield ended.",
+                                getName()));
+            }
         }
     }
 

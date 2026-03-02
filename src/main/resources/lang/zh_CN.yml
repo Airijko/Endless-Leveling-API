@@ -5,18 +5,19 @@ notify:
   skills:
     command: /el
     unspent:
-      primary: You have {0} unspent skill points!
+      primary: 您有 {0} 点未使用的技能点！
       secondary:
-        open: 'Open '
-        close: ' to invest them'
+        open: '打开 '
+        close: ' 界面进行分配'
     chat:
-      have: 'You still have '
-      use: ' skill points. Use '
-      end: ' to spend them.'
+      have: '您还有 '
+      use: ' 点技能点。使用 '
+      end: ' 进行分配。'
   augments:
     available:
-      header: '[EndlessLeveling] You have augments available to choose from:'
-      footer: Use /el augments to choose.
+      header: '[EndlessLeveling] 您有可用的强化可以选择：'
+      footer: 使用 /el augments 选择。
+  xp_suppressed: 玩家等级过高：无法获得经验 (怪物: {0} / 玩家: {1} / 差距: {2})
 hud:
   common:
     unavailable: --
@@ -531,3 +532,44 @@ command:
     available: '可用语言: {0}'
     invalid: '未知语言 ''{0}''。可用语言: {1}'
     updated: 语言已设置为 {0}。
+
+augments:
+  stacks:
+    max: "{0} (最大层数 {1})."
+    update: "{0}: {1}/{2} 层."
+    expired: "{0} 层已过期."
+    remaining: "{0}: 剩余 {1}/{2} 层."
+  executioner:
+    triggered: "{0} 触发！ +{1}% 伤害."
+  fortress:
+    activated: "{0} 激活！ {1}秒护盾, {2}秒增益."
+    buff_ended: "{0} 增益结束."
+    shield_ended: "{0} 停滞护盾结束."
+  undying_rage:
+    active: "{0} 激活 {1}秒."
+    ended: "{0} 效果结束."
+  rebirth:
+    activated: "{0} 触发！恢复 {1}% 最大生命值."
+  first_strike:
+    triggered: "{0} 触发！ +{1}% 伤害."
+    lost: "{0} 丢失: 攻击前受到伤害. 冷却中."
+
+command:
+  language:
+    unavailable: "语言管理器不可用。"
+    data_not_loaded: "玩家数据未加载。"
+    current: "当前语言: {0}"
+    available: "可用语言: {0}"
+    usage: "用法: /el language list | /el language set <语言代码>"
+    invalid: "未知语言代码 '{0}'。可用: {1}"
+    updated: "语言已设置为 {0}。"
+  reset_cooldowns:
+    unavailable: "被动/强化管理器不可用。"
+    success: "已重置 {0} 名玩家的被动冷却，并清除强化状态。"
+  reset_skillpoints:
+    system_unavailable: "技能系统未初始化。请联系管理员。"
+    player_not_found: "未找到玩家: {0}"
+    no_data: "无保存数据。请重新加入。"
+    success_target: "已重置 {0} 的技能点。"
+    notify_target: "管理员重置了您的技能点。"
+    success_self: "已将技能点重置为默认值。"

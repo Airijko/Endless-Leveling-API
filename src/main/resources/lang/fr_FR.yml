@@ -15,8 +15,13 @@ notify:
       end: ' to spend them.'
   augments:
     available:
-      header: '[EndlessLeveling] You have augments available to choose from:'
-      footer: Use /el augments to choose.
+      header: '[EndlessLeveling] Vous avez des augmentations disponibles à choisir:'
+      footer: Utilisez /el augments pour choisir.
+  xp_suppressed:
+    mob_label: "ce mob"
+    mob_label_level: "ce mob (niveau {0})"
+    player_too_high: "Pas d'XP accordée: votre niveau ({0}) est trop élevé pour {1}."
+    player_too_low: "Pas d'XP accordée: {0} est bien au-dessus de votre niveau ({1})."
 hud:
   common:
     unavailable: --
@@ -537,3 +542,44 @@ command:
     available: 'Langues disponibles : {0}'
     invalid: 'Langue inconnue ''{0}''. Langues disponibles : {1}'
     updated: Langue définie sur {0}.
+
+augments:
+  stacks:
+    max: "{0} stacks max ({1})."
+    update: "{0}: {1}/{2} stacks."
+    expired: "{0} stacks expirés."
+    remaining: "{0}: {1}/{2} stacks restants."
+  executioner:
+    triggered: "{0} déclenché! +{1}% dégâts."
+  fortress:
+    activated: "{0} activé! Bouclier pour {1}s, buffs pour {2}s."
+    buff_ended: "{0} buff terminé."
+    shield_ended: "{0} bouclier de stase terminé."
+  undying_rage:
+    active: "{0} est actif pour {1}s."
+    ended: "{0} durée terminée."
+  rebirth:
+    activated: "{0} activé! Restauré {1}% de santé max."
+  first_strike:
+    triggered: "{0} déclenché! +{1}% dégâts."
+    lost: "{0} perdu: touché avant de frapper. Cooldown commencé."
+
+command:
+  language:
+    unavailable: "Gestionnaire de langue non disponible."
+    data_not_loaded: "Vos données joueur ne sont pas chargées."
+    current: "Langue actuelle: {0}"
+    available: "Langues disponibles: {0}"
+    usage: "Usage: /el language list | /el language set <locale>"
+    invalid: "Langue inconnue '{0}'. Disponibles: {1}"
+    updated: "Langue définie sur {0}."
+  reset_cooldowns:
+    unavailable: "Les gestionnaires passifs et augments sont indisponibles."
+    success: "Cooldowns passifs réinitialisés pour {0} joueurs et état augments effacé."
+  reset_skillpoints:
+    system_unavailable: "Système de compétences non initialisé. Contactez un admin."
+    player_not_found: "Joueur introuvable: {0}"
+    no_data: "Aucune donnée sauvegardée. Réessayez de rejoindre."
+    success_target: "Points de compétence réinitialisés pour {0}."
+    notify_target: "Un admin a réinitialisé vos points de compétence."
+    success_self: "Vos points de compétence ont été réinitialisés par défaut."

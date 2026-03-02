@@ -1,22 +1,23 @@
 meta:
-  locale_name: Inglés (Estados Unidos)
+  locale_name: Español (ES)
 notify:
-  prefix: '[Nivelación sin fin]'
+  prefix: "[EndlessLeveling] "
   skills:
     command: /el
     unspent:
       primary: ¡Tienes {0} puntos de habilidad no gastados!
       secondary:
-        open: Abierto
-        close: invertirlos
+        open: "Abre "
+        close: " para invertirlos"
     chat:
-      have: todavía tienes
-      use: puntos de habilidad. Usar
-      end: para gastarlos.
+      have: "Todavía tienes "
+      use: " puntos de habilidad. Usa "
+      end: " para gastarlos."
   augments:
     available:
-      header: '[EndlessLeveling] Tienes aumentos disponibles para elegir:'
-      footer: Utilice los aumentos /el para elegir.
+      header: "[EndlessLeveling] Tienes aumentos disponibles para elegir:"
+      footer: Usa /el augments para elegir.
+  xp_suppressed: "Nivel de jugador demasiado alto: No se otorga XP (Mob: {0} / Jugador: {1} / Diferencia: {2})"
 hud:
   common:
     unavailable: --
@@ -59,7 +60,8 @@ ui:
       toggled: Notificaciones de regeneración de salud {0}
     race_model:
       label: Imágenes del modelo de carrera
-      globally_disabled: Las imágenes del modelo de carrera están deshabilitadas por
+      globally_disabled:
+        Las imágenes del modelo de carrera están deshabilitadas por
         la configuración del servidor.
       enabled: Imágenes del modelo de carrera habilitadas
       disabled: Imágenes del modelo de carrera deshabilitadas
@@ -68,7 +70,7 @@ ui:
       default: AUMENTOS
     actions:
       choose: Elegir
-    selected: 'Aumento seleccionado: {0} ({1})'
+    selected: "Aumento seleccionado: {0} ({1})"
     no_description: Sin descripción.
     no_augment:
       title: SIN AUMENTO
@@ -81,34 +83,38 @@ ui:
       body: No se configuran hitos de desbloqueo de aumento.
     all_claimed:
       title: TODOS RECLAMADOS
-      next_unlock: Has reclamado todos los aumentos actualmente desbloqueados. Próximo
+      next_unlock:
+        Has reclamado todos los aumentos actualmente desbloqueados. Próximo
         desbloqueo en el nivel {0}.
       done: Ya has reclamado todos los desbloqueos de aumentos configurados.
     remaining:
-      header: '[EndlessLeveling] Aún tienes más aumentos para elegir:'
+      header: "[EndlessLeveling] Aún tienes más aumentos para elegir:"
       footer: Elige de nuevo ahora.
     error:
       title: ERROR DE AUMENTO
       data_unavailable: Los datos de aumento no están disponibles.
       tier_unresolved: No se puede resolver el nivel de aumento.
-      playerdata_unavailable: No se pueden cargar los datos de tu jugador. Intente
+      playerdata_unavailable:
+        No se pueden cargar los datos de tu jugador. Intente
         reabrir esta página.
-      system_unavailable: El sistema de aumento no está disponible en este momento.
+      system_unavailable:
+        El sistema de aumento no está disponible en este momento.
         Por favor contacte a un administrador.
       definitions_missing: No se cargan definiciones de aumento. Consulta /mods/EndlessLeveling/augments.
-      offers_missing: Faltan aumentos desbloqueados. Pide a un admin ejecutar /el
+      offers_missing:
+        Faltan aumentos desbloqueados. Pide a un admin ejecutar /el
         augment refresh <player>.
       slot_empty: No hay aumento en esa ranura.
     effect:
-      cooldown: 'Enfriamiento: {0}'
-      duration_per_stack: 'Duración por pila: {0}'
-      duration: 'Duración: {0}'
-      max_stacks: 'Pilas máximas: {0}'
+      cooldown: "Enfriamiento: {0}"
+      duration_per_stack: "Duración por pila: {0}"
+      duration: "Duración: {0}"
+      max_stacks: "Pilas máximas: {0}"
       note:
-        full_at_health: ' (completo a <= {0}% de salud)'
-        full_at_ratio: ' (lleno en proporción {0}x)'
-        range: ' (rango {0}-{1})'
-        full_at_distance: ' (completo a {0} distancia)'
+        full_at_health: " (completo a <= {0}% de salud)"
+        full_at_ratio: " (lleno en proporción {0}x)"
+        range: " (rango {0}-{1})"
+        full_at_distance: " (completo a {0} distancia)"
       label:
         strength: Fuerza
         sorcery: Brujería
@@ -155,7 +161,7 @@ ui:
         full_value_at_health_percent: Umbral de valor total
         max_distance: Distancia máxima (bonificación completa)
   races:
-    count: '{0} {1}'
+    count: "{0} {1}"
     count_none: 0 disponible
     count_word:
       singular: carrera
@@ -184,7 +190,8 @@ ui:
       hint: Intente reabrir esta página en unos momentos.
     select:
       title: Seleccione una carrera
-      subtitle: Elija una carrera a la izquierda para obtener una vista previa de
+      subtitle:
+        Elija una carrera a la izquierda para obtener una vista previa de
         su identidad.
     subtitle:
       current: Actualmente activo
@@ -202,9 +209,11 @@ ui:
     cooldown:
       disabled: Desactivado
       card_title: Enfriamiento de intercambio de raza
-      card_hint: El intercambio vuelve a estar disponible una vez que el cronómetro
+      card_hint:
+        El intercambio vuelve a estar disponible una vez que el cronómetro
         llega a cero.
-      default_warning: Quedarás bloqueado durante el tiempo de reutilización restante
+      default_warning:
+        Quedarás bloqueado durante el tiempo de reutilización restante
         después del intercambio.
       bypassed: omitido
       bypassed_hint: Bypass del operador activo.
@@ -213,16 +222,16 @@ ui:
       ready: Listo
       swap_triggers: El intercambio activará un tiempo de reutilización de {0}.
       unrestricted: El intercambio de razas no tiene restricciones en este momento.
-      try_again_prefix: 'Puedes cambiar nuevamente en '
+      try_again_prefix: "Puedes cambiar nuevamente en "
       unlocks_in: Intercambia desbloqueos en {0}.
     chat:
-      prefix: '[Carreras]'
-      changed_prefix: 'ahora eres un '
+      prefix: "[Carreras]"
+      changed_prefix: "ahora eres un "
     error:
       playerdata: No se puede cargar la información de tu carrera en este momento.
       select_first: Selecciona una carrera para cambiar.
       disabled: Las carreras están deshabilitadas.
-      unknown: 'Raza desconocida: {0}'
+      unknown: "Raza desconocida: {0}"
       already_selected: Ya perteneces a esa raza.
       no_changes_remaining: No quedan cambios de raza.
     attribute_tagline:
@@ -239,7 +248,7 @@ ui:
     passive:
       default_name: Pasivo
       label:
-        with_attribute: '{0} ({1})'
+        with_attribute: "{0} ({1})"
       type:
         xp_bonus: XP Bonificación
         health_regen: regeneración de salud
@@ -266,37 +275,37 @@ ui:
         stamina: aguante
         target_hp: objetivo HP
       desc:
-        xp_bonus: '{0} XP ganancia'
-        health_regen: '{0} HP/5s'
-        mana_regen: '{0} maná/5s'
-        mana_regen_flat: '{0} maná/s'
-        regeneration: '{0} CV/s'
-        healing_bonus: '{0} curación'
-        life_steal: '{0} robo de vida'
-        charge_bonus: '{0} tasa de cargo'
-        stamina_gain: '{0} ganancia de resistencia'
-        luck: '{0} suerte'
-        second_wind: '{0} sanar'
-        first_strike: '{0} abridor'
-        adrenaline: '{0} resistencia'
-        berzerker: '{0} daño'
-        retaliation: '{0} reflexionar'
-        executioner: '{0} finalizador'
-        swiftness: '{0} velocidad'
-        wither: '{0} máx. HP/seg'
-        crit_defense: '{0} reducción de daño'
+        xp_bonus: "{0} XP ganancia"
+        health_regen: "{0} HP/5s"
+        mana_regen: "{0} maná/5s"
+        mana_regen_flat: "{0} maná/s"
+        regeneration: "{0} CV/s"
+        healing_bonus: "{0} curación"
+        life_steal: "{0} robo de vida"
+        charge_bonus: "{0} tasa de cargo"
+        stamina_gain: "{0} ganancia de resistencia"
+        luck: "{0} suerte"
+        second_wind: "{0} sanar"
+        first_strike: "{0} abridor"
+        adrenaline: "{0} resistencia"
+        berzerker: "{0} daño"
+        retaliation: "{0} reflexionar"
+        executioner: "{0} finalizador"
+        swiftness: "{0} velocidad"
+        wither: "{0} máx. HP/seg"
+        crit_defense: "{0} reducción de daño"
       detail:
         threshold: <{0}% {1}
-        slow: '{0} lento'
+        slow: "{0} lento"
         scales_with: escalas con {0}
-        per_level: '{0} por nivel'
-        total_at_level: '{0} (Total {1} @ Nivel {2})'
-        duration: '{0}s duración'
+        per_level: "{0} por nivel"
+        total_at_level: "{0} (Total {1} @ Nivel {2})"
+        duration: "{0}s duración"
         cooldown: CD de {0}s
         window: ventana de {0}s
-        stacks: '{0} pilas'
+        stacks: "{0} pilas"
   classes:
-    count: '{0} {1}'
+    count: "{0} {1}"
     count_none: 0 disponible
     count_word:
       singular: clase
@@ -336,12 +345,13 @@ ui:
       hint: Intente reabrir esta página en unos momentos.
     select:
       title: Seleccione una clase
-      subtitle: Elija una clase a la izquierda para obtener una vista previa de su
+      subtitle:
+        Elija una clase a la izquierda para obtener una vista previa de su
         función y pasivos.
     role:
-      unspecified: 'Rol: No especificado'
-      value: 'Rol: {0}'
-      empty: 'Rol: --'
+      unspecified: "Rol: No especificado"
+      value: "Rol: {0}"
+      empty: "Rol: --"
     lore:
       unavailable: Conocimiento no disponible.
       missing: No se proporciona ninguna historia para esta clase.
@@ -403,17 +413,18 @@ ui:
       primary_already: Esa ya es tu clase principal.
       secondary_disabled: Actualmente las clases de secundaria están inhabilitadas.
       select_secondary: Seleccione una clase para establecerla como secundaria.
-      secondary_matches_primary: Tu clase de secundaria no puede coincidir con tu
+      secondary_matches_primary:
+        Tu clase de secundaria no puede coincidir con tu
         clase primaria.
       secondary_already: Esa ya es tu clase de secundaria.
       secondary_set_failed: No se puede establecer eso como su clase secundaria.
       secondary_none: No tienes una clase de secundaria asignada.
-      unknown: 'Clase desconocida: {0}'
+      unknown: "Clase desconocida: {0}"
       cooldown_remaining: Puedes cambiar tu clase {0} nuevamente en {1}.
       no_changes_remaining: No te quedan cambios de clase.
   skills:
     unknown: Desconocido
-    points: 'PUNTOS DE HABILIDAD: {0}'
+    points: "PUNTOS DE HABILIDAD: {0}"
     page:
       title: Atributos de habilidad
       subtitle: Asigna puntos para dar forma a tu identidad de combate.
@@ -441,16 +452,17 @@ ui:
       precision: Aumenta la probabilidad de golpe crítico por cada ataque.
       ferocity: Agrega daño adicional a cada golpe crítico.
       stamina: Amplía la resistencia para esquivar, bloquear y explotar.
-      flow: Aumenta el flujo (maná) para que los hechizos y habilidades permanezcan
+      flow:
+        Aumenta el flujo (maná) para que los hechizos y habilidades permanezcan
         en línea por más tiempo.
       discipline: Aumenta la tasa de ganancia de XP de todas las fuentes.
     value:
-      resource: '{0} {1}'
+      resource: "{0} {1}"
       strength: +{0}% de daño
       sorcery: +{0}% de daño mágico
-      defense: '{0}% de reducción'
+      defense: "{0}% de reducción"
       haste: +{0}% de velocidad
-      precision: '{0}% de probabilidad de crítico'
+      precision: "{0}% de probabilidad de crítico"
       ferocity: +{0} % de daño crítico
       discipline: +{0}% de ganancia de XP
     message:
@@ -459,25 +471,28 @@ ui:
       applied: ¡Habilidades aplicadas!
       added: Se agregaron {0} puntos a {1}
       removed: Se eliminaron {0} puntos de {1}
-      precision_capped: Probabilidad de crítico de precisión limitada al 100%; puntos
+      precision_capped:
+        Probabilidad de crítico de precisión limitada al 100%; puntos
         excedentes no aplicados.
     error:
-      precision_at_cap: La probabilidad de crítico de precisión ya es del 100%; elimine
+      precision_at_cap:
+        La probabilidad de crítico de precisión ya es del 100%; elimine
         otras bonificaciones primero.
       not_enough_points: No hay suficientes puntos de habilidad
-      precision_no_refund: La probabilidad de crítico de precisión ya es del 100%
+      precision_no_refund:
+        La probabilidad de crítico de precisión ya es del 100%
         o menos; No hay exceso de puntos para reembolsar.
       below_original: No se puede bajar del nivel original
-      invalid_attribute: 'Atributo no válido: {0}'
+      invalid_attribute: "Atributo no válido: {0}"
       action_failed: Error al manejar la acción de habilidad
     resource:
       health: Salud
       stamina: Aguante
       flow: Fluir
   time:
-    hours: '{0}h'
-    minutes: '{0}m'
-    seconds: '{0}s'
+    hours: "{0}h"
+    minutes: "{0}m"
+    seconds: "{0}s"
   nav:
     profile: PERFIL
     skills: HABILIDADES
@@ -498,7 +513,7 @@ ui:
       title: Perfiles {0}/{1}
       slot: Ranura {0}
       level: Nivel {0}
-      xp: '{0} XP'
+      xp: "{0} XP"
       select: SELECCIONAR
       status:
         active: ACTIVO
@@ -510,7 +525,7 @@ ui:
       innate_attr_none: Sin bonificaciones de atributos innatos
       select_prompt: Seleccione un perfil para ver bonos pasivos
       select_innate_prompt: Seleccione un perfil para ver las bonificaciones innatas
-      level_label: '{0} (Nivel {1})'
+      level_label: "{0} (Nivel {1})"
     augments:
       none: No hay aumentos activos
     error:
@@ -536,9 +551,82 @@ ui:
       delete_canceled: Eliminación de perfil cancelada.
 command:
   language:
-    usage: 'Uso: /el lang list | /el conjunto de idiomas <locale>'
-    current: 'Idioma actual: {0}'
-    available: 'Configuraciones regionales disponibles: {0}'
-    invalid: 'Configuración regional desconocida ''{0}''. Configuraciones locales
-      disponibles: {1}'
-    updated: Idioma establecido en {0}.
+    unavailable: "El gestor de idiomas no está disponible."
+    data_not_loaded: "Tus datos de jugador aún no se han cargado."
+    current: "Idioma actual: {0}"
+    available: "Idiomas disponibles: {0}"
+    usage: "Uso: /el language list | /el language set <locale>"
+    invalid: "Idioma desconocido '{0}'. Idiomas disponibles: {1}"
+    updated: "Idioma establecido en {0}."
+  reset_cooldowns:
+    unavailable: "Los gestores de pasivas y aumentos no están disponibles."
+    success: "Tiempo de espera de pasivas restablecido para {0} jugador(es) y estado de tiempo de espera de aumentos borrado."
+  reset_skillpoints:
+    system_unavailable: "El sistema de habilidades no está inicializado. Contacta a un administrador."
+    player_not_found: "Jugador no encontrado: {0}"
+    no_data: "No se encontraron datos guardados. Intenta volver a unirte."
+    success_target: "Puntos de habilidad restablecidos para {0}."
+    notify_target: "Un administrador restableció tus puntos de habilidad al diseño predeterminado."
+    success_self: "Tus puntos de habilidad han sido restablecidos al diseño predeterminado."
+
+augments:
+  stacks:
+    max: "{0} con acumulaciones máximas ({1})."
+    update: "{0}: {1}/{2} acumulaciones."
+    expired: "{0} acumulaciones expiradas."
+    remaining: "{0}: {1}/{2} acumulaciones restantes."
+  executioner:
+    triggered: "¡{0} activado! +{1}% de daño."
+  fortress:
+    activated: "¡{0} activado! Escudo por {1}s, mejoras por {2}s."
+    buff_ended: "{0} mejora terminada."
+    shield_ended: "{0} escudo de estasis terminado."
+  undying_rage:
+    active: "{0} está activo por {1}s."
+    ended: "{0} duración terminada."
+  rebirth:
+    activated: "¡{0} activado! Restaurado {1}% de la salud máxima."
+  first_strike:
+    triggered: "¡{0} activado! +{1}% de daño."
+    lost: "{0} perdido: fuiste golpeado antes de golpear. Tiempo de espera iniciado."
+
+augments:
+  stacks:
+    max: "{0} (Max pilas {1})."
+    update: "{0}: {1}/{2} pilas."
+    expired: "{0} pilas expiradas."
+    remaining: "{0}: quedan {1}/{2} pilas."
+  executioner:
+    triggered: "¡{0} activado! +{1}% daño."
+  fortress:
+    activated: "¡{0} activado! {1}s escudo, {2}s buff."
+    buff_ended: "{0} buff terminado."
+    shield_ended: "{0} escudo de estasis terminado."
+  undying_rage:
+    active: "{0} activo por {1}s."
+    ended: "{0} efecto terminado."
+  rebirth:
+    activated: "¡{0} activado! {1}% salud máxima restaurada."
+  first_strike:
+    triggered: "¡{0} activado! +{1}% daño."
+    lost: "{0} perdido: Daño recibido antes del ataque. Enfriamiento."
+
+command:
+  language:
+    unavailable: "Gestor de idiomas no disponible."
+    data_not_loaded: "Datos del jugador no cargados."
+    current: "Idioma actual: {0}"
+    available: "Disponible: {0}"
+    usage: "Uso: /el language list | /el language set <código>"
+    invalid: "Código desconocido '{0}'. Disponible: {1}"
+    updated: "Idioma establecido a {0}."
+  reset_cooldowns:
+    unavailable: "Gestor de pasivos/aumentos no disponible."
+    success: "Enfriamientos pasivos restablecidos y estado de aumentos borrado para {0} jugadores."
+  reset_skillpoints:
+    system_unavailable: "Sistema de habilidades no inicializado. Contacte al administrador."
+    player_not_found: "Jugador no encontrado: {0}"
+    no_data: "No hay datos guardados. Por favor, vuelva a unirse."
+    success_target: "Puntos de habilidad restablecidos para {0}."
+    notify_target: "El administrador ha restablecido tus puntos de habilidad."
+    success_self: "Puntos de habilidad restablecidos a los valores predeterminados."

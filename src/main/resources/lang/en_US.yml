@@ -18,6 +18,32 @@ notify:
     available:
       header: "[EndlessLeveling] You have augments available to choose from:"
       footer: "Use /el augments to choose."
+  xp_suppressed:
+    mob_label: "this mob"
+    mob_label_level: "this mob (level {0})"
+    player_too_high: "No XP awarded: your level ({0}) is too high for {1}."
+    player_too_low: "No XP awarded: {0} is too far above your level ({1})."
+
+augments:
+  stacks:
+    max: "{0} at max stacks ({1})."
+    update: "{0}: {1}/{2} stacks."
+    expired: "{0} stacks expired."
+    remaining: "{0}: {1}/{2} stacks remaining."
+  executioner:
+    triggered: "{0} triggered! +{1}% damage."
+  fortress:
+    activated: "{0} activated! Shielded for {1}s, buffs for {2}s."
+    buff_ended: "{0} buff ended."
+    shield_ended: "{0} stasis shield ended."
+  undying_rage:
+    active: "{0} is active for {1}s."
+    ended: "{0} duration ended."
+  rebirth:
+    activated: "{0} activated! Restored {1}% of max health."
+  first_strike:
+    triggered: "{0} triggered! +{1}% damage."
+    lost: "{0} lost: you were hit before striking. Cooldown started."
 
 hud:
   common:
@@ -539,3 +565,23 @@ command:
     available: "Available locales: {0}"
     invalid: "Unknown locale '{0}'. Available locales: {1}"
     updated: "Language set to {0}."
+
+command:
+  language:
+    unavailable: "Language manager is unavailable."
+    data_not_loaded: "Your player data is not loaded yet."
+    current: "Current language: {0}"
+    available: "Available locales: {0}"
+    usage: "Usage: /el language list | /el language set <locale>"
+    invalid: "Unknown locale '{0}'. Available locales: {1}"
+    updated: "Language set to {0}."
+  reset_cooldowns:
+    unavailable: "Passive and augment managers are unavailable."
+    success: "Reset passive cooldowns for {0} player runtime state(s) and cleared all augment cooldown runtime state."
+  reset_skillpoints:
+    system_unavailable: "Skill system is not initialised. Please contact an admin."
+    player_not_found: "Player not found: {0}"
+    no_data: "No saved data found. Try rejoining."
+    success_target: "Reset skill points for {0}."
+    notify_target: "An admin reset your skill points to the default layout."
+    success_self: "Your skill points have been reset to the default layout."

@@ -19,6 +19,8 @@ import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
+import com.airijko.endlessleveling.util.Lang;
+
 import javax.annotation.Nonnull;
 
 /**
@@ -49,8 +51,10 @@ public class ResetSkillPointsCommand extends AbstractPlayerCommand {
             @Nonnull PlayerRef playerRef,
             @Nonnull World world) {
         if (playerDataManager == null || skillManager == null) {
-            playerRef.sendMessage(
-                    Message.raw("Skill system is not initialised. Please contact an admin.").color("#ff6666"));
+            playerRef.sendMessage(Message.raw(Lang.tr(playerRef.getUuid(),
+                    "command.reset_skillpoints.system_unavailable",
+                    "Skill system is not initialised. Please contact an admin."))
+                    .color("#ff6666"));
             return;
         }
 
@@ -67,14 +71,20 @@ public class ResetSkillPointsCommand extends AbstractPlayerCommand {
             targetName = targetArg.get(commandContext);
             targetData = playerDataManager.getByName(targetName);
             if (targetData == null) {
-                playerRef.sendMessage(Message.raw("Player not found: " + targetName).color("#ff6666"));
+                playerRef.sendMessage(Message.raw(Lang.tr(playerRef.getUuid(),
+                        "command.reset_skillpoints.player_not_found",
+                        "Player not found: {0}", targetName))
+                        .color("#ff6666"));
                 return;
             }
             targetRef = Universe.get().getPlayer(targetData.getUuid());
         } else {
             targetData = playerDataManager.get(playerRef.getUuid());
             if (targetData == null) {
-                playerRef.sendMessage(Message.raw("No saved data found. Try rejoining.").color("#ff6666"));
+                playerRef.sendMessage(Message.raw(Lang.tr(playerRef.getUuid(),
+                        "command.reset_skillpoints.no_data",
+                        "No saved data found. Try rejoining."))
+                        .color("#ff6666"));
                 return;
             }
             targetRef = playerRef;
@@ -85,13 +95,20 @@ public class ResetSkillPointsCommand extends AbstractPlayerCommand {
         applySkillModifiers(targetData, targetRef, ref, store);
         playerDataManager.save(targetData);
 
-        playerRef.sendMessage(Message.raw("Reset skill points for " + targetName + ".").color("#4fd7f7"));
+        playerRef.sendMessage(Message.raw(Lang.tr(playerRef.getUuid(),
+                "command.reset_skillpoints.success_target",
+                "Reset skill points for {0}.", targetName))
+                .color("#4fd7f7"));
         if (targetRef != null && !targetRef.getUuid().equals(playerRef.getUuid())) {
-            targetRef.sendMessage(
-                    Message.raw("An admin reset your skill points to the default layout.").color("#4fd7f7"));
+            targetRef.sendMessage(Message.raw(Lang.tr(targetRef.getUuid(),
+                    "command.reset_skillpoints.notify_target",
+                    "An admin reset your skill points to the default layout."))
+                    .color("#4fd7f7"));
         } else if (!hasTarget) {
-            playerRef.sendMessage(
-                    Message.raw("Your skill points have been reset to the default layout.").color("#4fd7f7"));
+            playerRef.sendMessage(Message.raw(Lang.tr(playerRef.getUuid(),
+                    "command.reset_skillpoints.success_self",
+                    "Your skill points have been reset to the default layout."))
+                    .color("#4fd7f7"));
         }
     }
 

@@ -1,6 +1,7 @@
 package com.airijko.endlessleveling.augments.types;
 
 import com.airijko.endlessleveling.augments.AugmentDefinition;
+import com.airijko.endlessleveling.util.Lang;
 import com.airijko.endlessleveling.augments.AugmentHooks;
 import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
@@ -44,8 +45,13 @@ public final class ExecutionerAugment extends YamlAugment implements AugmentHook
             return context.getDamage();
         }
         var playerRef = AugmentUtils.getPlayerRef(context.getCommandBuffer(), context.getAttackerRef());
-        AugmentUtils.sendAugmentMessage(playerRef,
-                String.format("%s triggered! +%.0f%% damage.", getName(), bonusMultiplier * 100.0D));
+        if (playerRef != null && playerRef.isValid()) {
+            AugmentUtils.sendAugmentMessage(playerRef,
+                    Lang.tr(playerRef.getUuid(),
+                            "augments.executioner.triggered",
+                            "{0} triggered! +{1}% damage.",
+                            getName(), bonusMultiplier * 100.0D));
+        }
         return AugmentUtils.applyMultiplier(context.getDamage(), bonusMultiplier);
     }
 }

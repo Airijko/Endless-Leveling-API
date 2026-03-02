@@ -14,6 +14,8 @@ import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
+import com.airijko.endlessleveling.util.Lang;
+
 import javax.annotation.Nonnull;
 
 /**
@@ -43,7 +45,10 @@ public class ResetCooldownsCommand extends AbstractPlayerCommand {
         CommandUtil.requirePermission(commandContext.sender(), PERMISSION_NODE);
 
         if (passiveManager == null && augmentRuntimeManager == null) {
-            senderRef.sendMessage(Message.raw("Passive and augment managers are unavailable.").color("#ff6666"));
+            senderRef.sendMessage(Message.raw(Lang.tr(senderRef.getUuid(),
+                    "command.reset_cooldowns.unavailable",
+                    "Passive and augment managers are unavailable."))
+                    .color("#ff6666"));
             return;
         }
 
@@ -52,9 +57,10 @@ public class ResetCooldownsCommand extends AbstractPlayerCommand {
             augmentRuntimeManager.clearAll();
         }
 
-        senderRef.sendMessage(Message.raw(
-                "Reset passive cooldowns for " + passiveAffected
-                        + " player runtime state(s) and cleared all augment cooldown runtime state.")
+        senderRef.sendMessage(Message.raw(Lang.tr(senderRef.getUuid(),
+                "command.reset_cooldowns.success",
+                "Reset passive cooldowns for {0} player runtime state(s) and cleared all augment cooldown runtime state.",
+                passiveAffected))
                 .color("#4fd7f7"));
     }
 }

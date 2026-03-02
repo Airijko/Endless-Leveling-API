@@ -1,6 +1,7 @@
 package com.airijko.endlessleveling.augments.types;
 
 import com.airijko.endlessleveling.augments.AugmentDefinition;
+import com.airijko.endlessleveling.util.Lang;
 import com.airijko.endlessleveling.augments.AugmentHooks;
 import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
@@ -37,8 +38,13 @@ public final class FirstStrikeAugment extends YamlAugment
             return context.getDamage();
         }
         var playerRef = AugmentUtils.getPlayerRef(context.getCommandBuffer(), context.getAttackerRef());
-        AugmentUtils.sendAugmentMessage(playerRef,
-                String.format("%s triggered! +%.0f%% damage.", getName(), multiplier * 100.0D));
+        if (playerRef != null && playerRef.isValid()) {
+            AugmentUtils.sendAugmentMessage(playerRef,
+                    Lang.tr(playerRef.getUuid(),
+                            "augments.first_strike.triggered",
+                            "{0} triggered! +{1}% damage.",
+                            getName(), multiplier * 100.0D));
+        }
         return AugmentUtils.applyMultiplier(context.getDamage(), multiplier);
     }
 
@@ -54,8 +60,13 @@ public final class FirstStrikeAugment extends YamlAugment
 
         if (AugmentUtils.consumeCooldown(context.getRuntimeState(), ID, getName(), cooldownMillis)) {
             var playerRef = AugmentUtils.getPlayerRef(context.getCommandBuffer(), context.getDefenderRef());
-            AugmentUtils.sendAugmentMessage(playerRef,
-                    String.format("%s lost: you were hit before striking. Cooldown started.", getName()));
+            if (playerRef != null && playerRef.isValid()) {
+                AugmentUtils.sendAugmentMessage(playerRef,
+                        Lang.tr(playerRef.getUuid(),
+                                "augments.first_strike.lost",
+                                "{0} lost: you were hit before striking. Cooldown started.",
+                                getName()));
+            }
         }
 
         return context.getIncomingDamage();

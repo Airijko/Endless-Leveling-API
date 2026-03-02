@@ -1,6 +1,7 @@
 package com.airijko.endlessleveling.augments.types;
 
 import com.airijko.endlessleveling.augments.AugmentDefinition;
+import com.airijko.endlessleveling.util.Lang;
 import com.airijko.endlessleveling.augments.AugmentHooks;
 import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
@@ -55,8 +56,13 @@ public final class RebirthAugment extends YamlAugment implements AugmentHooks.On
                 DefaultEntityStatTypes.getHealth(),
                 (float) Math.min(hp.getMax(), hp.get() + healAmount));
         var playerRef = AugmentUtils.getPlayerRef(context.getCommandBuffer(), context.getDefenderRef());
-        AugmentUtils.sendAugmentMessage(playerRef,
-                String.format("%s activated! Restored %.0f%% of max health.", getName(), healPercent * 100.0D));
+        if (playerRef != null && playerRef.isValid()) {
+            AugmentUtils.sendAugmentMessage(playerRef,
+                    Lang.tr(playerRef.getUuid(),
+                            "augments.rebirth.activated",
+                            "{0} activated! Restored {1}% of max health.",
+                            getName(), healPercent * 100.0D));
+        }
         return 0f;
     }
 }

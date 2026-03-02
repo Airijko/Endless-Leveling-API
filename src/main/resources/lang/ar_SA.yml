@@ -1,22 +1,23 @@
 meta:
   locale_name: العربية (SA)
 notify:
-  prefix: '[التسوية التي لا نهاية لها]'
+  prefix: "[EndlessLeveling] "
   skills:
     command: /el
     unspent:
       primary: لديك {0} من نقاط المهارة غير المنفقة!
       secondary:
-        open: 'يفتح '
-        close: ' لاستثمارها'
+        open: "افتح "
+        close: " لاستثمارها"
     chat:
-      have: 'لا يزال لديك '
-      use: ' نقاط المهارة. يستخدم '
-      end: ' لقضاءهم.'
+      have: "لا يزال لديك "
+      use: " نقاط مهارة. استخدم "
+      end: " لاستخدامها."
   augments:
     available:
-      header: '[EndlessLeveling] لديك التعزيزات المتاحة للاختيار من بينها:'
-      footer: استخدم /el augments to choose.
+      header: "[EndlessLeveling] لديك تعزيزات متاحة للاختيار من بينها:"
+      footer: استخدم /el augments للاختيار.
+  xp_suppressed: "مستوى اللاعب مرتفع جداً: لم يتم منح XP (الوحش: {0} / اللاعب: {1} / الفرق: {2})"
 hud:
   common:
     unavailable: --
@@ -67,7 +68,7 @@ ui:
       default: التحسينات
     actions:
       choose: اختيار
-    selected: 'التحسين المختار: {0} ({1})'
+    selected: "التحسين المختار: {0} ({1})"
     no_description: لا يوجد وصف.
     no_augment:
       title: لا يوجد تحسين
@@ -80,33 +81,36 @@ ui:
       body: لم يتم تكوين أي مراحل رئيسية لإلغاء القفل المعزز.
     all_claimed:
       title: تم المطالبة بكل شيء
-      next_unlock: لقد طالبت بجميع التعزيزات غير المؤمنة حاليًا. فتح القفل التالي
+      next_unlock:
+        لقد طالبت بجميع التعزيزات غير المؤمنة حاليًا. فتح القفل التالي
         عند المستوى {0}.
       done: لقد طالبت بالفعل بجميع عمليات إلغاء القفل الإضافية التي تم تكوينها.
     remaining:
-      header: '[EndlessLeveling] لا يزال لديك المزيد من التعزيزات للاختيار من بينها:'
+      header: "[EndlessLeveling] لا يزال لديك المزيد من التعزيزات للاختيار من بينها:"
       footer: اختر مرة أخرى الآن.
     error:
       title: خطأ إضافي
       data_unavailable: بيانات الزيادة غير متاحة.
       tier_unresolved: غير قادر على حل الطبقة الإضافية.
-      playerdata_unavailable: غير قادر على تحميل بيانات المشغل الخاص بك. حاول إعادة
+      playerdata_unavailable:
+        غير قادر على تحميل بيانات المشغل الخاص بك. حاول إعادة
         فتح هذه الصفحة.
       system_unavailable: نظام التعزيز غير متوفر في الوقت الحالي. يرجى الاتصال بالمسؤول.
       definitions_missing: لم يتم تحميل أي تعريفات إضافية. تحقق من /mods/EndlessLeveling/augments.
-      offers_missing: التحسينات المفتوحة مفقودة. اطلب من المسؤول تشغيل /el augment
+      offers_missing:
+        التحسينات المفتوحة مفقودة. اطلب من المسؤول تشغيل /el augment
         refresh <player>.
       slot_empty: لا زيادة في تلك الفتحة.
     effect:
-      cooldown: 'وقت الانتظار: {0}'
-      duration_per_stack: 'المدة لكل مكدس: {0}'
-      duration: 'المدة: {0}'
-      max_stacks: 'الحد الأقصى للأكوام: {0}'
+      cooldown: "وقت الانتظار: {0}"
+      duration_per_stack: "المدة لكل مكدس: {0}"
+      duration: "المدة: {0}"
+      max_stacks: "الحد الأقصى للأكوام: {0}"
       note:
-        full_at_health: ' (كامل عند <= {0}% صحة)'
-        full_at_ratio: ' (كامل بنسبة {0}x)'
-        range: ' (النطاق {0}-{1})'
-        full_at_distance: ' (كامل على مسافة {0})'
+        full_at_health: " (كامل عند <= {0}% صحة)"
+        full_at_ratio: " (كامل بنسبة {0}x)"
+        range: " (النطاق {0}-{1})"
+        full_at_distance: " (كامل على مسافة {0})"
       label:
         strength: القوة
         sorcery: السحر
@@ -153,7 +157,7 @@ ui:
         full_value_at_health_percent: عتبة القيمة الكاملة
         max_distance: المسافة القصوى (مكافأة كاملة)
   races:
-    count: '{0} {1}'
+    count: "{0} {1}"
     count_none: 0 متاح
     count_word:
       singular: سباق
@@ -208,16 +212,16 @@ ui:
       ready: مستعد
       swap_triggers: سيؤدي التبديل إلى تشغيل فترة تباطؤ {0}.
       unrestricted: تبديل السباق غير مقيد في الوقت الحالي.
-      try_again_prefix: 'يمكنك التبديل مرة أخرى '
+      try_again_prefix: "يمكنك التبديل مرة أخرى "
       unlocks_in: يتم فتح المبادلة في {0}.
     chat:
-      prefix: '[السباقات]'
-      changed_prefix: 'أنت الآن أ '
+      prefix: "[السباقات]"
+      changed_prefix: "أنت الآن أ "
     error:
       playerdata: غير قادر على تحميل معلومات السباق الخاصة بك الآن.
       select_first: اختر سباقًا للتبديل إليه.
       disabled: السباقات معطلة.
-      unknown: 'سباق غير معروف: {0}'
+      unknown: "سباق غير معروف: {0}"
       already_selected: أنت تنتمي بالفعل إلى هذا السباق.
       no_changes_remaining: لم يتبق أي تغييرات في السباق.
     attribute_tagline:
@@ -234,7 +238,7 @@ ui:
     passive:
       default_name: سلبي
       label:
-        with_attribute: '{0} ({1})'
+        with_attribute: "{0} ({1})"
       type:
         xp_bonus: XP مكافأة
         health_regen: الصحة ريجين
@@ -261,37 +265,37 @@ ui:
         stamina: قوة تحمل
         target_hp: الهدف HP
       desc:
-        xp_bonus: '{0} XP الربح'
-        health_regen: '{0} HP/5ث'
-        mana_regen: '{0} مانا/5ث'
-        mana_regen_flat: '{0} مانا/ثانية'
-        regeneration: '{0} HP/ث'
-        healing_bonus: '{0} الشفاء'
-        life_steal: '{0} سرقة الحياة'
-        charge_bonus: '{0} معدل الشحن'
-        stamina_gain: '{0} اكتساب القدرة على التحمل'
-        luck: '{0} الحظ'
-        second_wind: '{0} شفاء'
-        first_strike: '{0} الافتتاحية'
-        adrenaline: '{0} القدرة على التحمل'
-        berzerker: '{0} الضرر'
-        retaliation: '{0} تعكس'
-        executioner: '{0} التشطيب'
-        swiftness: '{0} السرعة'
-        wither: '{0} الحد الأقصى HP/ثانية'
-        crit_defense: '{0} تقليل الأضرار'
+        xp_bonus: "{0} XP الربح"
+        health_regen: "{0} HP/5ث"
+        mana_regen: "{0} مانا/5ث"
+        mana_regen_flat: "{0} مانا/ثانية"
+        regeneration: "{0} HP/ث"
+        healing_bonus: "{0} الشفاء"
+        life_steal: "{0} سرقة الحياة"
+        charge_bonus: "{0} معدل الشحن"
+        stamina_gain: "{0} اكتساب القدرة على التحمل"
+        luck: "{0} الحظ"
+        second_wind: "{0} شفاء"
+        first_strike: "{0} الافتتاحية"
+        adrenaline: "{0} القدرة على التحمل"
+        berzerker: "{0} الضرر"
+        retaliation: "{0} تعكس"
+        executioner: "{0} التشطيب"
+        swiftness: "{0} السرعة"
+        wither: "{0} الحد الأقصى HP/ثانية"
+        crit_defense: "{0} تقليل الأضرار"
       detail:
         threshold: <{0}% {1}
-        slow: '{0} بطيء'
+        slow: "{0} بطيء"
         scales_with: موازين ذات {0}
-        per_level: '{0} لكل مستوى'
-        total_at_level: '{0} (الإجمالي {1} @ Lv {2})'
+        per_level: "{0} لكل مستوى"
+        total_at_level: "{0} (الإجمالي {1} @ Lv {2})"
         duration: مدة {0}
-        cooldown: '{0}s القرص المضغوط'
+        cooldown: "{0}s القرص المضغوط"
         window: نافذة {0}s
-        stacks: '{0} مكدسات'
+        stacks: "{0} مكدسات"
   classes:
-    count: '{0} {1}'
+    count: "{0} {1}"
     count_none: 0 متاح
     count_word:
       singular: فصل
@@ -333,9 +337,9 @@ ui:
       title: اختر فئة
       subtitle: اختر فئة على اليسار لمعاينة دورها وعناصرها السلبية.
     role:
-      unspecified: 'الدور: غير محدد'
-      value: 'الدور: {0}'
-      empty: 'دور: --'
+      unspecified: "الدور: غير محدد"
+      value: "الدور: {0}"
+      empty: "دور: --"
     lore:
       unavailable: المعرفة غير متوفرة.
       missing: لم يتم توفير أي تقاليد لهذه الفئة.
@@ -401,12 +405,12 @@ ui:
       secondary_already: هذا هو بالفعل صفك الثانوي.
       secondary_set_failed: غير قادر على تعيين ذلك كصفك الثانوي.
       secondary_none: ليس لديك فصل ثانوي معين.
-      unknown: 'فئة غير معروفة: {0}'
+      unknown: "فئة غير معروفة: {0}"
       cooldown_remaining: يمكنك تغيير صفك {0} مرة أخرى في {1}.
       no_changes_remaining: لم يتبق لديك أي تغييرات في الفصل.
   skills:
     unknown: غير معروف
-    points: 'نقاط المهارة: {0}'
+    points: "نقاط المهارة: {0}"
     page:
       title: سمات المهارة
       subtitle: خصص النقاط لتشكيل هويتك القتالية.
@@ -434,16 +438,17 @@ ui:
       precision: يزيد من فرصة الضربة الحاسمة لكل هجوم.
       ferocity: يضيف ضررًا إضافيًا لكل ضربة حاسمة.
       stamina: يوسع القدرة على التحمل للمراوغات والكتل والانفجارات.
-      flow: يزيد من التدفق (المانا) بحيث تبقى التعويذات والقدرات على الإنترنت لفترة
+      flow:
+        يزيد من التدفق (المانا) بحيث تبقى التعويذات والقدرات على الإنترنت لفترة
         أطول.
       discipline: يزيد معدل الكسب XP من جميع المصادر.
     value:
-      resource: '{0} {1}'
+      resource: "{0} {1}"
       strength: +{0}% الضرر
       sorcery: +{0}% الضرر السحري
-      defense: '{0}% تخفيض'
+      defense: "{0}% تخفيض"
       haste: +{0}% السرعة
-      precision: '{0}% فرصة حرجة'
+      precision: "{0}% فرصة حرجة"
       ferocity: +{0}% ضرر جسيم
       discipline: +{0}% XP الربح
     message:
@@ -452,25 +457,28 @@ ui:
       applied: المهارات المطبقة!
       added: تمت إضافة {0} نقطة (نقاط) إلى {1}
       removed: تمت إزالة {0} نقطة (نقاط) من {1}
-      precision_capped: الحد الأقصى لفرصة الدقة الحرجة هو 100%؛ النقاط الزائدة لم
+      precision_capped:
+        الحد الأقصى لفرصة الدقة الحرجة هو 100%؛ النقاط الزائدة لم
         يتم تطبيقها.
     error:
-      precision_at_cap: فرصة الدقة الحرجة هي بالفعل 100%؛ قم بإزالة المكافآت الأخرى
+      precision_at_cap:
+        فرصة الدقة الحرجة هي بالفعل 100%؛ قم بإزالة المكافآت الأخرى
         أولاً.
       not_enough_points: لا توجد نقاط مهارة كافية
-      precision_no_refund: فرصة الدقة الحرجة تبلغ بالفعل 100% أو أقل؛ لا توجد نقاط
+      precision_no_refund:
+        فرصة الدقة الحرجة تبلغ بالفعل 100% أو أقل؛ لا توجد نقاط
         زائدة لاستردادها.
       below_original: لا يمكن أن ينخفض ​​عن المستوى الأصلي
-      invalid_attribute: 'سمة غير صالحة: {0}'
+      invalid_attribute: "سمة غير صالحة: {0}"
       action_failed: خطأ في التعامل مع عمل المهارة
     resource:
       health: صحة
       stamina: قوة تحمل
       flow: تدفق
   time:
-    hours: '{0}ح'
-    minutes: '{0}م'
-    seconds: '{0}s'
+    hours: "{0}ح"
+    minutes: "{0}م"
+    seconds: "{0}s"
   nav:
     profile: حساب تعريفي
     skills: مهارات
@@ -491,7 +499,7 @@ ui:
       title: الملفات الشخصية {0}/{1}
       slot: الفتحة {0}
       level: المستوى {0}
-      xp: '{0} XP'
+      xp: "{0} XP"
       select: يختار
       status:
         active: نشيط
@@ -503,7 +511,7 @@ ui:
       innate_attr_none: لا توجد مكافآت سمة فطرية
       select_prompt: حدد ملفًا شخصيًا لعرض المكافآت السلبية
       select_innate_prompt: حدد ملفًا شخصيًا لعرض المكافآت الفطرية
-      level_label: '{0} (المستوى {1})'
+      level_label: "{0} (المستوى {1})"
     augments:
       none: لا توجد زيادات نشطة
     error:
@@ -529,8 +537,82 @@ ui:
       delete_canceled: تم إلغاء حذف الملف الشخصي.
 command:
   language:
-    usage: 'الاستخدام: /el lang list | /el lang set <locale>'
-    current: 'اللغة الحالية: {0}'
-    available: 'اللغات المتاحة: {0}'
-    invalid: 'لغة غير معروفة ''{0}''. اللغات المتاحة: {1}'
-    updated: تم تعيين اللغة إلى {0}.
+    unavailable: "مدير اللغة غير متاح."
+    data_not_loaded: "لم يتم تحميل بيانات اللاعب بعد."
+    current: "اللغة الحالية: {0}"
+    available: "اللغات المتاحة: {0}"
+    usage: "الاستخدام: /el language list | /el language set <locale>"
+    invalid: "لغة غير معروفة '{0}'. اللغات المتاحة: {1}"
+    updated: "تم تعيين اللغة إلى {0}."
+  reset_cooldowns:
+    unavailable: "مديرو التعزيزات السلبية غير متاحين."
+    success: "تم إعادة تعيين أوقات الانتظار السلبية لـ {0} لاعب (لاعبين) وحذف حالة وقت الانتظار للتعزيزات."
+  reset_skillpoints:
+    system_unavailable: "نظام المهارات غير مهيأ. يرجى الاتصال بالإدارة."
+    player_not_found: "اللاعب غير موجود: {0}"
+    no_data: "لم يتم العثور على بيانات محفوظة. حاول إعادة الانضمام."
+    success_target: "تم إعادة تعيين نقاط المهارة لـ {0}."
+    notify_target: "قام المسؤول بإعادة تعيين نقاط المهارت الخاصة بك إلى المخطط الافتراضي."
+    success_self: "تم إعادة تعيين نقاط المهارة الخاصة بك إلى المخطط الافتراضي."
+
+augments:
+  stacks:
+    max: "{0} عند أقصى عدد ({1})."
+    update: "{0}: {1}/{2} حزم."
+    expired: "{0} حزم منتهية الصلاحية."
+    remaining: "{0}: {1}/{2} حزم متبقية."
+  executioner:
+    triggered: "تم تفعيل {0}! +{1}% ضرر."
+  fortress:
+    activated: "تم تفعيل {0}! درع لمدة {1} ثانية، تعزيزات لمدة {2} ثانية."
+    buff_ended: "انتهى تعزيز {0}."
+    shield_ended: "انتهى درع الركود {0}."
+  undying_rage:
+    active: "{0} نشط لمدة {1} ثانية."
+    ended: "مدة {0} انتهت."
+  rebirth:
+    activated: "تم تفعيل {0}! تم استعادة {1}% من الصحة القصوى."
+  first_strike:
+    triggered: "تم تفعيل {0}! +{1}% ضرر."
+    lost: "فقدت {0}: أصبت قبل أن تضرب. بدأ وقت الانتظار."
+
+augments:
+  stacks:
+    max: "{0} (الحد الأقصى {1})."
+    update: "{0}: {1}/{2} المكدس."
+    expired: "{0} المكدس منتهي الصلاحية."
+    remaining: "{0}: المتبقي {1}/{2} الكومة."
+  executioner:
+    triggered: "{0} تم التفعيل! +{1}% ضرر."
+  fortress:
+    activated: "{0} مفعل! {1}ث درع, {2}ث تعزيز."
+    buff_ended: "{0} التعزيز انتهى."
+    shield_ended: "{0} درع الثبات انتهى."
+  undying_rage:
+    active: "{0} نشط لمدة {1}ث."
+    ended: "{0} التأثير انتهى."
+  rebirth:
+    activated: "{0} مفعل! استعادة {1}% من أقصى صحة."
+  first_strike:
+    triggered: "{0} تم التفعيل! +{1}% ضرر."
+    lost: "{0} فقدت: تم تلقي الضرر قبل الهجوم. بداية فترة التهدئة."
+
+command:
+  language:
+    unavailable: "مدير اللغة غير متاح."
+    data_not_loaded: "بيانات اللاعب غير محملة."
+    current: "اللغة الحالية: {0}"
+    available: "متاح: {0}"
+    usage: "الاستخدام: /el language list | /el language set <رمز>"
+    invalid: "رمز اللغة غير معروف '{0}'. متاح: {1}"
+    updated: "تم تعيين اللغة إلى {0}."
+  reset_cooldowns:
+    unavailable: "مدير السلبيات/التحسينات غير متاح."
+    success: "تم إعادة تعيين فترات التهدئة السلبية ومسح حالة التحسينات لـ {0} لاعبين."
+  reset_skillpoints:
+    system_unavailable: "نظام المهارات غير مهيأ. اتصل بالمسؤول."
+    player_not_found: "اللاعب غير موجود: {0}"
+    no_data: "لا توجد بيانات محفوظة. يرجى إعادة الانضمام."
+    success_target: "تم إعادة تعيين نقاط المهارة لـ {0}."
+    notify_target: "قام المسؤول بإعادة تعيين نقاط مهارتك."
+    success_self: "تم إعادة تعيين نقاط المهارة إلى الافتراضي."

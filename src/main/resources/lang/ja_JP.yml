@@ -15,8 +15,13 @@ notify:
       end: ' to spend them.'
   augments:
     available:
-      header: '[EndlessLeveling] You have augments available to choose from:'
-      footer: Use /el augments to choose.
+      header: '[EndlessLeveling] 利用可能なオーグメントがあります:'
+      footer: /el augments を使用して選択してください。
+  xp_suppressed:
+    mob_label: "このモブ"
+    mob_label_level: "このモブ (Lv {0})"
+    player_too_high: "XP獲得不可: あなたのレベル ({0}) は {1} に対して高すぎます。"
+    player_too_low: "XP獲得不可: {0} はあなたのレベル ({1}) に対して強すぎます。"
 hud:
   common:
     unavailable: --
@@ -532,3 +537,44 @@ command:
     available: '利用可能な言語: {0}'
     invalid: '不明な言語 ''{0}''。利用可能: {1}'
     updated: 言語を {0} に設定しました。
+
+augments:
+  stacks:
+    max: "{0} (最大スタック {1})."
+    update: "{0}: {1}/{2} スタック."
+    expired: "{0} スタック期限切れ."
+    remaining: "{0}: 後 {1}/{2} スタック."
+  executioner:
+    triggered: "{0} 発動！ +{1}% ダメージ."
+  fortress:
+    activated: "{0} 発動！ {1}秒シールド, {2}秒バフ."
+    buff_ended: "{0} バフ終了."
+    shield_ended: "{0} ステイシスシールド終了."
+  undying_rage:
+    active: "{0} が {1}秒間有効."
+    ended: "{0} 効果終了."
+  rebirth:
+    activated: "{0} 発動！ 最大HPの {1}% を回復."
+  first_strike:
+    triggered: "{0} 発動！ +{1}% ダメージ."
+    lost: "{0} 消失: 攻撃前に被弾. クールダウン開始."
+
+command:
+  language:
+    unavailable: "言語マネージャー利用不可."
+    data_not_loaded: "プレイヤーデータ未ロード."
+    current: "現在の言語: {0}"
+    available: "利用可能: {0}"
+    usage: "使用法: /el language list | /el language set <locale>"
+    invalid: "不明なロケール '{0}'. 利用可能: {1}"
+    updated: "言語を {0} に設定."
+  reset_cooldowns:
+    unavailable: "パッシブ/オーグメントマネージャー利用不可."
+    success: "{0} 人のパッシブCDをリセットし、オーグメント状態をクリア."
+  reset_skillpoints:
+    system_unavailable: "スキルシステム未初期化. 管理者に連絡してください."
+    player_not_found: "プレイヤー未発見: {0}"
+    no_data: "保存データなし. 再接続してください."
+    success_target: "{0} のスキルポイントをリセット."
+    notify_target: "管理者がスキルポイントをリセットしました."
+    success_self: "スキルポイントをデフォルトにリセットしました."
