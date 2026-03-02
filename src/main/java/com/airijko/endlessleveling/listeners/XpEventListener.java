@@ -115,8 +115,8 @@ public class XpEventListener extends DeathSystems.OnDeathSystem {
         }
 
         ArchetypePassiveSnapshot snapshot = archetypePassiveManager != null
-            ? archetypePassiveManager.getSnapshot(playerData)
-            : ArchetypePassiveSnapshot.empty();
+                ? archetypePassiveManager.getSnapshot(playerData)
+                : ArchetypePassiveSnapshot.empty();
         double archetypeXpBonus = snapshot.getValue(ArchetypePassiveType.XP_BONUS);
 
         double disciplineBonusPercent = 0.0D;
@@ -124,7 +124,7 @@ public class XpEventListener extends DeathSystems.OnDeathSystem {
         SkillManager skillManager = plugin != null ? plugin.getSkillManager() : null;
         if (skillManager != null) {
             disciplineBonusPercent = skillManager.getDisciplineXpBonusPercent(
-                playerData.getPlayerSkillAttributeLevel(SkillAttributeType.DISCIPLINE));
+                    playerData.getPlayerSkillAttributeLevel(SkillAttributeType.DISCIPLINE));
         }
 
         double additiveBonus = archetypeXpBonus + (disciplineBonusPercent / 100.0D);
@@ -134,24 +134,24 @@ public class XpEventListener extends DeathSystems.OnDeathSystem {
         double totalLuck = getLuckValue(playerData, snapshot);
 
         LOGGER.atInfo().log(
-            "XP-Report target=%d player=%s playerLvl=%d mobLvl=%d blacklisted=%s sourceMaxHP=%.3f (cached=%.3f live=%.3f) baseXP=%.3f killRulesXP=%.3f killRulesMult=%.4f archetypeXpBonus=%.4f disciplineBonusPct=%.3f additiveMult=%.4f projectedPersonalXP=%.3f luck=%.4f luckAffectsXp=%s",
-            ref.getIndex(),
-            playerUuid,
-            playerData.getLevel(),
-            mobLevel,
-            mobIsBlacklisted,
-            maxHealthForXp,
-            cachedMaxHealth,
-            healthStat.getMax(),
-            baseXp,
-            xpAfterKillRules,
-            killRulesMultiplier,
-            archetypeXpBonus,
-            disciplineBonusPercent,
-            Math.max(0.0D, 1.0D + additiveBonus),
-            projectedPersonalXp,
-            totalLuck,
-            false);
+                "XP-Report target=%d player=%s playerLvl=%d mobLvl=%d blacklisted=%s sourceMaxHP=%.3f (cached=%.3f live=%.3f) baseXP=%.3f killRulesXP=%.3f killRulesMult=%.4f archetypeXpBonus=%.4f disciplineBonusPct=%.3f additiveMult=%.4f projectedPersonalXP=%.3f luck=%.4f luckAffectsXp=%s",
+                ref.getIndex(),
+                playerUuid,
+                playerData.getLevel(),
+                mobLevel,
+                mobIsBlacklisted,
+                maxHealthForXp,
+                cachedMaxHealth,
+                healthStat.getMax(),
+                baseXp,
+                xpAfterKillRules,
+                killRulesMultiplier,
+                archetypeXpBonus,
+                disciplineBonusPercent,
+                Math.max(0.0D, 1.0D + additiveBonus),
+                projectedPersonalXp,
+                totalLuck,
+                false);
 
         LOGGER.atInfo().log("Granting XP (before party share): %f to player %s", xpAfterKillRules, playerUuid);
 

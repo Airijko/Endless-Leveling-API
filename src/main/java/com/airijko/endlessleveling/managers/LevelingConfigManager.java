@@ -227,12 +227,6 @@ public class LevelingConfigManager {
             }
         }
 
-        for (Map.Entry<String, Object> entry : existingMap.entrySet()) {
-            List<String> existingPath = appendPath(currentPath, entry.getKey());
-            if (!result.containsKey(entry.getKey()) && !existingValueIndex.isConsumed(existingPath)) {
-                result.put(entry.getKey(), deepCopyValue(entry.getValue()));
-            }
-        }
         return result;
     }
 
@@ -377,18 +371,7 @@ public class LevelingConfigManager {
         Map<String, Object> overridesWithinTemplate = intersectWithTemplate(merged, bundled);
         applyTemplateOverrides(lines, overridesWithinTemplate);
 
-        Map<String, Object> extraKeys = collectKeysMissingFromTemplate(merged, bundled);
         StringBuilder output = new StringBuilder(String.join(System.lineSeparator(), lines));
-        if (!extraKeys.isEmpty()) {
-            if (output.length() > 0 && output.charAt(output.length() - 1) != '\n') {
-                output.append(System.lineSeparator());
-            }
-            output.append(System.lineSeparator())
-                    .append("# Preserved legacy keys from previous config")
-                    .append(System.lineSeparator());
-            output.append(yaml.dump(extraKeys));
-        }
-
         Files.writeString(levelingFile.toPath(), output.toString());
     }
 
@@ -431,37 +414,6 @@ public class LevelingConfigManager {
         }
 
         return result;
-    }
-
-    private Map<String, Object> collectKeysMissingFromTemplate(Map<String, Object> merged,
-            Map<String, Object> bundled) {
-        Map<String, Object> extras = new LinkedHashMap<>();
-        if (merged == null) {
-            return extras;
-        }
-        if (bundled == null) {
-            extras.putAll(merged);
-            return extras;
-        }
-
-        for (Map.Entry<String, Object> entry : merged.entrySet()) {
-            String key = entry.getKey();
-            if (!bundled.containsKey(key)) {
-                extras.put(key, deepCopyValue(entry.getValue()));
-                continue;
-            }
-            Object mergedValue = entry.getValue();
-            Object bundledValue = bundled.get(key);
-            if (mergedValue instanceof Map<?, ?> mergedMap && bundledValue instanceof Map<?, ?> bundledMap) {
-                Map<String, Object> nestedExtras = collectKeysMissingFromTemplate(toMutableMap(mergedMap),
-                        toMutableMap(bundledMap));
-                if (!nestedExtras.isEmpty()) {
-                    extras.put(key, nestedExtras);
-                }
-            }
-        }
-
-        return extras;
     }
 
     private void applyTemplateOverrides(List<String> lines, Map<String, Object> overrides) {

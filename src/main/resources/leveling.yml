@@ -119,7 +119,7 @@ Mob_Leveling:
     # Mob level is based on the player's level
   Player_Based:
     Offset: 0
-    Min_Difference: -10
+    Min_Difference: -5
     Max_Difference: 10
 
     # -------------------------------
@@ -217,4 +217,4 @@ Mob_Leveling:
     Show_Mob_Level: true
 
 # DON'T EDIT THIS LINE BELOW
-config_version: 7
+config_version: 8
