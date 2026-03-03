@@ -16,6 +16,7 @@ types:
       - katana
       - noctivagus
       - yamato
+      - rapier
 
   axe:
     keywords:
@@ -26,13 +27,10 @@ types:
   gauntlet:
     keywords:
       - gauntlet
-      - gauntlets
       - glove
-      - gloves
       - knuckle
-      - knuckles
       - bracer
-      - bracers
+      - fist
 
   bow:
     keywords:

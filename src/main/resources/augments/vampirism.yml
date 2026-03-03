@@ -6,5 +6,5 @@ description: "Steal life from every hit."
 passives:
   buffs:
     life_steal:
-      value: 20.0 # +20% life steal on dealt damage
+      value: 15 # +15% life steal on dealt damage
       category: ON_HIT

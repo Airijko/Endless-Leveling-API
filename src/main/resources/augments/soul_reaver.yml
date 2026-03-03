@@ -6,5 +6,5 @@ category: ON_KILL
 
 passives:
   heal_on_kill:
-    value: 0.20 # heals 20% of the enemy's max HP
-    cooldown: 5 # 5 seconds cooldown between triggers
+    value: 0.2 # heals 20% of the enemy's max HP
+    cooldown: 7 # 7 seconds cooldown between triggers

@@ -7,5 +7,5 @@ category: ON_HIT
 passives:
   life_steal_scaling:
     max_value: 0.50 # 50% life steal at max missing HP
-    full_value_at_health_percent: 0.25 # full life steal when player health is at or below 25%
+    full_value_at_health_percent: 0.2 # full life steal when player health is at or below 20%
 
