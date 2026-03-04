@@ -340,6 +340,37 @@ public class MobLevelingManager {
         return isPurePlayerSourceMode();
     }
 
+    public boolean isLevelSourceMixedMode() {
+        return getLevelSourceMode() == LevelSourceMode.MIXED;
+    }
+
+    public String describeMixedPromotionTrigger(Ref<EntityStore> ref,
+            Store<EntityStore> store,
+            CommandBuffer<EntityStore> commandBuffer) {
+        if (ref == null) {
+            return "ctx=missing-ref";
+        }
+
+        Store<EntityStore> safeStore = store != null ? store : ref.getStore();
+        Vector3d mobPos = getWorldPosition(ref, commandBuffer);
+        if (mobPos == null) {
+            return "ctx=missing-pos";
+        }
+
+        int entityId = ref.getIndex();
+        int distanceLevel = resolveDistanceLevel(safeStore, mobPos);
+        int playerLevel = resolvePlayerBasedLevelWithoutFallback(safeStore, mobPos, entityId);
+        int playerLowerBound = resolvePlayerLowerBoundForMixed(safeStore, mobPos);
+        int xpMaxDifference = getExperienceXpMaxDifference();
+        return String.format(
+                Locale.ROOT,
+                "distance=%d player=%d floor=%d xpMaxDiff=%d",
+                distanceLevel,
+                playerLevel,
+                playerLowerBound,
+                xpMaxDifference);
+    }
+
     private boolean isPurePlayerSourceMode() {
         return getLevelSourceMode() == LevelSourceMode.PLAYER;
     }
@@ -833,22 +864,12 @@ public class MobLevelingManager {
         }
 
         int distanceLevel = resolveDistanceLevel(store, mobPos);
-        int nearbyPlayerLevel = computePlayerModeLevelFromNearestPlayerWithinRadius(
-                store,
-                mobPos,
-                entityId,
-                PLAYER_LEVEL_LOCK_RADIUS_BLOCKS);
-        if (nearbyPlayerLevel > 0 && distanceLevel < nearbyPlayerLevel) {
-            rememberMixedSourceChoice(store, entityId, MixedSourceChoice.PLAYER);
-            return nearbyPlayerLevel;
-        }
-
         int playerLevel = resolvePlayerBasedLevelWithoutFallback(store, mobPos, entityId);
         int playerLowerBound = resolvePlayerLowerBoundForMixed(store, mobPos);
 
         if (playerLevel > 0 && playerLowerBound > 0 && distanceLevel < playerLowerBound) {
             rememberMixedSourceChoice(store, entityId, MixedSourceChoice.PLAYER);
-            return playerLevel;
+            return clampToConfiguredRange(Math.max(playerLevel, playerLowerBound));
         }
 
         MixedSourceChoice choice = resolveMixedSourceChoice(store, mobPos, entityId);
@@ -912,13 +933,7 @@ public class MobLevelingManager {
             return -1;
         }
 
-        int minDiff = getPlayerBasedMinDifference();
-        int maxDiff = getPlayerBasedMaxDifference();
-        if (minDiff > maxDiff) {
-            int tmp = minDiff;
-            minDiff = maxDiff;
-            maxDiff = tmp;
-        }
+        int xpMaxDifference = getExperienceXpMaxDifference();
 
         if (isPartyPlayerSourceEnabled()) {
             double radius = Math.max(0.0D, getPlayerPartyInfluenceRadius());
@@ -931,7 +946,7 @@ public class MobLevelingManager {
                 return -1;
             }
             int vpl = computeVirtualPartyLevel(dominant.members());
-            int floor = vpl + getPlayerBasedOffset() + minDiff;
+            int floor = vpl - xpMaxDifference;
             return clampToConfiguredRange(floor);
         }
 
@@ -939,8 +954,12 @@ public class MobLevelingManager {
         if (nearestPlayerLevel <= 0) {
             return -1;
         }
-        int floor = nearestPlayerLevel + minDiff;
+        int floor = nearestPlayerLevel - xpMaxDifference;
         return clampToConfiguredRange(floor);
+    }
+
+    private int getExperienceXpMaxDifference() {
+        return Math.max(0, getConfigInt("Mob_Leveling.Experience.XP_Level_Range.Max_Difference", 10));
     }
 
     private int resolvePlayerBasedLevelWithPartySystem(Store<EntityStore> store, Vector3d mobPos, Integer entityId) {
