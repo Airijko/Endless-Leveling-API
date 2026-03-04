@@ -11,6 +11,7 @@ import com.airijko.endlessleveling.augments.AugmentExecutor;
 import com.airijko.endlessleveling.augments.AugmentManager;
 import com.airijko.endlessleveling.augments.AugmentRuntimeManager;
 import com.airijko.endlessleveling.augments.AugmentUnlockManager;
+import com.airijko.endlessleveling.compatibility.NameplateBuilderCompatibility;
 import com.airijko.endlessleveling.listeners.LuckDoubleDropSystem;
 import com.airijko.endlessleveling.listeners.OpenPlayerHudListener;
 import com.airijko.endlessleveling.listeners.PartyListener;
@@ -184,6 +185,15 @@ public class EndlessLeveling extends JavaPlugin {
         partyManager = new PartyManager(playerDataManager, levelingManager);
         if (!partyManager.isAvailable()) {
             LOGGER.atWarning().log("PartyPro not detected; party features will stay disabled.");
+        }
+
+        if (NameplateBuilderCompatibility.isAvailable()) {
+            boolean described = NameplateBuilderCompatibility.describeMobLevelSegment(this);
+            if (described) {
+                LOGGER.atInfo().log("NameplateBuilder detected; registered mob_level segment.");
+            } else {
+                LOGGER.atWarning().log("NameplateBuilder detected but mob_level segment registration failed.");
+            }
         }
 
         // Register event listeners

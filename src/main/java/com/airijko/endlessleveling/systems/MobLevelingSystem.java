@@ -1,6 +1,7 @@
 package com.airijko.endlessleveling.systems;
 
 import com.airijko.endlessleveling.EndlessLeveling;
+import com.airijko.endlessleveling.compatibility.NameplateBuilderCompatibility;
 import com.airijko.endlessleveling.managers.MobLevelingManager;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
@@ -41,6 +42,7 @@ public class MobLevelingSystem extends TickingSystem<EntityStore> {
     private static final Query<EntityStore> ENTITY_QUERY = Query.any();
     private static final String MOB_HEALTH_SCALE_MODIFIER_KEY = "EL_MOB_HEALTH_SCALE";
     private static final long STALE_ENTITY_TTL_STEPS = 2000L;
+    private static final long HEALTH_RESYNC_INTERVAL_STEPS = 200L;
 
     private final MobLevelingManager mobLevelingManager = EndlessLeveling.getInstance().getMobLevelingManager();
     private final Map<Long, Integer> healthAppliedLevel = new ConcurrentHashMap<>();
@@ -50,6 +52,9 @@ public class MobLevelingSystem extends TickingSystem<EntityStore> {
     private final Map<Long, Integer> levelResolveAttemptCountByEntityKey = new ConcurrentHashMap<>();
     private final Map<Long, Integer> levelResolveAssignmentCountByEntityKey = new ConcurrentHashMap<>();
     private final Map<Long, String> lastResetReasonByEntityKey = new ConcurrentHashMap<>();
+    private final Map<Long, Long> lastHealthResyncStepByEntityKey = new ConcurrentHashMap<>();
+    private final Map<Long, String> lastKnownEntitySignatureByEntityKey = new ConcurrentHashMap<>();
+    private final Map<Long, String> lastHealthApplySkipReasonByEntityKey = new ConcurrentHashMap<>();
     private final Set<Long> deathHandledEntityKeys = ConcurrentHashMap.newKeySet();
     private final Set<Long> forcedDeathLoggedEntityKeys = ConcurrentHashMap.newKeySet();
     private final AtomicBoolean fullMobRescaleRequested = new AtomicBoolean(false);
@@ -84,6 +89,9 @@ public class MobLevelingSystem extends TickingSystem<EntityStore> {
             levelResolveAttemptCountByEntityKey.clear();
             levelResolveAssignmentCountByEntityKey.clear();
             lastResetReasonByEntityKey.clear();
+            lastHealthResyncStepByEntityKey.clear();
+            lastKnownEntitySignatureByEntityKey.clear();
+            lastHealthApplySkipReasonByEntityKey.clear();
             deathHandledEntityKeys.clear();
             forcedDeathLoggedEntityKeys.clear();
             LOGGER.atInfo().log("MobLeveling: queued full mob rescale pass.");
@@ -101,6 +109,8 @@ public class MobLevelingSystem extends TickingSystem<EntityStore> {
 
                         NPCEntity npcEntity = commandBuffer.getComponent(ref, NPCEntity.getComponentType());
                         if (npcEntity == null) {
+                            lastKnownEntitySignatureByEntityKey.remove(entityKey);
+                            lastHealthApplySkipReasonByEntityKey.remove(entityKey);
                             continue;
                         }
 
@@ -121,6 +131,8 @@ public class MobLevelingSystem extends TickingSystem<EntityStore> {
                         }
 
                         if (mobLevelingManager.isEntityBlacklisted(ref, store, commandBuffer)) {
+                            lastKnownEntitySignatureByEntityKey.remove(entityKey);
+                            lastHealthApplySkipReasonByEntityKey.remove(entityKey);
                             boolean hasTrackedState = healthAppliedLevel.containsKey(entityKey)
                                     || levelResolveAttemptCountByEntityKey.containsKey(entityKey)
                                     || levelResolveAssignmentCountByEntityKey.containsKey(entityKey)
@@ -133,6 +145,21 @@ public class MobLevelingSystem extends TickingSystem<EntityStore> {
                             }
                             clearOrRemoveNameplate(ref, commandBuffer);
                             continue;
+                        }
+
+                        String currentEntitySignature = buildEntitySignature(ref, commandBuffer, npcEntity);
+                        String previousEntitySignature = lastKnownEntitySignatureByEntityKey.put(entityKey,
+                                currentEntitySignature);
+                        if (previousEntitySignature != null
+                                && !previousEntitySignature.equals(currentEntitySignature)) {
+                            LOGGER.atInfo().log(
+                                    "MobEntitySignatureChanged target=%d previous=%s current=%s step=%d",
+                                    entityId,
+                                    previousEntitySignature,
+                                    currentEntitySignature,
+                                    currentStep);
+                            clearLevelingStateForEntity(ref, commandBuffer, entityId, "entity-signature-changed");
+                            lastKnownEntitySignatureByEntityKey.put(entityKey, currentEntitySignature);
                         }
 
                         Integer previouslyAppliedLevel = healthAppliedLevel.get(entityKey);
@@ -213,11 +240,32 @@ public class MobLevelingSystem extends TickingSystem<EntityStore> {
                         boolean shouldApplyHealthModifier = previouslyAppliedLevel == null
                                 || previouslyAppliedLevel <= 0
                                 || !previouslyAppliedLevel.equals(appliedLevel);
+                        if (!shouldApplyHealthModifier && shouldForceHealthResync(
+                                ref,
+                                commandBuffer,
+                                entityId,
+                                appliedLevel,
+                                entityKey,
+                                currentStep)) {
+                            shouldApplyHealthModifier = true;
+                        }
+
                         if (shouldApplyHealthModifier) {
+                            lastHealthApplySkipReasonByEntityKey.remove(entityKey);
                             applyHealthModifier(ref, commandBuffer, appliedLevel, entityKey);
+                            lastHealthResyncStepByEntityKey.put(entityKey, currentStep);
+                        } else {
+                            logHealthApplySkipIfChanged(
+                                    entityKey,
+                                    entityId,
+                                    appliedLevel,
+                                    "cached-level-unchanged",
+                                    summarizeHealthForDebug(ref, commandBuffer));
                         }
                         if (showMobLevelUi) {
                             applyNameplate(ref, commandBuffer, includeLevelInName, entityKey);
+                        } else if (NameplateBuilderCompatibility.isAvailable()) {
+                            NameplateBuilderCompatibility.removeMobLevel(ref.getStore(), ref);
                         }
                     }
                 });
@@ -244,6 +292,9 @@ public class MobLevelingSystem extends TickingSystem<EntityStore> {
             healthAppliedLevel.remove(entityKey);
             loggedHealthLevelByEntityKey.remove(entityKey);
             loggedNameplateLevelByEntityKey.remove(entityKey);
+            lastHealthResyncStepByEntityKey.remove(entityKey);
+            lastKnownEntitySignatureByEntityKey.remove(entityKey);
+            lastHealthApplySkipReasonByEntityKey.remove(entityKey);
             levelResolveAttemptCountByEntityKey.remove(entityKey);
             levelResolveAssignmentCountByEntityKey.remove(entityKey);
             deathHandledEntityKeys.remove(entityKey);
@@ -332,6 +383,9 @@ public class MobLevelingSystem extends TickingSystem<EntityStore> {
         healthAppliedLevel.remove(entityKey);
         loggedHealthLevelByEntityKey.remove(entityKey);
         loggedNameplateLevelByEntityKey.remove(entityKey);
+        lastHealthResyncStepByEntityKey.remove(entityKey);
+        lastKnownEntitySignatureByEntityKey.remove(entityKey);
+        lastHealthApplySkipReasonByEntityKey.remove(entityKey);
         levelResolveAttemptCountByEntityKey.remove(entityKey);
         levelResolveAssignmentCountByEntityKey.remove(entityKey);
 
@@ -372,11 +426,13 @@ public class MobLevelingSystem extends TickingSystem<EntityStore> {
 
         EntityStatMap statMap = commandBuffer.getComponent(ref, EntityStatMap.getComponentType());
         if (statMap == null) {
+            logHealthApplySkipIfChanged(entityKey, entityId, appliedLevel, "missing-stat-map", "");
             return;
         }
 
         EntityStatValue healthStat = statMap.get(DefaultEntityStatTypes.getHealth());
         if (healthStat == null) {
+            logHealthApplySkipIfChanged(entityKey, entityId, appliedLevel, "missing-health-stat", "");
             return;
         }
 
@@ -385,6 +441,12 @@ public class MobLevelingSystem extends TickingSystem<EntityStore> {
         float currentValue = healthStat.get();
         float currentMax = healthStat.getMax();
         if (!Float.isFinite(currentValue) || !Float.isFinite(currentMax) || currentMax <= 0.0f) {
+            logHealthApplySkipIfChanged(
+                    entityKey,
+                    entityId,
+                    appliedLevel,
+                    "invalid-current-health",
+                    String.format("value=%.3f max=%.3f", currentValue, currentMax));
             healthAppliedLevel.put(entityKey, appliedLevel);
             return;
         }
@@ -408,6 +470,7 @@ public class MobLevelingSystem extends TickingSystem<EntityStore> {
             if (restoredHealth != null && Float.isFinite(restoredHealth.getMax()) && restoredHealth.getMax() > 0.0f) {
                 mobLevelingManager.recordEntityMaxHealth(entityId, restoredHealth.getMax());
             }
+            lastHealthApplySkipReasonByEntityKey.remove(entityKey);
             healthAppliedLevel.put(entityKey, appliedLevel);
             return;
         }
@@ -421,6 +484,17 @@ public class MobLevelingSystem extends TickingSystem<EntityStore> {
         float targetMax = scaled.targetMax();
         float targetValue = scaled.newValue();
         if (!Float.isFinite(targetMax) || targetMax <= 0.0f || !Float.isFinite(targetValue)) {
+            logHealthApplySkipIfChanged(
+                    entityKey,
+                    entityId,
+                    appliedLevel,
+                    "invalid-scaled-health",
+                    String.format("targetMax=%.3f targetValue=%.3f baseMax=%.3f current=%.3f/%.3f",
+                            targetMax,
+                            targetValue,
+                            baseMax,
+                            currentValue,
+                            currentMax));
             healthAppliedLevel.put(entityKey, appliedLevel);
             return;
         }
@@ -446,6 +520,7 @@ public class MobLevelingSystem extends TickingSystem<EntityStore> {
             mobLevelingManager.recordEntityMaxHealth(entityId, updatedHealth.getMax());
         }
 
+        lastHealthApplySkipReasonByEntityKey.remove(entityKey);
         healthAppliedLevel.put(entityKey, appliedLevel);
 
     }
@@ -471,6 +546,9 @@ public class MobLevelingSystem extends TickingSystem<EntityStore> {
         lastSeenStepByEntityKey.remove(entityKey);
         loggedHealthLevelByEntityKey.remove(entityKey);
         loggedNameplateLevelByEntityKey.remove(entityKey);
+        lastHealthResyncStepByEntityKey.remove(entityKey);
+        lastKnownEntitySignatureByEntityKey.remove(entityKey);
+        lastHealthApplySkipReasonByEntityKey.remove(entityKey);
         levelResolveAttemptCountByEntityKey.remove(entityKey);
         levelResolveAssignmentCountByEntityKey.remove(entityKey);
         deathHandledEntityKeys.remove(entityKey);
@@ -527,6 +605,11 @@ public class MobLevelingSystem extends TickingSystem<EntityStore> {
             return;
         }
 
+        if (NameplateBuilderCompatibility.isAvailable()) {
+            NameplateBuilderCompatibility.registerMobLevel(ref.getStore(), ref, appliedLevel);
+            return;
+        }
+
         Nameplate nameplate = commandBuffer.ensureAndGetComponent(ref, Nameplate.getComponentType());
         if (nameplate == null) {
             return;
@@ -560,6 +643,11 @@ public class MobLevelingSystem extends TickingSystem<EntityStore> {
 
     private void clearOrRemoveNameplate(Ref<EntityStore> ref, CommandBuffer<EntityStore> commandBuffer) {
         if (ref == null || commandBuffer == null) {
+            return;
+        }
+
+        if (NameplateBuilderCompatibility.isAvailable()) {
+            NameplateBuilderCompatibility.removeMobLevel(ref.getStore(), ref);
             return;
         }
 
@@ -683,5 +771,129 @@ public class MobLevelingSystem extends TickingSystem<EntityStore> {
             identity.append("|worldGen=").append(worldGen);
         }
         return identity.toString();
+    }
+
+    private String summarizeHealthForDebug(Ref<EntityStore> ref, CommandBuffer<EntityStore> commandBuffer) {
+        if (ref == null || commandBuffer == null) {
+            return "health=unknown";
+        }
+
+        EntityStatMap statMap = commandBuffer.getComponent(ref, EntityStatMap.getComponentType());
+        if (statMap == null) {
+            return "health=missing-stat-map";
+        }
+
+        EntityStatValue hp = statMap.get(DefaultEntityStatTypes.getHealth());
+        if (hp == null) {
+            return "health=missing-health-stat";
+        }
+
+        return String.format("health=%.3f/%.3f", hp.get(), hp.getMax());
+    }
+
+    private boolean shouldForceHealthResync(Ref<EntityStore> ref,
+            CommandBuffer<EntityStore> commandBuffer,
+            int entityId,
+            int appliedLevel,
+            long entityKey,
+            long currentStep) {
+        if (ref == null || commandBuffer == null || entityId < 0 || appliedLevel <= 0 || mobLevelingManager == null) {
+            return false;
+        }
+
+        Long lastResyncStep = lastHealthResyncStepByEntityKey.get(entityKey);
+        if (lastResyncStep == null || currentStep - lastResyncStep >= HEALTH_RESYNC_INTERVAL_STEPS) {
+            return true;
+        }
+
+        if (!mobLevelingManager.isMobHealthScalingEnabled()) {
+            return false;
+        }
+
+        float expectedMaxSnapshot = mobLevelingManager.getEntityMaxHealthSnapshot(entityId);
+        if (!Float.isFinite(expectedMaxSnapshot) || expectedMaxSnapshot <= 0.0f) {
+            return true;
+        }
+
+        EntityStatMap statMap = commandBuffer.getComponent(ref, EntityStatMap.getComponentType());
+        if (statMap == null) {
+            return true;
+        }
+
+        EntityStatValue hp = statMap.get(DefaultEntityStatTypes.getHealth());
+        if (hp == null || !Float.isFinite(hp.getMax()) || hp.getMax() <= 0.0f) {
+            return true;
+        }
+
+        float currentMax = hp.getMax();
+        float allowedDrift = Math.max(1.0f, expectedMaxSnapshot * 0.02f);
+        return Math.abs(currentMax - expectedMaxSnapshot) > allowedDrift;
+    }
+
+    private void logHealthApplySkipIfChanged(long entityKey,
+            int entityId,
+            int level,
+            String reason,
+            String details) {
+        if (reason == null || reason.isBlank()) {
+            return;
+        }
+
+        String normalizedDetails = details == null ? "" : details.trim();
+        String marker = "cached-level-unchanged".equals(reason)
+                ? reason
+                : (normalizedDetails.isBlank() ? reason : reason + "|" + normalizedDetails);
+        String previousMarker = lastHealthApplySkipReasonByEntityKey.get(entityKey);
+        if (marker.equals(previousMarker)) {
+            return;
+        }
+
+        lastHealthApplySkipReasonByEntityKey.put(entityKey, marker);
+        if (normalizedDetails.isBlank()) {
+            LOGGER.atInfo().log(
+                    "MobHealthApplySkipped target=%d level=%d reason=%s",
+                    entityId,
+                    level,
+                    reason);
+        } else {
+            LOGGER.atInfo().log(
+                    "MobHealthApplySkipped target=%d level=%d reason=%s %s",
+                    entityId,
+                    level,
+                    reason,
+                    normalizedDetails);
+        }
+    }
+
+    private String buildEntitySignature(Ref<EntityStore> ref,
+            CommandBuffer<EntityStore> commandBuffer,
+            NPCEntity npcEntity) {
+        if (ref == null || commandBuffer == null || npcEntity == null) {
+            return "unknown";
+        }
+
+        String npcType = "unknown";
+        try {
+            String rawType = npcEntity.getNPCTypeId();
+            if (rawType != null && !rawType.isBlank()) {
+                npcType = rawType.trim();
+            }
+        } catch (Throwable ignored) {
+        }
+
+        String worldGen = "none";
+        WorldGenId worldGenId = commandBuffer.getComponent(ref, WorldGenId.getComponentType());
+        if (worldGenId != null) {
+            try {
+                worldGen = Integer.toString(worldGenId.getWorldGenId());
+            } catch (Throwable ignored) {
+                try {
+                    worldGen = worldGenId.toString();
+                } catch (Throwable ignored2) {
+                }
+            }
+        }
+
+        return npcType + "|worldGen=" + worldGen;
     }
 }
