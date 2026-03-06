@@ -1,7 +1,7 @@
 id: titans_might
 name: "Titan's Might"
 tier: ELITE
-description: "Convert maximum Health into bonus Strength."
+description: "Gain Strength based on your total max Health, but lose some Haste."
 category: PASSIVE_STAT
 
 passives:

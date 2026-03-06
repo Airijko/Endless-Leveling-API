@@ -490,23 +490,28 @@ public class MobLevelingManager {
         }
 
         String worldId = resolveWorldId(effectiveStore);
-        if (worldId == null || worldId.isBlank()) {
-            return null;
-        }
-
         Object rootRaw = worldsConfigManager.get("World_Overrides", null, false);
         if (!(rootRaw instanceof Map<?, ?> rootMap) || rootMap.isEmpty()) {
             return null;
         }
 
-        Object exactRaw = resolveCaseInsensitive(rootMap, worldId);
-        WorldMobOverride exactOverride = resolveWorldMobOverrideFromWorldNode(exactRaw, normalizedMobType);
-        if (exactOverride != null) {
-            return exactOverride;
+        if (worldId != null && !worldId.isBlank()) {
+            Object exactRaw = resolveCaseInsensitive(rootMap, worldId);
+            WorldMobOverride exactOverride = resolveWorldMobOverrideFromWorldNode(exactRaw, normalizedMobType);
+            if (exactOverride != null) {
+                return exactOverride;
+            }
+
+            Map<?, ?> bestWildcardMap = resolveBestWildcardWorldOverrideMap(rootMap, worldId);
+            WorldMobOverride wildcardOverride = resolveWorldMobOverrideFromWorldNode(bestWildcardMap,
+                    normalizedMobType);
+            if (wildcardOverride != null) {
+                return wildcardOverride;
+            }
         }
 
-        Map<?, ?> bestWildcardMap = resolveBestWildcardWorldOverrideMap(rootMap, worldId);
-        return resolveWorldMobOverrideFromWorldNode(bestWildcardMap, normalizedMobType);
+        Object defaultRaw = resolveCaseInsensitive(rootMap, "default");
+        return resolveWorldMobOverrideFromWorldNode(defaultRaw, normalizedMobType);
     }
 
     private WorldMobOverride resolveWorldMobOverrideFromWorldNode(Object worldNode, String normalizedMobType) {
@@ -1871,6 +1876,10 @@ public class MobLevelingManager {
         return resolveWorldId(store, null);
     }
 
+    public String resolveWorldIdentifier(Store<EntityStore> store) {
+        return resolveWorldId(store, null);
+    }
+
     private boolean isSameWorld(Store<EntityStore> mobStore, Store<EntityStore> playerStore) {
         if (mobStore == null || playerStore == null) {
             return true;
@@ -2285,7 +2294,11 @@ public class MobLevelingManager {
     }
 
     public boolean isMobHealthScalingEnabled() {
-        Object raw = getMobLevelingValue("Mob_Leveling.Scaling.Health.Enabled", Boolean.FALSE, null, null);
+        return isMobHealthScalingEnabled(null);
+    }
+
+    public boolean isMobHealthScalingEnabled(Store<EntityStore> store) {
+        Object raw = getMobLevelingValue("Mob_Leveling.Scaling.Health.Enabled", Boolean.FALSE, store, null);
         if (raw instanceof Boolean b)
             return b;
         if (raw instanceof Number n)

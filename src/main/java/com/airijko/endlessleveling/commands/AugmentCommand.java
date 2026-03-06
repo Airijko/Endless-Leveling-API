@@ -1,6 +1,7 @@
 package com.airijko.endlessleveling.commands;
 
 import com.airijko.endlessleveling.commands.subcommands.AugmentRefreshCommand;
+import com.airijko.endlessleveling.commands.subcommands.ResetAugmentsCommand;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.Message;
@@ -17,6 +18,8 @@ public class AugmentCommand extends AbstractPlayerCommand {
     public AugmentCommand() {
         super("augment", "Admin augment commands");
         this.addSubCommand(new AugmentRefreshCommand("refresh", "Reroll stored augment offers for a player"));
+        this.addSubCommand(new ResetAugmentsCommand("reset",
+                "Reset selected augments and reroll all eligible offers"));
     }
 
     @Override
@@ -31,5 +34,6 @@ public class AugmentCommand extends AbstractPlayerCommand {
             @Nonnull PlayerRef senderRef,
             @Nonnull World world) {
         senderRef.sendMessage(Message.raw("Usage: /el augment refresh [player]").color("#4fd7f7"));
+        senderRef.sendMessage(Message.raw("Usage: /el augment reset [player]").color("#4fd7f7"));
     }
 }

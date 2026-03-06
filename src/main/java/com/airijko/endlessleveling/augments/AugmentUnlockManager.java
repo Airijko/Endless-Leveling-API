@@ -119,11 +119,70 @@ public class AugmentUnlockManager {
         }
     }
 
-    /** Clears and rerolls all unlock tiers the player qualifies for. */
+    /**
+     * Rerolls pending offers for eligible tiers while preserving selected augments.
+     */
     public void refreshUnlocks(@Nonnull PlayerData playerData) {
+        playerData.clearAugmentOffers();
+        ensureUnlocks(playerData);
+    }
+
+    /**
+     * Clears selected augments and pending offers, then rerolls unlocks the player
+     * is
+     * currently eligible for.
+     */
+    public void resetAllAugments(@Nonnull PlayerData playerData) {
         playerData.clearSelectedAugments();
         playerData.clearAugmentOffers();
         ensureUnlocks(playerData);
+        playerDataManager.save(playerData);
+    }
+
+    /**
+     * Trims pending/selected augment unlocks that exceed the player's current
+     * eligibility (for example after reducing prestige).
+     */
+    public boolean trimExcessUnlocks(@Nonnull PlayerData playerData) {
+        int playerLevel = playerData.getLevel();
+        Map<PassiveTier, Integer> eligibleByTier = buildEligibleByTier(playerData, playerLevel);
+
+        boolean updated = false;
+        for (PassiveTier tier : PassiveTier.values()) {
+            String tierKey = tier.name();
+            int eligibleMilestones = Math.max(0, eligibleByTier.getOrDefault(tier, 0));
+
+            int selectedCount = countSelectedForTier(playerData, tierKey);
+            List<String> offers = new ArrayList<>(playerData.getAugmentOffersForTier(tierKey));
+            int pendingCount = countPendingUnlockBundles(offers);
+            int grantedCount = selectedCount + pendingCount;
+
+            int excess = grantedCount - eligibleMilestones;
+            if (excess <= 0) {
+                continue;
+            }
+
+            int bundlesToRemove = Math.min(excess, pendingCount);
+            if (bundlesToRemove > 0) {
+                truncateOfferBundlesFromEnd(offers, bundlesToRemove);
+                playerData.setAugmentOffersForTier(tierKey, offers);
+                excess -= bundlesToRemove;
+                updated = true;
+            }
+
+            if (excess > 0) {
+                int removedSelections = removeSelectedEntriesFromTier(playerData, tierKey, excess);
+                if (removedSelections > 0) {
+                    updated = true;
+                }
+            }
+        }
+
+        if (updated) {
+            playerDataManager.save(playerData);
+        }
+
+        return updated;
     }
 
     /**
@@ -364,6 +423,74 @@ public class AugmentUnlockManager {
             return 0;
         }
         return (offers.size() + DEFAULT_OFFER_COUNT - 1) / DEFAULT_OFFER_COUNT;
+    }
+
+    private void truncateOfferBundlesFromEnd(List<String> offers, int bundlesToRemove) {
+        if (offers == null || offers.isEmpty() || bundlesToRemove <= 0) {
+            return;
+        }
+
+        int toRemove = Math.min(offers.size(), bundlesToRemove * DEFAULT_OFFER_COUNT);
+        int newSize = Math.max(0, offers.size() - toRemove);
+        offers.subList(newSize, offers.size()).clear();
+    }
+
+    private int removeSelectedEntriesFromTier(PlayerData playerData, String tierKey, int entriesToRemove) {
+        if (playerData == null || tierKey == null || tierKey.isBlank() || entriesToRemove <= 0) {
+            return 0;
+        }
+
+        String normalizedTier = tierKey.trim().toUpperCase(Locale.ROOT);
+        List<String> candidateKeys = playerData.getSelectedAugmentsSnapshot().keySet().stream()
+                .filter(key -> isTierSelectionKey(key, normalizedTier))
+                .sorted((a, b) -> Integer.compare(selectionKeyRank(b, normalizedTier),
+                        selectionKeyRank(a, normalizedTier)))
+                .collect(Collectors.toCollection(ArrayList::new));
+
+        int removed = 0;
+        for (String key : candidateKeys) {
+            if (removed >= entriesToRemove) {
+                break;
+            }
+            playerData.setSelectedAugmentForTier(key, null);
+            removed++;
+        }
+
+        return removed;
+    }
+
+    private boolean isTierSelectionKey(String key, String normalizedTier) {
+        if (key == null || key.isBlank() || normalizedTier == null || normalizedTier.isBlank()) {
+            return false;
+        }
+        String normalizedKey = key.trim().toUpperCase(Locale.ROOT);
+        return normalizedKey.equals(normalizedTier) || normalizedKey.startsWith(normalizedTier + "#");
+    }
+
+    private int selectionKeyRank(String key, String normalizedTier) {
+        if (key == null || key.isBlank() || normalizedTier == null || normalizedTier.isBlank()) {
+            return 0;
+        }
+
+        String normalizedKey = key.trim().toUpperCase(Locale.ROOT);
+        if (normalizedKey.equals(normalizedTier)) {
+            return 0;
+        }
+        if (!normalizedKey.startsWith(normalizedTier + "#")) {
+            return 0;
+        }
+
+        String suffix = normalizedKey.substring((normalizedTier + "#").length()).trim();
+        if (suffix.isEmpty()) {
+            return 1;
+        }
+
+        try {
+            int parsed = Integer.parseInt(suffix);
+            return Math.max(1, parsed);
+        } catch (NumberFormatException ignored) {
+            return Integer.MAX_VALUE / 2;
+        }
     }
 
     private int countSelectedForTier(PlayerData playerData, String tierKey) {

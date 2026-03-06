@@ -4,11 +4,14 @@ import com.airijko.endlessleveling.commands.subcommands.ApplyModifiersCommand;
 import com.airijko.endlessleveling.commands.subcommands.OpenPageSubCommand;
 import com.airijko.endlessleveling.commands.subcommands.ResetAllPlayersCommand;
 import com.airijko.endlessleveling.commands.subcommands.ResetLevelCommand;
+import com.airijko.endlessleveling.commands.subcommands.ResetPrestigeCommand;
+import com.airijko.endlessleveling.commands.subcommands.ResetAllCommand;
 import com.airijko.endlessleveling.commands.subcommands.ResetCooldownsCommand;
 import com.airijko.endlessleveling.commands.subcommands.ResetSkillPointsCommand;
 import com.airijko.endlessleveling.commands.subcommands.ReloadCommand;
 import com.airijko.endlessleveling.commands.subcommands.LanguageCommand;
 import com.airijko.endlessleveling.commands.subcommands.AugmentRefreshCommand;
+import com.airijko.endlessleveling.commands.subcommands.ResetAugmentsCommand;
 import com.airijko.endlessleveling.commands.subcommands.AugmentTestCommand;
 import com.airijko.endlessleveling.commands.subcommands.PrestigeCommand;
 import com.airijko.endlessleveling.commands.subcommands.SetLevelCommand;
@@ -38,6 +41,8 @@ public class EndlessLevelingCommand extends AbstractPlayerCommand {
                 this.addAliases("el", "endlessleveling", "skill", "eskills");
                 this.addSubCommand(new SetLevelCommand());
                 this.addSubCommand(new ResetLevelCommand());
+                this.addSubCommand(new ResetPrestigeCommand());
+                this.addSubCommand(new ResetAllCommand());
                 this.addSubCommand(new ApplyModifiersCommand());
                 this.addSubCommand(new DebugCommand());
                 this.addSubCommand(new ResetAllPlayersCommand());
@@ -48,6 +53,7 @@ public class EndlessLevelingCommand extends AbstractPlayerCommand {
                 this.addSubCommand(new LanguageCommand());
                 this.addSubCommand(new AugmentCommand());
                 this.addSubCommand(new AugmentRefreshCommand());
+                this.addSubCommand(new ResetAugmentsCommand());
                 this.addSubCommand(new AugmentTestCommand());
 
                 addGuiShortcut("leaderboards", "Open the EndlessLeveling Leaderboards page",

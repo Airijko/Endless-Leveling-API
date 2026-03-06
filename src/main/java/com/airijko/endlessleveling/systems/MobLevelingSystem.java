@@ -507,7 +507,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
             baseMax = Math.max(1.0f, currentMax);
         }
 
-        if (!mobLevelingManager.isMobHealthScalingEnabled()) {
+        if (!mobLevelingManager.isMobHealthScalingEnabled(ref.getStore())) {
             float ratio = currentMax > 0.0f ? currentValue / currentMax : 1.0f;
             float restoredValue = Math.max(0.0f, Math.min(baseMax, ratio * baseMax));
             if (currentValue <= 0.0f) {
@@ -980,6 +980,17 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         } catch (Throwable ignored) {
         }
 
-        return npcType;
+        String worldId = "unknown-world";
+        if (mobLevelingManager != null && ref != null) {
+            try {
+                String resolvedWorld = mobLevelingManager.resolveWorldIdentifier(ref.getStore());
+                if (resolvedWorld != null && !resolvedWorld.isBlank()) {
+                    worldId = resolvedWorld.trim();
+                }
+            } catch (Throwable ignored) {
+            }
+        }
+
+        return npcType + "@" + worldId;
     }
 }

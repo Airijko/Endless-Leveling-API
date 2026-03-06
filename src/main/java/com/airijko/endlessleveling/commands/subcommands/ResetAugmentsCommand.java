@@ -20,19 +20,20 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import javax.annotation.Nonnull;
 
-public class AugmentRefreshCommand extends AbstractPlayerCommand {
+public class ResetAugmentsCommand extends AbstractPlayerCommand {
 
-    private static final String PERMISSION_NODE = HytalePermissions.fromCommand("endlessleveling.augments.refresh");
+    private static final String PERMISSION_NODE = HytalePermissions.fromCommand("endlessleveling.augments.reset");
 
     private final PlayerDataManager playerDataManager;
     private final AugmentUnlockManager augmentUnlockManager;
     private final OptionalArg<String> targetArg = this.withOptionalArg("player", "Target player name", ArgTypes.STRING);
 
-    public AugmentRefreshCommand() {
-        this("augmentrefresh", "Reroll stored augment offers for a player", "augmentsrefresh", "refreshaugments");
+    public ResetAugmentsCommand() {
+        this("resetaugments", "Reset selected augments and reroll all eligible augment offers",
+                "augmentsreset", "resetallaugments");
     }
 
-    public AugmentRefreshCommand(String name, String description, String... aliases) {
+    public ResetAugmentsCommand(String name, String description, String... aliases) {
         super(name, description);
         if (aliases != null && aliases.length > 0) {
             this.addAliases(aliases);
@@ -78,13 +79,13 @@ public class AugmentRefreshCommand extends AbstractPlayerCommand {
             targetName = playerRef.getUsername();
         }
 
-        augmentUnlockManager.refreshUnlocks(targetData);
+        augmentUnlockManager.resetAllAugments(targetData);
 
-        playerRef.sendMessage(
-                Message.raw("Refreshed augment offers for " + targetName + " (selected augments unchanged).")
-                        .color("#4fd7f7"));
+        playerRef.sendMessage(Message.raw("Reset augments and rebuilt eligible offers for " + targetName + ".")
+                .color("#4fd7f7"));
         if (targetRef != null && !targetRef.getUuid().equals(playerRef.getUuid())) {
-            targetRef.sendMessage(Message.raw("An admin refreshed your augment offers.").color("#4fd7f7"));
+            targetRef.sendMessage(Message.raw("An admin reset your augments and rerolled your eligible offers.")
+                    .color("#4fd7f7"));
         }
     }
 }
