@@ -13,12 +13,9 @@ public enum PassiveCategory {
     ON_RANGED_HIT("Weapon_Shortbow_Crude"),
     ON_DAMAGE_TAKEN("Weapon_Shield_Orbis_Knight"),
     ON_LOW_HP("Potion_Health_Lesser"),
-    ON_SKILL_USE("Ingredient_Water_Essence"),
     ON_CRIT("Weapon_Battleaxe_Mithril"),
-    ON_CRIT_TAKEN("Weapon_Shield_Orbis_Knight"),
-    ON_DEATH("Ingredient_Void_Essence"),
-    ON_BLOCK("Weapon_Shield_Orbis_Knight"),
-    ON_KILL("Ingredient_Fire_Essence");
+    ON_KILL("Ingredient_Fire_Essence"),
+    ON_LIFESTEAL("Potion_Health_Greater");
 
     private final String iconItemId;
 
