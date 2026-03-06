@@ -99,6 +99,10 @@ public class EndlessLeveling extends JavaPlugin {
         return configManager;
     }
 
+    public PluginFilesManager getFilesManager() {
+        return filesManager;
+    }
+
     public LanguageManager getLanguageManager() {
         return languageManager;
     }

@@ -134,6 +134,21 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
                         trackedStoreByEntityKey.put(entityKey, ref.getStore());
                         lastSeenTimeByEntityKey.put(entityKey, currentTimeMillis);
 
+                        PlayerRef playerRef = commandBuffer.getComponent(ref, PlayerRef.getComponentType());
+                        if (playerRef != null && playerRef.isValid()) {
+                            clearMobHealthScaleModifierForPlayer(ref, commandBuffer, entityId, entityKey);
+                            healthAppliedLevel.remove(entityKey);
+                            settledHealthLevelByEntityKey.remove(entityKey);
+                            appliedNameplateLevelByEntityKey.remove(entityKey);
+                            nameplateSyncReadyAtTimeByEntityKey.remove(entityKey);
+                            levelResolveAttemptCountByEntityKey.remove(entityKey);
+                            levelResolveAssignmentCountByEntityKey.remove(entityKey);
+                            lastKnownEntitySignatureByEntityKey.remove(entityKey);
+                            lastHealthApplySkipReasonByEntityKey.remove(entityKey);
+                            clearOrRemoveNameplate(ref, commandBuffer);
+                            continue;
+                        }
+
                         NPCEntity npcEntity = commandBuffer.getComponent(ref, NPCEntity.getComponentType());
                         if (npcEntity == null) {
                             settledHealthLevelByEntityKey.remove(entityKey);
@@ -146,20 +161,6 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
 
                         if (shouldResetAllMobs) {
                             clearLevelingStateForEntity(ref, commandBuffer, entityId, entityKey, "reload-rescale");
-                        }
-
-                        PlayerRef playerRef = commandBuffer.getComponent(ref, PlayerRef.getComponentType());
-                        if (playerRef != null && playerRef.isValid()) {
-                            healthAppliedLevel.remove(entityKey);
-                            settledHealthLevelByEntityKey.remove(entityKey);
-                            appliedNameplateLevelByEntityKey.remove(entityKey);
-                            nameplateSyncReadyAtTimeByEntityKey.remove(entityKey);
-                            levelResolveAttemptCountByEntityKey.remove(entityKey);
-                            levelResolveAssignmentCountByEntityKey.remove(entityKey);
-                            lastKnownEntitySignatureByEntityKey.remove(entityKey);
-                            lastHealthApplySkipReasonByEntityKey.remove(entityKey);
-                            clearOrRemoveNameplate(ref, commandBuffer);
-                            continue;
                         }
 
                         ensureDeadComponentWhenZeroHp(ref, commandBuffer);
@@ -467,6 +468,12 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
 
         int entityId = ref.getIndex();
 
+        PlayerRef playerRef = commandBuffer.getComponent(ref, PlayerRef.getComponentType());
+        if (playerRef != null && playerRef.isValid()) {
+            clearMobHealthScaleModifierForPlayer(ref, commandBuffer, entityId, entityKey);
+            return false;
+        }
+
         EntityStatMap statMap = commandBuffer.getComponent(ref, EntityStatMap.getComponentType());
         if (statMap == null) {
             logHealthApplySkipIfChanged(entityKey, entityId, appliedLevel, "missing-stat-map", "");
@@ -517,6 +524,9 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         }
 
         MobLevelingManager.MobHealthScalingResult scaled = mobLevelingManager.computeMobHealthScaling(
+                ref,
+                ref.getStore(),
+                commandBuffer,
                 appliedLevel,
                 baseMax,
                 currentMax,
@@ -564,6 +574,65 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
 
         lastHealthApplySkipReasonByEntityKey.remove(entityKey);
         return true;
+    }
+
+    private void clearMobHealthScaleModifierForPlayer(Ref<EntityStore> ref,
+            CommandBuffer<EntityStore> commandBuffer,
+            int entityId,
+            long entityKey) {
+        if (ref == null || commandBuffer == null) {
+            return;
+        }
+
+        EntityStatMap statMap = commandBuffer.getComponent(ref, EntityStatMap.getComponentType());
+        if (statMap == null) {
+            return;
+        }
+
+        int healthIndex = DefaultEntityStatTypes.getHealth();
+        EntityStatValue before = statMap.get(healthIndex);
+        if (before == null) {
+            return;
+        }
+
+        float previousValue = before.get();
+        float previousMax = before.getMax();
+
+        statMap.removeModifier(healthIndex, MOB_HEALTH_SCALE_MODIFIER_KEY);
+
+        EntityStatValue baseline = statMap.get(healthIndex);
+        float baselineMax = baseline != null ? baseline.getMax() : previousMax;
+        if (!Float.isFinite(previousMax) || previousMax <= 0.0f
+                || !Float.isFinite(baselineMax) || baselineMax <= 0.0f) {
+            statMap.update();
+            return;
+        }
+
+        if (Math.abs(previousMax - baselineMax) <= 0.0001f) {
+            return;
+        }
+
+        float ratio = previousValue / previousMax;
+        float restoredValue = Math.max(0.0f, Math.min(baselineMax, ratio * baselineMax));
+        if (!Float.isFinite(restoredValue)) {
+            restoredValue = Math.max(0.0f, Math.min(baselineMax, previousValue));
+        }
+        if (previousValue <= 0.0f) {
+            restoredValue = 0.0f;
+        }
+
+        statMap.setStatValue(healthIndex, restoredValue);
+        statMap.update();
+
+        logMobInfo(
+                "cleared-player-health-modifier",
+                entityId,
+                entityKey,
+                "prevMax=%.3f newMax=%.3f prevValue=%.3f newValue=%.3f",
+                previousMax,
+                baselineMax,
+                previousValue,
+                restoredValue);
     }
 
     private void clearLevelingStateForEntity(Ref<EntityStore> ref,

@@ -143,7 +143,11 @@ public class PlayerCombatListener extends DamageEventSystem {
             targetIsPlayer = targetPlayer != null && targetPlayer.isValid();
             if (!targetIsPlayer) {
                 mobLevel = mobLevelingManager.resolveMobLevel(targetRef, commandBuffer);
-                reduction = mobLevelingManager.getMobDefenseReductionForLevels(mobLevel, playerLevel);
+                reduction = mobLevelingManager.getMobDefenseReductionForLevels(
+                        targetRef,
+                        commandBuffer,
+                        mobLevel,
+                        playerLevel);
                 if (reduction > 0.0D) {
                     adjusted = (float) (adjusted * (1.0D - reduction));
                 }

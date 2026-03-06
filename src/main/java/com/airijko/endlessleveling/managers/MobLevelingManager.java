@@ -196,7 +196,7 @@ public class MobLevelingManager {
         Vector3d position = getWorldPosition(ref, commandBuffer);
         Integer entityId = ref != null ? ref.getIndex() : null;
 
-        Integer override = resolveExternalOverride(store, position, entityId);
+        Integer override = resolveExternalOverride(ref, store, commandBuffer, position, entityId);
         if (override != null && override > 0) {
             return clampToConfiguredRange(override);
         }
@@ -304,7 +304,7 @@ public class MobLevelingManager {
         Store<EntityStore> store = ref != null ? ref.getStore() : null;
         Vector3d position = getWorldPosition(ref, commandBuffer);
         Integer entityId = ref != null ? ref.getIndex() : null;
-        return resolveMobLevel(store, position, entityId);
+        return resolveMobLevel(store, position, entityId, ref, commandBuffer);
     }
 
     public int resolveMobLevel(Store<EntityStore> store, Vector3d mobPosition) {
@@ -312,7 +312,15 @@ public class MobLevelingManager {
     }
 
     public int resolveMobLevel(Store<EntityStore> store, Vector3d mobPosition, Integer entityId) {
-        Integer override = resolveExternalOverride(store, mobPosition, entityId);
+        return resolveMobLevel(store, mobPosition, entityId, null, null);
+    }
+
+    private int resolveMobLevel(Store<EntityStore> store,
+            Vector3d mobPosition,
+            Integer entityId,
+            Ref<EntityStore> ref,
+            CommandBuffer<EntityStore> commandBuffer) {
+        Integer override = resolveExternalOverride(ref, store, commandBuffer, mobPosition, entityId);
         if (override != null && override > 0) {
             return override;
         }
@@ -403,6 +411,14 @@ public class MobLevelingManager {
     }
 
     private Integer resolveExternalOverride(Store<EntityStore> store, Vector3d mobPosition, Integer entityId) {
+        return resolveExternalOverride(null, store, null, mobPosition, entityId);
+    }
+
+    private Integer resolveExternalOverride(Ref<EntityStore> ref,
+            Store<EntityStore> store,
+            CommandBuffer<EntityStore> commandBuffer,
+            Vector3d mobPosition,
+            Integer entityId) {
         if (entityId != null) {
             if (store != null) {
                 Integer scoped = entityLevelOverridesScoped.get(toEntityKey(store, entityId));
@@ -414,6 +430,11 @@ public class MobLevelingManager {
             if (direct != null) {
                 return Math.max(1, direct);
             }
+        }
+
+        Integer worldMobOverrideLevel = resolveWorldMobOverrideLevel(ref, store, commandBuffer);
+        if (worldMobOverrideLevel != null && worldMobOverrideLevel > 0) {
+            return worldMobOverrideLevel;
         }
 
         if (areaOverrides.isEmpty()) {
@@ -440,6 +461,287 @@ public class MobLevelingManager {
             }
             int sampled = sampleLevel(override.minLevel, override.maxLevel, entityId, mobPosition);
             return Math.max(1, sampled);
+        }
+        return null;
+    }
+
+    private Integer resolveWorldMobOverrideLevel(Ref<EntityStore> ref,
+            Store<EntityStore> store,
+            CommandBuffer<EntityStore> commandBuffer) {
+        WorldMobOverride override = resolveWorldMobOverride(ref, store, commandBuffer);
+        if (override == null) {
+            return null;
+        }
+        return override.level();
+    }
+
+    private WorldMobOverride resolveWorldMobOverride(Ref<EntityStore> ref,
+            Store<EntityStore> store,
+            CommandBuffer<EntityStore> commandBuffer) {
+        if (ref == null) {
+            return null;
+        }
+
+        Store<EntityStore> effectiveStore = store != null ? store : ref.getStore();
+        String mobType = resolveMobType(ref, effectiveStore, commandBuffer);
+        String normalizedMobType = normalizeMobIdentifier(mobType);
+        if (normalizedMobType == null) {
+            return null;
+        }
+
+        String worldId = resolveWorldId(effectiveStore);
+        if (worldId == null || worldId.isBlank()) {
+            return null;
+        }
+
+        Object rootRaw = worldsConfigManager.get("World_Overrides", null, false);
+        if (!(rootRaw instanceof Map<?, ?> rootMap) || rootMap.isEmpty()) {
+            return null;
+        }
+
+        Object exactRaw = resolveCaseInsensitive(rootMap, worldId);
+        WorldMobOverride exactOverride = resolveWorldMobOverrideFromWorldNode(exactRaw, normalizedMobType);
+        if (exactOverride != null) {
+            return exactOverride;
+        }
+
+        Map<?, ?> bestWildcardMap = resolveBestWildcardWorldOverrideMap(rootMap, worldId);
+        return resolveWorldMobOverrideFromWorldNode(bestWildcardMap, normalizedMobType);
+    }
+
+    private WorldMobOverride resolveWorldMobOverrideFromWorldNode(Object worldNode, String normalizedMobType) {
+        if (!(worldNode instanceof Map<?, ?> worldMap) || normalizedMobType == null || normalizedMobType.isBlank()) {
+            return null;
+        }
+
+        Object mobOverridesRaw = resolveCaseInsensitive(worldMap, "Mob_Overrides");
+        if (!(mobOverridesRaw instanceof Map<?, ?> mobOverridesMap) || mobOverridesMap.isEmpty()) {
+            return null;
+        }
+
+        WorldMobOverride bestWildcardOverride = null;
+        int bestWildcardSpecificity = -1;
+        int bestWildcardLength = -1;
+
+        for (Map.Entry<?, ?> entry : mobOverridesMap.entrySet()) {
+            Object keyObj = entry.getKey();
+            if (!(keyObj instanceof String rule)) {
+                continue;
+            }
+
+            WorldMobOverride override = parseMobOverride(entry.getValue());
+            if (override == null) {
+                continue;
+            }
+
+            String normalizedRule = normalizeMobIdentifier(rule);
+            if (normalizedRule == null || normalizedRule.isBlank()) {
+                continue;
+            }
+
+            if (normalizedRule.indexOf('*') < 0) {
+                if (normalizedMobType.equals(normalizedRule)) {
+                    return override;
+                }
+                continue;
+            }
+
+            if (!matchesWildcard(normalizedMobType, normalizedRule)) {
+                continue;
+            }
+
+            int specificity = wildcardSpecificity(normalizedRule);
+            int length = normalizedRule.length();
+            if (specificity > bestWildcardSpecificity
+                    || (specificity == bestWildcardSpecificity && length > bestWildcardLength)) {
+                bestWildcardOverride = override;
+                bestWildcardSpecificity = specificity;
+                bestWildcardLength = length;
+            }
+        }
+
+        return bestWildcardOverride;
+    }
+
+    private WorldMobOverride parseMobOverride(Object rawValue) {
+        if (rawValue == null) {
+            return null;
+        }
+
+        Integer level = parseMobOverrideLevel(rawValue);
+
+        double healthMultiplier = 1.0D;
+        double damageMultiplier = 1.0D;
+        Double defenseReduction = null;
+
+        if (rawValue instanceof Map<?, ?> mapValue) {
+            healthMultiplier = parseMobOverrideMultiplier(
+                    mapValue,
+                    "Health_Multiplier",
+                    "Health_Modifier",
+                    "Health",
+                    1.0D);
+            damageMultiplier = parseMobOverrideMultiplier(
+                    mapValue,
+                    "Damage_Multiplier",
+                    "Damage_Modifier",
+                    "Damage",
+                    1.0D);
+            defenseReduction = parseMobOverrideReduction(
+                    mapValue,
+                    "Defense_Multiplier",
+                    "Defense_Modifier",
+                    "Defense");
+        }
+
+        boolean hasStatModifier = Math.abs(healthMultiplier - 1.0D) > 0.000001D
+                || Math.abs(damageMultiplier - 1.0D) > 0.000001D
+                || defenseReduction != null;
+        if (level == null && !hasStatModifier) {
+            return null;
+        }
+
+        return new WorldMobOverride(level, healthMultiplier, damageMultiplier, defenseReduction);
+    }
+
+    private double parseMobOverrideMultiplier(Map<?, ?> mapValue,
+            String topLevelMultiplierKey,
+            String topLevelLegacyModifierKey,
+            String statKey,
+            double defaultValue) {
+        Object raw = resolveMobOverrideStatValue(mapValue, topLevelMultiplierKey, topLevelLegacyModifierKey, statKey);
+        Double parsed = parsePositiveDouble(raw);
+        return parsed != null ? parsed : defaultValue;
+    }
+
+    private Double parseMobOverrideReduction(Map<?, ?> mapValue,
+            String topLevelMultiplierKey,
+            String topLevelLegacyModifierKey,
+            String statKey) {
+        Object raw = resolveMobOverrideStatValue(mapValue, topLevelMultiplierKey, topLevelLegacyModifierKey, statKey);
+        Double parsed = parseNonNegativeDouble(raw);
+        if (parsed == null) {
+            return null;
+        }
+        return clampReduction(parsed);
+    }
+
+    private Object resolveMobOverrideStatValue(Map<?, ?> mapValue,
+            String topLevelMultiplierKey,
+            String topLevelLegacyModifierKey,
+            String statKey) {
+        if (mapValue == null) {
+            return null;
+        }
+
+        Object raw = resolveCaseInsensitive(mapValue, topLevelMultiplierKey);
+        if (raw == null) {
+            raw = resolveCaseInsensitive(mapValue, topLevelLegacyModifierKey);
+        }
+        if (raw == null) {
+            raw = resolveCaseInsensitive(mapValue, statKey);
+        }
+
+        if (raw == null) {
+            Object statModifiersRaw = resolveCaseInsensitive(mapValue, "Stat_Multipliers");
+            if (!(statModifiersRaw instanceof Map<?, ?>)) {
+                statModifiersRaw = resolveCaseInsensitive(mapValue, "Stat_Modifiers");
+            }
+            if (!(statModifiersRaw instanceof Map<?, ?>)) {
+                statModifiersRaw = resolveCaseInsensitive(mapValue, "Multipliers");
+            }
+            if (!(statModifiersRaw instanceof Map<?, ?>)) {
+                statModifiersRaw = resolveCaseInsensitive(mapValue, "Modifiers");
+            }
+            if (statModifiersRaw instanceof Map<?, ?> statMap) {
+                raw = resolveCaseInsensitive(statMap, statKey);
+            }
+        }
+
+        return raw;
+    }
+
+    private Double parsePositiveDouble(Object raw) {
+        if (raw == null) {
+            return null;
+        }
+        if (raw instanceof Number number) {
+            double value = number.doubleValue();
+            if (!Double.isFinite(value) || value <= 0.0D) {
+                return null;
+            }
+            return value;
+        }
+        if (raw instanceof String text) {
+            String trimmed = text.trim();
+            if (trimmed.isEmpty()) {
+                return null;
+            }
+            try {
+                double value = Double.parseDouble(trimmed);
+                if (!Double.isFinite(value) || value <= 0.0D) {
+                    return null;
+                }
+                return value;
+            } catch (NumberFormatException ignored) {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    private Double parseNonNegativeDouble(Object raw) {
+        if (raw == null) {
+            return null;
+        }
+        if (raw instanceof Number number) {
+            double value = number.doubleValue();
+            if (!Double.isFinite(value) || value < 0.0D) {
+                return null;
+            }
+            return value;
+        }
+        if (raw instanceof String text) {
+            String trimmed = text.trim();
+            if (trimmed.isEmpty()) {
+                return null;
+            }
+            try {
+                double value = Double.parseDouble(trimmed);
+                if (!Double.isFinite(value) || value < 0.0D) {
+                    return null;
+                }
+                return value;
+            } catch (NumberFormatException ignored) {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    private Integer parseMobOverrideLevel(Object rawValue) {
+        if (rawValue == null) {
+            return null;
+        }
+        if (rawValue instanceof Number number) {
+            int level = number.intValue();
+            return level > 0 ? level : null;
+        }
+        if (rawValue instanceof String text) {
+            String trimmed = text.trim();
+            if (!trimmed.matches("-?\\d+")) {
+                return null;
+            }
+            try {
+                int level = Integer.parseInt(trimmed);
+                return level > 0 ? level : null;
+            } catch (NumberFormatException ignored) {
+                return null;
+            }
+        }
+        if (rawValue instanceof Map<?, ?> mapValue) {
+            Object levelNode = resolveCaseInsensitive(mapValue, "Level");
+            return parseMobOverrideLevel(levelNode);
         }
         return null;
     }
@@ -1606,7 +1908,7 @@ public class MobLevelingManager {
 
     /** Whether mob leveling is enabled (Mob_Leveling.Enabled) */
     public boolean isMobLevelingEnabled() {
-        Object raw = configManager.get("Mob_Leveling.Enabled", Boolean.TRUE, false);
+        Object raw = getMobLevelingValue("Mob_Leveling.Enabled", Boolean.TRUE, null, null);
         if (raw instanceof Boolean b)
             return b;
         if (raw instanceof Number n)
@@ -1618,7 +1920,7 @@ public class MobLevelingManager {
 
     /** Whether passive mobs are allowed to be leveled */
     public boolean allowPassiveMobLeveling() {
-        Object raw = configManager.get("Mob_Leveling.allow_passive_mob_leveling", Boolean.FALSE, false);
+        Object raw = getMobLevelingValue("Mob_Leveling.allow_passive_mob_leveling", Boolean.FALSE, null, null);
         if (raw instanceof Boolean b)
             return b;
         if (raw instanceof Number n)
@@ -1637,7 +1939,7 @@ public class MobLevelingManager {
         if (normalizedMob == null)
             return false;
 
-        Object raw = configManager.get("Mob_Leveling.Blacklist_Mob_Types", null, false);
+        Object raw = getMobLevelingValue("Mob_Leveling.Blacklist_Mob_Types", null, null, null);
         if (raw == null)
             return false;
 
@@ -1870,6 +2172,25 @@ public class MobLevelingManager {
         return base * (1.0 + per * (effectiveLevel - 1));
     }
 
+    public double getMobHealthMultiplierForLevel(Ref<EntityStore> ref,
+            CommandBuffer<EntityStore> commandBuffer,
+            int level) {
+        Store<EntityStore> store = ref != null ? ref.getStore() : null;
+        return getMobHealthMultiplierForLevel(ref, store, commandBuffer, level);
+    }
+
+    public double getMobHealthMultiplierForLevel(Ref<EntityStore> ref,
+            Store<EntityStore> store,
+            CommandBuffer<EntityStore> commandBuffer,
+            int level) {
+        double baseMultiplier = getMobHealthMultiplierForLevel(level);
+        WorldMobOverride override = resolveWorldMobOverride(ref, store, commandBuffer);
+        if (override == null) {
+            return baseMultiplier;
+        }
+        return baseMultiplier * Math.max(0.0001D, override.healthMultiplier());
+    }
+
     /**
      * Computes additive max-health offset for a mob level from an unmodified base
      * max value.
@@ -1905,6 +2226,27 @@ public class MobLevelingManager {
         return new MobHealthScalingResult(targetMax, additive, newValue);
     }
 
+    public MobHealthScalingResult computeMobHealthScaling(Ref<EntityStore> ref,
+            Store<EntityStore> store,
+            CommandBuffer<EntityStore> commandBuffer,
+            int level,
+            float baseMax,
+            float previousMax,
+            float previousValue) {
+        float safeBaseMax = Math.max(1.0f, baseMax);
+        double multiplier = getMobHealthMultiplierForLevel(ref, store, commandBuffer, level);
+        float targetMax = (float) Math.max(1.0D, safeBaseMax * multiplier);
+        float additive = targetMax - safeBaseMax;
+
+        float ratio = previousMax > 0.0f ? previousValue / previousMax : 1.0f;
+        float newValue = Math.max(0.0f, Math.min(targetMax, ratio * targetMax));
+        if (previousValue <= 0.0f) {
+            newValue = 0.0f;
+        }
+
+        return new MobHealthScalingResult(targetMax, additive, newValue);
+    }
+
     public record MobHealthScalingResult(float targetMax, float additive, float newValue) {
     }
 
@@ -1915,8 +2257,20 @@ public class MobLevelingManager {
         return base * (1.0 + per * (effectiveLevel - 1));
     }
 
+    public double getMobDamageMultiplierForLevel(Ref<EntityStore> ref,
+            CommandBuffer<EntityStore> commandBuffer,
+            int level) {
+        Store<EntityStore> store = ref != null ? ref.getStore() : null;
+        double baseMultiplier = getMobDamageMultiplierForLevel(level);
+        WorldMobOverride override = resolveWorldMobOverride(ref, store, commandBuffer);
+        if (override == null) {
+            return baseMultiplier;
+        }
+        return baseMultiplier * Math.max(0.0001D, override.damageMultiplier());
+    }
+
     public boolean isMobDamageScalingEnabled() {
-        Object raw = configManager.get("Mob_Leveling.Scaling.Damage.Enabled", Boolean.FALSE, false);
+        Object raw = getMobLevelingValue("Mob_Leveling.Scaling.Damage.Enabled", Boolean.FALSE, null, null);
         if (raw instanceof Boolean b)
             return b;
         if (raw instanceof Number n)
@@ -1927,7 +2281,7 @@ public class MobLevelingManager {
     }
 
     public boolean isMobHealthScalingEnabled() {
-        Object raw = configManager.get("Mob_Leveling.Scaling.Health.Enabled", Boolean.FALSE, false);
+        Object raw = getMobLevelingValue("Mob_Leveling.Scaling.Health.Enabled", Boolean.FALSE, null, null);
         if (raw instanceof Boolean b)
             return b;
         if (raw instanceof Number n)
@@ -1941,7 +2295,7 @@ public class MobLevelingManager {
      * Whether mob defense scaling is enabled.
      */
     public boolean isMobDefenseScalingEnabled() {
-        Object raw = configManager.get("Mob_Leveling.Scaling.Defense.Enabled", Boolean.FALSE, false);
+        Object raw = getMobLevelingValue("Mob_Leveling.Scaling.Defense.Enabled", Boolean.FALSE, null, null);
         if (raw instanceof Boolean b)
             return b;
         if (raw instanceof Number n)
@@ -1963,6 +2317,21 @@ public class MobLevelingManager {
         int safePlayerLevel = Math.max(1, playerLevel);
         int levelDifference = safeMobLevel - safePlayerLevel;
         return getMobDefenseReductionForLevelDifference(levelDifference);
+    }
+
+    public double getMobDefenseReductionForLevels(Ref<EntityStore> ref,
+            CommandBuffer<EntityStore> commandBuffer,
+            int mobLevel,
+            int playerLevel) {
+        double baseReduction = getMobDefenseReductionForLevels(mobLevel, playerLevel);
+
+        Store<EntityStore> store = ref != null ? ref.getStore() : null;
+        WorldMobOverride override = resolveWorldMobOverride(ref, store, commandBuffer);
+        if (override != null && override.defenseReduction() != null) {
+            return clampReduction(override.defenseReduction());
+        }
+
+        return baseReduction;
     }
 
     /**
@@ -2126,25 +2495,53 @@ public class MobLevelingManager {
             return null;
         }
 
-        String worldId = resolveWorldId(store, worldHint);
-        if (worldId == null || worldId.isBlank()) {
-            return null;
-        }
-
         Object rootRaw = worldsConfigManager.get("World_Overrides", null, false);
         if (!(rootRaw instanceof Map<?, ?> rootMap) || rootMap.isEmpty()) {
             return null;
         }
 
-        Object exact = resolveCaseInsensitive(rootMap, worldId);
-        if (exact instanceof Map<?, ?> exactMap) {
-            Object value = resolveNestedValue(exactMap, path.substring("Mob_Leveling.".length()));
+        String relativePath = path.substring("Mob_Leveling.".length());
+        String worldId = resolveWorldId(store, worldHint);
+
+        if (worldId != null && !worldId.isBlank()) {
+            Object exact = resolveCaseInsensitive(rootMap, worldId);
+            if (exact instanceof Map<?, ?> exactMap) {
+                Object value = resolveNestedValue(exactMap, relativePath);
+                if (value != null) {
+                    return value;
+                }
+            }
+
+            Map<?, ?> bestPatternMap = resolveBestWildcardWorldOverrideMap(rootMap, worldId);
+            if (bestPatternMap != null) {
+                Object value = resolveNestedValue(bestPatternMap, relativePath);
+                if (value != null) {
+                    return value;
+                }
+            }
+        }
+
+        Object defaultNode = resolveCaseInsensitive(rootMap, "default");
+        if (defaultNode instanceof Map<?, ?> defaultMap) {
+            Object value = resolveNestedValue(defaultMap, relativePath);
             if (value != null) {
                 return value;
             }
         }
 
+        return null;
+    }
+
+    private Map<?, ?> resolveBestWildcardWorldOverrideMap(Map<?, ?> rootMap, String worldId) {
+        if (rootMap == null || rootMap.isEmpty() || worldId == null || worldId.isBlank()) {
+            return null;
+        }
+
         String normalizedWorldId = normalizeWorldPattern(worldId);
+        if (normalizedWorldId == null || normalizedWorldId.isBlank()) {
+            return null;
+        }
+
         Map<?, ?> bestPatternMap = null;
         int bestSpecificity = -1;
         int bestLength = -1;
@@ -2178,11 +2575,7 @@ public class MobLevelingManager {
             }
         }
 
-        if (bestPatternMap == null) {
-            return null;
-        }
-
-        return resolveNestedValue(bestPatternMap, path.substring("Mob_Leveling.".length()));
+        return bestPatternMap;
     }
 
     private String normalizeWorldPattern(String value) {
@@ -2385,5 +2778,11 @@ public class MobLevelingManager {
     private record AreaOverride(String id, String worldId,
             double centerX, double centerZ, double radiusSq,
             int minLevel, int maxLevel) {
+    }
+
+    private record WorldMobOverride(Integer level,
+            double healthMultiplier,
+            double damageMultiplier,
+            Double defenseReduction) {
     }
 }

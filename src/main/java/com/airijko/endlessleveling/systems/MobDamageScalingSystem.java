@@ -56,7 +56,7 @@ public class MobDamageScalingSystem extends DamageEventSystem {
             if (attackerPlayer == null || !attackerPlayer.isValid()) {
                 // Treat as mob source
                 int mobLevel = levelingManager.resolveMobLevel(attackerRef, commandBuffer);
-                double mult = levelingManager.getMobDamageMultiplierForLevel(mobLevel);
+                double mult = levelingManager.getMobDamageMultiplierForLevel(attackerRef, commandBuffer, mobLevel);
                 float old = damage.getAmount();
                 float updated = (float) (old * mult);
                 damage.setAmount(updated);

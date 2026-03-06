@@ -38,7 +38,7 @@ public class SkillManager {
     private static final double DEFAULT_DISCIPLINE_XP_BONUS_PER_LEVEL_PERCENT = 0.5D;
     private static final double DEFAULT_FLOW_PER_LEVEL = 0.5D;
 
-    private final LevelingConfigManager levelingConfig;
+    private final ConfigManager levelingConfig;
     private final ConfigManager config;
     private final PlayerAttributeManager attributeManager;
     private final ArchetypePassiveManager archetypePassiveManager;
@@ -53,7 +53,7 @@ public class SkillManager {
             ArchetypePassiveManager archetypePassiveManager,
             PassiveManager passiveManager,
             AugmentRuntimeManager augmentRuntimeManager) {
-        this.levelingConfig = new LevelingConfigManager(filesManager, filesManager.getLevelingFile());
+        this.levelingConfig = new ConfigManager(filesManager, filesManager.getLevelingFile());
         this.config = new ConfigManager(filesManager, filesManager.getConfigFile());
         this.attributeManager = attributeManager;
         this.archetypePassiveManager = archetypePassiveManager;
@@ -74,8 +74,8 @@ public class SkillManager {
     /** Load skill point values from leveling.yml */
     public void loadConfigValues() {
         try {
-            baseSkillPoints = levelingConfig.getInt("baseSkillPoints", 8);
-            skillPointsPerLevel = levelingConfig.getInt("skillPointsPerLevel", 4);
+            baseSkillPoints = getIntFromLevelingConfig("baseSkillPoints", 8);
+            skillPointsPerLevel = getIntFromLevelingConfig("skillPointsPerLevel", 4);
             LOGGER.atInfo().log("SkillManager loaded: baseSkillPoints=%d, skillPointsPerLevel=%d",
                     baseSkillPoints, skillPointsPerLevel);
         } catch (Exception e) {
@@ -83,6 +83,21 @@ public class SkillManager {
             baseSkillPoints = 8;
             skillPointsPerLevel = 4;
         }
+    }
+
+    private int getIntFromLevelingConfig(String path, int defaultValue) {
+        Object raw = levelingConfig.get(path, defaultValue, false);
+        if (raw instanceof Number number) {
+            return number.intValue();
+        }
+        if (raw instanceof String text) {
+            try {
+                return Integer.parseInt(text.trim());
+            } catch (NumberFormatException ignored) {
+                return defaultValue;
+            }
+        }
+        return defaultValue;
     }
 
     /** Grant skill points to a player */

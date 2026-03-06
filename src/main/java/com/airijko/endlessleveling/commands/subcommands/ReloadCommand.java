@@ -3,12 +3,15 @@ package com.airijko.endlessleveling.commands.subcommands;
 import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.augments.AugmentManager;
 import com.airijko.endlessleveling.augments.AugmentUnlockManager;
+import com.airijko.endlessleveling.classes.ClassWeaponResolver;
+import com.airijko.endlessleveling.classes.WeaponConfig;
 import com.airijko.endlessleveling.managers.ClassManager;
 import com.airijko.endlessleveling.managers.ConfigManager;
 import com.airijko.endlessleveling.managers.LevelingManager;
 import com.airijko.endlessleveling.managers.LoggingManager;
 import com.airijko.endlessleveling.managers.LanguageManager;
 import com.airijko.endlessleveling.managers.MobLevelingManager;
+import com.airijko.endlessleveling.managers.PluginFilesManager;
 import com.airijko.endlessleveling.managers.PlayerDataManager;
 import com.airijko.endlessleveling.managers.RaceManager;
 import com.airijko.endlessleveling.managers.SkillManager;
@@ -42,6 +45,7 @@ public class ReloadCommand extends AbstractPlayerCommand {
     private final AugmentManager augmentManager;
     private final AugmentUnlockManager augmentUnlockManager;
     private final MobLevelingSystem mobLevelingSystem;
+    private final PluginFilesManager filesManager;
 
     public ReloadCommand() {
         super("reload", "Reload EndlessLeveling configs, races, and classes");
@@ -57,6 +61,7 @@ public class ReloadCommand extends AbstractPlayerCommand {
         this.augmentManager = plugin != null ? plugin.getAugmentManager() : null;
         this.augmentUnlockManager = plugin != null ? plugin.getAugmentUnlockManager() : null;
         this.mobLevelingSystem = plugin != null ? plugin.getMobLevelingSystem() : null;
+        this.filesManager = plugin != null ? plugin.getFilesManager() : null;
     }
 
     @Override
@@ -70,6 +75,11 @@ public class ReloadCommand extends AbstractPlayerCommand {
         if (configManager != null) {
             configManager.load();
             LoggingManager.configureFromConfig(configManager);
+        }
+
+        if (filesManager != null) {
+            new ConfigManager(filesManager, filesManager.getWeaponsFile());
+            ClassWeaponResolver.configure(WeaponConfig.load(filesManager.getWeaponsFile()));
         }
 
         if (languageManager != null) {
