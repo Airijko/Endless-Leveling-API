@@ -8,7 +8,9 @@ import java.util.Locale;
  */
 public enum PassiveCategory {
     PASSIVE_STAT("Ingredient_Life_Essence"),
-    ON_HIT("Weapon_Sword_Mithril"),
+    MAGIC_STAT("Weapon_Staff_Bronze"),
+    ON_HIT("Weapon_Daggers_Fang_Doomed"),
+    ON_RANGED_HIT("Weapon_Shortbow_Crude"),
     ON_DAMAGE_TAKEN("Weapon_Shield_Orbis_Knight"),
     ON_LOW_HP("Potion_Health_Lesser"),
     ON_SKILL_USE("Ingredient_Water_Essence"),
@@ -16,8 +18,7 @@ public enum PassiveCategory {
     ON_CRIT_TAKEN("Weapon_Shield_Orbis_Knight"),
     ON_DEATH("Ingredient_Void_Essence"),
     ON_BLOCK("Weapon_Shield_Orbis_Knight"),
-    ON_KILL("Ingredient_Fire_Essence"),
-    ON_HIT_TARGET_CONDITION("Weapon_Sword_Mithril");
+    ON_KILL("Ingredient_Fire_Essence");
 
     private final String iconItemId;
 

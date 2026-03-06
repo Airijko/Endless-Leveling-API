@@ -2,7 +2,7 @@ id: arcane_mastery
 name: "Arcane Mastery"
 tier: ELITE
 description: "Convert your Sorcery into extra Mana."
-category: PASSIVE_STAT
+category: MAGIC_STAT
 
 passives:
   buffs:

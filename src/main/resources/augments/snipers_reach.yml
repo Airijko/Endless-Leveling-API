@@ -2,7 +2,7 @@ id: snipers_reach
 name: "Sniper's Reach"
 tier: MYTHIC
 description: "Ranged damage scales with distance, peaking at long range."
-category: ON_HIT
+category: ON_RANGED_HIT
 
 passives:
   bonus_damage_by_distance:

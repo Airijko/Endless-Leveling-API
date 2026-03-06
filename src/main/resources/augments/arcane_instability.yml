@@ -2,7 +2,7 @@ id: arcane_instability
 name: "Arcane Instability"
 tier: ELITE
 description: "Gain Sorcery while high on Mana and suffer a Sorcery penalty when Mana is low."
-category: PASSIVE_STAT
+category: MAGIC_STAT
 
 passives:
   buffs:
