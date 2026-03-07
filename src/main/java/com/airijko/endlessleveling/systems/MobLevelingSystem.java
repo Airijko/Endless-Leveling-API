@@ -64,6 +64,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
     private final Map<Long, String> lastResetReasonByEntityKey = new ConcurrentHashMap<>();
     private final Map<Long, Integer> settledHealthLevelByEntityKey = new ConcurrentHashMap<>();
     private final Map<Long, Integer> appliedNameplateLevelByEntityKey = new ConcurrentHashMap<>();
+    private final Map<Long, String> previousNameplateTextByEntityKey = new ConcurrentHashMap<>();
     private final Map<Long, Long> nameplateSyncReadyAtTimeByEntityKey = new ConcurrentHashMap<>();
     private final Map<Long, Integer> trackedEntityIndexByEntityKey = new ConcurrentHashMap<>();
     private final Map<Long, Store<EntityStore>> trackedStoreByEntityKey = new ConcurrentHashMap<>();
@@ -105,6 +106,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
             lastResetReasonByEntityKey.clear();
             settledHealthLevelByEntityKey.clear();
             appliedNameplateLevelByEntityKey.clear();
+            previousNameplateTextByEntityKey.clear();
             nameplateSyncReadyAtTimeByEntityKey.clear();
             trackedEntityIndexByEntityKey.clear();
             trackedStoreByEntityKey.clear();
@@ -144,16 +146,17 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
 
                         PlayerRef playerRef = commandBuffer.getComponent(ref, PlayerRef.getComponentType());
                         if (playerRef != null && playerRef.isValid()) {
+                            clearOrRemoveNameplate(ref, commandBuffer, entityKey);
                             clearMobHealthScaleModifierForPlayer(ref, commandBuffer, entityId, entityKey);
                             healthAppliedLevel.remove(entityKey);
                             settledHealthLevelByEntityKey.remove(entityKey);
                             appliedNameplateLevelByEntityKey.remove(entityKey);
+                            previousNameplateTextByEntityKey.remove(entityKey);
                             nameplateSyncReadyAtTimeByEntityKey.remove(entityKey);
                             levelResolveAttemptCountByEntityKey.remove(entityKey);
                             levelResolveAssignmentCountByEntityKey.remove(entityKey);
                             lastKnownEntitySignatureByEntityKey.remove(entityKey);
                             lastHealthApplySkipReasonByEntityKey.remove(entityKey);
-                            clearOrRemoveNameplate(ref, commandBuffer);
                             continue;
                         }
 
@@ -193,10 +196,10 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
                                         entityId,
                                         entityKey,
                                         "no-nearby-player-chunk");
-                                clearOrRemoveNameplate(ref, commandBuffer);
                             } else {
                                 settledHealthLevelByEntityKey.remove(entityKey);
                                 appliedNameplateLevelByEntityKey.remove(entityKey);
+                                previousNameplateTextByEntityKey.remove(entityKey);
                                 nameplateSyncReadyAtTimeByEntityKey.remove(entityKey);
                                 lastKnownEntitySignatureByEntityKey.remove(entityKey);
                                 lastHealthApplySkipReasonByEntityKey.remove(entityKey);
@@ -237,11 +240,11 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
                             } else {
                                 settledHealthLevelByEntityKey.remove(entityKey);
                                 appliedNameplateLevelByEntityKey.remove(entityKey);
+                                previousNameplateTextByEntityKey.remove(entityKey);
                                 nameplateSyncReadyAtTimeByEntityKey.remove(entityKey);
                                 lastKnownEntitySignatureByEntityKey.remove(entityKey);
                                 lastHealthApplySkipReasonByEntityKey.remove(entityKey);
                             }
-                            clearOrRemoveNameplate(ref, commandBuffer);
                             continue;
                         }
 
@@ -291,10 +294,11 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
                         }
                         if (appliedLevel == null || appliedLevel <= 0) {
                             if (isAtOrBelowZeroHealth(ref, commandBuffer)) {
-                                clearOrRemoveNameplate(ref, commandBuffer);
+                                clearOrRemoveNameplate(ref, commandBuffer, entityKey);
                                 healthAppliedLevel.remove(entityKey);
                                 settledHealthLevelByEntityKey.remove(entityKey);
                                 appliedNameplateLevelByEntityKey.remove(entityKey);
+                                previousNameplateTextByEntityKey.remove(entityKey);
                                 nameplateSyncReadyAtTimeByEntityKey.remove(entityKey);
                                 lastResetReasonByEntityKey.put(entityKey, "zero-health-no-level");
                             }
@@ -331,8 +335,9 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
                                 }
                             }
                         } else {
+                            clearOrRemoveNameplate(ref, commandBuffer, entityKey);
                             appliedNameplateLevelByEntityKey.remove(entityKey);
-                            clearOrRemoveNameplate(ref, commandBuffer);
+                            previousNameplateTextByEntityKey.remove(entityKey);
                         }
                     }
                 });
@@ -359,6 +364,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
             healthAppliedLevel.remove(entityKey);
             settledHealthLevelByEntityKey.remove(entityKey);
             appliedNameplateLevelByEntityKey.remove(entityKey);
+            previousNameplateTextByEntityKey.remove(entityKey);
             nameplateSyncReadyAtTimeByEntityKey.remove(entityKey);
             lastKnownEntitySignatureByEntityKey.remove(entityKey);
             lastHealthApplySkipReasonByEntityKey.remove(entityKey);
@@ -449,7 +455,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
                 hpBefore,
                 maxBefore);
 
-        clearOrRemoveNameplate(ref, commandBuffer);
+        clearOrRemoveNameplate(ref, commandBuffer, entityKey);
     }
 
     private void ensureDeathHealthApplied(Ref<EntityStore> ref,
@@ -479,6 +485,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         healthAppliedLevel.remove(entityKey);
         settledHealthLevelByEntityKey.remove(entityKey);
         appliedNameplateLevelByEntityKey.remove(entityKey);
+        previousNameplateTextByEntityKey.remove(entityKey);
         nameplateSyncReadyAtTimeByEntityKey.remove(entityKey);
         lastKnownEntitySignatureByEntityKey.remove(entityKey);
         lastHealthApplySkipReasonByEntityKey.remove(entityKey);
@@ -698,9 +705,11 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         }
 
         Integer previousLevel = healthAppliedLevel.get(entityKey);
+        clearOrRemoveNameplate(ref, commandBuffer, entityKey);
         healthAppliedLevel.remove(entityKey);
         settledHealthLevelByEntityKey.remove(entityKey);
         appliedNameplateLevelByEntityKey.remove(entityKey);
+        previousNameplateTextByEntityKey.remove(entityKey);
         lastSeenTimeByEntityKey.remove(entityKey);
         nameplateSyncReadyAtTimeByEntityKey.remove(entityKey);
         lastKnownEntitySignatureByEntityKey.remove(entityKey);
@@ -734,7 +743,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
 
         NPCEntity npcEntity = commandBuffer.getComponent(ref, NPCEntity.getComponentType());
         if (npcEntity == null) {
-            clearOrRemoveNameplate(ref, commandBuffer);
+            clearOrRemoveNameplate(ref, commandBuffer, entityKey);
             return false;
         }
 
@@ -744,7 +753,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         }
 
         if (commandBuffer.getComponent(ref, DeathComponent.getComponentType()) != null) {
-            clearOrRemoveNameplate(ref, commandBuffer);
+            clearOrRemoveNameplate(ref, commandBuffer, entityKey);
             return false;
         }
 
@@ -760,6 +769,8 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         if (nameplate == null) {
             return false;
         }
+
+        previousNameplateTextByEntityKey.computeIfAbsent(entityKey, ignored -> readNameplateText(nameplate));
 
         String baseName = "Mob";
         DisplayNameComponent display = commandBuffer.getComponent(ref, DisplayNameComponent.getComponentType());
@@ -788,19 +799,41 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         return true;
     }
 
-    private void clearOrRemoveNameplate(Ref<EntityStore> ref, CommandBuffer<EntityStore> commandBuffer) {
+    private void clearOrRemoveNameplate(Ref<EntityStore> ref,
+            CommandBuffer<EntityStore> commandBuffer,
+            long entityKey) {
         if (ref == null || commandBuffer == null) {
+            return;
+        }
+
+        // Only clear/restore nameplates that this system applied.
+        if (!appliedNameplateLevelByEntityKey.containsKey(entityKey)
+                && !previousNameplateTextByEntityKey.containsKey(entityKey)) {
             return;
         }
 
         if (NameplateBuilderCompatibility.isAvailable()) {
             NameplateBuilderCompatibility.removeMobLevel(ref.getStore(), ref);
+            previousNameplateTextByEntityKey.remove(entityKey);
             return;
         }
 
         Nameplate nameplate = commandBuffer.getComponent(ref, Nameplate.getComponentType());
         if (nameplate != null) {
-            nameplate.setText("");
+            nameplate.setText(previousNameplateTextByEntityKey.getOrDefault(entityKey, ""));
+        }
+        previousNameplateTextByEntityKey.remove(entityKey);
+    }
+
+    private String readNameplateText(Nameplate nameplate) {
+        if (nameplate == null) {
+            return "";
+        }
+        try {
+            Object raw = nameplate.getClass().getMethod("getText").invoke(nameplate);
+            return raw == null ? "" : raw.toString();
+        } catch (Throwable ignored) {
+            return "";
         }
     }
 

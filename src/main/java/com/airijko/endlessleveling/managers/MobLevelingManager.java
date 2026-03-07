@@ -2933,26 +2933,6 @@ public class MobLevelingManager {
         return findNearestPlayerLevel(store, mobPosition);
     }
 
-    private int findClosestTierForPlayerLevel(int playerLevel,
-            LevelRange baseRange,
-            int totalTiers,
-            int levelsPerTier) {
-        int safePlayerLevel = Math.max(1, playerLevel);
-        int bestTier = 1;
-        int bestDistance = Integer.MAX_VALUE;
-
-        for (int tier = 1; tier <= totalTiers; tier++) {
-            LevelRange tierRange = getTierRange(baseRange, tier, levelsPerTier);
-            int distance = distanceToInclusiveRange(safePlayerLevel, tierRange.min(), tierRange.max());
-            if (distance < bestDistance) {
-                bestDistance = distance;
-                bestTier = tier;
-            }
-        }
-
-        return bestTier;
-    }
-
     private int applyTierPromotionAllowance(int playerLevel,
             LevelRange baseRange,
             int totalTiers,
@@ -2989,18 +2969,6 @@ public class MobLevelingManager {
         int safeTier = Math.max(1, tier);
         int tierOffset = Math.max(0, safeTier - 1) * Math.max(0, levelsPerTier);
         return new LevelRange(baseRange.min() + tierOffset, baseRange.max() + tierOffset);
-    }
-
-    private int distanceToInclusiveRange(int value, int min, int max) {
-        int lower = Math.min(min, max);
-        int upper = Math.max(min, max);
-        if (value < lower) {
-            return lower - value;
-        }
-        if (value > upper) {
-            return value - upper;
-        }
-        return 0;
     }
 
     private boolean isTierPlayerAdaptationEnabled(Store<EntityStore> store) {
