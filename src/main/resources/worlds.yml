@@ -10,10 +10,21 @@ World_Overrides:
   #   Level_Source:
   #     Mode: "MIXED"
 
+  # Global defaults applied to all worlds unless a world override provides its own value.
+  Global:
+    Level_Source:
+      Party_System:
+        Enabled: true
+        Level_Calculation: "AVERAGE"
+        # Radius used for party XP sharing and TIERS party-level adaptation.
+        XP_Share_Range: 25
+        Dominant_Party_Resolution:
+          Mode: "MOST_MEMBERS"
+        Max_Internal_Level_Gap: 999
+
   # Static world exact match
   default:
     Enabled: true
-    allow_passive_mob_leveling: false
     Blacklist_Mob_Types:
       ids: []
       keywords:
@@ -103,7 +114,7 @@ World_Overrides:
           "Stag",
           "Merchant",
           "Trader",
-          "Frog*",
+          "Frog",
         ]
     Level_Range:
       Min: 1
@@ -129,23 +140,19 @@ World_Overrides:
         # Used when Mode: "TIERS"
         # Preferred tier base range key: Base_Level (Fixed_Level still works as fallback).
         Total_Tiers: 1
-        Levels_Per_Tier: 25
+        Levels_Per_Tier: 20
         Player_Adaptation:
           Enabled: true
-          # Promotes to the next tier when player level is this many levels below that tier's min.
-          Below_Range_Allowance: 0
+          # BELOW: promotes early before next tier min.
+          # ABOVE: requires extra levels above the current tier max.
+          Allowance_Mode: "BELOW"
+          Range_Allowance: 0
       Player_Based:
         Offset: 0
         Min_Difference: -5
         Max_Difference: 10
         # Player mode specific tuning.
         Influence_Radius: 25
-      Party_System:
-        Enabled: true
-        Level_Calculation: "AVERAGE"
-        Dominant_Party_Resolution:
-          Mode: "MOST_MEMBERS"
-        Max_Internal_Level_Gap: 999
     Scaling:
       Health:
         Enabled: true
@@ -162,22 +169,22 @@ World_Overrides:
         Below_Negative_Max_Difference: 0.0
         Above_Positive_Max_Difference: 0.9
 
+  # ------------------------------------------------------------
   # MAJOR DUNGEONS
+  # ------------------------------------------------------------
   instance-mj_instance_d01-*:
     Level_Source:
       Mode: "TIERS"
       Base_Level:
-        Level: 25-40
+        Level: 20-35
       Tiers:
         Total_Tiers: 4
-        Levels_Per_Tier: 25
+        Levels_Per_Tier: 20
         Player_Adaptation:
           Enabled: true
-          Below_Range_Allowance: 5
-      Party_System:
-        Enabled: true
-        Level_Calculation: "AVERAGE"
-        Max_Internal_Level_Gap: 999
+          # Example: Base 20-35 with ABOVE + 5 unlocks next tier at 40.
+          Allowance_Mode: "ABOVE"
+          Range_Allowance: 5
     Scaling:
       Health:
         Base_Multiplier: 3.0
@@ -192,13 +199,13 @@ World_Overrides:
         Above_Positive_Max_Difference: 0.9
     Mob_Overrides:
       Azaroth:
-        Level: 50
+        Level: 40
         Scaling:
           Health:
-            Base_Multiplier: 3.0
-            Per_Level: 0.075
+            Base_Multiplier: 1.0
+            Per_Level: 0.06
           Damage:
-            Base_Multiplier: 1.25
+            Base_Multiplier: 1.0
             Per_Level: 0.05
           Defense:
             At_Negative_Max_Difference: 0.35
@@ -210,17 +217,14 @@ World_Overrides:
     Level_Source:
       Mode: "TIERS"
       Base_Level:
-        Level: 25-40
+        Level: 40-55
       Tiers:
         Total_Tiers: 4
-        Levels_Per_Tier: 25
+        Levels_Per_Tier: 20
         Player_Adaptation:
           Enabled: true
-          Below_Range_Allowance: 5
-      Party_System:
-        Enabled: true
-        Level_Calculation: "AVERAGE"
-        Max_Internal_Level_Gap: 999
+          Allowance_Mode: "BELOW"
+          Range_Allowance: 5
     Scaling:
       Health:
         Base_Multiplier: 3.0
@@ -235,28 +239,28 @@ World_Overrides:
         Above_Positive_Max_Difference: 0.9
     Mob_Overrides:
       Katherina:
-        Level: 75
+        Level: 60
         Scaling:
           Health:
-            Base_Multiplier: 3.0
-            Per_Level: 0.075
-          Damage:
-            Base_Multiplier: 1.25
+            Base_Multiplier: 1.0
             Per_Level: 0.06
+          Damage:
+            Base_Multiplier: 1.0
+            Per_Level: 0.05
           Defense:
             At_Negative_Max_Difference: 0.35
             At_Positive_Max_Difference: 0.8
             Below_Negative_Max_Difference: 0.0
             Above_Positive_Max_Difference: 0.9
       Construct_Ancient_Dark_Titan:
-        Level: 75
+        Level: 60
         Scaling:
           Health:
-            Base_Multiplier: 3.0
-            Per_Level: 0.075
-          Damage:
-            Base_Multiplier: 1.15
+            Base_Multiplier: 1.0
             Per_Level: 0.05
+          Damage:
+            Base_Multiplier: 1.0
+            Per_Level: 0.04
           Defense:
             At_Negative_Max_Difference: 0.45
             At_Positive_Max_Difference: 0.8
@@ -265,12 +269,81 @@ World_Overrides:
 
   instance-mj_instance_d03-*:
     Level_Source:
-      Mode: "FIXED"
-      Fixed_Level:
+      Mode: "TIERS"
+      Base_Level:
+        Level: 60-75
+      Tiers:
+        Total_Tiers: 4
+        Levels_Per_Tier: 20
+        Player_Adaptation:
+          Enabled: true
+          Allowance_Mode: "ABOVE"
+          Range_Allowance: 5
+    Scaling:
+      Health:
+        Base_Multiplier: 3.0
+        Per_Level: 0.075
+      Damage:
+        Base_Multiplier: 1.25
+        Per_Level: 0.05
+      Defense:
+        At_Negative_Max_Difference: 0.2
+        At_Positive_Max_Difference: 0.8
+        Below_Negative_Max_Difference: 0.0
+        Above_Positive_Max_Difference: 0.9
+    Mob_Overrides:
+      Baron:
+        Level: 80
+        Scaling:
+          Health:
+            Base_Multiplier: 1.0
+            Per_Level: 0.06
+          Damage:
+            Base_Multiplier: 1.0
+            Per_Level: 0.05
+          Defense:
+            At_Negative_Max_Difference: 0.35
+            At_Positive_Max_Difference: 0.8
+            Below_Negative_Max_Difference: 0.0
+            Above_Positive_Max_Difference: 0.9
+      Cult_Knight_Werewolf_Group:
+        Names: [Cult_Knight, Cult_Werewolf]
+        Scaling:
+          Health:
+            Base_Multiplier: 1.0
+            Per_Level: 0.075
+          Damage:
+            Base_Multiplier: 1.0
+            Per_Level: 0.04
+          Defense:
+            At_Negative_Max_Difference: 0.3
+            At_Positive_Max_Difference: 0.8
+            Below_Negative_Max_Difference: 0.0
+            Above_Positive_Max_Difference: 0.9
+      Cult_Knight_MiniBoss:
+        Scaling:
+          Health:
+            Base_Multiplier:
+            Per_Level: 0.06
+          Damage:
+            Base_Multiplier: 1.0
+            Per_Level: 0.04
+          Defense:
+            At_Negative_Max_Difference: 0.3
+            At_Positive_Max_Difference: 0.8
+            Below_Negative_Max_Difference: 0.0
+            Above_Positive_Max_Difference: 0.9
+      Cult_Werewolf_MiniBoss:
         Level: 75
-
-  instance-mj_instance_d04-*:
-    Level_Source:
-      Mode: "FIXED"
-      Fixed_Level:
-        Level: 100
+        Scaling:
+          Health:
+            Base_Multiplier: 1.0
+            Per_Level: 0.06
+          Damage:
+            Base_Multiplier: 1.0
+            Per_Level: 0.04
+          Defense:
+            At_Negative_Max_Difference: 0.3
+            At_Positive_Max_Difference: 0.8
+            Below_Negative_Max_Difference: 0.0
+            Above_Positive_Max_Difference: 0.9

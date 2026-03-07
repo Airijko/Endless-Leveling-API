@@ -22,9 +22,11 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -550,38 +552,95 @@ public class MobLevelingManager {
                 continue;
             }
 
-            WorldMobOverride override = parseMobOverride(entry.getValue());
+            Object rawValue = entry.getValue();
+            WorldMobOverride override = parseMobOverride(rawValue);
             if (override == null) {
                 continue;
             }
 
-            String normalizedRule = normalizeMobIdentifier(rule);
-            if (normalizedRule == null || normalizedRule.isBlank()) {
+            List<String> candidateRules = resolveMobOverrideCandidateRules(rule, rawValue);
+            if (candidateRules.isEmpty()) {
                 continue;
             }
 
-            if (normalizedRule.indexOf('*') < 0) {
-                if (normalizedMobType.equals(normalizedRule)) {
-                    return override;
+            for (String candidateRule : candidateRules) {
+                String normalizedRule = normalizeMobIdentifier(candidateRule);
+                if (normalizedRule == null || normalizedRule.isBlank()) {
+                    continue;
                 }
-                continue;
-            }
 
-            if (!matchesWildcard(normalizedMobType, normalizedRule)) {
-                continue;
-            }
+                if (normalizedRule.indexOf('*') < 0) {
+                    if (normalizedMobType.equals(normalizedRule)) {
+                        return override;
+                    }
+                    continue;
+                }
 
-            int specificity = wildcardSpecificity(normalizedRule);
-            int length = normalizedRule.length();
-            if (specificity > bestWildcardSpecificity
-                    || (specificity == bestWildcardSpecificity && length > bestWildcardLength)) {
-                bestWildcardOverride = override;
-                bestWildcardSpecificity = specificity;
-                bestWildcardLength = length;
+                if (!matchesWildcard(normalizedMobType, normalizedRule)) {
+                    continue;
+                }
+
+                int specificity = wildcardSpecificity(normalizedRule);
+                int length = normalizedRule.length();
+                if (specificity > bestWildcardSpecificity
+                        || (specificity == bestWildcardSpecificity && length > bestWildcardLength)) {
+                    bestWildcardOverride = override;
+                    bestWildcardSpecificity = specificity;
+                    bestWildcardLength = length;
+                }
             }
         }
 
         return bestWildcardOverride;
+    }
+
+    private List<String> resolveMobOverrideCandidateRules(String fallbackRule, Object rawValue) {
+        Set<String> rules = new LinkedHashSet<>();
+
+        if (rawValue instanceof Map<?, ?> mapValue) {
+            appendMobOverrideRulesFromRaw(resolveCaseInsensitive(mapValue, "Names"), rules);
+            appendMobOverrideRulesFromRaw(resolveCaseInsensitive(mapValue, "Mob_Names"), rules);
+            appendMobOverrideRulesFromRaw(resolveCaseInsensitive(mapValue, "Ids"), rules);
+            appendMobOverrideRulesFromRaw(resolveCaseInsensitive(mapValue, "Mob_Types"), rules);
+            appendMobOverrideRulesFromRaw(resolveCaseInsensitive(mapValue, "Rules"), rules);
+        }
+
+        if (rules.isEmpty()) {
+            appendMobOverrideRulesFromRaw(fallbackRule, rules);
+        }
+
+        return new ArrayList<>(rules);
+    }
+
+    private void appendMobOverrideRulesFromRaw(Object rawRules, Set<String> target) {
+        if (rawRules == null || target == null) {
+            return;
+        }
+
+        if (rawRules instanceof Iterable<?> iterable) {
+            for (Object element : iterable) {
+                appendMobOverrideRulesFromRaw(element, target);
+            }
+            return;
+        }
+
+        if (!(rawRules instanceof String text)) {
+            target.add(rawRules.toString());
+            return;
+        }
+
+        String trimmed = text.trim();
+        if (trimmed.isEmpty()) {
+            return;
+        }
+
+        String[] parts = trimmed.split(",");
+        for (String part : parts) {
+            String token = part == null ? "" : part.trim();
+            if (!token.isEmpty()) {
+                target.add(token);
+            }
+        }
     }
 
     private WorldMobOverride parseMobOverride(Object rawValue) {
@@ -1689,6 +1748,22 @@ public class MobLevelingManager {
         return getPartySystemBoolean("Enabled", false, store);
     }
 
+    public double getPartyXpShareRange(Store<EntityStore> store) {
+        double configured = getPartySystemDouble("XP_Share_Range", Double.NaN, store);
+        if (!Double.isFinite(configured)) {
+            configured = getPartySystemDouble("Share_Range", Double.NaN, store);
+        }
+        if (!Double.isFinite(configured)) {
+            configured = getPartySystemDouble("Influence_Radius", Double.NaN, store);
+        }
+        if (Double.isFinite(configured)) {
+            return Math.max(0.0D, configured);
+        }
+
+        // Backward compatibility when no share range is configured.
+        return Math.max(0.0D, getPlayerPartyInfluenceRadius(store));
+    }
+
     private double getPlayerPartyInfluenceRadius() {
         return getPlayerPartyInfluenceRadius(null);
     }
@@ -1854,6 +1929,19 @@ public class MobLevelingManager {
         return Boolean.parseBoolean(raw.trim());
     }
 
+    private double getPartySystemDouble(String suffix, double defaultValue) {
+        return getPartySystemDouble(suffix, defaultValue, null);
+    }
+
+    private double getPartySystemDouble(String suffix, double defaultValue, Store<EntityStore> store) {
+        String raw = getPartySystemString(suffix, String.valueOf(defaultValue), store);
+        try {
+            return Double.parseDouble(raw.trim());
+        } catch (Exception ignored) {
+            return defaultValue;
+        }
+    }
+
     private double getMixedPlayerWeight() {
         return getMixedPlayerWeight(null);
     }
@@ -1906,6 +1994,11 @@ public class MobLevelingManager {
         MOST_MEMBERS,
         CLOSEST_MEMBER,
         HIGHEST_AVERAGE
+    }
+
+    private enum TierPromotionAllowanceMode {
+        BELOW,
+        ABOVE
     }
 
     private record PlayerContext(UUID playerId, int level, double distanceSq, UUID partyId) {
@@ -2810,15 +2903,34 @@ public class MobLevelingManager {
         }
 
         LevelRange baseRange = getTierBaseLevelRange(store);
-        int nearestPlayerLevel = findNearestPlayerLevel(store, mobPosition);
-        if (nearestPlayerLevel <= 0 || nearestPlayerLevel < baseRange.min()) {
+        int referencePlayerLevel = resolveTierReferencePlayerLevel(store, mobPosition);
+        if (referencePlayerLevel <= 0 || referencePlayerLevel < baseRange.min()) {
             return 1;
         }
 
-        int closestTier = findClosestTierForPlayerLevel(nearestPlayerLevel, baseRange, totalTiers, levelsPerTier);
-        int belowRangeAllowance = getTierBelowRangeAllowance(store);
-        return applyTierPromotionAllowance(nearestPlayerLevel, baseRange, totalTiers, levelsPerTier, closestTier,
-                belowRangeAllowance);
+        int tierPromotionAllowance = getTierPromotionAllowance(store);
+        TierPromotionAllowanceMode allowanceMode = getTierPromotionAllowanceMode(store);
+        return applyTierPromotionAllowance(referencePlayerLevel, baseRange, totalTiers, levelsPerTier, 1,
+                tierPromotionAllowance, allowanceMode);
+    }
+
+    private int resolveTierReferencePlayerLevel(Store<EntityStore> store, Vector3d mobPosition) {
+        if (mobPosition == null) {
+            return -1;
+        }
+
+        if (isPartyPlayerSourceEnabled(store)) {
+            double shareRange = getPartyXpShareRange(store);
+            List<PlayerContext> nearbyPlayers = getPlayersWithinRadius(store, mobPosition, shareRange);
+            if (!nearbyPlayers.isEmpty()) {
+                PartyContext dominant = resolveDominantPartyContext(nearbyPlayers, store);
+                if (dominant != null && !dominant.members().isEmpty()) {
+                    return computeVirtualPartyLevel(dominant.members(), store);
+                }
+            }
+        }
+
+        return findNearestPlayerLevel(store, mobPosition);
     }
 
     private int findClosestTierForPlayerLevel(int playerLevel,
@@ -2846,13 +2958,23 @@ public class MobLevelingManager {
             int totalTiers,
             int levelsPerTier,
             int initialTier,
-            int belowRangeAllowance) {
+            int promotionAllowance,
+            TierPromotionAllowanceMode allowanceMode) {
         int safePlayerLevel = Math.max(1, playerLevel);
         int resolvedTier = Math.max(1, Math.min(totalTiers, initialTier));
+        int allowance = Math.max(0, promotionAllowance);
+        TierPromotionAllowanceMode mode = allowanceMode != null ? allowanceMode : TierPromotionAllowanceMode.BELOW;
 
         for (int tier = resolvedTier + 1; tier <= totalTiers; tier++) {
             LevelRange tierRange = getTierRange(baseRange, tier, levelsPerTier);
-            int promotedThreshold = Math.max(1, tierRange.min() - belowRangeAllowance);
+            int promotedThreshold;
+            if (mode == TierPromotionAllowanceMode.ABOVE) {
+                LevelRange previousTierRange = getTierRange(baseRange, tier - 1, levelsPerTier);
+                promotedThreshold = Math.max(1, previousTierRange.max() + allowance);
+            } else {
+                promotedThreshold = Math.max(1, tierRange.min() - allowance);
+            }
+
             if (safePlayerLevel >= promotedThreshold) {
                 resolvedTier = tier;
             } else {
@@ -2885,9 +3007,58 @@ public class MobLevelingManager {
         return getConfigBoolean("Mob_Leveling.Level_Source.Tiers.Player_Adaptation.Enabled", true, store);
     }
 
-    private int getTierBelowRangeAllowance(Store<EntityStore> store) {
+    private TierPromotionAllowanceMode getTierPromotionAllowanceMode(Store<EntityStore> store) {
+        Object rawValue = getMobLevelingValue("Mob_Leveling.Level_Source.Tiers.Player_Adaptation.Allowance_Mode",
+                "BELOW", store, null);
+        String raw = rawValue != null ? rawValue.toString() : "BELOW";
+        if (raw == null) {
+            return TierPromotionAllowanceMode.BELOW;
+        }
+
+        String normalized = raw.trim().toUpperCase(Locale.ROOT);
+        return switch (normalized) {
+            case "ABOVE" -> TierPromotionAllowanceMode.ABOVE;
+            default -> TierPromotionAllowanceMode.BELOW;
+        };
+    }
+
+    private int getTierPromotionAllowance(Store<EntityStore> store) {
+        Object newValue = getMobLevelingValue("Mob_Leveling.Level_Source.Tiers.Player_Adaptation.Range_Allowance",
+                null, store, null);
+        if (newValue != null) {
+            Integer parsed = parseInteger(newValue);
+            if (parsed != null) {
+                return Math.max(0, parsed);
+            }
+        }
+
+        // Backward compatibility with older configs.
         return Math.max(0,
                 getConfigInt("Mob_Leveling.Level_Source.Tiers.Player_Adaptation.Below_Range_Allowance", 0, store));
+    }
+
+    private Integer parseInteger(Object raw) {
+        if (raw == null) {
+            return null;
+        }
+
+        if (raw instanceof Number number) {
+            return number.intValue();
+        }
+
+        if (raw instanceof String text) {
+            String trimmed = text.trim();
+            if (trimmed.isEmpty()) {
+                return null;
+            }
+            try {
+                return Integer.parseInt(trimmed);
+            } catch (NumberFormatException ignored) {
+                return null;
+            }
+        }
+
+        return null;
     }
 
     private int applyTierOffsetToConfiguredLevel(Store<EntityStore> store,
@@ -3102,6 +3273,14 @@ public class MobLevelingManager {
                 if (value != null) {
                     return value;
                 }
+            }
+        }
+
+        Object globalNode = resolveCaseInsensitive(rootMap, "global");
+        if (globalNode instanceof Map<?, ?> globalMap) {
+            Object value = resolveNestedValue(globalMap, relativePath);
+            if (value != null) {
+                return value;
             }
         }
 
