@@ -12,6 +12,9 @@ import com.airijko.endlessleveling.augments.AugmentHooks.OnLowHpAugment;
 import com.airijko.endlessleveling.augments.AugmentHooks.OnTargetConditionAugment;
 import com.airijko.endlessleveling.augments.AugmentHooks.OnMissAugment;
 import com.airijko.endlessleveling.augments.AugmentHooks.PassiveStatAugment;
+import com.airijko.endlessleveling.augments.types.FortressAugment;
+import com.airijko.endlessleveling.augments.types.RebirthAugment;
+import com.airijko.endlessleveling.augments.types.UndyingRageAugment;
 import com.airijko.endlessleveling.data.PlayerData;
 import com.airijko.endlessleveling.enums.ClassWeaponType;
 import com.airijko.endlessleveling.managers.SkillManager;
@@ -136,12 +139,58 @@ public final class AugmentExecutor {
                 damage = handler.onDamageTaken(context);
                 context.setIncomingDamage(damage);
             }
-            if (augment instanceof OnLowHpAugment lowHp) {
-                damage = lowHp.onLowHp(context);
-                context.setIncomingDamage(damage);
+        }
+
+        if (damage <= 0f) {
+            return 0f;
+        }
+
+        for (Augment augment : resolveLowHpTriggerOrder(augments)) {
+            OnLowHpAugment lowHp = (OnLowHpAugment) augment;
+            damage = lowHp.onLowHp(context);
+            context.setIncomingDamage(damage);
+            if (damage <= 0f) {
+                return 0f;
             }
         }
         return damage;
+    }
+
+    private List<Augment> resolveLowHpTriggerOrder(List<Augment> augments) {
+        List<Augment> lowHpAugments = new ArrayList<>();
+        for (Augment augment : augments) {
+            if (augment instanceof OnLowHpAugment) {
+                lowHpAugments.add(augment);
+            }
+        }
+        if (lowHpAugments.size() <= 1) {
+            return lowHpAugments;
+        }
+        lowHpAugments.sort((left, right) -> Integer.compare(lowHpPriority(left), lowHpPriority(right)));
+        return lowHpAugments;
+    }
+
+    private int lowHpPriority(Augment augment) {
+        if (augment instanceof RebirthAugment) {
+            return 0;
+        }
+        if (augment instanceof FortressAugment) {
+            return 1;
+        }
+        if (augment instanceof UndyingRageAugment) {
+            return 2;
+        }
+
+        String augmentId = augment == null ? null : augment.getId();
+        if (augmentId == null) {
+            return Integer.MAX_VALUE;
+        }
+        return switch (augmentId.trim().toLowerCase()) {
+            case RebirthAugment.ID -> 0;
+            case FortressAugment.ID -> 1;
+            case UndyingRageAugment.ID -> 2;
+            default -> Integer.MAX_VALUE;
+        };
     }
 
     public void handleKill(@Nonnull PlayerData killer,

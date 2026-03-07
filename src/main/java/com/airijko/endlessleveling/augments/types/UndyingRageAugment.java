@@ -81,6 +81,12 @@ public final class UndyingRageAugment extends YamlAugment
             return context.getIncomingDamage();
         }
         var state = runtime.getState(ID);
+        var fortressState = runtime.getState(FortressAugment.ID);
+
+        // Fortress shield takes precedence over Undying Rage while active.
+        if (fortressState.getStacks() == 1 && fortressState.getExpiresAt() > now) {
+            return context.getIncomingDamage();
+        }
 
         float thresholdHp = AugmentUtils.resolveThresholdHp(hp.getMax(), minHealthHp, healthThresholdPercent);
         float survivalFloor = AugmentUtils.resolveSurvivalFloor(hp.getMax(), thresholdHp);
