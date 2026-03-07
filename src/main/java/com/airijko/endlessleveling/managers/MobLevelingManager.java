@@ -53,7 +53,8 @@ public class MobLevelingManager {
         PLAYER,
         MIXED,
         DISTANCE,
-        FIXED
+        FIXED,
+        TIERS
     }
 
     private enum MixedSourceChoice {
@@ -209,6 +210,7 @@ public class MobLevelingManager {
                 case MIXED -> resolveMixedLevel(store, position, entityId);
                 case DISTANCE -> resolveDistanceLevel(store, position);
                 case FIXED -> getFixedLevel(store, entityId, position);
+                case TIERS -> getTieredLevel(store, entityId, position);
             };
         } catch (Throwable t) {
             LOGGER.atWarning().log("MobLeveling: failed to resolve level via mode %s: %s", mode, t.toString());
@@ -333,6 +335,7 @@ public class MobLevelingManager {
                 case MIXED -> resolveMixedLevel(store, mobPosition, entityId);
                 case DISTANCE -> resolveDistanceLevel(store, mobPosition);
                 case FIXED -> getFixedLevel(store, entityId, mobPosition);
+                case TIERS -> getTieredLevel(store, entityId, mobPosition);
             };
         } catch (Throwable t) {
             LOGGER.atWarning().log("MobLeveling: failed to resolve level via mode %s: %s", mode, t.toString());
@@ -472,7 +475,20 @@ public class MobLevelingManager {
         if (override == null) {
             return null;
         }
-        return override.level();
+
+        Integer level = override.level();
+        if (level == null || level <= 0) {
+            return level;
+        }
+
+        Store<EntityStore> effectiveStore = store != null ? store : (ref != null ? ref.getStore() : null);
+        if (getLevelSourceMode(effectiveStore) != LevelSourceMode.TIERS) {
+            return level;
+        }
+
+        Integer entityId = ref != null ? ref.getIndex() : null;
+        Vector3d mobPosition = ref != null ? getWorldPosition(ref, commandBuffer) : null;
+        return applyTierOffsetToConfiguredLevel(effectiveStore, entityId, mobPosition, level);
     }
 
     private WorldMobOverride resolveWorldMobOverride(Ref<EntityStore> ref,
@@ -578,6 +594,9 @@ public class MobLevelingManager {
         Double healthMultiplier = null;
         Double damageMultiplier = null;
         Double defenseReduction = null;
+        MobOverrideLinearScaling healthScaling = null;
+        MobOverrideLinearScaling damageScaling = null;
+        MobOverrideDefenseScaling defenseScaling = null;
 
         if (rawValue instanceof Map<?, ?> mapValue) {
             healthMultiplier = parseMobOverrideMultiplier(
@@ -595,16 +614,102 @@ public class MobLevelingManager {
                     "Defense_Multiplier",
                     "Defense_Modifier",
                     "Defense");
+
+            Object scalingRaw = resolveCaseInsensitive(mapValue, "Scaling");
+            if (scalingRaw instanceof Map<?, ?> scalingMap) {
+                healthScaling = parseMobOverrideLinearScaling(resolveCaseInsensitive(scalingMap, "Health"));
+                damageScaling = parseMobOverrideLinearScaling(resolveCaseInsensitive(scalingMap, "Damage"));
+                defenseScaling = parseMobOverrideDefenseScaling(resolveCaseInsensitive(scalingMap, "Defense"));
+            }
         }
 
         boolean hasStatModifier = healthMultiplier != null
                 || damageMultiplier != null
-                || defenseReduction != null;
+                || defenseReduction != null
+                || healthScaling != null
+                || damageScaling != null
+                || defenseScaling != null;
         if (level == null && !hasStatModifier) {
             return null;
         }
 
-        return new WorldMobOverride(level, healthMultiplier, damageMultiplier, defenseReduction);
+        return new WorldMobOverride(
+                level,
+                healthMultiplier,
+                damageMultiplier,
+                defenseReduction,
+                healthScaling,
+                damageScaling,
+                defenseScaling);
+    }
+
+    private MobOverrideLinearScaling parseMobOverrideLinearScaling(Object rawValue) {
+        if (!(rawValue instanceof Map<?, ?> scalingMap)) {
+            return null;
+        }
+
+        Object enabledRaw = resolveCaseInsensitive(scalingMap, "Enabled");
+        boolean enabled = parseBooleanOrDefault(enabledRaw, true);
+
+        Double baseMultiplier = parsePositiveDouble(resolveCaseInsensitive(scalingMap, "Base_Multiplier"));
+        Double perLevel = parseNonNegativeDouble(resolveCaseInsensitive(scalingMap, "Per_Level"));
+
+        boolean hasAnyValue = enabledRaw != null || baseMultiplier != null || perLevel != null;
+        if (!hasAnyValue) {
+            return null;
+        }
+
+        return new MobOverrideLinearScaling(enabled, baseMultiplier, perLevel);
+    }
+
+    private MobOverrideDefenseScaling parseMobOverrideDefenseScaling(Object rawValue) {
+        if (!(rawValue instanceof Map<?, ?> scalingMap)) {
+            return null;
+        }
+
+        Object enabledRaw = resolveCaseInsensitive(scalingMap, "Enabled");
+        boolean enabled = parseBooleanOrDefault(enabledRaw, true);
+
+        Double atNegativeMaxDifference = parseNonNegativeDouble(
+                resolveCaseInsensitive(scalingMap, "At_Negative_Max_Difference"));
+        Double atPositiveMaxDifference = parseNonNegativeDouble(
+                resolveCaseInsensitive(scalingMap, "At_Positive_Max_Difference"));
+        Double belowNegativeMaxDifference = parseNonNegativeDouble(
+                resolveCaseInsensitive(scalingMap, "Below_Negative_Max_Difference"));
+        Double abovePositiveMaxDifference = parseNonNegativeDouble(
+                resolveCaseInsensitive(scalingMap, "Above_Positive_Max_Difference"));
+
+        boolean hasAnyValue = enabledRaw != null
+                || atNegativeMaxDifference != null
+                || atPositiveMaxDifference != null
+                || belowNegativeMaxDifference != null
+                || abovePositiveMaxDifference != null;
+        if (!hasAnyValue) {
+            return null;
+        }
+
+        return new MobOverrideDefenseScaling(
+                enabled,
+                atNegativeMaxDifference,
+                atPositiveMaxDifference,
+                belowNegativeMaxDifference,
+                abovePositiveMaxDifference);
+    }
+
+    private boolean parseBooleanOrDefault(Object rawValue, boolean defaultValue) {
+        if (rawValue == null) {
+            return defaultValue;
+        }
+        if (rawValue instanceof Boolean b) {
+            return b;
+        }
+        if (rawValue instanceof Number n) {
+            return n.intValue() != 0;
+        }
+        if (rawValue instanceof String text) {
+            return Boolean.parseBoolean(text.trim());
+        }
+        return defaultValue;
     }
 
     private Double parseMobOverrideMultiplier(Map<?, ?> mapValue,
@@ -1581,7 +1686,7 @@ public class MobLevelingManager {
     }
 
     private boolean isPartyPlayerSourceEnabled(Store<EntityStore> store) {
-        return getPlayerBasedBoolean("Party_System.Enabled", false, store);
+        return getPartySystemBoolean("Enabled", false, store);
     }
 
     private double getPlayerPartyInfluenceRadius() {
@@ -1589,6 +1694,12 @@ public class MobLevelingManager {
     }
 
     private double getPlayerPartyInfluenceRadius(Store<EntityStore> store) {
+        double preferred = getPlayerBasedDouble("Influence_Radius", Double.NaN, store);
+        if (Double.isFinite(preferred)) {
+            return Math.max(0.0D, preferred);
+        }
+
+        // Backward compatibility for legacy nesting.
         return Math.max(0.0D, getPlayerBasedDouble("Party_System.Influence_Radius", 25.0D, store));
     }
 
@@ -1597,7 +1708,7 @@ public class MobLevelingManager {
     }
 
     private PartyLevelCalculation getPartyLevelCalculationMode(Store<EntityStore> store) {
-        String raw = getPlayerBasedString("Party_System.Level_Calculation", "AVERAGE", store);
+        String raw = getPartySystemString("Level_Calculation", "AVERAGE", store);
         if (raw == null) {
             return PartyLevelCalculation.AVERAGE;
         }
@@ -1613,7 +1724,7 @@ public class MobLevelingManager {
     }
 
     private DominantPartyMode getDominantPartyResolutionMode(Store<EntityStore> store) {
-        String raw = getPlayerBasedString("Party_System.Dominant_Party_Resolution.Mode", "MOST_MEMBERS", store);
+        String raw = getPartySystemString("Dominant_Party_Resolution.Mode", "MOST_MEMBERS", store);
         if (raw == null) {
             return DominantPartyMode.MOST_MEMBERS;
         }
@@ -1696,6 +1807,47 @@ public class MobLevelingManager {
 
     private boolean getPlayerBasedBoolean(String suffix, boolean defaultValue, Store<EntityStore> store) {
         String raw = getPlayerBasedString(suffix, String.valueOf(defaultValue), store);
+        if (raw == null) {
+            return defaultValue;
+        }
+        return Boolean.parseBoolean(raw.trim());
+    }
+
+    private String getPartySystemString(String suffix, String defaultValue) {
+        return getPartySystemString(suffix, defaultValue, null);
+    }
+
+    private String getPartySystemString(String suffix, String defaultValue, Store<EntityStore> store) {
+        String primary = "Mob_Leveling.Level_Source.Party_System." + suffix;
+        String fallbackGlobal = "Mob_Leveling.Party_System." + suffix;
+        String legacyLevelSource = "Mob_Leveling.Level_Source.Player_Based.Party_System." + suffix;
+        String legacyRoot = "Mob_Leveling.Player_Based.Party_System." + suffix;
+
+        if (hasMobLevelingPath(primary, store, null)) {
+            Object raw = getMobLevelingValue(primary, defaultValue, store, null);
+            return raw != null ? raw.toString() : defaultValue;
+        }
+
+        if (hasMobLevelingPath(fallbackGlobal, store, null)) {
+            Object raw = getMobLevelingValue(fallbackGlobal, defaultValue, store, null);
+            return raw != null ? raw.toString() : defaultValue;
+        }
+
+        if (hasMobLevelingPath(legacyLevelSource, store, null)) {
+            Object raw = getMobLevelingValue(legacyLevelSource, defaultValue, store, null);
+            return raw != null ? raw.toString() : defaultValue;
+        }
+
+        Object raw = getMobLevelingValue(legacyRoot, defaultValue, store, null);
+        return raw != null ? raw.toString() : defaultValue;
+    }
+
+    private boolean getPartySystemBoolean(String suffix, boolean defaultValue) {
+        return getPartySystemBoolean(suffix, defaultValue, null);
+    }
+
+    private boolean getPartySystemBoolean(String suffix, boolean defaultValue, Store<EntityStore> store) {
+        String raw = getPartySystemString(suffix, String.valueOf(defaultValue), store);
         if (raw == null) {
             return defaultValue;
         }
@@ -2194,8 +2346,22 @@ public class MobLevelingManager {
             int level) {
         double baseMultiplier = getMobHealthMultiplierForLevel(level, store);
         WorldMobOverride override = resolveWorldMobOverride(ref, store, commandBuffer);
-        if (override != null && override.healthMultiplier() != null) {
-            return Math.max(0.0001D, override.healthMultiplier());
+        if (override != null) {
+            if (override.healthMultiplier() != null) {
+                return Math.max(0.0001D, override.healthMultiplier());
+            }
+
+            Double scaledOverride = resolveMobOverrideLinearScaling(
+                    override.healthScaling(),
+                    level,
+                    "Mob_Leveling.Scaling.Health.Base_Multiplier",
+                    1.0D,
+                    "Mob_Leveling.Scaling.Health.Per_Level",
+                    0.05D,
+                    store);
+            if (scaledOverride != null) {
+                return Math.max(0.0001D, scaledOverride);
+            }
         }
         return baseMultiplier;
     }
@@ -2276,8 +2442,22 @@ public class MobLevelingManager {
         Store<EntityStore> store = ref != null ? ref.getStore() : null;
         double baseMultiplier = getMobDamageMultiplierForLevel(level, store);
         WorldMobOverride override = resolveWorldMobOverride(ref, store, commandBuffer);
-        if (override != null && override.damageMultiplier() != null) {
-            return Math.max(0.0001D, override.damageMultiplier());
+        if (override != null) {
+            if (override.damageMultiplier() != null) {
+                return Math.max(0.0001D, override.damageMultiplier());
+            }
+
+            Double scaledOverride = resolveMobOverrideLinearScaling(
+                    override.damageScaling(),
+                    level,
+                    "Mob_Leveling.Scaling.Damage.Base_Multiplier",
+                    1.0D,
+                    "Mob_Leveling.Scaling.Damage.Per_Level",
+                    0.03D,
+                    store);
+            if (scaledOverride != null) {
+                return Math.max(0.0001D, scaledOverride);
+            }
         }
         return baseMultiplier;
     }
@@ -2349,14 +2529,104 @@ public class MobLevelingManager {
             int mobLevel,
             int playerLevel) {
         Store<EntityStore> store = ref != null ? ref.getStore() : null;
-        double baseReduction = getMobDefenseReductionForLevels(store, mobLevel, playerLevel);
+        int safeMobLevel = Math.max(1, mobLevel);
+        int safePlayerLevel = Math.max(1, playerLevel);
+        int levelDifference = safeMobLevel - safePlayerLevel;
+
+        double baseReduction = getMobDefenseReductionForLevelDifference(store, levelDifference);
 
         WorldMobOverride override = resolveWorldMobOverride(ref, store, commandBuffer);
-        if (override != null && override.defenseReduction() != null) {
-            return clampReduction(override.defenseReduction());
+        if (override != null) {
+            if (override.defenseReduction() != null) {
+                return clampReduction(override.defenseReduction());
+            }
+
+            Double scaledOverride = resolveMobOverrideDefenseScaling(
+                    override.defenseScaling(),
+                    levelDifference,
+                    store);
+            if (scaledOverride != null) {
+                return clampReduction(scaledOverride);
+            }
         }
 
         return baseReduction;
+    }
+
+    private Double resolveMobOverrideLinearScaling(MobOverrideLinearScaling scaling,
+            int level,
+            String basePath,
+            double defaultBase,
+            String perLevelPath,
+            double defaultPerLevel,
+            Store<EntityStore> store) {
+        if (scaling == null) {
+            return null;
+        }
+        if (!scaling.enabled()) {
+            return 1.0D;
+        }
+
+        double base = scaling.baseMultiplier() != null
+                ? scaling.baseMultiplier()
+                : getConfigDouble(basePath, defaultBase, store);
+        double perLevel = scaling.perLevel() != null
+                ? scaling.perLevel()
+                : getConfigDouble(perLevelPath, defaultPerLevel, store);
+
+        int effectiveLevel = Math.max(1, level);
+        return base * (1.0D + perLevel * (effectiveLevel - 1));
+    }
+
+    private Double resolveMobOverrideDefenseScaling(MobOverrideDefenseScaling scaling,
+            int levelDifference,
+            Store<EntityStore> store) {
+        if (scaling == null) {
+            return null;
+        }
+        if (!scaling.enabled()) {
+            return 0.0D;
+        }
+
+        int maxDifference = Math.max(0,
+                getGlobalConfigInt("Mob_Leveling.Experience.XP_Level_Range.Max_Difference", 10));
+
+        double atNegativeMax = scaling.atNegativeMaxDifference() != null
+                ? clampReduction(scaling.atNegativeMaxDifference())
+                : clampReduction(
+                        getConfigDouble("Mob_Leveling.Scaling.Defense.At_Negative_Max_Difference", 0.0D, store));
+        double atPositiveMax = scaling.atPositiveMaxDifference() != null
+                ? clampReduction(scaling.atPositiveMaxDifference())
+                : clampReduction(
+                        getConfigDouble("Mob_Leveling.Scaling.Defense.At_Positive_Max_Difference", 0.75D, store));
+        double belowNegativeMax = scaling.belowNegativeMaxDifference() != null
+                ? clampReduction(scaling.belowNegativeMaxDifference())
+                : clampReduction(
+                        getConfigDouble("Mob_Leveling.Scaling.Defense.Below_Negative_Max_Difference", 0.0D, store));
+        double abovePositiveMax = scaling.abovePositiveMaxDifference() != null
+                ? clampReduction(scaling.abovePositiveMaxDifference())
+                : clampReduction(
+                        getConfigDouble("Mob_Leveling.Scaling.Defense.Above_Positive_Max_Difference", 0.90D, store));
+
+        if (maxDifference <= 0) {
+            if (levelDifference > 0) {
+                return abovePositiveMax;
+            }
+            if (levelDifference < 0) {
+                return belowNegativeMax;
+            }
+            return atNegativeMax;
+        }
+
+        if (levelDifference < -maxDifference) {
+            return belowNegativeMax;
+        }
+        if (levelDifference > maxDifference) {
+            return abovePositiveMax;
+        }
+
+        double ratio = (levelDifference + maxDifference) / (double) (maxDifference * 2);
+        return lerp(atNegativeMax, atPositiveMax, ratio);
     }
 
     /**
@@ -2428,16 +2698,48 @@ public class MobLevelingManager {
         return sampleLevel(fixedRange.min(), fixedRange.max(), entityId, mobPosition);
     }
 
-    private LevelRange getFixedLevelRange(Store<EntityStore> store) {
-        String basePath = "Mob_Leveling.Level_Source.Fixed_Level";
-        Object fixedLevelRaw = getMobLevelingValue(basePath + ".Level", null, store, null);
-        Object fixedLevelMinRaw = getMobLevelingValue(basePath + ".Min", null, store, null);
-        Object fixedLevelMaxRaw = getMobLevelingValue(basePath + ".Max", null, store, null);
+    private int getTieredLevel(Store<EntityStore> store, Integer entityId, Vector3d mobPosition) {
+        LevelRange tieredRange = getTieredLevelRange(store, entityId, mobPosition);
+        return sampleLevel(tieredRange.min(), tieredRange.max(), entityId, mobPosition);
+    }
 
-        LevelRange parsedInlineRange = parseInlineFixedLevelRange(fixedLevelRaw);
-        Integer parsedSingleLevel = parsePositiveInteger(fixedLevelRaw);
-        Integer parsedMinLevel = parsePositiveInteger(fixedLevelMinRaw);
-        Integer parsedMaxLevel = parsePositiveInteger(fixedLevelMaxRaw);
+    private LevelRange getFixedLevelRange(Store<EntityStore> store) {
+        LevelRange configured = resolveConfiguredLevelRange("Mob_Leveling.Level_Source.Fixed_Level", store);
+        if (configured != null) {
+            return configured;
+        }
+
+        int fallback = clampToConfiguredRange(10, store);
+        return new LevelRange(fallback, fallback);
+    }
+
+    private LevelRange getTierBaseLevelRange(Store<EntityStore> store) {
+        LevelRange baseLevel = resolveConfiguredLevelRange("Mob_Leveling.Level_Source.Base_Level", store);
+        if (baseLevel != null) {
+            return baseLevel;
+        }
+
+        // Backward compatibility for existing TIERS configs.
+        return getFixedLevelRange(store);
+    }
+
+    private LevelRange resolveConfiguredLevelRange(String basePath, Store<EntityStore> store) {
+        if (basePath == null || basePath.isBlank()) {
+            return null;
+        }
+
+        Object levelRaw = getMobLevelingValue(basePath + ".Level", null, store, null);
+        Object minRaw = getMobLevelingValue(basePath + ".Min", null, store, null);
+        Object maxRaw = getMobLevelingValue(basePath + ".Max", null, store, null);
+
+        if (levelRaw == null && minRaw == null && maxRaw == null) {
+            return null;
+        }
+
+        LevelRange parsedInlineRange = parseInlineFixedLevelRange(levelRaw);
+        Integer parsedSingleLevel = parsePositiveInteger(levelRaw);
+        Integer parsedMinLevel = parsePositiveInteger(minRaw);
+        Integer parsedMaxLevel = parsePositiveInteger(maxRaw);
 
         int minLevel;
         int maxLevel;
@@ -2454,10 +2756,11 @@ public class MobLevelingManager {
         } else if (parsedInlineRange != null) {
             minLevel = parsedInlineRange.min();
             maxLevel = parsedInlineRange.max();
+        } else if (parsedSingleLevel != null) {
+            minLevel = parsedSingleLevel;
+            maxLevel = parsedSingleLevel;
         } else {
-            int fallback = parsedSingleLevel != null ? parsedSingleLevel : 10;
-            minLevel = fallback;
-            maxLevel = fallback;
+            return null;
         }
 
         minLevel = clampToConfiguredRange(minLevel, store);
@@ -2469,6 +2772,134 @@ public class MobLevelingManager {
         }
 
         return new LevelRange(minLevel, maxLevel);
+    }
+
+    private LevelRange getTieredLevelRange(Store<EntityStore> store, Integer entityId, Vector3d mobPosition) {
+        LevelRange baseRange = getTierBaseLevelRange(store);
+        int tierOffset = resolveTierLevelOffset(store, entityId, mobPosition);
+
+        int minLevel = clampToConfiguredRange(baseRange.min() + tierOffset, store);
+        int maxLevel = clampToConfiguredRange(baseRange.max() + tierOffset, store);
+        if (minLevel > maxLevel) {
+            int tmp = minLevel;
+            minLevel = maxLevel;
+            maxLevel = tmp;
+        }
+
+        return new LevelRange(minLevel, maxLevel);
+    }
+
+    private int resolveTierLevelOffset(Store<EntityStore> store, Integer entityId, Vector3d mobPosition) {
+        int totalTiers = Math.max(1, getConfigInt("Mob_Leveling.Level_Source.Tiers.Total_Tiers", 1, store));
+        int levelsPerTier = Math.max(0, getConfigInt("Mob_Leveling.Level_Source.Tiers.Levels_Per_Tier", 25, store));
+        if (totalTiers <= 1 || levelsPerTier <= 0) {
+            return 0;
+        }
+
+        int resolvedTier = resolveTierIndex(store, entityId, mobPosition, totalTiers, levelsPerTier);
+        return Math.max(0, resolvedTier - 1) * levelsPerTier;
+    }
+
+    private int resolveTierIndex(Store<EntityStore> store,
+            Integer entityId,
+            Vector3d mobPosition,
+            int totalTiers,
+            int levelsPerTier) {
+        if (!isTierPlayerAdaptationEnabled(store) || mobPosition == null) {
+            return sampleLevel(1, totalTiers, entityId, mobPosition);
+        }
+
+        LevelRange baseRange = getTierBaseLevelRange(store);
+        int nearestPlayerLevel = findNearestPlayerLevel(store, mobPosition);
+        if (nearestPlayerLevel <= 0 || nearestPlayerLevel < baseRange.min()) {
+            return 1;
+        }
+
+        int closestTier = findClosestTierForPlayerLevel(nearestPlayerLevel, baseRange, totalTiers, levelsPerTier);
+        int belowRangeAllowance = getTierBelowRangeAllowance(store);
+        return applyTierPromotionAllowance(nearestPlayerLevel, baseRange, totalTiers, levelsPerTier, closestTier,
+                belowRangeAllowance);
+    }
+
+    private int findClosestTierForPlayerLevel(int playerLevel,
+            LevelRange baseRange,
+            int totalTiers,
+            int levelsPerTier) {
+        int safePlayerLevel = Math.max(1, playerLevel);
+        int bestTier = 1;
+        int bestDistance = Integer.MAX_VALUE;
+
+        for (int tier = 1; tier <= totalTiers; tier++) {
+            LevelRange tierRange = getTierRange(baseRange, tier, levelsPerTier);
+            int distance = distanceToInclusiveRange(safePlayerLevel, tierRange.min(), tierRange.max());
+            if (distance < bestDistance) {
+                bestDistance = distance;
+                bestTier = tier;
+            }
+        }
+
+        return bestTier;
+    }
+
+    private int applyTierPromotionAllowance(int playerLevel,
+            LevelRange baseRange,
+            int totalTiers,
+            int levelsPerTier,
+            int initialTier,
+            int belowRangeAllowance) {
+        int safePlayerLevel = Math.max(1, playerLevel);
+        int resolvedTier = Math.max(1, Math.min(totalTiers, initialTier));
+
+        for (int tier = resolvedTier + 1; tier <= totalTiers; tier++) {
+            LevelRange tierRange = getTierRange(baseRange, tier, levelsPerTier);
+            int promotedThreshold = Math.max(1, tierRange.min() - belowRangeAllowance);
+            if (safePlayerLevel >= promotedThreshold) {
+                resolvedTier = tier;
+            } else {
+                break;
+            }
+        }
+
+        return resolvedTier;
+    }
+
+    private LevelRange getTierRange(LevelRange baseRange, int tier, int levelsPerTier) {
+        int safeTier = Math.max(1, tier);
+        int tierOffset = Math.max(0, safeTier - 1) * Math.max(0, levelsPerTier);
+        return new LevelRange(baseRange.min() + tierOffset, baseRange.max() + tierOffset);
+    }
+
+    private int distanceToInclusiveRange(int value, int min, int max) {
+        int lower = Math.min(min, max);
+        int upper = Math.max(min, max);
+        if (value < lower) {
+            return lower - value;
+        }
+        if (value > upper) {
+            return value - upper;
+        }
+        return 0;
+    }
+
+    private boolean isTierPlayerAdaptationEnabled(Store<EntityStore> store) {
+        return getConfigBoolean("Mob_Leveling.Level_Source.Tiers.Player_Adaptation.Enabled", true, store);
+    }
+
+    private int getTierBelowRangeAllowance(Store<EntityStore> store) {
+        return Math.max(0,
+                getConfigInt("Mob_Leveling.Level_Source.Tiers.Player_Adaptation.Below_Range_Allowance", 0, store));
+    }
+
+    private int applyTierOffsetToConfiguredLevel(Store<EntityStore> store,
+            Integer entityId,
+            Vector3d mobPosition,
+            int baseLevel) {
+        if (baseLevel <= 0 || getLevelSourceMode(store) != LevelSourceMode.TIERS) {
+            return baseLevel;
+        }
+
+        int tierOffset = resolveTierLevelOffset(store, entityId, mobPosition);
+        return clampToConfiguredRange(baseLevel + tierOffset, store);
     }
 
     private LevelRange parseInlineFixedLevelRange(Object raw) {
@@ -2936,6 +3367,21 @@ public class MobLevelingManager {
     private record WorldMobOverride(Integer level,
             Double healthMultiplier,
             Double damageMultiplier,
-            Double defenseReduction) {
+            Double defenseReduction,
+            MobOverrideLinearScaling healthScaling,
+            MobOverrideLinearScaling damageScaling,
+            MobOverrideDefenseScaling defenseScaling) {
+    }
+
+    private record MobOverrideLinearScaling(boolean enabled,
+            Double baseMultiplier,
+            Double perLevel) {
+    }
+
+    private record MobOverrideDefenseScaling(boolean enabled,
+            Double atNegativeMaxDifference,
+            Double atPositiveMaxDifference,
+            Double belowNegativeMaxDifference,
+            Double abovePositiveMaxDifference) {
     }
 }

@@ -125,13 +125,23 @@ World_Overrides:
         # Min: 50
         # Max: 65
         Level: 10
-    Player_Based:
-      Offset: 0
-      Min_Difference: -5
-      Max_Difference: 10
+      Tiers:
+        # Used when Mode: "TIERS"
+        # Preferred tier base range key: Base_Level (Fixed_Level still works as fallback).
+        Total_Tiers: 1
+        Levels_Per_Tier: 25
+        Player_Adaptation:
+          Enabled: true
+          # Promotes to the next tier when player level is this many levels below that tier's min.
+          Below_Range_Allowance: 0
+      Player_Based:
+        Offset: 0
+        Min_Difference: -5
+        Max_Difference: 10
+        # Player mode specific tuning.
+        Influence_Radius: 25
       Party_System:
         Enabled: true
-        Influence_Radius: 25
         Level_Calculation: "AVERAGE"
         Dominant_Party_Resolution:
           Mode: "MOST_MEMBERS"
@@ -155,62 +165,103 @@ World_Overrides:
   # MAJOR DUNGEONS
   instance-mj_instance_d01-*:
     Level_Source:
-      Mode: "FIXED"
-      Fixed_Level:
+      Mode: "TIERS"
+      Base_Level:
         Level: 25-40
+      Tiers:
+        Total_Tiers: 4
+        Levels_Per_Tier: 25
+        Player_Adaptation:
+          Enabled: true
+          Below_Range_Allowance: 5
+      Party_System:
+        Enabled: true
+        Level_Calculation: "AVERAGE"
+        Max_Internal_Level_Gap: 999
     Scaling:
       Health:
-        Enabled: true
         Base_Multiplier: 3.0
         Per_Level: 0.075
       Damage:
-        Enabled: true
         Base_Multiplier: 1.25
         Per_Level: 0.05
       Defense:
-        Enabled: true
-        At_Negative_Max_Difference: 0.0
+        At_Negative_Max_Difference: 0.2
         At_Positive_Max_Difference: 0.8
         Below_Negative_Max_Difference: 0.0
         Above_Positive_Max_Difference: 0.9
     Mob_Overrides:
       Azaroth:
         Level: 50
-        Health_Multiplier: 4.0
-        Damage_Multiplier: 1.5
-        Defense_Multiplier: 0.45
+        Scaling:
+          Health:
+            Base_Multiplier: 3.0
+            Per_Level: 0.075
+          Damage:
+            Base_Multiplier: 1.25
+            Per_Level: 0.05
+          Defense:
+            At_Negative_Max_Difference: 0.35
+            At_Positive_Max_Difference: 0.8
+            Below_Negative_Max_Difference: 0.0
+            Above_Positive_Max_Difference: 0.9
 
   instance-mj_instance_d02-*:
     Level_Source:
-      Mode: "FIXED"
-      Fixed_Level:
-        Level: 50-65
+      Mode: "TIERS"
+      Base_Level:
+        Level: 25-40
+      Tiers:
+        Total_Tiers: 4
+        Levels_Per_Tier: 25
+        Player_Adaptation:
+          Enabled: true
+          Below_Range_Allowance: 5
+      Party_System:
+        Enabled: true
+        Level_Calculation: "AVERAGE"
+        Max_Internal_Level_Gap: 999
     Scaling:
       Health:
-        Enabled: true
         Base_Multiplier: 3.0
         Per_Level: 0.075
       Damage:
-        Enabled: true
         Base_Multiplier: 1.25
         Per_Level: 0.05
       Defense:
-        Enabled: true
-        At_Negative_Max_Difference: 0.0
+        At_Negative_Max_Difference: 0.2
         At_Positive_Max_Difference: 0.8
         Below_Negative_Max_Difference: 0.0
         Above_Positive_Max_Difference: 0.9
     Mob_Overrides:
       Katherina:
         Level: 75
-        Health_Multiplier: 5.0
-        Damage_Multiplier: 2.25
-        Defense_Multiplier: 0.55
+        Scaling:
+          Health:
+            Base_Multiplier: 3.0
+            Per_Level: 0.075
+          Damage:
+            Base_Multiplier: 1.25
+            Per_Level: 0.06
+          Defense:
+            At_Negative_Max_Difference: 0.35
+            At_Positive_Max_Difference: 0.8
+            Below_Negative_Max_Difference: 0.0
+            Above_Positive_Max_Difference: 0.9
       Construct_Ancient_Dark_Titan:
         Level: 75
-        Health_Multiplier: 4.0
-        Damage_Multiplier: 1.5
-        Defense_Multiplier: 0.7
+        Scaling:
+          Health:
+            Base_Multiplier: 3.0
+            Per_Level: 0.075
+          Damage:
+            Base_Multiplier: 1.15
+            Per_Level: 0.05
+          Defense:
+            At_Negative_Max_Difference: 0.45
+            At_Positive_Max_Difference: 0.8
+            Below_Negative_Max_Difference: 0.0
+            Above_Positive_Max_Difference: 0.9
 
   instance-mj_instance_d03-*:
     Level_Source:

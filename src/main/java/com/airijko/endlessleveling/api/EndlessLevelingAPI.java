@@ -243,7 +243,8 @@ public final class EndlessLevelingAPI {
 
     /**
      * Register a radius/area override (min/max or flat) for mob levels. This is
-     * applied before Level_Source (player/distance/fixed), so overrides are not
+     * applied before Level_Source (player/distance/fixed/tiers), so overrides are
+     * not
      * modified by the normal resolver.
      */
     public boolean registerMobAreaLevelOverride(String id, String worldId,
