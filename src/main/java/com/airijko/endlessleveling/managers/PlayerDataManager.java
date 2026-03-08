@@ -40,7 +40,6 @@ public class PlayerDataManager {
     private final SkillManager skillManager;
     private final RaceManager raceManager;
     private final ClassManager classManager;
-    private final Yaml yaml;
     private final ConcurrentHashMap<UUID, PlayerData> playerCache = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, ReentrantLock> playerLocks = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, Long> lastAutoBackupMs = new ConcurrentHashMap<>();
@@ -57,12 +56,6 @@ public class PlayerDataManager {
         this.skillManager = skillManager;
         this.raceManager = raceManager;
         this.classManager = classManager;
-
-        DumperOptions options = new DumperOptions();
-        options.setIndent(2);
-        options.setPrettyFlow(true);
-        options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
-        this.yaml = new Yaml(options);
 
         LOGGER.atInfo().log("PlayerDataManager initialized.");
     }
@@ -153,6 +146,7 @@ public class PlayerDataManager {
             File file = filesManager.getPlayerDataFile(data.getUuid());
 
             Map<String, Object> map = buildYamlMap(data);
+            Yaml yaml = createYaml();
 
             try (StringWriter buffer = new StringWriter()) {
                 yaml.dump(map, buffer);
@@ -188,6 +182,7 @@ public class PlayerDataManager {
     // --- Load from file helper ---
     private PlayerData loadFromFile(UUID uuid, String playerName, File file) {
         Map<String, Object> map;
+        Yaml yaml = createYaml();
         try (FileReader reader = new FileReader(file)) {
             map = yaml.load(reader);
         } catch (Exception e) {
@@ -749,6 +744,7 @@ public class PlayerDataManager {
      * this server run. Reads name/level/xp/skillPoints from the YAML file.
      */
     private PlayerData loadFromFileMinimal(UUID uuid, File file) {
+        Yaml yaml = createYaml();
         try (FileReader reader = new FileReader(file)) {
             Map<String, Object> map = yaml.load(reader);
             if (map == null) {
@@ -972,12 +968,20 @@ public class PlayerDataManager {
             return false;
         }
         try (StringReader reader = new StringReader(yamlContent)) {
-            Object loaded = yaml.load(reader);
+            Object loaded = createYaml().load(reader);
             return loaded instanceof Map<?, ?>;
         } catch (Exception ex) {
             LOGGER.atSevere().log("Round-trip YAML validation failed: %s", ex.getMessage());
             return false;
         }
+    }
+
+    private Yaml createYaml() {
+        DumperOptions options = new DumperOptions();
+        options.setIndent(2);
+        options.setPrettyFlow(true);
+        options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
+        return new Yaml(options);
     }
 
     /**
