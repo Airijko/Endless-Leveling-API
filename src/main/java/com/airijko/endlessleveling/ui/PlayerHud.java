@@ -30,6 +30,7 @@ public class PlayerHud extends CustomUIHud {
     public static final String ID = "EndlessLeveling:PlayerHud";
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
     private static final Map<UUID, PlayerHud> ACTIVE_HUDS = new ConcurrentHashMap<>();
+    private static final Map<UUID, Object> HUD_LOCKS = new ConcurrentHashMap<>();
     private static final Map<String, String> DEFAULT_CLASS_ICONS = Map.ofEntries(
             Map.entry("*", "Weapon_Longsword_Adamantite_Saurian"),
             Map.entry("adventurer", "Ingredient_Life_Essence"),
@@ -65,9 +66,17 @@ public class PlayerHud extends CustomUIHud {
 
     @Override
     protected void build(@Nonnull UICommandBuilder uiCommandBuilder) {
+        UUID uuid = targetPlayerRef.getUuid();
+        // Build can run asynchronously after a newer HUD replaced this one. Ignore
+        // stale
+        // builds so old overlays cannot re-append.
+        if (uuid == null || ACTIVE_HUDS.get(uuid) != this) {
+            LOGGER.atFine().log("Ignoring stale PlayerHud build for %s", uuid);
+            return;
+        }
+
         uiCommandBuilder.append("Hud/EndlessPlayerHud.ui");
         built.set(true);
-        ACTIVE_HUDS.put(targetPlayerRef.getUuid(), this);
         pushHudState(uiCommandBuilder);
     }
 
@@ -347,6 +356,12 @@ public class PlayerHud extends CustomUIHud {
         if (uuid == null) {
             return;
         }
+        synchronized (getHudLock(uuid)) {
+            unregisterInternal(uuid);
+        }
+    }
+
+    private static void unregisterInternal(UUID uuid) {
         PlayerHud removed = ACTIVE_HUDS.remove(uuid);
         if (removed != null) {
             removed.built.set(false);
@@ -361,20 +376,37 @@ public class PlayerHud extends CustomUIHud {
     }
 
     public static void open(@Nonnull Player player, @Nonnull PlayerRef playerRef) {
-        var existingHud = player.getHudManager().getCustomHud();
-        if (existingHud instanceof PlayerHud existingPlayerHud) {
-            ACTIVE_HUDS.put(playerRef.getUuid(), existingPlayerHud);
-            LOGGER.atFine().log("PlayerHud already active for %s; skipping duplicate open", playerRef.getUuid());
+        UUID uuid = playerRef.getUuid();
+        if (uuid == null) {
             return;
         }
 
-        unregister(playerRef.getUuid());
-        PlayerHud newHud = new PlayerHud(playerRef);
-        // Register before setCustomHud() so periodic refresh ticks do not target a
-        // stale HUD.
-        ACTIVE_HUDS.put(playerRef.getUuid(), newHud);
-        LOGGER.atInfo().log("Opening PlayerHud via default HudManager for %s", playerRef.getUuid());
-        player.getHudManager().setCustomHud(playerRef, newHud);
+        synchronized (getHudLock(uuid)) {
+            var hudManager = player.getHudManager();
+            var existingHud = hudManager.getCustomHud();
+            if (existingHud instanceof PlayerHud existingPlayerHud) {
+                ACTIVE_HUDS.put(uuid, existingPlayerHud);
+                LOGGER.atFine().log("PlayerHud already active for %s; skipping duplicate open", uuid);
+                return;
+            }
+
+            unregisterInternal(uuid);
+            // HudManager does not hide the previous HUD when replacing non-null ->
+            // non-null.
+            // Explicitly clear first to avoid stacked overlays.
+            hudManager.setCustomHud(playerRef, null);
+
+            PlayerHud newHud = new PlayerHud(playerRef);
+            // Register before setCustomHud() so periodic refresh ticks do not target a
+            // stale HUD.
+            ACTIVE_HUDS.put(uuid, newHud);
+            LOGGER.atInfo().log("Opening PlayerHud via default HudManager for %s", uuid);
+            hudManager.setCustomHud(playerRef, newHud);
+        }
+    }
+
+    private static Object getHudLock(UUID uuid) {
+        return HUD_LOCKS.computeIfAbsent(uuid, ignored -> new Object());
     }
 
 }

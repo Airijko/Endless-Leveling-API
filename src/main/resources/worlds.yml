@@ -262,7 +262,7 @@ World_Overrides:
             Base_Multiplier: 1.0
             Per_Level: 0.05
           Defense:
-            At_Negative_Max_Difference: 0.45
+            At_Negative_Max_Difference: 0.375
             At_Positive_Max_Difference: 0.9
             Below_Negative_Max_Difference: 0.0
             Above_Positive_Max_Difference: 0.95
@@ -300,7 +300,7 @@ World_Overrides:
             Per_Level: 0.07
           Damage:
             Base_Multiplier: 1.0
-            Per_Level: 0.07
+            Per_Level: 0.075
           Defense:
             At_Negative_Max_Difference: 0.45
             At_Positive_Max_Difference: 0.9
@@ -314,13 +314,14 @@ World_Overrides:
             Per_Level: 0.075
           Damage:
             Base_Multiplier: 1.0
-            Per_Level: 0.045
+            Per_Level: 0.05
           Defense:
-            At_Negative_Max_Difference: 0.35
+            At_Negative_Max_Difference: 0.275
             At_Positive_Max_Difference: 0.8
             Below_Negative_Max_Difference: 0.0
             Above_Positive_Max_Difference: 0.9
-      Cult_Knight_MiniBoss:
+      Cult_Knight_Werewolf_MiniBoss_Group:
+        Names: [Cult_Knight_MiniBoss, Cult_Werewolf_MiniBoss]
         Level: 75
         Scaling:
           Health:
@@ -328,24 +329,10 @@ World_Overrides:
             Per_Level: 0.07
           Damage:
             Base_Multiplier: 1.0
-            Per_Level: 0.06
+            Per_Level: 0.065
           Defense:
             At_Negative_Max_Difference: 0.4
-            At_Positive_Max_Difference: 0.8
-            Below_Negative_Max_Difference: 0.0
-            Above_Positive_Max_Difference: 0.9
-      Cult_Werewolf_MiniBoss:
-        Level: 75
-        Scaling:
-          Health:
-            Base_Multiplier: 1.0
-            Per_Level: 0.07
-          Damage:
-            Base_Multiplier: 1.0
-            Per_Level: 0.06
-          Defense:
-            At_Negative_Max_Difference: 0.4
-            At_Positive_Max_Difference: 0.8
+            At_Positive_Max_Difference: 0.9
             Below_Negative_Max_Difference: 0.0
             Above_Positive_Max_Difference: 0.9
 
