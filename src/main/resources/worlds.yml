@@ -175,8 +175,8 @@ World_Overrides:
         Below_Negative_Max_Difference: 0.0
         Above_Positive_Max_Difference: 0.9
     # Disables damage scaling when level difference exceeds the configured threshold, instead of applying the At_Positive_Max_Difference multiplier.
-    # Damage_Max_Difference:
-    #   Enabled: false
+    Damage_Max_Difference:
+      Enabled: false
 
   # ------------------------------------------------------------
   # MAJOR DUNGEONS
