@@ -8,4 +8,3 @@ passives:
   cooldown_reduction:
     flat_seconds: 1 # reduces cooldown by 1 second
     percent_remaining: 0.075 # reduces an additional 7.5% of remaining cooldown
-    affects: all_augments
