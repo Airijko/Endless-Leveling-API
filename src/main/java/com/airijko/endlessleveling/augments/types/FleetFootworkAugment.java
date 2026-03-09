@@ -6,10 +6,12 @@ import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
 import com.airijko.endlessleveling.augments.YamlAugment;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
+import com.hypixel.hytale.logger.HytaleLogger;
 
 import java.util.Map;
 
 public final class FleetFootworkAugment extends YamlAugment implements AugmentHooks.OnHitAugment {
+    private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
     public static final String ID = "fleet_footwork";
 
     private final long cooldownMillis;
@@ -53,6 +55,18 @@ public final class FleetFootworkAugment extends YamlAugment implements AugmentHo
                     movementSpeedBonus * 100.0D,
                     movementDurationMillis);
         }
+
+        String playerId = context.getPlayerData() != null && context.getPlayerData().getUuid() != null
+                ? context.getPlayerData().getUuid().toString()
+                : "unknown";
+        LOGGER.atInfo().log(
+                "Fleet Footwork activated for player=%s damage=%.2f healPct=%.3f hastePct=%.3f durationMs=%d cooldownMs=%d",
+                playerId,
+                context.getDamage(),
+                healPercentOfDamage,
+                movementSpeedBonus,
+                movementDurationMillis,
+                cooldownMillis);
 
         return context.getDamage();
     }

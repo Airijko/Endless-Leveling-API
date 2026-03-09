@@ -7,7 +7,7 @@ category: ON_HIT
 passives:
   overheal_shield:
     max_shield_percent: 0.15 # store up to 15% of max health as overheal shield
-    decay_duration: 5 # shield value decays over 5 seconds
+    decay_duration: 8 # shield value decays over 8 seconds
 
   buffs:
     lifesteal:

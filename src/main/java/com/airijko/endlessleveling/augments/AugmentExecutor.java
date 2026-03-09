@@ -12,6 +12,7 @@ import com.airijko.endlessleveling.augments.AugmentHooks.OnLowHpAugment;
 import com.airijko.endlessleveling.augments.AugmentHooks.OnTargetConditionAugment;
 import com.airijko.endlessleveling.augments.AugmentHooks.OnMissAugment;
 import com.airijko.endlessleveling.augments.AugmentHooks.PassiveStatAugment;
+import com.airijko.endlessleveling.augments.types.FleetFootworkAugment;
 import com.airijko.endlessleveling.augments.types.FortressAugment;
 import com.airijko.endlessleveling.augments.types.RebirthAugment;
 import com.airijko.endlessleveling.augments.types.UndyingRageAugment;
@@ -20,6 +21,7 @@ import com.airijko.endlessleveling.enums.ClassWeaponType;
 import com.airijko.endlessleveling.managers.SkillManager;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue;
@@ -38,6 +40,7 @@ import java.util.Objects;
  * Bridges event systems to augment logic implementations.
  */
 public final class AugmentExecutor {
+    private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
 
     private final AugmentManager augmentManager;
     private final AugmentRuntimeManager runtimeManager;
@@ -258,6 +261,9 @@ public final class AugmentExecutor {
                 String display = names.getOrDefault(cooldown.getAugmentId(), cooldown.getDisplayName());
                 sendAugmentMessage(playerRef,
                         String.format("%s is ready again!", display != null ? display : "Augment"));
+                if (FleetFootworkAugment.ID.equalsIgnoreCase(cooldown.getAugmentId())) {
+                    LOGGER.atInfo().log("Fleet Footwork available for player=%s", playerData.getUuid());
+                }
                 cooldown.setReadyNotified(true);
             }
         }
