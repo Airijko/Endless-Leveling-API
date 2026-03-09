@@ -1,5 +1,6 @@
 package com.airijko.endlessleveling.ui;
 
+import com.airijko.endlessleveling.compatibility.MultipleHudCompatibility;
 import com.airijko.endlessleveling.data.PlayerData;
 import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.managers.LevelingManager;
@@ -28,6 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class PlayerHud extends CustomUIHud {
 
     public static final String ID = "EndlessLeveling:PlayerHud";
+    private static final String MULTI_HUD_SLOT = "EndlessLevelingHud";
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
     private static final Map<UUID, PlayerHud> ACTIVE_HUDS = new ConcurrentHashMap<>();
     private static final Map<UUID, Object> HUD_LOCKS = new ConcurrentHashMap<>();
@@ -395,10 +397,20 @@ public class PlayerHud extends CustomUIHud {
             if (trackedHud != null) {
                 if (!trackedHud.targetPlayerRef.isValid()) {
                     unregisterInternal(uuid);
-                } else if (!trackedHud.built.get()) {
-                    LOGGER.atFine().log("PlayerHud open already pending for %s; skipping duplicate open", uuid);
+                } else {
+                    LOGGER.atFine().log("PlayerHud already tracked for %s; skipping duplicate open", uuid);
                     return;
                 }
+            }
+
+            PlayerHud newHud = new PlayerHud(playerRef);
+            ACTIVE_HUDS.put(uuid, newHud);
+
+            // Prefer MultipleHUD if available so EndlessLeveling can coexist with
+            // other custom HUD mods.
+            if (MultipleHudCompatibility.showHud(player, playerRef, MULTI_HUD_SLOT, newHud)) {
+                LOGGER.atInfo().log("Opening PlayerHud via MultipleHUD for %s", uuid);
+                return;
             }
 
             var hudManager = player.getHudManager();
@@ -409,16 +421,11 @@ public class PlayerHud extends CustomUIHud {
                 return;
             }
 
-            unregisterInternal(uuid);
             // HudManager does not hide the previous HUD when replacing non-null ->
             // non-null.
             // Explicitly clear first to avoid stacked overlays.
             hudManager.setCustomHud(playerRef, null);
 
-            PlayerHud newHud = new PlayerHud(playerRef);
-            // Register before setCustomHud() so periodic refresh ticks do not target a
-            // stale HUD.
-            ACTIVE_HUDS.put(uuid, newHud);
             LOGGER.atInfo().log("Opening PlayerHud via default HudManager for %s", uuid);
             hudManager.setCustomHud(playerRef, newHud);
         }

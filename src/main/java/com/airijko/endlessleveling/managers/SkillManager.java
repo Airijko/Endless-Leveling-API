@@ -406,6 +406,16 @@ public class SkillManager {
         return Math.max(0.0D, disciplineLevel * perLevelPercent);
     }
 
+    public double getDisciplineXpBonusPercent(PlayerData playerData) {
+        if (playerData == null) {
+            return 0.0D;
+        }
+        int disciplineLevel = playerData.getPlayerSkillAttributeLevel(SkillAttributeType.DISCIPLINE);
+        double baseBonusPercent = getDisciplineXpBonusPercent(disciplineLevel);
+        double augmentBonusPercent = getAugmentAttributeBonus(playerData, SkillAttributeType.DISCIPLINE);
+        return Math.max(0.0D, baseBonusPercent + augmentBonusPercent);
+    }
+
     public double getXpGainMultiplier(PlayerData playerData) {
         if (playerData == null) {
             return 1.0D;

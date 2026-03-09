@@ -1,0 +1,14 @@
+id: absolute_focus
+name: "Absolute Focus"
+tier: MYTHIC
+description: "Periodically guarantee a critical strike. Excess critical chance is converted into bonus damage."
+category: PASSIVE_STAT
+
+passives:
+  guaranteed_crit:
+    cooldown: 8 # every 8 seconds
+    crit_chance: 1.0 # next attack has 100% critical chance
+
+  excess_crit_conversion:
+    stat: crit_chance
+    conversion_ratio: 0.5 # excess crit converts to bonus damage at 1:2 ratio

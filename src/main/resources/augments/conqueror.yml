@@ -1,0 +1,16 @@
+id: conqueror
+name: "Conqueror"
+tier: MYTHIC
+description: "Sustained combat builds momentum, increasing your damage. At full stacks your attacks pierce defenses with true damage."
+category: ON_HIT
+
+passives:
+  buffs:
+    bonus_damage:
+      value: 0.05 # +5% bonus damage per stack
+    max_stacks: 10
+
+  max_stack_bonus:
+    bonus_true_damage:
+      value: 0.10 # +10% bonus true damage
+      based_on: pre_mitigated_damage # calculated before damage reduction

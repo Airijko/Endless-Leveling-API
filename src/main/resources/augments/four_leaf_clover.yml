@@ -1,0 +1,10 @@
+id: four_leaf_clover
+name: "Four Leaf Clover"
+tier: ELITE
+description: "Fortune smiles upon you, increasing the experience you gain."
+category: PASSIVE_STAT
+
+passives:
+  buffs:
+    luck:
+      value: 0.50 # +50% XP gain

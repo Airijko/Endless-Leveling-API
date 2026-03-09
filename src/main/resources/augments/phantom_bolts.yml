@@ -1,0 +1,12 @@
+id: phantom_bolts
+name: "Phantom Bolts"
+tier: ELITE
+description: "Your attacks fire additional phantom strikes that scale with both Strength and Sorcery."
+category: ON_HIT
+
+passives:
+  phantom_damage:
+    flat_damage: 25 # base additional damage
+    strength_scaling: 0.20 # +20% of Strength added to damage
+    sorcery_scaling: 0.20 # +20% of Sorcery added to damage
+    can_crit: true # phantom damage can critically strike

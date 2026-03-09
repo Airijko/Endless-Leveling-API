@@ -1,0 +1,14 @@
+id: magic_blade
+name: "Magic Blade"
+tier: MYTHIC
+description: "Your magical power empowers your weapons, converting Sorcery into weapon damage and empowering swords."
+category: PASSIVE_STAT
+
+passives:
+  sorcery_weapon_conversion:
+    stat: sorcery
+    conversion_percent: 0.75 # 75% of total Sorcery now applies to all weapon damage
+
+  weapon_bonus:
+    weapon_type: sword # skirmisher weapons
+    bonus_damage: 0.20 # +20% bonus damage when using swords

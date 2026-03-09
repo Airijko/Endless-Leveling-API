@@ -16,12 +16,52 @@ public final class AugmentValueReader {
             return number.doubleValue();
         }
         if (value instanceof String string) {
-            try {
-                return Double.parseDouble(string.trim());
-            } catch (NumberFormatException ignored) {
+            Double parsed = parseDoubleOrFraction(string);
+            if (parsed != null) {
+                return parsed;
             }
         }
         return defaultValue;
+    }
+
+    private static Double parseDoubleOrFraction(String raw) {
+        if (raw == null) {
+            return null;
+        }
+        String text = raw.trim();
+        if (text.isEmpty()) {
+            return null;
+        }
+
+        try {
+            return Double.parseDouble(text);
+        } catch (NumberFormatException ignored) {
+        }
+
+        int slashIndex = text.indexOf('/');
+        if (slashIndex <= 0 || slashIndex == text.length() - 1) {
+            return null;
+        }
+        if (text.indexOf('/', slashIndex + 1) >= 0) {
+            return null;
+        }
+
+        String left = text.substring(0, slashIndex).trim();
+        String right = text.substring(slashIndex + 1).trim();
+        if (left.isEmpty() || right.isEmpty()) {
+            return null;
+        }
+
+        try {
+            double numerator = Double.parseDouble(left);
+            double denominator = Double.parseDouble(right);
+            if (Math.abs(denominator) <= 0.0D) {
+                return null;
+            }
+            return numerator / denominator;
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
     }
 
     public static int getInt(Map<String, Object> map, String key, int defaultValue) {

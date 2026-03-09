@@ -123,8 +123,7 @@ public class XpEventListener extends DeathSystems.OnDeathSystem {
         EndlessLeveling plugin = EndlessLeveling.getInstance();
         SkillManager skillManager = plugin != null ? plugin.getSkillManager() : null;
         if (skillManager != null) {
-            disciplineBonusPercent = skillManager.getDisciplineXpBonusPercent(
-                    playerData.getPlayerSkillAttributeLevel(SkillAttributeType.DISCIPLINE));
+            disciplineBonusPercent = skillManager.getDisciplineXpBonusPercent(playerData);
         }
 
         double additiveBonus = archetypeXpBonus + (disciplineBonusPercent / 100.0D);

@@ -1,0 +1,18 @@
+id: bailout
+name: "Bailout"
+tier: MYTHIC
+description: "Cheat death briefly and rapidly decay unless you secure a kill."
+category: ON_DEATH
+
+passives:
+  death_prevention:
+    cooldown: 45 # seconds
+    revive_health_percent: 0.75 # heal 75% of max health on trigger
+
+  health_decay:
+    duration: 3 # HP drains over 3 seconds
+    drains_to_zero: true
+    cancel_on_kill: true # killing a target stops the decay
+
+  emergency_heal:
+    missing_health_percent: 0.25 # heal 25% of missing health

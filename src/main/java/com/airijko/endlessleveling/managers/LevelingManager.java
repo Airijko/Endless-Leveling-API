@@ -131,9 +131,7 @@ public class LevelingManager {
         // Combine additive XP bonuses: race/class passive XP_BONUS plus Discipline
         // percent.
         double disciplineBonusPercent = skillManager != null
-                ? skillManager.getDisciplineXpBonusPercent(
-                        player.getPlayerSkillAttributeLevel(
-                                com.airijko.endlessleveling.enums.SkillAttributeType.DISCIPLINE))
+                ? skillManager.getDisciplineXpBonusPercent(player)
                 : 0.0D;
         double totalBonus = 0.0D;
 
