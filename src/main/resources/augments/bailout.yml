@@ -10,8 +10,8 @@ passives:
     revive_health_percent: 0.75 # heal 75% of max health on trigger
 
   health_decay:
-    duration: 3 # HP drains over 3 seconds
     drains_to_zero: true
+    drain_max_hp_percent_per_second: 0.25 # lose 25% max HP/s; if no kill, death is forced after the expected drain window
     cancel_on_kill: true # killing a target stops the decay
 
   emergency_heal:

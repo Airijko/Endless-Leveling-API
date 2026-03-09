@@ -6,6 +6,9 @@ import com.airijko.endlessleveling.augments.AugmentRuntimeManager.AugmentState;
 import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
 import com.airijko.endlessleveling.augments.YamlAugment;
+import com.hypixel.hytale.server.core.modules.entity.damage.Damage;
+import com.hypixel.hytale.server.core.modules.entity.damage.DamageCause;
+import com.hypixel.hytale.server.core.modules.entity.damage.DeathComponent;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue;
 import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
@@ -18,7 +21,7 @@ public final class BailoutAugment extends YamlAugment
 
     private final long cooldownMillis;
     private final double reviveHealthPercent;
-    private final long decayDurationMillis;
+    private final double drainMaxHpPercentPerSecond;
     private final boolean drainsToZero;
     private final boolean cancelOnKill;
     private final double emergencyHealMissingPercent;
@@ -35,8 +38,7 @@ public final class BailoutAugment extends YamlAugment
         this.reviveHealthPercent = Math.max(0.0D,
                 Math.min(1.0D, AugmentValueReader.getDouble(deathPrevention, "revive_health_percent", 0.0D)));
 
-        this.decayDurationMillis = AugmentUtils
-                .secondsToMillis(AugmentValueReader.getDouble(healthDecay, "duration", 0.0D));
+        this.drainMaxHpPercentPerSecond = resolveDrainRatePerSecond(healthDecay);
         this.drainsToZero = AugmentValueReader.getBoolean(healthDecay, "drains_to_zero", true);
         this.cancelOnKill = AugmentValueReader.getBoolean(healthDecay, "cancel_on_kill", true);
 
@@ -71,13 +73,22 @@ public final class BailoutAugment extends YamlAugment
 
         AugmentState state = context.getRuntimeState() != null ? context.getRuntimeState().getState(ID) : null;
         if (state != null) {
-            if (drainsToZero && decayDurationMillis > 0L) {
+            if (drainsToZero && drainMaxHpPercentPerSecond > 0.0D) {
                 state.setStacks(1);
-                state.setStoredValue(Math.max(1.0D, revivedHealth));
-                state.setExpiresAt(System.currentTimeMillis() + decayDurationMillis);
+                state.setStoredValue(drainMaxHpPercentPerSecond);
+                state.setExpiresAt(0L);
             } else {
                 state.clear();
             }
+        }
+
+        var playerRef = AugmentUtils.getPlayerRef(context.getCommandBuffer(), context.getDefenderRef());
+        if (playerRef != null && playerRef.isValid()) {
+            AugmentUtils.sendAugmentMessage(playerRef,
+                    String.format("%s triggered! Revived at %.0f%% health. Losing %.0f%% max HP/s until kill or death.",
+                            getName(),
+                            reviveHealthPercent * 100.0D,
+                            drainMaxHpPercentPerSecond * 100.0D));
         }
 
         return 0f;
@@ -89,21 +100,13 @@ public final class BailoutAugment extends YamlAugment
             return;
         }
         AugmentState state = context.getRuntimeState().getState(ID);
-        if (state.getStacks() <= 0 || state.getStoredValue() <= 0.0D || state.getExpiresAt() <= 0L) {
+        if (state.getStacks() <= 0 || !drainsToZero || drainMaxHpPercentPerSecond <= 0.0D) {
             return;
         }
 
         EntityStatValue hp = context.getStatMap().get(DefaultEntityStatTypes.getHealth());
         if (hp == null || hp.get() <= 0f) {
-            state.clear();
-            return;
-        }
-
-        long now = System.currentTimeMillis();
-        long expiresAt = state.getExpiresAt();
-        if (now >= expiresAt) {
-            float drained = Math.min(hp.get(), (float) state.getStoredValue());
-            context.getStatMap().setStatValue(DefaultEntityStatTypes.getHealth(), Math.max(0f, hp.get() - drained));
+            executePlayerDeath(context);
             state.clear();
             return;
         }
@@ -113,20 +116,72 @@ public final class BailoutAugment extends YamlAugment
             return;
         }
 
-        long remainingMillis = Math.max(1L, expiresAt - now);
-        double tickMillis = deltaSeconds * 1000.0D;
-        double plannedDrain = state.getStoredValue() * Math.min(1.0D, tickMillis / remainingMillis);
+        if (hp.getMax() <= 0f) {
+            state.clear();
+            return;
+        }
+
+        double activeDrainRate = state.getStoredValue() > 0.0D
+                ? Math.min(1.0D, state.getStoredValue())
+                : drainMaxHpPercentPerSecond;
+
         float currentHp = hp.get();
+        double plannedDrain = hp.getMax() * activeDrainRate * deltaSeconds;
         float appliedDrain = (float) Math.min(currentHp, plannedDrain);
         if (appliedDrain <= 0f) {
             return;
         }
 
-        context.getStatMap().setStatValue(DefaultEntityStatTypes.getHealth(), Math.max(0f, currentHp - appliedDrain));
-        state.setStoredValue(Math.max(0.0D, state.getStoredValue() - appliedDrain));
-        if (state.getStoredValue() <= 0.0001D) {
+        float newHp = Math.max(0f, currentHp - appliedDrain);
+        context.getStatMap().setStatValue(DefaultEntityStatTypes.getHealth(), newHp);
+        if (newHp <= 0.0001f) {
+            executePlayerDeath(context);
             state.clear();
         }
+    }
+
+    private void executePlayerDeath(AugmentHooks.PassiveStatContext context) {
+        if (context == null || context.getCommandBuffer() == null || context.getPlayerRef() == null
+                || !context.getPlayerRef().isValid()) {
+            return;
+        }
+
+        if (context.getCommandBuffer().getComponent(context.getPlayerRef(),
+                DeathComponent.getComponentType()) != null) {
+            return;
+        }
+
+        DeathComponent.tryAddComponent(
+                context.getCommandBuffer(),
+                context.getPlayerRef(),
+                new Damage(Damage.NULL_SOURCE, DamageCause.COMMAND, Float.MAX_VALUE));
+    }
+
+    private double resolveDrainRatePerSecond(Map<String, Object> healthDecay) {
+        double configured = AugmentValueReader.getDouble(healthDecay,
+                "drain_max_hp_percent_per_second",
+                -1.0D);
+
+        if (configured <= 0.0D) {
+            configured = AugmentValueReader.getDouble(healthDecay,
+                    "drain_percent_per_second",
+                    -1.0D);
+        }
+
+        // Legacy fallback: duration means "drain revived HP to zero over N seconds".
+        if (configured <= 0.0D) {
+            double legacyDuration = AugmentValueReader.getDouble(healthDecay, "duration", 0.0D);
+            if (legacyDuration > 0.0D) {
+                configured = reviveHealthPercent / legacyDuration;
+            }
+        }
+
+        // Accept either decimal ratio (0.25) or percent points (25).
+        if (configured > 1.0D && configured <= 100.0D) {
+            configured = configured / 100.0D;
+        }
+
+        return Math.max(0.0D, Math.min(1.0D, configured));
     }
 
     @Override

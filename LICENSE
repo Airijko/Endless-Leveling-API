@@ -1,21 +1,35 @@
-MIT License
+Airijko Proprietary Software License (2026)
 
-Copyright (c) 2026 Airijko
+Copyright (c) 2026 Airijko. All rights reserved.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+1. Grant of License
+   The Software and all associated documentation files (the "Software") are the exclusive property of the
+   copyright holder. You may install and use the Software for personal or commercial purposes under the
+   following conditions:
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+   a. The Software core code may NOT be copied, modified, or redistributed.
+   b. You MAY develop plugins, add-ons, or extensions that interact with the Software through its documented
+   API, provided you do NOT modify the core Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+2. Restrictions
+   You may NOT:
+   - Modify, reverse engineer, decompile, or create derivative works of the core Software.
+   - Copy, distribute, or sublicense the core Software.
+   - Use the core Software for purposes beyond the license granted without explicit written permission.
+
+3. Ownership
+   The Software is licensed, not sold. All intellectual property rights, including copyrights, trademarks,
+   trade secrets, and patents, remain with the copyright holder. Plugins you create belong to you, but must
+   comply with this license when interacting with the Software.
+
+4. Termination
+   This license is effective until terminated. Your rights terminate automatically if you violate any terms.
+   Upon termination, you must delete or destroy all copies of the Software.
+
+5. Disclaimer of Warranty
+   THE SOFTWARE IS PROVIDED "AS IS," WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+   WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT.
+
+6. Limitation of Liability
+   IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY ARISING FROM, OUT OF,
+   OR IN CONNECTION WITH THE SOFTWARE OR ITS USE, INCLUDING PLUGINS AND ADD-ONS.
