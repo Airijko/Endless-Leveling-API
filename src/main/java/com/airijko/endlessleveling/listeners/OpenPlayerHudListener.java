@@ -10,8 +10,11 @@ import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 public class OpenPlayerHudListener {
+
+    private static final long HUD_OPEN_DELAY_MS = 300L;
 
     public static void openGui(PlayerReadyEvent event) {
         Player player = event.getPlayer();
@@ -33,7 +36,11 @@ public class OpenPlayerHudListener {
                 return;
             }
 
+            if (player.getWorld() == null || !playerRef.isValid()) {
+                return;
+            }
+
             PlayerHud.open(player, playerRef);
-        }, world);
+        }, CompletableFuture.delayedExecutor(HUD_OPEN_DELAY_MS, TimeUnit.MILLISECONDS, world));
     }
 }

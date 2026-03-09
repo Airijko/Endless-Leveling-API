@@ -75,9 +75,17 @@ public class PlayerHud extends CustomUIHud {
             return;
         }
 
+        // Build may be invoked more than once by the UI pipeline; append exactly once
+        // per HUD instance to prevent stacked duplicate overlays.
+        if (!built.compareAndSet(false, true)) {
+            LOGGER.atFine().log("Skipping duplicate PlayerHud build for %s", uuid);
+            return;
+        }
+
         uiCommandBuilder.append("Hud/EndlessPlayerHud.ui");
-        built.set(true);
-        pushHudState(uiCommandBuilder);
+        // Avoid calling update() during build. The initial build packet should only
+        // append
+        // the UI, while dynamic values are pushed on the next refresh tick.
     }
 
     private void pushHudState(@Nonnull UICommandBuilder uiCommandBuilder) {
@@ -107,12 +115,13 @@ public class PlayerHud extends CustomUIHud {
             uiCommandBuilder.set("#SecondaryClass.Text", resolveClassLabel(false));
         } else {
             uiCommandBuilder.set("#SecondaryClass.Text", "");
-            uiCommandBuilder.set("#SecondaryIcon.Visible", false);
         }
-        setClassIcon(uiCommandBuilder, "#PrimaryIcon", resolveClassIconId(true));
-        if (secondaryEnabled) {
-            setClassIcon(uiCommandBuilder, "#SecondaryIcon", resolveClassIconId(false));
-        }
+
+        // Runtime ItemIcon.ItemId updates on HUDs can hard-fail CustomUI command
+        // application on some clients. Keep HUD icons hidden to prioritize stability.
+        uiCommandBuilder.set("#PrimaryIcon.Visible", false);
+        uiCommandBuilder.set("#SecondaryIcon.Visible", false);
+
         update(false, uiCommandBuilder);
     }
 
@@ -382,6 +391,16 @@ public class PlayerHud extends CustomUIHud {
         }
 
         synchronized (getHudLock(uuid)) {
+            PlayerHud trackedHud = ACTIVE_HUDS.get(uuid);
+            if (trackedHud != null) {
+                if (!trackedHud.targetPlayerRef.isValid()) {
+                    unregisterInternal(uuid);
+                } else if (!trackedHud.built.get()) {
+                    LOGGER.atFine().log("PlayerHud open already pending for %s; skipping duplicate open", uuid);
+                    return;
+                }
+            }
+
             var hudManager = player.getHudManager();
             var existingHud = hudManager.getCustomHud();
             if (existingHud instanceof PlayerHud existingPlayerHud) {
