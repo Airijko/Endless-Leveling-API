@@ -11,6 +11,7 @@ passives:
 
   hit_counter:
     hits_required: 5
+    duration: 5 # seconds to complete the hit counter before it resets
 
   haste_burst:
     multiplier: 2.0 # double haste

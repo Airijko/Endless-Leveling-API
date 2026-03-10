@@ -5,9 +5,11 @@ description: "Your strikes grow stronger while healthy and sustain you when woun
 category: ON_HIT
 
 passives:
+  hit_counter: 3
+  hit_counter_duration: 5 # seconds to complete the shared hit counter before it resets
+
   healthy_state:
     health_threshold_above: 0.50 # active when above 50% HP
-    hit_counter: 3
     bonus_damage:
       value: 1.0 # 100% bonus damage on every 3rd hit
     self_damage:
@@ -15,7 +17,6 @@ passives:
 
   wounded_state:
     health_threshold_below: 0.50 # active when below 50% HP
-    hit_counter: 3
     healing:
       missing_health_percent: 0.10 # heal 10% missing HP
       strength_scaling: 0.10 # +10% of Strength added to healing

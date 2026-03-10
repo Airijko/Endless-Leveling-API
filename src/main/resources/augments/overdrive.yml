@@ -1,7 +1,7 @@
 id: overdrive
 name: "Overdrive"
 tier: ELITE
-description: "Build Haste and Critical Damage with consecutive hits; lose momentum when hit or when you miss."
+description: "Build Haste and Critical Damage with consecutive hits; lose momentum when you take damage."
 category: ON_HIT
 
 passives:

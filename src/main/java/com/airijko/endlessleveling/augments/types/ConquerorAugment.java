@@ -13,6 +13,8 @@ import java.util.Map;
 public final class ConquerorAugment extends YamlAugment implements AugmentHooks.OnHitAugment {
     public static final String ID = "conqueror";
     public static final long INTERNAL_COOLDOWN_MILLIS = 400L;
+    public static final long INTERNAL_STACKING_DELAY_MILLIS = 400L;
+    private static final String STACK_DELAY_STATE_ID = ID + "_stack_delay";
 
     private final double bonusDamagePerStack;
     private final int maxStacks;
@@ -56,14 +58,18 @@ public final class ConquerorAugment extends YamlAugment implements AugmentHooks.
             state.setExpiresAt(0L);
         }
 
-        int stacks = AugmentUtils.setStacksWithNotify(runtime,
-                ID,
-                state.getStacks() + 1,
-                maxStacks,
-                playerRef,
-                getName());
-        if (stackDurationMillis > 0L) {
-            state.setExpiresAt(now + stackDurationMillis);
+        int stacks = state.getStacks();
+        if (isStackDelayReady(runtime, now)) {
+            stacks = AugmentUtils.setStacksWithNotify(runtime,
+                    ID,
+                    stacks + 1,
+                    maxStacks,
+                    playerRef,
+                    getName());
+            if (stackDurationMillis > 0L) {
+                state.setExpiresAt(now + stackDurationMillis);
+            }
+            markStackDelay(runtime, now);
         }
 
         float preMitigatedDamage = context.getDamage();
@@ -85,5 +91,14 @@ public final class ConquerorAugment extends YamlAugment implements AugmentHooks.
             return 0.0D;
         }
         return raw > 1.0D ? raw / 100.0D : raw;
+    }
+
+    private static boolean isStackDelayReady(AugmentRuntimeState runtime, long now) {
+        var delayState = runtime.getState(STACK_DELAY_STATE_ID);
+        return delayState.getLastProc() <= 0L || now - delayState.getLastProc() >= INTERNAL_STACKING_DELAY_MILLIS;
+    }
+
+    private static void markStackDelay(AugmentRuntimeState runtime, long now) {
+        runtime.getState(STACK_DELAY_STATE_ID).setLastProc(now);
     }
 }

@@ -21,12 +21,12 @@ public final class BloodthirsterAugment extends YamlAugment implements AugmentHo
     private static final int MODE_WOUNDED = 2;
 
     private final double healthyThresholdAbove;
-    private final int healthyHitCounter;
+    private final int sharedHitCounter;
+    private final long sharedHitCounterDurationMillis;
     private final double healthyBonusDamage;
     private final double healthySelfDamagePercentOfCurrent;
 
     private final double woundedThresholdBelow;
-    private final int woundedHitCounter;
     private final double woundedMissingHealthPercent;
     private final double woundedStrengthScaling;
     private final double woundedSorceryScaling;
@@ -40,16 +40,29 @@ public final class BloodthirsterAugment extends YamlAugment implements AugmentHo
         Map<String, Object> woundedState = AugmentValueReader.getMap(passives, "wounded_state");
         Map<String, Object> woundedHealing = AugmentValueReader.getMap(woundedState, "healing");
 
+        int configuredHitCounter = AugmentValueReader.getInt(passives, "hit_counter", 0);
+        if (configuredHitCounter <= 0) {
+            configuredHitCounter = Math.max(
+                    AugmentValueReader.getInt(healthyState, "hit_counter", 0),
+                    AugmentValueReader.getInt(woundedState, "hit_counter", 0));
+        }
+        double configuredDurationSeconds = AugmentValueReader.getDouble(passives, "hit_counter_duration", 0.0D);
+        if (configuredDurationSeconds <= 0.0D) {
+            configuredDurationSeconds = Math.max(
+                    AugmentValueReader.getDouble(healthyState, "hit_counter_duration", 0.0D),
+                    AugmentValueReader.getDouble(woundedState, "hit_counter_duration", 0.0D));
+        }
+
         this.healthyThresholdAbove = clampRatio(
                 AugmentValueReader.getDouble(healthyState, "health_threshold_above", 0.50D));
-        this.healthyHitCounter = Math.max(1, AugmentValueReader.getInt(healthyState, "hit_counter", 3));
+        this.sharedHitCounter = Math.max(1, configuredHitCounter > 0 ? configuredHitCounter : 3);
+        this.sharedHitCounterDurationMillis = AugmentUtils.secondsToMillis(configuredDurationSeconds);
         this.healthyBonusDamage = Math.max(0.0D, AugmentValueReader.getDouble(healthyBonus, "value", 0.0D));
         this.healthySelfDamagePercentOfCurrent = clampRatio(
                 AugmentValueReader.getDouble(healthySelfDamage, "percent_of_current_hp", 0.0D));
 
         this.woundedThresholdBelow = clampRatio(
                 AugmentValueReader.getDouble(woundedState, "health_threshold_below", 0.50D));
-        this.woundedHitCounter = Math.max(1, AugmentValueReader.getInt(woundedState, "hit_counter", 3));
         this.woundedMissingHealthPercent = clampRatio(
                 AugmentValueReader.getDouble(woundedHealing, "missing_health_percent", 0.0D));
         this.woundedStrengthScaling = Math.max(0.0D,
@@ -78,20 +91,26 @@ public final class BloodthirsterAugment extends YamlAugment implements AugmentHo
         }
 
         var state = runtime.getState(ID);
-        int previousMode = (int) state.getStoredValue();
-        if (previousMode != mode) {
+        long now = System.currentTimeMillis();
+        if (sharedHitCounterDurationMillis > 0L
+                && state.getStacks() > 0
+                && state.getExpiresAt() > 0L
+                && now >= state.getExpiresAt()) {
             state.setStacks(0);
-            state.setStoredValue(mode);
+            state.setExpiresAt(0L);
         }
 
-        int hitsRequired = mode == MODE_HEALTHY ? healthyHitCounter : woundedHitCounter;
         int nextHits = state.getStacks() + 1;
-        if (nextHits < hitsRequired) {
+        if (nextHits < sharedHitCounter) {
             state.setStacks(nextHits);
+            if (sharedHitCounterDurationMillis > 0L) {
+                state.setExpiresAt(now + sharedHitCounterDurationMillis);
+            }
             return context.getDamage();
         }
 
         state.setStacks(0);
+        state.setExpiresAt(0L);
         var playerRef = AugmentUtils.getPlayerRef(context.getCommandBuffer(), context.getAttackerRef());
 
         if (mode == MODE_HEALTHY) {

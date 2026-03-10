@@ -14,6 +14,8 @@ import java.util.Map;
 public final class PhaseRushAugment extends YamlAugment
         implements AugmentHooks.PassiveStatAugment, AugmentHooks.OnHitAugment {
     public static final String ID = "phase_rush";
+    private static final long INTERNAL_STACKING_DELAY_MILLIS = 400L;
+    private static final String STACK_DELAY_STATE_ID = ID + "_stack_delay";
 
     private final double baseHasteBonus;
     private final int hitsRequired;
@@ -68,21 +70,24 @@ public final class PhaseRushAugment extends YamlAugment
 
         long now = System.currentTimeMillis();
         var state = runtime.getState(ID);
-        int hits = state.getStacks() + 1;
-        if (hits >= hitsRequired) {
-            state.setStacks(0);
-            if (hasteBurstDurationMillis > 0L) {
-                state.setExpiresAt(now + hasteBurstDurationMillis);
+        if (isStackDelayReady(runtime, now)) {
+            int hits = state.getStacks() + 1;
+            if (hits >= hitsRequired) {
+                state.setStacks(0);
+                if (hasteBurstDurationMillis > 0L) {
+                    state.setExpiresAt(now + hasteBurstDurationMillis);
+                }
+                var playerRef = AugmentUtils.getPlayerRef(context.getCommandBuffer(), context.getAttackerRef());
+                if (playerRef != null && playerRef.isValid()) {
+                    AugmentUtils.sendAugmentMessage(playerRef,
+                            String.format("%s activated! Haste burst for %.1fs.",
+                                    getName(),
+                                    hasteBurstDurationMillis / 1000.0D));
+                }
+            } else {
+                state.setStacks(hits);
             }
-            var playerRef = AugmentUtils.getPlayerRef(context.getCommandBuffer(), context.getAttackerRef());
-            if (playerRef != null && playerRef.isValid()) {
-                AugmentUtils.sendAugmentMessage(playerRef,
-                        String.format("%s activated! Haste burst for %.1fs.",
-                                getName(),
-                                hasteBurstDurationMillis / 1000.0D));
-            }
-        } else {
-            state.setStacks(hits);
+            markStackDelay(runtime, now);
         }
 
         boolean burstActive = state.getExpiresAt() > now;
@@ -107,5 +112,14 @@ public final class PhaseRushAugment extends YamlAugment
         SkillManager.HasteBreakdown breakdown = context.getSkillManager().getHasteBreakdown(context.getPlayerData());
         double hasteRatio = Math.max(0.0D, breakdown.totalMultiplier() - 1.0D);
         return hasteRatio * hasteToDamageConversionPercent;
+    }
+
+    private boolean isStackDelayReady(AugmentRuntimeState runtime, long now) {
+        var delayState = runtime.getState(STACK_DELAY_STATE_ID);
+        return delayState.getLastProc() <= 0L || now - delayState.getLastProc() >= INTERNAL_STACKING_DELAY_MILLIS;
+    }
+
+    private void markStackDelay(AugmentRuntimeState runtime, long now) {
+        runtime.getState(STACK_DELAY_STATE_ID).setLastProc(now);
     }
 }

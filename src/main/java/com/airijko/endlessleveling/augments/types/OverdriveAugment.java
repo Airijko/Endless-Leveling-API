@@ -13,6 +13,8 @@ import java.util.Map;
 public final class OverdriveAugment extends YamlAugment
         implements AugmentHooks.OnHitAugment, AugmentHooks.OnDamageTakenAugment {
     public static final String ID = "overdrive";
+    private static final long INTERNAL_STACKING_DELAY_MILLIS = 400L;
+    private static final String STACK_DELAY_STATE_ID = ID + "_stack_delay";
 
     private final double critDamagePerStack;
     private final double hastePerStack;
@@ -51,15 +53,18 @@ public final class OverdriveAugment extends YamlAugment
             applyAttributeBonuses(runtime, 0, 0L);
         }
 
-        int stacks = AugmentUtils.setStacksWithNotify(runtime,
-                ID,
-                state.getStacks() + 1,
-                maxStacks,
-                AugmentUtils.getPlayerRef(context.getCommandBuffer(), context.getAttackerRef()),
-                getName());
-
-        if (stackDurationMillis > 0L) {
-            state.setExpiresAt(now + stackDurationMillis);
+        int stacks = state.getStacks();
+        if (isStackDelayReady(runtime, now)) {
+            stacks = AugmentUtils.setStacksWithNotify(runtime,
+                    ID,
+                    stacks + 1,
+                    maxStacks,
+                    AugmentUtils.getPlayerRef(context.getCommandBuffer(), context.getAttackerRef()),
+                    getName());
+            if (stackDurationMillis > 0L) {
+                state.setExpiresAt(now + stackDurationMillis);
+            }
+            markStackDelay(runtime, now);
         }
 
         double bonus = stacks * critDamagePerStack;
@@ -98,5 +103,14 @@ public final class OverdriveAugment extends YamlAugment
         double hasteBonus = stacks * hastePerStack * 100.0D;
         long expiresAtMillis = stackDurationMillis > 0L && stacks > 0 ? Math.max(0L, expiresAt) : 0L;
         runtime.setAttributeBonus(SkillAttributeType.HASTE, ID + "_haste", hasteBonus, expiresAtMillis);
+    }
+
+    private boolean isStackDelayReady(AugmentRuntimeState runtime, long now) {
+        var delayState = runtime.getState(STACK_DELAY_STATE_ID);
+        return delayState.getLastProc() <= 0L || now - delayState.getLastProc() >= INTERNAL_STACKING_DELAY_MILLIS;
+    }
+
+    private void markStackDelay(AugmentRuntimeState runtime, long now) {
+        runtime.getState(STACK_DELAY_STATE_ID).setLastProc(now);
     }
 }
