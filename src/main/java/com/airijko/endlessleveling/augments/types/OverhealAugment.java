@@ -242,7 +242,7 @@ public final class OverhealAugment extends YamlAugment
             return;
         }
         AugmentUtils.sendAugmentMessage(playerRef,
-                String.format("%s shield broken (0/no shield).", getName()));
+                String.format("%s shield broken", getName()));
     }
 
     private double normalizePercentPoints(double configuredValue) {

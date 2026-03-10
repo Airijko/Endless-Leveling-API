@@ -18,13 +18,13 @@ import com.hypixel.hytale.server.core.modules.entitystats.modifier.StaticModifie
 import java.util.Map;
 
 public final class NestingDollAugment extends YamlAugment
-        implements AugmentHooks.OnLowHpAugment, AugmentHooks.PassiveStatAugment {
+        implements AugmentHooks.OnDamageTakenAugment, AugmentHooks.OnLowHpAugment, AugmentHooks.PassiveStatAugment {
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
     public static final String ID = "nesting_doll";
     private static final String MAX_HP_PENALTY_KEY = ID + "_max_hp_penalty";
-    // Some damage paths can invoke low-HP handling more than once for a single hit.
-    // Keep this guard conservative so only one stack is consumed per lethal event.
-    private static final long PROC_GUARD_WINDOW_MS = 1000L;
+    // Short post-proc invulnerability window to prevent duplicate stack consumption
+    // from clustered damage callbacks.
+    private static final long STACK_GRANT_IMMUNITY_MS = 250L;
     // If the engine applies a late lethal update right after a revive proc,
     // recover once within this window to preserve the intended revive.
     private static final long POST_PROC_SURVIVAL_WINDOW_MS = 1500L;
@@ -52,6 +52,19 @@ public final class NestingDollAugment extends YamlAugment
     }
 
     @Override
+    public float onDamageTaken(AugmentHooks.DamageTakenContext context) {
+        if (context == null || context.getRuntimeState() == null || context.getIncomingDamage() <= 0f) {
+            return context != null ? context.getIncomingDamage() : 0f;
+        }
+
+        AugmentState state = context.getRuntimeState().getState(ID);
+        if (isWithinStackGrantImmunity(state, System.currentTimeMillis())) {
+            return 0f;
+        }
+        return context.getIncomingDamage();
+    }
+
+    @Override
     public float onLowHp(AugmentHooks.DamageTakenContext context) {
         if (context == null || context.getRuntimeState() == null || context.getStatMap() == null
                 || context.getIncomingDamage() <= 0f) {
@@ -72,9 +85,9 @@ public final class NestingDollAugment extends YamlAugment
 
         AugmentState state = context.getRuntimeState().getState(ID);
         long now = System.currentTimeMillis();
-        if (state.getLastProc() > 0L && now - state.getLastProc() < PROC_GUARD_WINDOW_MS) {
+        if (isWithinStackGrantImmunity(state, now)) {
             LOGGER.atFine().log(
-                    "[NestingDoll] Proc guard blocked duplicate lethal event: player=%s stacks=%d hp=%.2f incoming=%.2f elapsedMs=%d",
+                    "[NestingDoll] Immunity window blocked duplicate lethal event: player=%s stacks=%d hp=%.2f incoming=%.2f elapsedMs=%d",
                     context.getRuntimeState().getPlayerId(),
                     state.getStacks(),
                     hp.get(),
@@ -296,5 +309,11 @@ public final class NestingDollAugment extends YamlAugment
 
     private double effectiveHealthRatio(int stacks) {
         return Math.max(0.0D, 1.0D - (healthPenaltyPerDeath * Math.max(0, stacks)));
+    }
+
+    private boolean isWithinStackGrantImmunity(AugmentState state, long nowMillis) {
+        return state != null
+                && state.getLastProc() > 0L
+                && nowMillis - state.getLastProc() <= STACK_GRANT_IMMUNITY_MS;
     }
 }

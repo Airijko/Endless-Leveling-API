@@ -13,6 +13,9 @@ import com.hypixel.hytale.server.core.asset.type.entityeffect.config.EntityEffec
 import com.hypixel.hytale.server.core.asset.type.entityeffect.config.OverlapBehavior;
 import com.hypixel.hytale.server.core.entity.entities.player.movement.MovementManager;
 import com.hypixel.hytale.server.core.entity.effect.EffectControllerComponent;
+import com.hypixel.hytale.server.core.modules.entity.damage.Damage;
+import com.hypixel.hytale.server.core.modules.entity.damage.DamageCause;
+import com.hypixel.hytale.server.core.modules.entity.damage.DeathComponent;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue;
 import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
@@ -92,6 +95,7 @@ public final class WitherAugment extends YamlAugment implements AugmentHooks.OnH
         double percentPerSecond;
         double movementSpeedSlowPercent;
         double durationSeconds;
+        Ref<EntityStore> sourceRef;
         MovementSnapshot movementSnapshot;
         MovementSnapshot defaultMovementSnapshot;
         boolean fallbackSlowEffectApplied;
@@ -149,6 +153,7 @@ public final class WitherAugment extends YamlAugment implements AugmentHooks.OnH
         state.percentPerSecond = percentPerSecond;
         state.movementSpeedSlowPercent = movementSpeedSlowPercent;
         state.durationSeconds = durationSeconds;
+        state.sourceRef = context.getAttackerRef();
 
         LOGGER.atFine().log("Wither applied: key=%s target=%s durationMs=%d slowPct=%.4f dpsPct=%.4f",
                 key,
@@ -197,9 +202,35 @@ public final class WitherAugment extends YamlAugment implements AugmentHooks.OnH
         long elapsedMillis = Math.max(TICK_INTERVAL_MILLIS, now - (state.nextTickAt - TICK_INTERVAL_MILLIS));
         double elapsedSeconds = elapsedMillis / 1000.0D;
         double damage = hp.getMax() * state.percentPerSecond * elapsedSeconds;
+        if (damage >= hp.get()) {
+            markWitherKill(state.sourceRef, ref, commandBuffer, statMap);
+            clearSlowIfPossible(state, commandBuffer, ref);
+            ACTIVE_WITHER.remove(key);
+            return;
+        }
+
         float updated = Math.max(0.0f, (float) (hp.get() - damage));
         statMap.setStatValue(DefaultEntityStatTypes.getHealth(), updated);
         state.nextTickAt = now + TICK_INTERVAL_MILLIS;
+    }
+
+    private static void markWitherKill(Ref<EntityStore> sourceRef,
+            Ref<EntityStore> targetRef,
+            CommandBuffer<EntityStore> commandBuffer,
+            EntityStatMap targetStats) {
+        if (targetRef == null || commandBuffer == null || targetStats == null) {
+            return;
+        }
+
+        if (commandBuffer.getComponent(targetRef, DeathComponent.getComponentType()) == null) {
+            Damage damage = sourceRef != null
+                    ? new Damage(new Damage.EntitySource(sourceRef), DamageCause.PHYSICAL, Float.MAX_VALUE)
+                    : new Damage(Damage.NULL_SOURCE, DamageCause.PHYSICAL, Float.MAX_VALUE);
+            DeathComponent.tryAddComponent(commandBuffer, targetRef, damage);
+        }
+
+        // Keep health state consistent with the lethal wither tick.
+        targetStats.setStatValue(DefaultEntityStatTypes.getHealth(), 0.0f);
     }
 
     private static String keyFor(Ref<EntityStore> ref, CommandBuffer<EntityStore> commandBuffer) {

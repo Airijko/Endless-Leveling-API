@@ -14,8 +14,10 @@ import com.airijko.endlessleveling.augments.AugmentHooks.OnMissAugment;
 import com.airijko.endlessleveling.augments.AugmentHooks.PassiveStatAugment;
 import com.airijko.endlessleveling.augments.types.FleetFootworkAugment;
 import com.airijko.endlessleveling.augments.types.FortressAugment;
+import com.airijko.endlessleveling.augments.types.NestingDollAugment;
 import com.airijko.endlessleveling.augments.types.RebirthAugment;
 import com.airijko.endlessleveling.augments.types.UndyingRageAugment;
+import com.airijko.endlessleveling.augments.types.BailoutAugment;
 import com.airijko.endlessleveling.data.PlayerData;
 import com.airijko.endlessleveling.enums.ClassWeaponType;
 import com.airijko.endlessleveling.managers.SkillManager;
@@ -183,6 +185,12 @@ public final class AugmentExecutor {
         if (augment instanceof UndyingRageAugment) {
             return 2;
         }
+        if (augment instanceof NestingDollAugment) {
+            return 3;
+        }
+        if (augment instanceof BailoutAugment) {
+            return 4;
+        }
 
         String augmentId = augment == null ? null : augment.getId();
         if (augmentId == null) {
@@ -192,6 +200,8 @@ public final class AugmentExecutor {
             case RebirthAugment.ID -> 0;
             case FortressAugment.ID -> 1;
             case UndyingRageAugment.ID -> 2;
+            case NestingDollAugment.ID -> 3;
+            case BailoutAugment.ID -> 4;
             default -> Integer.MAX_VALUE;
         };
     }
