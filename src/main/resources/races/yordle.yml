@@ -23,4 +23,6 @@ passives:
     max_stacks: 5 # Can stack up to 5 times after killing a target for a total of +125% movement speed
   - type: SPECIAL_CHARGE_BONUS
     value: 2.0 # +200% faster special charge
-
+  - type: INNATE_ATTRIBUTE_GAIN
+    attribute: life_force
+    value: 1.2

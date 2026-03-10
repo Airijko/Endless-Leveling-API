@@ -6,7 +6,7 @@ enabled: true
 
 attributes: # Base Values
   life_force: 125
-  strength: 1.0
+  strength: 1.15
   defense: 0.975
   haste: 1.2
   precision: 15.0
@@ -23,4 +23,6 @@ passives:
     value: 0.1 # Passive +10% movement speed applied after haste
     duration: 5 # Seconds after killing a target to maintain swiftness bonus
     max_stacks: 8 # Can stack up to 8 times after killing a target for a total of +80% movement speed
-
+  - type: INNATE_ATTRIBUTE_GAIN
+    attribute: life_force
+    value: 1.0

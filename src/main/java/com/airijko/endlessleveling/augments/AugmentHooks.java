@@ -85,6 +85,7 @@ public interface AugmentHooks {
         private final boolean rangedAttack;
         private final ClassWeaponType weaponType;
         private float damage;
+        private double trueDamageBonus;
 
         public HitContext(PlayerData playerData,
                 AugmentRuntimeManager.AugmentRuntimeState runtimeState,
@@ -108,6 +109,7 @@ public interface AugmentHooks {
             this.critical = critical;
             this.rangedAttack = rangedAttack;
             this.weaponType = weaponType;
+            this.trueDamageBonus = 0.0D;
         }
 
         public Ref<EntityStore> getAttackerRef() {
@@ -149,6 +151,16 @@ public interface AugmentHooks {
 
         public void setDamage(float damage) {
             this.damage = damage;
+        }
+
+        public double getTrueDamageBonus() {
+            return trueDamageBonus;
+        }
+
+        public void addTrueDamageBonus(double bonus) {
+            if (Double.isFinite(bonus) && bonus > 0.0D) {
+                this.trueDamageBonus += bonus;
+            }
         }
     }
 

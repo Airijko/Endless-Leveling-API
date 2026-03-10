@@ -24,4 +24,6 @@ passives:
     threshold: 0.2 # Trigger below 20% stamina
     duration: 3 # Seconds to spread stamina recovery over
     cooldown: 45 # Seconds between adrenaline bursts
-
+  - type: INNATE_ATTRIBUTE_GAIN
+    attribute: life_force
+    value: 2.0

@@ -14,6 +14,8 @@ public enum ArchetypePassiveType {
     REGENERATION("REGENERATION"),
     HEALING_BONUS("HEALING_BONUS"),
     LIFE_STEAL("LIFE_STEAL"),
+    TRUE_EDGE("TRUE_EDGE"),
+    RAVENOUS_STRIKE("RAVENOUS_STRIKE"),
     SPECIAL_CHARGE_BONUS("SPECIAL_CHARGE_BONUS"),
     STAMINA_GAIN_BONUS("STAMINA_GAIN_BONUS"),
     LUCK("LUCK"),
@@ -43,6 +45,10 @@ public enum ArchetypePassiveType {
             return null;
         }
         String normalized = rawKey.trim().toUpperCase(Locale.ROOT);
+        // Legacy alias retained for backward compatibility with older configs.
+        if ("VAMPIRIC_BLADE".equals(normalized)) {
+            return RAVENOUS_STRIKE;
+        }
         for (ArchetypePassiveType type : values()) {
             if (type.configKey.equals(normalized)) {
                 return type;

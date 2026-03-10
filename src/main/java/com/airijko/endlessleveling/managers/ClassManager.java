@@ -165,6 +165,11 @@ public class ClassManager {
         if (data == null) {
             return null;
         }
+        String currentPrimaryId = data.getPrimaryClassId();
+        if (isMissingAssignedClass(currentPrimaryId)) {
+            clearMissingClassAssignment(data, ClassAssignmentSlot.PRIMARY, currentPrimaryId);
+            return null;
+        }
         String resolvedId = resolvePrimaryClassIdentifier(data.getPrimaryClassId());
         CharacterClassDefinition resolved = getClass(resolvedId);
         if (resolved != null && !resolved.getId().equals(data.getPrimaryClassId())) {
@@ -181,6 +186,11 @@ public class ClassManager {
             if (data.getSecondaryClassId() != null) {
                 data.setSecondaryClassId(null);
             }
+            return null;
+        }
+        String currentSecondaryId = data.getSecondaryClassId();
+        if (isMissingAssignedClass(currentSecondaryId)) {
+            clearMissingClassAssignment(data, ClassAssignmentSlot.SECONDARY, currentSecondaryId);
             return null;
         }
         String resolvedId = resolveSecondaryClassIdentifier(data.getSecondaryClassId());
@@ -387,12 +397,30 @@ public class ClassManager {
         if (data.getLevel() < getSwapConsumeLevelThreshold()) {
             return;
         }
-        if (data.getPrimaryClassSwitchCount() < SWAP_CONSUME_COUNT) {
+        if (hasAssignedClassInSlot(data, ClassAssignmentSlot.PRIMARY)
+                && data.getPrimaryClassSwitchCount() < SWAP_CONSUME_COUNT) {
             data.setPrimaryClassSwitchCount(SWAP_CONSUME_COUNT);
         }
-        if (data.getSecondaryClassSwitchCount() < SWAP_CONSUME_COUNT) {
+        if (isSecondaryClassEnabled()
+                && hasAssignedClassInSlot(data, ClassAssignmentSlot.SECONDARY)
+                && data.getSecondaryClassSwitchCount() < SWAP_CONSUME_COUNT) {
             data.setSecondaryClassSwitchCount(SWAP_CONSUME_COUNT);
         }
+
+        // If a slot is unassigned (None) and fully exhausted, grant exactly one
+        // emergency swap so players can recover from a None state.
+        grantEmergencySwapIfNoneAndExhausted(data, ClassAssignmentSlot.PRIMARY);
+        if (isSecondaryClassEnabled()) {
+            grantEmergencySwapIfNoneAndExhausted(data, ClassAssignmentSlot.SECONDARY);
+        }
+    }
+
+    private boolean hasAssignedClassInSlot(PlayerData data, ClassAssignmentSlot slot) {
+        if (data == null || slot == null) {
+            return false;
+        }
+        String classId = slot == ClassAssignmentSlot.PRIMARY ? data.getPrimaryClassId() : data.getSecondaryClassId();
+        return classId != null && !classId.isBlank() && !"none".equalsIgnoreCase(classId.trim());
     }
 
     private boolean isSwapAntiExploitEnabled() {
@@ -497,6 +525,64 @@ public class ClassManager {
             }
         }
         return null;
+    }
+
+    private boolean isMissingAssignedClass(String classId) {
+        if (classId == null || classId.isBlank()) {
+            return false;
+        }
+        if ("none".equalsIgnoreCase(classId.trim())) {
+            return false;
+        }
+        return getClass(classId) == null;
+    }
+
+    private void clearMissingClassAssignment(PlayerData data, ClassAssignmentSlot slot, String missingClassId) {
+        if (data == null || slot == null) {
+            return;
+        }
+
+        if (slot == ClassAssignmentSlot.PRIMARY) {
+            data.setPrimaryClassId(null);
+        } else {
+            data.setSecondaryClassId(null);
+        }
+
+        LOGGER.atInfo().log("Cleared missing class assignment '%s' for %s slot.",
+                missingClassId,
+                slot.name().toLowerCase(Locale.ROOT));
+    }
+
+    private void grantEmergencySwapIfNoneAndExhausted(PlayerData data, ClassAssignmentSlot slot) {
+        if (data == null || slot == null || maxClassSwitches <= 0) {
+            return;
+        }
+
+        if (hasAssignedClassInSlot(data, slot)) {
+            return;
+        }
+
+        int currentConsumed;
+        if (slot == ClassAssignmentSlot.PRIMARY) {
+            currentConsumed = data.getPrimaryClassSwitchCount();
+        } else {
+            currentConsumed = data.getSecondaryClassSwitchCount();
+        }
+
+        // Only grant an emergency swap when the slot has no swaps remaining.
+        if (currentConsumed < maxClassSwitches) {
+            return;
+        }
+
+        int consumedWithOneRemaining = Math.max(0, maxClassSwitches - 1);
+        if (slot == ClassAssignmentSlot.PRIMARY) {
+            data.setPrimaryClassSwitchCount(consumedWithOneRemaining);
+        } else {
+            data.setSecondaryClassSwitchCount(consumedWithOneRemaining);
+        }
+
+        LOGGER.atInfo().log("Granted one emergency class swap for %s slot after clearing missing class.",
+                slot.name().toLowerCase(Locale.ROOT));
     }
 
     private void loadClasses() {

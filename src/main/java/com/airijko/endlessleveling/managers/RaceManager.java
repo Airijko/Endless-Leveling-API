@@ -202,9 +202,37 @@ public class RaceManager {
         if (data.getLevel() < getSwapConsumeLevelThreshold()) {
             return;
         }
-        if (data.getRaceSwitchCount() < SWAP_CONSUME_COUNT) {
+
+        if (hasAssignedRace(data) && data.getRaceSwitchCount() < SWAP_CONSUME_COUNT) {
             data.setRaceSwitchCount(SWAP_CONSUME_COUNT);
         }
+
+        // If race is unassigned (None) and swaps are exhausted, grant exactly one
+        // emergency swap to recover from the None state.
+        grantEmergencyRaceSwapIfNoneAndExhausted(data);
+    }
+
+    private boolean hasAssignedRace(PlayerData data) {
+        if (data == null) {
+            return false;
+        }
+        String raceId = data.getRaceId();
+        return raceId != null && !raceId.isBlank() && !"none".equalsIgnoreCase(raceId.trim());
+    }
+
+    private void grantEmergencyRaceSwapIfNoneAndExhausted(PlayerData data) {
+        if (data == null || maxRaceSwitches <= 0) {
+            return;
+        }
+        if (hasAssignedRace(data)) {
+            return;
+        }
+        if (data.getRaceSwitchCount() < maxRaceSwitches) {
+            return;
+        }
+
+        data.setRaceSwitchCount(Math.max(0, maxRaceSwitches - 1));
+        LOGGER.atInfo().log("Granted one emergency race swap because race is None and swaps were exhausted.");
     }
 
     private boolean isSwapAntiExploitEnabled() {

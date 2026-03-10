@@ -14,8 +14,9 @@ passives:
   - type: MANA_REGEN
     value: 0.03
   - type: EXECUTIONER
-    value: 5.00 # +500% damage to targets below the threshold
-    threshold: 0.2 # Only applies to targets already below 20% HP
+    value: 2.0 # +200% executioner scaling descriptor
+    flat_bonus_damage: 25 # Flat bonus damage when threshold condition is met
+    threshold: 15 # Only applies to targets below 15% HP
     cooldown: 45 # Seconds between executioner procs
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: flow

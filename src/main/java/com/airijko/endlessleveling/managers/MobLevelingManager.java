@@ -1448,6 +1448,17 @@ public class MobLevelingManager {
     }
 
     private int getMobScalingLevelDifferenceRange(Store<EntityStore> store) {
+        String preferredMobScalingPath = "Mob_Leveling.Mob_Scaling.Mob_Level_Scaling_Difference.Range";
+        if (hasMobLevelingPath(preferredMobScalingPath, store, null)) {
+            return Math.max(0, getConfigInt(preferredMobScalingPath, 10, store));
+        }
+
+        // Alternate key variant under Mob_Scaling.
+        String preferredMobScalingAliasPath = "Mob_Leveling.Mob_Scaling.Level_Scaling_Difference.Range";
+        if (hasMobLevelingPath(preferredMobScalingAliasPath, store, null)) {
+            return Math.max(0, getConfigInt(preferredMobScalingAliasPath, 10, store));
+        }
+
         String preferredPath = "Mob_Leveling.Scaling.Level_Scaling_Difference.Range";
         if (hasMobLevelingPath(preferredPath, store, null)) {
             return Math.max(0, getConfigInt(preferredPath, 10, store));
@@ -2685,6 +2696,11 @@ public class MobLevelingManager {
     private double getMobDamageMaxDifferenceConfigDouble(String suffix,
             double defaultValue,
             Store<EntityStore> store) {
+        String preferredMobScalingPath = "Mob_Leveling.Mob_Scaling.Damage_Max_Difference." + suffix;
+        if (hasMobLevelingPath(preferredMobScalingPath, store, null)) {
+            return getConfigDouble(preferredMobScalingPath, defaultValue, store);
+        }
+
         String modernPath = "Mob_Leveling.Damage_Max_Difference." + suffix;
         if (hasMobLevelingPath(modernPath, store, null)) {
             return getConfigDouble(modernPath, defaultValue, store);
@@ -2701,6 +2717,11 @@ public class MobLevelingManager {
     private boolean getMobDamageMaxDifferenceConfigBoolean(String suffix,
             boolean defaultValue,
             Store<EntityStore> store) {
+        String preferredMobScalingPath = "Mob_Leveling.Mob_Scaling.Damage_Max_Difference." + suffix;
+        if (hasMobLevelingPath(preferredMobScalingPath, store, null)) {
+            return getConfigBoolean(preferredMobScalingPath, defaultValue, store);
+        }
+
         String modernPath = "Mob_Leveling.Damage_Max_Difference." + suffix;
         if (hasMobLevelingPath(modernPath, store, null)) {
             return getConfigBoolean(modernPath, defaultValue, store);

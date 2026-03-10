@@ -17,9 +17,9 @@ weapons:
 passives:
   - type: SECOND_WIND
     value: 0.5
-    threshold: 0.25
+    threshold: 0.35
     duration: 10
-    cooldown: 60
+    cooldown: 45
   - type: RETALIATION
     value: 0.25 # Reflect 25% of damage taken in the window
     window: 5 # Collect damage for 5 seconds before retaliating
@@ -30,4 +30,3 @@ passives:
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: life_force
     value: 2.25
-

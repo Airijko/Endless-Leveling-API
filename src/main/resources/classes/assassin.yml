@@ -14,19 +14,21 @@ weapons:
 
 passives:
   - type: FIRST_STRIKE
-    value: 3.00
-    cooldown: 25
+    value: 1.5 # +150% first-strike bonus descriptor
+    flat_bonus_damage: 50 # Flat bonus damage on first hit
+    cooldown: 25 # seconds between first-strike windows
   - type: EXECUTIONER
-    value: 5.00 # +500% damage to targets below the threshold
-    threshold: 0.2 # Only applies to targets already below 20% HP
+    value: 2.0 # +200% executioner scaling descriptor
+    flat_bonus_damage: 25 # Flat bonus damage when threshold condition is met
+    threshold: 15 # Only applies to targets below 15% HP
     cooldown: 45 # Seconds between executioner procs
   - type: SWIFTNESS
     value: 0.1
     duration: 5
     max_stacks: 8
   - type: INNATE_ATTRIBUTE_GAIN
-    attribute: precision
-    value: 0.20
+    attribute: haste
+    value: 0.40
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: ferocity
     value: 1.2

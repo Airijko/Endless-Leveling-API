@@ -12,5 +12,8 @@ passives:
 
   max_stack_bonus:
     bonus_true_damage:
-      value: 0.10 # +10% bonus true damage
-      based_on: pre_mitigated_damage # calculated before damage reduction
+      value: 10.0 # Flat true damage added to each hit
+      true_damage_percent: 0.15 # +15% of damage dealt is added as bonus true damage at max stacks
+
+  duration:
+    seconds: 8 # Seconds after hitting a target to maintain stacks, refreshing on each hit

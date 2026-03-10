@@ -17,7 +17,7 @@ passives:
     value: 0.03
   - type: BERZERKER
     value: 0.35
-    threshold: 0.3
+    threshold: 0.4
   - type: RETALIATION
     value: 0.20
     window: 4
@@ -27,5 +27,4 @@ passives:
     value: 1.35
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: life_force
-    value: 1.5
-
+    value: 2.25

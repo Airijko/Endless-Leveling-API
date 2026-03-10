@@ -21,4 +21,6 @@ passives:
     value: 0.03 # Restore 3% of max mana every 5 seconds
   - type: XP_BONUS
     value: 0.4 # +40% XP gain
-
+  - type: INNATE_ATTRIBUTE_GAIN
+    attribute: life_force
+    value: 0.75

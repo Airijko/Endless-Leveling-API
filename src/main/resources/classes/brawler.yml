@@ -11,17 +11,16 @@ weapons:
     damage: 1.05
 
 passives:
-  - type: SECOND_WIND
-    value: 0.5
-    threshold: 0.25
-    duration: 10
-    cooldown: 60
+  - type: RETALIATION
+    value: 0.25
+    window: 5
+    cooldown: 25
   - type: BERZERKER
     value: 0.35
-    threshold: 0.3
+    threshold: 0.4
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: life_force
-    value: 1.75
+    value: 2.5
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: strength
     value: 1.2

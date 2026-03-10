@@ -14,7 +14,8 @@ weapons:
 
 passives:
   - type: FIRST_STRIKE
-    value: 2.5
+    value: 1.5 # +150% first-strike bonus descriptor
+    flat_bonus_damage: 25 # Flat bonus damage on first hit
     cooldown: 15
   - type: SWIFTNESS
     value: 0.075

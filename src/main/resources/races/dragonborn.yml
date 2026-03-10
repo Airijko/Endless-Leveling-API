@@ -4,7 +4,7 @@ model_scale: 1.0
 enabled: true
 
 attributes:
-  life_force: 190
+  life_force: 175
   strength: 1.2
   defense: 1.2
   haste: 1.05
@@ -25,4 +25,6 @@ passives:
     threshold: 0.2 # Trigger when below 20% HP
     duration: 10 # Lasts for 10 seconds
     cooldown: 60 # seconds between triggers
-
+  - type: INNATE_ATTRIBUTE_GAIN
+    attribute: life_force
+    value: 1.5

@@ -3,6 +3,7 @@ package com.airijko.endlessleveling.listeners;
 import com.airijko.endlessleveling.augments.AugmentExecutor;
 import com.airijko.endlessleveling.combat.CombatHookProcessor;
 import com.airijko.endlessleveling.data.PlayerData;
+import com.airijko.endlessleveling.enums.ArchetypePassiveType;
 import com.airijko.endlessleveling.managers.ClassManager;
 import com.airijko.endlessleveling.managers.MobLevelingManager;
 import com.airijko.endlessleveling.managers.PassiveManager;
@@ -11,6 +12,7 @@ import com.airijko.endlessleveling.managers.PlayerDataManager;
 import com.airijko.endlessleveling.managers.SkillManager;
 import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveManager;
 import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveSnapshot;
+import com.airijko.endlessleveling.races.RacePassiveDefinition;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
@@ -23,6 +25,7 @@ import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.modules.entity.damage.Damage;
+import com.hypixel.hytale.server.core.modules.entity.damage.DamageCause;
 import com.hypixel.hytale.server.core.modules.entity.damage.DeathComponent;
 import com.hypixel.hytale.server.core.modules.entity.damage.DamageEventSystem;
 import com.hypixel.hytale.server.core.modules.entity.damage.DamageSystems;
@@ -33,6 +36,8 @@ import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import javax.annotation.Nonnull;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -135,12 +140,24 @@ public class PlayerCombatListener extends DamageEventSystem {
         int mobLevel = -1;
         int playerLevel = Math.max(1, playerData.getLevel());
         double reduction = 0.0D;
-        boolean targetIsPlayer = false;
+        PlayerRef targetPlayer = commandBuffer.getComponent(targetRef, PlayerRef.getComponentType());
+        boolean targetIsPlayer = targetPlayer != null && targetPlayer.isValid();
+
+        TrueEdgeComputation trueEdge = computeTrueEdgeConversion(
+                targetRef,
+                commandBuffer,
+                archetypeSnapshot,
+                incomingBeforeDefense,
+                playerLevel,
+                reduction,
+                targetIsPlayer);
+        float normalAfterConversion = (float) Math.max(0.0D,
+                incomingBeforeDefense - trueEdge.convertedDamageFromNormal());
+        adjusted = normalAfterConversion;
+
         if (mobLevelingManager != null
                 && mobLevelingManager.isMobLevelingEnabled()
                 && mobLevelingManager.isMobDefenseScalingEnabled()) {
-            PlayerRef targetPlayer = commandBuffer.getComponent(targetRef, PlayerRef.getComponentType());
-            targetIsPlayer = targetPlayer != null && targetPlayer.isValid();
             if (!targetIsPlayer) {
                 mobLevel = mobLevelingManager.resolveMobLevel(targetRef, commandBuffer);
                 reduction = mobLevelingManager.getMobDefenseReductionForLevels(
@@ -154,6 +171,26 @@ public class PlayerCombatListener extends DamageEventSystem {
             }
         }
 
+        // Re-resolve using the final matchup reduction (mob or player) so conversion
+        // only
+        // shifts damage buckets and level-difference defense is the sole true-damage
+        // reducer.
+        trueEdge = computeTrueEdgeConversion(
+                targetRef,
+                commandBuffer,
+                archetypeSnapshot,
+                incomingBeforeDefense,
+                playerLevel,
+                reduction,
+                targetIsPlayer);
+        double reducedAugmentTrueDamage = applyLevelDifferenceReductionToTrueDamage(
+                result.trueDamageBonus(),
+                targetRef,
+                commandBuffer,
+                playerLevel,
+                reduction,
+                targetIsPlayer);
+
         float targetHp = Float.NaN;
         float targetMax = Float.NaN;
         boolean targetDead = commandBuffer.getComponent(targetRef, DeathComponent.getComponentType()) != null;
@@ -166,19 +203,26 @@ public class PlayerCombatListener extends DamageEventSystem {
         }
 
         float finalAdjusted = Math.max(0.0f, adjusted);
+        float appliedTrueDamage = applyTrueEdgeDamage(
+                attackerRef,
+                targetRef,
+                commandBuffer,
+                trueEdge.reducedTrueDamage() + reducedAugmentTrueDamage);
+
         float predictedPostHp = Float.NaN;
         boolean predictedLethal = false;
         if (Float.isFinite(targetHp)) {
-            predictedPostHp = targetHp - finalAdjusted;
+            predictedPostHp = targetHp - finalAdjusted - appliedTrueDamage;
             predictedLethal = predictedPostHp <= 0.0001f;
         }
 
         LOGGER.atInfo().log(
-                "PlayerHit target=%d attacker=%d dmg=%.3f->%.3f mobLevel=%d playerLevel=%d reduction=%.4f hp=%.3f max=%.3f predictedPostHp=%.3f predictedLethal=%s dead=%s targetIsPlayer=%s",
+                "PlayerHit target=%d attacker=%d dmg=%.3f->%.3f true=%.3f mobLevel=%d playerLevel=%d reduction=%.4f hp=%.3f max=%.3f predictedPostHp=%.3f predictedLethal=%s dead=%s targetIsPlayer=%s",
                 targetRef.getIndex(),
                 attackerRef.getIndex(),
                 incomingBeforeDefense,
                 finalAdjusted,
+                appliedTrueDamage,
                 mobLevel,
                 playerLevel,
                 reduction,
@@ -190,5 +234,218 @@ public class PlayerCombatListener extends DamageEventSystem {
                 targetIsPlayer);
 
         damage.setAmount(finalAdjusted);
+    }
+
+    private float applyTrueEdgeDamage(Ref<EntityStore> attackerRef,
+            Ref<EntityStore> targetRef,
+            CommandBuffer<EntityStore> commandBuffer,
+            double trueDamageAmount) {
+        if (trueDamageAmount <= 0.0D || targetRef == null || commandBuffer == null) {
+            return 0.0f;
+        }
+
+        EntityStatMap targetStats = commandBuffer.getComponent(targetRef, EntityStatMap.getComponentType());
+        EntityStatValue hp = targetStats == null ? null : targetStats.get(DefaultEntityStatTypes.getHealth());
+        if (hp == null || hp.getMax() <= 0f || hp.get() <= 0f) {
+            return 0.0f;
+        }
+
+        float current = hp.get();
+        float applied = (float) Math.min(current, trueDamageAmount);
+        if (applied <= 0f) {
+            return 0.0f;
+        }
+
+        if (applied >= current - 0.0001f) {
+            markTrueEdgeKill(attackerRef, targetRef, commandBuffer, targetStats);
+            return applied;
+        }
+
+        targetStats.setStatValue(DefaultEntityStatTypes.getHealth(), current - applied);
+        return applied;
+    }
+
+    private TrueEdgeComputation computeTrueEdgeConversion(Ref<EntityStore> targetRef,
+            CommandBuffer<EntityStore> commandBuffer,
+            ArchetypePassiveSnapshot archetypeSnapshot,
+            float outgoingDamageBeforeDefense,
+            int attackerLevel,
+            double mobReduction,
+            boolean targetIsPlayer) {
+        TrueEdgeSettings settings = resolveTrueEdgeSettings(archetypeSnapshot);
+        if (!settings.enabled()) {
+            return TrueEdgeComputation.none();
+        }
+
+        double baseOutgoing = Math.max(0.0D, outgoingDamageBeforeDefense);
+        if (baseOutgoing <= 0.0D) {
+            return TrueEdgeComputation.none();
+        }
+
+        double convertedDamageFromNormal = Math.min(baseOutgoing, baseOutgoing * settings.trueDamagePercent());
+        double rawTrueDamage = settings.flatTrueDamage() + convertedDamageFromNormal;
+        if (rawTrueDamage <= 0.0D) {
+            return TrueEdgeComputation.none();
+        }
+
+        double reducedTrueDamage = applyLevelDifferenceReductionToTrueDamage(
+                rawTrueDamage,
+                targetRef,
+                commandBuffer,
+                attackerLevel,
+                mobReduction,
+                targetIsPlayer);
+        if (reducedTrueDamage <= 0.0D) {
+            return new TrueEdgeComputation(convertedDamageFromNormal, 0.0D);
+        }
+
+        return new TrueEdgeComputation(convertedDamageFromNormal, reducedTrueDamage);
+    }
+
+    private TrueEdgeSettings resolveTrueEdgeSettings(ArchetypePassiveSnapshot snapshot) {
+        if (snapshot == null) {
+            return TrueEdgeSettings.disabled();
+        }
+
+        List<RacePassiveDefinition> definitions = snapshot.getDefinitions(ArchetypePassiveType.TRUE_EDGE);
+        if (definitions.isEmpty()) {
+            return TrueEdgeSettings.disabled();
+        }
+
+        double flatTrueDamage = 0.0D;
+        double trueDamagePercent = 0.0D;
+        for (RacePassiveDefinition definition : definitions) {
+            if (definition == null) {
+                continue;
+            }
+
+            Map<String, Object> props = definition.properties();
+
+            double flat = Math.max(0.0D, definition.value());
+            double explicitFlat = parsePositiveDouble(props == null ? null : props.get("flat_true_damage"));
+            if (explicitFlat > 0.0D) {
+                flat = explicitFlat;
+            }
+            flatTrueDamage += flat;
+
+            trueDamagePercent += parsePercent(props == null ? null : props.get("true_damage_percent"));
+        }
+
+        if (flatTrueDamage <= 0.0D && trueDamagePercent <= 0.0D) {
+            return TrueEdgeSettings.disabled();
+        }
+        return new TrueEdgeSettings(flatTrueDamage, trueDamagePercent);
+    }
+
+    private double resolveTrueEdgeReduction(Ref<EntityStore> targetRef,
+            CommandBuffer<EntityStore> commandBuffer,
+            int attackerLevel,
+            double mobReduction,
+            boolean targetIsPlayer) {
+        if (mobLevelingManager == null
+                || !mobLevelingManager.isMobLevelingEnabled()
+                || !mobLevelingManager.isMobDefenseScalingEnabled()) {
+            return 0.0D;
+        }
+
+        if (!targetIsPlayer) {
+            return clamp01(mobReduction);
+        }
+
+        PlayerRef targetPlayer = commandBuffer.getComponent(targetRef, PlayerRef.getComponentType());
+        if (targetPlayer == null || !targetPlayer.isValid()) {
+            return 0.0D;
+        }
+
+        PlayerData targetData = playerDataManager.get(targetPlayer.getUuid());
+        int targetLevel = targetData == null ? Math.max(1, attackerLevel) : Math.max(1, targetData.getLevel());
+        int levelDifference = targetLevel - Math.max(1, attackerLevel);
+        return clamp01(mobLevelingManager.getMobDefenseReductionForLevelDifference(levelDifference));
+    }
+
+    private double applyLevelDifferenceReductionToTrueDamage(double rawTrueDamage,
+            Ref<EntityStore> targetRef,
+            CommandBuffer<EntityStore> commandBuffer,
+            int attackerLevel,
+            double mobReduction,
+            boolean targetIsPlayer) {
+        if (rawTrueDamage <= 0.0D) {
+            return 0.0D;
+        }
+        double levelDifferenceReduction = resolveTrueEdgeReduction(
+                targetRef,
+                commandBuffer,
+                attackerLevel,
+                mobReduction,
+                targetIsPlayer);
+        return Math.max(0.0D, rawTrueDamage * (1.0D - levelDifferenceReduction));
+    }
+
+    private void markTrueEdgeKill(Ref<EntityStore> sourceRef,
+            Ref<EntityStore> targetRef,
+            CommandBuffer<EntityStore> commandBuffer,
+            EntityStatMap targetStats) {
+        if (targetRef == null || commandBuffer == null || targetStats == null) {
+            return;
+        }
+
+        if (commandBuffer.getComponent(targetRef, DeathComponent.getComponentType()) == null) {
+            Damage killDamage = sourceRef != null
+                    ? new Damage(new Damage.EntitySource(sourceRef), DamageCause.PHYSICAL, Float.MAX_VALUE)
+                    : new Damage(Damage.NULL_SOURCE, DamageCause.PHYSICAL, Float.MAX_VALUE);
+            DeathComponent.tryAddComponent(commandBuffer, targetRef, killDamage);
+        }
+
+        targetStats.setStatValue(DefaultEntityStatTypes.getHealth(), 0.0f);
+    }
+
+    private double parsePositiveDouble(Object raw) {
+        if (raw instanceof Number number) {
+            double value = number.doubleValue();
+            return value > 0.0D ? value : 0.0D;
+        }
+        if (raw instanceof String stringValue) {
+            try {
+                double value = Double.parseDouble(stringValue.trim());
+                return value > 0.0D ? value : 0.0D;
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return 0.0D;
+    }
+
+    private double parsePercent(Object raw) {
+        double value = parsePositiveDouble(raw);
+        if (value <= 0.0D) {
+            return 0.0D;
+        }
+        return value > 1.0D ? value / 100.0D : value;
+    }
+
+    private double clamp01(double value) {
+        if (Double.isNaN(value) || Double.isInfinite(value)) {
+            return 0.0D;
+        }
+        return Math.max(0.0D, Math.min(1.0D, value));
+    }
+
+    private record TrueEdgeSettings(double flatTrueDamage, double trueDamagePercent) {
+        private static final TrueEdgeSettings DISABLED = new TrueEdgeSettings(0.0D, 0.0D);
+
+        private static TrueEdgeSettings disabled() {
+            return DISABLED;
+        }
+
+        private boolean enabled() {
+            return flatTrueDamage > 0.0D || trueDamagePercent > 0.0D;
+        }
+    }
+
+    private record TrueEdgeComputation(double convertedDamageFromNormal, double reducedTrueDamage) {
+        private static final TrueEdgeComputation NONE = new TrueEdgeComputation(0.0D, 0.0D);
+
+        private static TrueEdgeComputation none() {
+            return NONE;
+        }
     }
 }

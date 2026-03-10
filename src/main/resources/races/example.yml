@@ -110,7 +110,8 @@ passives:
     duration: 10 # Lasts for 10 seconds
     cooldown: 60 # seconds between triggers
   - type: FIRST_STRIKE
-    value: 3.0 # +300% damage on first hit
+    value: 2.0 # +200% first-strike bonus descriptor
+    flat_bonus_damage: 25 # Flat bonus damage on first hit
     cooldown: 20 # seconds between first-strike windows
   - type: ADRENALINE
     value: 0.8 # Restore 80% of max stamina when drained
@@ -132,4 +133,7 @@ passives:
     value: 0.1 # Passive +10% movement speed applied after haste
     duration: 5 # Seconds after killing a target to maintain swiftness bonus
     max_stacks: 8 # Can stack up to 8 times after killing a target for a total of +80% movement speed
-
+  - type: RAVENOUS_STRIKE
+    value: 5.0 # Flat healing per hit
+    strength_scaling: 0.075 # +7.5% of Strength added to healing
+    sorcery_scaling: 0.075 # +7.5% of Sorcery added to healing

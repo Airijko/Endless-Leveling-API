@@ -9,7 +9,7 @@
 skill_attributes:
   life_force:
     enabled: true
-    per_level: 2.0 # Health gained per level
+    per_level: 2.5 # Health gained per level
   strength:
     enabled: true
     per_level: 0.5 # Damage bonus per level
@@ -36,7 +36,7 @@ skill_attributes:
     per_level: 0.5 # Flow (mana) per level
   discipline:
     enabled: true
-    per_level: 0.5 # XP gain bonus percent per level
+    per_level: 0.75 # XP gain bonus percent per level
 
 # ------------------------------------------------------------
 # PASSIVE SKILLS

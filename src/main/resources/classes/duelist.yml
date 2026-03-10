@@ -1,6 +1,6 @@
-class_name: "Skirmisher"
+class_name: "Duelist"
 description: "A mobile duelist who dances between sword and spear strikes."
-role: "Skirmisher"
+role: "Duelist"
 enabled: true
 icon: "Weapon_Spear_Tribal"
 
@@ -17,13 +17,12 @@ passives:
     value: 0.075
     duration: 5
     max_stacks: 8
-  - type: BERZERKER
-    value: 0.35
-    threshold: 0.3
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: haste
     value: 0.40
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: strength
-    value: 1.25
-
+    value: 1.20
+  - type: INNATE_ATTRIBUTE_GAIN
+    attribute: life_force
+    value: 1.5

@@ -53,6 +53,7 @@ public enum PassiveStackingStyle {
                     MANA_REGEN_FLAT,
                     REGENERATION,
                     SPECIAL_CHARGE_BONUS,
+                    RAVENOUS_STRIKE,
                     SECOND_WIND,
                     BERZERKER,
                     SWIFTNESS ->

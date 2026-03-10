@@ -14,11 +14,9 @@ import java.util.Map;
 public record ExecutionerSettings(List<Entry> entries, double cooldownSeconds) {
 
     private static final double DEFAULT_COOLDOWN = 12.0D;
+    private static final double DEFAULT_FLAT_BONUS_DAMAGE = 25.0D;
 
-    public record Entry(double thresholdPercent, double bonusPercent) {
-        public boolean isExecute() {
-            return bonusPercent >= 1.0D;
-        }
+    public record Entry(double thresholdPercent, double flatBonusDamage) {
     }
 
     public static ExecutionerSettings fromSnapshot(ArchetypePassiveSnapshot snapshot) {
@@ -38,16 +36,22 @@ public record ExecutionerSettings(List<Entry> entries, double cooldownSeconds) {
             if (definition == null) {
                 continue;
             }
-            double bonusPercent = Math.max(0.0D, definition.value());
-            if (bonusPercent <= 0.0D) {
+            double scalingValue = Math.max(0.0D, definition.value());
+            if (scalingValue <= 0.0D) {
                 continue;
             }
+
             Map<String, Object> props = definition.properties();
-            double threshold = parsePositiveDouble(props, "threshold", 0.35D);
+            double threshold = parseThresholdPercent(props, "threshold", 0.35D);
             if (threshold <= 0.0D) {
                 continue;
             }
-            entries.add(new Entry(threshold, bonusPercent));
+
+            double flatBonusDamage = parsePositiveDouble(props, "flat_bonus_damage", DEFAULT_FLAT_BONUS_DAMAGE);
+            if (flatBonusDamage <= 0.0D) {
+                continue;
+            }
+            entries.add(new Entry(threshold, flatBonusDamage));
 
             double cooldownCandidate = parsePositiveDouble(props, "cooldown", 0.0D);
             if (cooldownCandidate > 0.0D) {
@@ -84,5 +88,17 @@ public record ExecutionerSettings(List<Entry> entries, double cooldownSeconds) {
             }
         }
         return fallback;
+    }
+
+    private static double parseThresholdPercent(Map<String, Object> props, String key, double fallback) {
+        double rawThreshold = parsePositiveDouble(props, key, fallback);
+        double normalized = rawThreshold;
+        if (normalized > 1.0D) {
+            normalized /= 100.0D;
+        }
+        if (normalized <= 0.0D) {
+            return fallback;
+        }
+        return Math.min(1.0D, normalized);
     }
 }

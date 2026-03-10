@@ -71,7 +71,7 @@ public final class CombatHookProcessor {
         PlayerData playerData = ctx.playerData();
         Damage damage = ctx.damage();
         if (playerData == null || damage == null) {
-            return new OutgoingResult(ctx.damage() != null ? ctx.damage().getAmount() : 0f, false);
+            return new OutgoingResult(ctx.damage() != null ? ctx.damage().getAmount() : 0f, false, 0.0D);
         }
 
         PassiveRuntimeState runtimeState = ctx.runtimeState() != null
@@ -174,8 +174,9 @@ public final class CombatHookProcessor {
         if (targetStats == null && ctx.commandBuffer() != null && ctx.targetRef() != null) {
             targetStats = ctx.commandBuffer().getComponent(ctx.targetRef(), EntityStatMap.getComponentType());
         }
+        double augmentTrueDamageBonus = 0.0D;
         if (augmentExecutor != null) {
-            finalDamage = augmentExecutor.applyOnHit(playerData,
+            AugmentExecutor.OnHitResult onHitResult = augmentExecutor.applyOnHit(playerData,
                     ctx.attackerRef(),
                     ctx.targetRef(),
                     ctx.commandBuffer(),
@@ -185,14 +186,16 @@ public final class CombatHookProcessor {
                     critResult.isCrit,
                     rangedAttack,
                     weaponType);
+            finalDamage = onHitResult.damage();
+            augmentTrueDamageBonus = Math.max(0.0D, onHitResult.trueDamageBonus());
         }
 
-        applyLifeSteal(ctx.attackerRef(), ctx.commandBuffer(), archetypeSnapshot, finalDamage);
+        applyLifeSteal(playerData, ctx.attackerRef(), ctx.commandBuffer(), archetypeSnapshot, finalDamage);
         if (passiveManager != null) {
             passiveManager.markCombat(playerData.getUuid());
         }
 
-        return new OutgoingResult(finalDamage, critResult.isCrit);
+        return new OutgoingResult(finalDamage, critResult.isCrit, augmentTrueDamageBonus);
     }
 
     /**
@@ -284,7 +287,8 @@ public final class CombatHookProcessor {
         }
 
         double bonusPercent = Math.max(0.0D, settings.bonusPercent());
-        if (bonusPercent <= 0) {
+        double flatBonusDamage = Math.max(0.0D, settings.flatBonusDamage());
+        if (bonusPercent <= 0 || flatBonusDamage <= 0.0D) {
             return 0f;
         }
 
@@ -293,7 +297,7 @@ public final class CombatHookProcessor {
             return 0f;
         }
 
-        float bonusDamage = (float) (currentDamage * bonusPercent);
+        float bonusDamage = (float) flatBonusDamage;
         if (bonusDamage <= 0) {
             return 0f;
         }
@@ -301,7 +305,9 @@ public final class CombatHookProcessor {
         runtimeState.setFirstStrikeCooldownExpiresAt(now + settings.cooldownMillis());
         runtimeState.setFirstStrikeReadyNotified(false);
         sendPassiveMessage(playerRef,
-                String.format("First Strike triggered! Cooldown: %.0fs",
+                String.format("First Strike triggered! +%.0f flat damage (+%.0f%%). Cooldown: %.0fs",
+                        flatBonusDamage,
+                        bonusPercent * 100.0D,
                         settings.cooldownMillis() / 1000.0D));
         return bonusDamage;
     }
@@ -415,8 +421,7 @@ public final class CombatHookProcessor {
             return 0f;
         }
         float predicted = Math.max(0f, current - currentDamage);
-        double bonusPercent = 0.0D;
-        boolean execute = false;
+        double flatBonusDamage = 0.0D;
         for (ExecutionerSettings.Entry entry : settings.entries()) {
             double threshold = entry.thresholdPercent();
             if (threshold <= 0.0D) {
@@ -424,15 +429,11 @@ public final class CombatHookProcessor {
             }
             float thresholdHealth = (float) (max * threshold);
             if (current <= thresholdHealth || predicted <= thresholdHealth) {
-                if (entry.isExecute()) {
-                    execute = true;
-                    break;
-                }
-                bonusPercent += Math.max(0.0D, entry.bonusPercent());
+                flatBonusDamage += Math.max(0.0D, entry.flatBonusDamage());
             }
         }
 
-        if (!execute && bonusPercent <= 0.0D) {
+        if (flatBonusDamage <= 0.0D) {
             return 0f;
         }
 
@@ -442,7 +443,7 @@ public final class CombatHookProcessor {
             return 0f;
         }
 
-        float bonusDamage = execute ? Math.max(0f, current) : (float) (currentDamage * bonusPercent);
+        float bonusDamage = (float) flatBonusDamage;
         if (bonusDamage <= 0f) {
             return 0f;
         }
@@ -453,14 +454,13 @@ public final class CombatHookProcessor {
         }
 
         sendPassiveMessage(playerRef,
-                execute
-                        ? "Executioner triggered! Target executed."
-                        : String.format("Executioner triggered! +%.0f%% damage.", bonusPercent * 100.0D));
+                String.format("Executioner triggered! +%.0f flat damage.", flatBonusDamage));
 
         return bonusDamage;
     }
 
-    private void applyLifeSteal(@Nonnull Ref<EntityStore> attackerRef,
+    private void applyLifeSteal(@Nonnull PlayerData playerData,
+            @Nonnull Ref<EntityStore> attackerRef,
             @Nonnull CommandBuffer<EntityStore> commandBuffer,
             @Nonnull ArchetypePassiveSnapshot archetypeSnapshot,
             float damageDealt) {
@@ -469,12 +469,13 @@ public final class CombatHookProcessor {
         }
 
         double lifeStealPercent = Math.max(0.0D, archetypeSnapshot.getValue(ArchetypePassiveType.LIFE_STEAL));
-        if (lifeStealPercent <= 0.0D) {
+        double vampiricBladeHeal = resolveVampiricBladeHeal(archetypeSnapshot, playerData);
+        if (lifeStealPercent <= 0.0D && vampiricBladeHeal <= 0.0D) {
             return;
         }
 
         double healPercent = lifeStealPercent / 100.0D;
-        double healAmount = damageDealt * healPercent;
+        double healAmount = (damageDealt * healPercent) + vampiricBladeHeal;
         if (healAmount <= 0) {
             return;
         }
@@ -495,6 +496,41 @@ public final class CombatHookProcessor {
         if (updatedHealth > currentHealth) {
             statMap.setStatValue(DefaultEntityStatTypes.getHealth(), updatedHealth);
         }
+    }
+
+    private double resolveVampiricBladeHeal(@Nonnull ArchetypePassiveSnapshot snapshot,
+            @Nonnull PlayerData playerData) {
+        List<RacePassiveDefinition> definitions = snapshot.getDefinitions(ArchetypePassiveType.RAVENOUS_STRIKE);
+        if (definitions.isEmpty()) {
+            return 0.0D;
+        }
+
+        double strength = 0.0D;
+        double sorcery = 0.0D;
+        if (skillManager != null) {
+            strength = Math.max(0.0D, skillManager.calculatePlayerStrength(playerData));
+            sorcery = Math.max(0.0D, skillManager.calculatePlayerSorcery(playerData));
+        }
+
+        double totalHeal = 0.0D;
+        for (RacePassiveDefinition definition : definitions) {
+            if (definition == null) {
+                continue;
+            }
+
+            Map<String, Object> props = definition.properties();
+            double flatHeal = Math.max(0.0D, definition.value());
+            double configuredFlat = parsePositiveDouble(props == null ? null : props.get("flat_heal"));
+            if (configuredFlat > 0.0D) {
+                flatHeal = configuredFlat;
+            }
+
+            double strengthScaling = parsePositiveDouble(props == null ? null : props.get("strength_scaling"));
+            double sorceryScaling = parsePositiveDouble(props == null ? null : props.get("sorcery_scaling"));
+            double scaledHeal = (strength * strengthScaling) + (sorcery * sorceryScaling);
+            totalHeal += flatHeal + scaledHeal;
+        }
+        return Math.max(0.0D, totalHeal);
     }
 
     private PassiveContributionBlueprint resolveBlueprint(ArchetypePassiveSnapshot snapshot,
@@ -734,7 +770,7 @@ public final class CombatHookProcessor {
             EntityStatMap targetStats) {
     }
 
-    public record OutgoingResult(float finalDamage, boolean critical) {
+    public record OutgoingResult(float finalDamage, boolean critical, double trueDamageBonus) {
     }
 
     public record IncomingContext(PlayerData defender,

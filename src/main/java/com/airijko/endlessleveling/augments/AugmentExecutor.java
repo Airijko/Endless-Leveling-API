@@ -56,7 +56,7 @@ public final class AugmentExecutor {
         this.skillManager = Objects.requireNonNull(skillManager, "skillManager");
     }
 
-    public float applyOnHit(@Nonnull PlayerData playerData,
+    public OnHitResult applyOnHit(@Nonnull PlayerData playerData,
             Ref<EntityStore> attackerRef,
             Ref<EntityStore> targetRef,
             CommandBuffer<EntityStore> commandBuffer,
@@ -68,7 +68,7 @@ public final class AugmentExecutor {
             ClassWeaponType weaponType) {
         List<Augment> augments = resolve(playerData);
         if (augments.isEmpty()) {
-            return startingDamage;
+            return new OnHitResult(startingDamage, 0.0D);
         }
         var runtime = runtimeManager.getRuntimeState(playerData.getUuid());
         notifyCooldowns(playerData, runtime, commandBuffer, attackerRef, augments);
@@ -81,7 +81,7 @@ public final class AugmentExecutor {
                     missHandler.onMiss(context);
                 }
             }
-            return context.getDamage();
+            return new OnHitResult(context.getDamage(), context.getTrueDamageBonus());
         }
 
         for (Augment augment : augments) {
@@ -97,7 +97,10 @@ public final class AugmentExecutor {
                 context.setDamage(updated);
             }
         }
-        return context.getDamage();
+        return new OnHitResult(context.getDamage(), context.getTrueDamageBonus());
+    }
+
+    public record OnHitResult(float damage, double trueDamageBonus) {
     }
 
     private boolean isMiss(@Nonnull HitContext context) {
