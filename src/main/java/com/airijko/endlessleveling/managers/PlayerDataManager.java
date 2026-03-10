@@ -80,6 +80,7 @@ public class PlayerDataManager {
             File file = filesManager.getPlayerDataFile(uuid);
             PlayerData data;
             boolean safeToSave = true; // avoid overwriting if load failed
+            boolean createdNewPlayerData = false;
 
             if (file.exists()) {
                 data = loadFromFile(uuid, playerName, file);
@@ -87,6 +88,7 @@ public class PlayerDataManager {
                     safeToSave = false;
                     data = new PlayerData(uuid, playerName, getStartingSkillPoints());
                     applyConfigDefaults(data);
+                    createdNewPlayerData = true;
                     LOGGER.atSevere().log(
                             "PlayerData for UUID %s could not be parsed; using in-memory fallback and will NOT overwrite %s. Please fix the YAML or restore a backup.",
                             uuid, file.getName());
@@ -96,11 +98,13 @@ public class PlayerDataManager {
             } else {
                 data = new PlayerData(uuid, playerName, getStartingSkillPoints());
                 applyConfigDefaults(data);
+                createdNewPlayerData = true;
                 LOGGER.atInfo().log("PlayerData for UUID %s created new.", uuid);
             }
 
             ensureValidRace(data);
             ensureValidClasses(data);
+            initializeSwapDefaultsForAllProfiles(data, createdNewPlayerData);
 
             // Cache and save
             playerCache.put(uuid, data);
@@ -146,6 +150,7 @@ public class PlayerDataManager {
         try {
             ensureValidRace(data);
             ensureValidClasses(data);
+            initializeSwapDefaultsForAllProfiles(data, false);
             File file = filesManager.getPlayerDataFile(data.getUuid());
 
             Map<String, Object> map = buildYamlMap(data);
@@ -343,6 +348,67 @@ public class PlayerDataManager {
         }
         data.setUseRaceModel(useRaceModelDefault);
         data.setLanguage(PlayerData.DEFAULT_LANGUAGE);
+    }
+
+    public void initializeSwapDefaultsForNewProfile(PlayerData data, int profileIndex) {
+        if (data == null || !PlayerData.isValidProfileIndex(profileIndex)) {
+            return;
+        }
+
+        PlayerProfile profile = data.getProfiles().get(profileIndex);
+        if (profile == null) {
+            return;
+        }
+
+        initializeProfileSwapDefaults(profile, true);
+    }
+
+    private void initializeSwapDefaultsForAllProfiles(PlayerData data, boolean seedFromConfigWhenEmpty) {
+        if (data == null) {
+            return;
+        }
+
+        data.getProfiles().values().forEach(profile -> initializeProfileSwapDefaults(profile, seedFromConfigWhenEmpty));
+    }
+
+    private void initializeProfileSwapDefaults(PlayerProfile profile, boolean seedFromConfigWhenEmpty) {
+        if (profile == null) {
+            return;
+        }
+
+        int configuredRaceMax = resolveConfiguredRaceMaxSwaps();
+        if (seedFromConfigWhenEmpty && profile.getRemainingRaceSwitches() <= 0) {
+            profile.setRemainingRaceSwitches(configuredRaceMax);
+        }
+        if (!hasAssignedSelection(profile.getRaceId()) && profile.getRemainingRaceSwitches() <= 0) {
+            profile.setRemainingRaceSwitches(1);
+        }
+
+        int configuredClassMax = resolveConfiguredClassMaxSwaps();
+        if (seedFromConfigWhenEmpty && profile.getRemainingPrimaryClassSwitches() <= 0) {
+            profile.setRemainingPrimaryClassSwitches(configuredClassMax);
+        }
+        if (!hasAssignedSelection(profile.getPrimaryClassId()) && profile.getRemainingPrimaryClassSwitches() <= 0) {
+            profile.setRemainingPrimaryClassSwitches(1);
+        }
+
+        if (seedFromConfigWhenEmpty && profile.getRemainingSecondaryClassSwitches() <= 0) {
+            profile.setRemainingSecondaryClassSwitches(configuredClassMax);
+        }
+        if (!hasAssignedSelection(profile.getSecondaryClassId())
+                && profile.getRemainingSecondaryClassSwitches() <= 0) {
+            profile.setRemainingSecondaryClassSwitches(1);
+        }
+    }
+
+    private int resolveConfiguredRaceMaxSwaps() {
+        int configured = raceManager != null ? raceManager.getMaxRaceSwitches() : 1;
+        return configured < 0 ? 1 : Math.max(0, configured);
+    }
+
+    private int resolveConfiguredClassMaxSwaps() {
+        int configured = classManager != null ? classManager.getMaxClassSwitches() : 1;
+        return configured < 0 ? 1 : Math.max(0, configured);
     }
 
     private Map<String, Object> castToStringObjectMap(Object value) {

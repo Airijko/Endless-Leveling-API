@@ -1037,6 +1037,10 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             return new ProfileActionOutcome(false, false);
         }
 
+        if (playerDataManager != null) {
+            playerDataManager.initializeSwapDefaultsForNewProfile(playerData, nextSlot);
+        }
+
         playerRef.sendMessage(
                 Message.raw(tr("ui.profile.info.created", "Created and activated profile slot {0}.", nextSlot))
                         .color("#4fd7f7"));

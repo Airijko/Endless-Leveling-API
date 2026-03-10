@@ -2,39 +2,28 @@ $C = "../Common.ui";
 
 $Hotbar = "Hotbar.ui";
 
-Group #HudFrameBackground {
-  LayoutMode: Bottom;
-  Anchor: (Bottom: -10, Width: 800, Height: 175, Left: -50); // 173 ~= 675 * (imageH/imageW)
-  Background: (TexturePath: "hytaleHudBackground.png");
-}
-
 Group #EndlessPlayerHud {
   LayoutMode: Bottom;
-  Anchor: (Bottom: 0, Width: 675, Height: 12);
+  Anchor: (Bottom: 140, Width: 634, Height: 24);
+
+  Label #Level {
+    Anchor: (Left: 0, Width: 4, Height: 18, Right: 4);
+    Style: (FontSize: 12, Alignment: Center);
+    Text: "Level";
+  }
 
   Group #Content {
     LayoutMode: Middle;
 
     Group #XpBar {
-      Anchor: (Left: 0, Width: 675, Height: 12);
+      Anchor: (Left: 0, Width: 634, Height: 24);
       Background: "XPBackground.png";
 
       ProgressBar #ProgressBar {
-        Anchor: (Width: 675, Height: 12);
+        Anchor: (Width: 634, Height: 24);
         BarTexturePath: "XPFill.png";
       }
-
-      ProgressBar #ProgressBarEffect {
-        Anchor: (Width: 675, Height: 12);
-        BarTexturePath: "XPEffect.png";
-      }
     }
-  }
-
-  Label #Level {
-    Anchor: (Left: 0, Width: 4, Height: 18, Right: 4);
-    Style: (FontSize: 12, Alignment: Center);
-    Text: "MyText";
   }
 }
 

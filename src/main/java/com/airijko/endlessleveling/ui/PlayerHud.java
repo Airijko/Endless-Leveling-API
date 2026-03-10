@@ -106,7 +106,6 @@ public class PlayerHud extends CustomUIHud {
         uiCommandBuilder.set("#Level.Text", resolveHudLabel());
         double progress = resolveXpProgress();
         uiCommandBuilder.set("#ProgressBar.Value", progress);
-        uiCommandBuilder.set("#ProgressBarEffect.Value", progress);
         uiCommandBuilder.set("#InfoRaceValue.Text", resolveRaceLabel());
         uiCommandBuilder.set("#InfoMobLevelValue.Text", resolveMobLevelLabel());
         uiCommandBuilder.set("#PrimaryClass.Text", resolveClassLabel(true));

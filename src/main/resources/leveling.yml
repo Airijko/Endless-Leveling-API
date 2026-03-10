@@ -5,7 +5,7 @@ default:
 
 # If you change these values, make sure to reset everyone to sync the skill points by do "/el resetskillpointsall"
 baseSkillPoints: 12
-skillPointsPerLevel: 6
+skillPointsPerLevel: 5
 
 player_level_cap: 75
 

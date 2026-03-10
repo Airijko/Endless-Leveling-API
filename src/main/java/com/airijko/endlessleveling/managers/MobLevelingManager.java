@@ -7,6 +7,7 @@ import com.hypixel.hytale.component.Component;
 import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
@@ -36,6 +37,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class MobLevelingManager {
 
     private static final double PLAYER_LEVEL_LOCK_RADIUS_BLOCKS = 40.0D;
+    private static final Query<EntityStore> ENTITY_QUERY = Query.any();
 
     private final Map<Integer, Integer> cachedPlayerDiffs = new ConcurrentHashMap<>();
     private final Map<Long, Integer> cachedPosDiffs = new ConcurrentHashMap<>();
@@ -46,6 +48,8 @@ public class MobLevelingManager {
     private final Map<String, String> loggedDistanceCentersByWorldKey = new ConcurrentHashMap<>();
     private final Map<Integer, UUID> entityPartyOverrides = new ConcurrentHashMap<>();
     private final Map<Integer, Float> entityMaxHealthSnapshots = new ConcurrentHashMap<>();
+    private final Map<Long, Integer> tierLockByStoreKey = new ConcurrentHashMap<>();
+    private final Map<Long, UUID> tierLockSourcePlayerByStoreKey = new ConcurrentHashMap<>();
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
     private final ConfigManager configManager;
     private final ConfigManager worldsConfigManager;
@@ -78,6 +82,218 @@ public class MobLevelingManager {
         cachedPosDiffs.clear();
         mixedSourceChoiceByEntityKey.clear();
         loggedDistanceCentersByWorldKey.clear();
+        tierLockByStoreKey.clear();
+        tierLockSourcePlayerByStoreKey.clear();
+    }
+
+    /**
+     * For TIERS mode dungeons/instances: lock the tier from the first joining
+     * player
+     * context and immediately push matching level overrides to all eligible mobs in
+     * that world store.
+     */
+    public void syncTierLevelOverridesForDungeon(Store<EntityStore> store, UUID sourcePlayerUuid) {
+        if (store == null || store.isShutdown() || sourcePlayerUuid == null) {
+            return;
+        }
+
+        if (getLevelSourceMode(store) != LevelSourceMode.TIERS) {
+            return;
+        }
+
+        long storeKey = toStoreKey(store);
+        Integer existingTier = tierLockByStoreKey.get(storeKey);
+        if (existingTier != null && existingTier > 0) {
+            return;
+        }
+
+        int lockedTier = resolveTierLockForPlayerContext(store, sourcePlayerUuid);
+        if (lockedTier <= 0) {
+            return;
+        }
+
+        tierLockByStoreKey.put(storeKey, lockedTier);
+        tierLockSourcePlayerByStoreKey.put(storeKey, sourcePlayerUuid);
+
+        int changed = applyTierLockOverridesToStore(store, lockedTier);
+        LOGGER.atInfo().log("Tier lock established for world %s (tier=%d, source=%s, changed=%d)",
+                resolveWorldIdentifier(store),
+                lockedTier,
+                sourcePlayerUuid,
+                changed);
+    }
+
+    private int applyTierLockOverridesToStore(Store<EntityStore> store, int lockedTier) {
+        if (store == null || store.isShutdown() || lockedTier <= 0) {
+            return 0;
+        }
+
+        int[] changed = { 0 };
+        store.forEachChunk(ENTITY_QUERY, (chunk, commandBuffer) -> {
+            for (int i = 0; i < chunk.size(); i++) {
+                Ref<EntityStore> ref = chunk.getReferenceTo(i);
+                if (ref == null) {
+                    continue;
+                }
+
+                int entityId = ref.getIndex();
+                if (entityId < 0) {
+                    continue;
+                }
+
+                NPCEntity npcEntity = commandBuffer.getComponent(ref, NPCEntity.getComponentType());
+                if (npcEntity == null) {
+                    continue;
+                }
+
+                PlayerRef playerRef = commandBuffer.getComponent(ref, PlayerRef.getComponentType());
+                if (playerRef != null && playerRef.isValid()) {
+                    continue;
+                }
+
+                if (commandBuffer.getComponent(ref, DeathComponent.getComponentType()) != null) {
+                    continue;
+                }
+
+                if (isEntityBlacklisted(ref, store, commandBuffer)) {
+                    continue;
+                }
+
+                Vector3d mobPosition = getWorldPosition(ref, commandBuffer);
+                int resolvedLevel = resolveTierLevelForLockedTier(store, entityId, mobPosition, lockedTier);
+                if (resolvedLevel <= 0) {
+                    continue;
+                }
+
+                if (setEntityLevelOverrideIfChanged(store, entityId, resolvedLevel)) {
+                    changed[0]++;
+                }
+            }
+        });
+
+        return changed[0];
+    }
+
+    private int resolveTierLockForPlayerContext(Store<EntityStore> store, UUID sourcePlayerUuid) {
+        int totalTiers = Math.max(1, getConfigInt("Mob_Leveling.Level_Source.Tiers.Total_Tiers", 1, store));
+        int levelsPerTier = Math.max(0, getConfigInt("Mob_Leveling.Level_Source.Tiers.Levels_Per_Tier", 25, store));
+        if (totalTiers <= 1 || levelsPerTier <= 0) {
+            return 1;
+        }
+
+        int referencePlayerLevel = resolveTierReferenceLevelForPlayerContext(store, sourcePlayerUuid);
+        LevelRange baseRange = getTierBaseLevelRange(store);
+        if (referencePlayerLevel <= 0 || referencePlayerLevel < baseRange.min()) {
+            return 1;
+        }
+
+        int tierPromotionAllowance = getTierPromotionAllowance(store);
+        TierPromotionAllowanceMode allowanceMode = getTierPromotionAllowanceMode(store);
+        return applyTierPromotionAllowance(referencePlayerLevel, baseRange, totalTiers, levelsPerTier, 1,
+                tierPromotionAllowance, allowanceMode);
+    }
+
+    private int resolveTierReferenceLevelForPlayerContext(Store<EntityStore> store, UUID sourcePlayerUuid) {
+        int fallbackLevel = getPlayerLevelIncludingOnline(sourcePlayerUuid);
+        if (!isPartyPlayerSourceEnabled(store) || sourcePlayerUuid == null) {
+            return fallbackLevel;
+        }
+
+        PartyManager partyManager = resolvePartyManager();
+        if (partyManager == null || !partyManager.isAvailable() || !partyManager.isInParty(sourcePlayerUuid)) {
+            return fallbackLevel;
+        }
+
+        Set<UUID> partyMembers = partyManager.getOnlinePartyMembers(sourcePlayerUuid);
+        if (partyMembers.isEmpty()) {
+            partyMembers = partyManager.getPartyMembers(sourcePlayerUuid);
+        }
+        if (partyMembers.isEmpty()) {
+            return fallbackLevel;
+        }
+
+        List<Integer> partyLevels = new ArrayList<>();
+        for (UUID memberUuid : partyMembers) {
+            if (memberUuid == null) {
+                continue;
+            }
+            int level = getPlayerLevelIncludingOnline(memberUuid);
+            if (level > 0) {
+                partyLevels.add(level);
+            }
+        }
+
+        if (partyLevels.isEmpty()) {
+            return fallbackLevel;
+        }
+
+        return computePartyReferenceLevel(partyLevels, getPartyLevelCalculationMode(store));
+    }
+
+    private int computePartyReferenceLevel(List<Integer> levels, PartyLevelCalculation calculationMode) {
+        if (levels == null || levels.isEmpty()) {
+            return 1;
+        }
+
+        List<Integer> normalized = new ArrayList<>(levels.size());
+        for (Integer level : levels) {
+            if (level == null) {
+                continue;
+            }
+            normalized.add(Math.max(1, level));
+        }
+        if (normalized.isEmpty()) {
+            return 1;
+        }
+
+        if (calculationMode == PartyLevelCalculation.MEDIAN) {
+            Collections.sort(normalized);
+            int size = normalized.size();
+            int mid = size / 2;
+            if ((size % 2) == 1) {
+                return normalized.get(mid);
+            }
+            return (int) Math.round((normalized.get(mid - 1) + normalized.get(mid)) / 2.0D);
+        }
+
+        double sum = 0.0D;
+        for (int level : normalized) {
+            sum += level;
+        }
+        return (int) Math.round(sum / normalized.size());
+    }
+
+    private int getPlayerLevelIncludingOnline(UUID uuid) {
+        if (uuid == null) {
+            return 1;
+        }
+
+        PlayerData data = playerDataManager != null ? playerDataManager.get(uuid) : null;
+        if (data == null && playerDataManager != null) {
+            PlayerRef playerRef = Universe.get().getPlayer(uuid);
+            if (playerRef != null && playerRef.isValid()) {
+                data = playerDataManager.loadOrCreate(uuid, playerRef.getUsername());
+            }
+        }
+
+        if (data == null) {
+            return 1;
+        }
+        return Math.max(1, data.getLevel());
+    }
+
+    private int resolveTierLevelForLockedTier(Store<EntityStore> store,
+            Integer entityId,
+            Vector3d mobPosition,
+            int lockedTier) {
+        LevelRange baseRange = getTierBaseLevelRange(store);
+        int levelsPerTier = Math.max(0, getConfigInt("Mob_Leveling.Level_Source.Tiers.Levels_Per_Tier", 25, store));
+        if (levelsPerTier <= 0) {
+            return sampleLevel(baseRange.min(), baseRange.max(), entityId, mobPosition);
+        }
+
+        LevelRange tierRange = getTierRange(baseRange, lockedTier, levelsPerTier);
+        return sampleLevel(tierRange.min(), tierRange.max(), entityId, mobPosition);
     }
 
     /**
@@ -3083,6 +3299,11 @@ public class MobLevelingManager {
             Vector3d mobPosition,
             int totalTiers,
             int levelsPerTier) {
+        Integer lockedTier = resolveLockedTierForStore(store);
+        if (lockedTier != null && lockedTier > 0) {
+            return Math.max(1, Math.min(totalTiers, lockedTier));
+        }
+
         if (!isTierPlayerAdaptationEnabled(store) || mobPosition == null) {
             return sampleLevel(1, totalTiers, entityId, mobPosition);
         }
@@ -3097,6 +3318,13 @@ public class MobLevelingManager {
         TierPromotionAllowanceMode allowanceMode = getTierPromotionAllowanceMode(store);
         return applyTierPromotionAllowance(referencePlayerLevel, baseRange, totalTiers, levelsPerTier, 1,
                 tierPromotionAllowance, allowanceMode);
+    }
+
+    private Integer resolveLockedTierForStore(Store<EntityStore> store) {
+        if (store == null) {
+            return null;
+        }
+        return tierLockByStoreKey.get(toStoreKey(store));
     }
 
     private int resolveTierReferencePlayerLevel(Store<EntityStore> store, Vector3d mobPosition) {
@@ -3683,12 +3911,18 @@ public class MobLevelingManager {
         entityPartyOverrides.clear();
         cachedPlayerDiffs.clear();
         entityMaxHealthSnapshots.clear();
+        tierLockByStoreKey.clear();
+        tierLockSourcePlayerByStoreKey.clear();
     }
 
     private long toEntityKey(Store<EntityStore> store, int entityId) {
         long storePart = store == null ? 0L : Integer.toUnsignedLong(System.identityHashCode(store));
         long entityPart = Integer.toUnsignedLong(entityId);
         return (storePart << 32) | entityPart;
+    }
+
+    private long toStoreKey(Store<EntityStore> store) {
+        return store == null ? 0L : Integer.toUnsignedLong(System.identityHashCode(store));
     }
 
     private record AreaOverride(String id, String worldId,

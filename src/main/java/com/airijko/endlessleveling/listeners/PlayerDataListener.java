@@ -4,6 +4,7 @@ import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.augments.AugmentUnlockManager;
 import com.airijko.endlessleveling.data.PlayerData;
 import com.airijko.endlessleveling.enums.PassiveTier;
+import com.airijko.endlessleveling.managers.MobLevelingManager;
 import com.airijko.endlessleveling.managers.PassiveManager;
 import com.airijko.endlessleveling.managers.PlayerDataManager;
 import com.airijko.endlessleveling.managers.RaceManager;
@@ -90,6 +91,11 @@ public class PlayerDataListener {
             Store<EntityStore> store,
             boolean inInstanceWorld) {
         UUID uuid = playerRef.getUuid();
+
+        MobLevelingManager mobLevelingManager = EndlessLeveling.getInstance().getMobLevelingManager();
+        if (mobLevelingManager != null && store != null) {
+            mobLevelingManager.syncTierLevelOverridesForDungeon(store, uuid);
+        }
 
         if (passiveManager != null) {
             passiveManager.resetRuntimeState(uuid);

@@ -77,6 +77,8 @@ public class ProfileNewSubCommand extends AbstractPlayerCommand {
             return;
         }
 
+        playerDataManager.initializeSwapDefaultsForNewProfile(playerData, nextSlot);
+
         resyncPassives(playerData);
         playerDataManager.save(playerData);
 
