@@ -16,9 +16,11 @@ public final class PhaseRushAugment extends YamlAugment
     public static final String ID = "phase_rush";
     private static final long INTERNAL_STACKING_DELAY_MILLIS = 400L;
     private static final String STACK_DELAY_STATE_ID = ID + "_stack_delay";
+    private static final String HIT_COUNTER_WINDOW_STATE_ID = ID + "_hit_counter_window";
 
     private final double baseHasteBonus;
     private final int hitsRequired;
+    private final long hitCounterDurationMillis;
     private final double hasteBurstMultiplier;
     private final long hasteBurstDurationMillis;
     private final double hasteToDamageConversionPercent;
@@ -34,6 +36,8 @@ public final class PhaseRushAugment extends YamlAugment
 
         this.baseHasteBonus = Math.max(0.0D, AugmentValueReader.getDouble(hasteNode, "value", 0.0D));
         this.hitsRequired = Math.max(1, AugmentValueReader.getInt(hitCounter, "hits_required", 5));
+        this.hitCounterDurationMillis = AugmentUtils
+                .secondsToMillis(AugmentValueReader.getDouble(hitCounter, "duration", 0.0D));
         this.hasteBurstMultiplier = Math.max(1.0D, AugmentValueReader.getDouble(hasteBurst, "multiplier", 1.0D));
         this.hasteBurstDurationMillis = AugmentUtils
                 .secondsToMillis(AugmentValueReader.getDouble(hasteBurst, "duration", 0.0D));
@@ -70,10 +74,21 @@ public final class PhaseRushAugment extends YamlAugment
 
         long now = System.currentTimeMillis();
         var state = runtime.getState(ID);
+        var hitCounterWindowState = runtime.getState(HIT_COUNTER_WINDOW_STATE_ID);
+
+        if (hitCounterDurationMillis > 0L
+                && state.getStacks() > 0
+                && hitCounterWindowState.getExpiresAt() > 0L
+                && now >= hitCounterWindowState.getExpiresAt()) {
+            state.setStacks(0);
+            hitCounterWindowState.setExpiresAt(0L);
+        }
+
         if (isStackDelayReady(runtime, now)) {
             int hits = state.getStacks() + 1;
             if (hits >= hitsRequired) {
                 state.setStacks(0);
+                hitCounterWindowState.setExpiresAt(0L);
                 if (hasteBurstDurationMillis > 0L) {
                     state.setExpiresAt(now + hasteBurstDurationMillis);
                 }
@@ -86,6 +101,9 @@ public final class PhaseRushAugment extends YamlAugment
                 }
             } else {
                 state.setStacks(hits);
+                if (hitCounterDurationMillis > 0L) {
+                    hitCounterWindowState.setExpiresAt(now + hitCounterDurationMillis);
+                }
             }
             markStackDelay(runtime, now);
         }
