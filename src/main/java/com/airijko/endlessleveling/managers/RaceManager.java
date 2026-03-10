@@ -182,14 +182,14 @@ public class RaceManager {
         if (maxRaceSwitches < 0)
             return true;
         applyLevelThresholdSwapConsumption(data);
-        return data.getRaceSwitchCount() < maxRaceSwitches;
+        return data.getRemainingRaceSwitches() > 0;
     }
 
     public int getRemainingRaceSwitches(PlayerData data) {
         if (maxRaceSwitches < 0 || data == null)
             return Integer.MAX_VALUE;
         applyLevelThresholdSwapConsumption(data);
-        return Math.max(0, maxRaceSwitches - data.getRaceSwitchCount());
+        return Math.max(0, data.getRemainingRaceSwitches());
     }
 
     private void applyLevelThresholdSwapConsumption(PlayerData data) {
@@ -203,8 +203,9 @@ public class RaceManager {
             return;
         }
 
-        if (hasAssignedRace(data) && data.getRaceSwitchCount() < SWAP_CONSUME_COUNT) {
-            data.setRaceSwitchCount(SWAP_CONSUME_COUNT);
+        int consumeFloor = Math.max(0, maxRaceSwitches - SWAP_CONSUME_COUNT);
+        if (hasAssignedRace(data) && data.getRemainingRaceSwitches() > consumeFloor) {
+            data.setRemainingRaceSwitches(consumeFloor);
         }
 
         // If race is unassigned (None) and swaps are exhausted, grant exactly one
@@ -227,11 +228,11 @@ public class RaceManager {
         if (hasAssignedRace(data)) {
             return;
         }
-        if (data.getRaceSwitchCount() < maxRaceSwitches) {
+        if (data.getRemainingRaceSwitches() > 0) {
             return;
         }
 
-        data.setRaceSwitchCount(Math.max(0, maxRaceSwitches - 1));
+        data.setRemainingRaceSwitches(1);
         LOGGER.atInfo().log("Granted one emergency race swap because race is None and swaps were exhausted.");
     }
 
@@ -344,8 +345,16 @@ public class RaceManager {
         if (data == null)
             return;
         applyLevelThresholdSwapConsumption(data);
-        data.incrementRaceSwitchCount();
+        data.decrementRemainingRaceSwitches();
         data.setLastRaceChangeEpochSeconds(Instant.now().getEpochSecond());
+    }
+
+    public boolean isSwapAntiExploitConsumeEnabled() {
+        return isSwapAntiExploitEnabled();
+    }
+
+    public int getSwapAntiExploitConsumeLevelThreshold() {
+        return getSwapConsumeLevelThreshold();
     }
 
     public Collection<RaceDefinition> getLoadedRaces() {

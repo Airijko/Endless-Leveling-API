@@ -1,7 +1,9 @@
 package com.airijko.endlessleveling.augments;
 
+import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.augments.AugmentRuntimeManager.AugmentRuntimeState;
 import com.airijko.endlessleveling.augments.types.OverhealAugment;
+import com.airijko.endlessleveling.augments.types.UndyingRageAugment;
 import com.airijko.endlessleveling.util.Lang;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.hypixel.hytale.component.CommandBuffer;
@@ -117,6 +119,29 @@ public final class AugmentUtils {
             return 0f;
         }
         return safeIncoming;
+    }
+
+    public static boolean isUndyingRageActive(CommandBuffer<EntityStore> commandBuffer,
+            Ref<EntityStore> ref,
+            long now) {
+        if (commandBuffer == null || ref == null) {
+            return false;
+        }
+
+        PlayerRef playerRef = getPlayerRef(commandBuffer, ref);
+        if (playerRef == null || !playerRef.isValid() || playerRef.getUuid() == null) {
+            return false;
+        }
+
+        EndlessLeveling plugin = EndlessLeveling.getInstance();
+        if (plugin == null || plugin.getAugmentRuntimeManager() == null) {
+            return false;
+        }
+
+        var rageState = plugin.getAugmentRuntimeManager()
+                .getRuntimeState(playerRef.getUuid())
+                .getState(UndyingRageAugment.ID);
+        return rageState != null && rageState.getExpiresAt() > now;
     }
 
     public static long secondsToMillis(double seconds) {

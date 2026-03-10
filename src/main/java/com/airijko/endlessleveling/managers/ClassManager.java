@@ -324,7 +324,7 @@ public class ClassManager {
         if (slot == ClassAssignmentSlot.SECONDARY && !isSecondaryClassEnabled()) {
             return false;
         }
-        return getClassSwitchCount(data, slot) < maxClassSwitches;
+        return getClassSwitchCount(data, slot) > 0;
     }
 
     public int getRemainingClassSwitches(PlayerData data) {
@@ -349,7 +349,7 @@ public class ClassManager {
         if (slot == ClassAssignmentSlot.SECONDARY && !isSecondaryClassEnabled()) {
             return 0;
         }
-        return Math.max(0, maxClassSwitches - getClassSwitchCount(data, slot));
+        return Math.max(0, getClassSwitchCount(data, slot));
     }
 
     public long getClassCooldownRemaining(PlayerData data, ClassAssignmentSlot slot) {
@@ -370,10 +370,10 @@ public class ClassManager {
         long now = Instant.now().getEpochSecond();
         if (slot == ClassAssignmentSlot.PRIMARY) {
             data.setLastPrimaryClassChangeEpochSeconds(now);
-            data.incrementPrimaryClassSwitchCount();
+            data.decrementRemainingPrimaryClassSwitches();
         } else {
             data.setLastSecondaryClassChangeEpochSeconds(now);
-            data.incrementSecondaryClassSwitchCount();
+            data.decrementRemainingSecondaryClassSwitches();
         }
     }
 
@@ -383,8 +383,8 @@ public class ClassManager {
         }
         applyLevelThresholdSwapConsumption(data);
         return slot == ClassAssignmentSlot.PRIMARY
-                ? data.getPrimaryClassSwitchCount()
-                : data.getSecondaryClassSwitchCount();
+                ? data.getRemainingPrimaryClassSwitches()
+                : data.getRemainingSecondaryClassSwitches();
     }
 
     private void applyLevelThresholdSwapConsumption(PlayerData data) {
@@ -397,14 +397,15 @@ public class ClassManager {
         if (data.getLevel() < getSwapConsumeLevelThreshold()) {
             return;
         }
+        int consumeFloor = Math.max(0, maxClassSwitches - SWAP_CONSUME_COUNT);
         if (hasAssignedClassInSlot(data, ClassAssignmentSlot.PRIMARY)
-                && data.getPrimaryClassSwitchCount() < SWAP_CONSUME_COUNT) {
-            data.setPrimaryClassSwitchCount(SWAP_CONSUME_COUNT);
+                && data.getRemainingPrimaryClassSwitches() > consumeFloor) {
+            data.setRemainingPrimaryClassSwitches(consumeFloor);
         }
         if (isSecondaryClassEnabled()
                 && hasAssignedClassInSlot(data, ClassAssignmentSlot.SECONDARY)
-                && data.getSecondaryClassSwitchCount() < SWAP_CONSUME_COUNT) {
-            data.setSecondaryClassSwitchCount(SWAP_CONSUME_COUNT);
+                && data.getRemainingSecondaryClassSwitches() > consumeFloor) {
+            data.setRemainingSecondaryClassSwitches(consumeFloor);
         }
 
         // If a slot is unassigned (None) and fully exhausted, grant exactly one
@@ -562,27 +563,34 @@ public class ClassManager {
             return;
         }
 
-        int currentConsumed;
+        int currentRemaining;
         if (slot == ClassAssignmentSlot.PRIMARY) {
-            currentConsumed = data.getPrimaryClassSwitchCount();
+            currentRemaining = data.getRemainingPrimaryClassSwitches();
         } else {
-            currentConsumed = data.getSecondaryClassSwitchCount();
+            currentRemaining = data.getRemainingSecondaryClassSwitches();
         }
 
         // Only grant an emergency swap when the slot has no swaps remaining.
-        if (currentConsumed < maxClassSwitches) {
+        if (currentRemaining > 0) {
             return;
         }
 
-        int consumedWithOneRemaining = Math.max(0, maxClassSwitches - 1);
         if (slot == ClassAssignmentSlot.PRIMARY) {
-            data.setPrimaryClassSwitchCount(consumedWithOneRemaining);
+            data.setRemainingPrimaryClassSwitches(1);
         } else {
-            data.setSecondaryClassSwitchCount(consumedWithOneRemaining);
+            data.setRemainingSecondaryClassSwitches(1);
         }
 
         LOGGER.atInfo().log("Granted one emergency class swap for %s slot after clearing missing class.",
                 slot.name().toLowerCase(Locale.ROOT));
+    }
+
+    public boolean isSwapAntiExploitConsumeEnabled() {
+        return isSwapAntiExploitEnabled();
+    }
+
+    public int getSwapAntiExploitConsumeLevelThreshold() {
+        return getSwapConsumeLevelThreshold();
     }
 
     private void loadClasses() {

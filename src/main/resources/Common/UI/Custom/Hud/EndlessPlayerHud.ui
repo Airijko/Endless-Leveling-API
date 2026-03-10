@@ -1,6 +1,13 @@
 $C = "../Common.ui";
 
 $Hotbar = "Hotbar.ui";
+
+Group #HudFrameBackground {
+  LayoutMode: Bottom;
+  Anchor: (Bottom: -10, Width: 800, Height: 175, Left: -50); // 173 ~= 675 * (imageH/imageW)
+  Background: (TexturePath: "hytaleHudBackground.png");
+}
+
 Group #EndlessPlayerHud {
   LayoutMode: Bottom;
   Anchor: (Bottom: 0, Width: 675, Height: 12);

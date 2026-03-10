@@ -168,6 +168,54 @@ public class AugmentUnlockManager {
     }
 
     /**
+     * Finds the tier for a pending offer id currently shown to the player.
+     */
+    public PassiveTier findOfferTier(@Nonnull PlayerData playerData, @Nonnull String offerId) {
+        OfferLocation location = findOfferLocation(playerData, null, offerId);
+        return location != null ? location.tier() : null;
+    }
+
+    /**
+     * Consumes one reroll token for the tier and rerolls the specific pending
+     * offer.
+     *
+     * @return replacement augment id when successful, otherwise null.
+     */
+    public String tryConsumeRerollForOffer(@Nonnull PlayerData playerData,
+            @Nonnull PassiveTier tier,
+            @Nonnull String offerId) {
+        if (playerData == null || tier == null || offerId == null || offerId.isBlank()) {
+            return null;
+        }
+
+        OfferLocation location = findOfferLocation(playerData, tier, offerId);
+        if (location == null) {
+            return null;
+        }
+
+        if (getRemainingRerolls(playerData, tier) <= 0) {
+            return null;
+        }
+
+        Set<String> excludedAugmentIds = collectOwnedAugmentIds(playerData);
+        String rolled = rollSingleOffer(tier, excludedAugmentIds);
+        if (rolled == null || rolled.isBlank()) {
+            return null;
+        }
+
+        List<String> offers = new ArrayList<>(playerData.getAugmentOffersForTier(location.tierKey()));
+        if (location.offerIndex() < 0 || location.offerIndex() >= offers.size()) {
+            return null;
+        }
+
+        offers.set(location.offerIndex(), rolled);
+        playerData.setAugmentOffersForTier(location.tierKey(), offers);
+        playerData.incrementAugmentRerollsUsedForTier(location.tierKey());
+        playerDataManager.save(playerData);
+        return rolled;
+    }
+
+    /**
      * Consumes one reroll for a tier and rerolls pending offers in that tier.
      *
      * @return true when a reroll was consumed and offers were updated.
@@ -370,6 +418,55 @@ public class AugmentUnlockManager {
             rolled.add(pool.get(i).getId());
         }
         return rolled;
+    }
+
+    private String rollSingleOffer(PassiveTier tier, Set<String> excludedAugmentIds) {
+        List<String> rolled = rollOffers(tier, excludedAugmentIds);
+        if (rolled.isEmpty()) {
+            return null;
+        }
+        return rolled.get(0);
+    }
+
+    private OfferLocation findOfferLocation(PlayerData playerData, PassiveTier expectedTier, String offerId) {
+        if (playerData == null || offerId == null || offerId.isBlank()) {
+            return null;
+        }
+
+        String normalizedRequested = normalizeAugmentId(offerId);
+        if (normalizedRequested == null) {
+            return null;
+        }
+
+        Map<String, List<String>> offersByTier = playerData.getAugmentOffersSnapshot();
+        for (Map.Entry<String, List<String>> entry : offersByTier.entrySet()) {
+            String tierKey = entry.getKey();
+            PassiveTier tier = parseTier(tierKey);
+            if (tier == null) {
+                continue;
+            }
+            if (expectedTier != null && tier != expectedTier) {
+                continue;
+            }
+
+            List<String> offers = entry.getValue();
+            if (offers == null || offers.isEmpty()) {
+                continue;
+            }
+
+            for (int i = 0; i < offers.size(); i++) {
+                String candidate = offers.get(i);
+                String normalizedCandidate = normalizeAugmentId(candidate);
+                if (normalizedRequested.equals(normalizedCandidate)) {
+                    return new OfferLocation(tier, tier.name(), i, candidate);
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private record OfferLocation(PassiveTier tier, String tierKey, int offerIndex, String offerId) {
     }
 
     private Set<String> collectOwnedAugmentIds(PlayerData playerData) {

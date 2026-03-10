@@ -3,6 +3,7 @@ package com.airijko.endlessleveling.augments.types;
 import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentHooks;
+import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
 import com.airijko.endlessleveling.augments.YamlAugment;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
@@ -98,6 +99,7 @@ public final class BurnAugment extends YamlAugment implements AugmentHooks.Passi
         UUID sourcePartyLeader = resolvePartyLeader(partyManager, sourceUuid);
 
         HashSet<Integer> visitedEntityIds = new HashSet<>();
+        long now = System.currentTimeMillis();
         for (Ref<EntityStore> targetRef : TargetUtil.getAllEntitiesInSphere(
                 sourceTransform.getPosition(),
                 radius,
@@ -129,12 +131,15 @@ public final class BurnAugment extends YamlAugment implements AugmentHooks.Passi
                 continue;
             }
 
-            if (burnDamage >= targetHp.get()) {
+            boolean rageActive = AugmentUtils.isUndyingRageActive(commandBuffer, targetRef, now);
+
+            if (burnDamage >= targetHp.get() && !rageActive) {
                 markBurnKill(sourceRef, targetRef, commandBuffer, targetStats);
                 continue;
             }
 
-            float updatedHealth = (float) Math.max(0.0D, targetHp.get() - burnDamage);
+            float minimumHealthFloor = rageActive ? 1.0f : 0.0f;
+            float updatedHealth = (float) Math.max(minimumHealthFloor, targetHp.get() - burnDamage);
             targetStats.setStatValue(DefaultEntityStatTypes.getHealth(), updatedHealth);
         }
     }

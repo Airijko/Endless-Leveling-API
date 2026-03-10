@@ -472,16 +472,28 @@ public class PlayerData {
         getActiveProfile().setLastRaceChangeEpochSeconds(epochSeconds);
     }
 
+    public int getRemainingRaceSwitches() {
+        return getActiveProfile().getRemainingRaceSwitches();
+    }
+
+    public void setRemainingRaceSwitches(int count) {
+        getActiveProfile().setRemainingRaceSwitches(count);
+    }
+
+    public void decrementRemainingRaceSwitches() {
+        getActiveProfile().decrementRemainingRaceSwitches();
+    }
+
     public int getRaceSwitchCount() {
-        return getActiveProfile().getRaceSwitchCount();
+        return getRemainingRaceSwitches();
     }
 
     public void setRaceSwitchCount(int count) {
-        getActiveProfile().setRaceSwitchCount(count);
+        setRemainingRaceSwitches(count);
     }
 
     public void incrementRaceSwitchCount() {
-        getActiveProfile().incrementRaceSwitchCount();
+        decrementRemainingRaceSwitches();
     }
 
     public String getPrimaryClassId() {
@@ -516,40 +528,76 @@ public class PlayerData {
         getActiveProfile().setLastSecondaryClassChangeEpochSeconds(epochSeconds);
     }
 
+    public int getRemainingClassSwitches() {
+        return getActiveProfile().getRemainingClassSwitches();
+    }
+
+    public void setRemainingClassSwitches(int count) {
+        getActiveProfile().setRemainingClassSwitches(count);
+    }
+
+    public void decrementRemainingClassSwitches() {
+        getActiveProfile().decrementRemainingClassSwitches();
+    }
+
+    public int getRemainingPrimaryClassSwitches() {
+        return getActiveProfile().getRemainingPrimaryClassSwitches();
+    }
+
+    public void setRemainingPrimaryClassSwitches(int count) {
+        getActiveProfile().setRemainingPrimaryClassSwitches(count);
+    }
+
+    public void decrementRemainingPrimaryClassSwitches() {
+        getActiveProfile().decrementRemainingPrimaryClassSwitches();
+    }
+
+    public int getRemainingSecondaryClassSwitches() {
+        return getActiveProfile().getRemainingSecondaryClassSwitches();
+    }
+
+    public void setRemainingSecondaryClassSwitches(int count) {
+        getActiveProfile().setRemainingSecondaryClassSwitches(count);
+    }
+
+    public void decrementRemainingSecondaryClassSwitches() {
+        getActiveProfile().decrementRemainingSecondaryClassSwitches();
+    }
+
     public int getClassSwitchCount() {
-        return getActiveProfile().getClassSwitchCount();
+        return getRemainingClassSwitches();
     }
 
     public void setClassSwitchCount(int count) {
-        getActiveProfile().setClassSwitchCount(count);
+        setRemainingClassSwitches(count);
     }
 
     public void incrementClassSwitchCount() {
-        getActiveProfile().incrementClassSwitchCount();
+        decrementRemainingClassSwitches();
     }
 
     public int getPrimaryClassSwitchCount() {
-        return getActiveProfile().getPrimaryClassSwitchCount();
+        return getRemainingPrimaryClassSwitches();
     }
 
     public void setPrimaryClassSwitchCount(int count) {
-        getActiveProfile().setPrimaryClassSwitchCount(count);
+        setRemainingPrimaryClassSwitches(count);
     }
 
     public void incrementPrimaryClassSwitchCount() {
-        getActiveProfile().incrementPrimaryClassSwitchCount();
+        decrementRemainingPrimaryClassSwitches();
     }
 
     public int getSecondaryClassSwitchCount() {
-        return getActiveProfile().getSecondaryClassSwitchCount();
+        return getRemainingSecondaryClassSwitches();
     }
 
     public void setSecondaryClassSwitchCount(int count) {
-        getActiveProfile().setSecondaryClassSwitchCount(count);
+        setRemainingSecondaryClassSwitches(count);
     }
 
     public void incrementSecondaryClassSwitchCount() {
-        getActiveProfile().incrementSecondaryClassSwitchCount();
+        decrementRemainingSecondaryClassSwitches();
     }
 
     /**
@@ -593,14 +641,13 @@ public class PlayerData {
         private final Map<String, Integer> augmentRerollsUsed;
         private String raceId;
         private long lastRaceChangeEpochSeconds;
-        private int raceSwitchCount;
+        private int remainingRaceSwitches;
         private String primaryClassId;
         private String secondaryClassId;
         private long lastPrimaryClassChangeEpochSeconds;
         private long lastSecondaryClassChangeEpochSeconds;
-        private int classSwitchCount;
-        private int primaryClassSwitchCount;
-        private int secondaryClassSwitchCount;
+        private int remainingPrimaryClassSwitches;
+        private int remainingSecondaryClassSwitches;
 
         private String name;
 
@@ -622,14 +669,13 @@ public class PlayerData {
             this.augmentRerollsUsed = new LinkedHashMap<>();
             this.raceId = null;
             this.lastRaceChangeEpochSeconds = 0L;
-            this.raceSwitchCount = 0;
+            this.remainingRaceSwitches = 0;
             this.primaryClassId = null;
             this.secondaryClassId = null;
             this.lastPrimaryClassChangeEpochSeconds = 0L;
             this.lastSecondaryClassChangeEpochSeconds = 0L;
-            this.classSwitchCount = 0;
-            this.primaryClassSwitchCount = 0;
-            this.secondaryClassSwitchCount = 0;
+            this.remainingPrimaryClassSwitches = 0;
+            this.remainingSecondaryClassSwitches = 0;
             this.name = (name == null || name.isBlank()) ? "Profile" : name;
         }
 
@@ -826,16 +872,28 @@ public class PlayerData {
             this.lastRaceChangeEpochSeconds = Math.max(0L, epochSeconds);
         }
 
+        public int getRemainingRaceSwitches() {
+            return Math.max(0, remainingRaceSwitches);
+        }
+
+        public void setRemainingRaceSwitches(int count) {
+            this.remainingRaceSwitches = Math.max(0, count);
+        }
+
+        public void decrementRemainingRaceSwitches() {
+            this.remainingRaceSwitches = Math.max(0, this.remainingRaceSwitches - 1);
+        }
+
         public int getRaceSwitchCount() {
-            return raceSwitchCount;
+            return getRemainingRaceSwitches();
         }
 
         public void setRaceSwitchCount(int count) {
-            this.raceSwitchCount = Math.max(0, count);
+            setRemainingRaceSwitches(count);
         }
 
         public void incrementRaceSwitchCount() {
-            this.raceSwitchCount = Math.max(0, this.raceSwitchCount + 1);
+            decrementRemainingRaceSwitches();
         }
 
         public String getPrimaryClassId() {
@@ -887,43 +945,77 @@ public class PlayerData {
             this.lastSecondaryClassChangeEpochSeconds = Math.max(0L, epochSeconds);
         }
 
+        public int getRemainingClassSwitches() {
+            return Math.max(0, remainingPrimaryClassSwitches) + Math.max(0, remainingSecondaryClassSwitches);
+        }
+
+        public void setRemainingClassSwitches(int count) {
+            this.remainingPrimaryClassSwitches = Math.max(0, count);
+            this.remainingSecondaryClassSwitches = 0;
+        }
+
+        public void decrementRemainingClassSwitches() {
+            this.remainingPrimaryClassSwitches = Math.max(0, this.remainingPrimaryClassSwitches - 1);
+        }
+
+        public int getRemainingPrimaryClassSwitches() {
+            return Math.max(0, remainingPrimaryClassSwitches);
+        }
+
+        public void setRemainingPrimaryClassSwitches(int count) {
+            this.remainingPrimaryClassSwitches = Math.max(0, count);
+        }
+
+        public void decrementRemainingPrimaryClassSwitches() {
+            this.remainingPrimaryClassSwitches = Math.max(0, this.remainingPrimaryClassSwitches - 1);
+        }
+
+        public int getRemainingSecondaryClassSwitches() {
+            return Math.max(0, remainingSecondaryClassSwitches);
+        }
+
+        public void setRemainingSecondaryClassSwitches(int count) {
+            this.remainingSecondaryClassSwitches = Math.max(0, count);
+        }
+
+        public void decrementRemainingSecondaryClassSwitches() {
+            this.remainingSecondaryClassSwitches = Math.max(0, this.remainingSecondaryClassSwitches - 1);
+        }
+
         public int getClassSwitchCount() {
-            return Math.max(0, primaryClassSwitchCount) + Math.max(0, secondaryClassSwitchCount);
+            return getRemainingClassSwitches();
         }
 
         public void setClassSwitchCount(int count) {
-            this.classSwitchCount = Math.max(0, count);
-            this.primaryClassSwitchCount = Math.max(0, count);
-            this.secondaryClassSwitchCount = 0;
+            setRemainingClassSwitches(count);
         }
 
         public void incrementClassSwitchCount() {
-            this.classSwitchCount = Math.max(0, this.classSwitchCount + 1);
-            this.primaryClassSwitchCount = Math.max(0, this.primaryClassSwitchCount + 1);
+            decrementRemainingClassSwitches();
         }
 
         public int getPrimaryClassSwitchCount() {
-            return Math.max(0, primaryClassSwitchCount);
+            return getRemainingPrimaryClassSwitches();
         }
 
         public void setPrimaryClassSwitchCount(int count) {
-            this.primaryClassSwitchCount = Math.max(0, count);
+            setRemainingPrimaryClassSwitches(count);
         }
 
         public void incrementPrimaryClassSwitchCount() {
-            this.primaryClassSwitchCount = Math.max(0, this.primaryClassSwitchCount + 1);
+            decrementRemainingPrimaryClassSwitches();
         }
 
         public int getSecondaryClassSwitchCount() {
-            return Math.max(0, secondaryClassSwitchCount);
+            return getRemainingSecondaryClassSwitches();
         }
 
         public void setSecondaryClassSwitchCount(int count) {
-            this.secondaryClassSwitchCount = Math.max(0, count);
+            setRemainingSecondaryClassSwitches(count);
         }
 
         public void incrementSecondaryClassSwitchCount() {
-            this.secondaryClassSwitchCount = Math.max(0, this.secondaryClassSwitchCount + 1);
+            decrementRemainingSecondaryClassSwitches();
         }
     }
 }

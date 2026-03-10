@@ -4,6 +4,7 @@ import com.hypixel.hytale.builtin.instances.config.InstanceWorldConfig;
 import com.hypixel.hytale.builtin.instances.config.InstanceEntityConfig;
 import com.hypixel.hytale.component.ComponentAccessor;
 import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.WorldConfig;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -12,6 +13,8 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
  * Utilities for detecting world context (normal world vs instance world).
  */
 public final class WorldContextUtil {
+
+    private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
 
     private WorldContextUtil() {
     }
@@ -39,9 +42,17 @@ public final class WorldContextUtil {
             return false;
         }
 
-        InstanceEntityConfig entityConfig = accessor.getComponent(playerRef, InstanceEntityConfig.getComponentType());
-        return entityConfig != null
-                && (entityConfig.getReturnPoint() != null || entityConfig.getReturnPointOverride() != null);
+        try {
+            InstanceEntityConfig entityConfig = accessor.getComponent(playerRef,
+                    InstanceEntityConfig.getComponentType());
+            return entityConfig != null
+                    && (entityConfig.getReturnPoint() != null || entityConfig.getReturnPointOverride() != null);
+        } catch (IllegalStateException ex) {
+            // Some lifecycle callbacks can run off the world thread. Treat this as
+            // "unknown/no return-point" to avoid crashing event dispatch.
+            LOGGER.atFine().withCause(ex).log("Skipping instance return-point check off-thread.");
+            return false;
+        }
     }
 
     /**

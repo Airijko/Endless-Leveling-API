@@ -48,6 +48,9 @@ public class PlayerDataManager {
     private static final long AUTO_BACKUP_MIN_INTERVAL_MS = 10 * 60 * 1000L; // 10 minutes between backups per player
     private static final DateTimeFormatter AUTO_BACKUP_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
 
+    private record ParsedSwitchValue(int value, boolean legacyDerived) {
+    }
+
     public PlayerDataManager(PluginFilesManager filesManager,
             SkillManager skillManager,
             RaceManager raceManager,
@@ -448,7 +451,21 @@ public class PlayerDataManager {
         Object raceNode = source.get("race");
         profile.setRaceId(parseRaceId(raceNode));
         profile.setLastRaceChangeEpochSeconds(parseRaceLastChanged(raceNode));
-        profile.setRaceSwitchCount(parseRaceSwitchCount(raceNode, source));
+        int maxRaceSwitches = raceManager != null ? raceManager.getMaxRaceSwitches() : -1;
+        ParsedSwitchValue parsedRaceRemaining = parseRaceRemainingSwitches(raceNode, source, maxRaceSwitches);
+        int raceRemaining = parsedRaceRemaining.value();
+        if (parsedRaceRemaining.legacyDerived()) {
+            raceRemaining = applyLegacyMigrationSwapConsumption(
+                    raceRemaining,
+                    maxRaceSwitches,
+                    profile.getLevel(),
+                    hasAssignedSelection(profile.getRaceId()),
+                    raceManager != null && raceManager.isSwapAntiExploitConsumeEnabled(),
+                    raceManager != null ? raceManager.getSwapAntiExploitConsumeLevelThreshold() : 0);
+        }
+        raceRemaining = grantEmergencySwapForNoneSelection(raceRemaining, maxRaceSwitches,
+                hasAssignedSelection(profile.getRaceId()));
+        profile.setRemainingRaceSwitches(raceRemaining);
 
         Map<String, Object> classesNode = castToStringObjectMap(source.get("classes"));
         String primaryClassId = parseClassId(classesNode != null ? classesNode.get("primary") : null);
@@ -464,21 +481,63 @@ public class PlayerDataManager {
         if (secondaryClassTimestamp <= 0L && legacyClassTimestamp > 0L) {
             secondaryClassTimestamp = legacyClassTimestamp;
         }
-        int primaryClassSwitchCount = parseInt(classesNode != null ? classesNode.get("primarySwitchCount") : null, 0);
-        int secondaryClassSwitchCount = parseInt(classesNode != null ? classesNode.get("secondarySwitchCount") : null,
-                0);
+        int maxClassSwitches = classManager != null ? classManager.getMaxClassSwitches() : -1;
+        ParsedSwitchValue parsedPrimaryClassRemaining = parseClassRemainingSwitches(classesNode,
+                "primaryRemainingSwitchCount",
+                "primarySwitchCount",
+                maxClassSwitches);
+        ParsedSwitchValue parsedSecondaryClassRemaining = parseClassRemainingSwitches(classesNode,
+                "secondaryRemainingSwitchCount",
+                "secondarySwitchCount",
+                maxClassSwitches);
         int legacyClassSwitchCount = parseInt(classesNode != null ? classesNode.get("switchCount") : null, -1);
-        if (primaryClassSwitchCount <= 0 && secondaryClassSwitchCount <= 0 && legacyClassSwitchCount > 0) {
+        if (parsedPrimaryClassRemaining.value() < 0
+                && parsedSecondaryClassRemaining.value() < 0
+                && legacyClassSwitchCount >= 0) {
+            int convertedRemaining = convertLegacyConsumedToRemaining(legacyClassSwitchCount, maxClassSwitches);
             if (secondaryClassTimestamp > 0L && primaryClassTimestamp <= 0L) {
-                secondaryClassSwitchCount = legacyClassSwitchCount;
+                parsedSecondaryClassRemaining = new ParsedSwitchValue(convertedRemaining, true);
             } else {
-                primaryClassSwitchCount = legacyClassSwitchCount;
+                parsedPrimaryClassRemaining = new ParsedSwitchValue(convertedRemaining, true);
             }
         }
+
+        int primaryClassRemaining = normalizeParsedRemaining(parsedPrimaryClassRemaining.value(), maxClassSwitches);
+        int secondaryClassRemaining = normalizeParsedRemaining(parsedSecondaryClassRemaining.value(), maxClassSwitches);
+
+        boolean classAntiExploitEnabled = classManager != null && classManager.isSwapAntiExploitConsumeEnabled();
+        int classConsumeLevelThreshold = classManager != null ? classManager.getSwapAntiExploitConsumeLevelThreshold()
+                : 0;
+
+        if (parsedPrimaryClassRemaining.legacyDerived()) {
+            primaryClassRemaining = applyLegacyMigrationSwapConsumption(
+                    primaryClassRemaining,
+                    maxClassSwitches,
+                    profile.getLevel(),
+                    hasAssignedSelection(primaryClassId),
+                    classAntiExploitEnabled,
+                    classConsumeLevelThreshold);
+        }
+
+        if (parsedSecondaryClassRemaining.legacyDerived()) {
+            secondaryClassRemaining = applyLegacyMigrationSwapConsumption(
+                    secondaryClassRemaining,
+                    maxClassSwitches,
+                    profile.getLevel(),
+                    hasAssignedSelection(secondaryClassId),
+                    classAntiExploitEnabled,
+                    classConsumeLevelThreshold);
+        }
+
+        primaryClassRemaining = grantEmergencySwapForNoneSelection(primaryClassRemaining, maxClassSwitches,
+                hasAssignedSelection(primaryClassId));
+        secondaryClassRemaining = grantEmergencySwapForNoneSelection(secondaryClassRemaining, maxClassSwitches,
+                hasAssignedSelection(secondaryClassId));
+
         profile.setLastPrimaryClassChangeEpochSeconds(primaryClassTimestamp);
         profile.setLastSecondaryClassChangeEpochSeconds(secondaryClassTimestamp);
-        profile.setPrimaryClassSwitchCount(primaryClassSwitchCount);
-        profile.setSecondaryClassSwitchCount(secondaryClassSwitchCount);
+        profile.setRemainingPrimaryClassSwitches(primaryClassRemaining);
+        profile.setRemainingSecondaryClassSwitches(secondaryClassRemaining);
     }
 
     private int parseProfileIndex(String key) {
@@ -629,28 +688,109 @@ public class PlayerDataManager {
         return 0L;
     }
 
-    private int parseRaceSwitchCount(Object raceNode, Map<String, Object> profileSource) {
+    private ParsedSwitchValue parseRaceRemainingSwitches(Object raceNode,
+            Map<String, Object> profileSource,
+            int maxSwitches) {
         Map<String, Object> raceMap = castToStringObjectMap(raceNode);
         if (raceMap != null) {
+            int explicitRemaining = parseInt(raceMap.get("remainingSwitchCount"), -1);
+            if (explicitRemaining >= 0) {
+                return new ParsedSwitchValue(explicitRemaining, false);
+            }
+
             int direct = parseInt(raceMap.get("switchCount"), -1);
             if (direct >= 0) {
-                return direct;
+                return new ParsedSwitchValue(convertLegacyConsumedToRemaining(direct, maxSwitches), true);
             }
 
             int alternate = parseInt(raceMap.get("raceSwitchCount"), -1);
             if (alternate >= 0) {
-                return alternate;
+                return new ParsedSwitchValue(convertLegacyConsumedToRemaining(alternate, maxSwitches), true);
             }
         }
 
         if (profileSource != null) {
             int legacy = parseInt(profileSource.get("raceSwitchCount"), -1);
             if (legacy >= 0) {
-                return legacy;
+                return new ParsedSwitchValue(convertLegacyConsumedToRemaining(legacy, maxSwitches), true);
             }
         }
 
-        return 0;
+        return new ParsedSwitchValue(defaultRemainingSwitches(maxSwitches), true);
+    }
+
+    private ParsedSwitchValue parseClassRemainingSwitches(Map<String, Object> classesNode,
+            String remainingKey,
+            String legacyConsumedKey,
+            int maxSwitches) {
+        if (classesNode != null) {
+            int explicitRemaining = parseInt(classesNode.get(remainingKey), -1);
+            if (explicitRemaining >= 0) {
+                return new ParsedSwitchValue(explicitRemaining, false);
+            }
+
+            int legacyConsumed = parseInt(classesNode.get(legacyConsumedKey), -1);
+            if (legacyConsumed >= 0) {
+                return new ParsedSwitchValue(convertLegacyConsumedToRemaining(legacyConsumed, maxSwitches), true);
+            }
+        }
+
+        return new ParsedSwitchValue(defaultRemainingSwitches(maxSwitches), true);
+    }
+
+    private int normalizeParsedRemaining(int parsedValue, int maxSwitches) {
+        if (parsedValue >= 0) {
+            return Math.max(0, parsedValue);
+        }
+        return defaultRemainingSwitches(maxSwitches);
+    }
+
+    private int convertLegacyConsumedToRemaining(int consumedCount, int maxSwitches) {
+        int normalizedConsumed = Math.max(0, consumedCount);
+        if (maxSwitches < 0) {
+            return 0;
+        }
+        return Math.max(0, maxSwitches - normalizedConsumed);
+    }
+
+    private int defaultRemainingSwitches(int maxSwitches) {
+        if (maxSwitches < 0) {
+            return 0;
+        }
+        return Math.max(0, maxSwitches);
+    }
+
+    private int applyLegacyMigrationSwapConsumption(int remainingCount,
+            int maxSwitches,
+            int level,
+            boolean hasAssignedSelection,
+            boolean antiExploitEnabled,
+            int consumeLevelThreshold) {
+        if (maxSwitches < 0 || remainingCount <= 0) {
+            return Math.max(0, remainingCount);
+        }
+        if (!hasAssignedSelection || !antiExploitEnabled) {
+            return Math.max(0, remainingCount);
+        }
+        if (level < Math.max(1, consumeLevelThreshold)) {
+            return Math.max(0, remainingCount);
+        }
+        return Math.max(0, remainingCount - 1);
+    }
+
+    private int grantEmergencySwapForNoneSelection(int remainingCount, int maxSwitches, boolean hasAssignedSelection) {
+        int normalized = Math.max(0, remainingCount);
+        if (hasAssignedSelection || maxSwitches <= 0 || normalized > 0) {
+            return normalized;
+        }
+        return 1;
+    }
+
+    private boolean hasAssignedSelection(String id) {
+        if (id == null || id.isBlank()) {
+            return false;
+        }
+        return !"none".equalsIgnoreCase(id.trim());
     }
 
     private String parseClassId(Object classNode) {
@@ -843,7 +983,7 @@ public class PlayerDataManager {
                         raceSection.put("name", raceDisplay);
                     }
                     raceSection.put("lastChangedEpochSeconds", profile.getLastRaceChangeEpochSeconds());
-                    raceSection.put("switchCount", profile.getRaceSwitchCount());
+                    raceSection.put("remainingSwitchCount", profile.getRemainingRaceSwitches());
                     profileMap.put("race", raceSection);
 
                     Map<String, Object> classesSection = new LinkedHashMap<>();
@@ -853,13 +993,13 @@ public class PlayerDataManager {
                     }
                     long primaryChanged = profile.getLastPrimaryClassChangeEpochSeconds();
                     long secondaryChanged = profile.getLastSecondaryClassChangeEpochSeconds();
-                    int primarySwitchCount = profile.getPrimaryClassSwitchCount();
-                    int secondarySwitchCount = profile.getSecondaryClassSwitchCount();
+                    int primarySwitchCount = profile.getRemainingPrimaryClassSwitches();
+                    int secondarySwitchCount = profile.getRemainingSecondaryClassSwitches();
                     classesSection.put("primaryLastChangedEpochSeconds", primaryChanged);
                     classesSection.put("secondaryLastChangedEpochSeconds", secondaryChanged);
-                    classesSection.put("primarySwitchCount", primarySwitchCount);
-                    classesSection.put("secondarySwitchCount", secondarySwitchCount);
-                    classesSection.put("switchCount", Math.max(0, primarySwitchCount + secondarySwitchCount));
+                    classesSection.put("primaryRemainingSwitchCount", primarySwitchCount);
+                    classesSection.put("secondaryRemainingSwitchCount", secondarySwitchCount);
+                    classesSection.put("remainingSwitchCount", Math.max(0, primarySwitchCount + secondarySwitchCount));
                     classesSection.put("lastChangedEpochSeconds", Math.max(primaryChanged, secondaryChanged));
                     profileMap.put("classes", classesSection);
 

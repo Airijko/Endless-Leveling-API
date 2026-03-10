@@ -202,14 +202,16 @@ public final class WitherAugment extends YamlAugment implements AugmentHooks.OnH
         long elapsedMillis = Math.max(TICK_INTERVAL_MILLIS, now - (state.nextTickAt - TICK_INTERVAL_MILLIS));
         double elapsedSeconds = elapsedMillis / 1000.0D;
         double damage = hp.getMax() * state.percentPerSecond * elapsedSeconds;
-        if (damage >= hp.get()) {
+        boolean rageActive = AugmentUtils.isUndyingRageActive(commandBuffer, ref, now);
+        if (damage >= hp.get() && !rageActive) {
             markWitherKill(state.sourceRef, ref, commandBuffer, statMap);
             clearSlowIfPossible(state, commandBuffer, ref);
             ACTIVE_WITHER.remove(key);
             return;
         }
 
-        float updated = Math.max(0.0f, (float) (hp.get() - damage));
+        float minimumHealthFloor = rageActive ? 1.0f : 0.0f;
+        float updated = Math.max(minimumHealthFloor, (float) (hp.get() - damage));
         statMap.setStatValue(DefaultEntityStatTypes.getHealth(), updated);
         state.nextTickAt = now + TICK_INTERVAL_MILLIS;
     }

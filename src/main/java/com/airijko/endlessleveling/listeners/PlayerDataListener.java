@@ -55,10 +55,41 @@ public class PlayerDataListener {
             return;
         }
         UUID uuid = playerRef.getUuid();
-        boolean inInstanceWorld = WorldContextUtil.isInstanceContext(player.getWorld(), entityRef, store);
 
         // Load or create PlayerData
         PlayerData playerData = playerDataManager.loadOrCreate(uuid, playerRef.getUsername());
+        if (playerData == null) {
+            LOGGER.atWarning().log("Unable to load PlayerData for joining player %s", playerRef.getUsername());
+            return;
+        }
+
+        var world = player.getWorld();
+        if (world == null) {
+            boolean inInstanceWorld = false;
+            processPlayerReadyOnWorldThread(playerData, playerRef, entityRef, store, inInstanceWorld);
+            return;
+        }
+
+        try {
+            world.execute(() -> {
+                boolean inInstanceWorld = WorldContextUtil.isInstanceContext(world, entityRef, store);
+                processPlayerReadyOnWorldThread(playerData, playerRef, entityRef, store, inInstanceWorld);
+            });
+        } catch (Exception ex) {
+            LOGGER.atWarning().withCause(ex).log(
+                    "Failed to enqueue PlayerReady world task for %s; applying fallback path",
+                    playerRef.getUsername());
+            boolean inInstanceWorld = WorldContextUtil.isInstanceWorld(world);
+            processPlayerReadyOnWorldThread(playerData, playerRef, null, null, inInstanceWorld);
+        }
+    }
+
+    private void processPlayerReadyOnWorldThread(PlayerData playerData,
+            PlayerRef playerRef,
+            Ref<EntityStore> entityRef,
+            Store<EntityStore> store,
+            boolean inInstanceWorld) {
+        UUID uuid = playerRef.getUuid();
 
         if (passiveManager != null) {
             passiveManager.resetRuntimeState(uuid);
@@ -70,16 +101,14 @@ public class PlayerDataListener {
             try {
                 boolean applied = skillManager.applyAllSkillModifiers(entityRef, store, playerData);
                 if (!applied) {
-                    LOGGER.atFine().log("Skill modifiers scheduled for retry for %s", playerRef.getUsername());
-                    var retrySystem = EndlessLeveling.getInstance().getPlayerRaceStatSystem();
-                    if (retrySystem != null) {
-                        retrySystem.scheduleRetry(uuid);
-                    }
+                    scheduleSkillRetry(uuid, playerRef.getUsername());
                 }
             } catch (Exception e) {
                 LOGGER.atWarning().log("Failed to apply skill modifiers for %s: %s", playerRef.getUsername(),
                         e.getMessage());
             }
+        } else if (skillManager != null) {
+            scheduleSkillRetry(uuid, playerRef.getUsername());
         }
 
         if (raceManager != null && !inInstanceWorld) {
@@ -100,6 +129,14 @@ public class PlayerDataListener {
 
         if (playerData.getSkillPoints() > 0) {
             notifyAvailableSkillPoints(playerRef, playerData.getSkillPoints());
+        }
+    }
+
+    private void scheduleSkillRetry(UUID uuid, String username) {
+        LOGGER.atFine().log("Skill modifiers scheduled for retry for %s", username);
+        var retrySystem = EndlessLeveling.getInstance().getPlayerRaceStatSystem();
+        if (retrySystem != null) {
+            retrySystem.scheduleRetry(uuid);
         }
     }
 

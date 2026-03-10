@@ -37,6 +37,7 @@ public class AugmentCommand extends AbstractPlayerCommand {
             @Nonnull World world) {
         senderRef.sendMessage(Message.raw("Usage: /el augment refresh [player]").color("#4fd7f7"));
         senderRef.sendMessage(Message.raw("Usage: /el augment reset [player]").color("#4fd7f7"));
-        senderRef.sendMessage(Message.raw("Usage: /el augment reroll [tier]").color("#4fd7f7"));
+        senderRef.sendMessage(Message.raw("Usage: /el augment reroll <augment_id>").color("#4fd7f7"));
+        senderRef.sendMessage(Message.raw("Usage: /el augment reroll <tier> <augment_id>").color("#4fd7f7"));
     }
 }
