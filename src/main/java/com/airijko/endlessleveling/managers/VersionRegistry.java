@@ -20,7 +20,7 @@ public final class VersionRegistry {
 
     public static final int PLAYERDATA_SCHEMA_VERSION = 10;
 
-    public static final int BUILTIN_AUGMENTS_VERSION = 14;
+    public static final int BUILTIN_AUGMENTS_VERSION = 15;
     public static final int BUILTIN_CLASSES_VERSION = 9;
     public static final int BUILTIN_RACES_VERSION = 9;
     public static final int BUILTIN_LANG_VERSION = 2;
