@@ -20,7 +20,10 @@ import java.util.WeakHashMap;
 public final class OverhealAugment extends YamlAugment
         implements AugmentHooks.OnHitAugment, AugmentHooks.OnDamageTakenAugment, AugmentHooks.PassiveStatAugment {
     public static final String ID = "overheal";
+    private static final double SHIELD_EPSILON = 0.0001D;
     private static final Map<EntityStatMap, Double> PENDING_OVERHEAL = Collections
+            .synchronizedMap(new WeakHashMap<>());
+    private static final Map<AugmentState, Boolean> FULL_SHIELD_NOTIFIED = Collections
             .synchronizedMap(new WeakHashMap<>());
 
     private final double maxShieldPercent;
@@ -91,10 +94,8 @@ public final class OverhealAugment extends YamlAugment
         float incoming = Math.max(0f, context.getIncomingDamage());
         double absorbed = Math.min(incoming, state.getStoredValue());
         state.setStoredValue(Math.max(0.0D, state.getStoredValue() - absorbed));
-        if (state.getStoredValue() <= 0.0001D) {
+        if (state.getStoredValue() <= SHIELD_EPSILON) {
             clearShieldState(state, context.getCommandBuffer(), context.getDefenderRef());
-        } else {
-            notifyShieldChanged(state, context.getCommandBuffer(), context.getDefenderRef());
         }
         return (float) Math.max(0.0D, incoming - absorbed);
     }
@@ -129,10 +130,8 @@ public final class OverhealAugment extends YamlAugment
 
         double decay = state.getStoredValue() * Math.min(1.0D, (deltaSeconds * 1000.0D) / durationMillis);
         state.setStoredValue(Math.max(0.0D, state.getStoredValue() - decay));
-        if (state.getStoredValue() <= 0.0001D) {
+        if (state.getStoredValue() <= SHIELD_EPSILON) {
             clearShieldState(state, context.getCommandBuffer(), context.getPlayerRef());
-        } else {
-            notifyShieldChanged(state, context.getCommandBuffer(), context.getPlayerRef());
         }
     }
 
@@ -156,9 +155,16 @@ public final class OverhealAugment extends YamlAugment
 
         AugmentState state = runtimeState.getState(ID);
         double maxShield = maxHealth * maxShieldPercent;
-        state.setStoredValue(Math.min(maxShield, state.getStoredValue() + overflow));
+        double previousShield = Math.max(0.0D, state.getStoredValue());
+        double nextShield = Math.min(maxShield, previousShield + overflow);
+        state.setStoredValue(nextShield);
         state.setExpiresAt(System.currentTimeMillis() + durationMillis);
-        notifyShieldChanged(state, commandBuffer, ownerRef);
+
+        boolean becameFull = previousShield + SHIELD_EPSILON < maxShield
+                && nextShield + SHIELD_EPSILON >= maxShield;
+        if (becameFull && shouldNotifyFull(state)) {
+            notifyShieldFull(commandBuffer, ownerRef, nextShield, maxShield);
+        }
     }
 
     private double consumeOverhealOverflow(EntityStatMap statMap) {
@@ -180,23 +186,41 @@ public final class OverhealAugment extends YamlAugment
         if (state == null) {
             return;
         }
+        boolean hadShield = state.getStoredValue() > SHIELD_EPSILON;
         state.setStoredValue(0.0D);
         state.setExpiresAt(0L);
-        notifyShieldChanged(state, commandBuffer, ownerRef);
+        clearFullNotifyFlag(state);
+        if (hadShield) {
+            notifyShieldRemoved(commandBuffer, ownerRef);
+        }
     }
 
-    private void notifyShieldChanged(AugmentState state,
-            CommandBuffer<EntityStore> commandBuffer,
-            Ref<EntityStore> ownerRef) {
+    private boolean shouldNotifyFull(AugmentState state) {
+        if (state == null) {
+            return false;
+        }
+        synchronized (FULL_SHIELD_NOTIFIED) {
+            if (Boolean.TRUE.equals(FULL_SHIELD_NOTIFIED.get(state))) {
+                return false;
+            }
+            FULL_SHIELD_NOTIFIED.put(state, true);
+            return true;
+        }
+    }
+
+    private void clearFullNotifyFlag(AugmentState state) {
         if (state == null) {
             return;
         }
-        int displayedValue = (int) Math.round(Math.max(0.0D, state.getStoredValue()));
-        if (displayedValue == state.getStacks()) {
-            return;
+        synchronized (FULL_SHIELD_NOTIFIED) {
+            FULL_SHIELD_NOTIFIED.remove(state);
         }
-        state.setStacks(displayedValue);
+    }
 
+    private void notifyShieldFull(CommandBuffer<EntityStore> commandBuffer,
+            Ref<EntityStore> ownerRef,
+            double currentShield,
+            double maxShield) {
         if (commandBuffer == null || ownerRef == null) {
             return;
         }
@@ -205,7 +229,20 @@ public final class OverhealAugment extends YamlAugment
             return;
         }
         AugmentUtils.sendAugmentMessage(playerRef,
-                String.format("%s shield: %d", getName(), displayedValue));
+                String.format("%s shield is full: %.1f/%.1f.", getName(), currentShield, maxShield));
+    }
+
+    private void notifyShieldRemoved(CommandBuffer<EntityStore> commandBuffer,
+            Ref<EntityStore> ownerRef) {
+        if (commandBuffer == null || ownerRef == null) {
+            return;
+        }
+        PlayerRef playerRef = AugmentUtils.getPlayerRef(commandBuffer, ownerRef);
+        if (playerRef == null || !playerRef.isValid()) {
+            return;
+        }
+        AugmentUtils.sendAugmentMessage(playerRef,
+                String.format("%s shield broken (0/no shield).", getName()));
     }
 
     private double normalizePercentPoints(double configuredValue) {
