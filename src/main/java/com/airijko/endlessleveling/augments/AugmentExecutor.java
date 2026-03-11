@@ -14,8 +14,12 @@ import com.airijko.endlessleveling.augments.AugmentHooks.OnMissAugment;
 import com.airijko.endlessleveling.augments.AugmentHooks.PassiveStatAugment;
 import com.airijko.endlessleveling.augments.types.FleetFootworkAugment;
 import com.airijko.endlessleveling.augments.types.FortressAugment;
+import com.airijko.endlessleveling.augments.types.GoliathAugment;
 import com.airijko.endlessleveling.augments.types.NestingDollAugment;
+import com.airijko.endlessleveling.augments.types.RaidBossAugment;
 import com.airijko.endlessleveling.augments.types.RebirthAugment;
+import com.airijko.endlessleveling.augments.types.CommonAugment;
+import com.airijko.endlessleveling.augments.types.TankEngineAugment;
 import com.airijko.endlessleveling.augments.types.UndyingRageAugment;
 import com.airijko.endlessleveling.augments.types.BailoutAugment;
 import com.airijko.endlessleveling.data.PlayerData;
@@ -34,15 +38,23 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Bridges event systems to augment logic implementations.
  */
 public final class AugmentExecutor {
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
+    private static final List<HealthModifierSpec> PASSIVE_HEALTH_MODIFIERS = List.of(
+            new HealthModifierSpec(RaidBossAugment.ID, "max_hp_bonus"),
+            new HealthModifierSpec(GoliathAugment.ID, "max_hp_bonus"),
+            new HealthModifierSpec(TankEngineAugment.ID, "max_hp_bonus"),
+            new HealthModifierSpec(NestingDollAugment.ID, "max_hp_penalty"));
 
     private final AugmentManager augmentManager;
     private final AugmentRuntimeManager runtimeManager;
@@ -238,6 +250,16 @@ public final class AugmentExecutor {
         runtime.clearPermanentAttributeBonuses();
 
         Map<String, String> selected = playerData.getSelectedAugmentsSnapshot();
+        Set<String> selectedAugmentIds = toSelectedAugmentIds(selected.values());
+        String signature = buildSelectionSignature(selectedAugmentIds);
+        String previousSignature = runtime.getPassiveSelectionSignature();
+
+        if (!Objects.equals(previousSignature, signature) && statMap != null) {
+            cleanupStalePassiveHealthModifiers(statMap, selectedAugmentIds);
+            runtime.retainAugmentStates(selectedAugmentIds);
+            runtime.setPassiveSelectionSignature(signature);
+        }
+
         if (selected.isEmpty()) {
             return;
         }
@@ -271,6 +293,94 @@ public final class AugmentExecutor {
                         deltaSeconds);
                 handler.applyPassive(context);
             }
+        }
+    }
+
+    private void cleanupStalePassiveHealthModifiers(EntityStatMap statMap, Set<String> selectedAugmentIds) {
+        if (statMap == null) {
+            return;
+        }
+
+        var health = statMap.get(DefaultEntityStatTypes.getHealth());
+        if (health == null) {
+            return;
+        }
+        float previousMax = Math.max(1.0f, health.getMax());
+        float previousCurrent = Math.max(0.0f, health.get());
+
+        boolean shouldUpdate = false;
+        for (HealthModifierSpec spec : PASSIVE_HEALTH_MODIFIERS) {
+            // Always strip legacy non-prefixed keys when selections change.
+            statMap.removeModifier(DefaultEntityStatTypes.getHealth(), spec.legacyKey());
+
+            // Prefixed keys must only exist while the augment is actively selected.
+            if (!selectedAugmentIds.contains(spec.augmentId())) {
+                statMap.removeModifier(DefaultEntityStatTypes.getHealth(), spec.prefixedKey());
+                shouldUpdate = true;
+            }
+        }
+
+        if (!shouldUpdate) {
+            return;
+        }
+
+        statMap.update();
+        var updated = statMap.get(DefaultEntityStatTypes.getHealth());
+        if (updated == null || updated.getMax() <= 0f) {
+            return;
+        }
+
+        float newMax = Math.max(1.0f, updated.getMax());
+        float ratio = previousMax > 0.01f ? (previousCurrent / previousMax) : 1.0f;
+        float adjustedCurrent = Math.max(1.0f, Math.min(newMax, ratio * newMax));
+        statMap.setStatValue(DefaultEntityStatTypes.getHealth(), adjustedCurrent);
+    }
+
+    private Set<String> toSelectedAugmentIds(Collection<String> selectedAugmentValues) {
+        Set<String> selected = new HashSet<>();
+        if (selectedAugmentValues == null || selectedAugmentValues.isEmpty()) {
+            return selected;
+        }
+        for (String selectedValue : selectedAugmentValues) {
+            String normalized = normalizeSelectedAugmentId(selectedValue);
+            if (normalized != null && !normalized.isBlank()) {
+                selected.add(normalized);
+            }
+        }
+        return selected;
+    }
+
+    private String normalizeSelectedAugmentId(String augmentId) {
+        if (augmentId == null || augmentId.isBlank()) {
+            return null;
+        }
+        String normalized = augmentId.trim().toLowerCase(Locale.ROOT);
+        int encodedDelimiter = normalized.indexOf("::");
+        if (encodedDelimiter > 0) {
+            normalized = normalized.substring(0, encodedDelimiter);
+        }
+        if ("basic".equals(normalized)) {
+            return CommonAugment.ID;
+        }
+        return normalized;
+    }
+
+    private String buildSelectionSignature(Set<String> selectedAugmentIds) {
+        if (selectedAugmentIds == null || selectedAugmentIds.isEmpty()) {
+            return "";
+        }
+        List<String> sorted = new ArrayList<>(selectedAugmentIds);
+        sorted.sort(String::compareTo);
+        return String.join("|", sorted);
+    }
+
+    private record HealthModifierSpec(String augmentId, String suffix) {
+        private String prefixedKey() {
+            return "EL_" + augmentId + "_" + suffix;
+        }
+
+        private String legacyKey() {
+            return augmentId + "_" + suffix;
         }
     }
 

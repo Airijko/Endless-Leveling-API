@@ -17,7 +17,8 @@ import java.util.Map;
 public final class RaidBossAugment extends YamlAugment
         implements AugmentHooks.PassiveStatAugment, AugmentHooks.OnHitAugment {
     public static final String ID = "raid_boss";
-    private static final String MAX_HP_BONUS_KEY = ID + "_max_hp_bonus";
+    private static final String MAX_HP_BONUS_KEY = "EL_" + ID + "_max_hp_bonus";
+    private static final String LEGACY_MAX_HP_BONUS_KEY = ID + "_max_hp_bonus";
 
     private final double maxHealthPercentBonus;
     private final double bonusDamage;
@@ -64,6 +65,7 @@ public final class RaidBossAugment extends YamlAugment
         float previousCurrent = hpBefore.get();
 
         statMap.removeModifier(DefaultEntityStatTypes.getHealth(), MAX_HP_BONUS_KEY);
+        statMap.removeModifier(DefaultEntityStatTypes.getHealth(), LEGACY_MAX_HP_BONUS_KEY);
         statMap.update();
 
         EntityStatValue hpBaseline = statMap.get(DefaultEntityStatTypes.getHealth());

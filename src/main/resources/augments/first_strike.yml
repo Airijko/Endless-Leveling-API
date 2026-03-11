@@ -6,6 +6,6 @@ category: ON_HIT
 
 passives:
   bonus_damage_on_hit:
-    value: 2.0 # +200% damage on first hit
+    value: 1.75 # +175% damage on first hit
     cooldown: 25 # seconds between first-strike windows
     category: ON_HIT

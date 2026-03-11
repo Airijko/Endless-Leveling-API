@@ -19,9 +19,9 @@ public final class VersionRegistry {
     public static final int WORLDS_YML_VERSION = 15;
     public static final int WEAPONS_YML_VERSION = 3;
 
-    public static final int PLAYERDATA_SCHEMA_VERSION = 13;
+    public static final int PLAYERDATA_SCHEMA_VERSION = 14;
 
-    public static final int BUILTIN_AUGMENTS_VERSION = 23;
+    public static final int BUILTIN_AUGMENTS_VERSION = 24;
     public static final int BUILTIN_CLASSES_VERSION = 10;
     public static final int BUILTIN_RACES_VERSION = 10;
     public static final int BUILTIN_LANG_VERSION = 2;

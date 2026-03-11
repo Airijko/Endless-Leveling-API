@@ -50,6 +50,8 @@ public class PlayerCombatListener extends DamageEventSystem {
     private static final long TRUE_EDGE_INTERNAL_COOLDOWN_MILLIS = 400L;
     public static final MetaKey<Boolean> AUGMENT_DOT_DAMAGE = Damage.META_REGISTRY
             .registerMetaObject(data -> Boolean.FALSE);
+    public static final MetaKey<Boolean> AUGMENT_PROC_DAMAGE = Damage.META_REGISTRY
+            .registerMetaObject(data -> Boolean.FALSE);
 
     private final PlayerDataManager playerDataManager;
     private final PassiveManager passiveManager;
@@ -125,8 +127,8 @@ public class PlayerCombatListener extends DamageEventSystem {
         EntityStatMap attackerStats = commandBuffer.getComponent(attackerRef, EntityStatMap.getComponentType());
         EntityStatMap targetStats = commandBuffer.getComponent(targetRef, EntityStatMap.getComponentType());
 
-        boolean isAugmentDot = isAugmentDotDamage(damage);
-        CombatHookProcessor.OutgoingResult result = isAugmentDot
+        boolean bypassOutgoingAugmentMath = shouldBypassOutgoingAugmentMath(damage);
+        CombatHookProcessor.OutgoingResult result = bypassOutgoingAugmentMath
                 ? new CombatHookProcessor.OutgoingResult(damage.getAmount(), false, 0.0D)
                 : combatHookProcessor.processOutgoing(
                         new CombatHookProcessor.OutgoingContext(
@@ -153,7 +155,7 @@ public class PlayerCombatListener extends DamageEventSystem {
         TrueEdgeSettings trueEdgeSettings = resolveTrueEdgeSettings(archetypeSnapshot);
         boolean trueEdgeReady = isTrueEdgeOffCooldown(runtimeState, now);
 
-        TrueEdgeComputation trueEdge = (!isAugmentDot && trueEdgeReady)
+        TrueEdgeComputation trueEdge = (!bypassOutgoingAugmentMath && trueEdgeReady)
                 ? computeTrueEdgeConversion(
                         targetRef,
                         commandBuffer,
@@ -187,7 +189,7 @@ public class PlayerCombatListener extends DamageEventSystem {
         // only
         // shifts damage buckets and level-difference defense is the sole true-damage
         // reducer.
-        trueEdge = (!isAugmentDot && trueEdgeReady)
+        trueEdge = (!bypassOutgoingAugmentMath && trueEdgeReady)
                 ? computeTrueEdgeConversion(
                         targetRef,
                         commandBuffer,
@@ -197,10 +199,10 @@ public class PlayerCombatListener extends DamageEventSystem {
                         reduction,
                         targetIsPlayer)
                 : TrueEdgeComputation.none();
-        if (!isAugmentDot && trueEdgeReady && trueEdge.triggered() && runtimeState != null) {
+        if (!bypassOutgoingAugmentMath && trueEdgeReady && trueEdge.triggered() && runtimeState != null) {
             runtimeState.setTrueEdgeCooldownExpiresAt(now + TRUE_EDGE_INTERNAL_COOLDOWN_MILLIS);
         }
-        double reducedAugmentTrueDamage = isAugmentDot
+        double reducedAugmentTrueDamage = bypassOutgoingAugmentMath
                 ? 0.0D
                 : applyLevelDifferenceReductionToTrueDamage(
                         result.trueDamageBonus(),
@@ -263,8 +265,24 @@ public class PlayerCombatListener extends DamageEventSystem {
         return dotDamage;
     }
 
+    public static Damage createAugmentProcDamage(Ref<EntityStore> sourceRef, float amount) {
+        Damage procDamage = sourceRef != null
+                ? new Damage(new Damage.EntitySource(sourceRef), DamageCause.PHYSICAL, amount)
+                : new Damage(Damage.NULL_SOURCE, DamageCause.PHYSICAL, amount);
+        procDamage.putMetaObject(AUGMENT_PROC_DAMAGE, Boolean.TRUE);
+        return procDamage;
+    }
+
     public static boolean isAugmentDotDamage(Damage damage) {
         return damage != null && Boolean.TRUE.equals(damage.getIfPresentMetaObject(AUGMENT_DOT_DAMAGE));
+    }
+
+    public static boolean isAugmentProcDamage(Damage damage) {
+        return damage != null && Boolean.TRUE.equals(damage.getIfPresentMetaObject(AUGMENT_PROC_DAMAGE));
+    }
+
+    public static boolean shouldBypassOutgoingAugmentMath(Damage damage) {
+        return isAugmentDotDamage(damage) || isAugmentProcDamage(damage);
     }
 
     private float applyTrueEdgeDamage(Ref<EntityStore> attackerRef,

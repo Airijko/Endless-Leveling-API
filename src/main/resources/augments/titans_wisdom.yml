@@ -1,10 +1,14 @@
 id: titans_wisdom
 name: "Titan's Wisdom"
 tier: ELITE
-description: "Your immense vitality fuels your magical power."
+description: "Gain Sorcery based on your total max Health, but lose some Haste."
 category: PASSIVE_STAT
 
 passives:
-  health_to_sorcery:
-    scaling_stat: max_health
-    conversion_percent: 0.20 # gain Sorcery equal to 20% of your max health
+  buffs:
+    sorcery_from_max_health:
+      scaling_stat: max_health
+      conversion_percent: 0.15 # gain Sorcery equal to 15% of your max health
+  debuffs:
+    haste:
+      value: -0.15 # -15% Haste

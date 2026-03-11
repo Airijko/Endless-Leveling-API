@@ -12,7 +12,7 @@ passives:
 
   bonus_damage:
     scaling_stat: missing_health_percent # scales with missing HP
-    max_bonus_ferocity: 150 # up to 150% bonus critical damage at full missing HP
+    max_bonus_ferocity: 125 # up to 125% bonus critical damage at full missing HP
     full_value_at_health_percent: 0.05 # full bonus damage when player health is at or below 5%
 
   buffs:

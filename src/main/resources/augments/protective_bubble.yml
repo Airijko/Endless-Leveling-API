@@ -7,4 +7,4 @@ category: ON_DAMAGE_TAKEN
 passives:
   immunity_bubble:
     immunity_window: 0.25 # seconds of immunity for the triggering attack window
-    cooldown: 25 # seconds
+    cooldown: 30 # seconds

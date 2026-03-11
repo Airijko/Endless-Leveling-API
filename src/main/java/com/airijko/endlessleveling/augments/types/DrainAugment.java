@@ -5,6 +5,8 @@ import com.airijko.endlessleveling.augments.AugmentHooks;
 import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
 import com.airijko.endlessleveling.augments.YamlAugment;
+import com.airijko.endlessleveling.listeners.PlayerCombatListener;
+import com.hypixel.hytale.server.core.modules.entity.damage.DamageSystems;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
 import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
 
@@ -37,6 +39,7 @@ public final class DrainAugment extends YamlAugment implements AugmentHooks.OnHi
         return Math.max(0.0D, health.get() * (percent / 100.0D));
     }
 
+    @Override
     public float onHit(AugmentHooks.HitContext context) {
         var runtime = context.getRuntimeState();
         if (runtime == null) {
@@ -53,6 +56,17 @@ public final class DrainAugment extends YamlAugment implements AugmentHooks.OnHi
         if (extra <= 0.0D) {
             return context.getDamage();
         }
+
+        // Drain is a one-time proc hit, so it should use the augment proc damage path.
+        if (context.getCommandBuffer() != null && context.getTargetRef() != null && context.getTargetRef().isValid()) {
+            DamageSystems.executeDamage(
+                    context.getTargetRef(),
+                    context.getCommandBuffer(),
+                    PlayerCombatListener.createAugmentProcDamage(context.getAttackerRef(), (float) extra));
+            state.setLastProc(now);
+            return context.getDamage();
+        }
+
         state.setLastProc(now);
         return context.getDamage() + (float) extra;
     }

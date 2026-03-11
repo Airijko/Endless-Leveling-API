@@ -7,8 +7,8 @@ category: PASSIVE_STAT
 passives:
   stacking_health:
     flat_health_per_stack: 5 # +5 HP per stack
-    percent_max_health_per_stack: 0.04 # +4% max health per stack
-    percent_cap: 1.0 # caps at +100% max health
+    max_health_multiplier_at_max_stacks: 2.0 # 2.0 means 2x max HP at full stacks (set 1.75 for 1.75x)
+    percent_max_health_per_stack: 0.04 # legacy fallback when max_health_multiplier_at_max_stacks is not set
     max_stacks: 25
     duration_per_stack: 10 # seconds
     exclude_flat_from_percent_scaling: true # flat HP does not contribute to % scaling

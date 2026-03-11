@@ -3,7 +3,9 @@ package com.airijko.endlessleveling.augments;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
@@ -44,6 +46,7 @@ public final class AugmentRuntimeManager {
         private final Map<String, CooldownState> cooldowns = new ConcurrentHashMap<>();
         private final Map<String, AugmentState> states = new ConcurrentHashMap<>();
         private final Map<SkillAttributeType, Map<String, AttributeBonus>> attributeBonuses = new ConcurrentHashMap<>();
+        private volatile String passiveSelectionSignature;
 
         private AugmentRuntimeState(UUID playerId) {
             this.playerId = playerId;
@@ -99,6 +102,15 @@ public final class AugmentRuntimeManager {
             cooldowns.clear();
             states.clear();
             attributeBonuses.clear();
+            passiveSelectionSignature = null;
+        }
+
+        public String getPassiveSelectionSignature() {
+            return passiveSelectionSignature;
+        }
+
+        public void setPassiveSelectionSignature(String passiveSelectionSignature) {
+            this.passiveSelectionSignature = passiveSelectionSignature;
         }
 
         public void clearPermanentAttributeBonuses() {
@@ -122,6 +134,27 @@ public final class AugmentRuntimeManager {
             attributeBonuses
                     .computeIfAbsent(type, t -> new ConcurrentHashMap<>())
                     .put(normalizeId(sourceId), new AttributeBonus(value, expiresAtMillis));
+        }
+
+        public void retainAugmentStates(Set<String> activeAugmentIds) {
+            Set<String> normalizedActive = new HashSet<>();
+            if (activeAugmentIds != null) {
+                for (String augmentId : activeAugmentIds) {
+                    String normalized = normalizeId(augmentId);
+                    if (normalized != null && !normalized.isBlank()) {
+                        normalizedActive.add(normalized);
+                    }
+                }
+            }
+
+            if (normalizedActive.isEmpty()) {
+                states.clear();
+                cooldowns.clear();
+                return;
+            }
+
+            states.keySet().removeIf(id -> !normalizedActive.contains(normalizeId(id)));
+            cooldowns.keySet().removeIf(id -> !normalizedActive.contains(normalizeId(id)));
         }
 
         public double getAttributeBonus(SkillAttributeType type, long now) {

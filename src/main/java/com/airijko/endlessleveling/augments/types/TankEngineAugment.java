@@ -21,11 +21,12 @@ import java.util.Map;
 public final class TankEngineAugment extends YamlAugment
         implements AugmentHooks.PassiveStatAugment, AugmentHooks.OnHitAugment, AugmentHooks.OnDamageTakenAugment {
     public static final String ID = "tank_engine";
-    private static final String MAX_HP_BONUS_KEY = ID + "_max_hp_bonus";
+    private static final String MAX_HP_BONUS_KEY = "EL_" + ID + "_max_hp_bonus";
+    private static final String LEGACY_MAX_HP_BONUS_KEY = ID + "_max_hp_bonus";
 
     private final double flatHealthPerStack;
     private final double percentMaxHealthPerStack;
-    private final double percentCap;
+    private final double maxHealthMultiplierAtMaxStacks;
     private final int maxStacks;
     private final long durationPerStackMillis;
     private final boolean excludeFlatFromPercentScaling;
@@ -38,7 +39,8 @@ public final class TankEngineAugment extends YamlAugment
         this.flatHealthPerStack = Math.max(0.0D, AugmentValueReader.getDouble(stacking, "flat_health_per_stack", 0.0D));
         this.percentMaxHealthPerStack = Math.max(0.0D,
                 AugmentValueReader.getDouble(stacking, "percent_max_health_per_stack", 0.0D));
-        this.percentCap = Math.max(0.0D, AugmentValueReader.getDouble(stacking, "percent_cap", 0.0D));
+        this.maxHealthMultiplierAtMaxStacks = Math.max(0.0D,
+                AugmentValueReader.getDouble(stacking, "max_health_multiplier_at_max_stacks", 0.0D));
         this.maxStacks = Math.max(1, AugmentValueReader.getInt(stacking, "max_stacks", 1));
         this.durationPerStackMillis = AugmentUtils
                 .secondsToMillis(AugmentValueReader.getDouble(stacking, "duration_per_stack", 0.0D));
@@ -105,6 +107,7 @@ public final class TankEngineAugment extends YamlAugment
         float previousCurrent = hpBefore.get();
 
         statMap.removeModifier(DefaultEntityStatTypes.getHealth(), MAX_HP_BONUS_KEY);
+        statMap.removeModifier(DefaultEntityStatTypes.getHealth(), LEGACY_MAX_HP_BONUS_KEY);
         statMap.update();
 
         EntityStatValue hpBaseline = statMap.get(DefaultEntityStatTypes.getHealth());
@@ -114,11 +117,13 @@ public final class TankEngineAugment extends YamlAugment
 
         int safeStacks = Math.max(0, Math.min(maxStacks, stacks));
         double flatBonus = flatHealthPerStack * safeStacks;
-        double percentRatio = Math.min(percentCap, percentMaxHealthPerStack * safeStacks);
-        double percentBase = excludeFlatFromPercentScaling
-                ? hpBaseline.getMax()
-                : (hpBaseline.getMax() + flatBonus);
-        double totalBonus = flatBonus + (percentBase * Math.max(0.0D, percentRatio));
+        double healthMultiplier = resolveHealthMultiplier(safeStacks);
+        double baselineMax = hpBaseline.getMax();
+
+        double targetMax = excludeFlatFromPercentScaling
+                ? (baselineMax * healthMultiplier) + flatBonus
+                : (baselineMax + flatBonus) * healthMultiplier;
+        double totalBonus = targetMax - baselineMax;
 
         if (Math.abs(totalBonus) > 0.0001D) {
             statMap.putModifier(DefaultEntityStatTypes.getHealth(),
@@ -135,6 +140,21 @@ public final class TankEngineAugment extends YamlAugment
         float ratio = previousMax > 0.01f ? previousCurrent / previousMax : 1.0f;
         float adjustedCurrent = Math.max(1.0f, Math.min(newMax, ratio * newMax));
         statMap.setStatValue(DefaultEntityStatTypes.getHealth(), adjustedCurrent);
+    }
+
+    private double resolveHealthMultiplier(int safeStacks) {
+        if (safeStacks <= 0) {
+            return 1.0D;
+        }
+
+        if (maxHealthMultiplierAtMaxStacks > 0.0D) {
+            double maxMultiplier = Math.max(1.0D, maxHealthMultiplierAtMaxStacks);
+            double progress = Math.max(0.0D, Math.min(1.0D, safeStacks / (double) maxStacks));
+            return 1.0D + ((maxMultiplier - 1.0D) * progress);
+        }
+
+        double percentRatio = Math.max(0.0D, percentMaxHealthPerStack * safeStacks);
+        return 1.0D + percentRatio;
     }
 
     private void gainStack(AugmentRuntimeState runtime,

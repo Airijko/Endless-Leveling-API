@@ -7,7 +7,7 @@ category: MAGIC_STAT
 passives:
   buffs:
     sorcery_bonus_high:
-      value: 0.50 # +50% Sorcery
+      value: 0.40 # +40% Sorcery
       condition:
         resource: MANA
         min_percent: 0.75 # active above 75% Mana

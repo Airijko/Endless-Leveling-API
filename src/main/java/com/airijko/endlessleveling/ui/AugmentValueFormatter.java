@@ -583,6 +583,7 @@ public final class AugmentValueFormatter {
         map.put("max_bonus_damage", "Bonus Damage");
         map.put("max_bonus_ferocity", "Ferocity");
         map.put("strength_from_max_health", "Strength");
+        map.put("sorcery_from_max_health", "Sorcery");
         map.put("sorcery_bonus_high", "Sorcery");
         map.put("sorcery_penalty_low", "Sorcery");
         map.put("crit_defense", "Damage Reduction");

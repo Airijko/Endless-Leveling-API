@@ -9,6 +9,6 @@ passives:
     max_health_percent:
       value: 0.20 # +20% maximum health
     strength:
-      value: 0.10 # +10% strength
+      value: 0.075 # +7.5% strength
     sorcery:
-      value: 0.10 # +10% sorcery
+      value: 0.075 # +7.5% sorcery

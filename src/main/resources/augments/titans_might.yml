@@ -7,8 +7,8 @@ category: PASSIVE_STAT
 passives:
   buffs:
     strength_from_max_health:
-      value: 0.2 # 20% of total max Health added as Strength
+      value: 0.15 # 15% of total max Health added as Strength
       scaling_stat: MAX_HEALTH # scales based on total max HP
   debuffs:
     haste:
-      value: -0.10 # -10% Haste
+      value: -0.15 # -15% Haste

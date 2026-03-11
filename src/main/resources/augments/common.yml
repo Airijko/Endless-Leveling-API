@@ -23,17 +23,17 @@ passives:
       min_value: 1.0
       max_value: 4.0
     precision:
-      min_value: 0.25
-      max_value: 1
-    ferocity:
       min_value: 0.5
-      max_value: 2
+      max_value: 1.5
+    ferocity:
+      min_value: 0.75
+      max_value: 2.5
     discipline:
       min_value: 2
-      max_value: 8
+      max_value: 6
     flow:
       min_value: 2
-      max_value: 8
+      max_value: 6
     stamina:
       min_value: 2
-      max_value: 8
+      max_value: 6

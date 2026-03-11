@@ -4,7 +4,7 @@ import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentManager;
 import com.airijko.endlessleveling.augments.AugmentUnlockManager;
-import com.airijko.endlessleveling.augments.types.BasicAugment;
+import com.airijko.endlessleveling.augments.types.CommonAugment;
 import com.airijko.endlessleveling.data.PlayerData;
 import com.airijko.endlessleveling.enums.PassiveCategory;
 import com.airijko.endlessleveling.enums.PassiveTier;
@@ -281,10 +281,10 @@ public class AugmentsChoosePage extends InteractiveCustomUIPage<SkillsUIPage.Dat
         String neutralSelector = "#AugmentCard" + slotIndex + "Neutral";
         String notesSelector = "#AugmentCard" + slotIndex + "Notes";
 
-        BasicAugment.BasicStatOffer basicOffer = BasicAugment.parseStatOfferId(offerId);
+        CommonAugment.CommonStatOffer commonOffer = CommonAugment.parseStatOfferId(offerId);
         String iconItemId = resolveIconItemId(augment);
-        if (augment != null && basicOffer != null && BasicAugment.ID.equalsIgnoreCase(augment.getId())) {
-            iconItemId = resolveCommonStatIcon(basicOffer.attributeKey(), iconItemId);
+        if (augment != null && commonOffer != null && CommonAugment.ID.equalsIgnoreCase(augment.getId())) {
+            iconItemId = SkillAttributeIconResolver.resolveByConfigKey(commonOffer.attributeKey(), iconItemId);
         }
         ui.set(iconSelector + ".ItemId", iconItemId);
         ui.set(iconSelector + ".Visible", true);
@@ -312,9 +312,9 @@ public class AugmentsChoosePage extends InteractiveCustomUIPage<SkillsUIPage.Dat
 
         ui.set(titleSelector + ".Text", augment.getName().toUpperCase(Locale.ROOT));
 
-        if (basicOffer != null && BasicAugment.ID.equalsIgnoreCase(augment.getId())) {
+        if (commonOffer != null && CommonAugment.ID.equalsIgnoreCase(augment.getId())) {
             ui.set(titleSelector + ".Text",
-                    formatCommonStatDisplayName(basicOffer.attributeKey()).toUpperCase(Locale.ROOT));
+                    formatCommonStatDisplayName(commonOffer.attributeKey()).toUpperCase(Locale.ROOT));
             String description = augment.getDescription();
             if (description == null || description.isBlank()) {
                 description = tr("ui.augments.no_description", "No description provided.");
@@ -328,9 +328,9 @@ public class AugmentsChoosePage extends InteractiveCustomUIPage<SkillsUIPage.Dat
             ui.set(neutralSelector + ".Visible", false);
             ui.set(notesSelector + ".Visible", false);
 
-            String line = valueFormatter.formatSingleValueLine(basicOffer.attributeKey(),
-                    basicOffer.rolledValue(),
-                    basicOffer.attributeKey());
+            String line = valueFormatter.formatSingleValueLine(commonOffer.attributeKey(),
+                    commonOffer.rolledValue(),
+                    commonOffer.attributeKey());
             ui.set(buffsSelector + ".Text", line);
             ui.set(buffsSelector + ".Style.TextColor", COLOR_BUFF);
             ui.set(buffsSelector + ".Visible", true);
@@ -592,25 +592,6 @@ public class AugmentsChoosePage extends InteractiveCustomUIPage<SkillsUIPage.Dat
         return iconItemId == null || iconItemId.isBlank() ? "Ingredient_Ice_Essence" : iconItemId;
     }
 
-    private String resolveCommonStatIcon(String attributeKey, String fallback) {
-        if (attributeKey == null || attributeKey.isBlank()) {
-            return fallback;
-        }
-        return switch (attributeKey.trim().toLowerCase(Locale.ROOT)) {
-            case "life_force" -> "Ingredient_Life_Essence";
-            case "strength" -> "Weapon_Battleaxe_Mithril";
-            case "sorcery" -> "Weapon_Staff_Bronze";
-            case "defense" -> "Weapon_Shield_Orbis_Knight";
-            case "haste" -> "Ingredient_Ice_Essence";
-            case "precision" -> "Weapon_Shortbow_Crude";
-            case "ferocity" -> "Weapon_Daggers_Fang_Doomed";
-            case "discipline" -> "Ingredient_Crystal_White";
-            case "flow" -> "Ingredient_Water_Essence";
-            case "stamina" -> "Potion_Health_Greater";
-            default -> fallback;
-        };
-    }
-
     private String formatCommonStatDisplayName(String attributeKey) {
         if (attributeKey == null || attributeKey.isBlank()) {
             return tr("ui.augments.effect.label.common", "Common Stat");
@@ -656,6 +637,7 @@ public class AugmentsChoosePage extends InteractiveCustomUIPage<SkillsUIPage.Dat
         map.put("max_bonus_damage", "Bonus Damage");
         map.put("max_bonus_ferocity", "Ferocity");
         map.put("strength_from_max_health", "Strength");
+        map.put("sorcery_from_max_health", "Sorcery");
         map.put("sorcery_bonus_high", "Sorcery");
         map.put("sorcery_penalty_low", "Sorcery");
         map.put("crit_defense", "Damage Reduction");

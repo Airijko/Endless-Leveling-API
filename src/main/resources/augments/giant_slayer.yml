@@ -6,8 +6,8 @@ category: ON_HIT
 
 passives:
   bonus_damage_vs_hp_ratio:
-    max_value: 2.0 # 200% max bonus damage
+    max_value: 1.8 # 180% max bonus damage
     scaling_stat: TARGET_CURRENT_HP
     reference_stat: PLAYER_CURRENT_HP
-    max_ratio: 10.0 # max bonus when target has 10x your HP
+    max_ratio: 8.0 # max bonus when target has 8x your HP
     calculation: "linear" # scales linearly between equal HP and max_ratio

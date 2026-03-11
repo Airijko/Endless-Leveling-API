@@ -11,7 +11,7 @@ passives:
   healthy_state:
     health_threshold_above: 0.50 # active when above 50% HP
     bonus_damage:
-      value: 1.0 # 100% bonus damage on every 3rd hit
+      value: 0.8 # 80% bonus damage on every 3rd hit
     self_damage:
       percent_of_current_hp: 0.10 # lose 10% current HP
 

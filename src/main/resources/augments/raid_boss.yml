@@ -9,4 +9,4 @@ passives:
     max_health_percent:
       value: 0.50 # +50% bonus health
     bonus_damage:
-      value: 0.20 # +20% bonus damage
+      value: 0.15 # +15% bonus damage

@@ -11,7 +11,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
-public final class BasicAugment extends YamlAugment implements AugmentHooks.PassiveStatAugment {
+public final class CommonAugment extends YamlAugment implements AugmentHooks.PassiveStatAugment {
     public static final String ID = "common";
     private static final String LEGACY_ID = "basic";
     private static final String OFFER_DELIMITER = "::";
@@ -27,7 +27,7 @@ public final class BasicAugment extends YamlAugment implements AugmentHooks.Pass
     private final BonusRange flowRange;
     private final BonusRange staminaRange;
 
-    public BasicAugment(AugmentDefinition definition) {
+    public CommonAugment(AugmentDefinition definition) {
         super(definition);
         Map<String, Object> buffs = AugmentValueReader.getMap(definition.getPassives(), "buffs");
         this.lifeForceRange = readRange(buffs, "life_force");
@@ -50,7 +50,7 @@ public final class BasicAugment extends YamlAugment implements AugmentHooks.Pass
 
         String selectionKey = context.getSelectionKey();
         String selectedAugmentId = context.getPlayerData().getSelectedAugmentsSnapshot().get(selectionKey);
-        BasicStatOffer selectedOffer = parseStatOfferId(selectedAugmentId);
+        CommonStatOffer selectedOffer = parseStatOfferId(selectedAugmentId);
         String sourcePrefix = buildSourcePrefix(selectionKey);
         double lifeForceBonus = selectedOffer == null
                 ? resolveRoll(context, selectionKey, "life_force", lifeForceRange)
@@ -135,7 +135,7 @@ public final class BasicAugment extends YamlAugment implements AugmentHooks.Pass
                 0L);
     }
 
-    private double resolveSelectedOfferBonus(BasicStatOffer selectedOffer, String expectedStatKey) {
+    private double resolveSelectedOfferBonus(CommonStatOffer selectedOffer, String expectedStatKey) {
         if (selectedOffer == null || expectedStatKey == null || expectedStatKey.isBlank()) {
             return 0.0D;
         }
@@ -195,7 +195,7 @@ public final class BasicAugment extends YamlAugment implements AugmentHooks.Pass
         return ID + OFFER_DELIMITER + normalizedKey + OFFER_DELIMITER + formatOfferValue(rolledValue);
     }
 
-    public static BasicStatOffer parseStatOfferId(String augmentId) {
+    public static CommonStatOffer parseStatOfferId(String augmentId) {
         if (augmentId == null || augmentId.isBlank()) {
             return null;
         }
@@ -223,7 +223,7 @@ public final class BasicAugment extends YamlAugment implements AugmentHooks.Pass
         }
 
         try {
-            return new BasicStatOffer(attributeKey, Double.parseDouble(valueText));
+            return new CommonStatOffer(attributeKey, Double.parseDouble(valueText));
         } catch (NumberFormatException ignored) {
             return null;
         }
@@ -252,7 +252,7 @@ public final class BasicAugment extends YamlAugment implements AugmentHooks.Pass
         return end <= 0 ? "0" : text.substring(0, end);
     }
 
-    public record BasicStatOffer(String attributeKey, double rolledValue) {
+    public record CommonStatOffer(String attributeKey, double rolledValue) {
     }
 
     private record BonusRange(double min, double max) {

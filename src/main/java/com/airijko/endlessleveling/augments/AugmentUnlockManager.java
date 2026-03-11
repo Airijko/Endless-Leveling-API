@@ -9,7 +9,7 @@ import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveManager;
 import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveSnapshot;
 import com.airijko.endlessleveling.augments.types.ExecutionerAugment;
 import com.airijko.endlessleveling.augments.types.FirstStrikeAugment;
-import com.airijko.endlessleveling.augments.types.BasicAugment;
+import com.airijko.endlessleveling.augments.types.CommonAugment;
 import com.hypixel.hytale.logger.HytaleLogger;
 
 import javax.annotation.Nonnull;
@@ -422,9 +422,9 @@ public class AugmentUnlockManager {
 
     private List<String> rollOffers(PassiveTier tier, Set<String> excludedAugmentIds) {
         if (tier == PassiveTier.COMMON) {
-            List<String> basicOffers = rollBasicCommonOffers();
-            if (!basicOffers.isEmpty()) {
-                return basicOffers;
+            List<String> commonOffers = rollCommonStatOffers();
+            if (!commonOffers.isEmpty()) {
+                return commonOffers;
             }
         }
 
@@ -452,13 +452,13 @@ public class AugmentUnlockManager {
         return rolled;
     }
 
-    private List<String> rollBasicCommonOffers() {
-        AugmentDefinition basic = augmentManager.getAugment(BasicAugment.ID);
-        if (basic == null || basic.getTier() != PassiveTier.COMMON) {
+    private List<String> rollCommonStatOffers() {
+        AugmentDefinition commonAugmentDefinition = augmentManager.getAugment(CommonAugment.ID);
+        if (commonAugmentDefinition == null || commonAugmentDefinition.getTier() != PassiveTier.COMMON) {
             return List.of();
         }
 
-        Map<String, Object> buffs = AugmentValueReader.getMap(basic.getPassives(), "buffs");
+        Map<String, Object> buffs = AugmentValueReader.getMap(commonAugmentDefinition.getPassives(), "buffs");
         if (buffs.isEmpty()) {
             return List.of();
         }
@@ -479,13 +479,13 @@ public class AugmentUnlockManager {
         for (int i = 0; i < count; i++) {
             String statKey = statKeys.get(i);
             Map<String, Object> section = AugmentValueReader.getMap(buffs, statKey);
-            double value = rollBasicRange(section);
-            rolled.add(BasicAugment.buildStatOfferId(statKey, value));
+            double value = rollCommonRange(section);
+            rolled.add(CommonAugment.buildStatOfferId(statKey, value));
         }
         return rolled;
     }
 
-    private double rollBasicRange(Map<String, Object> section) {
+    private double rollCommonRange(Map<String, Object> section) {
         double base = Math.max(0.0D, AugmentValueReader.getDouble(section, "value", 0.0D));
         double min = Math.max(0.0D, AugmentValueReader.getDouble(section, "min_value", base));
         double max = Math.max(0.0D, AugmentValueReader.getDouble(section, "max_value", base));

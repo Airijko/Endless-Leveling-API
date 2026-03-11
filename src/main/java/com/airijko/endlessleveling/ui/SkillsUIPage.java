@@ -31,8 +31,6 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
         private static final EnumMap<SkillAttributeType, String> ATTRIBUTE_DESCRIPTIONS = new EnumMap<>(
                         SkillAttributeType.class);
-        private static final EnumMap<SkillAttributeType, String> DEFAULT_ATTRIBUTE_ICONS = new EnumMap<>(
-                        SkillAttributeType.class); // Icon asset IDs live here (not in YAML).
         private static final SkillBinding[] SKILL_BINDINGS = {
                         new SkillBinding("LifeForce", "#LifeForceIcon", SkillAttributeType.LIFE_FORCE),
                         new SkillBinding("Strength", "#StrengthIcon", SkillAttributeType.STRENGTH),
@@ -74,16 +72,6 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 ATTRIBUTE_DESCRIPTIONS.put(SkillAttributeType.DISCIPLINE,
                                 "Increases XP gain rate from all sources.");
 
-                DEFAULT_ATTRIBUTE_ICONS.put(SkillAttributeType.LIFE_FORCE, "Potion_Health");
-                DEFAULT_ATTRIBUTE_ICONS.put(SkillAttributeType.STRENGTH, "Weapon_Longsword_Adamantite_Saurian");
-                DEFAULT_ATTRIBUTE_ICONS.put(SkillAttributeType.SORCERY, "Weapon_Staff_Mithril");
-                DEFAULT_ATTRIBUTE_ICONS.put(SkillAttributeType.DEFENSE, "Weapon_Shield_Orbis_Knight");
-                DEFAULT_ATTRIBUTE_ICONS.put(SkillAttributeType.HASTE, "Spawn_Temple_Helix");
-                DEFAULT_ATTRIBUTE_ICONS.put(SkillAttributeType.PRECISION, "Weapon_Shortbow_Combat");
-                DEFAULT_ATTRIBUTE_ICONS.put(SkillAttributeType.FEROCITY, "Weapon_Battleaxe_Mithril");
-                DEFAULT_ATTRIBUTE_ICONS.put(SkillAttributeType.STAMINA, "Potion_Stamina");
-                DEFAULT_ATTRIBUTE_ICONS.put(SkillAttributeType.FLOW, "Prototype_Tool_Book_Mana");
-                DEFAULT_ATTRIBUTE_ICONS.put(SkillAttributeType.DISCIPLINE, "Ingredient_Life_Essence");
         }
 
         public SkillsUIPage(@Nonnull PlayerRef playerRef, @Nonnull CustomPageLifetime lifetime) {
@@ -665,7 +653,7 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         private void applySkillIcons(UICommandBuilder ui) {
                 for (SkillBinding binding : SKILL_BINDINGS) {
                         String selector = binding.iconSelector();
-                        String rawId = DEFAULT_ATTRIBUTE_ICONS.get(binding.attribute());
+                        String rawId = SkillAttributeIconResolver.resolve(binding.attribute());
                         if (rawId == null || rawId.isBlank()) {
                                 ui.set(selector + ".Visible", false);
                                 continue;

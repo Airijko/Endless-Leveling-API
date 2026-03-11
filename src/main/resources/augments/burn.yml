@@ -10,7 +10,7 @@ passives:
     bonus_max_hp_scaling: 0.002 # +0.2% damage per 100 max HP
     radius: 5 # base radius in blocks
     radius_health_scaling:
-      health_per_block: 175 # gain +1 block radius per 175 max HP
+      health_per_block: 200 # gain +1 block radius per 200 max HP
 
   buffs:
     life_force:

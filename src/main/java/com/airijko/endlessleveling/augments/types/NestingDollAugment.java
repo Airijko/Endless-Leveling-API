@@ -21,7 +21,8 @@ public final class NestingDollAugment extends YamlAugment
         implements AugmentHooks.OnDamageTakenAugment, AugmentHooks.OnLowHpAugment, AugmentHooks.PassiveStatAugment {
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
     public static final String ID = "nesting_doll";
-    private static final String MAX_HP_PENALTY_KEY = ID + "_max_hp_penalty";
+    private static final String MAX_HP_PENALTY_KEY = "EL_" + ID + "_max_hp_penalty";
+    private static final String LEGACY_MAX_HP_PENALTY_KEY = ID + "_max_hp_penalty";
     // Short post-proc invulnerability window to prevent duplicate stack consumption
     // from clustered damage callbacks.
     private static final long STACK_GRANT_IMMUNITY_MS = 250L;
@@ -264,6 +265,7 @@ public final class NestingDollAugment extends YamlAugment
         float delta = (float) (targetMax - baseline);
 
         statMap.removeModifier(DefaultEntityStatTypes.getHealth(), MAX_HP_PENALTY_KEY);
+        statMap.removeModifier(DefaultEntityStatTypes.getHealth(), LEGACY_MAX_HP_PENALTY_KEY);
         if (Math.abs(delta) > 0.0001f) {
             statMap.putModifier(DefaultEntityStatTypes.getHealth(),
                     MAX_HP_PENALTY_KEY,
@@ -304,6 +306,7 @@ public final class NestingDollAugment extends YamlAugment
             return;
         }
         statMap.removeModifier(DefaultEntityStatTypes.getHealth(), MAX_HP_PENALTY_KEY);
+        statMap.removeModifier(DefaultEntityStatTypes.getHealth(), LEGACY_MAX_HP_PENALTY_KEY);
         statMap.update();
     }
 

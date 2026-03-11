@@ -17,7 +17,8 @@ import java.util.Map;
 
 public final class GoliathAugment extends YamlAugment implements AugmentHooks.PassiveStatAugment {
     public static final String ID = "goliath";
-    private static final String MAX_HP_BONUS_KEY = ID + "_max_hp_bonus";
+    private static final String MAX_HP_BONUS_KEY = "EL_" + ID + "_max_hp_bonus";
+    private static final String LEGACY_MAX_HP_BONUS_KEY = ID + "_max_hp_bonus";
 
     private final double maxHealthPercentBonus;
     private final double strengthPercentBonus;
@@ -72,6 +73,7 @@ public final class GoliathAugment extends YamlAugment implements AugmentHooks.Pa
         float previousCurrent = hpBefore.get();
 
         statMap.removeModifier(DefaultEntityStatTypes.getHealth(), MAX_HP_BONUS_KEY);
+        statMap.removeModifier(DefaultEntityStatTypes.getHealth(), LEGACY_MAX_HP_BONUS_KEY);
         statMap.update();
 
         EntityStatValue hpBaseline = statMap.get(DefaultEntityStatTypes.getHealth());

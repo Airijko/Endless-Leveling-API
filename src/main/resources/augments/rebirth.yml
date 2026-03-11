@@ -6,6 +6,6 @@ category: ON_LOW_HP
 
 passives:
   heal_on_trigger:
-    value: 0.80 # heals 80% of max HP
+    value: 0.5 # heals 50% of max HP
     min_health_hp: 1 # flat HP trigger/floor
     cooldown: 100 # 100 seconds cooldown

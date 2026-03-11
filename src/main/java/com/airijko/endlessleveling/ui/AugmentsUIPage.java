@@ -4,7 +4,7 @@ import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentManager;
 import com.airijko.endlessleveling.augments.AugmentUnlockManager;
-import com.airijko.endlessleveling.augments.types.BasicAugment;
+import com.airijko.endlessleveling.augments.types.CommonAugment;
 import com.airijko.endlessleveling.data.PlayerData;
 import com.airijko.endlessleveling.enums.PassiveCategory;
 import com.airijko.endlessleveling.enums.PassiveTier;
@@ -47,7 +47,7 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     private static final int GRID_ITEMS_PER_ROW = 5;
     private static final String COLOR_MYTHIC_OWNED = "#b084e0";
     private static final String COLOR_ELITE_OWNED = "#7ec8f5";
-    private static final String COLOR_COMMON_OWNED = "#e6c168";
+    private static final String COLOR_COMMON_OWNED = "#b8bec9";
     private static final String COLOR_UNOWNED = "#d4d9df";
     private static final String COLOR_CHOOSE_AVAILABLE = "#8adf9e";
     private static final String COLOR_CHOOSE_UNAVAILABLE = "#ff9f9f";
@@ -228,7 +228,7 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         AugmentDefinition def = (augmentId != null && augmentManager != null)
                 ? augmentManager.getAugment(augmentId)
                 : null;
-        BasicAugment.BasicStatOffer commonStatOffer = BasicAugment.parseStatOfferId(augmentId);
+        CommonAugment.CommonStatOffer commonStatOffer = CommonAugment.parseStatOfferId(augmentId);
 
         if (def == null) {
             ui.set("#AugmentInfoIcon.Visible", false);
@@ -243,14 +243,14 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         }
 
         String iconId = resolveIconItemId(def);
-        if (commonStatOffer != null && BasicAugment.ID.equalsIgnoreCase(def.getId())) {
-            iconId = resolveCommonStatIcon(commonStatOffer.attributeKey(), iconId);
+        if (commonStatOffer != null && CommonAugment.ID.equalsIgnoreCase(def.getId())) {
+            iconId = SkillAttributeIconResolver.resolveByConfigKey(commonStatOffer.attributeKey(), iconId);
         }
         ui.set("#AugmentInfoIcon.ItemId", iconId);
         ui.set("#AugmentInfoIcon.Visible", true);
         String displayName = def.getName();
-        if (commonStatOffer != null && BasicAugment.ID.equalsIgnoreCase(def.getId())) {
-            displayName = tr("ui.augments.common_stat.name", "Common - {0}",
+        if (commonStatOffer != null && CommonAugment.ID.equalsIgnoreCase(def.getId())) {
+            displayName = tr("ui.augments.common_stat.card_name", "{0}",
                     formatCommonStatDisplayName(commonStatOffer.attributeKey()));
         }
         ui.set("#AugmentInfoName.Text", displayName);
@@ -269,7 +269,7 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         ui.set("#AugmentInfoDescription.Visible", hasDesc);
 
         String valuesText;
-        if (commonStatOffer != null && BasicAugment.ID.equalsIgnoreCase(def.getId())) {
+        if (commonStatOffer != null && CommonAugment.ID.equalsIgnoreCase(def.getId())) {
             String singleValue = valueFormatter.formatSingleValueLine(commonStatOffer.attributeKey(),
                     commonStatOffer.rolledValue(),
                     commonStatOffer.attributeKey());
@@ -824,6 +824,7 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         map.put("max_bonus_damage", "Bonus Damage");
         map.put("max_bonus_ferocity", "Ferocity");
         map.put("strength_from_max_health", "Strength");
+        map.put("sorcery_from_max_health", "Sorcery");
         map.put("sorcery_bonus_high", "Sorcery");
         map.put("sorcery_penalty_low", "Sorcery");
         map.put("crit_defense", "Damage Reduction");
@@ -895,6 +896,9 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         Collection<AugmentDefinition> allDefs = augmentManager != null ? augmentManager.getAugments().values()
                 : List.of();
 
+        ui.set("#AugmentStatCommon.Style.TextColor", COLOR_COMMON_OWNED);
+        ui.set("#AugmentRerollCommon.Style.TextColor", COLOR_COMMON_OWNED);
+
         long totalMythic = allDefs.stream().filter(d -> d.getTier() == PassiveTier.MYTHIC).count();
         long totalElite = allDefs.stream().filter(d -> d.getTier() == PassiveTier.ELITE).count();
 
@@ -959,9 +963,7 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
             ui.set(base + " #ItemIcon.ItemId", resolveIconItemId(def));
             ui.set(base + " #ItemName.Text", def.getName());
-
-            boolean owned = ownedIds.contains(def.getId());
-            ui.set(base + " #ItemName.Style.TextColor", owned ? tierColor(def.getTier()) : COLOR_UNOWNED);
+            ui.set(base + " #ItemName.Style.TextColor", tierColor(def.getTier()));
 
             events.addEventBinding(Activating, base, of("Action", "augment:select:" + def.getId()), false);
             events.addEventBinding(MouseEntered, base, of("Action", "augment:hover:" + def.getId()), false);
@@ -1106,12 +1108,12 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 String icon = resolveIconItemId(definition);
                 String groupKey;
 
-                BasicAugment.BasicStatOffer offer = BasicAugment.parseStatOfferId(rawId);
-                if (offer != null && BasicAugment.ID.equalsIgnoreCase(definition.getId())) {
+                CommonAugment.CommonStatOffer offer = CommonAugment.parseStatOfferId(rawId);
+                if (offer != null && CommonAugment.ID.equalsIgnoreCase(definition.getId())) {
                     String attributeKey = offer.attributeKey() == null ? "" : offer.attributeKey().trim();
-                    displayName = tr("ui.augments.common_stat.name", "Common - {0}",
+                    displayName = tr("ui.augments.common_stat.card_name", "{0}",
                             formatCommonStatDisplayName(attributeKey));
-                    icon = resolveCommonStatIcon(attributeKey, icon);
+                    icon = SkillAttributeIconResolver.resolveByConfigKey(attributeKey, icon);
                     groupKey = "common_stat:" + attributeKey.toLowerCase(Locale.ROOT);
                     totalCommonValueByGroup.merge(groupKey, offer.rolledValue(), Double::sum);
                 } else {
@@ -1137,7 +1139,7 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             if (groupKey.startsWith("common_stat:")) {
                 String attributeKey = groupKey.substring("common_stat:".length());
                 double totalValue = totalCommonValueByGroup.getOrDefault(groupKey, 0.0D);
-                infoId = BasicAugment.buildStatOfferId(attributeKey, totalValue);
+                infoId = CommonAugment.buildStatOfferId(attributeKey, totalValue);
             }
 
             String displayName = baseCard.displayName();
@@ -1203,25 +1205,6 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             }
         }
         return builder.toString();
-    }
-
-    private String resolveCommonStatIcon(String attributeKey, String fallback) {
-        if (attributeKey == null || attributeKey.isBlank()) {
-            return fallback;
-        }
-        return switch (attributeKey.trim().toLowerCase(Locale.ROOT)) {
-            case "life_force" -> "Ingredient_Life_Essence";
-            case "strength" -> "Weapon_Battleaxe_Mithril";
-            case "sorcery" -> "Weapon_Staff_Bronze";
-            case "defense" -> "Weapon_Shield_Orbis_Knight";
-            case "haste" -> "Ingredient_Ice_Essence";
-            case "precision" -> "Weapon_Shortbow_Crude";
-            case "ferocity" -> "Weapon_Daggers_Fang_Doomed";
-            case "discipline" -> "Ingredient_Crystal_White";
-            case "flow" -> "Ingredient_Water_Essence";
-            case "stamina" -> "Potion_Health_Greater";
-            default -> fallback;
-        };
     }
 
     private record OwnedAugmentCard(String id, String displayName, String iconItemId) {
