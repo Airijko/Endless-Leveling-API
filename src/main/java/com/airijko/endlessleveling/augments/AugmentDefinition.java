@@ -17,6 +17,7 @@ public final class AugmentDefinition {
     private final String name;
     private final PassiveTier tier;
     private final PassiveCategory category;
+    private final boolean stackable;
     private final String description;
     private final Map<String, Object> passives;
 
@@ -24,12 +25,14 @@ public final class AugmentDefinition {
             String name,
             PassiveTier tier,
             PassiveCategory category,
+            boolean stackable,
             String description,
             Map<String, Object> passives) {
         this.id = Objects.requireNonNull(id, "id");
         this.name = name == null ? id : name;
         this.tier = tier == null ? PassiveTier.COMMON : tier;
         this.category = category == null ? PassiveCategory.PASSIVE_STAT : category;
+        this.stackable = stackable;
         this.description = description == null ? "" : description;
         Map<String, Object> safe = passives == null ? Collections.emptyMap() : new LinkedHashMap<>(passives);
         this.passives = Collections.unmodifiableMap(safe);
@@ -49,6 +52,10 @@ public final class AugmentDefinition {
 
     public PassiveCategory getCategory() {
         return category;
+    }
+
+    public boolean isStackable() {
+        return stackable;
     }
 
     public String getDescription() {

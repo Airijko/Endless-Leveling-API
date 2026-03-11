@@ -493,6 +493,7 @@ public class ConfigManager {
     private void mergeBundledDefaultsPreservingUserValues() throws IOException {
         Map<String, Object> bundledMap = loadBundledConfigMap();
         Map<String, Object> merged = mergeMapsPreservingUserValues(bundledMap, configMap);
+        applyResourceSpecificMigrationFixups(merged, bundledMap);
         merged.put(VersionRegistry.CONFIG_VERSION_KEY, bundledConfigVersion);
         writeMergedWithBundledTemplate(merged, bundledMap);
         configMap = merged;
@@ -531,12 +532,130 @@ public class ConfigManager {
 
             if (bundledValue instanceof Map<?, ?> bundledChild && existingValue instanceof Map<?, ?> existingChild) {
                 result.put(key, mergeMapsPreservingUserValues(toMutableMap(bundledChild), toMutableMap(existingChild)));
+            } else if (bundledValue instanceof List<?> bundledList && existingValue instanceof List<?> existingList) {
+                result.put(key, mergeListsPreservingUserValues(bundledList, existingList));
             } else {
                 result.put(key, deepCopyValue(existingValue));
             }
         }
 
         return result;
+    }
+
+    private List<Object> mergeListsPreservingUserValues(List<?> bundledList, List<?> existingList) {
+        List<?> bundledSafe = bundledList == null ? List.of() : bundledList;
+        List<?> existingSafe = existingList == null ? List.of() : existingList;
+
+        if (existingSafe.isEmpty()) {
+            List<Object> merged = new ArrayList<>(bundledSafe.size());
+            for (Object entry : bundledSafe) {
+                merged.add(deepCopyValue(entry));
+            }
+            return merged;
+        }
+
+        if (bundledSafe.isEmpty()) {
+            List<Object> merged = new ArrayList<>(existingSafe.size());
+            for (Object entry : existingSafe) {
+                merged.add(deepCopyValue(entry));
+            }
+            return merged;
+        }
+
+        if (!isListOfMaps(bundledSafe) || !isListOfMaps(existingSafe)) {
+            List<Object> merged = new ArrayList<>(existingSafe.size());
+            for (Object entry : existingSafe) {
+                merged.add(deepCopyValue(entry));
+            }
+            return merged;
+        }
+
+        List<Map<String, Object>> bundledEntries = new ArrayList<>(bundledSafe.size());
+        for (Object entry : bundledSafe) {
+            bundledEntries.add(toMutableMap(entry));
+        }
+        List<Map<String, Object>> existingEntries = new ArrayList<>(existingSafe.size());
+        for (Object entry : existingSafe) {
+            existingEntries.add(toMutableMap(entry));
+        }
+
+        List<Object> merged = new ArrayList<>(Math.max(bundledEntries.size(), existingEntries.size()));
+        boolean[] usedExisting = new boolean[existingEntries.size()];
+
+        for (Map<String, Object> bundledEntry : bundledEntries) {
+            String bundledDiscriminator = getListEntryDiscriminator(bundledEntry);
+            int matchedIndex = -1;
+
+            if (bundledDiscriminator != null) {
+                for (int i = 0; i < existingEntries.size(); i++) {
+                    if (usedExisting[i]) {
+                        continue;
+                    }
+                    String existingDiscriminator = getListEntryDiscriminator(existingEntries.get(i));
+                    if (bundledDiscriminator.equals(existingDiscriminator)) {
+                        matchedIndex = i;
+                        break;
+                    }
+                }
+            }
+
+            if (matchedIndex < 0) {
+                for (int i = 0; i < existingEntries.size(); i++) {
+                    if (usedExisting[i]) {
+                        continue;
+                    }
+                    if (getListEntryDiscriminator(existingEntries.get(i)) == null) {
+                        matchedIndex = i;
+                        break;
+                    }
+                }
+            }
+
+            if (matchedIndex >= 0) {
+                usedExisting[matchedIndex] = true;
+                merged.add(mergeMapsPreservingUserValues(bundledEntry, existingEntries.get(matchedIndex)));
+            } else {
+                merged.add(deepCopyValue(bundledEntry));
+            }
+        }
+
+        for (int i = 0; i < existingEntries.size(); i++) {
+            if (!usedExisting[i]) {
+                merged.add(deepCopyValue(existingEntries.get(i)));
+            }
+        }
+
+        return merged;
+    }
+
+    private String getListEntryDiscriminator(Map<String, Object> entry) {
+        if (entry == null || entry.isEmpty()) {
+            return null;
+        }
+        String[] keys = { "tier", "id", "key", "name", "type" };
+        for (String key : keys) {
+            Object value = entry.get(key);
+            if (value == null) {
+                continue;
+            }
+            String normalized = value.toString().trim();
+            if (!normalized.isEmpty()) {
+                return key + ":" + normalized.toUpperCase();
+            }
+        }
+        return null;
+    }
+
+    private boolean isListOfMaps(List<?> list) {
+        if (list == null || list.isEmpty()) {
+            return false;
+        }
+        for (Object entry : list) {
+            if (!(entry instanceof Map<?, ?>)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private boolean containsLegacyKeysMarker() {
@@ -554,9 +673,88 @@ public class ConfigManager {
     private void rebuildFromBundledTemplatePreservingCurrentValues() throws IOException {
         Map<String, Object> bundledMap = loadBundledConfigMap();
         Map<String, Object> merged = mergeMapsPreservingUserValues(bundledMap, configMap);
+        applyResourceSpecificMigrationFixups(merged, bundledMap);
         merged.put(VersionRegistry.CONFIG_VERSION_KEY, bundledConfigVersion);
         writeMergedWithBundledTemplate(merged, bundledMap);
         configMap = merged;
+    }
+
+    private void applyResourceSpecificMigrationFixups(Map<String, Object> merged, Map<String, Object> bundled) {
+        if (!"leveling.yml".equalsIgnoreCase(resourceName) || merged == null || bundled == null) {
+            return;
+        }
+
+        copyPathFromBundled(merged, bundled, "augments", "unlocks");
+        copyPathFromBundled(merged, bundled, "prestige", "augment_unlock_tiers");
+        copyPathFromBundled(merged, bundled, "prestige", "augment_reroll_tiers");
+    }
+
+    private void copyPathFromBundled(Map<String, Object> target,
+            Map<String, Object> source,
+            String... path) {
+        if (path == null || path.length == 0) {
+            return;
+        }
+
+        Object sourceValue = getPathValue(source, path);
+        if (sourceValue == null) {
+            return;
+        }
+
+        setPathValue(target, deepCopyValue(sourceValue), path);
+    }
+
+    private Object getPathValue(Map<String, Object> root, String... path) {
+        Object current = root;
+        for (String key : path) {
+            if (!(current instanceof Map<?, ?> map)) {
+                return null;
+            }
+            current = map.get(key);
+            if (current == null) {
+                return null;
+            }
+        }
+        return current;
+    }
+
+    private void setPathValue(Map<String, Object> root, Object value, String... path) {
+        Map<String, Object> current = root;
+        for (int i = 0; i < path.length - 1; i++) {
+            String key = path[i];
+            Object next = current.get(key);
+            if (next instanceof Map<?, ?> nextMap) {
+                current = toMutableMap(nextMap);
+                rootPathAssign(root, path, i, current);
+            } else {
+                Map<String, Object> created = new LinkedHashMap<>();
+                current.put(key, created);
+                current = created;
+            }
+        }
+        current.put(path[path.length - 1], value);
+    }
+
+    private void rootPathAssign(Map<String, Object> root, String[] path, int depth, Map<String, Object> value) {
+        if (depth == 0) {
+            root.put(path[0], value);
+            return;
+        }
+
+        Map<String, Object> current = root;
+        for (int i = 0; i < depth; i++) {
+            Object next = current.get(path[i]);
+            if (next instanceof Map<?, ?> nextMap) {
+                Map<String, Object> mutable = toMutableMap(nextMap);
+                current.put(path[i], mutable);
+                current = mutable;
+            } else {
+                Map<String, Object> created = new LinkedHashMap<>();
+                current.put(path[i], created);
+                current = created;
+            }
+        }
+        current.put(path[depth], value);
     }
 
     private void ensureInlineVersionMarker() {

@@ -424,6 +424,18 @@ public class PlayerData {
         return Collections.unmodifiableMap(new LinkedHashMap<>(getActiveProfile().getSelectedAugments()));
     }
 
+    public Double getAugmentValueRoll(String selectionKey, String rollKey) {
+        return getActiveProfile().getAugmentValueRoll(selectionKey, rollKey);
+    }
+
+    public void setAugmentValueRoll(String selectionKey, String rollKey, double value) {
+        getActiveProfile().setAugmentValueRoll(selectionKey, rollKey, value);
+    }
+
+    public Map<String, Map<String, Double>> getAugmentValueRollsSnapshot() {
+        return Collections.unmodifiableMap(getActiveProfile().copyAugmentValueRolls());
+    }
+
     public void clearSelectedAugments() {
         getActiveProfile().clearSelectedAugments();
     }
@@ -638,6 +650,7 @@ public class PlayerData {
         private final Map<PassiveType, Integer> passiveLevels;
         private final Map<String, List<String>> augmentOffers;
         private final Map<String, String> selectedAugments;
+        private final Map<String, Map<String, Double>> augmentValueRolls;
         private final Map<String, Integer> augmentRerollsUsed;
         private String raceId;
         private long lastRaceChangeEpochSeconds;
@@ -666,6 +679,7 @@ public class PlayerData {
             }
             this.augmentOffers = new LinkedHashMap<>();
             this.selectedAugments = new LinkedHashMap<>();
+            this.augmentValueRolls = new LinkedHashMap<>();
             this.augmentRerollsUsed = new LinkedHashMap<>();
             this.raceId = null;
             this.lastRaceChangeEpochSeconds = 0L;
@@ -751,6 +765,21 @@ public class PlayerData {
             return augmentRerollsUsed;
         }
 
+        public Map<String, Map<String, Double>> getAugmentValueRolls() {
+            return augmentValueRolls;
+        }
+
+        public Map<String, Map<String, Double>> copyAugmentValueRolls() {
+            Map<String, Map<String, Double>> copy = new LinkedHashMap<>();
+            augmentValueRolls.forEach((selectionKey, rolls) -> {
+                if (selectionKey == null || selectionKey.isBlank() || rolls == null || rolls.isEmpty()) {
+                    return;
+                }
+                copy.put(selectionKey, new LinkedHashMap<>(rolls));
+            });
+            return copy;
+        }
+
         public List<String> getAugmentOffers(String tierKey) {
             if (tierKey == null || tierKey.isBlank()) {
                 return List.of();
@@ -789,9 +818,15 @@ public class PlayerData {
             }
             if (augmentId == null || augmentId.isBlank()) {
                 selectedAugments.remove(key);
+                clearAugmentValueRollsForSelection(key);
                 return;
             }
-            selectedAugments.put(key, augmentId.trim());
+            String normalizedAugmentId = augmentId.trim();
+            String previous = selectedAugments.get(key);
+            if (previous == null || !previous.equals(normalizedAugmentId)) {
+                clearAugmentValueRollsForSelection(key);
+            }
+            selectedAugments.put(key, normalizedAugmentId);
         }
 
         public void addSelectedAugment(String tierKey, String augmentId) {
@@ -817,6 +852,53 @@ public class PlayerData {
 
         public void clearSelectedAugments() {
             selectedAugments.clear();
+            clearAugmentValueRolls();
+        }
+
+        public Double getAugmentValueRoll(String selectionKey, String rollKey) {
+            String normalizedSelectionKey = normalizeSelectionKey(selectionKey);
+            String normalizedRollKey = normalizeRollKey(rollKey);
+            if (normalizedSelectionKey == null || normalizedRollKey == null) {
+                return null;
+            }
+            Map<String, Double> rolls = augmentValueRolls.get(normalizedSelectionKey);
+            if (rolls == null || rolls.isEmpty()) {
+                return null;
+            }
+            return rolls.get(normalizedRollKey);
+        }
+
+        public void setAugmentValueRoll(String selectionKey, String rollKey, double value) {
+            if (!Double.isFinite(value)) {
+                return;
+            }
+            String normalizedSelectionKey = normalizeSelectionKey(selectionKey);
+            String normalizedRollKey = normalizeRollKey(rollKey);
+            if (normalizedSelectionKey == null || normalizedRollKey == null) {
+                return;
+            }
+            augmentValueRolls.computeIfAbsent(normalizedSelectionKey, key -> new LinkedHashMap<>())
+                    .put(normalizedRollKey, value);
+        }
+
+        public void clearAugmentValueRollsForSelection(String selectionKey) {
+            String normalizedSelectionKey = normalizeSelectionKey(selectionKey);
+            if (normalizedSelectionKey == null) {
+                return;
+            }
+            augmentValueRolls.remove(normalizedSelectionKey);
+        }
+
+        public void clearAugmentValueRolls() {
+            augmentValueRolls.clear();
+        }
+
+        public void pruneAugmentValueRollsToSelections() {
+            if (augmentValueRolls.isEmpty()) {
+                return;
+            }
+            augmentValueRolls.keySet().removeIf(selectionKey -> !selectedAugments.containsKey(selectionKey));
+            augmentValueRolls.values().removeIf(rolls -> rolls == null || rolls.isEmpty());
         }
 
         public int getAugmentRerollsUsed(String tierKey) {
@@ -850,6 +932,28 @@ public class PlayerData {
                 return null;
             }
             return trimmed.toUpperCase(Locale.ROOT);
+        }
+
+        private String normalizeSelectionKey(String selectionKey) {
+            if (selectionKey == null) {
+                return null;
+            }
+            String trimmed = selectionKey.trim();
+            if (trimmed.isEmpty()) {
+                return null;
+            }
+            return trimmed.toUpperCase(Locale.ROOT);
+        }
+
+        private String normalizeRollKey(String rollKey) {
+            if (rollKey == null) {
+                return null;
+            }
+            String trimmed = rollKey.trim();
+            if (trimmed.isEmpty()) {
+                return null;
+            }
+            return trimmed.toLowerCase(Locale.ROOT);
         }
 
         public String getRaceId() {

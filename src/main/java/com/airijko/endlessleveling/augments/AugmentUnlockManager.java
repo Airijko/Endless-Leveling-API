@@ -9,6 +9,7 @@ import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveManager;
 import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveSnapshot;
 import com.airijko.endlessleveling.augments.types.ExecutionerAugment;
 import com.airijko.endlessleveling.augments.types.FirstStrikeAugment;
+import com.airijko.endlessleveling.augments.types.BasicAugment;
 import com.hypixel.hytale.logger.HytaleLogger;
 
 import javax.annotation.Nonnull;
@@ -347,10 +348,9 @@ public class AugmentUnlockManager {
     public int getNextUnlockLevel(int currentLevel) {
         int next = Integer.MAX_VALUE;
         for (UnlockRule rule : unlockRules) {
-            for (int level : rule.levels()) {
-                if (level > currentLevel && level < next) {
-                    next = level;
-                }
+            int candidate = rule.nextEligibleLevelAfter(currentLevel);
+            if (candidate > currentLevel && candidate < next) {
+                next = candidate;
             }
         }
         return next == Integer.MAX_VALUE ? -1 : next;
@@ -401,6 +401,13 @@ public class AugmentUnlockManager {
     }
 
     private List<String> rollOffers(PassiveTier tier, Set<String> excludedAugmentIds) {
+        if (tier == PassiveTier.COMMON) {
+            List<String> basicOffers = rollBasicCommonOffers();
+            if (!basicOffers.isEmpty()) {
+                return basicOffers;
+            }
+        }
+
         Map<String, AugmentDefinition> all = augmentManager.getAugments();
         LOGGER.atFiner().log("Rolling tier %s: augmentManager size=%d", tier, all != null ? all.size() : -1);
         List<AugmentDefinition> pool = all.values().stream()
@@ -408,7 +415,8 @@ public class AugmentUnlockManager {
                 .filter(def -> {
                     String normalizedId = normalizeAugmentId(def.getId());
                     return normalizedId != null
-                            && (excludedAugmentIds == null || !excludedAugmentIds.contains(normalizedId));
+                            && (def.isStackable() || excludedAugmentIds == null
+                                    || !excludedAugmentIds.contains(normalizedId));
                 })
                 .collect(Collectors.toCollection(ArrayList::new));
         if (pool.isEmpty()) {
@@ -422,6 +430,74 @@ public class AugmentUnlockManager {
             rolled.add(pool.get(i).getId());
         }
         return rolled;
+    }
+
+    private List<String> rollBasicCommonOffers() {
+        AugmentDefinition basic = augmentManager.getAugment(BasicAugment.ID);
+        if (basic == null || basic.getTier() != PassiveTier.COMMON) {
+            return List.of();
+        }
+
+        Map<String, Object> buffs = AugmentValueReader.getMap(basic.getPassives(), "buffs");
+        if (buffs.isEmpty()) {
+            return List.of();
+        }
+
+        List<String> statKeys = new ArrayList<>();
+        for (String key : buffs.keySet()) {
+            if (key != null && !key.isBlank()) {
+                statKeys.add(key.trim().toLowerCase(Locale.ROOT));
+            }
+        }
+        if (statKeys.isEmpty()) {
+            return List.of();
+        }
+
+        Collections.shuffle(statKeys, ThreadLocalRandom.current());
+        int count = Math.min(DEFAULT_OFFER_COUNT, statKeys.size());
+        List<String> rolled = new ArrayList<>(count);
+        for (int i = 0; i < count; i++) {
+            String statKey = statKeys.get(i);
+            Map<String, Object> section = AugmentValueReader.getMap(buffs, statKey);
+            double value = rollBasicRange(section);
+            rolled.add(BasicAugment.buildStatOfferId(statKey, value));
+        }
+        return rolled;
+    }
+
+    private double rollBasicRange(Map<String, Object> section) {
+        double base = Math.max(0.0D, AugmentValueReader.getDouble(section, "value", 0.0D));
+        double min = Math.max(0.0D, AugmentValueReader.getDouble(section, "min_value", base));
+        double max = Math.max(0.0D, AugmentValueReader.getDouble(section, "max_value", base));
+
+        if (max < min) {
+            double swap = min;
+            min = max;
+            max = swap;
+        }
+
+        if (Math.abs(max - min) < 0.0001D) {
+            return roundToTwoDecimals(min);
+        }
+
+        if (isWholeNumber(min) && isWholeNumber(max)) {
+            long minInt = Math.round(min);
+            long maxInt = Math.round(max);
+            if (maxInt <= minInt) {
+                return minInt;
+            }
+            return ThreadLocalRandom.current().nextLong(minInt, maxInt + 1L);
+        }
+
+        return roundToTwoDecimals(ThreadLocalRandom.current().nextDouble(min, max));
+    }
+
+    private double roundToTwoDecimals(double value) {
+        return Math.round(value * 100.0D) / 100.0D;
+    }
+
+    private boolean isWholeNumber(double value) {
+        return Math.abs(value - Math.rint(value)) < 0.0001D;
     }
 
     private String rollSingleOffer(PassiveTier tier, Set<String> excludedAugmentIds) {
@@ -561,14 +637,28 @@ public class AugmentUnlockManager {
             if (tier == null) {
                 continue;
             }
+
             Set<Integer> levels = parseLevels(map.get("levels"));
-            if (levels.isEmpty()) {
+            if (!levels.isEmpty()) {
+                rules.add(UnlockRule.explicit(tier, levels));
                 continue;
             }
-            rules.add(new UnlockRule(tier, levels));
+
+            int requiredPlayerLevel = parseInt(map.get("required_player_level"), 1);
+            int levelInterval = parseInt(map.get("level_interval"),
+                    parseInt(map.get("unlock_every_levels"), 1));
+            int maxUnlocks = parseInt(map.get("max_unlocks"), -1);
+            if (requiredPlayerLevel <= 0 || levelInterval <= 0 || maxUnlocks == 0) {
+                continue;
+            }
+
+            rules.add(UnlockRule.progressive(tier, requiredPlayerLevel, levelInterval, maxUnlocks));
         }
-        // Ensure deterministic ordering: higher tiers first, then ascending level
-        rules.sort(Comparator.comparing(UnlockRule::tier).reversed());
+
+        // Ensure deterministic ordering: earliest unlock first, then tier.
+        rules.sort(Comparator
+                .comparingInt(UnlockRule::firstPlayerLevel)
+                .thenComparing(UnlockRule::tier));
         return rules;
     }
 
@@ -613,8 +703,71 @@ public class AugmentUnlockManager {
         return levels;
     }
 
-    private record UnlockRule(PassiveTier tier, Set<Integer> levels) {
+    /**
+     * Returns the interval N if value is a wildcard pattern ("*" or
+     * "star-slash-N"),
+     * otherwise 0.
+     */
+    private int parseWildcardInterval(Object value) {
+        if (!(value instanceof List<?> list) || list.size() != 1) {
+            return 0;
+        }
+        String s = list.get(0) instanceof String str ? str.trim() : null;
+        if (s == null) {
+            return 0;
+        }
+        if ("*".equals(s)) {
+            return 1;
+        }
+        if (s.startsWith("*/")) {
+            try {
+                int n = Integer.parseInt(s.substring(2).trim());
+                return n > 0 ? n : 0;
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return 0;
+    }
+
+    private record UnlockRule(PassiveTier tier,
+            Set<Integer> levels,
+            int requiredPlayerLevel,
+            int levelInterval,
+            int maxUnlocks) {
+
+        static UnlockRule explicit(PassiveTier tier, Set<Integer> levels) {
+            return new UnlockRule(tier,
+                    levels == null ? Set.of() : Set.copyOf(levels),
+                    1,
+                    1,
+                    1);
+        }
+
+        static UnlockRule progressive(PassiveTier tier,
+                int requiredPlayerLevel,
+                int levelInterval,
+                int maxUnlocks) {
+            return new UnlockRule(tier,
+                    Set.of(),
+                    Math.max(1, requiredPlayerLevel),
+                    Math.max(1, levelInterval),
+                    maxUnlocks);
+        }
+
         int countEligibleMilestones(int playerLevel) {
+            if (levels.isEmpty()) {
+                if (playerLevel < requiredPlayerLevel) {
+                    return 0;
+                }
+
+                int interval = Math.max(1, levelInterval);
+                int unlocked = ((playerLevel - requiredPlayerLevel) / interval) + 1;
+                if (maxUnlocks > 0) {
+                    return Math.min(unlocked, maxUnlocks);
+                }
+                return unlocked;
+            }
+
             int count = 0;
             for (int level : levels) {
                 if (playerLevel >= level) {
@@ -622,6 +775,50 @@ public class AugmentUnlockManager {
                 }
             }
             return count;
+        }
+
+        int nextEligibleLevelAfter(int currentLevel) {
+            if (levels.isEmpty()) {
+                if (maxUnlocks == 0) {
+                    return -1;
+                }
+
+                int interval = Math.max(1, levelInterval);
+                if (currentLevel < requiredPlayerLevel) {
+                    return requiredPlayerLevel;
+                }
+
+                int progressionIndex = ((currentLevel - requiredPlayerLevel) / interval) + 1;
+                int next = requiredPlayerLevel + (progressionIndex * interval);
+                if (maxUnlocks > 0) {
+                    int last = requiredPlayerLevel + ((maxUnlocks - 1) * interval);
+                    if (next > last) {
+                        return -1;
+                    }
+                }
+                return next;
+            }
+
+            int next = Integer.MAX_VALUE;
+            for (int level : levels) {
+                if (level > currentLevel && level < next) {
+                    next = level;
+                }
+            }
+            return next == Integer.MAX_VALUE ? -1 : next;
+        }
+
+        int firstPlayerLevel() {
+            if (levels.isEmpty()) {
+                return requiredPlayerLevel;
+            }
+            int min = Integer.MAX_VALUE;
+            for (int level : levels) {
+                if (level > 0 && level < min) {
+                    min = level;
+                }
+            }
+            return min == Integer.MAX_VALUE ? Integer.MAX_VALUE : min;
         }
     }
 
@@ -644,6 +841,14 @@ public class AugmentUnlockManager {
 
             int requiredPlayerLevel = parseInt(map.get("required_player_level"), 0);
             if (requiredPlayerLevel < 0) {
+                continue;
+            }
+
+            int wildcardInterval = parseWildcardInterval(map.get("prestige_levels"));
+            if (wildcardInterval > 0) {
+                int wildcardMaxUnlocks = parseInt(map.get("max_unlocks"), -1);
+                rules.add(PrestigeUnlockRule.progressive(tier, wildcardInterval, requiredPlayerLevel,
+                        wildcardMaxUnlocks, wildcardInterval));
                 continue;
             }
 
@@ -787,13 +992,15 @@ public class AugmentUnlockManager {
             Set<Integer> prestigeLevels,
             int requiredPrestigeLevel,
             int requiredPlayerLevel,
-            int maxUnlocks) {
+            int maxUnlocks,
+            int interval) {
 
         static PrestigeUnlockRule explicit(PassiveTier tier, Set<Integer> prestigeLevels, int requiredPlayerLevel) {
             return new PrestigeUnlockRule(tier,
                     prestigeLevels == null ? Set.of() : Set.copyOf(prestigeLevels),
                     1,
                     requiredPlayerLevel,
+                    1,
                     1);
         }
 
@@ -801,11 +1008,20 @@ public class AugmentUnlockManager {
                 int requiredPrestigeLevel,
                 int requiredPlayerLevel,
                 int maxUnlocks) {
+            return progressive(tier, requiredPrestigeLevel, requiredPlayerLevel, maxUnlocks, 1);
+        }
+
+        static PrestigeUnlockRule progressive(PassiveTier tier,
+                int requiredPrestigeLevel,
+                int requiredPlayerLevel,
+                int maxUnlocks,
+                int interval) {
             return new PrestigeUnlockRule(tier,
                     Set.of(),
                     requiredPrestigeLevel,
                     requiredPlayerLevel,
-                    maxUnlocks);
+                    maxUnlocks,
+                    Math.max(1, interval));
         }
 
         int firstPrestigeLevel() {
@@ -827,7 +1043,8 @@ public class AugmentUnlockManager {
                     return 0;
                 }
 
-                int unlocked = (prestigeLevel - requiredPrestigeLevel) + 1;
+                int effectiveInterval = Math.max(1, interval);
+                int unlocked = ((prestigeLevel - requiredPrestigeLevel) / effectiveInterval) + 1;
                 if (maxUnlocks > 0) {
                     return Math.min(unlocked, maxUnlocks);
                 }

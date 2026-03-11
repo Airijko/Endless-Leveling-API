@@ -101,6 +101,20 @@ public final class AugmentRuntimeManager {
             attributeBonuses.clear();
         }
 
+        public void clearPermanentAttributeBonuses() {
+            attributeBonuses.entrySet().removeIf(entry -> {
+                Map<String, AttributeBonus> bonuses = entry.getValue();
+                if (bonuses == null || bonuses.isEmpty()) {
+                    return true;
+                }
+                bonuses.entrySet().removeIf(bonusEntry -> {
+                    AttributeBonus bonus = bonusEntry.getValue();
+                    return bonus == null || bonus.expiresAt() <= 0L;
+                });
+                return bonuses.isEmpty();
+            });
+        }
+
         public void setAttributeBonus(SkillAttributeType type, String sourceId, double value, long expiresAtMillis) {
             if (type == null || sourceId == null) {
                 return;

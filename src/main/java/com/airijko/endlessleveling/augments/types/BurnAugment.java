@@ -70,6 +70,13 @@ public final class BurnAugment extends YamlAugment implements AugmentHooks.Passi
                     0L);
         }
 
+        // Gate aura damage to once per second
+        long now = System.currentTimeMillis();
+        var burnState = context.getRuntimeState() != null ? context.getRuntimeState().getState(ID) : null;
+        if (burnState == null || (burnState.getLastProc() > 0L && now - burnState.getLastProc() < 1000L)) {
+            return;
+        }
+
         EntityStatValue sourceHp = context.getStatMap().get(DefaultEntityStatTypes.getHealth());
         if (sourceHp == null || sourceHp.getMax() <= 0f || sourceHp.get() <= 0f) {
             return;
@@ -82,8 +89,7 @@ public final class BurnAugment extends YamlAugment implements AugmentHooks.Passi
         }
 
         double percentPerSecond = basePercentPerSecond + ((maxHealth / 100.0D) * bonusScalingPer100Health);
-        double deltaSeconds = Math.max(0.0D, context.getDeltaSeconds());
-        if (percentPerSecond <= 0.0D || deltaSeconds <= 0.0D) {
+        if (percentPerSecond <= 0.0D) {
             return;
         }
 
@@ -95,7 +101,8 @@ public final class BurnAugment extends YamlAugment implements AugmentHooks.Passi
             return;
         }
 
-        double ratioThisTick = percentPerSecond * deltaSeconds;
+        burnState.setLastProc(now);
+        double ratioThisTick = percentPerSecond;
         UUID sourceUuid = resolveSourceUuid(context, sourceRef, commandBuffer);
         PartyManager partyManager = resolvePartyManager();
         UUID sourcePartyLeader = resolvePartyLeader(partyManager, sourceUuid);

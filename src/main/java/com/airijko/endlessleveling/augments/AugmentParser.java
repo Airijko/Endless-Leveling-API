@@ -28,11 +28,12 @@ public final class AugmentParser {
             String description = stringVal(root.get("description"), "");
             PassiveTier tier = PassiveTier.fromConfig(root.get("tier"), PassiveTier.COMMON);
             PassiveCategory category = PassiveCategory.fromConfig(root.get("category"), null);
+            boolean stackable = booleanVal(root.get("stackable"), false);
             Object passivesNode = root.getOrDefault("passives", Collections.emptyMap());
             Map<String, Object> passives = passivesNode instanceof Map<?, ?> m
                     ? (Map<String, Object>) m
                     : Collections.emptyMap();
-            return new AugmentDefinition(id, name, tier, category, description, passives);
+            return new AugmentDefinition(id, name, tier, category, stackable, description, passives);
         }
     }
 
@@ -44,6 +45,19 @@ public final class AugmentParser {
     private static String stringVal(Object raw, String fallback) {
         if (raw instanceof String str && !str.isBlank()) {
             return str.trim();
+        }
+        return fallback;
+    }
+
+    private static boolean booleanVal(Object raw, boolean fallback) {
+        if (raw instanceof Boolean bool) {
+            return bool;
+        }
+        if (raw instanceof String str && !str.isBlank()) {
+            return Boolean.parseBoolean(str.trim());
+        }
+        if (raw instanceof Number number) {
+            return number.intValue() != 0;
         }
         return fallback;
     }

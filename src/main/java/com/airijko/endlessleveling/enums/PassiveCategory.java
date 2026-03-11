@@ -7,6 +7,7 @@ import java.util.Locale;
  * logic).
  */
 public enum PassiveCategory {
+    COMMON_STAT("Ingredient_Crystal_White"),
     PASSIVE_STAT("Ingredient_Life_Essence"),
     MAGIC_STAT("Weapon_Staff_Bronze"),
     ON_HIT("Weapon_Daggers_Fang_Doomed"),

@@ -3,6 +3,7 @@ package com.airijko.endlessleveling.augments;
 import com.airijko.endlessleveling.managers.ConfigManager;
 import com.airijko.endlessleveling.managers.PluginFilesManager;
 import com.airijko.endlessleveling.managers.VersionRegistry;
+import com.airijko.endlessleveling.augments.types.BasicAugment;
 import com.hypixel.hytale.logger.HytaleLogger;
 import org.yaml.snakeyaml.Yaml;
 
@@ -76,15 +77,23 @@ public class AugmentManager {
     }
 
     public AugmentDefinition getAugment(String id) {
-        return cache.get(id);
+        return cache.get(resolveLookupId(id));
     }
 
     public Augment createAugment(String id) {
-        AugmentDefinition definition = cache.get(id);
+        AugmentDefinition definition = cache.get(resolveLookupId(id));
         if (definition == null) {
             return null;
         }
         return AugmentRegistry.create(definition);
+    }
+
+    private String resolveLookupId(String id) {
+        if (id == null || id.isBlank()) {
+            return id;
+        }
+        String resolved = BasicAugment.resolveBaseAugmentId(id);
+        return resolved == null ? id : resolved;
     }
 
     private void syncBuiltinAugmentsIfNeeded() {

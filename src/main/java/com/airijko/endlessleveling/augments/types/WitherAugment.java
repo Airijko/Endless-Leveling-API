@@ -148,8 +148,11 @@ public final class WitherAugment extends YamlAugment implements AugmentHooks.OnH
         long durationMillis = AugmentUtils.secondsToMillis(durationSeconds);
         String key = keyFor(targetRef, context.getCommandBuffer());
         ActiveWither state = ACTIVE_WITHER.computeIfAbsent(key, unused -> new ActiveWither());
+        boolean isNewOrExpired = state.nextTickAt <= 0L || now >= state.expiresAt;
         state.expiresAt = now + durationMillis;
-        state.nextTickAt = now + TICK_INTERVAL_MILLIS;
+        if (isNewOrExpired) {
+            state.nextTickAt = now + TICK_INTERVAL_MILLIS;
+        }
         state.percentPerSecond = percentPerSecond;
         state.movementSpeedSlowPercent = movementSpeedSlowPercent;
         state.durationSeconds = durationSeconds;

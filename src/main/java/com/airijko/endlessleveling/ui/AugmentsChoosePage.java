@@ -4,6 +4,7 @@ import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentManager;
 import com.airijko.endlessleveling.augments.AugmentUnlockManager;
+import com.airijko.endlessleveling.augments.types.BasicAugment;
 import com.airijko.endlessleveling.data.PlayerData;
 import com.airijko.endlessleveling.enums.PassiveCategory;
 import com.airijko.endlessleveling.enums.PassiveTier;
@@ -51,6 +52,7 @@ public class AugmentsChoosePage extends InteractiveCustomUIPage<SkillsUIPage.Dat
     private final AugmentUnlockManager augmentUnlockManager;
     private final PlayerDataManager playerDataManager;
     private final PlayerRef playerRef;
+    private final AugmentValueFormatter valueFormatter;
 
     public AugmentsChoosePage(@Nonnull PlayerRef playerRef, @Nonnull CustomPageLifetime lifetime) {
         super(playerRef, lifetime, SkillsUIPage.Data.CODEC);
@@ -59,6 +61,7 @@ public class AugmentsChoosePage extends InteractiveCustomUIPage<SkillsUIPage.Dat
         this.augmentUnlockManager = plugin != null ? plugin.getAugmentUnlockManager() : null;
         this.playerDataManager = plugin != null ? plugin.getPlayerDataManager() : null;
         this.playerRef = playerRef;
+        this.valueFormatter = new AugmentValueFormatter(this::tr);
     }
 
     @Override
@@ -70,14 +73,16 @@ public class AugmentsChoosePage extends InteractiveCustomUIPage<SkillsUIPage.Dat
 
         PlayerData playerData = playerDataManager != null ? playerDataManager.get(playerRef.getUuid()) : null;
         List<AugmentDefinition> augments = pickPlayerAugments(playerData);
+        List<AugmentChoice> choices = playerData != null ? collectChoices(playerData) : List.of();
         NoAugmentState noAugmentState = resolveNoAugmentState(playerData, augments);
         String tierTitle = resolveTierTitle(playerData, augments);
         ui.set("#AugmentsTierTitle.Text", tierTitle);
         ui.set("#AugmentsTierTitle.Visible", true);
 
         for (int i = 0; i < CARD_COUNT; i++) {
+            String offerId = i < choices.size() ? choices.get(i).id() : null;
             AugmentDefinition augment = i < augments.size() ? augments.get(i) : null;
-            applyCard(ui, i + 1, augment, noAugmentState);
+            applyCard(ui, i + 1, offerId, augment, noAugmentState);
         }
 
         String chooseText = tr("ui.augments.actions.choose", "Choose");
@@ -252,6 +257,7 @@ public class AugmentsChoosePage extends InteractiveCustomUIPage<SkillsUIPage.Dat
 
     private void applyCard(@Nonnull UICommandBuilder ui,
             int slotIndex,
+            String offerId,
             AugmentDefinition augment,
             NoAugmentState noAugmentState) {
         String titleSelector = "#AugmentCard" + slotIndex + "Title";
@@ -266,7 +272,12 @@ public class AugmentsChoosePage extends InteractiveCustomUIPage<SkillsUIPage.Dat
         String neutralSelector = "#AugmentCard" + slotIndex + "Neutral";
         String notesSelector = "#AugmentCard" + slotIndex + "Notes";
 
-        ui.set(iconSelector + ".ItemId", resolveIconItemId(augment));
+        BasicAugment.BasicStatOffer basicOffer = BasicAugment.parseStatOfferId(offerId);
+        String iconItemId = resolveIconItemId(augment);
+        if (augment != null && basicOffer != null && BasicAugment.ID.equalsIgnoreCase(augment.getId())) {
+            iconItemId = resolveCommonStatIcon(basicOffer.attributeKey(), iconItemId);
+        }
+        ui.set(iconSelector + ".ItemId", iconItemId);
         ui.set(iconSelector + ".Visible", true);
 
         if (augment == null) {
@@ -291,6 +302,31 @@ public class AugmentsChoosePage extends InteractiveCustomUIPage<SkillsUIPage.Dat
         ui.set(chooseSelector + ".Visible", true);
 
         ui.set(titleSelector + ".Text", augment.getName().toUpperCase(Locale.ROOT));
+
+        if (basicOffer != null && BasicAugment.ID.equalsIgnoreCase(augment.getId())) {
+            ui.set(titleSelector + ".Text",
+                    formatCommonStatDisplayName(basicOffer.attributeKey()).toUpperCase(Locale.ROOT));
+            String description = augment.getDescription();
+            if (description == null || description.isBlank()) {
+                description = tr("ui.augments.no_description", "No description provided.");
+            }
+            ui.set(descriptionSelector + ".Text", description);
+
+            ui.set(cooldownSelector + ".Visible", false);
+            ui.set(durationSelector + ".Visible", false);
+            ui.set(debuffsSelector + ".Visible", false);
+            ui.set(selfDamageSelector + ".Visible", false);
+            ui.set(neutralSelector + ".Visible", false);
+            ui.set(notesSelector + ".Visible", false);
+
+            String line = valueFormatter.formatSingleValueLine(basicOffer.attributeKey(),
+                    basicOffer.rolledValue(),
+                    basicOffer.attributeKey());
+            ui.set(buffsSelector + ".Text", line);
+            ui.set(buffsSelector + ".Style.TextColor", COLOR_BUFF);
+            ui.set(buffsSelector + ".Visible", true);
+            return;
+        }
 
         String description = augment.getDescription();
         if (description == null || description.isBlank()) {
@@ -547,8 +583,50 @@ public class AugmentsChoosePage extends InteractiveCustomUIPage<SkillsUIPage.Dat
         return iconItemId == null || iconItemId.isBlank() ? "Ingredient_Ice_Essence" : iconItemId;
     }
 
+    private String resolveCommonStatIcon(String attributeKey, String fallback) {
+        if (attributeKey == null || attributeKey.isBlank()) {
+            return fallback;
+        }
+        return switch (attributeKey.trim().toLowerCase(Locale.ROOT)) {
+            case "life_force" -> "Ingredient_Life_Essence";
+            case "strength" -> "Weapon_Battleaxe_Mithril";
+            case "sorcery" -> "Weapon_Staff_Bronze";
+            case "defense" -> "Weapon_Shield_Orbis_Knight";
+            case "haste" -> "Ingredient_Ice_Essence";
+            case "precision" -> "Weapon_Shortbow_Crude";
+            case "ferocity" -> "Weapon_Daggers_Fang_Doomed";
+            case "discipline" -> "Ingredient_Crystal_White";
+            case "flow" -> "Ingredient_Water_Essence";
+            case "stamina" -> "Potion_Health_Greater";
+            default -> fallback;
+        };
+    }
+
+    private String formatCommonStatDisplayName(String attributeKey) {
+        if (attributeKey == null || attributeKey.isBlank()) {
+            return tr("ui.augments.effect.label.common", "Common Stat");
+        }
+        String normalized = attributeKey.trim().toLowerCase(Locale.ROOT).replace(' ', '_');
+        String[] parts = normalized.split("_");
+        StringBuilder builder = new StringBuilder();
+        for (String part : parts) {
+            if (part == null || part.isBlank()) {
+                continue;
+            }
+            if (builder.length() > 0) {
+                builder.append(' ');
+            }
+            builder.append(part.substring(0, 1).toUpperCase(Locale.ROOT));
+            if (part.length() > 1) {
+                builder.append(part.substring(1));
+            }
+        }
+        return builder.toString();
+    }
+
     private static Map<String, String> createBuffNameOverrides() {
         Map<String, String> map = new HashMap<>();
+        map.put("life_force", "Life Force");
         map.put("strength", "Strength");
         map.put("sorcery", "Sorcery");
         map.put("haste", "Haste");
@@ -584,6 +662,10 @@ public class AugmentsChoosePage extends InteractiveCustomUIPage<SkillsUIPage.Dat
         map.put("resistance", "Resistance");
         map.put("precision", "Critical Chance");
         map.put("defense", "Defense");
+        map.put("ferocity", "Ferocity");
+        map.put("stamina", "Stamina");
+        map.put("flow", "Flow");
+        map.put("discipline", "Discipline");
         map.put("wither", "Wither");
         map.put("slow_percent", "Slow");
         map.put("mana", "Mana");
@@ -597,23 +679,11 @@ public class AugmentsChoosePage extends InteractiveCustomUIPage<SkillsUIPage.Dat
     }
 
     private String formatCooldown(Map<String, Object> passives) {
-        Double value = findNumericField(passives, "trigger_cooldown", "cooldown", "proc_cooldown");
-        if (value == null) {
-            return null;
-        }
-        return tr("ui.augments.effect.cooldown", "Cooldown: {0}", formatSeconds(value));
+        return valueFormatter.formatCooldown(passives);
     }
 
     private String formatDuration(Map<String, Object> passives) {
-        Double perStack = findNumericField(passives, "duration_per_stack");
-        if (perStack != null) {
-            return tr("ui.augments.effect.duration_per_stack", "Duration per stack: {0}", formatSeconds(perStack));
-        }
-        Double value = findNumericField(passives, "duration", "effect_duration");
-        if (value == null) {
-            return null;
-        }
-        return tr("ui.augments.effect.duration", "Duration: {0}", formatSeconds(value));
+        return valueFormatter.formatDuration(passives);
     }
 
     private Double findNumericField(Map<String, Object> passives, String... keys) {
@@ -637,11 +707,11 @@ public class AugmentsChoosePage extends InteractiveCustomUIPage<SkillsUIPage.Dat
     }
 
     private String formatBuffs(Map<String, Object> passives) {
-        return formatEffects(passives, true);
+        return valueFormatter.formatBuffs(passives);
     }
 
     private String formatDebuffs(Map<String, Object> passives) {
-        return formatEffects(passives, false);
+        return valueFormatter.formatDebuffs(passives);
     }
 
     private boolean isTimingKey(String key) {
@@ -822,7 +892,7 @@ public class AugmentsChoosePage extends InteractiveCustomUIPage<SkillsUIPage.Dat
         if (scalar != null) {
             if (normalizedKey.startsWith("max_")) {
                 if ((positives && scalar > 0) || (!positives && scalar < 0)) {
-                    parts.add(formatRangeEntry(normalizedKey, scalar, fallbackLabel, thresholdSuffix));
+                    parts.add(formatRangeEntry(normalizedKey, 0.0D, scalar, fallbackLabel, thresholdSuffix));
                 }
                 return;
             }
@@ -842,11 +912,19 @@ public class AugmentsChoosePage extends InteractiveCustomUIPage<SkillsUIPage.Dat
             nestedThresholdSuffix = thresholdSuffix;
         }
 
+        Double minValue = toDouble(nested.get("min_value"));
         Double maxValue = toDouble(nested.get("max_value"));
+        if (minValue != null && maxValue != null) {
+            if ((positives && maxValue > 0) || (!positives && minValue < 0)) {
+                parts.add(formatRangeEntry(key, minValue, maxValue, fallbackLabel, nestedThresholdSuffix));
+            }
+            return;
+        }
+
         Double baseValue = toDouble(nested.get("value"));
         if (maxValue != null && (baseValue == null || Math.abs(baseValue) < 0.0001D)) {
             if ((positives && maxValue > 0) || (!positives && maxValue < 0)) {
-                parts.add(formatRangeEntry(key, maxValue, fallbackLabel, nestedThresholdSuffix));
+                parts.add(formatRangeEntry(key, 0.0D, maxValue, fallbackLabel, nestedThresholdSuffix));
             }
             return;
         }
@@ -894,7 +972,11 @@ public class AugmentsChoosePage extends InteractiveCustomUIPage<SkillsUIPage.Dat
         return null;
     }
 
-    private String formatRangeEntry(String key, double maxValue, String fallbackLabel, String suffixNote) {
+    private String formatRangeEntry(String key,
+            double minValue,
+            double maxValue,
+            String fallbackLabel,
+            String suffixNote) {
         String normalizedKey = key == null ? "" : key.toLowerCase(Locale.ROOT);
         String baseKey = normalizedKey.startsWith("max_") ? normalizedKey.substring(4) : normalizedKey;
         String canonicalBaseKey = baseKey.replace(' ', '_');
@@ -909,14 +991,32 @@ public class AugmentsChoosePage extends InteractiveCustomUIPage<SkillsUIPage.Dat
             semanticKeyForUnit = fallbackLabel.toLowerCase(Locale.ROOT).replace(' ', '_');
         }
 
-        String unit = inferSuffix(semanticKeyForUnit, maxValue);
-        double displayMax = "%".equals(unit) ? toDisplayPercent(maxValue) : maxValue;
-        String rangePrefix = displayMax > 0 ? "+" : (displayMax < 0 ? "-" : "");
-        String rendered = capitalize(label) + ": " + rangePrefix + "0-" + formatNumber(Math.abs(displayMax)) + unit;
+        double normalizedMin = minValue;
+        double normalizedMax = maxValue;
+        if (normalizedMin > normalizedMax) {
+            double swap = normalizedMin;
+            normalizedMin = normalizedMax;
+            normalizedMax = swap;
+        }
+
+        double unitSource = Math.abs(normalizedMax) >= Math.abs(normalizedMin) ? normalizedMax : normalizedMin;
+        String unit = inferSuffix(semanticKeyForUnit, unitSource);
+        double displayMin = "%".equals(unit) ? toDisplayPercent(normalizedMin) : normalizedMin;
+        double displayMax = "%".equals(unit) ? toDisplayPercent(normalizedMax) : normalizedMax;
+
+        String rendered = capitalize(label) + ": "
+                + formatSignedRangeValue(displayMin, unit)
+                + " to "
+                + formatSignedRangeValue(displayMax, unit);
         if (suffixNote != null && !suffixNote.isBlank()) {
             rendered += suffixNote;
         }
         return rendered;
+    }
+
+    private String formatSignedRangeValue(double value, String suffix) {
+        String sign = value > 0 ? "+" : "";
+        return sign + formatNumber(value) + (suffix == null ? "" : suffix);
     }
 
     private Double firstNumber(Map<String, Object> map, String... keys) {

@@ -10,8 +10,16 @@ skillPointsPerLevel: 5
 player_level_cap: 75
 
 # Augment unlock milestones earned from normal player levels.
+# Only for prestige 0; prestige milestones are configured separately under prestige.
+# Each entry supports either explicit levels or progressive level milestones:
+# - Explicit: levels: [10, 25, 50]
+# - Progressive: required_player_level + level_interval (+ optional max_unlocks; -1 = unlimited)
 augments:
   unlocks:
+    - tier: COMMON
+      required_player_level: 10
+      level_interval: 30
+      max_unlocks: -1
     - tier: ELITE
       levels: [15]
     - tier: MYTHIC
@@ -23,11 +31,19 @@ prestige:
   level_cap_increase_per_prestige: 25
   base_xp_increase_per_prestige: 10
   # Prestige augment milestone slots by tier.
+  # Each entry requires both a prestige condition and an optional player level gate (required_player_level).
+  # - Use prestige_levels: [1, 2, ...] for explicit milestones.
+  # - Use required_prestige_level + max_unlocks for progressive unlocks (one slot per prestige, up to max_unlocks; -1 = unlimited).
   augment_unlock_tiers:
+    - tier: COMMON
+      prestige_levels: ["*"] # one COMMON slot every prestige level
+      required_player_level: 1 # grant prestige COMMON slot immediately at level 1
     - tier: ELITE
-      prestige_levels: [2, 4, 6, 8]
+      prestige_levels: [2, 4, 6, 8] # one ELITE slot every 2 prestige levels
+      required_player_level: 15
     - tier: MYTHIC
       prestige_levels: [10]
+      required_player_level: 50
 
   # Prestige reroll milestone grants by tier.
   augment_reroll_tiers:

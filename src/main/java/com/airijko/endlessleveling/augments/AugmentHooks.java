@@ -250,6 +250,7 @@ public interface AugmentHooks {
     }
 
     public static final class PassiveStatContext extends BaseContext {
+        private final String selectionKey;
         private final Ref<EntityStore> playerRef;
         private final CommandBuffer<EntityStore> commandBuffer;
         private final EntityStatMap statMap;
@@ -258,15 +259,21 @@ public interface AugmentHooks {
         public PassiveStatContext(PlayerData playerData,
                 AugmentRuntimeManager.AugmentRuntimeState runtimeState,
                 SkillManager skillManager,
+                String selectionKey,
                 Ref<EntityStore> playerRef,
                 CommandBuffer<EntityStore> commandBuffer,
                 EntityStatMap statMap,
                 double deltaSeconds) {
             super(playerData, runtimeState, skillManager);
+            this.selectionKey = selectionKey;
             this.playerRef = playerRef;
             this.commandBuffer = commandBuffer;
             this.statMap = statMap;
             this.deltaSeconds = deltaSeconds;
+        }
+
+        public String getSelectionKey() {
+            return selectionKey;
         }
 
         public Ref<EntityStore> getPlayerRef() {

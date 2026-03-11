@@ -521,6 +521,23 @@ public class PlayerDataManager {
             }
         }
 
+        Map<String, Object> augmentValueRollsNode = castToStringObjectMap(source.get("augmentValueRolls"));
+        if (augmentValueRollsNode != null) {
+            for (Map.Entry<String, Object> selectionEntry : augmentValueRollsNode.entrySet()) {
+                Map<String, Object> rollsNode = castToStringObjectMap(selectionEntry.getValue());
+                if (rollsNode == null) {
+                    continue;
+                }
+                for (Map.Entry<String, Object> rollEntry : rollsNode.entrySet()) {
+                    double parsed = parseDouble(rollEntry.getValue(), Double.NaN);
+                    if (Double.isFinite(parsed)) {
+                        profile.setAugmentValueRoll(selectionEntry.getKey(), rollEntry.getKey(), parsed);
+                    }
+                }
+            }
+        }
+        profile.pruneAugmentValueRollsToSelections();
+
         Map<String, Object> rerollsNode = castToStringObjectMap(source.get("augmentRerollsUsed"));
         if (rerollsNode != null) {
             for (Map.Entry<String, Object> entry : rerollsNode.entrySet()) {
@@ -1101,6 +1118,28 @@ public class PlayerDataManager {
                     });
                     if (!profileSelectedAugments.isEmpty()) {
                         profileMap.put("selectedAugments", profileSelectedAugments);
+                    }
+
+                    Map<String, Object> profileAugmentValueRolls = new LinkedHashMap<>();
+                    profile.getAugmentValueRolls().forEach((selectionKey, rolls) -> {
+                        if (selectionKey == null || selectionKey.isBlank() || rolls == null || rolls.isEmpty()) {
+                            return;
+                        }
+
+                        Map<String, Double> serializedRolls = new LinkedHashMap<>();
+                        rolls.forEach((rollKey, value) -> {
+                            if (rollKey == null || rollKey.isBlank() || value == null || !Double.isFinite(value)) {
+                                return;
+                            }
+                            serializedRolls.put(rollKey, value);
+                        });
+
+                        if (!serializedRolls.isEmpty()) {
+                            profileAugmentValueRolls.put(selectionKey, serializedRolls);
+                        }
+                    });
+                    if (!profileAugmentValueRolls.isEmpty()) {
+                        profileMap.put("augmentValueRolls", profileAugmentValueRolls);
                     }
 
                     Map<String, Integer> profileRerollsUsed = new LinkedHashMap<>();

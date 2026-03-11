@@ -4,10 +4,12 @@ import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentManager;
 import com.airijko.endlessleveling.augments.AugmentUnlockManager;
+import com.airijko.endlessleveling.augments.types.BasicAugment;
 import com.airijko.endlessleveling.data.PlayerData;
 import com.airijko.endlessleveling.enums.PassiveCategory;
 import com.airijko.endlessleveling.enums.PassiveTier;
 import com.airijko.endlessleveling.managers.PlayerDataManager;
+import com.airijko.endlessleveling.util.Lang;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
@@ -61,6 +63,7 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     private final AugmentUnlockManager augmentUnlockManager;
     private final PlayerDataManager playerDataManager;
     private final PlayerRef playerRef;
+    private final AugmentValueFormatter valueFormatter;
 
     private String searchQuery = "";
     private String selectedAugmentId = null;
@@ -72,6 +75,7 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         this.augmentUnlockManager = plugin != null ? plugin.getAugmentUnlockManager() : null;
         this.playerDataManager = plugin != null ? plugin.getPlayerDataManager() : null;
         this.playerRef = playerRef;
+        this.valueFormatter = new AugmentValueFormatter(this::tr);
     }
 
     @Override
@@ -168,19 +172,17 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         applyLeftPanel(ui, playerData);
 
         Set<String> ownedIds = resolveOwnedIds(playerData);
+        List<OwnedAugmentCard> unlockedCards = applySearchOwned(buildOwnedCards(playerData));
         Collection<AugmentDefinition> all = augmentManager.getAugments().values();
 
         // Organize augments into sections
-        List<AugmentDefinition> unlockedAugments = new java.util.ArrayList<>();
         List<AugmentDefinition> mythicAugments = new java.util.ArrayList<>();
         List<AugmentDefinition> eliteAugments = new java.util.ArrayList<>();
         List<AugmentDefinition> commonAugments = new java.util.ArrayList<>();
 
         for (AugmentDefinition def : all) {
             boolean owned = ownedIds.contains(def.getId());
-            if (owned) {
-                unlockedAugments.add(def);
-            } else {
+            if (!owned) {
                 switch (def.getTier()) {
                     case MYTHIC:
                         mythicAugments.add(def);
@@ -196,24 +198,21 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         }
 
         // Sort each section
-        unlockedAugments.sort(Comparator.<AugmentDefinition>comparingInt(d -> TIER_ORDER.getOrDefault(d.getTier(), 3))
-                .thenComparing(AugmentDefinition::getName));
         mythicAugments.sort(Comparator.comparing(AugmentDefinition::getName));
         eliteAugments.sort(Comparator.comparing(AugmentDefinition::getName));
         commonAugments.sort(Comparator.comparing(AugmentDefinition::getName));
 
         // Apply search filter to all sections
-        unlockedAugments = applySearch(unlockedAugments);
         mythicAugments = applySearch(mythicAugments);
         eliteAugments = applySearch(eliteAugments);
         commonAugments = applySearch(commonAugments);
 
-        int totalResults = unlockedAugments.size() + mythicAugments.size() + eliteAugments.size()
+        int totalResults = unlockedCards.size() + mythicAugments.size() + eliteAugments.size()
                 + commonAugments.size();
         ui.set("#AugmentsResultLabel.Text", "Results: " + totalResults);
 
         // Build UNLOCKED section
-        buildSection(ui, events, unlockedAugments, "#UnlockedCards", "#UnlockedSection", ownedIds);
+        buildOwnedSection(ui, events, unlockedCards, "#UnlockedCards", "#UnlockedSection");
 
         // Build MYTHIC section
         buildSection(ui, events, mythicAugments, "#MythicCards", "#MythicSection", ownedIds);
@@ -229,6 +228,7 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         AugmentDefinition def = (augmentId != null && augmentManager != null)
                 ? augmentManager.getAugment(augmentId)
                 : null;
+        BasicAugment.BasicStatOffer commonStatOffer = BasicAugment.parseStatOfferId(augmentId);
 
         if (def == null) {
             ui.set("#AugmentInfoIcon.Visible", false);
@@ -242,9 +242,18 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             return;
         }
 
-        ui.set("#AugmentInfoIcon.ItemId", resolveIconItemId(def));
+        String iconId = resolveIconItemId(def);
+        if (commonStatOffer != null && BasicAugment.ID.equalsIgnoreCase(def.getId())) {
+            iconId = resolveCommonStatIcon(commonStatOffer.attributeKey(), iconId);
+        }
+        ui.set("#AugmentInfoIcon.ItemId", iconId);
         ui.set("#AugmentInfoIcon.Visible", true);
-        ui.set("#AugmentInfoName.Text", def.getName());
+        String displayName = def.getName();
+        if (commonStatOffer != null && BasicAugment.ID.equalsIgnoreCase(def.getId())) {
+            displayName = tr("ui.augments.common_stat.name", "Basic - {0}",
+                    formatCommonStatDisplayName(commonStatOffer.attributeKey()));
+        }
+        ui.set("#AugmentInfoName.Text", displayName);
         ui.set("#AugmentInfoName.Style.TextColor", tierColor(def.getTier()));
 
         String tierName = def.getTier() != null ? def.getTier().name() : "";
@@ -259,7 +268,15 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         ui.set("#AugmentInfoDescription.Text", hasDesc ? desc : "");
         ui.set("#AugmentInfoDescription.Visible", hasDesc);
 
-        String valuesText = buildValuesText(def);
+        String valuesText;
+        if (commonStatOffer != null && BasicAugment.ID.equalsIgnoreCase(def.getId())) {
+            String singleValue = valueFormatter.formatSingleValueLine(commonStatOffer.attributeKey(),
+                    commonStatOffer.rolledValue(),
+                    commonStatOffer.attributeKey());
+            valuesText = tr("ui.augments.section.buffs", "Buffs:") + "\n" + singleValue;
+        } else {
+            valuesText = buildValuesText(def);
+        }
         boolean hasValues = !valuesText.isBlank();
         ui.set("#AugmentInfoDivider2.Visible", hasValues);
         ui.set("#AugmentInfoValues.Text", valuesText);
@@ -286,13 +303,13 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
         String buffs = formatBuffs(passives);
         if (buffs != null && !buffs.isBlank()) {
-            lines.add("Buffs:");
+            lines.add(tr("ui.augments.section.buffs", "Buffs:"));
             lines.addAll(List.of(buffs.split("\\n")));
         }
 
         String debuffs = formatDebuffs(passives);
         if (debuffs != null && !debuffs.isBlank()) {
-            lines.add("Debuffs:");
+            lines.add(tr("ui.augments.section.debuffs", "Debuffs:"));
             lines.addAll(List.of(debuffs.split("\\n")));
         }
 
@@ -300,23 +317,11 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     }
 
     private String formatCooldown(Map<String, Object> passives) {
-        Double value = findNumericField(passives, "trigger_cooldown", "cooldown", "proc_cooldown");
-        if (value == null) {
-            return null;
-        }
-        return "Cooldown: " + formatSeconds(value);
+        return valueFormatter.formatCooldown(passives);
     }
 
     private String formatDuration(Map<String, Object> passives) {
-        Double perStack = findNumericField(passives, "duration_per_stack");
-        if (perStack != null) {
-            return "Duration per stack: " + formatSeconds(perStack);
-        }
-        Double value = findNumericField(passives, "duration", "effect_duration");
-        if (value == null) {
-            return null;
-        }
-        return "Duration: " + formatSeconds(value);
+        return valueFormatter.formatDuration(passives);
     }
 
     private Double findNumericField(Map<String, Object> passives, String... keys) {
@@ -340,11 +345,11 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     }
 
     private String formatBuffs(Map<String, Object> passives) {
-        return formatEffects(passives, true);
+        return valueFormatter.formatBuffs(passives);
     }
 
     private String formatDebuffs(Map<String, Object> passives) {
-        return formatEffects(passives, false);
+        return valueFormatter.formatDebuffs(passives);
     }
 
     private boolean isTimingKey(String key) {
@@ -519,7 +524,7 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         if (scalar != null) {
             if (normalizedKey.startsWith("max_")) {
                 if ((positives && scalar > 0) || (!positives && scalar < 0)) {
-                    parts.add(formatRangeEntry(normalizedKey, scalar, fallbackLabel, thresholdSuffix));
+                    parts.add(formatRangeEntry(normalizedKey, 0.0D, scalar, fallbackLabel, thresholdSuffix));
                 }
                 return;
             }
@@ -539,11 +544,19 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             nestedThresholdSuffix = thresholdSuffix;
         }
 
+        Double minValue = toDouble(nested.get("min_value"));
         Double maxValue = toDouble(nested.get("max_value"));
+        if (minValue != null && maxValue != null) {
+            if ((positives && maxValue > 0) || (!positives && minValue < 0)) {
+                parts.add(formatRangeEntry(key, minValue, maxValue, fallbackLabel, nestedThresholdSuffix));
+            }
+            return;
+        }
+
         Double baseValue = toDouble(nested.get("value"));
         if (maxValue != null && (baseValue == null || Math.abs(baseValue) < 0.0001D)) {
             if ((positives && maxValue > 0) || (!positives && maxValue < 0)) {
-                parts.add(formatRangeEntry(key, maxValue, fallbackLabel, nestedThresholdSuffix));
+                parts.add(formatRangeEntry(key, 0.0D, maxValue, fallbackLabel, nestedThresholdSuffix));
             }
             return;
         }
@@ -585,7 +598,11 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         return null;
     }
 
-    private String formatRangeEntry(String key, double maxValue, String fallbackLabel, String suffixNote) {
+    private String formatRangeEntry(String key,
+            double minValue,
+            double maxValue,
+            String fallbackLabel,
+            String suffixNote) {
         String normalizedKey = key == null ? "" : key.toLowerCase(Locale.ROOT);
         String baseKey = normalizedKey.startsWith("max_") ? normalizedKey.substring(4) : normalizedKey;
         String canonicalBaseKey = baseKey.replace(' ', '_');
@@ -600,14 +617,31 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             semanticKeyForUnit = normalizedFallbackKey;
         }
 
-        String unit = inferSuffix(semanticKeyForUnit, maxValue);
-        double displayMax = "%".equals(unit) ? toDisplayPercent(maxValue) : maxValue;
-        String rangePrefix = displayMax > 0 ? "+" : (displayMax < 0 ? "-" : "");
-        String rendered = label + ": " + rangePrefix + "0-" + formatNumber(Math.abs(displayMax)) + unit;
+        double normalizedMin = minValue;
+        double normalizedMax = maxValue;
+        if (normalizedMin > normalizedMax) {
+            double swap = normalizedMin;
+            normalizedMin = normalizedMax;
+            normalizedMax = swap;
+        }
+
+        double unitSource = Math.abs(normalizedMax) >= Math.abs(normalizedMin) ? normalizedMax : normalizedMin;
+        String unit = inferSuffix(semanticKeyForUnit, unitSource);
+        double displayMin = "%".equals(unit) ? toDisplayPercent(normalizedMin) : normalizedMin;
+        double displayMax = "%".equals(unit) ? toDisplayPercent(normalizedMax) : normalizedMax;
+        String rendered = label + ": "
+                + formatSignedRangeValue(displayMin, unit)
+                + " to "
+                + formatSignedRangeValue(displayMax, unit);
         if (suffixNote != null && !suffixNote.isBlank()) {
             rendered += suffixNote;
         }
         return rendered;
+    }
+
+    private String formatSignedRangeValue(double value, String suffix) {
+        String sign = value > 0 ? "+" : "";
+        return sign + formatNumber(value) + (suffix == null ? "" : suffix);
     }
 
     private Double firstNumber(Map<String, Object> map, String... keys) {
@@ -769,6 +803,7 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
     private static Map<String, String> createBuffNameOverrides() {
         Map<String, String> map = new HashMap<>();
+        map.put("life_force", "Life Force");
         map.put("strength", "Strength");
         map.put("sorcery", "Sorcery");
         map.put("haste", "Haste");
@@ -804,6 +839,10 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         map.put("resistance", "Resistance");
         map.put("precision", "Critical Chance");
         map.put("defense", "Defense");
+        map.put("ferocity", "Ferocity");
+        map.put("stamina", "Stamina");
+        map.put("flow", "Flow");
+        map.put("discipline", "Discipline");
         map.put("wither", "Wither");
         map.put("slow_percent", "Slow");
         map.put("mana", "Mana");
@@ -858,30 +897,40 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
         long totalMythic = allDefs.stream().filter(d -> d.getTier() == PassiveTier.MYTHIC).count();
         long totalElite = allDefs.stream().filter(d -> d.getTier() == PassiveTier.ELITE).count();
-        long totalCommon = allDefs.stream().filter(d -> d.getTier() == PassiveTier.COMMON).count();
 
-        long mythicOwned = ownedIds.stream()
-                .map(id -> augmentManager != null ? augmentManager.getAugment(id) : null)
-                .filter(d -> d != null && d.getTier() == PassiveTier.MYTHIC)
-                .count();
-        long eliteOwned = ownedIds.stream()
-                .map(id -> augmentManager != null ? augmentManager.getAugment(id) : null)
-                .filter(d -> d != null && d.getTier() == PassiveTier.ELITE)
-                .count();
-        long commonOwned = ownedIds.stream()
-                .map(id -> augmentManager != null ? augmentManager.getAugment(id) : null)
-                .filter(d -> d != null && d.getTier() == PassiveTier.COMMON)
-                .count();
+        int mythicOwned = countSelectedForTier(playerData, PassiveTier.MYTHIC);
+        int eliteOwned = countSelectedForTier(playerData, PassiveTier.ELITE);
+        int commonOwned = countSelectedForTier(playerData, PassiveTier.COMMON);
+        int totalOwned = mythicOwned + eliteOwned + commonOwned;
 
-        ui.set("#AugmentStatTotal.Text", "Total: " + ownedIds.size() + " / " + allDefs.size());
+        ui.set("#AugmentStatTotal.Text", "Total: " + totalOwned + " / " + allDefs.size());
         ui.set("#AugmentStatMythic.Text", "Mythic: " + mythicOwned + " / " + totalMythic);
         ui.set("#AugmentStatElite.Text", "Elite: " + eliteOwned + " / " + totalElite);
-        ui.set("#AugmentStatCommon.Text", "Common: " + commonOwned + " / " + totalCommon);
+        ui.set("#AugmentStatCommon.Text", "Common: " + commonOwned);
 
         Map<String, Integer> rerolls = playerData != null ? playerData.getAugmentRerollsUsedSnapshot() : Map.of();
         ui.set("#AugmentRerollMythic.Text", "Mythic: " + rerolls.getOrDefault("MYTHIC", 0));
         ui.set("#AugmentRerollElite.Text", "Elite: " + rerolls.getOrDefault("ELITE", 0));
         ui.set("#AugmentRerollCommon.Text", "Common: " + rerolls.getOrDefault("COMMON", 0));
+    }
+
+    private int countSelectedForTier(PlayerData playerData, PassiveTier tier) {
+        if (playerData == null || tier == null) {
+            return 0;
+        }
+
+        String normalizedTier = tier.name().toUpperCase(Locale.ROOT);
+        int count = 0;
+        for (String key : playerData.getSelectedAugmentsSnapshot().keySet()) {
+            if (key == null || key.isBlank()) {
+                continue;
+            }
+            String normalizedKey = key.trim().toUpperCase(Locale.ROOT);
+            if (normalizedKey.equals(normalizedTier) || normalizedKey.startsWith(normalizedTier + "#")) {
+                count++;
+            }
+        }
+        return count;
     }
 
     private void buildSection(@Nonnull UICommandBuilder ui,
@@ -926,6 +975,48 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         }
     }
 
+    private void buildOwnedSection(@Nonnull UICommandBuilder ui,
+            @Nonnull UIEventBuilder events,
+            @Nonnull List<OwnedAugmentCard> cards,
+            @Nonnull String cardsSelector,
+            @Nonnull String sectionSelector) {
+        boolean hasContent = !cards.isEmpty();
+        ui.set(sectionSelector + ".Visible", hasContent);
+
+        if (!hasContent) {
+            return;
+        }
+
+        int rowIndex = 0;
+        int cardsInCurrentRow = 0;
+
+        for (OwnedAugmentCard card : cards) {
+            if (cardsInCurrentRow == 0) {
+                ui.appendInline(cardsSelector, "Group { LayoutMode: Left; Anchor: (Bottom: 0); }");
+            }
+
+            ui.append(cardsSelector + "[" + rowIndex + "]", "Augments/AugmentGridEntry.ui");
+            String base = cardsSelector + "[" + rowIndex + "][" + cardsInCurrentRow + "]";
+
+            ui.set(base + " #ItemIcon.ItemId", card.iconItemId());
+            ui.set(base + " #ItemName.Text", card.displayName());
+
+            AugmentDefinition definition = augmentManager != null ? augmentManager.getAugment(card.id()) : null;
+            ui.set(base + " #ItemName.Style.TextColor",
+                    definition != null ? tierColor(definition.getTier()) : COLOR_UNOWNED);
+
+            events.addEventBinding(Activating, base, of("Action", "augment:select:" + card.id()), false);
+            events.addEventBinding(MouseEntered, base, of("Action", "augment:hover:" + card.id()), false);
+            events.addEventBinding(MouseExited, base, of("Action", "augment:hoverend"), false);
+
+            cardsInCurrentRow++;
+            if (cardsInCurrentRow >= GRID_ITEMS_PER_ROW) {
+                cardsInCurrentRow = 0;
+                rowIndex++;
+            }
+        }
+    }
+
     private List<AugmentDefinition> applySearch(List<AugmentDefinition> source) {
         if (searchQuery == null || searchQuery.isBlank()) {
             return source;
@@ -941,6 +1032,52 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         return id.contains(query) || name.contains(query);
     }
 
+    private List<OwnedAugmentCard> buildOwnedCards(PlayerData playerData) {
+        if (playerData == null || augmentManager == null) {
+            return List.of();
+        }
+
+        LinkedHashSet<String> rawSelected = new LinkedHashSet<>();
+        for (String id : playerData.getSelectedAugmentsSnapshot().values()) {
+            if (id != null && !id.isBlank()) {
+                rawSelected.add(id);
+            }
+        }
+
+        List<OwnedAugmentCard> cards = new ArrayList<>(rawSelected.size());
+        for (String rawId : rawSelected) {
+            AugmentDefinition definition = augmentManager.getAugment(rawId);
+            if (definition == null) {
+                continue;
+            }
+
+            String displayName = definition.getName();
+            String icon = resolveIconItemId(definition);
+            BasicAugment.BasicStatOffer offer = BasicAugment.parseStatOfferId(rawId);
+            if (offer != null && BasicAugment.ID.equalsIgnoreCase(definition.getId())) {
+                displayName = tr("ui.augments.common_stat.name", "Basic - {0}",
+                        formatCommonStatDisplayName(offer.attributeKey()));
+                icon = resolveCommonStatIcon(offer.attributeKey(), icon);
+            }
+
+            cards.add(new OwnedAugmentCard(rawId, displayName, icon));
+        }
+        return cards;
+    }
+
+    private List<OwnedAugmentCard> applySearchOwned(List<OwnedAugmentCard> source) {
+        if (searchQuery == null || searchQuery.isBlank()) {
+            return source;
+        }
+        return source.stream()
+                .filter(card -> {
+                    String id = card.id() == null ? "" : card.id().toLowerCase(Locale.ROOT);
+                    String name = card.displayName() == null ? "" : card.displayName().toLowerCase(Locale.ROOT);
+                    return id.contains(searchQuery) || name.contains(searchQuery);
+                })
+                .collect(Collectors.toList());
+    }
+
     private Set<String> resolveOwnedIds(PlayerData playerData) {
         if (playerData == null) {
             return Set.of();
@@ -949,10 +1086,59 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         Set<String> ids = new HashSet<>();
         for (String id : selected.values()) {
             if (id != null && !id.isBlank()) {
-                ids.add(id);
+                AugmentDefinition definition = augmentManager != null ? augmentManager.getAugment(id) : null;
+                if (definition != null && definition.getId() != null && !definition.getId().isBlank()) {
+                    ids.add(definition.getId());
+                } else {
+                    ids.add(id);
+                }
             }
         }
         return ids;
+    }
+
+    private String formatCommonStatDisplayName(String attributeKey) {
+        if (attributeKey == null || attributeKey.isBlank()) {
+            return tr("ui.augments.effect.label.common", "Common Stat");
+        }
+        String normalized = attributeKey.trim().toLowerCase(Locale.ROOT).replace(' ', '_');
+        String[] parts = normalized.split("_");
+        StringBuilder builder = new StringBuilder();
+        for (String part : parts) {
+            if (part == null || part.isBlank()) {
+                continue;
+            }
+            if (builder.length() > 0) {
+                builder.append(' ');
+            }
+            builder.append(part.substring(0, 1).toUpperCase(Locale.ROOT));
+            if (part.length() > 1) {
+                builder.append(part.substring(1));
+            }
+        }
+        return builder.toString();
+    }
+
+    private String resolveCommonStatIcon(String attributeKey, String fallback) {
+        if (attributeKey == null || attributeKey.isBlank()) {
+            return fallback;
+        }
+        return switch (attributeKey.trim().toLowerCase(Locale.ROOT)) {
+            case "life_force" -> "Ingredient_Life_Essence";
+            case "strength" -> "Weapon_Battleaxe_Mithril";
+            case "sorcery" -> "Weapon_Staff_Bronze";
+            case "defense" -> "Weapon_Shield_Orbis_Knight";
+            case "haste" -> "Ingredient_Ice_Essence";
+            case "precision" -> "Weapon_Shortbow_Crude";
+            case "ferocity" -> "Weapon_Daggers_Fang_Doomed";
+            case "discipline" -> "Ingredient_Crystal_White";
+            case "flow" -> "Ingredient_Water_Essence";
+            case "stamina" -> "Potion_Health_Greater";
+            default -> fallback;
+        };
+    }
+
+    private record OwnedAugmentCard(String id, String displayName, String iconItemId) {
     }
 
     private List<AugmentDefinition> buildSortedList(Set<String> ownedIds) {
@@ -973,6 +1159,10 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         }
         String id = category.getIconItemId();
         return id == null || id.isBlank() ? "Ingredient_Ice_Essence" : id;
+    }
+
+    private String tr(String key, String fallback, Object... args) {
+        return Lang.tr(playerRef.getUuid(), key, fallback, args);
     }
 
     private String tierColor(PassiveTier tier) {

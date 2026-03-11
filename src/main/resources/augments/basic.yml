@@ -1,0 +1,39 @@
+id: basic
+name: "Basic"
+tier: COMMON
+stackable: true
+description: "Small raw boosts to your core stats."
+category: COMMON_STAT
+
+passives:
+  buffs:
+    life_force:
+      min_value: 5
+      max_value: 20
+    strength:
+      min_value: 1.0
+      max_value: 4.0
+    sorcery:
+      min_value: 1.0
+      max_value: 4.0
+    defense:
+      min_value: 0.75
+      max_value: 3
+    haste:
+      min_value: 1.0
+      max_value: 4.0
+    precision:
+      min_value: 0.25
+      max_value: 1
+    ferocity:
+      min_value: 0.5
+      max_value: 2
+    discipline:
+      min_value: 2
+      max_value: 8
+    flow:
+      min_value: 2
+      max_value: 8
+    stamina:
+      min_value: 2
+      max_value: 8

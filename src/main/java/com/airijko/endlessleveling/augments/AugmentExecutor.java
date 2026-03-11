@@ -234,16 +234,41 @@ public final class AugmentExecutor {
             CommandBuffer<EntityStore> commandBuffer,
             EntityStatMap statMap,
             double deltaSeconds) {
+        var runtime = runtimeManager.getRuntimeState(playerData.getUuid());
+        runtime.clearPermanentAttributeBonuses();
+
+        Map<String, String> selected = playerData.getSelectedAugmentsSnapshot();
+        if (selected.isEmpty()) {
+            return;
+        }
+
         List<Augment> augments = resolve(playerData);
         if (augments.isEmpty()) {
             return;
         }
-        var runtime = runtimeManager.getRuntimeState(playerData.getUuid());
+
         notifyCooldowns(playerData, runtime, commandBuffer, playerRef, augments);
-        PassiveStatContext context = new PassiveStatContext(playerData, runtime, skillManager, playerRef, commandBuffer,
-                statMap, deltaSeconds);
-        for (Augment augment : augments) {
+        for (Map.Entry<String, String> entry : selected.entrySet()) {
+            String selectionKey = entry.getKey();
+            String augmentId = entry.getValue();
+            if (augmentId == null || augmentId.isBlank()) {
+                continue;
+            }
+
+            Augment augment = augmentManager.createAugment(augmentId);
+            if (augment == null) {
+                continue;
+            }
+
             if (augment instanceof PassiveStatAugment handler) {
+                PassiveStatContext context = new PassiveStatContext(playerData,
+                        runtime,
+                        skillManager,
+                        selectionKey,
+                        playerRef,
+                        commandBuffer,
+                        statMap,
+                        deltaSeconds);
                 handler.applyPassive(context);
             }
         }

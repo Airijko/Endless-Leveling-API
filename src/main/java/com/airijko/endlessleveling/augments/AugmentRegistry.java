@@ -16,6 +16,7 @@ public final class AugmentRegistry {
             Map.entry(ArcaneInstabilityAugment.ID, ArcaneInstabilityAugment::new),
             Map.entry(ArcaneMasteryAugment.ID, ArcaneMasteryAugment::new),
             Map.entry(BailoutAugment.ID, BailoutAugment::new),
+            Map.entry(BasicAugment.ID, BasicAugment::new),
             Map.entry(BruteForceAugment.ID, BruteForceAugment::new),
             Map.entry(DeathBombAugment.ID, DeathBombAugment::new),
             Map.entry(EndurePainAugment.ID, EndurePainAugment::new),
