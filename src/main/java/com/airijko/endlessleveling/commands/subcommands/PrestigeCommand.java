@@ -61,6 +61,13 @@ public class PrestigeCommand extends AbstractPlayerCommand {
             }
             case NOT_AT_CAP -> playerRef.sendMessage(
                     Message.raw("You must reach level " + currentCap + " before prestiging.").color("#ff9d00"));
+            case AT_MAX_PRESTIGE -> {
+                Integer prestigeCap = levelingManager.getPrestigeCap();
+                String capText = prestigeCap != null ? String.valueOf(prestigeCap) : "ENDLESS";
+                playerRef.sendMessage(
+                        Message.raw("You have already reached the prestige cap of " + capText + ".")
+                                .color("#ff9d00"));
+            }
             case DISABLED ->
                 playerRef.sendMessage(Message.raw("Prestige is disabled on this server.").color("#ff6666"));
             default ->

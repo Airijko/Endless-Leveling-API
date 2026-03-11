@@ -51,6 +51,7 @@ public class LevelingManager {
     private boolean playerBasedMode;
     private int playerBasedOffset;
     private boolean prestigeEnabled;
+    private Integer prestigeCap;
     private int prestigeLevelCapIncrease;
     private double prestigeBaseXpIncrease;
 
@@ -83,6 +84,7 @@ public class LevelingManager {
         int configuredCap = getInt("player_level_cap", 100);
         levelCap = Math.max(1, configuredCap);
         prestigeEnabled = getBoolean("prestige.enabled", true);
+        prestigeCap = parsePrestigeCap(configManager.get("prestige.prestige_level_cap", "ENDLESS", false));
         prestigeLevelCapIncrease = Math.max(0, getInt("prestige.level_cap_increase_per_prestige", 10));
         prestigeBaseXpIncrease = Math.max(0.0D, getDouble("prestige.base_xp_increase_per_prestige", 10.0D));
 
@@ -101,11 +103,12 @@ public class LevelingManager {
         xpScalingMinMultiplier = clampMultiplier(getDouble("Mob_Leveling.Experience.Scaling.MinMultiplier", 0.1));
 
         LOGGER.atInfo().log(
-                "Leveling config loaded: base=%f, multiplier=%f, cap=%d, prestigeEnabled=%s, cap+%d/base+%.2f",
+                "Leveling config loaded: base=%f, multiplier=%f, cap=%d, prestigeEnabled=%s, prestigeCap=%s, cap+%d/base+%.2f",
                 baseXp,
                 multiplier,
                 levelCap,
                 prestigeEnabled,
+                prestigeCap == null ? "ENDLESS" : prestigeCap,
                 prestigeLevelCapIncrease,
                 prestigeBaseXpIncrease);
     }
@@ -395,6 +398,14 @@ public class LevelingManager {
         return prestigeEnabled;
     }
 
+    public Integer getPrestigeCap() {
+        return prestigeCap;
+    }
+
+    public boolean hasPrestigeCap() {
+        return prestigeCap != null;
+    }
+
     public PrestigeResult tryGainPrestige(PlayerData player) {
         if (player == null) {
             return PrestigeResult.INVALID_PLAYER;
@@ -403,12 +414,16 @@ public class LevelingManager {
             return PrestigeResult.DISABLED;
         }
 
+        int oldPrestigeLevel = Math.max(0, player.getPrestigeLevel());
+        if (prestigeCap != null && oldPrestigeLevel >= prestigeCap) {
+            return PrestigeResult.AT_MAX_PRESTIGE;
+        }
+
         int currentCap = getLevelCap(player);
         if (player.getLevel() < currentCap) {
             return PrestigeResult.NOT_AT_CAP;
         }
 
-        int oldPrestigeLevel = Math.max(0, player.getPrestigeLevel());
         int nextPrestigeLevel = oldPrestigeLevel + 1;
         player.setPrestigeLevel(nextPrestigeLevel);
         player.setLevel(1);
@@ -624,6 +639,33 @@ public class LevelingManager {
         return raw != null ? raw.toString() : defaultValue;
     }
 
+    private Integer parsePrestigeCap(Object rawValue) {
+        if (rawValue == null) {
+            return null;
+        }
+        if (rawValue instanceof Number number) {
+            return Math.max(0, number.intValue());
+        }
+        if (rawValue instanceof String text) {
+            String normalized = text.trim();
+            if (normalized.isEmpty() || normalized.equalsIgnoreCase("ENDLESS")) {
+                return null;
+            }
+            try {
+                return Math.max(0, Integer.parseInt(normalized));
+            } catch (NumberFormatException ignored) {
+                LOGGER.atWarning().log(
+                        "Invalid prestige.prestige_level_cap value '%s'; defaulting to ENDLESS.",
+                        normalized);
+                return null;
+            }
+        }
+        LOGGER.atWarning().log(
+                "Unsupported prestige.prestige_level_cap value type %s; defaulting to ENDLESS.",
+                rawValue.getClass().getSimpleName());
+        return null;
+    }
+
     private enum XpSuppressionReason {
         PLAYER_TOO_HIGH,
         PLAYER_TOO_LOW
@@ -632,6 +674,7 @@ public class LevelingManager {
     public enum PrestigeResult {
         SUCCESS,
         NOT_AT_CAP,
+        AT_MAX_PRESTIGE,
         DISABLED,
         INVALID_PLAYER
     }

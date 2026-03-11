@@ -1,30 +1,35 @@
-# This is the leveling formula for the server. It is used to calculate the amount of experience required to level up.
+# Leveling formula used to calculate XP required for the next level.
 default:
   expression: "base * ((log(level)+1) * (sqrt(level)))^1.75"
   base: 50
 
-# If you change these values, make sure to reset everyone to sync the skill points by do "/el resetskillpointsall"
+# If you change these values, resync player skill points with "/el resetskillpointsall".
 baseSkillPoints: 12
 skillPointsPerLevel: 5
 
 player_level_cap: 75
 
+# Augment unlock milestones earned from normal player levels.
+augments:
+  unlocks:
+    - tier: ELITE
+      levels: [15]
+    - tier: MYTHIC
+      levels: [50]
+
 prestige:
   enabled: true
+  prestige_level_cap: ENDLESS # ENDLESS = no prestige cap; set an integer to cap prestige levels
   level_cap_increase_per_prestige: 25
   base_xp_increase_per_prestige: 10
-  # Prestige augment unlock milestones are now fully data-driven.
-  # Each rule grants milestone slots for the configured tier.
-  # Use explicit prestige_levels for clarity (recommended).
-  # Optional: required_player_level gates unlocks until the player reaches that level.
+  # Prestige augment milestone slots by tier.
   augment_unlock_tiers:
     - tier: ELITE
       prestige_levels: [2, 4, 6, 8]
     - tier: MYTHIC
       prestige_levels: [10]
 
-  # Prestige reroll milestones for pending augment offers.
-  # Each unlocked milestone grants one reroll token for the configured tier.
+  # Prestige reroll milestone grants by tier.
   augment_reroll_tiers:
     - tier: ELITE
       prestige_levels: [3, 7, 11]

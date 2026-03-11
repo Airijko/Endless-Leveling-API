@@ -8,6 +8,4 @@ passives:
   heal_on_trigger:
     value: 0.80 # heals 80% of max HP
     min_health_hp: 1 # flat HP trigger/floor
-    # Optional percent mode instead of flat HP:
-    # min_health_percent: 0.01
     cooldown: 100 # 100 seconds cooldown

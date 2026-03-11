@@ -59,8 +59,11 @@ public class AugmentUnlockManager {
         reload();
     }
 
-    /** Reload unlock milestone rules from config.yml. */
+    /**
+     * Reload unlock milestone rules from leveling.yml with legacy config fallback.
+     */
     public synchronized void reload() {
+        configManager.load();
         levelingConfigManager.load();
         List<UnlockRule> parsed = parseRules();
         List<PrestigeUnlockRule> parsedPrestige = parsePrestigeRules();
@@ -69,7 +72,8 @@ public class AugmentUnlockManager {
         this.prestigeUnlockRules = parsedPrestige;
         this.prestigeRerollRules = parsedRerolls;
         if (parsed.isEmpty()) {
-            LOGGER.atWarning().log("No augment unlock rules parsed. Check config augments.unlocks for tiers/levels.");
+            LOGGER.atWarning()
+                    .log("No augment unlock rules parsed. Check leveling.yml augments.unlocks or legacy config.yml augments.unlocks.");
         } else {
             LOGGER.atInfo().log("Loaded %d augment unlock rules", parsed.size());
         }
@@ -532,11 +536,21 @@ public class AugmentUnlockManager {
     }
 
     private List<UnlockRule> parseRules() {
-        Object raw = configManager.get("augments.unlocks", Collections.emptyList(), false);
-        if (!(raw instanceof List<?> list) || list.isEmpty()) {
-            LOGGER.atWarning().log("Config augments.unlocks is missing or empty (type=%s, value=%s)",
-                    raw == null ? "null" : raw.getClass().getSimpleName(), raw);
-            return List.of();
+        Object raw = levelingConfigManager.get("augments.unlocks", null, false);
+        List<?> list = raw instanceof List<?> parsedList ? parsedList : null;
+        if (list == null || list.isEmpty()) {
+            Object legacyRaw = configManager.get("augments.unlocks", Collections.emptyList(), false);
+            List<?> legacyList = legacyRaw instanceof List<?> parsedLegacyList ? parsedLegacyList : null;
+            if (legacyList == null || legacyList.isEmpty()) {
+                LOGGER.atWarning().log(
+                        "Augment unlock rules are missing from leveling.yml augments.unlocks and legacy config.yml augments.unlocks (leveling type=%s, legacy type=%s)",
+                        raw == null ? "null" : raw.getClass().getSimpleName(),
+                        legacyRaw == null ? "null" : legacyRaw.getClass().getSimpleName());
+                return List.of();
+            }
+            LOGGER.atWarning().log(
+                    "Using legacy config.yml augments.unlocks. Move this section to leveling.yml augments.unlocks.");
+            list = legacyList;
         }
         List<UnlockRule> rules = new ArrayList<>();
         for (Object entry : list) {

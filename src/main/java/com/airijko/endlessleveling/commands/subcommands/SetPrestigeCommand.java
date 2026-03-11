@@ -60,6 +60,13 @@ public class SetPrestigeCommand extends AbstractPlayerCommand {
             return;
         }
 
+        Integer prestigeCap = levelingManager != null ? levelingManager.getPrestigeCap() : null;
+        if (prestigeCap != null && requestedPrestige > prestigeCap) {
+            senderRef.sendMessage(Message.raw(
+                    "Prestige cannot be set above the configured cap of " + prestigeCap + "."));
+            return;
+        }
+
         PlayerData targetData = playerDataManager.getByName(targetName);
         if (targetData == null) {
             senderRef.sendMessage(Message.raw("Player not found: " + targetName));

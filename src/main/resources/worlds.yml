@@ -1,30 +1,22 @@
 # Per-world mob leveling overrides.
-#
 # World ids are matched case-insensitively.
-# Example wildcard pattern:
-#   instance-mj_instance_d01-*
 
 World_Overrides:
-  # Global fallback pattern example (optional)
-  # "*":
-  #   Level_Source:
-  #     Mode: "MIXED"
-
-  # Global defaults applied to all worlds unless a world override provides its own value.
+  # Global defaults for all matching worlds unless overridden below.
   Global:
     Level_Source:
       Party_System:
         Enabled: true
         Level_Calculation: "AVERAGE"
-        # Radius used for party XP sharing and TIERS party-level adaptation.
+        # Used for party XP sharing and TIERS party-level adaptation.
         XP_Share_Range: 25
         Dominant_Party_Resolution:
           Mode: "MOST_MEMBERS"
         Max_Internal_Level_Gap: 999
-    # Applies to all mobs in the world override, including Mob_Overrides entries.
+    # Applies to all mobs in this world override, including Mob_Overrides entries.
     Mob_Scaling:
       Mob_Level_Scaling_Difference:
-        # Shared +/- level range used by defense and damage max-difference scaling.
+        # Shared +/- level range for defense and damage max-difference scaling.
         Range: 15
       Damage_Max_Difference:
         Enabled: true
@@ -38,7 +30,6 @@ World_Overrides:
         At_Positive_Max_Difference: 0.3
         Above_Positive_Max_Difference: 0.6
 
-  # Static world exact match
   default:
     Enabled: true
     Blacklist_Mob_Types:
@@ -146,33 +137,25 @@ World_Overrides:
       Mixed:
         Player_Weight: 0.5
       Fixed_Level:
-        # Supports either a flat level or a random range:
-        # Level: 50
-        # Level: "50-65"
-        # Min: 50
-        # Max: 65
+        # Supports Level: 50, Level: "50-65", or Min/Max.
         Level: 10
       Tiers:
-        # Used when Mode: "TIERS"
-        # Preferred tier base range key: Base_Level (Fixed_Level still works as fallback).
+        # Used when Mode: "TIERS". Base_Level is preferred; Fixed_Level still works.
         Total_Tiers: 1
         Levels_Per_Tier: 20
         Player_Adaptation:
           Enabled: true
-          # BELOW: promotes early before next tier min.
-          # ABOVE: requires extra levels above the current tier max.
+          # BELOW unlocks early; ABOVE requires levels above the current tier max.
           Allowance_Mode: "BELOW"
           Range_Allowance: 0
       Player_Based:
         Offset: 0
         Min_Difference: -5
         Max_Difference: 10
-        # Player mode specific tuning.
+        # Player mode tuning.
         Influence_Radius: 25
     Scaling:
-      # Optional per-world override for the level-difference cap used by:
-      # - Scaling.Defense.(At/Below/Above)_* fields
-      # - Mob_Scaling.Damage_Max_Difference interpolation range
+      # Optional per-world override for the level-difference cap used by defense and mob damage scaling.
       Health:
         Enabled: true
         Base_Multiplier: 1.0
@@ -187,19 +170,14 @@ World_Overrides:
         At_Positive_Max_Difference: 0.8
         Below_Negative_Max_Difference: 0.0
         Above_Positive_Max_Difference: 0.9
-    # Mob-only max-difference damage scaling settings for this world.
     Mob_Scaling:
-      # Optional per-world override for mob-vs-player level difference interpolation.
-      # Mob_Level_Scaling_Difference:
-      #   Range: 15
-      # Disables damage scaling when level difference exceeds the configured threshold,
-      # instead of applying the At_Positive_Max_Difference multiplier.
+      # Set Enabled to false to disable damage scaling past the configured level-difference threshold.
       Damage_Max_Difference:
         Enabled: false
 
-  # ------------------------------------------------------------
-  # MAJOR DUNGEONS
-  # ------------------------------------------------------------
+  # ===============================
+  # Major dungeons
+  # ===============================
   instance-mj_instance_d01-*:
     Level_Source:
       Mode: "TIERED"
@@ -210,7 +188,6 @@ World_Overrides:
         Levels_Per_Tier: 20
         Player_Adaptation:
           Enabled: true
-          # Example: Base 20-35 with ABOVE + 5 unlocks next tier at 40.
           Allowance_Mode: "ABOVE"
           Range_Allowance: 5
     Scaling:
@@ -364,9 +341,9 @@ World_Overrides:
             Below_Negative_Max_Difference: 0.0
             Above_Positive_Max_Difference: 0.9
 
-  # ------------------------------------------------------------
-  # Endgame Dungeons
-  # ------------------------------------------------------------
+  # ===============================
+  # Endgame dungeons
+  # ===============================
   instance-endgame_frozen_dungeon-*:
     Level_Source:
       Mode: "TIERED"
@@ -447,9 +424,9 @@ World_Overrides:
             Below_Negative_Max_Difference: 0.0
             Above_Positive_Max_Difference: 0.975
 
-  # ------------------------------------------------------------
-  # Tower of Shiva Dungeons
-  # ------------------------------------------------------------
+  # ===============================
+  # Tower of Shiva dungeons
+  # ===============================
   instance-shiva_dungeon-*:
     Level_Source:
       Mode: "TIERED"
