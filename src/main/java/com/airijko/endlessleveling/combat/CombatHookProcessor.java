@@ -94,12 +94,13 @@ public final class CombatHookProcessor {
         boolean firstStrikeAugmentSelected = hasSelectedAugment(playerData, FirstStrikeAugment.ID);
         boolean executionerAugmentSelected = hasSelectedAugment(playerData, ExecutionerAugment.ID);
 
+        String weaponCategoryKey = ClassWeaponResolver.resolveCategoryKey(ctx.weapon());
         ClassWeaponType weaponType = ClassWeaponResolver.resolve(ctx.weapon());
         boolean usesSorcery = weaponType == ClassWeaponType.STAFF || weaponType == ClassWeaponType.WAND;
         boolean rangedAttack = weaponType == ClassWeaponType.BOW || weaponType == ClassWeaponType.CROSSBOW;
 
         float weaponMultiplier = classManager != null
-                ? (float) classManager.getWeaponDamageMultiplier(playerData, weaponType)
+                ? (float) classManager.getWeaponDamageMultiplier(playerData, weaponCategoryKey)
                 : 1.0f;
 
         float baseAmount = usesSorcery

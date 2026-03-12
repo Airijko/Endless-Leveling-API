@@ -1,11 +1,9 @@
 package com.airijko.endlessleveling.classes;
 
-import com.airijko.endlessleveling.enums.ClassWeaponType;
 import com.airijko.endlessleveling.races.RacePassiveDefinition;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,7 +20,7 @@ public class CharacterClassDefinition {
     private final String role;
     private final boolean enabled;
     private final String iconItemId;
-    private final Map<ClassWeaponType, Double> weaponMultipliers;
+    private final Map<String, Double> weaponMultipliers;
     private final List<Map<String, Object>> passives;
     private final List<RacePassiveDefinition> passiveDefinitions;
 
@@ -32,7 +30,7 @@ public class CharacterClassDefinition {
             String role,
             boolean enabled,
             String iconItemId,
-            Map<ClassWeaponType, Double> weaponMultipliers,
+            Map<String, Double> weaponMultipliers,
             List<Map<String, Object>> passives,
             List<RacePassiveDefinition> passiveDefinitions) {
         this.id = Objects.requireNonNull(id, "Class id cannot be null");
@@ -41,7 +39,11 @@ public class CharacterClassDefinition {
         this.role = role == null ? "" : role;
         this.enabled = enabled;
         this.iconItemId = iconItemId == null ? "" : iconItemId.trim();
-        this.weaponMultipliers = Collections.unmodifiableMap(new EnumMap<>(weaponMultipliers));
+        Map<String, Double> copiedWeaponMultipliers = new LinkedHashMap<>();
+        if (weaponMultipliers != null) {
+            copiedWeaponMultipliers.putAll(weaponMultipliers);
+        }
+        this.weaponMultipliers = Collections.unmodifiableMap(copiedWeaponMultipliers);
         this.passives = Collections.unmodifiableList(copyPassives(passives));
         List<RacePassiveDefinition> typed = passiveDefinitions == null
                 ? new ArrayList<>()
@@ -88,15 +90,16 @@ public class CharacterClassDefinition {
         return iconItemId;
     }
 
-    public Map<ClassWeaponType, Double> getWeaponMultipliers() {
+    public Map<String, Double> getWeaponMultipliers() {
         return weaponMultipliers;
     }
 
-    public double getWeaponMultiplier(ClassWeaponType type) {
-        if (type == null) {
+    public double getWeaponMultiplier(String categoryKey) {
+        String normalized = WeaponConfig.normalizeCategoryKey(categoryKey);
+        if (normalized == null) {
             return 1.0D;
         }
-        return weaponMultipliers.getOrDefault(type, 1.0D);
+        return weaponMultipliers.getOrDefault(normalized, 1.0D);
     }
 
     public List<Map<String, Object>> getPassives() {

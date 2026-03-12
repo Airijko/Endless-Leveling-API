@@ -2,10 +2,10 @@ package com.airijko.endlessleveling.ui;
 
 import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.classes.CharacterClassDefinition;
+import com.airijko.endlessleveling.classes.WeaponConfig;
 import com.airijko.endlessleveling.data.PlayerData;
 import com.airijko.endlessleveling.enums.ArchetypePassiveType;
 import com.airijko.endlessleveling.enums.ClassAssignmentSlot;
-import com.airijko.endlessleveling.enums.ClassWeaponType;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.airijko.endlessleveling.managers.ClassManager;
 import com.airijko.endlessleveling.managers.LevelingManager;
@@ -552,7 +552,7 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     }
 
     private void buildWeaponList(UICommandBuilder ui, CharacterClassDefinition selection) {
-        Map<ClassWeaponType, Double> weaponMap = selection.getWeaponMultipliers();
+        Map<String, Double> weaponMap = selection.getWeaponMultipliers();
         ui.clear("#ClassWeaponEntries");
         if (weaponMap == null || weaponMap.isEmpty()) {
             ui.set("#ClassWeaponSummary.Visible", true);
@@ -561,10 +561,10 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             return;
         }
         ui.set("#ClassWeaponSummary.Visible", false);
-        List<Map.Entry<ClassWeaponType, Double>> entries = new ArrayList<>(weaponMap.entrySet());
-        entries.sort(Comparator.comparing((Map.Entry<ClassWeaponType, Double> e) -> e.getValue()).reversed());
+        List<Map.Entry<String, Double>> entries = new ArrayList<>(weaponMap.entrySet());
+        entries.sort(Comparator.comparing((Map.Entry<String, Double> e) -> e.getValue()).reversed());
         for (int i = 0; i < entries.size(); i++) {
-            Map.Entry<ClassWeaponType, Double> entry = entries.get(i);
+            Map.Entry<String, Double> entry = entries.get(i);
             ui.append("#ClassWeaponEntries", "Pages/Classes/ClassWeaponRow.ui");
             String base = "#ClassWeaponEntries[" + i + "]";
             ui.set(base + " #WeaponName.Text", localizeWeaponType(entry.getKey()));
@@ -1197,12 +1197,12 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         return builder.toString();
     }
 
-    private String localizeWeaponType(ClassWeaponType type) {
-        if (type == null) {
+    private String localizeWeaponType(String typeKey) {
+        String normalized = WeaponConfig.normalizeCategoryKey(typeKey);
+        if (normalized == null) {
             return tr("hud.class.none", "None");
         }
-        String keySuffix = type.name().toLowerCase(Locale.ROOT);
-        return tr("ui.classes.weapon." + keySuffix, toDisplay(type.name()));
+        return tr("ui.classes.weapon." + normalized, toDisplay(normalized));
     }
 
     private String localizePassiveType(ArchetypePassiveType type) {

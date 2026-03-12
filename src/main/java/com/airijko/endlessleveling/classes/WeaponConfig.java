@@ -1,6 +1,5 @@
 package com.airijko.endlessleveling.classes;
 
-import com.airijko.endlessleveling.enums.ClassWeaponType;
 import com.hypixel.hytale.logger.HytaleLogger;
 import org.yaml.snakeyaml.Yaml;
 
@@ -20,20 +19,20 @@ import java.util.Set;
 
 /**
  * Parsed view of weapons.yml that allows explicit weapon ID or keyword routing
- * to a ClassWeaponType.
+ * to a normalized weapon category key.
  */
 public final class WeaponConfig {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
     private static final Yaml YAML = new Yaml();
 
-    private final Map<String, ClassWeaponType> exactIdMap;
-    private final Map<String, ClassWeaponType> keywordTokenMap;
-    private final Map<String, ClassWeaponType> keywordSubstringMap;
+    private final Map<String, String> exactIdMap;
+    private final Map<String, String> keywordTokenMap;
+    private final Map<String, String> keywordSubstringMap;
 
-    private WeaponConfig(Map<String, ClassWeaponType> exactIdMap,
-            Map<String, ClassWeaponType> keywordTokenMap,
-            Map<String, ClassWeaponType> keywordSubstringMap) {
+    private WeaponConfig(Map<String, String> exactIdMap,
+            Map<String, String> keywordTokenMap,
+            Map<String, String> keywordSubstringMap) {
         this.exactIdMap = exactIdMap;
         this.keywordTokenMap = keywordTokenMap;
         this.keywordSubstringMap = keywordSubstringMap;
@@ -59,13 +58,13 @@ public final class WeaponConfig {
             }
 
             Map<String, Object> typesSection = extractTypesSection(root);
-            Map<String, ClassWeaponType> exactIds = new HashMap<>();
-            Map<String, ClassWeaponType> keywordTokens = new HashMap<>();
-            Map<String, ClassWeaponType> keywordSubstrings = new HashMap<>();
+            Map<String, String> exactIds = new HashMap<>();
+            Map<String, String> keywordTokens = new HashMap<>();
+            Map<String, String> keywordSubstrings = new HashMap<>();
 
             for (Map.Entry<String, Object> entry : typesSection.entrySet()) {
-                ClassWeaponType weaponType = ClassWeaponType.fromConfigKey(entry.getKey());
-                if (weaponType == null) {
+                String weaponCategory = normalizeCategoryKey(entry.getKey());
+                if (weaponCategory == null) {
                     continue;
                 }
                 Map<String, Object> ruleNode = asMap(entry.getValue());
@@ -76,15 +75,15 @@ public final class WeaponConfig {
                 for (String id : ids) {
                     String normalized = normalizeIdentifier(id);
                     if (normalized != null) {
-                        exactIds.put(normalized, weaponType);
+                        exactIds.put(normalized, weaponCategory);
                     }
                 }
                 Set<String> keywords = readStrings(ruleNode.get("keywords"));
                 for (String keyword : keywords) {
                     String normalized = normalizeToken(keyword);
                     if (normalized != null) {
-                        keywordTokens.put(normalized, weaponType);
-                        keywordSubstrings.put(normalized, weaponType);
+                        keywordTokens.put(normalized, weaponCategory);
+                        keywordSubstrings.put(normalized, weaponCategory);
                     }
                 }
             }
@@ -100,24 +99,24 @@ public final class WeaponConfig {
         }
     }
 
-    public ClassWeaponType resolve(String itemId) {
+    public String resolveCategory(String itemId) {
         String normalized = normalizeIdentifier(itemId);
         if (normalized == null) {
             return null;
         }
-        ClassWeaponType byId = exactIdMap.get(normalized);
+        String byId = exactIdMap.get(normalized);
         if (byId != null) {
             return byId;
         }
 
         List<String> tokens = tokenize(normalized);
         for (String token : tokens) {
-            ClassWeaponType byToken = keywordTokenMap.get(token);
+            String byToken = keywordTokenMap.get(token);
             if (byToken != null) {
                 return byToken;
             }
         }
-        for (Map.Entry<String, ClassWeaponType> entry : keywordSubstringMap.entrySet()) {
+        for (Map.Entry<String, String> entry : keywordSubstringMap.entrySet()) {
             if (normalized.contains(entry.getKey())) {
                 return entry.getValue();
             }
@@ -131,6 +130,19 @@ public final class WeaponConfig {
             return asMap(map);
         }
         return root;
+    }
+
+    public static String normalizeCategoryKey(String raw) {
+        if (raw == null) {
+            return null;
+        }
+        String trimmed = raw.trim();
+        if (trimmed.isEmpty()) {
+            return null;
+        }
+        return trimmed.replace('-', '_')
+                .replace(' ', '_')
+                .toLowerCase(Locale.ROOT);
     }
 
     private static Map<String, Object> asMap(Object node) {

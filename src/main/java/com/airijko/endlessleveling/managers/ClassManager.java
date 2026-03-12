@@ -1,10 +1,10 @@
 package com.airijko.endlessleveling.managers;
 
 import com.airijko.endlessleveling.classes.CharacterClassDefinition;
+import com.airijko.endlessleveling.classes.WeaponConfig;
 import com.airijko.endlessleveling.data.PlayerData;
 import com.airijko.endlessleveling.enums.ArchetypePassiveType;
 import com.airijko.endlessleveling.enums.ClassAssignmentSlot;
-import com.airijko.endlessleveling.enums.ClassWeaponType;
 import com.airijko.endlessleveling.enums.DamageLayer;
 import com.airijko.endlessleveling.enums.PassiveCategory;
 import com.airijko.endlessleveling.enums.PassiveStackingStyle;
@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -269,19 +268,19 @@ public class ClassManager {
         return classesByKey.values().stream().findFirst().orElse(null);
     }
 
-    public double getWeaponDamageMultiplier(PlayerData data, ClassWeaponType weaponType) {
+    public double getWeaponDamageMultiplier(PlayerData data, String weaponCategoryKey) {
         if (!isEnabled() || data == null) {
             return 1.0D;
         }
         double totalBonus = 0.0D;
         CharacterClassDefinition primary = getPlayerPrimaryClass(data);
         if (primary != null) {
-            double primaryBonus = Math.max(0.0D, primary.getWeaponMultiplier(weaponType) - 1.0D);
+            double primaryBonus = Math.max(0.0D, primary.getWeaponMultiplier(weaponCategoryKey) - 1.0D);
             totalBonus += primaryBonus;
         }
         CharacterClassDefinition secondary = getPlayerSecondaryClass(data);
         if (secondary != null && secondary != primary) {
-            double secondaryBonus = Math.max(0.0D, secondary.getWeaponMultiplier(weaponType) - 1.0D);
+            double secondaryBonus = Math.max(0.0D, secondary.getWeaponMultiplier(weaponCategoryKey) - 1.0D);
             if (secondaryBonus > 0.0D) {
                 totalBonus += secondaryBonus * secondaryWeaponScale;
             }
@@ -717,7 +716,7 @@ public class ClassManager {
         boolean enabled = parseBoolean(yamlData.getOrDefault("enabled", Boolean.TRUE), true);
 
         String iconItemId = parseIconId(yamlData);
-        Map<ClassWeaponType, Double> weaponMultipliers = parseWeaponSection(yamlData);
+        Map<String, Double> weaponMultipliers = parseWeaponSection(yamlData);
         List<Map<String, Object>> passives = parsePassives(yamlData.get("passives"));
         List<RacePassiveDefinition> passiveDefinitions = buildPassiveDefinitions(classId, passives);
 
@@ -746,7 +745,7 @@ public class ClassManager {
         return safeString(value);
     }
 
-    private Map<ClassWeaponType, Double> parseWeaponSection(Map<String, Object> yamlData) {
+    private Map<String, Double> parseWeaponSection(Map<String, Object> yamlData) {
         Object node = yamlData.get("Weapon");
         if (node == null) {
             node = yamlData.get("weapon");
@@ -754,7 +753,7 @@ public class ClassManager {
         if (node == null) {
             node = yamlData.get("weapons");
         }
-        Map<ClassWeaponType, Double> result = new EnumMap<>(ClassWeaponType.class);
+        Map<String, Double> result = new LinkedHashMap<>();
         if (!(node instanceof Iterable<?> iterable)) {
             return result;
         }
@@ -767,15 +766,15 @@ public class ClassManager {
             if (typeKey == null) {
                 continue;
             }
-            ClassWeaponType weaponType = ClassWeaponType.fromConfigKey(typeKey);
-            if (weaponType == null) {
+            String weaponCategory = WeaponConfig.normalizeCategoryKey(typeKey);
+            if (weaponCategory == null) {
                 continue;
             }
             double multiplier = parseDouble(weaponMap.get("damage"), 1.0D);
             if (multiplier <= 0.0D) {
                 multiplier = 1.0D;
             }
-            result.put(weaponType, multiplier);
+            result.put(weaponCategory, multiplier);
         }
         return result;
     }
