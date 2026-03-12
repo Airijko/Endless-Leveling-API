@@ -432,7 +432,16 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
     private List<RaceDefinition> getSortedRaces() {
         Collection<RaceDefinition> loaded = raceManager.getLoadedRaces();
-        List<RaceDefinition> races = new ArrayList<>(loaded);
+        List<RaceDefinition> races = new ArrayList<>();
+        for (RaceDefinition race : loaded) {
+            if (race == null) {
+                continue;
+            }
+            String stage = race.getAscension() != null ? race.getAscension().getStage() : "base";
+            if (stage == null || stage.isBlank() || "base".equalsIgnoreCase(stage.trim())) {
+                races.add(race);
+            }
+        }
         races.sort(Comparator.comparing(r -> r.getDisplayName().toLowerCase(Locale.ROOT)));
         return races;
     }
