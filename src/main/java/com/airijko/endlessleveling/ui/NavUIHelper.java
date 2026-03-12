@@ -35,6 +35,7 @@ public final class NavUIHelper {
                 ui.set("#NavSkills.Text", Lang.tr(playerRef.getUuid(), "ui.nav.skills", "SKILLS"));
                 ui.set("#NavRaces.Text", Lang.tr(playerRef.getUuid(), "ui.nav.races", "RACES"));
                 ui.set("#NavClasses.Text", Lang.tr(playerRef.getUuid(), "ui.nav.classes", "CLASSES"));
+                ui.set("#NavAugments.Text", Lang.tr(playerRef.getUuid(), "ui.nav.augments", "AUGMENTS"));
                 ui.set("#NavLeaderboards.Text", Lang.tr(playerRef.getUuid(), "ui.nav.leaderboards", "LEADERBOARDS"));
                 ui.set("#NavSettings.Text", Lang.tr(playerRef.getUuid(), "ui.nav.settings", "SETTINGS"));
                 ui.set("#NavVersion.Text", NAV_VERSION);
@@ -48,6 +49,7 @@ public final class NavUIHelper {
                 events.addEventBinding(Activating, "#NavRaces", of("Action", "nav:races"), false);
                 events.addEventBinding(Activating, "#NavClasses", of("Action", "nav:classes"), false);
                 events.addEventBinding(Activating, "#NavSkills", of("Action", "nav:skills"), false);
+                events.addEventBinding(Activating, "#NavAugments", of("Action", "nav:augments"), false);
                 events.addEventBinding(Activating, "#NavLeaderboards", of("Action", "nav:leaderboards"), false);
                 events.addEventBinding(Activating, "#NavSettings", of("Action", "nav:settings"), false);
         }
@@ -92,6 +94,9 @@ public final class NavUIHelper {
                         case "classes" -> player.getPageManager()
                                         .openCustomPage(ref, store,
                                                         new ClassesUIPage(playerRef, CustomPageLifetime.CanDismiss));
+                        case "augments" -> player.getPageManager()
+                                        .openCustomPage(ref, store,
+                                                        new AugmentsUIPage(playerRef, CustomPageLifetime.CanDismiss));
                         case "leaderboards" -> player.getPageManager()
                                         .openCustomPage(ref, store, new LeaderboardsUIPage(playerRef,
                                                         CustomPageLifetime.CanDismiss));

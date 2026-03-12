@@ -1,6 +1,7 @@
 package com.airijko.endlessleveling.listeners;
 
 import com.airijko.endlessleveling.ui.PlayerHud;
+import com.airijko.endlessleveling.ui.PlayerHudHide;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.entity.entities.Player;
@@ -22,6 +23,7 @@ public class OpenPlayerHudListener {
         World world = player.getWorld();
         if (world == null || ref == null) {
             PlayerHud.unregister(player.getUuid());
+            PlayerHudHide.unregister(player.getUuid());
             return;
         }
 
@@ -40,7 +42,7 @@ public class OpenPlayerHudListener {
                 return;
             }
 
-            PlayerHud.open(player, playerRef);
+            PlayerHud.openPreferred(player, playerRef);
         }, CompletableFuture.delayedExecutor(HUD_OPEN_DELAY_MS, TimeUnit.MILLISECONDS, world));
     }
 }

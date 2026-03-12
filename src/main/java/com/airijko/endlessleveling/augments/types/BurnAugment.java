@@ -3,6 +3,7 @@ package com.airijko.endlessleveling.augments.types;
 import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentHooks;
+import com.airijko.endlessleveling.augments.AugmentRuntimeManager.AugmentRuntimeState;
 import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
 import com.airijko.endlessleveling.augments.YamlAugment;
@@ -30,7 +31,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.UUID;
 
-public final class BurnAugment extends YamlAugment implements AugmentHooks.PassiveStatAugment {
+public final class BurnAugment extends YamlAugment
+        implements AugmentHooks.OnDamageTakenAugment, AugmentHooks.PassiveStatAugment {
     public static final String ID = "burn";
     private static final String[] BURN_EFFECT_IDS = new String[] { "burning", "Burning", "Burn" };
     private static final float BURN_EFFECT_DURATION_SECONDS = 1.25F;
@@ -39,6 +41,8 @@ public final class BurnAugment extends YamlAugment implements AugmentHooks.Passi
     private final double bonusScalingPer100Health;
     private final double baseRadius;
     private final double healthPerRadiusBlock;
+    private final long activeDurationMillis;
+    private final long cooldownMillis;
     private final double lifeForceFlatBonus;
 
     public BurnAugment(AugmentDefinition definition) {
@@ -56,28 +60,81 @@ public final class BurnAugment extends YamlAugment implements AugmentHooks.Passi
         this.baseRadius = Math.max(0.0D, AugmentValueReader.getDouble(auraBurn, "radius", 0.0D));
         this.healthPerRadiusBlock = Math.max(0.0D,
                 AugmentValueReader.getDouble(radiusScaling, "health_per_block", 0.0D));
+        this.activeDurationMillis = AugmentUtils
+                .secondsToMillis(AugmentValueReader.getDouble(auraBurn, "duration", 0.0D));
+        this.cooldownMillis = AugmentUtils.secondsToMillis(AugmentValueReader.getDouble(auraBurn, "cooldown", 0.0D));
         this.lifeForceFlatBonus = Math.max(0.0D, AugmentValueReader.getDouble(lifeForce, "value", 0.0D));
+    }
+
+    @Override
+    public float onDamageTaken(AugmentHooks.DamageTakenContext context) {
+        if (context == null || context.getRuntimeState() == null || activeDurationMillis <= 0L) {
+            return context != null ? context.getIncomingDamage() : 0f;
+        }
+
+        AugmentRuntimeState runtimeState = context.getRuntimeState();
+        var state = runtimeState.getState(ID);
+        long now = System.currentTimeMillis();
+        if (state.getExpiresAt() > now) {
+            return context.getIncomingDamage();
+        }
+
+        long cooldownEndsAt = (long) state.getStoredValue();
+        if (cooldownEndsAt > now) {
+            return context.getIncomingDamage();
+        }
+
+        long activeUntil = now + activeDurationMillis;
+        long combinedCooldownEnd = cooldownMillis > 0L ? activeUntil + cooldownMillis : activeUntil;
+        state.setExpiresAt(activeUntil);
+        state.setStoredValue(combinedCooldownEnd);
+        state.setStacks(1);
+        state.setLastProc(0L);
+        if (combinedCooldownEnd > now) {
+            runtimeState.setCooldown(ID, getName(), combinedCooldownEnd);
+        }
+
+        PlayerRef playerRef = AugmentUtils.getPlayerRef(context.getCommandBuffer(), context.getDefenderRef());
+        if (playerRef != null && playerRef.isValid()) {
+            AugmentUtils.sendAugmentMessage(playerRef,
+                    String.format("%s activated for %.1fs.", getName(), activeDurationMillis / 1000.0D));
+        }
+
+        return context.getIncomingDamage();
     }
 
     @Override
     public void applyPassive(AugmentHooks.PassiveStatContext context) {
         if (context == null || context.getCommandBuffer() == null || context.getPlayerRef() == null
-                || context.getStatMap() == null) {
+                || context.getStatMap() == null || context.getRuntimeState() == null) {
             return;
         }
 
-        if (context.getRuntimeState() != null) {
-            context.getRuntimeState().setAttributeBonus(
-                    SkillAttributeType.LIFE_FORCE,
-                    ID + "_life_force",
-                    lifeForceFlatBonus,
-                    0L);
+        long now = System.currentTimeMillis();
+        var burnState = context.getRuntimeState().getState(ID);
+        boolean active = burnState.getExpiresAt() > now;
+        if (!active) {
+            if (burnState.getStacks() > 0) {
+                PlayerRef playerRef = AugmentUtils.getPlayerRef(context.getCommandBuffer(), context.getPlayerRef());
+                if (playerRef != null && playerRef.isValid()) {
+                    AugmentUtils.sendAugmentMessage(playerRef,
+                            String.format("%s expired.", getName()));
+                }
+                burnState.setStacks(0);
+            }
+            AugmentUtils.setAttributeBonus(context.getRuntimeState(), ID + "_life_force", SkillAttributeType.LIFE_FORCE,
+                    0.0D, 0L);
+            return;
         }
 
+        context.getRuntimeState().setAttributeBonus(
+                SkillAttributeType.LIFE_FORCE,
+                ID + "_life_force",
+                lifeForceFlatBonus,
+                0L);
+
         // Gate aura damage to once per second
-        long now = System.currentTimeMillis();
-        var burnState = context.getRuntimeState() != null ? context.getRuntimeState().getState(ID) : null;
-        if (burnState == null || (burnState.getLastProc() > 0L && now - burnState.getLastProc() < 1000L)) {
+        if (burnState.getLastProc() > 0L && now - burnState.getLastProc() < 1000L) {
             return;
         }
 

@@ -92,6 +92,10 @@
 
     Group { Anchor: (Height: 24); }
 
+    @LeftNavButton #NavAugments {
+      Text: "AUGMENTS";
+    }
+
     @LeftNavButton #NavLeaderboards {
       Text: "LEADERBOARDS";
     }

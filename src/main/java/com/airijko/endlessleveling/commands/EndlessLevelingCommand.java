@@ -16,6 +16,7 @@ import com.airijko.endlessleveling.commands.subcommands.PrestigeCommand;
 import com.airijko.endlessleveling.commands.subcommands.SetLevelCommand;
 import com.airijko.endlessleveling.commands.subcommands.SetPrestigeCommand;
 import com.airijko.endlessleveling.commands.subcommands.DebugCommand;
+import com.airijko.endlessleveling.commands.subcommands.ToggleHudCommand;
 import com.airijko.endlessleveling.ui.SkillsUIPage;
 import com.airijko.endlessleveling.ui.LeaderboardsUIPage;
 import com.airijko.endlessleveling.ui.ProfileUIPage;
@@ -53,6 +54,7 @@ public class EndlessLevelingCommand extends AbstractPlayerCommand {
                 this.addSubCommand(new LanguageCommand());
                 this.addSubCommand(new AugmentCommand());
                 this.addSubCommand(new AugmentTestCommand());
+                this.addSubCommand(new ToggleHudCommand());
 
                 addGuiShortcut("leaderboards", "Open the EndlessLeveling Leaderboards page",
                                 playerRef -> new LeaderboardsUIPage(playerRef, CustomPageLifetime.CanDismiss));

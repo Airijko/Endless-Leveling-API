@@ -12,8 +12,6 @@ import com.hypixel.hytale.component.system.tick.TickingSystem;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
-import javax.annotation.Nonnull;
-
 /**
  * Periodically reapplies EndlessLeveling skill modifiers for all players to
  * ensure

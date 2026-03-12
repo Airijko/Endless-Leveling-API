@@ -3,6 +3,7 @@ package com.airijko.endlessleveling.augments.types;
 import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentHooks;
+import com.airijko.endlessleveling.augments.AugmentRuntimeManager.AugmentRuntimeState;
 import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
 import com.airijko.endlessleveling.augments.YamlAugment;
@@ -30,7 +31,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-public final class FrozenDomainAugment extends YamlAugment implements AugmentHooks.PassiveStatAugment {
+public final class FrozenDomainAugment extends YamlAugment
+        implements AugmentHooks.OnDamageTakenAugment, AugmentHooks.PassiveStatAugment {
     public static final String ID = "frozen_domain";
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
@@ -45,6 +47,8 @@ public final class FrozenDomainAugment extends YamlAugment implements AugmentHoo
     private final double stolenSlowRatio;
     private final double baseRadius;
     private final double healthPerRadiusBlock;
+    private final long activeDurationMillis;
+    private final long cooldownMillis;
     private final double lifeForceFlatBonus;
 
     private static final class MovementSnapshot {
@@ -130,7 +134,45 @@ public final class FrozenDomainAugment extends YamlAugment implements AugmentHoo
         this.baseRadius = Math.max(0.0D, AugmentValueReader.getDouble(aura, "radius", 0.0D));
         this.healthPerRadiusBlock = Math.max(0.0D,
                 AugmentValueReader.getDouble(radiusScaling, "health_per_block", 0.0D));
+        this.activeDurationMillis = AugmentUtils.secondsToMillis(AugmentValueReader.getDouble(aura, "duration", 0.0D));
+        this.cooldownMillis = AugmentUtils.secondsToMillis(AugmentValueReader.getDouble(aura, "cooldown", 0.0D));
         this.lifeForceFlatBonus = Math.max(0.0D, AugmentValueReader.getDouble(lifeForce, "value", 0.0D));
+    }
+
+    @Override
+    public float onDamageTaken(AugmentHooks.DamageTakenContext context) {
+        if (context == null || context.getRuntimeState() == null || activeDurationMillis <= 0L) {
+            return context != null ? context.getIncomingDamage() : 0f;
+        }
+
+        AugmentRuntimeState runtimeState = context.getRuntimeState();
+        var state = runtimeState.getState(ID);
+        long now = System.currentTimeMillis();
+        if (state.getExpiresAt() > now) {
+            return context.getIncomingDamage();
+        }
+
+        long cooldownEndsAt = (long) state.getStoredValue();
+        if (cooldownEndsAt > now) {
+            return context.getIncomingDamage();
+        }
+
+        long activeUntil = now + activeDurationMillis;
+        long combinedCooldownEnd = cooldownMillis > 0L ? activeUntil + cooldownMillis : activeUntil;
+        state.setExpiresAt(activeUntil);
+        state.setStoredValue(combinedCooldownEnd);
+        state.setStacks(1);
+        if (combinedCooldownEnd > now) {
+            runtimeState.setCooldown(ID, getName(), combinedCooldownEnd);
+        }
+
+        PlayerRef playerRef = AugmentUtils.getPlayerRef(context.getCommandBuffer(), context.getDefenderRef());
+        if (playerRef != null && playerRef.isValid()) {
+            AugmentUtils.sendAugmentMessage(playerRef,
+                    String.format("%s activated for %.1fs.", getName(), activeDurationMillis / 1000.0D));
+        }
+
+        return context.getIncomingDamage();
     }
 
     @Override
@@ -141,6 +183,25 @@ public final class FrozenDomainAugment extends YamlAugment implements AugmentHoo
         }
 
         long now = System.currentTimeMillis();
+        var augmentState = context.getRuntimeState().getState(ID);
+        boolean active = augmentState.getExpiresAt() > now;
+        if (!active) {
+            if (augmentState.getStacks() > 0) {
+                PlayerRef playerRef = AugmentUtils.getPlayerRef(context.getCommandBuffer(), context.getPlayerRef());
+                if (playerRef != null && playerRef.isValid()) {
+                    AugmentUtils.sendAugmentMessage(playerRef,
+                            String.format("%s expired.", getName()));
+                }
+                augmentState.setStacks(0);
+            }
+            AugmentUtils.setAttributeBonus(context.getRuntimeState(), ID + "_life_force", SkillAttributeType.LIFE_FORCE,
+                    0.0D, 0L);
+            AugmentUtils.setAttributeBonus(context.getRuntimeState(), ID + "_stolen_haste", SkillAttributeType.HASTE,
+                    0.0D, 0L);
+            cleanupExpired(context.getCommandBuffer(), now);
+            return;
+        }
+
         EntityStatMap sourceStats = context.getStatMap();
         EntityStatValue sourceHp = sourceStats.get(DefaultEntityStatTypes.getHealth());
         if (sourceHp == null || sourceHp.getMax() <= 0f || sourceHp.get() <= 0f) {
@@ -183,6 +244,7 @@ public final class FrozenDomainAugment extends YamlAugment implements AugmentHoo
 
         int affectedTargets = 0;
         HashSet<Integer> visitedEntityIds = new HashSet<>();
+        long activeUntil = augmentState.getExpiresAt();
         for (Ref<EntityStore> targetRef : TargetUtil.getAllEntitiesInSphere(
                 sourceTransform.getPosition(),
                 radius,
@@ -212,7 +274,7 @@ public final class FrozenDomainAugment extends YamlAugment implements AugmentHoo
             String key = keyFor(targetRef, commandBuffer);
             ActiveFrozen state = ACTIVE_FROST.computeIfAbsent(key, unused -> new ActiveFrozen());
             state.targetRef = targetRef;
-            state.expiresAt = now + REAPPLY_GRACE_MILLIS;
+            state.expiresAt = Math.min(activeUntil, now + REAPPLY_GRACE_MILLIS);
             state.slowPercent = slowPercent;
             applySlowIfPossible(state, commandBuffer, targetRef, freezeEffect);
             affectedTargets++;

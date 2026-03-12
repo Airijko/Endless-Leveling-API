@@ -46,6 +46,7 @@ public class SettingsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 NavUIHelper.bindNavEvents(events);
 
                 // Bind toggle buttons
+                events.addEventBinding(Activating, "#PlayerHudToggle", of("Action", "toggle:playerHud"), false);
                 events.addEventBinding(Activating, "#CriticalNotifToggle", of("Action", "toggle:criticalNotif"), false);
                 events.addEventBinding(Activating, "#XpNotifToggle", of("Action", "toggle:xpNotif"), false);
                 events.addEventBinding(Activating, "#PassiveLevelUpNotifToggle",
@@ -75,7 +76,11 @@ public class SettingsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 var raceManager = EndlessLeveling.getInstance().getRaceManager();
                 boolean raceModelsDisabled = raceManager != null && raceManager.isRaceModelGloballyDisabled();
 
-                ui.set("#PlayerHudRow.Visible", false);
+                ui.set("#PlayerHudLabel.Text",
+                                Lang.tr(playerRef.getUuid(), "ui.settings.player_hud.label", "Player HUD"));
+                ui.set("#PlayerHudValue.Text", data.isPlayerHudEnabled()
+                                ? Lang.tr(playerRef.getUuid(), "ui.common.toggle.on", "ON")
+                                : Lang.tr(playerRef.getUuid(), "ui.common.toggle.off", "OFF"));
 
                 ui.set("#CriticalNotifLabel.Text",
                                 Lang.tr(playerRef.getUuid(), "ui.settings.critical_notif.label",
@@ -125,6 +130,7 @@ public class SettingsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                                                 "Manage personal HUD, notifications, and visual preferences."));
 
                 String toggleText = Lang.tr(playerRef.getUuid(), "ui.settings.page.toggle_button", "TOGGLE");
+                ui.set("#PlayerHudToggle.Text", toggleText);
                 ui.set("#CriticalNotifToggle.Text", toggleText);
                 ui.set("#XpNotifToggle.Text", toggleText);
                 ui.set("#PassiveLevelUpNotifToggle.Text", toggleText);
@@ -132,6 +138,9 @@ public class SettingsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 ui.set("#HealthRegenNotifToggle.Text", toggleText);
                 ui.set("#RaceModelToggle.Text", toggleText);
 
+                ui.set("#PlayerHudDescription.Text",
+                                Lang.tr(playerRef.getUuid(), "ui.settings.description.player_hud",
+                                                "Show or hide the Endless Leveling HUD overlay."));
                 ui.set("#CriticalNotifDescription.Text",
                                 Lang.tr(playerRef.getUuid(), "ui.settings.description.critical_notif",
                                                 "Toggle floating alerts for critical strike events."));
@@ -187,9 +196,25 @@ public class SettingsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                         return;
                 }
                 var raceManager = EndlessLeveling.getInstance().getRaceManager();
+                Player playerEntity = store.getComponent(ref, Player.getComponentType());
 
                 boolean changed = false;
-                if ("toggle:criticalNotif".equalsIgnoreCase(action)) {
+                if ("toggle:playerHud".equalsIgnoreCase(action)) {
+                        boolean newValue = !playerData.isPlayerHudEnabled();
+                        playerData.setPlayerHudEnabled(newValue);
+                        changed = true;
+                        player.sendMessage(Message.raw(Lang.tr(playerRef.getUuid(),
+                                        "ui.settings.player_hud.toggled",
+                                        "Player HUD {0}",
+                                        newValue ? Lang.tr(playerRef.getUuid(), "ui.common.state.enabled", "enabled")
+                                                        : Lang.tr(playerRef.getUuid(), "ui.common.state.disabled",
+                                                                        "disabled")))
+                                        .color("#ffc300"));
+
+                        if (playerEntity != null) {
+                                PlayerHud.openPreferred(playerEntity, playerRef);
+                        }
+                } else if ("toggle:criticalNotif".equalsIgnoreCase(action)) {
                         boolean newValue = !playerData.isCriticalNotifEnabled();
                         playerData.setCriticalNotifEnabled(newValue);
                         changed = true;
