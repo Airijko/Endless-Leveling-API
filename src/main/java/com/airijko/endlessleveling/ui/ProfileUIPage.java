@@ -213,25 +213,65 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         ui.set("#DetailSecondaryClassValue.Text", getSecondaryClassDisplay(profile));
         ui.set("#DetailProgressBar.Value", resolveXpProgress(data, profile));
 
-        applyAttributeDisplay(ui, "#AttributeLifeForceValue", "#AttributeLifeForceLevel",
+        applyAttributeDisplay(ui,
+                SkillAttributeType.LIFE_FORCE,
+                "#AttributeLifeForceLabel",
+                "#AttributeLifeForceValue",
+                "#AttributeLifeForceLevel",
                 getAttributeDisplay(data, profile, SkillAttributeType.LIFE_FORCE, statMap));
-        applyAttributeDisplay(ui, "#AttributeStrengthValue", "#AttributeStrengthLevel",
+        applyAttributeDisplay(ui,
+                SkillAttributeType.STRENGTH,
+                "#AttributeStrengthLabel",
+                "#AttributeStrengthValue",
+                "#AttributeStrengthLevel",
                 getAttributeDisplay(data, profile, SkillAttributeType.STRENGTH, statMap));
-        applyAttributeDisplay(ui, "#AttributeSorceryValue", "#AttributeSorceryLevel",
+        applyAttributeDisplay(ui,
+                SkillAttributeType.SORCERY,
+                "#AttributeSorceryLabel",
+                "#AttributeSorceryValue",
+                "#AttributeSorceryLevel",
                 getAttributeDisplay(data, profile, SkillAttributeType.SORCERY, statMap));
-        applyAttributeDisplay(ui, "#AttributeDefenseValue", "#AttributeDefenseLevel",
+        applyAttributeDisplay(ui,
+                SkillAttributeType.DEFENSE,
+                "#AttributeDefenseLabel",
+                "#AttributeDefenseValue",
+                "#AttributeDefenseLevel",
                 getAttributeDisplay(data, profile, SkillAttributeType.DEFENSE, statMap));
-        applyAttributeDisplay(ui, "#AttributeHasteValue", "#AttributeHasteLevel",
+        applyAttributeDisplay(ui,
+                SkillAttributeType.HASTE,
+                "#AttributeHasteLabel",
+                "#AttributeHasteValue",
+                "#AttributeHasteLevel",
                 getAttributeDisplay(data, profile, SkillAttributeType.HASTE, statMap));
-        applyAttributeDisplay(ui, "#AttributePrecisionValue", "#AttributePrecisionLevel",
+        applyAttributeDisplay(ui,
+                SkillAttributeType.PRECISION,
+                "#AttributePrecisionLabel",
+                "#AttributePrecisionValue",
+                "#AttributePrecisionLevel",
                 getAttributeDisplay(data, profile, SkillAttributeType.PRECISION, statMap));
-        applyAttributeDisplay(ui, "#AttributeFerocityValue", "#AttributeFerocityLevel",
+        applyAttributeDisplay(ui,
+                SkillAttributeType.FEROCITY,
+                "#AttributeFerocityLabel",
+                "#AttributeFerocityValue",
+                "#AttributeFerocityLevel",
                 getAttributeDisplay(data, profile, SkillAttributeType.FEROCITY, statMap));
-        applyAttributeDisplay(ui, "#AttributeStaminaValue", "#AttributeStaminaLevel",
+        applyAttributeDisplay(ui,
+                SkillAttributeType.STAMINA,
+                "#AttributeStaminaLabel",
+                "#AttributeStaminaValue",
+                "#AttributeStaminaLevel",
                 getAttributeDisplay(data, profile, SkillAttributeType.STAMINA, statMap));
-        applyAttributeDisplay(ui, "#AttributeFlowValue", "#AttributeFlowLevel",
+        applyAttributeDisplay(ui,
+                SkillAttributeType.FLOW,
+                "#AttributeFlowLabel",
+                "#AttributeFlowValue",
+                "#AttributeFlowLevel",
                 getAttributeDisplay(data, profile, SkillAttributeType.FLOW, statMap));
-        applyAttributeDisplay(ui, "#AttributeDisciplineValue", "#AttributeDisciplineLevel",
+        applyAttributeDisplay(ui,
+                SkillAttributeType.DISCIPLINE,
+                "#AttributeDisciplineLabel",
+                "#AttributeDisciplineValue",
+                "#AttributeDisciplineLevel",
                 getAttributeDisplay(data, profile, SkillAttributeType.DISCIPLINE, statMap));
 
         AggregatedPassiveSections passiveSections = buildAggregatedPassiveSections(data, profile);
@@ -346,38 +386,38 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 double total = resolveResourceTotal(type, data, statMap);
                 detail = Double.isNaN(total)
                         ? tr("hud.common.unavailable", "--")
-                        : formatNumber(total);
+                        : formatWholeNumber(total);
             } else {
                 detail = switch (type) {
                     case STRENGTH -> {
                         SkillManager.StrengthBreakdown breakdown = skillManager.getStrengthBreakdown(data, level);
-                        yield "+" + formatNumber(breakdown.totalValue()) + "%";
+                        yield formatPercent(breakdown.totalValue(), 0, true);
                     }
                     case DEFENSE -> {
                         SkillManager.DefenseBreakdown breakdown = skillManager.getDefenseBreakdown(data, level);
                         double reduction = breakdown.resistance() * 100.0f;
-                        yield formatNumber(reduction) + "%";
+                        yield formatPercent(reduction, 0, false);
                     }
                     case HASTE -> {
                         SkillManager.HasteBreakdown breakdown = skillManager.getHasteBreakdown(data, level);
                         double percent = (breakdown.totalMultiplier() - 1.0f) * 100.0f;
-                        yield "+" + formatNumber(percent) + "%";
+                        yield formatPercent(percent, 1, true);
                     }
                     case PRECISION -> {
                         SkillManager.PrecisionBreakdown breakdown = skillManager.getPrecisionBreakdown(data, level);
-                        yield formatNumber(breakdown.totalPercent()) + "%";
+                        yield formatPercent(breakdown.totalPercent(), 1, false);
                     }
                     case SORCERY -> {
                         float bonus = skillManager.calculatePlayerSorcery(data);
-                        yield "+" + formatNumber(bonus) + "%";
+                        yield formatPercent(bonus, 0, true);
                     }
                     case FEROCITY -> {
                         SkillManager.FerocityBreakdown breakdown = skillManager.getFerocityBreakdown(data);
-                        yield "+" + formatNumber(breakdown.totalValue()) + "%";
+                        yield formatPercent(breakdown.totalValue(), 1, true);
                     }
                     case DISCIPLINE -> {
                         double xpBonus = skillManager.getDisciplineXpBonusPercent(level);
-                        yield "+" + formatNumber(xpBonus) + "%";
+                        yield formatPercent(xpBonus, 0, true);
                     }
                     default -> tr("hud.common.unavailable", "--");
                 };
@@ -740,11 +780,52 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     }
 
     private void applyAttributeDisplay(@Nonnull UICommandBuilder ui,
+            @Nonnull SkillAttributeType type,
+            @Nonnull String labelSelector,
             @Nonnull String valueSelector,
             @Nonnull String levelSelector,
             @Nonnull AttributeDisplay display) {
-        ui.set(valueSelector + ".Text", display.value());
-        ui.set(levelSelector + ".Text", display.level());
+        AttributeTheme theme = AttributeTheme.fromType(type);
+        String baseLabel = theme != null ? tr(theme.labelKey(), theme.labelFallback()) : toDisplay(type.name());
+
+        ui.set(labelSelector + ".Text", display.level() + " " + baseLabel);
+        ui.set(valueSelector + ".Text", "");
+        ui.set(levelSelector + ".Text", display.value());
+    }
+
+    private String formatWholeNumber(double value) {
+        if (!Double.isFinite(value)) {
+            return tr("hud.common.unavailable", "--");
+        }
+        return String.valueOf(Math.round(value));
+    }
+
+    private String formatPercent(double value, int decimals, boolean forcePlus) {
+        if (!Double.isFinite(value)) {
+            return tr("hud.common.unavailable", "--");
+        }
+
+        double rounded = roundTo(value, decimals);
+        StringBuilder builder = new StringBuilder();
+        if (forcePlus && rounded > 0.0D) {
+            builder.append('+');
+        }
+        builder.append(formatWithDecimals(rounded, decimals));
+        builder.append('%');
+        return builder.toString();
+    }
+
+    private double roundTo(double value, int decimals) {
+        if (decimals <= 0) {
+            return Math.rint(value);
+        }
+        double scale = Math.pow(10.0D, decimals);
+        return Math.round(value * scale) / scale;
+    }
+
+    private String formatWithDecimals(double value, int decimals) {
+        String pattern = "%1$." + Math.max(0, decimals) + "f";
+        return String.format(Locale.ROOT, pattern, value);
     }
 
     private String formatWeaponMultiplier(double multiplier) {
