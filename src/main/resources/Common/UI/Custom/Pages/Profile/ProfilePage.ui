@@ -332,7 +332,8 @@ $C.@PageOverlay {
                                                     Group { Anchor: (Width: 16); }
 
                                                     Group #DetailColumnRight {
-                                                        LayoutMode: Top;
+                                                        LayoutMode: TopScrolling;
+                                                        ScrollbarStyle: $C.@DefaultScrollbarStyle;
                                                         FlexWeight: 1;
                                                         Background: #050910(0.85);
                                                         Padding: (Full: 16);
@@ -438,7 +439,7 @@ $C.@PageOverlay {
 
                             #Content {
                                 LayoutMode: Top;
-                                Padding: (Horizontal: 12);
+                                Padding: (Horizontal: 12, Bottom: 12);
 
                                 Group {
                                     LayoutMode: Top;

@@ -4,6 +4,8 @@ import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Locale;
@@ -11,6 +13,7 @@ import java.util.Locale;
 import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentManager;
+import com.airijko.endlessleveling.augments.types.CommonAugment;
 import com.airijko.endlessleveling.classes.CharacterClassDefinition;
 import com.airijko.endlessleveling.classes.WeaponConfig;
 import com.airijko.endlessleveling.data.PlayerData;
@@ -66,6 +69,7 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     private final AugmentManager augmentManager;
     private final ClassManager classManager;
     private final LevelingManager levelingManager;
+    private final AugmentValueFormatter augmentValueFormatter;
     private Integer pendingDeleteSlot;
 
     public ProfileUIPage(@Nonnull com.hypixel.hytale.server.core.universe.PlayerRef playerRef,
@@ -83,6 +87,7 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         this.augmentManager = plugin != null ? plugin.getAugmentManager() : null;
         this.classManager = plugin != null ? plugin.getClassManager() : null;
         this.levelingManager = plugin != null ? plugin.getLevelingManager() : null;
+        this.augmentValueFormatter = new AugmentValueFormatter(this::tr);
         this.pendingDeleteSlot = null;
     }
 
@@ -470,20 +475,77 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             return List.of();
         }
 
-        List<AugmentEntry> entries = new ArrayList<>();
+        Map<String, AugmentGroupMeta> firstByGroup = new LinkedHashMap<>();
+        Map<String, Integer> countByGroup = new HashMap<>();
+        Map<String, Double> totalCommonValueByGroup = new HashMap<>();
+
         selected.forEach((tierKey, augmentId) -> {
             if (augmentId == null || augmentId.isBlank()) {
                 return;
             }
+
             AugmentDefinition def = augmentManager.getAugment(augmentId);
             String name = def != null ? def.getName() : augmentId;
             String tierLabel = def != null && def.getTier() != null ? def.getTier().name()
                     : (tierKey == null ? "?" : tierKey);
-            entries.add(new AugmentEntry(name, tierLabel, "", ""));
+            String groupKey;
+            String attributeKey = null;
+
+            CommonAugment.CommonStatOffer offer = CommonAugment.parseStatOfferId(augmentId);
+            if (offer != null && def != null && CommonAugment.ID.equalsIgnoreCase(def.getId())) {
+                attributeKey = offer.attributeKey() == null ? "" : offer.attributeKey().trim();
+                name = tr("ui.augments.common_stat.card_name", "{0}", toDisplay(attributeKey));
+                groupKey = "common_stat:" + attributeKey.toLowerCase(Locale.ROOT);
+                totalCommonValueByGroup.merge(groupKey, offer.rolledValue(), Double::sum);
+            } else {
+                String canonicalId = def != null ? def.getId() : null;
+                if (canonicalId == null || canonicalId.isBlank()) {
+                    canonicalId = augmentId;
+                }
+                groupKey = canonicalId.toLowerCase(Locale.ROOT);
+            }
+
+            firstByGroup.putIfAbsent(groupKey, new AugmentGroupMeta(name, tierLabel));
+            countByGroup.merge(groupKey, 1, Integer::sum);
         });
 
-        entries.sort(Comparator.comparing(AugmentEntry::tier).thenComparing(AugmentEntry::id));
-        return entries;
+        List<AugmentEntry> entries = new ArrayList<>(firstByGroup.size());
+        for (Map.Entry<String, AugmentGroupMeta> grouped : firstByGroup.entrySet()) {
+            String groupKey = grouped.getKey();
+            AugmentGroupMeta meta = grouped.getValue();
+
+            String displayName = meta.name();
+            int count = Math.max(1, countByGroup.getOrDefault(groupKey, 1));
+            if (count > 1) {
+                displayName = tr("ui.augments.unlocked.count_suffix", "{0} x{1}", displayName, count);
+            }
+
+            String valueText = meta.tierLabel();
+            if (groupKey.startsWith("common_stat:")) {
+                String commonAttributeKey = groupKey.substring("common_stat:".length());
+                double totalValue = totalCommonValueByGroup.getOrDefault(groupKey, 0.0D);
+                valueText = formatCommonAugmentTotal(commonAttributeKey, totalValue);
+            }
+
+            entries.add(new AugmentEntry(displayName, meta.tierLabel(), valueText, ""));
+        }
+
+        entries.sort(Comparator
+                .comparingInt((AugmentEntry entry) -> tierSortPriority(entry.tier()))
+                .thenComparing(AugmentEntry::id, String.CASE_INSENSITIVE_ORDER));
+        return List.copyOf(entries);
+    }
+
+    private int tierSortPriority(String tierLabel) {
+        if (tierLabel == null || tierLabel.isBlank()) {
+            return 3;
+        }
+        return switch (tierLabel.trim().toUpperCase(Locale.ROOT)) {
+            case "MYTHIC" -> 0;
+            case "ELITE" -> 1;
+            case "COMMON" -> 2;
+            default -> 3;
+        };
     }
 
     private List<PassiveEntry> buildInnatePlayerPassiveEntries(@Nonnull PlayerData playerData) {
@@ -622,9 +684,29 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             String base = entriesSelector + "[" + i + "]";
             ui.set(base + " #PassiveName.Text", entry.id());
             String tierLabel = entry.tier();
-            ui.set(base + " #PassiveValue.Text", tierLabel == null ? "" : tierLabel);
+            String valueText = entry.value();
+            if (valueText == null || valueText.isBlank()) {
+                valueText = tierLabel;
+            }
+            ui.set(base + " #PassiveValue.Text", valueText == null ? "" : valueText);
             ui.set(base + " #PassiveValue.Style.TextColor", resolveTierColor(tierLabel));
         }
+    }
+
+    private String formatCommonAugmentTotal(String attributeKey, double totalValue) {
+        String line = augmentValueFormatter.formatSingleValueLine(attributeKey, totalValue, attributeKey);
+        if (line == null || line.isBlank()) {
+            return tr("ui.augments.tier.common", "COMMON");
+        }
+
+        int separatorIndex = line.indexOf(':');
+        if (separatorIndex >= 0 && separatorIndex + 1 < line.length()) {
+            String valuePart = line.substring(separatorIndex + 1).trim();
+            if (!valuePart.isBlank()) {
+                return valuePart;
+            }
+        }
+        return line.trim();
     }
 
     private String resolveTierColor(String tierLabel) {
@@ -774,6 +856,9 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     }
 
     private record AugmentEntry(String id, String tier, String value, String source) {
+    }
+
+    private record AugmentGroupMeta(String name, String tierLabel) {
     }
 
     private record AggregatedPassiveSections(List<PassiveEntry> passiveEntries,
