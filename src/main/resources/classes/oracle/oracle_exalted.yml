@@ -1,4 +1,5 @@
-class_name: "Oracle"
+class_name: "Oracle Exalted"
+id: "oracle_exalted"
 description: "A divine seer who empowers magic through foresight and blessing, excelling in sustained spellcasting."
 role: "Mage"
 enabled: true
@@ -6,20 +7,30 @@ icon: "Weapon_Daggers_Mithril"
 
 weapons:
   - type: STAFF
-    damage: 1.2
+    damage: 1.56
   - type: DAGGER
-    damage: 1.05
+    damage: 1.365
 
 passives:
   - type: MANA_REGEN
-    value: 0.075
+    value: 0.098
   - type: HEALING_BONUS
-    value: 0.5 # +50% healing dealt/received
+    value: 0.65 # +50% healing dealt/received
   - type: SPECIAL_CHARGE_BONUS
-    value: 0.75
+    value: 0.975
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: flow
-    value: 2.5
+    value: 3.25
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: sorcery
-    value: 1.0
+    value: 1.3
+
+
+ascension:
+  id: class_oracle_exalted
+  stage: exalted
+  path: oracle
+  final_form: true
+  single_route_only: true
+  requirements:
+    required_prestige: 8

@@ -578,6 +578,18 @@ public class PlayerDataManager {
         String secondaryClassId = parseClassId(classesNode != null ? classesNode.get("secondary") : null);
         profile.setPrimaryClassId(primaryClassId);
         profile.setSecondaryClassId(secondaryClassId);
+        List<String> completedClassForms = parseStringList(classesNode != null
+                ? classesNode.get("completedForms")
+                : source.get("completedClassForms"));
+        profile.setCompletedClassForms(completedClassForms);
+        String primaryClassPathId = resolveClassPathId(primaryClassId);
+        if (primaryClassPathId != null) {
+            profile.addCompletedClassForm(primaryClassPathId);
+        }
+        String secondaryClassPathId = resolveClassPathId(secondaryClassId);
+        if (secondaryClassPathId != null) {
+            profile.addCompletedClassForm(secondaryClassPathId);
+        }
         long legacyClassTimestamp = parseClassTimestamp(classesNode, "lastChangedEpochSeconds");
         long primaryClassTimestamp = parseClassTimestamp(classesNode, "primaryLastChangedEpochSeconds");
         long secondaryClassTimestamp = parseClassTimestamp(classesNode, "secondaryLastChangedEpochSeconds");
@@ -1002,6 +1014,16 @@ public class PlayerDataManager {
         return raceManager.resolveAscensionPathId(raceId);
     }
 
+    private String resolveClassPathId(String classId) {
+        if (classId == null || classId.isBlank()) {
+            return null;
+        }
+        if (classManager == null) {
+            return classId.trim().toLowerCase();
+        }
+        return classManager.resolveAscensionPathId(classId);
+    }
+
     /**
      * Minimal loader used for leaderboards when a player has never joined
      * this server run. Reads name/level/xp/skillPoints from the YAML file.
@@ -1109,6 +1131,9 @@ public class PlayerDataManager {
                     classesSection.put("primary", profile.getPrimaryClassId());
                     if (profile.getSecondaryClassId() != null) {
                         classesSection.put("secondary", profile.getSecondaryClassId());
+                    }
+                    if (!profile.getCompletedClassFormsSnapshot().isEmpty()) {
+                        classesSection.put("completedForms", profile.getCompletedClassFormsSnapshot());
                     }
                     long primaryChanged = profile.getLastPrimaryClassChangeEpochSeconds();
                     long secondaryChanged = profile.getLastSecondaryClassChangeEpochSeconds();

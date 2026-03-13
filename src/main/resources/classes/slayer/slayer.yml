@@ -1,4 +1,5 @@
 class_name: "Slayer"
+id: "slayer"
 description: "A relentless slayer who excels at taking down powerful foes with a mix of strength and precision."
 role: "Slayer"
 enabled: true
@@ -6,22 +7,35 @@ icon: "Weapon_Spear_Tribal"
 
 weapons:
   - type: SWORD
-    damage: 1.25
+    damage: 0.875
   - type: SPEAR
-    damage: 1.25
+    damage: 0.875
   - type: DAGGER
-    damage: 1.05
+    damage: 0.735
 
 passives:
   - type: TRUE_EDGE
-    value: 10.0 # Flat true damage added to each hit
+    value: 7 # Flat true damage added to each hit
     true_damage_percent: 0.1 # +10% of damage dealt is converted to true damage
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: strength
-    value: 1.25
+    value: 0.875
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: life_force
-    value: 2.25
+    value: 1.575
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: defense
-    value: 0.15
+    value: 0.105
+
+
+ascension:
+  id: class_slayer_base
+  stage: base
+  path: slayer
+  final_form: false
+  single_route_only: false
+  requirements:
+    required_prestige: 0
+  next_paths:
+    - id: class_slayer_elite
+      name: "Elite"

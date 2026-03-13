@@ -1,0 +1,40 @@
+class_name: "Brawler"
+id: "brawler"
+description: "A fierce fist-fighter who thrives in close-quarters combat, using raw power and relentless aggression to overwhelm opponents."
+role: "Brawler"
+enabled: true
+icon: "Armor_Prisma_Hands"
+
+weapons:
+  - type: GAUNTLET
+    damage: 0.875
+  - type: DAGGER
+    damage: 0.735
+
+passives:
+  - type: RETALIATION
+    value: 0.175
+    window: 5
+    cooldown: 25
+  - type: BERZERKER
+    value: 0.245
+    threshold: 0.4
+  - type: INNATE_ATTRIBUTE_GAIN
+    attribute: life_force
+    value: 1.75
+  - type: INNATE_ATTRIBUTE_GAIN
+    attribute: strength
+    value: 0.84
+
+
+ascension:
+  id: class_brawler_base
+  stage: base
+  path: brawler
+  final_form: false
+  single_route_only: false
+  requirements:
+    required_prestige: 0
+  next_paths:
+    - id: class_brawler_elite
+      name: "Elite"

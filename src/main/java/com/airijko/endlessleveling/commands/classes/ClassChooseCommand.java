@@ -106,7 +106,13 @@ public class ClassChooseCommand extends AbstractPlayerCommand {
             return;
         }
 
+        if (current != null) {
+            data.addCompletedClassForm(classManager.resolveAscensionPathId(current.getId()));
+        }
         CharacterClassDefinition applied = classManager.setPlayerPrimaryClass(data, desired.getId());
+        if (applied != null) {
+            data.addCompletedClassForm(classManager.resolveAscensionPathId(applied.getId()));
+        }
         classManager.markClassChange(data, ClassAssignmentSlot.PRIMARY);
         playerDataManager.save(data);
         reapplyBonuses(data, ref, store);
@@ -162,12 +168,16 @@ public class ClassChooseCommand extends AbstractPlayerCommand {
             return;
         }
 
+        if (currentSecondary != null) {
+            data.addCompletedClassForm(classManager.resolveAscensionPathId(currentSecondary.getId()));
+        }
         CharacterClassDefinition applied = classManager.setPlayerSecondaryClass(data, desired.getId());
         if (applied == null) {
             senderRef.sendMessage(Message.raw("Unable to set that as your secondary class.").color("#ff6666"));
             return;
         }
 
+        data.addCompletedClassForm(classManager.resolveAscensionPathId(applied.getId()));
         classManager.markClassChange(data, ClassAssignmentSlot.SECONDARY);
         playerDataManager.save(data);
         reapplyBonuses(data, ref, store);

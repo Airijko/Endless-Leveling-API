@@ -1,4 +1,5 @@
-class_name: "Mage"
+class_name: "Mage Exalted"
+id: "mage_exalted"
 description: "A spellcasting prodigy who channels pure arcane force through staves."
 role: "Mage"
 enabled: true
@@ -6,19 +7,29 @@ icon: "Weapon_Spellbook_Grimoire_Brown"
 
 weapons:
   - type: STAFF
-    damage: 1.30
+    damage: 1.69
   - type: DAGGER
-    damage: 1.05
+    damage: 1.365
 
 passives:
   - type: MANA_REGEN
-    value: 0.04
+    value: 0.052
   - type: HEALTH_REGEN
-    value: 0.02
+    value: 0.026
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: flow
-    value: 1.50
+    value: 1.95
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: sorcery
-    value: 1.2
+    value: 1.56
 
+
+
+ascension:
+  id: class_mage_exalted
+  stage: exalted
+  path: mage
+  final_form: true
+  single_route_only: true
+  requirements:
+    required_prestige: 8

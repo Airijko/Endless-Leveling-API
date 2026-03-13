@@ -1,4 +1,5 @@
-class_name: "Arcanist"
+class_name: "Arcanist Exalted"
+id: "arcanist_exalted"
 description: "A master of pure arcane energy who amplifies spell power through disciplined mana control."
 role: "Mage"
 enabled: true
@@ -6,21 +7,31 @@ icon: "Weapon_Staff_Bronze"
 
 weapons:
   - type: STAFF
-    damage: 1.35
+    damage: 1.755
   - type: DAGGER
-    damage: 1.05
+    damage: 1.365
 
 passives:
   - type: MANA_REGEN
-    value: 0.03
+    value: 0.039
   - type: EXECUTIONER
-    value: 2.0 # +200% executioner scaling descriptor
+    value: 2.6 # +200% executioner scaling descriptor
     flat_bonus_damage: 25 # Flat bonus damage when threshold condition is met
     threshold: 15 # Only applies to targets below 15% HP
     cooldown: 45 # Seconds between executioner procs
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: flow
-    value: 0.4
+    value: 0.52
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: sorcery
-    value: 1.40
+    value: 1.82
+
+
+ascension:
+  id: class_arcanist_exalted
+  stage: exalted
+  path: arcanist
+  final_form: true
+  single_route_only: true
+  requirements:
+    required_prestige: 8

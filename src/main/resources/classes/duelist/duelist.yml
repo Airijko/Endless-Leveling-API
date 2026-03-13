@@ -1,0 +1,42 @@
+class_name: "Duelist"
+id: "duelist"
+description: "A mobile duelist who dances between sword and spear strikes."
+role: "Duelist"
+enabled: true
+icon: "Weapon_Spear_Tribal"
+
+weapons:
+  - type: SWORD
+    damage: 0.945
+  - type: SPEAR
+    damage: 0.945
+  - type: DAGGER
+    damage: 0.735
+
+passives:
+  - type: SWIFTNESS
+    value: 0.052
+    duration: 5
+    max_stacks: 8
+  - type: INNATE_ATTRIBUTE_GAIN
+    attribute: haste
+    value: 0.28
+  - type: INNATE_ATTRIBUTE_GAIN
+    attribute: strength
+    value: 0.91
+  - type: INNATE_ATTRIBUTE_GAIN
+    attribute: life_force
+    value: 1.05
+
+
+ascension:
+  id: class_duelist_base
+  stage: base
+  path: duelist
+  final_form: false
+  single_route_only: false
+  requirements:
+    required_prestige: 0
+  next_paths:
+    - id: class_duelist_elite
+      name: "Elite"

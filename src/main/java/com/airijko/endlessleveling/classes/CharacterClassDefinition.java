@@ -1,5 +1,6 @@
 package com.airijko.endlessleveling.classes;
 
+import com.airijko.endlessleveling.races.RaceAscensionDefinition;
 import com.airijko.endlessleveling.races.RacePassiveDefinition;
 
 import java.util.ArrayList;
@@ -23,6 +24,7 @@ public class CharacterClassDefinition {
     private final Map<String, Double> weaponMultipliers;
     private final List<Map<String, Object>> passives;
     private final List<RacePassiveDefinition> passiveDefinitions;
+    private final RaceAscensionDefinition ascension;
 
     public CharacterClassDefinition(String id,
             String displayName,
@@ -32,7 +34,8 @@ public class CharacterClassDefinition {
             String iconItemId,
             Map<String, Double> weaponMultipliers,
             List<Map<String, Object>> passives,
-            List<RacePassiveDefinition> passiveDefinitions) {
+            List<RacePassiveDefinition> passiveDefinitions,
+            RaceAscensionDefinition ascension) {
         this.id = Objects.requireNonNull(id, "Class id cannot be null");
         this.displayName = displayName == null ? id : displayName;
         this.description = description == null ? "" : description;
@@ -49,6 +52,9 @@ public class CharacterClassDefinition {
                 ? new ArrayList<>()
                 : new ArrayList<>(passiveDefinitions);
         this.passiveDefinitions = Collections.unmodifiableList(typed);
+        this.ascension = ascension == null
+                ? RaceAscensionDefinition.baseFallback(id)
+                : ascension;
     }
 
     private List<Map<String, Object>> copyPassives(List<Map<String, Object>> source) {
@@ -108,5 +114,9 @@ public class CharacterClassDefinition {
 
     public List<RacePassiveDefinition> getPassiveDefinitions() {
         return passiveDefinitions;
+    }
+
+    public RaceAscensionDefinition getAscension() {
+        return ascension;
     }
 }

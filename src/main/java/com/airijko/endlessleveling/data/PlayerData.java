@@ -493,6 +493,22 @@ public class PlayerData {
         return getActiveProfile().hasCompletedRaceForm(raceFormId);
     }
 
+    public List<String> getCompletedClassFormsSnapshot() {
+        return getActiveProfile().getCompletedClassFormsSnapshot();
+    }
+
+    public void setCompletedClassForms(List<String> forms) {
+        getActiveProfile().setCompletedClassForms(forms);
+    }
+
+    public void addCompletedClassForm(String classFormId) {
+        getActiveProfile().addCompletedClassForm(classFormId);
+    }
+
+    public boolean hasCompletedClassForm(String classFormId) {
+        return getActiveProfile().hasCompletedClassForm(classFormId);
+    }
+
     public long getLastRaceChangeEpochSeconds() {
         return getActiveProfile().getLastRaceChangeEpochSeconds();
     }
@@ -671,6 +687,7 @@ public class PlayerData {
         private final Map<String, Integer> augmentRerollsUsed;
         private String raceId;
         private final LinkedHashSet<String> completedRaceForms;
+        private final LinkedHashSet<String> completedClassForms;
         private long lastRaceChangeEpochSeconds;
         private int remainingRaceSwitches;
         private String primaryClassId;
@@ -701,6 +718,7 @@ public class PlayerData {
             this.augmentRerollsUsed = new LinkedHashMap<>();
             this.raceId = null;
             this.completedRaceForms = new LinkedHashSet<>();
+            this.completedClassForms = new LinkedHashSet<>();
             this.lastRaceChangeEpochSeconds = 0L;
             this.remainingRaceSwitches = 0;
             this.primaryClassId = null;
@@ -1011,11 +1029,46 @@ public class PlayerData {
             return normalized != null && completedRaceForms.contains(normalized);
         }
 
+        public List<String> getCompletedClassFormsSnapshot() {
+            return List.copyOf(completedClassForms);
+        }
+
+        public void setCompletedClassForms(List<String> forms) {
+            completedClassForms.clear();
+            if (forms == null || forms.isEmpty()) {
+                return;
+            }
+            forms.forEach(this::addCompletedClassForm);
+        }
+
+        public void addCompletedClassForm(String classFormId) {
+            String normalized = normalizeClassFormId(classFormId);
+            if (normalized != null) {
+                completedClassForms.add(normalized);
+            }
+        }
+
+        public boolean hasCompletedClassForm(String classFormId) {
+            String normalized = normalizeClassFormId(classFormId);
+            return normalized != null && completedClassForms.contains(normalized);
+        }
+
         private String normalizeRaceFormId(String raceFormId) {
             if (raceFormId == null) {
                 return null;
             }
             String trimmed = raceFormId.trim();
+            if (trimmed.isEmpty()) {
+                return null;
+            }
+            return trimmed.toLowerCase(Locale.ROOT);
+        }
+
+        private String normalizeClassFormId(String classFormId) {
+            if (classFormId == null) {
+                return null;
+            }
+            String trimmed = classFormId.trim();
             if (trimmed.isEmpty()) {
                 return null;
             }

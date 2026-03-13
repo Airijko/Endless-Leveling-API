@@ -373,7 +373,7 @@ World_Overrides:
     Mob_Overrides:
       Endgame_Dragon_Frost:
         Level: 30
-        Augments: []
+        Augments: [blood_surge]
         Scaling:
           Health:
             Base_Multiplier: 2.0
@@ -462,7 +462,7 @@ World_Overrides:
     Mob_Overrides:
       Shiva:
         Level: 55
-        Augments: [rebirth]
+        Augments: [rebirth, frozen_domain, drain]
         Scaling:
           Health:
             Base_Multiplier: 2.0
@@ -522,7 +522,7 @@ World_Overrides:
       Shiva_Boss_Group:
         Names: [Shivas_Ice_Cave, Shiva_Scaled]
         Level: 25
-        Augments: [frozen_domain, drain]
+        Augments: [rebirth, frozen_domain, drain]
         Scaling:
           Health:
             Base_Multiplier: 1.0

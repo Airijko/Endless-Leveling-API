@@ -1,4 +1,5 @@
-class_name: "Marksman"
+class_name: "Marksman Master"
+id: "marksman_master"
 description: "An eagle-eyed sharpshooter who controls the fight from afar."
 role: "Marksman"
 enabled: true
@@ -29,3 +30,16 @@ passives:
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: ferocity
     value: 1.2
+
+
+ascension:
+  id: class_marksman_master
+  stage: master
+  path: marksman
+  final_form: false
+  single_route_only: true
+  requirements:
+    required_prestige: 4
+  next_paths:
+    - id: class_marksman_legendary
+      name: "Legendary"

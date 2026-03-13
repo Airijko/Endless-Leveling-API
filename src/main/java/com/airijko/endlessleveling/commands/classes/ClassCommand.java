@@ -5,6 +5,7 @@ import com.airijko.endlessleveling.commands.subcommands.OpenPageSubCommand;
 import com.airijko.endlessleveling.data.PlayerData;
 import com.airijko.endlessleveling.managers.ClassManager;
 import com.airijko.endlessleveling.managers.PlayerDataManager;
+import com.airijko.endlessleveling.ui.ClassPathsUIPage;
 import com.airijko.endlessleveling.ui.ClassesUIPage;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
@@ -40,6 +41,10 @@ public class ClassCommand extends AbstractPlayerCommand {
                 "ui",
                 "Open the EndlessLeveling Classes page",
                 playerRef -> new ClassesUIPage(playerRef, CustomPageLifetime.CanDismiss)));
+        this.addSubCommand(new OpenPageSubCommand(
+                "paths",
+                "Open the EndlessLeveling Class Paths page",
+                playerRef -> new ClassPathsUIPage(playerRef, CustomPageLifetime.CanDismiss)));
     }
 
     @Override
@@ -95,7 +100,7 @@ public class ClassCommand extends AbstractPlayerCommand {
         }
 
         senderRef.sendMessage(Message.raw(
-                "Tip: Use /class choose <primary|secondary> <class> to update assignments, or /class ui to open the browser.")
+                "Tip: Use /class choose <primary|secondary> <class> to update assignments, /class ui to open the browser, or /class paths for progression.")
                 .color("#9fb6d3"));
     }
 

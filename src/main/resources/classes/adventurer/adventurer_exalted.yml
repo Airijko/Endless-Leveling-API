@@ -1,4 +1,5 @@
-class_name: "Adventurer"
+class_name: "Adventurer Exalted"
+id: "adventurer_exalted"
 description: "A flexible pathfinder who blends martial training with survival instincts."
 role: "Vanguard"
 enabled: true
@@ -6,27 +7,37 @@ icon: "Ingredient_Life_Essence"
 
 weapons:
   - type: SWORD
-    damage: 1.10
+    damage: 1.43
   - type: BOW
-    damage: 1.10
+    damage: 1.43
   - type: STAFF
-    damage: 1.10
+    damage: 1.43
   - type: DAGGER
-    damage: 1.10
+    damage: 1.43
 
 passives:
   - type: XP_BONUS
-    value: 0.50 # +50% XP gain
+    value: 0.65 # +50% XP gain
   - type: SPECIAL_CHARGE_BONUS
-    value: 0.5 # +50% faster special charge
+    value: 0.65 # +50% faster special charge
   - type: ADRENALINE
-    value: 0.8
+    value: 1.04
     threshold: 0.2
     duration: 2
     cooldown: 30
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: strength
-    value: 0.5
+    value: 0.65
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: stamina
-    value: 0.7
+    value: 0.91
+
+
+ascension:
+  id: class_adventurer_exalted
+  stage: exalted
+  path: adventurer
+  final_form: true
+  single_route_only: true
+  requirements:
+    required_prestige: 8
