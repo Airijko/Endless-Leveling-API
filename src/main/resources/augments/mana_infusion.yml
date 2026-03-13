@@ -1,7 +1,7 @@
 id: mana_infusion
 name: "Mana Infusion"
 tier: ELITE
-description: "Turn current Mana into bonus Sorcery."
+description: "Gain bonus Sorcery equal to a portion of your current Mana."
 category: MAGIC_STAT
 
 passives:

@@ -323,11 +323,21 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         }
 
         List<String> lines = new ArrayList<>();
-        for (String line : text.split("\\n")) {
+        boolean lastWasBlank = true;
+        for (String line : text.split("\\n", -1)) {
             String trimmed = line == null ? "" : line.trim();
-            if (!trimmed.isBlank()) {
-                lines.add(trimmed);
+            if (trimmed.isBlank()) {
+                if (!lastWasBlank) {
+                    lines.add("");
+                    lastWasBlank = true;
+                }
+                continue;
             }
+            lines.add(trimmed);
+            lastWasBlank = false;
+        }
+        while (!lines.isEmpty() && lines.get(lines.size() - 1).isBlank()) {
+            lines.remove(lines.size() - 1);
         }
         return String.join("\n", lines);
     }
@@ -343,19 +353,52 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
         List<String> buffLines = new ArrayList<>();
         List<String> ruleLines = new ArrayList<>();
+        boolean inBelowHealthSection = false;
 
-        for (String line : buffsText.split("\\n")) {
+        for (String line : buffsText.split("\\n", -1)) {
             String trimmed = line == null ? "" : line.trim();
             if (trimmed.isBlank()) {
+                if (inBelowHealthSection) {
+                    if (!ruleLines.isEmpty() && !ruleLines.get(ruleLines.size() - 1).isBlank()) {
+                        ruleLines.add("");
+                    }
+                } else {
+                    if (!buffLines.isEmpty() && !buffLines.get(buffLines.size() - 1).isBlank()) {
+                        buffLines.add("");
+                    }
+                }
                 continue;
             }
 
             String normalized = trimmed.toLowerCase(Locale.ROOT);
-            if (normalized.startsWith(localizedUnderRagePrefix) || normalized.startsWith("under rage:")) {
+            boolean isUnderRage = normalized.startsWith(localizedUnderRagePrefix)
+                    || normalized.startsWith("under rage:");
+            boolean isBelowHealthHeading = normalized.startsWith("below ")
+                    && normalized.contains("health:");
+
+            if (isBelowHealthHeading) {
+                inBelowHealthSection = true;
+                ruleLines.add(trimmed);
+                continue;
+            }
+
+            if (inBelowHealthSection) {
+                ruleLines.add(trimmed);
+                continue;
+            }
+
+            if (isUnderRage) {
                 ruleLines.add(trimmed);
             } else {
                 buffLines.add(trimmed);
             }
+        }
+
+        while (!buffLines.isEmpty() && buffLines.get(buffLines.size() - 1).isBlank()) {
+            buffLines.remove(buffLines.size() - 1);
+        }
+        while (!ruleLines.isEmpty() && ruleLines.get(ruleLines.size() - 1).isBlank()) {
+            ruleLines.remove(ruleLines.size() - 1);
         }
 
         return new BuffRuleSplit(String.join("\n", buffLines), String.join("\n", ruleLines));
