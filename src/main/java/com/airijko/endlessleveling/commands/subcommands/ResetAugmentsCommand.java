@@ -79,7 +79,7 @@ public class ResetAugmentsCommand extends AbstractPlayerCommand {
             targetName = playerRef.getUsername();
         }
 
-        augmentUnlockManager.resetAllAugments(targetData);
+        augmentUnlockManager.resetAllAugmentsForAllProfiles(targetData);
 
         playerRef.sendMessage(Message.raw("Reset augments and rebuilt eligible offers for " + targetName + ".")
                 .color("#4fd7f7"));

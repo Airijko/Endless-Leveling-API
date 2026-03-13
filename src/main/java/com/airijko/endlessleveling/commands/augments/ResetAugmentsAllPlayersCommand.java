@@ -54,15 +54,17 @@ public class ResetAugmentsAllPlayersCommand extends AbstractPlayerCommand {
             return;
         }
 
-        Collection<PlayerData> cachedPlayers = playerDataManager.getAllCached();
-        if (cachedPlayers.isEmpty()) {
-            senderRef.sendMessage(Message.raw("No loaded player data found.").color("#ff6666"));
+        // getAllPlayersSortedByLevel() loads all on-disk data files into the cache,
+        // so offline players are included as well as online ones.
+        Collection<PlayerData> allPlayers = playerDataManager.getAllPlayersSortedByLevel();
+        if (allPlayers.isEmpty()) {
+            senderRef.sendMessage(Message.raw("No player data found.").color("#ff6666"));
             return;
         }
 
         int count = 0;
-        for (PlayerData data : cachedPlayers) {
-            augmentUnlockManager.resetAllAugments(data);
+        for (PlayerData data : allPlayers) {
+            augmentUnlockManager.resetAllAugmentsForAllProfiles(data);
 
             PlayerRef targetRef = Universe.get().getPlayer(data.getUuid());
             if (targetRef != null && !targetRef.getUuid().equals(senderRef.getUuid())) {

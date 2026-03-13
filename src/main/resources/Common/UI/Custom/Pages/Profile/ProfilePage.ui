@@ -45,25 +45,6 @@ $C.@PageOverlay {
                                     LayoutMode: Top;
                                     Anchor: (Right: 7, Bottom: 7);
 
-                                    Group {
-                                        LayoutMode: Left;
-                                        Anchor: (Height: 60);
-                                        Padding: (Horizontal: 16, Vertical: 10);
-
-                                        Label #ProfileTitleLabel {
-                                            FlexWeight: 1;
-                                            Text: "Profiles 0/5";
-                                            Style: (FontSize: 22, TextColor: #ffffff, RenderBold: true, VerticalAlignment: Center);
-                                        }
-
-                                        $C.@TextButton #NewProfileButton {
-                                            Text: "NEW PROFILE";
-                                            Anchor: (Height: 32, Width: 170);
-                                        }
-                                    }
-
-                                    Group { Anchor: (Height: 1); Background: #2b3542; }
-
                                     Group #ProfileContent {
                                         LayoutMode: Left;
                                         FlexWeight: 1;
@@ -212,8 +193,7 @@ $C.@PageOverlay {
 
                                             Group #DetailScrollArea {
                                                 FlexWeight: 1;
-                                                LayoutMode: TopScrolling;
-                                                ScrollbarStyle: $C.@DefaultScrollbarStyle;
+
                                                 Group #DetailScrollContent {
                                                     LayoutMode: Left;
 
@@ -355,7 +335,7 @@ $C.@PageOverlay {
                                                         LayoutMode: Top;
                                                         FlexWeight: 1;
                                                         Background: #050910(0.85);
-                                                Padding: (Full: 16);
+                                                        Padding: (Full: 16);
 
                                                         Label {
                                                             Text: "Primary Weapon Bonuses";
@@ -458,11 +438,28 @@ $C.@PageOverlay {
 
                             #Content {
                                 LayoutMode: Top;
-                                Padding: (Full: 12);
+                                Padding: (Horizontal: 12);
+
+                                Group {
+                                    LayoutMode: Top;
+                                    Padding: (Vertical: 12);
+
+                                    Label #ProfileTitleLabel {
+                                        FlexWeight: 1;
+                                        Text: "Profiles 0/5";
+                                        Style: (FontSize: 22, TextColor: #ffffff, RenderBold: true, VerticalAlignment: Center, HorizontalAlignment: Center);
+                                    }
+
+                                    $C.@TextButton #NewProfileButton {
+                                        Text: "NEW PROFILE";
+                                        Anchor: (Height: 32, Width: 170);
+                                    }
+                                }
 
                                 Group #ProfileListColumn {
                                     FlexWeight: 1;
-                                    LayoutMode: Top;
+                                    LayoutMode: TopScrolling;
+                                    ScrollbarStyle: $C.@DefaultScrollbarStyle;
 
                                     Group #ProfileListSection {
                                         LayoutMode: Top;

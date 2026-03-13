@@ -176,7 +176,7 @@ $C.@PageOverlay {
                                 Group #CommandInfo {
                                     FlexWeight: 1;
                                     LayoutMode: TopScrolling;
-                                    Padding: (Left: 10, Right: 10, Top: 10, Bottom: 10);
+                                    Padding: (Full: 16);
                                     ScrollbarStyle: $C.@DefaultScrollbarStyle;
 
                                     Label #AugmentsResultLabel {

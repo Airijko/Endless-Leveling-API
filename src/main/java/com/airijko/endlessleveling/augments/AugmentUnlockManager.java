@@ -288,6 +288,22 @@ public class AugmentUnlockManager {
     }
 
     /**
+     * Resets augments for every profile the player has, not just the active one.
+     * Saves the player data once after all profiles are processed.
+     */
+    public void resetAllAugmentsForAllProfiles(@Nonnull PlayerData playerData) {
+        int originalActiveIndex = playerData.getActiveProfileIndex();
+        for (int profileIndex : playerData.getProfiles().keySet()) {
+            playerData.switchProfile(profileIndex);
+            playerData.clearSelectedAugments();
+            playerData.clearAugmentOffers();
+            ensureUnlocks(playerData);
+        }
+        playerData.switchProfile(originalActiveIndex);
+        playerDataManager.save(playerData);
+    }
+
+    /**
      * Trims pending/selected augment unlocks that exceed the player's current
      * eligibility (for example after reducing prestige).
      */
