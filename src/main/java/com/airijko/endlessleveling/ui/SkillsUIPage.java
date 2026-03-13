@@ -3,6 +3,7 @@ package com.airijko.endlessleveling.ui;
 import com.airijko.endlessleveling.data.PlayerData;
 import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
+import com.airijko.endlessleveling.enums.themes.AttributeTheme;
 import com.airijko.endlessleveling.managers.PlayerAttributeManager;
 import com.airijko.endlessleveling.managers.PlayerDataManager;
 import com.airijko.endlessleveling.managers.SkillManager;
@@ -29,19 +30,9 @@ import java.util.EnumMap;
 
 public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
-        private static final EnumMap<SkillAttributeType, String> ATTRIBUTE_DESCRIPTIONS = new EnumMap<>(
-                        SkillAttributeType.class);
-        private static final SkillBinding[] SKILL_BINDINGS = {
-                        new SkillBinding("LifeForce", "#LifeForceIcon", SkillAttributeType.LIFE_FORCE),
-                        new SkillBinding("Strength", "#StrengthIcon", SkillAttributeType.STRENGTH),
-                        new SkillBinding("Sorcery", "#SorceryIcon", SkillAttributeType.SORCERY),
-                        new SkillBinding("Defense", "#DefenseIcon", SkillAttributeType.DEFENSE),
-                        new SkillBinding("Haste", "#HasteIcon", SkillAttributeType.HASTE),
-                        new SkillBinding("Precision", "#PrecisionIcon", SkillAttributeType.PRECISION),
-                        new SkillBinding("Ferocity", "#FerocityIcon", SkillAttributeType.FEROCITY),
-                        new SkillBinding("Stamina", "#StaminaIcon", SkillAttributeType.STAMINA),
-                        new SkillBinding("Flow", "#FlowIcon", SkillAttributeType.FLOW),
-                        new SkillBinding("Discipline", "#DisciplineIcon", SkillAttributeType.DISCIPLINE) };
+        private static final SkillBinding[] SKILL_BINDINGS = java.util.Arrays.stream(AttributeTheme.values())
+                        .map(theme -> new SkillBinding(theme.uiSuffix(), theme.skillsIconSelector(), theme.type()))
+                        .toArray(SkillBinding[]::new);
 
         private final EnumMap<SkillAttributeType, Integer> previewLevels = new EnumMap<>(SkillAttributeType.class);
         private int previewSkillPoints = 0;
@@ -51,28 +42,6 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         private final SkillManager skillManager;
         private final PlayerDataManager playerDataManager;
         private final PlayerAttributeManager attributeManager;
-
-        static {
-                ATTRIBUTE_DESCRIPTIONS.put(SkillAttributeType.LIFE_FORCE,
-                                "Boosts your total health so you can tank more hits.");
-                ATTRIBUTE_DESCRIPTIONS.put(SkillAttributeType.STRENGTH,
-                                "Boosts physical damage for melee and ranged weapons.");
-                ATTRIBUTE_DESCRIPTIONS.put(SkillAttributeType.SORCERY,
-                                "Boosts magic damage for staff weapons.");
-                ATTRIBUTE_DESCRIPTIONS.put(SkillAttributeType.DEFENSE,
-                                "Cuts down incoming damage through resistances.");
-                ATTRIBUTE_DESCRIPTIONS.put(SkillAttributeType.HASTE, "Increases movement speed");
-                ATTRIBUTE_DESCRIPTIONS.put(SkillAttributeType.PRECISION,
-                                "Raises critical hit chance for every attack.");
-                ATTRIBUTE_DESCRIPTIONS.put(SkillAttributeType.FEROCITY, "Adds bonus damage to each critical strike.");
-                ATTRIBUTE_DESCRIPTIONS.put(SkillAttributeType.STAMINA,
-                                "Expands stamina for dodges, blocks, and bursts.");
-                ATTRIBUTE_DESCRIPTIONS.put(SkillAttributeType.FLOW,
-                                "Increases flow (mana) so spells and abilities stay online longer.");
-                ATTRIBUTE_DESCRIPTIONS.put(SkillAttributeType.DISCIPLINE,
-                                "Increases XP gain rate from all sources.");
-
-        }
 
         public SkillsUIPage(@Nonnull PlayerRef playerRef, @Nonnull CustomPageLifetime lifetime) {
                 super(playerRef, lifetime, Data.CODEC);
@@ -102,27 +71,7 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 // -----------------------------
 
                 applyStaticLabels(ui);
-
-                ui.set("#LifeForceLabel.Text", getLabel(SkillAttributeType.LIFE_FORCE, "Life Force"));
-                ui.set("#LifeForceDescription.Text", getDescription(SkillAttributeType.LIFE_FORCE));
-                ui.set("#StrengthLabel.Text", getLabel(SkillAttributeType.STRENGTH, "Strength"));
-                ui.set("#StrengthDescription.Text", getDescription(SkillAttributeType.STRENGTH));
-                ui.set("#SorceryLabel.Text", getLabel(SkillAttributeType.SORCERY, "Sorcery"));
-                ui.set("#SorceryDescription.Text", getDescription(SkillAttributeType.SORCERY));
-                ui.set("#DefenseLabel.Text", getLabel(SkillAttributeType.DEFENSE, "Defense"));
-                ui.set("#DefenseDescription.Text", getDescription(SkillAttributeType.DEFENSE));
-                ui.set("#HasteLabel.Text", getLabel(SkillAttributeType.HASTE, "Haste"));
-                ui.set("#HasteDescription.Text", getDescription(SkillAttributeType.HASTE));
-                ui.set("#PrecisionLabel.Text", getLabel(SkillAttributeType.PRECISION, "Precision"));
-                ui.set("#PrecisionDescription.Text", getDescription(SkillAttributeType.PRECISION));
-                ui.set("#FerocityLabel.Text", getLabel(SkillAttributeType.FEROCITY, "Ferocity"));
-                ui.set("#FerocityDescription.Text", getDescription(SkillAttributeType.FEROCITY));
-                ui.set("#StaminaLabel.Text", getLabel(SkillAttributeType.STAMINA, "Stamina"));
-                ui.set("#StaminaDescription.Text", getDescription(SkillAttributeType.STAMINA));
-                ui.set("#FlowLabel.Text", getLabel(SkillAttributeType.FLOW, "Flow"));
-                ui.set("#FlowDescription.Text", getDescription(SkillAttributeType.FLOW));
-                ui.set("#DisciplineLabel.Text", getLabel(SkillAttributeType.DISCIPLINE, "Discipline"));
-                ui.set("#DisciplineDescription.Text", getDescription(SkillAttributeType.DISCIPLINE));
+                applySkillAttributeTheme(ui);
 
                 applySkillIcons(ui);
 
@@ -614,17 +563,21 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 return formatted;
         }
 
-        private String getDescription(SkillAttributeType type) {
-                String fallback = ATTRIBUTE_DESCRIPTIONS.getOrDefault(type, "");
-                return tr("ui.skills.description." + type.name().toLowerCase(java.util.Locale.ROOT), fallback);
-        }
-
-        private String getLabel(SkillAttributeType type, String fallback) {
-                return tr("ui.skills.label." + type.name().toLowerCase(java.util.Locale.ROOT), fallback);
-        }
-
         private String tr(String key, String fallback, Object... args) {
                 return Lang.tr(playerRef.getUuid(), key, fallback, args);
+        }
+
+        private void applySkillAttributeTheme(@Nonnull UICommandBuilder ui) {
+                for (AttributeTheme theme : AttributeTheme.values()) {
+                        ui.set(theme.skillsLabelSelector() + ".Text", tr(theme.labelKey(), theme.labelFallback()));
+                        ui.set(theme.skillsLabelSelector() + ".Style.TextColor", theme.labelColor());
+                        ui.set(theme.skillsValueSelector() + ".Style.TextColor", theme.valueColor());
+                        ui.set(theme.skillsLevelPrefixSelector() + ".Style.TextColor", theme.profileLevelColor());
+                        ui.set(theme.skillsLevelSelector() + ".Style.TextColor", theme.profileLevelColor());
+                        ui.set(theme.skillsDescriptionSelector() + ".Text",
+                                        tr(theme.descriptionKey(), theme.descriptionFallback()));
+                        ui.set(theme.skillsDescriptionSelector() + ".Style.TextColor", theme.raceNoteColor());
+                }
         }
 
         private void applyStaticLabels(@Nonnull UICommandBuilder ui) {
@@ -638,29 +591,21 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 ui.set("#ApplySkills.Text", tr("ui.skills.page.apply", "APPLY"));
 
                 String lv = tr("ui.skills.level_prefix", "Lv.");
-                ui.set("#LifeForceLevelPrefix.Text", lv);
-                ui.set("#StrengthLevelPrefix.Text", lv);
-                ui.set("#PrecisionLevelPrefix.Text", lv);
-                ui.set("#HasteLevelPrefix.Text", lv);
-                ui.set("#FlowLevelPrefix.Text", lv);
-                ui.set("#DefenseLevelPrefix.Text", lv);
-                ui.set("#SorceryLevelPrefix.Text", lv);
-                ui.set("#FerocityLevelPrefix.Text", lv);
-                ui.set("#StaminaLevelPrefix.Text", lv);
-                ui.set("#DisciplineLevelPrefix.Text", lv);
+                for (AttributeTheme theme : AttributeTheme.values()) {
+                        ui.set(theme.skillsLevelPrefixSelector() + ".Text", lv);
+                }
         }
 
         private void applySkillIcons(UICommandBuilder ui) {
-                for (SkillBinding binding : SKILL_BINDINGS) {
-                        String selector = binding.iconSelector();
-                        String rawId = SkillAttributeIconResolver.resolve(binding.attribute());
-                        if (rawId == null || rawId.isBlank()) {
+                for (AttributeTheme theme : AttributeTheme.values()) {
+                        String selector = theme.skillsIconSelector();
+                        String iconItemId = theme.iconItemId();
+                        if (iconItemId == null || iconItemId.isBlank()) {
                                 ui.set(selector + ".Visible", false);
                                 continue;
                         }
 
-                        String resolved = rawId.trim();
-                        ui.set(selector + ".ItemId", resolved);
+                        ui.set(selector + ".ItemId", iconItemId.trim());
                         ui.set(selector + ".Visible", true);
                 }
         }
