@@ -21,7 +21,9 @@ import com.airijko.endlessleveling.data.PlayerData.PlayerProfile;
 import com.airijko.endlessleveling.enums.ArchetypePassiveType;
 import com.airijko.endlessleveling.enums.PassiveType;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
+import com.airijko.endlessleveling.enums.themes.AugmentTheme;
 import com.airijko.endlessleveling.enums.themes.AttributeTheme;
+import com.airijko.endlessleveling.enums.themes.ProfileSectionTheme;
 import com.airijko.endlessleveling.managers.ClassManager;
 import com.airijko.endlessleveling.managers.LevelingManager;
 import com.airijko.endlessleveling.managers.PlayerAttributeManager;
@@ -55,9 +57,6 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
     private static final String PASSIVE_ENTRY_TEMPLATE = "Pages/Profile/ProfileRacePassiveEntry.ui";
-    private static final String TIER_COLOR_MYTHIC = "#7851a9";
-    private static final String TIER_COLOR_ELITE = "#89cff0";
-    private static final String TIER_COLOR_DEFAULT = "#ffc300";
 
     private final PlayerDataManager playerDataManager;
     private final RaceManager raceManager;
@@ -240,23 +239,27 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 "#PassiveSummary",
                 "#PassiveEntries",
                 passiveSections.passiveSummary(),
-                passiveSections.passiveEntries());
+                passiveSections.passiveEntries(),
+                ProfileSectionTheme.PASSIVE);
         renderPassiveSection(ui,
                 "#InnatePassiveSummary",
                 "#InnatePassiveEntries",
                 passiveSections.innatePassiveSummary(),
-                passiveSections.innatePassiveEntries());
+                passiveSections.innatePassiveEntries(),
+                ProfileSectionTheme.INNATE_PASSIVE);
         renderPassiveSection(ui,
                 "#InnateAttributeSummary",
                 "#InnateAttributeEntries",
                 passiveSections.innateAttributeSummary(),
-                passiveSections.innateAttributeEntries());
+                passiveSections.innateAttributeEntries(),
+                ProfileSectionTheme.INNATE_ATTRIBUTE);
 
         renderPassiveSection(ui,
                 "#PrimaryWeaponSummary",
                 "#PrimaryWeaponEntries",
                 tr("ui.profile.classes.primary_weapon_none", "No primary class weapon bonuses"),
-                buildPrimaryWeaponEntries(profile));
+                buildPrimaryWeaponEntries(profile),
+                ProfileSectionTheme.PRIMARY_WEAPON);
         renderAugmentSection(ui, buildAugmentEntries(data));
     }
 
@@ -343,39 +346,38 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 double total = resolveResourceTotal(type, data, statMap);
                 detail = Double.isNaN(total)
                         ? tr("hud.common.unavailable", "--")
-                        : tr("ui.skills.value.resource", "{0} {1}", formatNumber(total), resourceLabel(type));
+                        : formatNumber(total);
             } else {
                 detail = switch (type) {
                     case STRENGTH -> {
                         SkillManager.StrengthBreakdown breakdown = skillManager.getStrengthBreakdown(data, level);
-                        yield tr("ui.skills.value.strength", "+{0}% Damage", formatNumber(breakdown.totalValue()));
+                        yield "+" + formatNumber(breakdown.totalValue()) + "%";
                     }
                     case DEFENSE -> {
                         SkillManager.DefenseBreakdown breakdown = skillManager.getDefenseBreakdown(data, level);
                         double reduction = breakdown.resistance() * 100.0f;
-                        yield tr("ui.skills.value.defense", "{0}% Reduction", formatNumber(reduction));
+                        yield formatNumber(reduction) + "%";
                     }
                     case HASTE -> {
                         SkillManager.HasteBreakdown breakdown = skillManager.getHasteBreakdown(data, level);
                         double percent = (breakdown.totalMultiplier() - 1.0f) * 100.0f;
-                        yield tr("ui.skills.value.haste", "+{0}% Speed", formatNumber(percent));
+                        yield "+" + formatNumber(percent) + "%";
                     }
                     case PRECISION -> {
                         SkillManager.PrecisionBreakdown breakdown = skillManager.getPrecisionBreakdown(data, level);
-                        yield tr("ui.skills.value.precision", "{0}% Crit Chance",
-                                formatNumber(breakdown.totalPercent()));
+                        yield formatNumber(breakdown.totalPercent()) + "%";
                     }
                     case SORCERY -> {
                         float bonus = skillManager.calculatePlayerSorcery(data);
-                        yield tr("ui.skills.value.sorcery", "+{0}% Magic Damage", formatNumber(bonus));
+                        yield "+" + formatNumber(bonus) + "%";
                     }
                     case FEROCITY -> {
                         SkillManager.FerocityBreakdown breakdown = skillManager.getFerocityBreakdown(data);
-                        yield tr("ui.skills.value.ferocity", "+{0}% Crit Damage", formatNumber(breakdown.totalValue()));
+                        yield "+" + formatNumber(breakdown.totalValue()) + "%";
                     }
                     case DISCIPLINE -> {
                         double xpBonus = skillManager.getDisciplineXpBonusPercent(level);
-                        yield tr("ui.skills.value.discipline", "+{0}% XP Gain", formatNumber(xpBonus));
+                        yield "+" + formatNumber(xpBonus) + "%";
                     }
                     default -> tr("hud.common.unavailable", "--");
                 };
@@ -652,7 +654,8 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             @Nonnull String summarySelector,
             @Nonnull String entriesSelector,
             @Nonnull String emptyText,
-            @Nonnull List<PassiveEntry> entries) {
+            @Nonnull List<PassiveEntry> entries,
+            @Nonnull ProfileSectionTheme sectionTheme) {
         if (entries.isEmpty()) {
             ui.set(summarySelector + ".Visible", true);
             ui.set(summarySelector + ".Text", emptyText);
@@ -660,7 +663,7 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             return;
         }
         ui.set(summarySelector + ".Visible", false);
-        populatePassiveEntries(ui, entriesSelector, PASSIVE_ENTRY_TEMPLATE, entries);
+        populatePassiveEntries(ui, entriesSelector, PASSIVE_ENTRY_TEMPLATE, entries, sectionTheme);
     }
 
     private void renderAugmentSection(@Nonnull UICommandBuilder ui,
@@ -680,6 +683,7 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             ui.append(entriesSelector, PASSIVE_ENTRY_TEMPLATE);
             String base = entriesSelector + "[" + i + "]";
             ui.set(base + " #PassiveName.Text", entry.id());
+            ui.set(base + " #PassiveName.Style.TextColor", ProfileSectionTheme.AUGMENT.nameColor());
             String tierLabel = entry.tier();
             String valueText = entry.value();
             if (valueText == null || valueText.isBlank()) {
@@ -708,26 +712,30 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
     private String resolveTierColor(String tierLabel) {
         if (tierLabel == null || tierLabel.isBlank()) {
-            return TIER_COLOR_DEFAULT;
+            return AugmentTheme.PROFILE_COMMON.color();
         }
         return switch (tierLabel.trim().toUpperCase(Locale.ROOT)) {
-            case "MYTHIC" -> TIER_COLOR_MYTHIC;
-            case "ELITE" -> TIER_COLOR_ELITE;
-            default -> TIER_COLOR_DEFAULT;
+            case "MYTHIC" -> AugmentTheme.PROFILE_MYTHIC.color();
+            case "ELITE" -> AugmentTheme.PROFILE_ELITE.color();
+            case "COMMON" -> AugmentTheme.PROFILE_COMMON.color();
+            default -> AugmentTheme.PROFILE_COMMON.color();
         };
     }
 
     private void populatePassiveEntries(@Nonnull UICommandBuilder ui,
             @Nonnull String containerSelector,
             @Nonnull String template,
-            @Nonnull List<PassiveEntry> entries) {
+            @Nonnull List<PassiveEntry> entries,
+            @Nonnull ProfileSectionTheme sectionTheme) {
         ui.clear(containerSelector);
         for (int i = 0; i < entries.size(); i++) {
             PassiveEntry entry = entries.get(i);
             ui.append(containerSelector, template);
             String base = containerSelector + "[" + i + "]";
             ui.set(base + " #PassiveName.Text", entry.label());
+            ui.set(base + " #PassiveName.Style.TextColor", sectionTheme.nameColor());
             ui.set(base + " #PassiveValue.Text", entry.value());
+            ui.set(base + " #PassiveValue.Style.TextColor", sectionTheme.valueColor());
         }
     }
 

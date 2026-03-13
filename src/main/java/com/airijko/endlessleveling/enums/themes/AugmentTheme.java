@@ -6,7 +6,7 @@ package com.airijko.endlessleveling.enums.themes;
 public enum AugmentTheme {
     PROFILE_MYTHIC("#7851a9"),
     PROFILE_ELITE("#89cff0"),
-    PROFILE_COMMON("#ffc300"),
+    PROFILE_COMMON("#7ad8c2"),
     GRID_MYTHIC_OWNED("#b084e0"),
     GRID_ELITE_OWNED("#7ec8f5"),
     GRID_COMMON_OWNED("#b8bec9"),
