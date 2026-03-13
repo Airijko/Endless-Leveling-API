@@ -90,8 +90,8 @@ $C.@PageOverlay {
                                 // ---------------- LEFT NAV ----------------
                                 $Nav.@LeftNavPanel {}
 
-                                // ---------------- RIGHT PANEL ----------------
-                                Group #RightPanel {
+                                // ---------------- MAIN CONTENT ----------------
+                                Group #LeftContent {
                                     FlexWeight: 1;
                                     LayoutMode: Top;
                                     Anchor: (Right: 7, Bottom: 7);
@@ -100,8 +100,6 @@ $C.@PageOverlay {
                                         LayoutMode: Left;
                                         FlexWeight: 1;
                                         Padding: (Full: 16);
-
-                                        Group { Anchor: (Width: 16); }
 
                                         Group #RaceDetailPanel {
                                             LayoutMode: Top;
@@ -271,30 +269,62 @@ $C.@PageOverlay {
                                                         LayoutMode: Top;
                                                     }
                                                 }
+                                                Group { Anchor: (Height: 16); }
+
+                                                Group #RaceDetailActions {
+                                                    LayoutMode: Left;
+                                                    Anchor: (Height: 45);
+
+                                                    Label #RaceDetailCooldownWarning {
+                                                        Text: "You will be locked for the remaining cooldown after swapping.";
+                                                        Style: (FontSize: 11, TextColor: #ffc300, RenderBold: true);
+                                                        FlexWeight: 1;
+                                                    }
+
+                                                    Group { Anchor: (Width: 10); }
+
+                                                    $C.@TextButton #ConfirmRaceButton {
+                                                        Text: "SWAP";
+                                                        Anchor: (Height: 32, Width: 140);
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        Group { Anchor: (Width: 16); }
+
+                                        Group #RightContent {
+                                            LayoutMode: Top;
+                                            FlexWeight: 1;
+                                            Background: #050910(0.85);
+                                            Padding: (Left: 16, Right: 16, Top: 16, Bottom: 16);
+
+                                            Label #RaceEvolutionTitle {
+                                                Text: "Evolution Paths";
+                                                Style: (FontSize: 16, TextColor: #ffffff, RenderBold: true);
+                                                Anchor: (Height: 22);
                                             }
 
-                                            Group { Anchor: (Height: 16); }
+                                            Label #RaceEvolutionSummary {
+                                                Text: "Select a race to inspect evolution branches.";
+                                                Style: (FontSize: 12, TextColor: #9fb6d3, RenderBold: true, Wrap: true);
+                                                Anchor: (Height: 34);
+                                            }
 
-                                            Group #RaceDetailActions {
-                                                LayoutMode: Left;
-                                                Anchor: (Height: 45);
+                                            Group { Anchor: (Height: 10); }
 
-                                                Label #RaceDetailCooldownWarning {
-                                                    Text: "You will be locked for the remaining cooldown after swapping.";
-                                                    Style: (FontSize: 11, TextColor: #ffc300, RenderBold: true);
-                                                    FlexWeight: 1;
-                                                }
+                                            Group #RaceEvolutionScrollArea {
+                                                FlexWeight: 1;
+                                                LayoutMode: TopScrolling;
+                                                ScrollbarStyle: $C.@DefaultScrollbarStyle;
 
-                                                Group { Anchor: (Width: 10); }
-
-                                                $C.@TextButton #ConfirmRaceButton {
-                                                    Text: "SWAP";
-                                                    Anchor: (Height: 32, Width: 140);
+                                                Group #RaceEvolutionEntries {
+                                                    LayoutMode: Top;
                                                 }
                                             }
                                         }
                                     }
-                                }
+                                }             
                             }
                         }
 

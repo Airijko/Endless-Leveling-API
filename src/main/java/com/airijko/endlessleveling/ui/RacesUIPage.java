@@ -7,6 +7,7 @@ import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.airijko.endlessleveling.enums.themes.AttributeTheme;
 import com.airijko.endlessleveling.managers.PlayerDataManager;
 import com.airijko.endlessleveling.managers.RaceManager;
+import com.airijko.endlessleveling.races.RaceAscensionDefinition;
 import com.airijko.endlessleveling.races.RaceAscensionEligibility;
 import com.airijko.endlessleveling.races.RaceDefinition;
 import com.airijko.endlessleveling.races.RacePassiveDefinition;
@@ -80,6 +81,7 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             ui.set("#CurrentRaceValue.Text", tr("hud.common.unavailable", "--"));
             ui.clear("#RaceRows");
             ui.clear("#RacePassiveEntries");
+            ui.clear("#RaceEvolutionEntries");
             return;
         }
 
@@ -94,6 +96,7 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             ui.set("#CurrentRaceValue.Text", tr("hud.common.unavailable", "--"));
             ui.clear("#RaceRows");
             ui.clear("#RacePassiveEntries");
+            ui.clear("#RaceEvolutionEntries");
             return;
         }
 
@@ -255,6 +258,9 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         ui.set("#RaceLoreTitle.Text", tr("ui.races.page.lore_title", "Lore Preview"));
         ui.set("#RaceStatsTitle.Text", tr("ui.races.page.stats_title", "Race Stats"));
         ui.set("#RacePassivesTitle.Text", tr("ui.races.page.passives_title", "Passives"));
+        ui.set("#RaceEvolutionTitle.Text", tr("ui.races.page.evolution_title", "Evolution Paths"));
+        ui.set("#RaceEvolutionSummary.Text",
+                tr("ui.races.evolution.summary.placeholder", "Select a race to inspect evolution branches."));
         ui.set("#RaceDetailCooldownWarning.Text",
                 tr("ui.races.cooldown.default_warning",
                         "You will be locked for the remaining cooldown after swapping."));
@@ -281,6 +287,8 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             ui.clear("#RacePassiveEntries");
             ui.set("#RacePassiveSummary.Visible", true);
             ui.set("#RacePassiveSummary.Text", tr("ui.races.passives.none_selected", "No race selected."));
+            ui.set("#RaceEvolutionSummary.Text", tr("ui.races.evolution.none_selected", "No race selected."));
+            ui.clear("#RaceEvolutionEntries");
             clearAttributePreview(ui);
             return;
         }
@@ -322,6 +330,8 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             }
         }
 
+        updateEvolutionPreview(ui, data, selection, activeRace);
+
         if (operatorBypass) {
             ui.set("#RaceDetailCooldownWarning.Text",
                     tr("ui.races.cooldown.bypassed_detail", "Operator bypass active. Swapping is immediate."));
@@ -347,6 +357,143 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             ui.set("#RaceDetailCooldownWarning.Text",
                     tr("ui.races.cooldown.unrestricted", "Swapping is unrestricted right now."));
         }
+    }
+
+    private void updateEvolutionPreview(@Nonnull UICommandBuilder ui,
+            @Nonnull PlayerData data,
+            @Nonnull RaceDefinition selection,
+            RaceDefinition activeRace) {
+        RaceAscensionDefinition ascension = selection.getAscension();
+        String stageLabel = ascension == null ? "" : toDisplay(ascension.getStage());
+        if (stageLabel.isBlank()) {
+            stageLabel = tr("ui.races.evolution.stage.base", "Base");
+        }
+
+        String pathLabel = ascension == null ? "" : toDisplay(ascension.getPath());
+        if (pathLabel.isBlank()) {
+            pathLabel = tr("ui.races.evolution.path.none", "None");
+        }
+
+        if (ascension != null && ascension.isFinalForm()) {
+            ui.set("#RaceEvolutionSummary.Text",
+                    tr("ui.races.evolution.summary.final", "Stage: {0} - Final form reached.", stageLabel));
+        } else {
+            ui.set("#RaceEvolutionSummary.Text",
+                    tr("ui.races.evolution.summary", "Stage: {0} - Path: {1}", stageLabel, pathLabel));
+        }
+
+        ui.clear("#RaceEvolutionEntries");
+        List<RaceDefinition> nextRaces = raceManager == null ? List.of()
+                : raceManager.getNextAscensionRaces(selection.getId());
+        if (nextRaces == null || nextRaces.isEmpty()) {
+            ui.append("#RaceEvolutionEntries", "Pages/Profile/ProfileRacePassiveEntry.ui");
+            ui.set("#RaceEvolutionEntries[0] #PassiveName.Text",
+                    tr("ui.races.evolution.none", "No further evolutions"));
+            ui.set("#RaceEvolutionEntries[0] #PassiveValue.Text", tr("ui.races.evolution.none_value", "FINAL"));
+            return;
+        }
+
+        for (int index = 0; index < nextRaces.size(); index++) {
+            RaceDefinition nextRace = nextRaces.get(index);
+            if (nextRace == null) {
+                continue;
+            }
+
+            RaceAscensionEligibility eligibility = raceManager == null
+                    ? null
+                    : raceManager.evaluateAscensionEligibility(data, selection.getId(), nextRace.getId(), true);
+
+            boolean active = isActiveRaceForm(nextRace, activeRace);
+            boolean unlocked = isRaceFormUnlocked(nextRace, activeRace, data);
+            boolean available = eligibility != null && eligibility.isEligible();
+
+            String statusText;
+            if (active) {
+                statusText = tr("ui.races.evolution.status.active", "ACTIVE");
+            } else if (unlocked) {
+                statusText = tr("ui.races.evolution.status.unlocked", "UNLOCKED");
+            } else if (available) {
+                statusText = tr("ui.races.evolution.status.available", "AVAILABLE");
+            } else {
+                statusText = tr("ui.races.evolution.status.locked", "LOCKED");
+                if (eligibility != null && !eligibility.getBlockers().isEmpty()) {
+                    statusText += " - " + abbreviate(eligibility.getBlockers().get(0), 44);
+                }
+            }
+
+            ui.append("#RaceEvolutionEntries", "Pages/Profile/ProfileRacePassiveEntry.ui");
+            String base = "#RaceEvolutionEntries[" + index + "]";
+            ui.set(base + " #PassiveName.Text", buildEvolutionLabel(nextRace));
+            ui.set(base + " #PassiveValue.Text", statusText);
+        }
+    }
+
+    private boolean isActiveRaceForm(RaceDefinition candidate, RaceDefinition activeRace) {
+        if (candidate == null || activeRace == null) {
+            return false;
+        }
+        String candidatePath = raceManager == null ? candidate.getId()
+                : raceManager.resolveAscensionPathId(candidate.getId());
+        String activePath = raceManager == null ? activeRace.getId()
+                : raceManager.resolveAscensionPathId(activeRace.getId());
+        return candidatePath != null && activePath != null && candidatePath.equalsIgnoreCase(activePath);
+    }
+
+    private boolean isRaceFormUnlocked(RaceDefinition race, RaceDefinition activeRace, PlayerData data) {
+        if (race == null) {
+            return false;
+        }
+
+        if (isActiveRaceForm(race, activeRace)) {
+            return true;
+        }
+
+        if (data == null || raceManager == null) {
+            return false;
+        }
+
+        String pathId = raceManager.resolveAscensionPathId(race.getId());
+        if (pathId != null && data.hasCompletedRaceForm(pathId)) {
+            return true;
+        }
+
+        return data.hasCompletedRaceForm(race.getId());
+    }
+
+    private String buildEvolutionLabel(@Nonnull RaceDefinition race) {
+        String display = race.getDisplayName();
+        if (display == null || display.isBlank()) {
+            display = race.getId();
+        }
+
+        RaceAscensionDefinition ascension = race.getAscension();
+        if (ascension == null) {
+            return display;
+        }
+
+        if (ascension.isFinalForm()) {
+            return display + " (Final)";
+        }
+
+        String pathLabel = toDisplay(ascension.getPath());
+        if (pathLabel.isBlank()) {
+            return display;
+        }
+        return display + " (" + pathLabel + ")";
+    }
+
+    private String abbreviate(String value, int maxLength) {
+        if (value == null) {
+            return "";
+        }
+        String normalized = value.replace('\n', ' ').trim();
+        if (normalized.length() <= maxLength) {
+            return normalized;
+        }
+        if (maxLength <= 3) {
+            return normalized.substring(0, Math.max(0, maxLength));
+        }
+        return normalized.substring(0, maxLength - 3) + "...";
     }
 
     private void clearAttributePreview(@Nonnull UICommandBuilder ui) {
