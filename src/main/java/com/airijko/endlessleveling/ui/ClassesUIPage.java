@@ -298,8 +298,7 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             boolean canModifySecondary) {
         ui.clear("#ClassRows");
 
-        List<CharacterClassDefinition> classes = new ArrayList<>(classManager.getLoadedClasses());
-        classes.sort(Comparator.comparing(def -> def.getDisplayName().toLowerCase(Locale.ROOT)));
+        List<CharacterClassDefinition> classes = getBaseClassesForList();
         ui.set("#ClassCountLabel.Text",
                 tr("ui.classes.count", "{0} {1}", classes.size(), classes.size() == 1
                         ? tr("ui.classes.count_word.singular", "class")
@@ -339,8 +338,7 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     private void refreshClassList(UICommandBuilder ui,
             CharacterClassDefinition primary,
             CharacterClassDefinition secondary) {
-        List<CharacterClassDefinition> classes = new ArrayList<>(classManager.getLoadedClasses());
-        classes.sort(Comparator.comparing(def -> def.getDisplayName().toLowerCase(Locale.ROOT)));
+        List<CharacterClassDefinition> classes = getBaseClassesForList();
         ui.set("#ClassCountLabel.Text",
                 tr("ui.classes.count", "{0} {1}", classes.size(), classes.size() == 1
                         ? tr("ui.classes.count_word.singular", "class")
@@ -638,6 +636,21 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
     private boolean selectedClassMatches(String classId) {
         return selectedClassId != null && selectedClassId.equalsIgnoreCase(classId);
+    }
+
+    private List<CharacterClassDefinition> getBaseClassesForList() {
+        List<CharacterClassDefinition> classes = new ArrayList<>();
+        for (CharacterClassDefinition definition : classManager.getLoadedClasses()) {
+            if (definition == null) {
+                continue;
+            }
+            String stage = definition.getAscension() != null ? definition.getAscension().getStage() : null;
+            if (stage == null || stage.isBlank() || "base".equalsIgnoreCase(stage.trim())) {
+                classes.add(definition);
+            }
+        }
+        classes.sort(Comparator.comparing(def -> def.getDisplayName().toLowerCase(Locale.ROOT)));
+        return classes;
     }
 
     private CharacterClassDefinition resolveSelection(CharacterClassDefinition primary) {

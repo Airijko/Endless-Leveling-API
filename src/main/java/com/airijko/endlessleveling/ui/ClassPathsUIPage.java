@@ -185,7 +185,7 @@ public class ClassPathsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data>
             RaceAscensionEligibility eligibility = classManager.evaluateAscensionEligibility(playerData,
                     focusedClass.getId());
             if (eligibility != null && !eligibility.getBlockers().isEmpty()) {
-                playerRef.sendMessage(Message.raw("Cannot evolve yet:").color("#ff6666"));
+                playerRef.sendMessage(Message.raw("Cannot upgrade yet:").color("#ff6666"));
                 for (String blocker : eligibility.getBlockers()) {
                     playerRef.sendMessage(Message.join(
                             Message.raw(" - ").color("#ff6666"),
@@ -201,7 +201,7 @@ public class ClassPathsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data>
             RaceAscensionEligibility eligibility = classManager.evaluateAscensionEligibility(playerData,
                     focusedClass.getId());
             if (eligibility == null || !eligibility.isEligible()) {
-                playerRef.sendMessage(Message.raw("Cannot evolve yet.").color("#ff6666"));
+                playerRef.sendMessage(Message.raw("Cannot upgrade yet.").color("#ff6666"));
                 if (eligibility != null) {
                     for (String blocker : eligibility.getBlockers()) {
                         playerRef.sendMessage(Message.join(
@@ -674,7 +674,7 @@ public class ClassPathsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data>
             return "CURRENT";
         }
         if (status.isAvailable()) {
-            return "EVOLVE";
+            return "UPGRADE";
         }
         if (status.isUnlocked()) {
             return "CHOOSE";
