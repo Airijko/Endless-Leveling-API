@@ -1,11 +1,11 @@
-race_name: "Human Emporer"
+race_name: "Human Emperor"
 icon: "Ingredient_Void_Essence"
 description: "The ultimate human sovereign, uniting expedition mastery with conquering might into absolute dominance."
 model_scale: 1.0
 enabled: true
 
 ascension:
-  id: "human_emporer"
+  id: "human_emperor"
   stage: "final"
   path: "hybrid"
   final_form: true

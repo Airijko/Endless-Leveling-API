@@ -52,14 +52,22 @@ public class RacePathsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> 
 
     private final RaceManager raceManager;
     private final PlayerDataManager playerDataManager;
+    private String browsedRaceId;
     private String selectedPathKey;
     private String hoveredPathKey;
 
     public RacePathsUIPage(@Nonnull PlayerRef playerRef, @Nonnull CustomPageLifetime lifetime) {
+        this(playerRef, lifetime, null);
+    }
+
+    public RacePathsUIPage(@Nonnull PlayerRef playerRef,
+            @Nonnull CustomPageLifetime lifetime,
+            String initialRaceId) {
         super(playerRef, lifetime, SkillsUIPage.Data.CODEC);
         EndlessLeveling plugin = EndlessLeveling.getInstance();
         this.raceManager = plugin != null ? plugin.getRaceManager() : null;
         this.playerDataManager = plugin != null ? plugin.getPlayerDataManager() : null;
+        this.browsedRaceId = initialRaceId;
         this.selectedPathKey = null;
         this.hoveredPathKey = null;
     }
@@ -75,20 +83,21 @@ public class RacePathsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> 
 
         PlayerData data = loadPlayerData();
         RaceDefinition currentRace = data != null && raceManager != null ? raceManager.getPlayerRace(data) : null;
+        RaceDefinition browsedRace = resolveBrowsedRace(currentRace);
 
-        String titleRace = currentRace != null ? resolveDisplayName(currentRace) : PlayerData.DEFAULT_RACE_ID;
+        String titleRace = browsedRace != null ? resolveDisplayName(browsedRace) : PlayerData.DEFAULT_RACE_ID;
         ui.set("#RacePathsTitleLabel.Text", titleRace + " Paths");
 
-        if (selectedPathKey == null && currentRace != null) {
-            selectedPathKey = pathKey(currentRace);
+        if (selectedPathKey == null && browsedRace != null) {
+            selectedPathKey = pathKey(browsedRace);
         }
 
         ui.clear("#RacePathRows");
 
-        RaceDefinition pathTreeRoot = resolvePathTreeRoot(currentRace);
+        RaceDefinition pathTreeRoot = resolvePathTreeRoot(browsedRace);
         List<PathTierRow> rows = buildTierRows(pathTreeRoot);
         renderTierRows(ui, events, rows, data, currentRace);
-        applyPathInfoPanel(ui, data, currentRace);
+        applyPathInfoPanel(ui, data, currentRace, browsedRace);
         events.addEventBinding(Activating, "#ChooseRacePathButton", of("Action", ACTION_PATH_BUTTON), false);
     }
 
@@ -137,15 +146,16 @@ public class RacePathsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> 
                 RaceDefinition currentRace = playerData != null && raceManager != null
                         ? raceManager.getPlayerRace(playerData)
                         : null;
+                RaceDefinition browsedRace = resolveBrowsedRace(currentRace);
 
                 if (selectionChanged) {
                     ui.clear("#RacePathRows");
-                    RaceDefinition pathTreeRoot = resolvePathTreeRoot(currentRace);
+                    RaceDefinition pathTreeRoot = resolvePathTreeRoot(browsedRace);
                     List<PathTierRow> rows = buildTierRows(pathTreeRoot);
                     renderTierRows(ui, eventBuilder, rows, playerData, currentRace);
                 }
 
-                applyPathInfoPanel(ui, playerData, currentRace);
+                applyPathInfoPanel(ui, playerData, currentRace, browsedRace);
                 sendUpdate(ui, eventBuilder, false);
             }
         }
@@ -164,13 +174,14 @@ public class RacePathsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> 
         }
 
         RaceDefinition currentRace = raceManager.getPlayerRace(playerData);
-        RaceDefinition focusedRace = resolveFocusedRace(currentRace);
+        RaceDefinition browsedRace = resolveBrowsedRace(currentRace);
+        RaceDefinition focusedRace = resolveFocusedRace(currentRace, browsedRace);
         if (focusedRace == null) {
             playerRef.sendMessage(Message.raw("Select a race path first.").color("#ff9900"));
             return;
         }
 
-        boolean baseTier = currentRace != null && pathKey(currentRace).equals(pathKey(focusedRace));
+        boolean baseTier = browsedRace != null && pathKey(browsedRace).equals(pathKey(focusedRace));
         NodeStatus status = resolveNodeStatus(focusedRace, baseTier, playerData, currentRace);
 
         if (status.isActive()) {
@@ -252,9 +263,26 @@ public class RacePathsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> 
                     Message.raw("!").color("#ffffff")));
         }
 
+        browsedRaceId = focusedRace.getId();
         selectedPathKey = pathKey(focusedRace);
         hoveredPathKey = null;
         rebuild();
+    }
+
+    private RaceDefinition resolveBrowsedRace(RaceDefinition currentRace) {
+        if (raceManager == null) {
+            return currentRace;
+        }
+        if (browsedRaceId != null && !browsedRaceId.isBlank()) {
+            RaceDefinition browsed = raceManager.findRaceByUserInput(browsedRaceId);
+            if (browsed == null) {
+                browsed = raceManager.getRace(browsedRaceId);
+            }
+            if (browsed != null) {
+                return browsed;
+            }
+        }
+        return currentRace;
     }
 
     private List<PathTierRow> buildTierRows(RaceDefinition rootRace) {
@@ -555,8 +583,11 @@ public class RacePathsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> 
         ui.set(nodeBase + " #NodeOutlineBottom.Background", outlineColor);
     }
 
-    private void applyPathInfoPanel(UICommandBuilder ui, PlayerData playerData, RaceDefinition currentPlayerRace) {
-        RaceDefinition focused = resolveFocusedRace(currentPlayerRace);
+    private void applyPathInfoPanel(UICommandBuilder ui,
+            PlayerData playerData,
+            RaceDefinition currentPlayerRace,
+            RaceDefinition browsedRace) {
+        RaceDefinition focused = resolveFocusedRace(currentPlayerRace, browsedRace);
         if (focused == null) {
             ui.set("#PathInfoIcon.ItemId", RaceDefinition.DEFAULT_ICON_ITEM_ID);
             ui.set("#PathInfoName.Text", "Select a path");
@@ -573,9 +604,7 @@ public class RacePathsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> 
         }
 
         String focusedKey = pathKey(focused);
-        boolean focusFromHover = hoveredPathKey != null && hoveredPathKey.equals(focusedKey);
-        boolean focusFromSelection = selectedPathKey != null && selectedPathKey.equals(focusedKey);
-        boolean baseTier = currentPlayerRace != null && pathKey(currentPlayerRace).equals(focusedKey);
+        boolean baseTier = browsedRace != null && pathKey(browsedRace).equals(focusedKey);
 
         NodeStatus status = resolveNodeStatus(focused, baseTier, playerData, currentPlayerRace);
         RaceAscensionEligibility eligibility = (playerData != null && raceManager != null)
@@ -677,7 +706,7 @@ public class RacePathsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> 
         return "SELECT PATH";
     }
 
-    private RaceDefinition resolveFocusedRace(RaceDefinition currentPlayerRace) {
+    private RaceDefinition resolveFocusedRace(RaceDefinition currentPlayerRace, RaceDefinition browsedRace) {
         if (raceManager == null) {
             return null;
         }
@@ -690,6 +719,10 @@ public class RacePathsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> 
         RaceDefinition selected = findRaceByPathKey(selectedPathKey);
         if (selected != null) {
             return selected;
+        }
+
+        if (browsedRace != null) {
+            return browsedRace;
         }
 
         return currentPlayerRace;

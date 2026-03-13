@@ -5,10 +5,13 @@ import com.airijko.endlessleveling.data.PlayerData;
 import com.airijko.endlessleveling.enums.ArchetypePassiveType;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.airijko.endlessleveling.enums.themes.AttributeTheme;
+import com.airijko.endlessleveling.enums.themes.EvolutionRequirementTheme;
+import com.airijko.endlessleveling.enums.themes.EvolutionStatusTheme;
 import com.airijko.endlessleveling.managers.PlayerDataManager;
 import com.airijko.endlessleveling.managers.RaceManager;
 import com.airijko.endlessleveling.races.RaceAscensionDefinition;
 import com.airijko.endlessleveling.races.RaceAscensionEligibility;
+import com.airijko.endlessleveling.races.RaceAscensionRequirements;
 import com.airijko.endlessleveling.races.RaceDefinition;
 import com.airijko.endlessleveling.races.RacePassiveDefinition;
 import com.airijko.endlessleveling.util.Lang;
@@ -18,6 +21,7 @@ import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
 import com.hypixel.hytale.server.core.Message;
+import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.entity.entities.player.pages.InteractiveCustomUIPage;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
@@ -27,12 +31,15 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import javax.annotation.Nonnull;
 import java.time.Instant;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 import static com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType.Activating;
 import static com.hypixel.hytale.server.core.ui.builder.EventData.of;
@@ -43,6 +50,7 @@ import static com.hypixel.hytale.server.core.ui.builder.EventData.of;
 public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
+    private static final String EVOLUTION_ENTRY_TEMPLATE = "Pages/Races/RaceEvolutionEntry.ui";
 
     private final RaceManager raceManager;
     private final PlayerDataManager playerDataManager;
@@ -69,6 +77,10 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         events.addEventBinding(Activating,
                 "#ConfirmRaceButton",
                 of("Action", "race:confirm"),
+                false);
+        events.addEventBinding(Activating,
+                "#ViewRacePathsButton",
+                of("Action", "race:open_paths"),
                 false);
 
         if (raceManager == null || !raceManager.isEnabled()) {
@@ -264,6 +276,7 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         ui.set("#RaceDetailCooldownWarning.Text",
                 tr("ui.races.cooldown.default_warning",
                         "You will be locked for the remaining cooldown after swapping."));
+        ui.set("#ViewRacePathsButton.Text", tr("ui.races.actions.view_paths", "VIEW PATHS"));
         ui.set("#ConfirmRaceButton.Text", tr("ui.races.actions.swap", "SWAP"));
 
         for (AttributeTheme theme : AttributeTheme.values()) {
@@ -289,11 +302,13 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             ui.set("#RacePassiveSummary.Text", tr("ui.races.passives.none_selected", "No race selected."));
             ui.set("#RaceEvolutionSummary.Text", tr("ui.races.evolution.none_selected", "No race selected."));
             ui.clear("#RaceEvolutionEntries");
+            ui.set("#ViewRacePathsButton.Visible", false);
             clearAttributePreview(ui);
             return;
         }
 
         ui.set("#SelectedRaceLabel.Text", selection.getDisplayName());
+        ui.set("#ViewRacePathsButton.Visible", true);
         ui.set("#SelectedRaceSubtitle.Text",
                 selection == activeRace ? tr("ui.races.subtitle.current", "Currently active")
                         : tr("ui.races.subtitle.preview", "Preview only"));
@@ -374,58 +389,450 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             pathLabel = tr("ui.races.evolution.path.none", "None");
         }
 
+        ui.clear("#RaceEvolutionEntries");
+        List<EvolutionNode> evolutionNodes = collectEvolutionNodes(selection);
+
         if (ascension != null && ascension.isFinalForm()) {
             ui.set("#RaceEvolutionSummary.Text",
                     tr("ui.races.evolution.summary.final", "Stage: {0} - Final form reached.", stageLabel));
-        } else {
+        } else if (evolutionNodes.isEmpty()) {
             ui.set("#RaceEvolutionSummary.Text",
                     tr("ui.races.evolution.summary", "Stage: {0} - Path: {1}", stageLabel, pathLabel));
+        } else {
+            String pathTypes = collectPathTypeSummary(evolutionNodes);
+            ui.set("#RaceEvolutionSummary.Text",
+                    tr("ui.races.evolution.summary.expanded",
+                            "Stage: {0} - Path: {1} - Paths: {2} ({3})",
+                            stageLabel,
+                            pathLabel,
+                            evolutionNodes.size(),
+                            pathTypes));
         }
 
-        ui.clear("#RaceEvolutionEntries");
-        List<RaceDefinition> nextRaces = raceManager == null ? List.of()
-                : raceManager.getNextAscensionRaces(selection.getId());
-        if (nextRaces == null || nextRaces.isEmpty()) {
-            ui.append("#RaceEvolutionEntries", "Pages/Profile/ProfileRacePassiveEntry.ui");
-            ui.set("#RaceEvolutionEntries[0] #PassiveName.Text",
+        if (evolutionNodes.isEmpty()) {
+            ui.append("#RaceEvolutionEntries", EVOLUTION_ENTRY_TEMPLATE);
+            ui.set("#RaceEvolutionEntries[0] #EvolutionName.Text",
                     tr("ui.races.evolution.none", "No further evolutions"));
-            ui.set("#RaceEvolutionEntries[0] #PassiveValue.Text", tr("ui.races.evolution.none_value", "FINAL"));
+            ui.set("#RaceEvolutionEntries[0] #EvolutionStatus.Text", tr("ui.races.evolution.none_value", "FINAL"));
+            ui.set("#RaceEvolutionEntries[0] #EvolutionStatus.Style.TextColor",
+                    EvolutionStatusTheme.FINAL.statusColor());
+            ui.set("#RaceEvolutionEntries[0] #EvolutionMeta.Text",
+                    tr("ui.races.evolution.none_meta", "This race is at the end of its ascension branch."));
+            ui.set("#RaceEvolutionEntries[0] #EvolutionCriteria.Text",
+                    tr("ui.races.evolution.none_criteria", "No additional upgrade criteria."));
+            ui.set("#RaceEvolutionEntries[0] #EvolutionCriteria.Style.TextColor",
+                    EvolutionRequirementTheme.NEUTRAL.color());
+            ui.set("#RaceEvolutionEntries[0] #EvolutionSkillCriteria.Text", "");
+            ui.set("#RaceEvolutionEntries[0] #EvolutionSkillCriteria.Visible", false);
+            ui.set("#RaceEvolutionEntries[0] #EvolutionProgress.Style.TextColor",
+                    EvolutionRequirementTheme.NEUTRAL.color());
+            ui.set("#RaceEvolutionEntries[0] #EvolutionProgress.Text", "");
             return;
         }
 
-        for (int index = 0; index < nextRaces.size(); index++) {
-            RaceDefinition nextRace = nextRaces.get(index);
+        int rowIndex = 0;
+        for (EvolutionNode node : evolutionNodes) {
+            RaceDefinition nextRace = node.race();
             if (nextRace == null) {
                 continue;
             }
 
             RaceAscensionEligibility eligibility = raceManager == null
                     ? null
-                    : raceManager.evaluateAscensionEligibility(data, selection.getId(), nextRace.getId(), true);
+                    : raceManager.evaluateAscensionEligibility(data, selection.getId(), nextRace.getId(), false);
 
             boolean active = isActiveRaceForm(nextRace, activeRace);
             boolean unlocked = isRaceFormUnlocked(nextRace, activeRace, data);
             boolean available = eligibility != null && eligibility.isEligible();
+            boolean directPath = isDirectEvolutionPath(selection, nextRace);
 
-            String statusText;
+            EvolutionStatusTheme statusTheme = resolveEvolutionStatusTheme(active, unlocked, available, directPath);
+            String statusLabel = localizeEvolutionStatus(statusTheme);
+            EvolutionCriteriaContent criteriaContent = buildEvolutionCriteriaContent(nextRace);
+
+            String progressText;
+            String progressColor = statusTheme.progressColor();
             if (active) {
-                statusText = tr("ui.races.evolution.status.active", "ACTIVE");
+                progressText = tr("ui.races.evolution.progress.active", "Currently active form.");
             } else if (unlocked) {
-                statusText = tr("ui.races.evolution.status.unlocked", "UNLOCKED");
-            } else if (available) {
-                statusText = tr("ui.races.evolution.status.available", "AVAILABLE");
+                progressText = tr("ui.races.evolution.progress.unlocked", "Previously completed and unlocked.");
+            } else if (eligibility == null) {
+                progressText = tr("ui.races.evolution.progress.unknown", "Unable to evaluate current progress.");
+                progressColor = EvolutionRequirementTheme.NEUTRAL.color();
+            } else if (eligibility.isEligible() && directPath) {
+                progressText = tr("ui.races.evolution.progress.ready", "All criteria met. Can evolve immediately.");
+                progressColor = EvolutionRequirementTheme.READY.color();
+            } else if (eligibility.isEligible()) {
+                progressText = tr("ui.races.evolution.progress.ready_after",
+                        "All criteria met. Reach this branch by progressing through earlier path nodes.");
+                progressColor = EvolutionRequirementTheme.READY.color();
             } else {
-                statusText = tr("ui.races.evolution.status.locked", "LOCKED");
-                if (eligibility != null && !eligibility.getBlockers().isEmpty()) {
-                    statusText += " - " + abbreviate(eligibility.getBlockers().get(0), 44);
+                progressText = formatMissingProgress(eligibility, nextRace);
+                progressColor = EvolutionRequirementTheme.MISSING.color();
+            }
+
+            ui.append("#RaceEvolutionEntries", EVOLUTION_ENTRY_TEMPLATE);
+            String base = "#RaceEvolutionEntries[" + rowIndex + "]";
+            ui.set(base + " #EvolutionName.Text", buildEvolutionLabel(nextRace));
+            ui.set(base + " #EvolutionStatus.Text", statusLabel);
+            ui.set(base + " #EvolutionStatus.Style.TextColor", statusTheme.statusColor());
+            ui.set(base + " #EvolutionMeta.Text", buildEvolutionMeta(nextRace, node));
+            ui.set(base + " #EvolutionCriteria.Text", criteriaContent.generalText());
+            ui.set(base + " #EvolutionCriteria.Style.TextColor", EvolutionRequirementTheme.GENERAL.color());
+            ui.set(base + " #EvolutionSkillCriteria.Text", criteriaContent.skillText());
+            ui.set(base + " #EvolutionSkillCriteria.Visible", !criteriaContent.skillText().isBlank());
+            ui.set(base + " #EvolutionSkillCriteria.Style.TextColor",
+                    EvolutionRequirementTheme.TRAINABLE_SKILLS.color());
+            ui.set(base + " #EvolutionProgress.Text", progressText);
+            ui.set(base + " #EvolutionProgress.Style.TextColor", progressColor);
+            rowIndex++;
+        }
+    }
+
+    private EvolutionStatusTheme resolveEvolutionStatusTheme(boolean active,
+            boolean unlocked,
+            boolean available,
+            boolean directPath) {
+        if (active) {
+            return EvolutionStatusTheme.ACTIVE;
+        }
+        if (unlocked) {
+            return EvolutionStatusTheme.UNLOCKED;
+        }
+        if (available && directPath) {
+            return EvolutionStatusTheme.AVAILABLE;
+        }
+        if (available) {
+            return EvolutionStatusTheme.ELIGIBLE;
+        }
+        return EvolutionStatusTheme.LOCKED;
+    }
+
+    private String localizeEvolutionStatus(@Nonnull EvolutionStatusTheme theme) {
+        return switch (theme) {
+            case ACTIVE -> tr("ui.races.evolution.status.active", "ACTIVE");
+            case UNLOCKED -> tr("ui.races.evolution.status.unlocked", "UNLOCKED");
+            case AVAILABLE -> tr("ui.races.evolution.status.available", "AVAILABLE");
+            case ELIGIBLE -> tr("ui.races.evolution.status.eligible", "ELIGIBLE");
+            case FINAL -> tr("ui.races.evolution.none_value", "FINAL");
+            case LOCKED, UNKNOWN -> tr("ui.races.evolution.status.locked", "LOCKED");
+        };
+    }
+
+    private String collectPathTypeSummary(@Nonnull List<EvolutionNode> nodes) {
+        Set<String> uniqueTypes = new LinkedHashSet<>();
+        for (EvolutionNode node : nodes) {
+            if (node == null || node.race() == null) {
+                continue;
+            }
+            uniqueTypes.add(resolvePathType(node.race()));
+        }
+        if (uniqueTypes.isEmpty()) {
+            return tr("ui.races.evolution.path.none", "None");
+        }
+        return String.join(", ", uniqueTypes);
+    }
+
+    private List<EvolutionNode> collectEvolutionNodes(@Nonnull RaceDefinition root) {
+        if (raceManager == null || root == null) {
+            return List.of();
+        }
+
+        List<EvolutionNode> nodes = new ArrayList<>();
+        ArrayDeque<EvolutionNode> frontier = new ArrayDeque<>();
+        Set<String> seen = new LinkedHashSet<>();
+
+        for (RaceDefinition next : raceManager.getNextAscensionRaces(root.getId())) {
+            if (next == null) {
+                continue;
+            }
+            String key = evolutionPathKey(next);
+            if (!seen.add(key)) {
+                continue;
+            }
+            EvolutionNode node = new EvolutionNode(next, 1, root.getId());
+            frontier.addLast(node);
+            nodes.add(node);
+        }
+
+        while (!frontier.isEmpty()) {
+            EvolutionNode current = frontier.removeFirst();
+            for (RaceDefinition child : raceManager.getNextAscensionRaces(current.race().getId())) {
+                if (child == null) {
+                    continue;
+                }
+                String key = evolutionPathKey(child);
+                if (!seen.add(key)) {
+                    continue;
+                }
+                EvolutionNode childNode = new EvolutionNode(child, current.depth() + 1, current.race().getId());
+                frontier.addLast(childNode);
+                nodes.add(childNode);
+            }
+        }
+
+        return nodes;
+    }
+
+    private String evolutionPathKey(RaceDefinition race) {
+        if (race == null) {
+            return "";
+        }
+
+        String key = race.getId();
+        if (raceManager != null) {
+            String resolvedPath = raceManager.resolveAscensionPathId(race.getId());
+            if (resolvedPath != null && !resolvedPath.isBlank()) {
+                key = resolvedPath;
+            }
+        }
+
+        if (key == null) {
+            return "";
+        }
+        return key.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private boolean isDirectEvolutionPath(@Nonnull RaceDefinition source, @Nonnull RaceDefinition target) {
+        if (raceManager == null) {
+            return false;
+        }
+        for (RaceDefinition candidate : raceManager.getNextAscensionRaces(source.getId())) {
+            if (candidate != null && candidate.getId().equalsIgnoreCase(target.getId())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String buildEvolutionMeta(@Nonnull RaceDefinition race, @Nonnull EvolutionNode node) {
+        String pathType = resolvePathType(race);
+        String stage = race.getAscension() == null ? tr("ui.races.evolution.stage.base", "Base")
+                : toDisplay(race.getAscension().getStage());
+        if (stage.isBlank()) {
+            stage = tr("ui.races.evolution.stage.base", "Base");
+        }
+
+        String parentName = resolveRaceDisplayName(node.parentRaceId());
+        return tr("ui.races.evolution.meta",
+                "Type: {0} | Stage: {1} | Tier: {2} | From: {3}",
+                pathType,
+                stage,
+                node.depth(),
+                parentName);
+    }
+
+    private EvolutionCriteriaContent buildEvolutionCriteriaContent(@Nonnull RaceDefinition race) {
+        RaceAscensionDefinition ascension = race.getAscension();
+        RaceAscensionRequirements requirements = ascension == null
+                ? RaceAscensionRequirements.none()
+                : ascension.getRequirements();
+
+        List<String> generalSections = new ArrayList<>();
+        List<String> skillSections = new ArrayList<>();
+
+        if (requirements.getRequiredPrestige() > 0) {
+            generalSections.add(tr("ui.races.evolution.criteria.prestige",
+                    "- Prestige: >= {0}", requirements.getRequiredPrestige()));
+        }
+
+        String minSkillLine = formatSkillThresholds(requirements.getMinSkillLevels(), ">=");
+        if (!minSkillLine.isBlank()) {
+            skillSections.add(tr("ui.races.evolution.criteria.min_skills",
+                    "- Minimum skill levels: {0}", minSkillLine));
+        }
+
+        String maxSkillLine = formatSkillThresholds(requirements.getMaxSkillLevels(), "<=");
+        if (!maxSkillLine.isBlank()) {
+            skillSections.add(tr("ui.races.evolution.criteria.max_skills",
+                    "- Skill caps: {0}", maxSkillLine));
+        }
+
+        if (!requirements.getMinAnySkillLevels().isEmpty()) {
+            List<String> anyGroups = new ArrayList<>();
+            for (Map<SkillAttributeType, Integer> group : requirements.getMinAnySkillLevels()) {
+                String renderedGroup = formatSkillThresholds(group, ">=");
+                if (!renderedGroup.isBlank()) {
+                    anyGroups.add(renderedGroup);
+                }
+            }
+            if (!anyGroups.isEmpty()) {
+                skillSections.add(tr("ui.races.evolution.criteria.any_skills",
+                        "- Any one set: {0}", String.join(" OR ", anyGroups)));
+            }
+        }
+
+        if (!requirements.getRequiredForms().isEmpty()) {
+            List<String> forms = new ArrayList<>();
+            for (String form : requirements.getRequiredForms()) {
+                forms.add(resolveRaceDisplayName(form));
+            }
+            generalSections
+                    .add(tr("ui.races.evolution.criteria.forms", "- Required forms: {0}", String.join(", ", forms)));
+        }
+
+        if (!requirements.getRequiredAugments().isEmpty()) {
+            generalSections.add(tr("ui.races.evolution.criteria.augments",
+                    "- Required augments: {0}", String.join(", ", requirements.getRequiredAugments())));
+        }
+
+        if (generalSections.isEmpty() && skillSections.isEmpty()) {
+            return new EvolutionCriteriaContent(tr("ui.races.evolution.criteria.none", "Requirements: none"), "");
+        }
+
+        String generalText;
+        if (generalSections.isEmpty()) {
+            generalText = tr("ui.races.evolution.criteria.general.none",
+                    "Requirements: skill targets only");
+        } else {
+            generalText = tr("ui.races.evolution.criteria.general.prefix",
+                    "Requirements:\n{0}", String.join("\n", generalSections));
+        }
+
+        String skillText = "";
+        if (!skillSections.isEmpty()) {
+            skillText = tr("ui.races.evolution.criteria.skills.prefix",
+                    "Trainable Skill Targets:\n{0}", String.join("\n", skillSections));
+        }
+
+        return new EvolutionCriteriaContent(generalText, skillText);
+    }
+
+    private String formatSkillThresholds(Map<SkillAttributeType, Integer> thresholds, String operator) {
+        if (thresholds == null || thresholds.isEmpty()) {
+            return "";
+        }
+
+        List<Map.Entry<SkillAttributeType, Integer>> entries = new ArrayList<>();
+        for (Map.Entry<SkillAttributeType, Integer> entry : thresholds.entrySet()) {
+            if (entry.getKey() == null || entry.getValue() == null) {
+                continue;
+            }
+            entries.add(entry);
+        }
+
+        if (entries.isEmpty()) {
+            return "";
+        }
+
+        entries.sort(Comparator.comparingInt(entry -> entry.getKey().ordinal()));
+
+        List<String> rendered = new ArrayList<>();
+        for (Map.Entry<SkillAttributeType, Integer> entry : entries) {
+            rendered.add(localizeAttributeName(entry.getKey()) + " " + operator + " " + entry.getValue());
+        }
+        return String.join(", ", rendered);
+    }
+
+    private String formatMissingProgress(@Nonnull RaceAscensionEligibility eligibility,
+            @Nonnull RaceDefinition targetRace) {
+        List<String> blockers = eligibility.getBlockers();
+        if (blockers == null || blockers.isEmpty()) {
+            return tr("ui.races.evolution.progress.missing_generic", "Missing requirements.");
+        }
+
+        List<String> lines = new ArrayList<>();
+        lines.add(tr("ui.races.evolution.progress.missing_header", "Missing requirements:"));
+        for (String blocker : blockers) {
+            if (blocker == null || blocker.isBlank()) {
+                continue;
+            }
+
+            String normalized = blocker.trim();
+            if (isAnySkillSetBlocker(normalized)) {
+                String anySkillOptions = buildAnySkillOptions(targetRace);
+                if (!anySkillOptions.isBlank()) {
+                    normalized = tr("ui.races.evolution.progress.missing_any_skill_specific",
+                            "Requires at least one skill option set to be met: {0}.",
+                            anySkillOptions);
                 }
             }
 
-            ui.append("#RaceEvolutionEntries", "Pages/Profile/ProfileRacePassiveEntry.ui");
-            String base = "#RaceEvolutionEntries[" + index + "]";
-            ui.set(base + " #PassiveName.Text", buildEvolutionLabel(nextRace));
-            ui.set(base + " #PassiveValue.Text", statusText);
+            lines.add("- " + abbreviate(normalized, 180));
         }
+
+        if (lines.size() == 1) {
+            lines.add(tr("ui.races.evolution.progress.missing_generic", "- Requirement unmet."));
+        }
+
+        return String.join("\n", lines);
+    }
+
+    private boolean isAnySkillSetBlocker(@Nonnull String blocker) {
+        String normalized = blocker.toLowerCase(Locale.ROOT);
+        return normalized.contains("at least one or skill requirement set")
+                || normalized.contains("at least one skill requirement set")
+                || normalized.contains("any one skill requirement set")
+                || normalized.contains("one or skill requirement set");
+    }
+
+    private String buildAnySkillOptions(@Nonnull RaceDefinition targetRace) {
+        RaceAscensionDefinition ascension = targetRace.getAscension();
+        RaceAscensionRequirements requirements = ascension == null
+                ? RaceAscensionRequirements.none()
+                : ascension.getRequirements();
+
+        List<String> groups = new ArrayList<>();
+        for (Map<SkillAttributeType, Integer> group : requirements.getMinAnySkillLevels()) {
+            String rendered = formatSkillThresholds(group, ">=");
+            if (!rendered.isBlank()) {
+                groups.add(rendered);
+            }
+        }
+
+        if (groups.isEmpty()) {
+            return "";
+        }
+
+        return String.join(" OR ", groups);
+    }
+
+    private String resolveRaceDisplayName(String raceIdOrPathId) {
+        if (raceIdOrPathId == null || raceIdOrPathId.isBlank()) {
+            return tr("hud.common.unavailable", "--");
+        }
+
+        if (raceManager != null) {
+            RaceDefinition direct = raceManager.getRace(raceIdOrPathId);
+            if (direct != null && direct.getDisplayName() != null && !direct.getDisplayName().isBlank()) {
+                return direct.getDisplayName();
+            }
+
+            String normalizedTarget = raceIdOrPathId.trim().toLowerCase(Locale.ROOT);
+            for (RaceDefinition candidate : raceManager.getLoadedRaces()) {
+                if (candidate == null) {
+                    continue;
+                }
+                String candidatePath = raceManager.resolveAscensionPathId(candidate.getId());
+                if (candidatePath != null && candidatePath.equalsIgnoreCase(normalizedTarget)) {
+                    String displayName = candidate.getDisplayName();
+                    return displayName == null || displayName.isBlank() ? candidate.getId() : displayName;
+                }
+            }
+        }
+
+        return toDisplay(raceIdOrPathId);
+    }
+
+    private String resolvePathType(@Nonnull RaceDefinition race) {
+        RaceAscensionDefinition ascension = race.getAscension();
+        if (ascension == null) {
+            return tr("ui.races.evolution.path.none", "None");
+        }
+
+        String path = ascension.getPath();
+        if (path == null || path.isBlank() || "none".equalsIgnoreCase(path)) {
+            return tr("ui.races.evolution.path.none", "None");
+        }
+
+        String normalized = path.trim().toLowerCase(Locale.ROOT);
+        return switch (normalized) {
+            case "adventurer", "adventure" -> tr("ui.races.evolution.path.adventure", "Adventure");
+            case "damage" -> tr("ui.races.evolution.path.damage", "Damage");
+            case "sorcery" -> tr("ui.races.evolution.path.sorcery", "Sorcery");
+            case "tank" -> tr("ui.races.evolution.path.tank", "Tank");
+            default -> toDisplay(path);
+        };
     }
 
     private boolean isActiveRaceForm(RaceDefinition candidate, RaceDefinition activeRace) {
@@ -494,6 +901,33 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             return normalized.substring(0, Math.max(0, maxLength));
         }
         return normalized.substring(0, maxLength - 3) + "...";
+    }
+
+    private static final class EvolutionNode {
+        private final RaceDefinition race;
+        private final int depth;
+        private final String parentRaceId;
+
+        private EvolutionNode(RaceDefinition race, int depth, String parentRaceId) {
+            this.race = race;
+            this.depth = Math.max(1, depth);
+            this.parentRaceId = parentRaceId;
+        }
+
+        private RaceDefinition race() {
+            return race;
+        }
+
+        private int depth() {
+            return depth;
+        }
+
+        private String parentRaceId() {
+            return parentRaceId;
+        }
+    }
+
+    private record EvolutionCriteriaContent(String generalText, String skillText) {
     }
 
     private void clearAttributePreview(@Nonnull UICommandBuilder ui) {
@@ -987,10 +1421,39 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             return;
         }
 
+        if (data.action.equals("race:open_paths")) {
+            openRacePathsPage(ref, store, raceManager == null ? null : raceManager.getPlayerRace(playerData));
+            return;
+        }
+
         if (data.action.startsWith("race:choose:")) {
             String targetId = data.action.substring("race:choose:".length());
             handleRaceChoose(targetId, playerData, ref, store, operatorBypass);
         }
+    }
+
+    private void openRacePathsPage(@Nonnull Ref<EntityStore> ref,
+            @Nonnull Store<EntityStore> store,
+            RaceDefinition activeRace) {
+        if (raceManager == null || !raceManager.isEnabled()) {
+            playerRef.sendMessage(Message.raw(tr("ui.races.error.disabled", "Races are disabled.")).color("#ff6666"));
+            return;
+        }
+
+        RaceDefinition selection = resolveSelection(activeRace);
+        if (selection == null) {
+            playerRef.sendMessage(
+                    Message.raw(tr("ui.races.error.select_first", "Select a race first.")).color("#ff9900"));
+            return;
+        }
+
+        Player player = store.getComponent(ref, Player.getComponentType());
+        if (player == null) {
+            return;
+        }
+
+        player.getPageManager().openCustomPage(ref, store,
+                new RacePathsUIPage(playerRef, CustomPageLifetime.CanDismiss, selection.getId()));
     }
 
     private void handleRaceChoose(String targetRaceId,

@@ -1,6 +1,14 @@
 $C = "../../Common.ui";
 $Nav = "../Nav/LeftNavPanel.ui";
 
+@CustomStyle = TextButtonStyle(
+    Default: (Background: $C.@DefaultSquareButtonDefaultBackground, LabelStyle: $C.@DefaultButtonLabelStyle),
+    Hovered: (Background: $C.@DefaultSquareButtonHoveredBackground, LabelStyle: $C.@DefaultButtonLabelStyle),
+    Pressed: (Background: $C.@DefaultSquareButtonPressedBackground, LabelStyle: $C.@DefaultButtonLabelStyle),
+    Disabled: (Background: $C.@DefaultSquareButtonDisabledBackground, LabelStyle: $C.@DefaultButtonDisabledLabelStyle),
+    Sounds: $C.@ButtonSounds,
+);
+
 $C.@PageOverlay {
     Group {
         LayoutMode: Middle;
@@ -269,25 +277,6 @@ $C.@PageOverlay {
                                                         LayoutMode: Top;
                                                     }
                                                 }
-                                                Group { Anchor: (Height: 16); }
-
-                                                Group #RaceDetailActions {
-                                                    LayoutMode: Left;
-                                                    Anchor: (Height: 45);
-
-                                                    Label #RaceDetailCooldownWarning {
-                                                        Text: "You will be locked for the remaining cooldown after swapping.";
-                                                        Style: (FontSize: 11, TextColor: #ffc300, RenderBold: true);
-                                                        FlexWeight: 1;
-                                                    }
-
-                                                    Group { Anchor: (Width: 10); }
-
-                                                    $C.@TextButton #ConfirmRaceButton {
-                                                        Text: "SWAP";
-                                                        Anchor: (Height: 32, Width: 140);
-                                                    }
-                                                }
                                             }
                                         }
 
@@ -308,7 +297,7 @@ $C.@PageOverlay {
                                             Label #RaceEvolutionSummary {
                                                 Text: "Select a race to inspect evolution branches.";
                                                 Style: (FontSize: 12, TextColor: #9fb6d3, RenderBold: true, Wrap: true);
-                                                Anchor: (Height: 34);
+                                                Anchor: (Height: 48);
                                             }
 
                                             Group { Anchor: (Height: 10); }
@@ -324,6 +313,36 @@ $C.@PageOverlay {
                                             }
                                         }
                                     }
+
+                                    Group #RaceDetailActions {
+                                        LayoutMode: Top;
+                                        Padding: (Full: 12);
+
+                                        Label #RaceDetailCooldownWarning {
+                                            Text: "You will be locked for the remaining cooldown after swapping.";
+                                            Style: (FontSize: 11, TextColor: #ffc300, RenderBold: true);
+                                        }
+
+                                        Group { Anchor: (Height: 8); }
+
+                                        Group {
+                                            LayoutMode: Left;
+
+                                            $C.@TextButton #ConfirmRaceButton {
+                                                Text: "SWAP";
+                                                Anchor: (Height: 32);
+                                                Style: @CustomStyle;
+                                            }
+
+                                            Group { FlexWeight: 1; }
+
+                                            $C.@TextButton #ViewRacePathsButton {
+                                                Text: "VIEW PATHS";
+                                                Anchor: (Height: 32);
+                                                Style: @CustomStyle;
+                                            }
+                                        }
+                                    }   
                                 }             
                             }
                         }
@@ -332,7 +351,6 @@ $C.@PageOverlay {
 
                         $C.@DecoratedContainer {
                             Anchor: (Width: 300, Height: 700);
-                            Padding: (Full: 12);
 
                             #Title {
                                 Group {
@@ -410,7 +428,7 @@ $C.@PageOverlay {
                                             Style: (FontSize: 20, TextColor: #6fe3ff, RenderBold: true);
                                         }
                                     }
-                                }                       
+                                }             
                             }
                         }
                     }

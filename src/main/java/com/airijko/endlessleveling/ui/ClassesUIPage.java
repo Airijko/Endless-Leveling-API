@@ -20,6 +20,7 @@ import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
 import com.hypixel.hytale.server.core.Message;
+import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.entity.entities.player.pages.InteractiveCustomUIPage;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
@@ -89,6 +90,7 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
         events.addEventBinding(Activating, "#ConfirmPrimaryButton", of("Action", "class:confirm_primary"), false);
         events.addEventBinding(Activating, "#ConfirmSecondaryButton", of("Action", "class:confirm_secondary"), false);
+        events.addEventBinding(Activating, "#ViewClassPathsButton", of("Action", "class:open_paths"), false);
 
         if (classManager == null || !classManager.isEnabled()) {
             ui.set("#SelectedClassLabel.Text", tr("ui.classes.offline.title", "Classes Offline"));
@@ -395,6 +397,7 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         ui.set("#ClassWeaponsTitle.Text", tr("ui.classes.page.weapons_title", "Weapon Affinities"));
         ui.set("#ClassInnateTitle.Text", tr("ui.classes.page.innate_title", "Innate Attribute Gains"));
         ui.set("#ClassPassivesTitle.Text", tr("ui.classes.page.passives_title", "Passives"));
+        ui.set("#ViewClassPathsButton.Text", tr("ui.classes.actions.view_paths", "VIEW PATHS"));
         ui.set("#ConfirmPrimaryButton.Text", tr("ui.classes.actions.set_primary", "SET PRIMARY"));
         ui.set("#ConfirmSecondaryButton.Text", tr("ui.classes.actions.set_secondary", "SET SECONDARY"));
     }
@@ -449,6 +452,7 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             ui.clear("#ClassInnateEntries");
             ui.set("#ConfirmPrimaryButton.Visible", false);
             ui.set("#ConfirmSecondaryButton.Visible", false);
+            ui.set("#ViewClassPathsButton.Visible", false);
 
             String status = tr("ui.classes.detail.select_prompt", "Select a class to preview bonuses.");
             if (operatorBypass) {
@@ -473,6 +477,7 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         }
 
         ui.set("#SelectedClassLabel.Text", selection.getDisplayName());
+        ui.set("#ViewClassPathsButton.Visible", true);
         if (primary != null && primary.getId().equalsIgnoreCase(selection.getId())) {
             ui.set("#SelectedClassSubtitle.Text", tr("ui.classes.subtitle.primary", "Currently your primary class"));
         } else if (secondary != null && secondary.getId().equalsIgnoreCase(selection.getId())) {
@@ -737,11 +742,42 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             return;
         }
 
+        if (data.action.equals("class:open_paths")) {
+            openClassPathsPage(ref, store,
+                    classManager == null ? null : classManager.getPlayerPrimaryClass(playerData));
+            return;
+        }
+
         switch (data.action) {
             case "class:confirm_primary" -> handlePrimarySelection(selectedClassId, playerData, ref, store);
             case "class:confirm_secondary" -> handleSecondarySelection(selectedClassId, playerData, ref, store);
             case "class:clear_secondary" -> clearSecondary(playerData, ref, store);
         }
+    }
+
+    private void openClassPathsPage(@Nonnull Ref<EntityStore> ref,
+            @Nonnull Store<EntityStore> store,
+            CharacterClassDefinition primaryClass) {
+        if (classManager == null || !classManager.isEnabled()) {
+            playerRef.sendMessage(
+                    Message.raw(tr("ui.classes.error.disabled", "Classes are currently disabled.")).color("#ff6666"));
+            return;
+        }
+
+        CharacterClassDefinition selection = resolveSelection(primaryClass);
+        if (selection == null) {
+            playerRef.sendMessage(
+                    Message.raw(tr("ui.classes.none_selected", "No class selected.")).color("#ff9900"));
+            return;
+        }
+
+        Player player = store.getComponent(ref, Player.getComponentType());
+        if (player == null) {
+            return;
+        }
+
+        player.getPageManager().openCustomPage(ref, store,
+                new ClassPathsUIPage(playerRef, CustomPageLifetime.CanDismiss, selection.getId()));
     }
 
     private void handlePrimarySelection(String targetId,

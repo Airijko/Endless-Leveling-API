@@ -1,5 +1,13 @@
 $C = "../../Common.ui";
 
+@CustomStyle = TextButtonStyle(
+    Default: (Background: $C.@DefaultSquareButtonDefaultBackground, LabelStyle: $C.@DefaultButtonLabelStyle),
+    Hovered: (Background: $C.@DefaultSquareButtonHoveredBackground, LabelStyle: $C.@DefaultButtonLabelStyle),
+    Pressed: (Background: $C.@DefaultSquareButtonPressedBackground, LabelStyle: $C.@DefaultButtonLabelStyle),
+    Disabled: (Background: $C.@DefaultSquareButtonDisabledBackground, LabelStyle: $C.@DefaultButtonDisabledLabelStyle),
+    Sounds: $C.@ButtonSounds,
+);
+
 Group {
     LayoutMode: Top;
 
@@ -44,6 +52,7 @@ Group {
                     Text: "VIEW";
                     Anchor: (Height: 28, Width: 96);
                     Padding: (Horizontal: 10, Vertical: 4);
+                    Style: @CustomStyle;
                 }
 
                 Group { Anchor: (Width: 6); }
@@ -52,6 +61,7 @@ Group {
                     Text: "CHOOSE";
                     Anchor: (Height: 28, Width: 96);
                     Padding: (Horizontal: 10, Vertical: 4);
+                    Style: @CustomStyle;
                 }
             }
         }

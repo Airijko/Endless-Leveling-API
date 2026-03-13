@@ -17,8 +17,8 @@ ascension:
     max_skill_levels: {}
     required_augments: []
   next_paths:
-    - id: "human_emporer"
-      name: "Human Emporer"
+    - id: "human_emperor"
+      name: "Human Emperor"
 
 attributes:
   life_force: 170

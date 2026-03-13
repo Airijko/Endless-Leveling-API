@@ -356,14 +356,22 @@ $C.@PageOverlay {
 
                             Group { Anchor: (Height: 8); }
 
-                            Group #RaceDetailActions {
+                            $C.@TextButton #ViewClassPathsButton {
+                                Text: "VIEW PATHS";
+                                Anchor: (Height: 30);
+                                Style: @CustomStyle;
+                            }
+
+                            Group { Anchor: (Height: 6); }
+
+                            Group {
                                 LayoutMode: Left;
-                                Anchor: (Height: 48);
-                                FlexWeight: 1;
+                                Anchor: (Height: 30);
 
                                 $C.@TextButton #ConfirmPrimaryButton {
                                     Text: "SET PRIMARY";
-                                    Anchor: (Height: 28, Width: 175);
+                                    FlexWeight: 1;
+                                    Anchor: (Height: 30);
                                     Style: @CustomStyle;
                                 }
 
@@ -371,10 +379,10 @@ $C.@PageOverlay {
 
                                 $C.@TextButton #ConfirmSecondaryButton {
                                     Text: "SET SECONDARY";
-                                    Anchor: (Height: 28, Width: 200);
+                                    FlexWeight: 1;
+                                    Anchor: (Height: 30);
                                     Style: @CustomStyle;
                                 }
-          
                             }
                         }
                     }

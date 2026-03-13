@@ -52,14 +52,22 @@ public class ClassPathsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data>
 
     private final ClassManager classManager;
     private final PlayerDataManager playerDataManager;
+    private String browsedClassId;
     private String selectedPathKey;
     private String hoveredPathKey;
 
     public ClassPathsUIPage(@Nonnull PlayerRef playerRef, @Nonnull CustomPageLifetime lifetime) {
+        this(playerRef, lifetime, null);
+    }
+
+    public ClassPathsUIPage(@Nonnull PlayerRef playerRef,
+            @Nonnull CustomPageLifetime lifetime,
+            String initialClassId) {
         super(playerRef, lifetime, SkillsUIPage.Data.CODEC);
         EndlessLeveling plugin = EndlessLeveling.getInstance();
         this.classManager = plugin != null ? plugin.getClassManager() : null;
         this.playerDataManager = plugin != null ? plugin.getPlayerDataManager() : null;
+        this.browsedClassId = initialClassId;
         this.selectedPathKey = null;
         this.hoveredPathKey = null;
     }
@@ -77,21 +85,22 @@ public class ClassPathsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data>
         CharacterClassDefinition currentClass = data != null && classManager != null
                 ? classManager.getPlayerPrimaryClass(data)
                 : null;
+        CharacterClassDefinition browsedClass = resolveBrowsedClass(currentClass);
 
-        String titleClass = currentClass != null ? resolveDisplayName(currentClass)
+        String titleClass = browsedClass != null ? resolveDisplayName(browsedClass)
                 : PlayerData.DEFAULT_PRIMARY_CLASS_ID;
         ui.set("#ClassPathsTitleLabel.Text", titleClass + " Paths");
 
-        if (selectedPathKey == null && currentClass != null) {
-            selectedPathKey = pathKey(currentClass);
+        if (selectedPathKey == null && browsedClass != null) {
+            selectedPathKey = pathKey(browsedClass);
         }
 
         ui.clear("#ClassPathRows");
 
-        CharacterClassDefinition pathTreeRoot = resolvePathTreeRoot(currentClass);
+        CharacterClassDefinition pathTreeRoot = resolvePathTreeRoot(browsedClass);
         List<PathTierRow> rows = buildTierRows(pathTreeRoot);
         renderTierRows(ui, events, rows, data, currentClass);
-        applyPathInfoPanel(ui, data, currentClass);
+        applyPathInfoPanel(ui, data, currentClass, browsedClass);
         events.addEventBinding(Activating, "#ChooseClassPathButton", of("Action", ACTION_PATH_BUTTON), false);
     }
 
@@ -140,15 +149,16 @@ public class ClassPathsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data>
                 CharacterClassDefinition currentClass = playerData != null && classManager != null
                         ? classManager.getPlayerPrimaryClass(playerData)
                         : null;
+                CharacterClassDefinition browsedClass = resolveBrowsedClass(currentClass);
 
                 if (selectionChanged) {
                     ui.clear("#ClassPathRows");
-                    CharacterClassDefinition pathTreeRoot = resolvePathTreeRoot(currentClass);
+                    CharacterClassDefinition pathTreeRoot = resolvePathTreeRoot(browsedClass);
                     List<PathTierRow> rows = buildTierRows(pathTreeRoot);
                     renderTierRows(ui, eventBuilder, rows, playerData, currentClass);
                 }
 
-                applyPathInfoPanel(ui, playerData, currentClass);
+                applyPathInfoPanel(ui, playerData, currentClass, browsedClass);
                 sendUpdate(ui, eventBuilder, false);
             }
         }
@@ -167,13 +177,14 @@ public class ClassPathsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data>
         }
 
         CharacterClassDefinition currentClass = classManager.getPlayerPrimaryClass(playerData);
-        CharacterClassDefinition focusedClass = resolveFocusedClass(currentClass);
+        CharacterClassDefinition browsedClass = resolveBrowsedClass(currentClass);
+        CharacterClassDefinition focusedClass = resolveFocusedClass(currentClass, browsedClass);
         if (focusedClass == null) {
             playerRef.sendMessage(Message.raw("Select a class path first.").color("#ff9900"));
             return;
         }
 
-        boolean baseTier = currentClass != null && pathKey(currentClass).equals(pathKey(focusedClass));
+        boolean baseTier = browsedClass != null && pathKey(browsedClass).equals(pathKey(focusedClass));
         NodeStatus status = resolveNodeStatus(focusedClass, baseTier, playerData, currentClass);
 
         if (status.isActive()) {
@@ -254,9 +265,26 @@ public class ClassPathsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data>
                     Message.raw("!").color("#ffffff")));
         }
 
+        browsedClassId = focusedClass.getId();
         selectedPathKey = pathKey(focusedClass);
         hoveredPathKey = null;
         rebuild();
+    }
+
+    private CharacterClassDefinition resolveBrowsedClass(CharacterClassDefinition currentClass) {
+        if (classManager == null) {
+            return currentClass;
+        }
+        if (browsedClassId != null && !browsedClassId.isBlank()) {
+            CharacterClassDefinition browsed = classManager.findClassByUserInput(browsedClassId);
+            if (browsed == null) {
+                browsed = classManager.getClass(browsedClassId);
+            }
+            if (browsed != null) {
+                return browsed;
+            }
+        }
+        return currentClass;
     }
 
     private List<PathTierRow> buildTierRows(CharacterClassDefinition rootClass) {
@@ -558,9 +586,11 @@ public class ClassPathsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data>
         ui.set(nodeBase + " #NodeOutlineBottom.Background", outlineColor);
     }
 
-    private void applyPathInfoPanel(UICommandBuilder ui, PlayerData playerData,
-            CharacterClassDefinition currentPlayerClass) {
-        CharacterClassDefinition focused = resolveFocusedClass(currentPlayerClass);
+    private void applyPathInfoPanel(UICommandBuilder ui,
+            PlayerData playerData,
+            CharacterClassDefinition currentPlayerClass,
+            CharacterClassDefinition browsedClass) {
+        CharacterClassDefinition focused = resolveFocusedClass(currentPlayerClass, browsedClass);
         if (focused == null) {
             ui.set("#PathInfoIcon.ItemId", "Ingredient_Life_Essence");
             ui.set("#PathInfoName.Text", "Select a path");
@@ -577,7 +607,7 @@ public class ClassPathsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data>
         }
 
         String focusedKey = pathKey(focused);
-        boolean baseTier = currentPlayerClass != null && pathKey(currentPlayerClass).equals(focusedKey);
+        boolean baseTier = browsedClass != null && pathKey(browsedClass).equals(focusedKey);
 
         NodeStatus status = resolveNodeStatus(focused, baseTier, playerData, currentPlayerClass);
         RaceAscensionEligibility eligibility = (playerData != null && classManager != null)
@@ -685,7 +715,8 @@ public class ClassPathsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data>
         return "SELECT PATH";
     }
 
-    private CharacterClassDefinition resolveFocusedClass(CharacterClassDefinition currentPlayerClass) {
+    private CharacterClassDefinition resolveFocusedClass(CharacterClassDefinition currentPlayerClass,
+            CharacterClassDefinition browsedClass) {
         if (classManager == null) {
             return null;
         }
@@ -698,6 +729,10 @@ public class ClassPathsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data>
         CharacterClassDefinition selected = findClassByPathKey(selectedPathKey);
         if (selected != null) {
             return selected;
+        }
+
+        if (browsedClass != null) {
+            return browsedClass;
         }
 
         return currentPlayerClass;
