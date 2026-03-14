@@ -4,14 +4,15 @@ import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentManager;
 import com.airijko.endlessleveling.augments.AugmentRuntimeManager;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
-import com.airijko.endlessleveling.augments.types.ConquerorAugment;
+import com.airijko.endlessleveling.augments.types.BurnAugment;
 import com.airijko.endlessleveling.augments.types.EndurePainAugment;
+import com.airijko.endlessleveling.augments.types.FleetFootworkAugment;
 import com.airijko.endlessleveling.augments.types.FortressAugment;
 import com.airijko.endlessleveling.augments.types.FrozenDomainAugment;
 import com.airijko.endlessleveling.augments.types.OverhealAugment;
-import com.airijko.endlessleveling.augments.types.PredatorAugment;
+import com.airijko.endlessleveling.augments.types.PhaseRushAugment;
 import com.airijko.endlessleveling.augments.types.ProtectiveBubbleAugment;
-import com.airijko.endlessleveling.augments.types.RagingMomentumAugment;
+import com.airijko.endlessleveling.augments.types.UndyingRageAugment;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
@@ -19,6 +20,7 @@ import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import javax.annotation.Nonnull;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -29,11 +31,13 @@ public final class AugmentHudOverlayController {
     private static final double EPSILON = 0.0001D;
     private static final double MIN_VISIBLE_BAR_PROGRESS = 1.0D / 634.0D;
     private static final List<String> DURATION_PRIORITY = List.of(
-            RagingMomentumAugment.ID,
-            PredatorAugment.ID,
-            ConquerorAugment.ID,
+            BurnAugment.ID,
+            EndurePainAugment.ID,
+            FleetFootworkAugment.ID,
+            FortressAugment.ID,
             FrozenDomainAugment.ID,
-            EndurePainAugment.ID);
+            PhaseRushAugment.ID,
+            UndyingRageAugment.ID);
     private static final List<String> SHIELD_PRIORITY = List.of(
             ProtectiveBubbleAugment.ID,
             FortressAugment.ID,
@@ -71,23 +75,54 @@ public final class AugmentHudOverlayController {
             return BarState.hidden();
         }
 
+        List<DurationCandidate> activeCandidates = new ArrayList<>();
         for (String augmentId : DURATION_PRIORITY) {
-            AugmentRuntimeManager.AugmentState state = runtimeState.getState(augmentId);
-            if (!isTimedStateActive(state, now)) {
+            DurationCandidate candidate = switch (augmentId) {
+                case BurnAugment.ID -> resolveSimpleDuration(runtimeState, BurnAugment.ID, now, false, false);
+                case EndurePainAugment.ID ->
+                    resolveSimpleDuration(runtimeState, EndurePainAugment.ID, now, true, false);
+                case FleetFootworkAugment.ID -> resolveSimpleDuration(runtimeState,
+                        FleetFootworkAugment.ID,
+                        now,
+                        false,
+                        false);
+                case FortressAugment.ID -> resolveFortressBuffDuration(runtimeState, now);
+                case FrozenDomainAugment.ID -> resolveSimpleDuration(runtimeState,
+                        FrozenDomainAugment.ID,
+                        now,
+                        false,
+                        false);
+                case PhaseRushAugment.ID -> resolveSimpleDuration(runtimeState, PhaseRushAugment.ID, now, false, false);
+                case UndyingRageAugment.ID -> resolveSimpleDuration(runtimeState,
+                        UndyingRageAugment.ID,
+                        now,
+                        false,
+                        false);
+                default -> null;
+            };
+            if (candidate == null) {
                 continue;
             }
-
-            long totalDuration = resolveConfiguredDurationMillis(augmentId);
-            if (totalDuration <= 0L) {
-                continue;
-            }
-
-            long remaining = Math.max(0L, state.getExpiresAt() - now);
-            double progress = clamp01(remaining / (double) totalDuration);
-            return new BarState(resolveDisplayName(augmentId), progress, true);
+            activeCandidates.add(candidate);
         }
 
-        return BarState.hidden();
+        if (activeCandidates.isEmpty()) {
+            return BarState.hidden();
+        }
+
+        DurationCandidate bestCandidate = activeCandidates.get(0);
+        for (int i = 1; i < activeCandidates.size(); i++) {
+            DurationCandidate candidate = activeCandidates.get(i);
+            if (candidate.expiresAt() < bestCandidate.expiresAt()) {
+                bestCandidate = candidate;
+            }
+        }
+
+        int additionalCount = activeCandidates.size() - 1;
+        String label = additionalCount > 0
+                ? bestCandidate.label() + " ( +" + additionalCount + " )"
+                : bestCandidate.label();
+        return new BarState(label, bestCandidate.progress(), true);
     }
 
     private BarState resolveShieldBar(AugmentRuntimeManager.AugmentRuntimeState runtimeState,
@@ -162,10 +197,56 @@ public final class AugmentHudOverlayController {
         return new BarState("Overheal Shield", progress, true);
     }
 
-    private boolean isTimedStateActive(AugmentRuntimeManager.AugmentState state, long now) {
-        return state != null
-                && state.getExpiresAt() > now
-                && (state.getStacks() > 0 || state.getStoredValue() > EPSILON);
+    private DurationCandidate resolveSimpleDuration(AugmentRuntimeManager.AugmentRuntimeState runtimeState,
+            String augmentId,
+            long now,
+            boolean requiresStoredValue,
+            boolean requiresStacks) {
+        AugmentRuntimeManager.AugmentState state = runtimeState.getState(augmentId);
+        if (state == null || state.getExpiresAt() <= now) {
+            return null;
+        }
+        if (requiresStoredValue && state.getStoredValue() <= EPSILON) {
+            return null;
+        }
+        if (requiresStacks && state.getStacks() <= 0) {
+            return null;
+        }
+
+        long totalDuration = resolveConfiguredDurationMillis(augmentId);
+        if (totalDuration <= 0L) {
+            totalDuration = Math.max(1L, state.getExpiresAt() - now);
+        }
+        return createDurationCandidate(resolveDisplayName(augmentId), state.getExpiresAt(), totalDuration, now);
+    }
+
+    private DurationCandidate resolveFortressBuffDuration(AugmentRuntimeManager.AugmentRuntimeState runtimeState,
+            long now) {
+        AugmentRuntimeManager.AugmentState state = runtimeState.getState(FortressAugment.ID);
+        if (state == null) {
+            return null;
+        }
+
+        long buffExpiresAt = Math.round(state.getStoredValue());
+        if (buffExpiresAt <= now) {
+            return null;
+        }
+
+        long totalDuration = resolveConfiguredDurationMillis(FortressAugment.ID);
+        if (totalDuration <= 0L) {
+            totalDuration = Math.max(1L, buffExpiresAt - now);
+        }
+        return createDurationCandidate(resolveDisplayName(FortressAugment.ID), buffExpiresAt, totalDuration, now);
+    }
+
+    private DurationCandidate createDurationCandidate(String label, long expiresAt, long totalDuration, long now) {
+        long remaining = Math.max(0L, expiresAt - now);
+        if (remaining <= 0L) {
+            return null;
+        }
+        long safeTotalDuration = Math.max(1L, totalDuration);
+        double progress = clamp01(remaining / (double) safeTotalDuration);
+        return new DurationCandidate(label, progress, Math.max(0L, expiresAt - safeTotalDuration), expiresAt);
     }
 
     private long resolveConfiguredDurationMillis(String augmentId) {
@@ -207,56 +288,41 @@ public final class AugmentHudOverlayController {
             return 0L;
         }
 
-        long nestedDuration = extractNestedDurationMillis(passives);
-        if (nestedDuration > 0L) {
-            return nestedDuration;
-        }
-
         return switch (augmentId) {
-            case OverhealAugment.ID, ProtectiveBubbleAugment.ID, FortressAugment.ID ->
-                resolveConfiguredShieldDurationMillis(
-                        augmentId);
+            case BurnAugment.ID -> secondsToMillis(
+                    AugmentValueReader.getDouble(AugmentValueReader.getMap(passives, "aura_burn"), "duration", 0.0D));
+            case EndurePainAugment.ID -> secondsToMillis(AugmentValueReader.getDouble(
+                    AugmentValueReader.getMap(passives, "heal_over_time"),
+                    "duration",
+                    0.0D));
+            case FleetFootworkAugment.ID -> secondsToMillis(AugmentValueReader.getDouble(
+                    AugmentValueReader.getMap(AugmentValueReader.getMap(passives, "buffs"), "movement_speed"),
+                    "duration",
+                    0.0D));
+            case FortressAugment.ID -> secondsToMillis(
+                    AugmentValueReader.getDouble(AugmentValueReader.getMap(passives, "buff_phase"), "duration", 0.0D));
+            case FrozenDomainAugment.ID -> secondsToMillis(AugmentValueReader.getDouble(
+                    AugmentValueReader.getMap(passives, "aura_frozen_domain"),
+                    "duration",
+                    0.0D));
+            case PhaseRushAugment.ID -> secondsToMillis(
+                    AugmentValueReader.getDouble(AugmentValueReader.getMap(passives, "haste_burst"), "duration", 0.0D));
+            case UndyingRageAugment.ID -> resolveUndyingRageDurationMillis(passives);
+            case OverhealAugment.ID, ProtectiveBubbleAugment.ID -> resolveConfiguredShieldDurationMillis(
+                    augmentId);
             default -> 0L;
         };
     }
 
-    private long extractNestedDurationMillis(Map<String, Object> section) {
-        if (section == null || section.isEmpty()) {
+    private long resolveUndyingRageDurationMillis(Map<String, Object> passives) {
+        if (passives == null || passives.isEmpty()) {
             return 0L;
         }
-
-        long duration = secondsToMillis(AugmentValueReader.getDouble(section, "duration_per_stack", 0.0D));
-        if (duration > 0L) {
-            return duration;
+        Map<String, Object> rage = AugmentValueReader.getMap(passives, "rage");
+        if (rage.isEmpty()) {
+            rage = AugmentValueReader.getMap(passives, "under_rage");
         }
-
-        duration = secondsToMillis(AugmentValueReader.getDouble(section, "duration", 0.0D));
-        if (duration > 0L) {
-            return duration;
-        }
-
-        duration = secondsToMillis(AugmentValueReader.getDouble(section, "effect_duration", 0.0D));
-        if (duration > 0L) {
-            return duration;
-        }
-
-        duration = secondsToMillis(AugmentValueReader.getDouble(section, "immunity_window", 0.0D));
-        if (duration > 0L) {
-            return duration;
-        }
-
-        for (Object value : section.values()) {
-            if (value instanceof Map<?, ?> raw) {
-                @SuppressWarnings("unchecked")
-                Map<String, Object> nested = (Map<String, Object>) raw;
-                duration = extractNestedDurationMillis(nested);
-                if (duration > 0L) {
-                    return duration;
-                }
-            }
-        }
-
-        return 0L;
+        return secondsToMillis(AugmentValueReader.getDouble(rage, "duration", 0.0D));
     }
 
     private double resolveOverhealShieldPercent() {
@@ -327,5 +393,8 @@ public final class AugmentHudOverlayController {
         public static BarState hidden() {
             return new BarState("", 0.0D, false);
         }
+    }
+
+    private record DurationCandidate(String label, double progress, long activeSince, long expiresAt) {
     }
 }

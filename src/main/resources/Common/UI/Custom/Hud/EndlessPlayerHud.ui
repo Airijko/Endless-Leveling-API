@@ -12,17 +12,17 @@ Group #EndlessPlayerHud {
     Visible: false;
 
     Label #ActiveAugmentName {
-      Anchor: (Height: 8, Left: 0, Right: 0);
-      Style: (FontSize: 8, Alignment: Center, TextColor: #dbe4e7, RenderBold: true);
+      Anchor: (Height: 12, Left: 0, Right: 0, Bottom: 2);
+      Style: (FontSize: 12, Alignment: Center, TextColor: #dbe4e7, RenderBold: true);
       Text: "";
     }
 
     Group #ActiveAugmentBar {
-      Anchor: (Top: 1, Width: 634, Height: 8);
+      Anchor: (Top: 1, Width: 634, Height: 12);
       Background: "Endless_DurationBarBackground.png";
 
       ProgressBar #ActiveAugmentProgress {
-        Anchor: (Width: 634, Height: 8);
+        Anchor: (Width: 634, Height: 12);
         BarTexturePath: "Endless_DurationBarFill.png";
       }
     }
@@ -30,31 +30,30 @@ Group #EndlessPlayerHud {
 
   Group #ShieldStatusPanel {
     LayoutMode: Top;
-    Anchor: (Bottom: 30, Width: 634, Height: 16);
+    Anchor: (Bottom: 48, Width: 634, Height: 16);
     Visible: false;
 
     Label #ShieldStatusName {
-      Anchor: (Height: 8, Left: 0, Right: 0);
-      Style: (FontSize: 8, Alignment: Center, TextColor: #dbe4e7, RenderBold: true);
+      Anchor: (Height: 12, Left: 0, Right: 0, Bottom: 2);
+      Style: (FontSize: 12, Alignment: Center, TextColor: #dbe4e7, RenderBold: true);
       Text: "";
     }
 
     Group #ShieldStatusBar {
-      Anchor: (Top: 1, Width: 634, Height: 8);
+      Anchor: (Top: 1, Width: 634, Height: 12);
       Background: "Endless_DurationBarBackground.png";
 
       ProgressBar #ShieldStatusProgress {
-        Anchor: (Width: 634, Height: 8);
+        Anchor: (Width: 634, Height: 12);
         BarTexturePath: "Endless_ShieldFill.png";
       }
     }
   }
+}
 
-  Label #Level {
-    Anchor: (Bottom: 24, Left: 0, Right: 0, Height: 18);
-    Style: (FontSize: 12, Alignment: Center);
-    Text: "Level";
-  }
+Group #EndlessPlayerLevel {
+  LayoutMode: Bottom;
+  Anchor: (Bottom: 8, Width: 634, Height: 66);
 
   Group #Content {
     LayoutMode: Middle;
@@ -72,11 +71,18 @@ Group #EndlessPlayerHud {
   }
 }
 
+
 // Player level, race, class info
 Group #InfoPanel {
   LayoutMode: Top;
   Anchor: (Bottom: 15, Left: 15, Width: 260, Height: 80);
   Padding: (Full: 4);
+
+  Label #Level {
+    Anchor: (Height: 18, Top: 4);
+    Text: "Level";
+    Style: (TextColor: #ffe8d7, FontSize: 12, RenderBold: true);
+  }
 
   Group #InfoMobLevel {
     LayoutMode: Left;

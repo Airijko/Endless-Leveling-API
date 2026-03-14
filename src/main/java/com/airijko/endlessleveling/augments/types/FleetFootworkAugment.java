@@ -49,11 +49,16 @@ public final class FleetFootworkAugment extends YamlAugment implements AugmentHo
         }
 
         if (movementSpeedBonus != 0.0D && context.getRuntimeState() != null) {
+            long now = System.currentTimeMillis();
             AugmentUtils.setAttributeBonus(context.getRuntimeState(),
                     ID + "_haste",
                     SkillAttributeType.HASTE,
                     movementSpeedBonus * 100.0D,
                     movementDurationMillis);
+            var state = context.getRuntimeState().getState(ID);
+            state.setStacks(1);
+            state.setExpiresAt(movementDurationMillis > 0L ? now + movementDurationMillis : 0L);
+            state.setLastProc(now);
         }
 
         String playerId = context.getPlayerData() != null && context.getPlayerData().getUuid() != null
