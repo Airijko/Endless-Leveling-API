@@ -82,6 +82,7 @@ public class ProfileNewSubCommand extends AbstractPlayerCommand {
         resyncPassives(playerData);
         playerDataManager.save(playerData);
 
+        skillManager.clearAugmentAttributeBonuses(playerData);
         boolean applied = skillManager.applyAllSkillModifiers(ref, store, playerData);
         if (!applied && playerRaceStatSystem == null) {
             senderRef.sendMessage(Message.raw("Skill modifiers could not be applied right now.").color("#ff6666"));

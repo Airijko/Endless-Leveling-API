@@ -14,6 +14,7 @@ import com.airijko.endlessleveling.managers.SkillManager;
 import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveManager;
 import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveSnapshot;
 import com.airijko.endlessleveling.systems.MobDamageScalingSystem;
+import com.airijko.endlessleveling.util.EntityRefUtil;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
@@ -110,57 +111,66 @@ public class PlayerDefenseListener extends DamageEventSystem {
 		Ref<EntityStore> attackerRef = null;
 		if (damage.getSource() instanceof Damage.EntitySource entitySource) {
 			attackerRef = entitySource.getRef();
+			if (!EntityRefUtil.isUsable(attackerRef)) {
+				attackerRef = null;
+			}
 		}
 		UUID mobAttackerUuid = null;
 
 		if (attackerRef != null && mobAugmentExecutor != null && mobLevelingManager != null) {
-			PlayerRef attackerPlayer = commandBuffer.getComponent(attackerRef, PlayerRef.getComponentType());
+			PlayerRef attackerPlayer = EntityRefUtil.tryGetComponent(commandBuffer, attackerRef,
+					PlayerRef.getComponentType());
 			boolean attackerIsPlayer = attackerPlayer != null && attackerPlayer.isValid();
 			if (!attackerIsPlayer) {
-				List<String> attackerAugments = mobLevelingManager.getMobOverrideAugmentIds(attackerRef,
-						attackerRef.getStore(), commandBuffer);
-				if (!attackerAugments.isEmpty()) {
-					UUID attackerUuid = resolveEntityUuid(attackerRef, attackerRef.getStore(), commandBuffer);
-					if (attackerUuid != null) {
-						mobAttackerUuid = attackerUuid;
-						if (!mobAugmentExecutor.hasMobAugments(attackerUuid)) {
-							EndlessLeveling plugin = EndlessLeveling.getInstance();
-							if (plugin != null && plugin.getAugmentManager() != null
-									&& plugin.getAugmentRuntimeManager() != null) {
-								mobAugmentExecutor.registerMobAugments(attackerUuid,
-										attackerAugments,
-										plugin.getAugmentManager(),
-										plugin.getAugmentRuntimeManager());
+				Store<EntityStore> attackerStore = EntityRefUtil.getStore(attackerRef);
+				if (attackerStore == null) {
+					attackerRef = null;
+				} else {
+					List<String> attackerAugments = mobLevelingManager.getMobOverrideAugmentIds(attackerRef,
+							attackerStore, commandBuffer);
+					if (!attackerAugments.isEmpty()) {
+						UUID attackerUuid = resolveEntityUuid(attackerRef, attackerStore, commandBuffer);
+						if (attackerUuid != null) {
+							mobAttackerUuid = attackerUuid;
+							if (!mobAugmentExecutor.hasMobAugments(attackerUuid)) {
+								EndlessLeveling plugin = EndlessLeveling.getInstance();
+								if (plugin != null && plugin.getAugmentManager() != null
+										&& plugin.getAugmentRuntimeManager() != null) {
+									mobAugmentExecutor.registerMobAugments(attackerUuid,
+											attackerAugments,
+											plugin.getAugmentManager(),
+											plugin.getAugmentRuntimeManager());
+								}
 							}
-						}
 
-						EntityStatMap attackerStats = commandBuffer.getComponent(attackerRef,
-								EntityStatMap.getComponentType());
-						EntityStatMap defenderStats = commandBuffer.getComponent(targetRef,
-								EntityStatMap.getComponentType());
-						float originalDamage = damage.getAmount();
-						var onHit = mobAugmentExecutor.applyOnHit(attackerUuid,
-								attackerRef,
-								targetRef,
-								commandBuffer,
-								attackerStats,
-								defenderStats,
-								originalDamage);
-						damage.setAmount(onHit.damage());
+							EntityStatMap attackerStats = EntityRefUtil.tryGetComponent(commandBuffer, attackerRef,
+									EntityStatMap.getComponentType());
+							EntityStatMap defenderStats = commandBuffer.getComponent(targetRef,
+									EntityStatMap.getComponentType());
+							float originalDamage = damage.getAmount();
+							var onHit = mobAugmentExecutor.applyOnHit(attackerUuid,
+									attackerRef,
+									targetRef,
+									commandBuffer,
+									attackerStats,
+									defenderStats,
+									originalDamage);
+							damage.setAmount(onHit.damage());
 
-						float appliedTrueDamage = applyMobTrueDamage(playerData,
-								targetRef,
-								attackerRef,
-								commandBuffer,
-								onHit.trueDamageBonus());
-						if (Math.abs(onHit.damage() - originalDamage) > 0.0001f || appliedTrueDamage > 0f) {
-							LOGGER.atInfo().log(
-									"MobOnHitAugments attacker=%d defender=%s damage=%.3f true=%.3f augments=%s",
-									attackerRef.getIndex(),
-									defenderPlayer.getUsername(),
-									onHit.damage(),
-									appliedTrueDamage,
-									attackerAugments);
+							float appliedTrueDamage = applyMobTrueDamage(playerData,
+									targetRef,
+									attackerRef,
+									commandBuffer,
+									onHit.trueDamageBonus());
+							if (Math.abs(onHit.damage() - originalDamage) > 0.0001f || appliedTrueDamage > 0f) {
+								LOGGER.atInfo().log(
+										"MobOnHitAugments attacker=%d defender=%s damage=%.3f true=%.3f augments=%s",
+										attackerRef.getIndex(),
+										defenderPlayer.getUsername(),
+										onHit.damage(),
+										appliedTrueDamage,
+										attackerAugments);
+							}
 						}
 					}
 				}

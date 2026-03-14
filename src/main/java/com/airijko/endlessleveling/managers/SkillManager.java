@@ -881,6 +881,16 @@ public class SkillManager {
         return perLevelValue * effectiveLevels;
     }
 
+    public void clearAugmentAttributeBonuses(PlayerData playerData) {
+        if (augmentRuntimeManager == null || playerData == null || playerData.getUuid() == null) {
+            return;
+        }
+        var runtime = augmentRuntimeManager.getRuntimeState(playerData.getUuid());
+        if (runtime != null) {
+            runtime.clearAttributeBonuses();
+        }
+    }
+
     /**
      * Apply all skill-based modifiers to an entity (health, stamina, etc.)
      */

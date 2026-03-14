@@ -3,11 +3,15 @@ $C = "../Common.ui";
 // 6 stacking augment icon slots, horizontally centered above the XP bar.
 // Each slot mirrors the same anatomy: background, gold max-stack outline,
 // ten category-icon variants (one shown at runtime), stack badge + count.
-// Positions (Left within 634px parent, 32px slots with 4px gaps, left-aligned):
-//   Slot 0: 0  Slot 1: 36  Slot 2: 72  Slot 3: 108  Slot 4: 144  Slot 5: 180
+// Positions (Left within 634px parent, 32px slots with 4px gaps):
+//   Left group:  Slot 0: 0   Slot 1: 36  Slot 2: 72
+//   Right group: Slot 3: 530 Slot 4: 566 Slot 5: 602
 
 Group #StackingAugmentsHud {
   Anchor: (Bottom: 145, Width: 634, Height: 32);
+
+  Group #StackingLeftGroup {
+    Anchor: (Left: 0, Top: 0, Width: 104, Height: 32);
 
   Group #StackingSlot0 {
     Anchor: (Left: 0, Top: 0, Width: 32, Height: 32);
@@ -129,8 +133,13 @@ Group #StackingAugmentsHud {
     }
   }
 
+  }
+
+  Group #StackingRightGroup {
+    Anchor: (Right: 0, Top: 0, Width: 104, Height: 32);
+
   Group #StackingSlot3 {
-    Anchor: (Left: 108, Top: 0, Width: 32, Height: 32);
+    Anchor: (Left: 0, Top: 0, Width: 32, Height: 32);
     Visible: false;
 
     Group #StackingSlot3Background {
@@ -170,7 +179,7 @@ Group #StackingAugmentsHud {
   }
 
   Group #StackingSlot4 {
-    Anchor: (Left: 144, Top: 0, Width: 32, Height: 32);
+    Anchor: (Left: 36, Top: 0, Width: 32, Height: 32);
     Visible: false;
 
     Group #StackingSlot4Background {
@@ -210,7 +219,7 @@ Group #StackingAugmentsHud {
   }
 
   Group #StackingSlot5 {
-    Anchor: (Left: 180, Top: 0, Width: 32, Height: 32);
+    Anchor: (Left: 72, Top: 0, Width: 32, Height: 32);
     Visible: false;
 
     Group #StackingSlot5Background {
@@ -247,5 +256,7 @@ Group #StackingAugmentsHud {
       Style: (FontSize: 12, Alignment: Center, TextColor: #ffffff, RenderBold: true);
       Text: "1";
     }
+  }
+
   }
 }

@@ -100,6 +100,7 @@ public class ProfileSelectSubCommand extends AbstractPlayerCommand {
         resyncPassives(playerData);
         playerDataManager.save(playerData);
 
+        skillManager.clearAugmentAttributeBonuses(playerData);
         boolean applied = skillManager.applyAllSkillModifiers(ref, store, playerData);
 
         if (!applied && playerRaceStatSystem == null) {

@@ -127,6 +127,10 @@ public final class AugmentRuntimeManager {
             });
         }
 
+        public void clearAttributeBonuses() {
+            attributeBonuses.clear();
+        }
+
         public void setAttributeBonus(SkillAttributeType type, String sourceId, double value, long expiresAtMillis) {
             if (type == null || sourceId == null) {
                 return;

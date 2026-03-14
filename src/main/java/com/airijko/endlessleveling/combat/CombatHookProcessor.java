@@ -23,6 +23,7 @@ import com.airijko.endlessleveling.passives.settings.RetaliationSettings;
 import com.airijko.endlessleveling.passives.util.PassiveContributionBlueprint;
 import com.airijko.endlessleveling.races.RacePassiveDefinition;
 import com.airijko.endlessleveling.util.ChatMessageTemplate;
+import com.airijko.endlessleveling.util.EntityRefUtil;
 import com.airijko.endlessleveling.util.PlayerChatNotifier;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
@@ -328,7 +329,8 @@ public final class CombatHookProcessor {
         if (!settings.enabled() || attackerRef == null || baseDamage <= 0f) {
             return 0f;
         }
-        EntityStatMap statMap = commandBuffer.getComponent(attackerRef, EntityStatMap.getComponentType());
+        EntityStatMap statMap = EntityRefUtil.tryGetComponent(commandBuffer, attackerRef,
+                EntityStatMap.getComponentType());
         if (statMap == null) {
             return 0f;
         }
@@ -489,7 +491,8 @@ public final class CombatHookProcessor {
             return;
         }
 
-        EntityStatMap statMap = commandBuffer.getComponent(attackerRef, EntityStatMap.getComponentType());
+        EntityStatMap statMap = EntityRefUtil.tryGetComponent(commandBuffer, attackerRef,
+                EntityStatMap.getComponentType());
         if (statMap == null) {
             return;
         }

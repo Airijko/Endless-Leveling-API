@@ -16,7 +16,7 @@ public enum PassiveCategory {
     ON_LOW_HP("Potion_Health_Lesser"),
     ON_CRIT("Weapon_Battleaxe_Mithril"),
     ON_KILL("Ingredient_Fire_Essence"),
-    ON_LIFESTEAL("Potion_Health_Greater");
+    LIFESTEAL("Weapon_Sword_Adamantite");
 
     private final String iconItemId;
 

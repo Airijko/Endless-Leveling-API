@@ -32,6 +32,9 @@ public final class AugmentHudOverlayController {
     private static final double EPSILON = 0.0001D;
     private static final double MIN_VISIBLE_BAR_PROGRESS = 1.0D / 634.0D;
     private static final String STACKING_ICON_FALLBACK = "Ingredient_Life_Essence";
+    private static final int STACKING_LEFT_SLOT_COUNT = 3;
+    private static final int STACKING_RIGHT_SLOT_COUNT = 3;
+    private static final int STACKING_TOTAL_SLOT_COUNT = STACKING_LEFT_SLOT_COUNT + STACKING_RIGHT_SLOT_COUNT;
     private static final List<String> DURATION_PRIORITY = List.of(
             BurnAugment.ID,
             FleetFootworkAugment.ID,
@@ -79,41 +82,78 @@ public final class AugmentHudOverlayController {
     private List<StackingHudState> resolveStackingHudStates(AugmentRuntimeManager.AugmentRuntimeState runtimeState,
             long now) {
         if (runtimeState == null || augmentManager == null) {
-            return List.of();
+            return emptyStackingLayout();
         }
 
         List<String> selectedAugmentIds = resolveSelectedAugmentIds(runtimeState);
         if (selectedAugmentIds.isEmpty()) {
-            return List.of();
+            return emptyStackingLayout();
         }
 
-        List<StackingHudState> result = new ArrayList<>();
+        List<StackingHudState> leftSlots = new ArrayList<>();
+        List<StackingHudState> rightSlots = new ArrayList<>();
+
         for (String augmentId : selectedAugmentIds) {
             AugmentDefinition definition = augmentManager.getAugment(augmentId);
-            if (definition == null || !hasStackingMechanic(definition)) {
+            if (definition == null) {
                 continue;
             }
 
-            AugmentRuntimeManager.AugmentState state = runtimeState.getState(augmentId);
-            if (state == null) {
+            if (leftSlots.size() < STACKING_LEFT_SLOT_COUNT && hasStackingMechanic(definition)) {
+                AugmentRuntimeManager.AugmentState state = runtimeState.getState(augmentId);
+                if (state != null) {
+                    int stacks = Math.max(0, state.getStacks());
+                    if (stacks > 0 && (state.getExpiresAt() <= 0L || state.getExpiresAt() > now)) {
+                        int maxStacks = resolveConfiguredMaxStacks(definition.getId(), definition.getPassives());
+                        boolean atMaxStacks = maxStacks > 0 && stacks >= maxStacks;
+                        leftSlots.add(new StackingHudState(
+                                true,
+                                stacks,
+                                atMaxStacks,
+                                resolveCategoryIconItemId(definition),
+                                true));
+                    }
+                }
+            }
+
+            if (rightSlots.size() >= STACKING_RIGHT_SLOT_COUNT) {
                 continue;
             }
 
-            int stacks = Math.max(0, state.getStacks());
-            if (stacks <= 0) {
+            AugmentRuntimeManager.CooldownState cooldownState = runtimeState.getCooldown(augmentId);
+            boolean tracksCooldown = cooldownState != null || hasCooldownMechanic(definition.getPassives());
+            if (!tracksCooldown) {
                 continue;
             }
 
-            if (state.getExpiresAt() > 0L && state.getExpiresAt() <= now) {
+            boolean available = cooldownState == null || cooldownState.getExpiresAt() <= now;
+            if (!available) {
                 continue;
             }
 
-            int maxStacks = resolveConfiguredMaxStacks(definition.getId(), definition.getPassives());
-            boolean atMaxStacks = maxStacks > 0 && stacks >= maxStacks;
-            result.add(new StackingHudState(true, stacks, atMaxStacks, resolveCategoryIconItemId(definition)));
+            rightSlots.add(new StackingHudState(
+                    true,
+                    0,
+                    false,
+                    resolveCategoryIconItemId(definition),
+                    false));
         }
 
-        return result;
+        List<StackingHudState> layout = new ArrayList<>(STACKING_TOTAL_SLOT_COUNT);
+        for (int i = 0; i < STACKING_LEFT_SLOT_COUNT; i++) {
+            layout.add(i < leftSlots.size() ? leftSlots.get(i) : StackingHudState.hidden());
+        }
+        int rightVisibleCount = Math.min(rightSlots.size(), STACKING_RIGHT_SLOT_COUNT);
+        int rightLeadingHidden = STACKING_RIGHT_SLOT_COUNT - rightVisibleCount;
+        for (int i = 0; i < STACKING_RIGHT_SLOT_COUNT; i++) {
+            if (i < rightLeadingHidden) {
+                layout.add(StackingHudState.hidden());
+                continue;
+            }
+            int rightIndex = i - rightLeadingHidden;
+            layout.add(rightIndex < rightVisibleCount ? rightSlots.get(rightIndex) : StackingHudState.hidden());
+        }
+        return layout;
     }
 
     private List<String> resolveSelectedAugmentIds(AugmentRuntimeManager.AugmentRuntimeState runtimeState) {
@@ -172,6 +212,36 @@ public final class AugmentHudOverlayController {
             }
         }
         return false;
+    }
+
+    private boolean hasCooldownMechanic(Object node) {
+        if (node instanceof Map<?, ?> map) {
+            for (Map.Entry<?, ?> entry : map.entrySet()) {
+                String key = entry.getKey() == null ? "" : entry.getKey().toString().toLowerCase(Locale.ROOT);
+                if (key.contains("cooldown") || hasCooldownMechanic(entry.getValue())) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        if (node instanceof Iterable<?> iterable) {
+            for (Object value : iterable) {
+                if (hasCooldownMechanic(value)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private List<StackingHudState> emptyStackingLayout() {
+        List<StackingHudState> slots = new ArrayList<>(STACKING_TOTAL_SLOT_COUNT);
+        for (int i = 0; i < STACKING_TOTAL_SLOT_COUNT; i++) {
+            slots.add(StackingHudState.hidden());
+        }
+        return slots;
     }
 
     private BarState resolveDurationBar(AugmentRuntimeManager.AugmentRuntimeState runtimeState, long now) {
@@ -613,9 +683,13 @@ public final class AugmentHudOverlayController {
     private record DurationCandidate(String label, double progress, long activeSince, long expiresAt) {
     }
 
-    public record StackingHudState(boolean active, int stacks, boolean atMaxStacks, String iconItemId) {
+    public record StackingHudState(boolean active,
+            int stacks,
+            boolean atMaxStacks,
+            String iconItemId,
+            boolean showStackCount) {
         private static StackingHudState hidden() {
-            return new StackingHudState(false, 0, false, STACKING_ICON_FALLBACK);
+            return new StackingHudState(false, 0, false, STACKING_ICON_FALLBACK, false);
         }
     }
 }

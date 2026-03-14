@@ -1,6 +1,7 @@
 package com.airijko.endlessleveling.listeners;
 
 import com.airijko.endlessleveling.managers.MobLevelingManager;
+import com.airijko.endlessleveling.util.EntityRefUtil;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
@@ -65,17 +66,18 @@ public class PlayerCombatPostApplyProbeSystem extends DamageEventSystem {
         }
 
         Ref<EntityStore> attackerRef = entitySource.getRef();
-        if (attackerRef == null) {
+        if (!EntityRefUtil.isUsable(attackerRef)) {
             return;
         }
 
-        PlayerRef attackerPlayer = commandBuffer.getComponent(attackerRef, PlayerRef.getComponentType());
+        PlayerRef attackerPlayer = EntityRefUtil.tryGetComponent(commandBuffer, attackerRef,
+                PlayerRef.getComponentType());
         if (attackerPlayer == null || !attackerPlayer.isValid()) {
             return;
         }
 
         Ref<EntityStore> targetRef = archetypeChunk.getReferenceTo(index);
-        PlayerRef targetPlayer = commandBuffer.getComponent(targetRef, PlayerRef.getComponentType());
+        PlayerRef targetPlayer = EntityRefUtil.tryGetComponent(commandBuffer, targetRef, PlayerRef.getComponentType());
         boolean targetIsPlayer = targetPlayer != null && targetPlayer.isValid();
         if (targetIsPlayer) {
             return;
@@ -83,7 +85,8 @@ public class PlayerCombatPostApplyProbeSystem extends DamageEventSystem {
 
         float hp = Float.NaN;
         float max = Float.NaN;
-        EntityStatMap targetStats = commandBuffer.getComponent(targetRef, EntityStatMap.getComponentType());
+        EntityStatMap targetStats = EntityRefUtil.tryGetComponent(commandBuffer, targetRef,
+                EntityStatMap.getComponentType());
         if (targetStats != null) {
             EntityStatValue targetHp = targetStats.get(DefaultEntityStatTypes.getHealth());
             if (targetHp != null) {
@@ -92,7 +95,8 @@ public class PlayerCombatPostApplyProbeSystem extends DamageEventSystem {
             }
         }
 
-        boolean dead = commandBuffer.getComponent(targetRef, DeathComponent.getComponentType()) != null;
+        boolean dead = EntityRefUtil.tryGetComponent(commandBuffer, targetRef,
+                DeathComponent.getComponentType()) != null;
         int targetId = targetRef.getIndex();
         long targetKey = resolveTrackingKey(targetRef, commandBuffer);
         int mobLevel = -1;
@@ -158,12 +162,11 @@ public class PlayerCombatPostApplyProbeSystem extends DamageEventSystem {
         }
 
         Store<EntityStore> store = ref.getStore();
-        UUIDComponent uuidComponent = commandBuffer != null
-                ? commandBuffer.getComponent(ref, UUIDComponent.getComponentType())
-                : null;
+        UUIDComponent uuidComponent = EntityRefUtil.tryGetComponent(commandBuffer, ref,
+                UUIDComponent.getComponentType());
 
         if (uuidComponent == null && store != null) {
-            uuidComponent = store.getComponent(ref, UUIDComponent.getComponentType());
+            uuidComponent = EntityRefUtil.tryGetComponent(store, ref, UUIDComponent.getComponentType());
         }
 
         if (uuidComponent != null) {

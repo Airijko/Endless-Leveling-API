@@ -191,13 +191,14 @@ public class PlayerHud extends CustomUIHud {
     private void applyStackingSlot(@Nonnull UICommandBuilder uiCommandBuilder, int slotIndex,
             AugmentHudOverlayController.StackingHudState slot) {
         boolean active = slot != null && slot.active();
+        boolean showStackCount = active && slot.showStackCount();
         String prefix = "#StackingSlot" + slotIndex;
         uiCommandBuilder.set(prefix + ".Visible", active);
-        uiCommandBuilder.set(prefix + "StackBadge.Visible", active);
-        uiCommandBuilder.set(prefix + "StackCount.Visible", active);
+        uiCommandBuilder.set(prefix + "StackBadge.Visible", showStackCount);
+        uiCommandBuilder.set(prefix + "StackCount.Visible", showStackCount);
         uiCommandBuilder.set(prefix + "MaxOutline.Visible", active && slot.atMaxStacks());
         uiCommandBuilder.set(prefix + "StackCount.Text",
-                active ? Integer.toString(Math.max(0, slot.stacks())) : "");
+                showStackCount ? Integer.toString(Math.max(0, slot.stacks())) : "");
         setStackingIconVariant(uiCommandBuilder, slotIndex, active ? slot.iconItemId() : null);
     }
 

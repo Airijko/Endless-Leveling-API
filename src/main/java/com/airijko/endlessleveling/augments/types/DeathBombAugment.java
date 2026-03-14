@@ -9,6 +9,7 @@ import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
 import com.airijko.endlessleveling.augments.YamlAugment;
 import com.airijko.endlessleveling.data.PlayerData;
+import com.airijko.endlessleveling.util.EntityRefUtil;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.math.vector.Vector3d;
@@ -261,9 +262,16 @@ public final class DeathBombAugment extends YamlAugment
         }
 
         if (commandBuffer.getComponent(targetRef, DeathComponent.getComponentType()) == null) {
-            Damage damage = sourceRef != null
-                    ? new Damage(new Damage.EntitySource(sourceRef), DamageCause.PHYSICAL, Float.MAX_VALUE)
-                    : new Damage(Damage.NULL_SOURCE, DamageCause.PHYSICAL, Float.MAX_VALUE);
+            Damage damage;
+            if (EntityRefUtil.isUsable(sourceRef)) {
+                try {
+                    damage = new Damage(new Damage.EntitySource(sourceRef), DamageCause.PHYSICAL, Float.MAX_VALUE);
+                } catch (IllegalStateException ignored) {
+                    damage = new Damage(Damage.NULL_SOURCE, DamageCause.PHYSICAL, Float.MAX_VALUE);
+                }
+            } else {
+                damage = new Damage(Damage.NULL_SOURCE, DamageCause.PHYSICAL, Float.MAX_VALUE);
+            }
             DeathComponent.tryAddComponent(commandBuffer, targetRef, damage);
         }
 

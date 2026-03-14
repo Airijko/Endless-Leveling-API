@@ -9,6 +9,7 @@ import com.airijko.endlessleveling.managers.SkillManager;
 import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveManager;
 import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveSnapshot;
 import com.airijko.endlessleveling.passives.settings.SwiftnessSettings;
+import com.airijko.endlessleveling.util.EntityRefUtil;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
@@ -64,11 +65,11 @@ public class SwiftnessKillSystem extends DeathSystems.OnDeathSystem {
         }
 
         Ref<EntityStore> attackerRef = entitySource.getRef();
-        if (attackerRef == null || !attackerRef.isValid()) {
+        if (!EntityRefUtil.isUsable(attackerRef)) {
             return;
         }
 
-        PlayerRef attackerPlayer = store.getComponent(attackerRef, PlayerRef.getComponentType());
+        PlayerRef attackerPlayer = EntityRefUtil.tryGetComponent(store, attackerRef, PlayerRef.getComponentType());
         if (attackerPlayer == null || !attackerPlayer.isValid()) {
             return;
         }

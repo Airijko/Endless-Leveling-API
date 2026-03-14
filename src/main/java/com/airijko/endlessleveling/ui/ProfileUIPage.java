@@ -1332,6 +1332,7 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         if (skillManager == null) {
             return;
         }
+        skillManager.clearAugmentAttributeBonuses(playerData);
         boolean applied = skillManager.applyAllSkillModifiers(ref, store, playerData);
         if (!applied && playerRaceStatSystem != null) {
             playerRaceStatSystem.scheduleRetry(playerData.getUuid());

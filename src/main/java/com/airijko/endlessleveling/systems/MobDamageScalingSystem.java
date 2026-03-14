@@ -1,6 +1,7 @@
 package com.airijko.endlessleveling.systems;
 
 import com.airijko.endlessleveling.managers.MobLevelingManager;
+import com.airijko.endlessleveling.util.EntityRefUtil;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
@@ -53,11 +54,17 @@ public class MobDamageScalingSystem extends DamageEventSystem {
         if (damage.getSource() instanceof Damage.EntitySource entitySource) {
             Ref<EntityStore> attackerRef = entitySource.getRef();
             Ref<EntityStore> targetRef = archetypeChunk.getReferenceTo(index);
-            PlayerRef attackerPlayer = commandBuffer.getComponent(attackerRef, PlayerRef.getComponentType());
+            if (!EntityRefUtil.isUsable(attackerRef) || !EntityRefUtil.isUsable(targetRef)) {
+                return;
+            }
+
+            PlayerRef attackerPlayer = EntityRefUtil.tryGetComponent(commandBuffer, attackerRef,
+                    PlayerRef.getComponentType());
             if (attackerPlayer == null || !attackerPlayer.isValid()) {
                 // Treat as mob source
                 int mobLevel = levelingManager.resolveMobLevel(attackerRef, commandBuffer);
-                PlayerRef defenderPlayer = commandBuffer.getComponent(targetRef, PlayerRef.getComponentType());
+                PlayerRef defenderPlayer = EntityRefUtil.tryGetComponent(commandBuffer, targetRef,
+                        PlayerRef.getComponentType());
 
                 double mult;
                 if (defenderPlayer != null && defenderPlayer.isValid()) {

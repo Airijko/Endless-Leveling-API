@@ -16,6 +16,7 @@ import com.airijko.endlessleveling.managers.SkillManager;
 import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveManager;
 import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveSnapshot;
 import com.airijko.endlessleveling.races.RacePassiveDefinition;
+import com.airijko.endlessleveling.util.EntityRefUtil;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
@@ -112,7 +113,12 @@ public class PlayerCombatListener extends DamageEventSystem {
 
         Ref<EntityStore> attackerRef = entitySource.getRef();
         Ref<EntityStore> targetRef = archetypeChunk.getReferenceTo(index);
-        PlayerRef attackerPlayer = commandBuffer.getComponent(attackerRef, PlayerRef.getComponentType());
+        if (!EntityRefUtil.isUsable(attackerRef) || !EntityRefUtil.isUsable(targetRef)) {
+            return;
+        }
+
+        PlayerRef attackerPlayer = EntityRefUtil.tryGetComponent(commandBuffer, attackerRef,
+                PlayerRef.getComponentType());
         if (attackerPlayer == null || !attackerPlayer.isValid()) {
             return;
         }
@@ -129,13 +135,15 @@ public class PlayerCombatListener extends DamageEventSystem {
                 ? archetypePassiveManager.getSnapshot(playerData)
                 : ArchetypePassiveSnapshot.empty();
 
-        Player player = commandBuffer.getComponent(attackerRef, Player.getComponentType());
+        Player player = EntityRefUtil.tryGetComponent(commandBuffer, attackerRef, Player.getComponentType());
         ItemStack weapon = player != null && player.getInventory() != null
                 ? player.getInventory().getItemInHand()
                 : null;
 
-        EntityStatMap attackerStats = commandBuffer.getComponent(attackerRef, EntityStatMap.getComponentType());
-        EntityStatMap targetStats = commandBuffer.getComponent(targetRef, EntityStatMap.getComponentType());
+        EntityStatMap attackerStats = EntityRefUtil.tryGetComponent(commandBuffer, attackerRef,
+                EntityStatMap.getComponentType());
+        EntityStatMap targetStats = EntityRefUtil.tryGetComponent(commandBuffer, targetRef,
+                EntityStatMap.getComponentType());
 
         boolean bypassOutgoingAugmentMath = shouldBypassOutgoingAugmentMath(damage);
         CombatHookProcessor.OutgoingResult result = bypassOutgoingAugmentMath
@@ -159,7 +167,7 @@ public class PlayerCombatListener extends DamageEventSystem {
         int mobLevel = -1;
         int playerLevel = Math.max(1, playerData.getLevel());
         double reduction = 0.0D;
-        PlayerRef targetPlayer = commandBuffer.getComponent(targetRef, PlayerRef.getComponentType());
+        PlayerRef targetPlayer = EntityRefUtil.tryGetComponent(commandBuffer, targetRef, PlayerRef.getComponentType());
         boolean targetIsPlayer = targetPlayer != null && targetPlayer.isValid();
         long now = System.currentTimeMillis();
         TrueEdgeSettings trueEdgeSettings = resolveTrueEdgeSettings(archetypeSnapshot);
@@ -359,19 +367,25 @@ public class PlayerCombatListener extends DamageEventSystem {
     }
 
     public static Damage createAugmentDotDamage(Ref<EntityStore> sourceRef, float amount) {
-        Damage dotDamage = sourceRef != null
-                ? new Damage(new Damage.EntitySource(sourceRef), DamageCause.PHYSICAL, amount)
-                : new Damage(Damage.NULL_SOURCE, DamageCause.PHYSICAL, amount);
+        Damage dotDamage = createPhysicalDamage(sourceRef, amount);
         dotDamage.putMetaObject(AUGMENT_DOT_DAMAGE, Boolean.TRUE);
         return dotDamage;
     }
 
     public static Damage createAugmentProcDamage(Ref<EntityStore> sourceRef, float amount) {
-        Damage procDamage = sourceRef != null
-                ? new Damage(new Damage.EntitySource(sourceRef), DamageCause.PHYSICAL, amount)
-                : new Damage(Damage.NULL_SOURCE, DamageCause.PHYSICAL, amount);
+        Damage procDamage = createPhysicalDamage(sourceRef, amount);
         procDamage.putMetaObject(AUGMENT_PROC_DAMAGE, Boolean.TRUE);
         return procDamage;
+    }
+
+    private static Damage createPhysicalDamage(Ref<EntityStore> sourceRef, float amount) {
+        if (EntityRefUtil.isUsable(sourceRef)) {
+            try {
+                return new Damage(new Damage.EntitySource(sourceRef), DamageCause.PHYSICAL, amount);
+            } catch (IllegalStateException ignored) {
+            }
+        }
+        return new Damage(Damage.NULL_SOURCE, DamageCause.PHYSICAL, amount);
     }
 
     public static boolean isAugmentDotDamage(Damage damage) {
@@ -564,9 +578,7 @@ public class PlayerCombatListener extends DamageEventSystem {
         }
 
         if (commandBuffer.getComponent(targetRef, DeathComponent.getComponentType()) == null) {
-            Damage killDamage = sourceRef != null
-                    ? new Damage(new Damage.EntitySource(sourceRef), DamageCause.PHYSICAL, Float.MAX_VALUE)
-                    : new Damage(Damage.NULL_SOURCE, DamageCause.PHYSICAL, Float.MAX_VALUE);
+            Damage killDamage = createPhysicalDamage(sourceRef, Float.MAX_VALUE);
             DeathComponent.tryAddComponent(commandBuffer, targetRef, killDamage);
         }
 

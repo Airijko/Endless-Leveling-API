@@ -13,6 +13,7 @@ import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveManager;
 import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveSnapshot;
 import com.airijko.endlessleveling.enums.ArchetypePassiveType;
+import com.airijko.endlessleveling.util.EntityRefUtil;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
@@ -76,8 +77,8 @@ public class XpEventListener extends DeathSystems.OnDeathSystem {
 
         if (deathInfo.getSource() instanceof Damage.EntitySource entitySource) {
             var attackerRef = entitySource.getRef();
-            if (attackerRef != null && attackerRef.isValid()) {
-                PlayerRef player = store.getComponent(attackerRef, PlayerRef.getComponentType());
+            if (EntityRefUtil.isUsable(attackerRef)) {
+                PlayerRef player = EntityRefUtil.tryGetComponent(store, attackerRef, PlayerRef.getComponentType());
                 if (player != null && player.isValid()) {
                     playerUuid = player.getUuid();
                 }

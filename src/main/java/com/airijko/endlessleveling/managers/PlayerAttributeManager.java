@@ -27,6 +27,16 @@ import java.util.Map;
 public class PlayerAttributeManager {
     // Key for suppressing vanilla mana
     private static final String SUPPRESS_VANILLA_MANA_KEY = "EL_SUPPRESS_VANILLA_MANA";
+    private static final String LEGACY_RACE_BASE_INTELLIGENCE_KEY = "EL_RACE_BASE_INTELLIGENCE";
+    private static final String LEGACY_SKILL_BONUS_INTELLIGENCE_KEY = "SKILL_BONUS_INTELLIGENCE";
+    private static final String LEGACY_RACE_BASE_MANA_KEY = "EL_RACE_BASE_MANA";
+    private static final String LEGACY_SKILL_BONUS_MANA_KEY = "SKILL_BONUS_MANA";
+    private static final String LEGACY_SUPPRESS_VANILLA_INTELLIGENCE_KEY = "EL_SUPPRESS_VANILLA_INTELLIGENCE";
+    private static final String LEGACY_SUPPRESS_VANILLA_FLOW_KEY = "EL_SUPPRESS_VANILLA_FLOW";
+    private static final String LEGACY_RACE_BASE_ENDURANCE_KEY = "EL_RACE_BASE_ENDURANCE";
+    private static final String LEGACY_SKILL_BONUS_ENDURANCE_KEY = "SKILL_BONUS_ENDURANCE";
+    private static final String LEGACY_RACE_BASE_VITALITY_KEY = "EL_RACE_BASE_VITALITY";
+    private static final String LEGACY_SKILL_BONUS_VITALITY_KEY = "SKILL_BONUS_VITALITY";
     private static final double DEFAULT_GLASS_CANNON_HEALTH_PENALTY = 0.20D;
     private static final double MAX_HEALTH_PENALTY = 0.95D;
 
@@ -116,6 +126,7 @@ public class PlayerAttributeManager {
         float previousMax = current.getMax();
         float previousValue = current.get();
 
+        cleanupLegacyAttributeModifiers(slot, statMap);
         statMap.removeModifier(slot.statIndex(), slot.raceModifierKey());
         statMap.removeModifier(slot.statIndex(), slot.skillModifierKey());
 
@@ -151,6 +162,25 @@ public class PlayerAttributeManager {
         statMap.update();
 
         return true;
+    }
+
+    private void cleanupLegacyAttributeModifiers(@Nonnull AttributeSlot slot, @Nonnull EntityStatMap statMap) {
+        if (slot == AttributeSlot.FLOW) {
+            statMap.removeModifier(slot.statIndex(), LEGACY_RACE_BASE_INTELLIGENCE_KEY);
+            statMap.removeModifier(slot.statIndex(), LEGACY_SKILL_BONUS_INTELLIGENCE_KEY);
+            statMap.removeModifier(slot.statIndex(), LEGACY_RACE_BASE_MANA_KEY);
+            statMap.removeModifier(slot.statIndex(), LEGACY_SKILL_BONUS_MANA_KEY);
+            statMap.removeModifier(slot.statIndex(), LEGACY_SUPPRESS_VANILLA_INTELLIGENCE_KEY);
+            statMap.removeModifier(slot.statIndex(), LEGACY_SUPPRESS_VANILLA_FLOW_KEY);
+            return;
+        }
+
+        if (slot == AttributeSlot.STAMINA) {
+            statMap.removeModifier(slot.statIndex(), LEGACY_RACE_BASE_ENDURANCE_KEY);
+            statMap.removeModifier(slot.statIndex(), LEGACY_SKILL_BONUS_ENDURANCE_KEY);
+            statMap.removeModifier(slot.statIndex(), LEGACY_RACE_BASE_VITALITY_KEY);
+            statMap.removeModifier(slot.statIndex(), LEGACY_SKILL_BONUS_VITALITY_KEY);
+        }
     }
 
     public AttributeComputation computeContribution(@Nonnull AttributeSlot slot,
