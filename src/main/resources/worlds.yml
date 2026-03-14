@@ -156,9 +156,9 @@ World_Overrides:
         Per_Level: 0.05
       Defense:
         Enabled: true
-        At_Negative_Max_Difference: 0.0
+        At_Negative_Max_Difference: -0.2
         At_Positive_Max_Difference: 0.8
-        Below_Negative_Max_Difference: 0.0
+        Below_Negative_Max_Difference: -0.4
         Above_Positive_Max_Difference: 0.9
     Mob_Scaling:
       # Set Enabled to false to disable damage scaling past the configured level-difference threshold.

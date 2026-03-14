@@ -1075,13 +1075,13 @@ public class MobLevelingManager {
         Object enabledRaw = resolveCaseInsensitive(scalingMap, "Enabled");
         boolean enabled = parseBooleanOrDefault(enabledRaw, true);
 
-        Double atNegativeMaxDifference = parseNonNegativeDouble(
+        Double atNegativeMaxDifference = parseFiniteDouble(
                 resolveCaseInsensitive(scalingMap, "At_Negative_Max_Difference"));
-        Double atPositiveMaxDifference = parseNonNegativeDouble(
+        Double atPositiveMaxDifference = parseFiniteDouble(
                 resolveCaseInsensitive(scalingMap, "At_Positive_Max_Difference"));
-        Double belowNegativeMaxDifference = parseNonNegativeDouble(
+        Double belowNegativeMaxDifference = parseFiniteDouble(
                 resolveCaseInsensitive(scalingMap, "Below_Negative_Max_Difference"));
-        Double abovePositiveMaxDifference = parseNonNegativeDouble(
+        Double abovePositiveMaxDifference = parseFiniteDouble(
                 resolveCaseInsensitive(scalingMap, "Above_Positive_Max_Difference"));
 
         boolean hasAnyValue = enabledRaw != null
@@ -1130,7 +1130,7 @@ public class MobLevelingManager {
             String topLevelLegacyModifierKey,
             String statKey) {
         Object raw = resolveMobOverrideStatValue(mapValue, topLevelMultiplierKey, topLevelLegacyModifierKey, statKey);
-        Double parsed = parseNonNegativeDouble(raw);
+        Double parsed = parseFiniteDouble(raw);
         if (parsed == null) {
             return null;
         }
@@ -1223,6 +1223,29 @@ public class MobLevelingManager {
                     return null;
                 }
                 return value;
+            } catch (NumberFormatException ignored) {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    private Double parseFiniteDouble(Object raw) {
+        if (raw == null) {
+            return null;
+        }
+        if (raw instanceof Number number) {
+            double value = number.doubleValue();
+            return Double.isFinite(value) ? value : null;
+        }
+        if (raw instanceof String text) {
+            String trimmed = text.trim();
+            if (trimmed.isEmpty()) {
+                return null;
+            }
+            try {
+                double value = Double.parseDouble(trimmed);
+                return Double.isFinite(value) ? value : null;
             } catch (NumberFormatException ignored) {
                 return null;
             }
@@ -3311,7 +3334,7 @@ public class MobLevelingManager {
         if (Double.isNaN(value) || Double.isInfinite(value)) {
             return 0.0D;
         }
-        return Math.max(0.0D, Math.min(1.0D, value));
+        return Math.max(-1.0D, Math.min(1.0D, value));
     }
 
     private double clampNonNegativeMultiplier(double value) {

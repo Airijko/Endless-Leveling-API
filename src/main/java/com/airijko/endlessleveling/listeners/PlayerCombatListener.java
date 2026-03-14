@@ -197,7 +197,7 @@ public class PlayerCombatListener extends DamageEventSystem {
                         commandBuffer,
                         mobLevel,
                         playerLevel);
-                if (reduction > 0.0D) {
+                if (reduction != 0.0D) {
                     adjusted = (float) (adjusted * (1.0D - reduction));
                 }
             }
@@ -537,7 +537,7 @@ public class PlayerCombatListener extends DamageEventSystem {
         }
 
         if (!targetIsPlayer) {
-            return clamp01(mobReduction);
+            return clampDefenseReduction(mobReduction);
         }
 
         PlayerRef targetPlayer = commandBuffer.getComponent(targetRef, PlayerRef.getComponentType());
@@ -548,7 +548,7 @@ public class PlayerCombatListener extends DamageEventSystem {
         PlayerData targetData = playerDataManager.get(targetPlayer.getUuid());
         int targetLevel = targetData == null ? Math.max(1, attackerLevel) : Math.max(1, targetData.getLevel());
         int levelDifference = targetLevel - Math.max(1, attackerLevel);
-        return clamp01(mobLevelingManager.getMobDefenseReductionForLevelDifference(levelDifference));
+        return clampDefenseReduction(mobLevelingManager.getMobDefenseReductionForLevelDifference(levelDifference));
     }
 
     private double applyLevelDifferenceReductionToTrueDamage(double rawTrueDamage,
@@ -608,11 +608,11 @@ public class PlayerCombatListener extends DamageEventSystem {
         return value > 1.0D ? value / 100.0D : value;
     }
 
-    private double clamp01(double value) {
+    private double clampDefenseReduction(double value) {
         if (Double.isNaN(value) || Double.isInfinite(value)) {
             return 0.0D;
         }
-        return Math.max(0.0D, Math.min(1.0D, value));
+        return Math.max(-1.0D, Math.min(1.0D, value));
     }
 
     private record TrueEdgeSettings(double flatTrueDamage, double trueDamagePercent) {
