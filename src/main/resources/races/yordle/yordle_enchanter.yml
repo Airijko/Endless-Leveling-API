@@ -13,8 +13,9 @@ ascension:
   requirements:
     required_prestige: 5
     min_skill_levels:
-      flow: 250
-      stamina: 250
+      flow: 200
+      stamina: 200
+      haste: 100
     max_skill_levels: {}
     required_augments: []
   next_paths:

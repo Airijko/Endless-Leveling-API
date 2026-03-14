@@ -14,7 +14,8 @@ ascension:
     required_prestige: 5
     min_skill_levels:
       flow: 250
-      life_force: 250
+      life_force: 100
+      stamina: 150
     max_skill_levels: {}
     required_augments: []
   next_paths:
