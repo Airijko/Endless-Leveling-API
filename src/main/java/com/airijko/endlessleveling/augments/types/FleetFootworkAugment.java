@@ -13,6 +13,7 @@ import java.util.Map;
 public final class FleetFootworkAugment extends YamlAugment implements AugmentHooks.OnHitAugment {
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
     public static final String ID = "fleet_footwork";
+    public static final String BUFF_WINDOW_STATE_ID = ID + "_buff_window";
 
     private final long cooldownMillis;
     private final double healPercentOfDamage;
@@ -27,7 +28,7 @@ public final class FleetFootworkAugment extends YamlAugment implements AugmentHo
         Map<String, Object> movementSpeed = AugmentValueReader.getMap(buffs, "movement_speed");
 
         this.cooldownMillis = AugmentUtils
-                .secondsToMillis(AugmentValueReader.getDouble(empoweredHit, "cooldown", 0.0D));
+                .secondsToMillis(AugmentValueReader.getDouble(empoweredHit, "cooldown", 8.0D));
         this.healPercentOfDamage = Math.max(0.0D,
                 AugmentValueReader.getDouble(empoweredHit, "heal_percent_of_damage", 0.0D));
         this.movementSpeedBonus = AugmentValueReader.getDouble(movementSpeed, "value", 0.0D);
@@ -37,25 +38,32 @@ public final class FleetFootworkAugment extends YamlAugment implements AugmentHo
 
     @Override
     public float onHit(AugmentHooks.HitContext context) {
-        if (context == null) {
+        if (context == null || context.getRuntimeState() == null) {
             return 0f;
         }
-        if (!AugmentUtils.consumeCooldown(context.getRuntimeState(), ID, getName(), cooldownMillis)) {
+
+        long now = System.currentTimeMillis();
+        var runtime = context.getRuntimeState();
+        var cooldown = runtime.getCooldown(ID);
+        if (cooldown != null && cooldown.getExpiresAt() > now) {
             return context.getDamage();
+        }
+
+        if (cooldownMillis > 0L) {
+            runtime.setCooldown(ID, getName(), now + cooldownMillis);
         }
 
         if (healPercentOfDamage > 0.0D) {
             AugmentUtils.heal(context.getAttackerStats(), context.getDamage() * healPercentOfDamage);
         }
 
-        if (movementSpeedBonus != 0.0D && context.getRuntimeState() != null) {
-            long now = System.currentTimeMillis();
-            AugmentUtils.setAttributeBonus(context.getRuntimeState(),
+        if (movementSpeedBonus != 0.0D) {
+            AugmentUtils.setAttributeBonus(runtime,
                     ID + "_haste",
                     SkillAttributeType.HASTE,
                     movementSpeedBonus * 100.0D,
                     movementDurationMillis);
-            var state = context.getRuntimeState().getState(ID);
+            var state = runtime.getState(BUFF_WINDOW_STATE_ID);
             state.setStacks(1);
             state.setExpiresAt(movementDurationMillis > 0L ? now + movementDurationMillis : 0L);
             state.setLastProc(now);

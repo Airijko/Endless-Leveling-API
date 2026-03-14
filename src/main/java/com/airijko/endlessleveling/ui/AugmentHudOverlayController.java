@@ -32,7 +32,6 @@ public final class AugmentHudOverlayController {
     private static final double MIN_VISIBLE_BAR_PROGRESS = 1.0D / 634.0D;
     private static final List<String> DURATION_PRIORITY = List.of(
             BurnAugment.ID,
-            EndurePainAugment.ID,
             FleetFootworkAugment.ID,
             FortressAugment.ID,
             FrozenDomainAugment.ID,
@@ -41,6 +40,7 @@ public final class AugmentHudOverlayController {
     private static final List<String> SHIELD_PRIORITY = List.of(
             ProtectiveBubbleAugment.ID,
             FortressAugment.ID,
+            EndurePainAugment.ID,
             OverhealAugment.ID);
 
     private final AugmentManager augmentManager;
@@ -79,10 +79,8 @@ public final class AugmentHudOverlayController {
         for (String augmentId : DURATION_PRIORITY) {
             DurationCandidate candidate = switch (augmentId) {
                 case BurnAugment.ID -> resolveSimpleDuration(runtimeState, BurnAugment.ID, now, false, false);
-                case EndurePainAugment.ID ->
-                    resolveSimpleDuration(runtimeState, EndurePainAugment.ID, now, true, false);
                 case FleetFootworkAugment.ID -> resolveSimpleDuration(runtimeState,
-                        FleetFootworkAugment.ID,
+                        FleetFootworkAugment.BUFF_WINDOW_STATE_ID,
                         now,
                         false,
                         false);
@@ -136,6 +134,7 @@ public final class AugmentHudOverlayController {
             BarState candidate = switch (augmentId) {
                 case ProtectiveBubbleAugment.ID -> resolveProtectiveBubbleBar(runtimeState, now);
                 case FortressAugment.ID -> resolveFortressShieldBar(runtimeState, now);
+                case EndurePainAugment.ID -> resolveEndurePainShieldBar(runtimeState, statMap, now);
                 case OverhealAugment.ID -> resolveOverhealShieldBar(runtimeState, statMap, now);
                 default -> BarState.hidden();
             };
@@ -203,6 +202,40 @@ public final class AugmentHudOverlayController {
         }
 
         return new BarState("Overheal Shield", progress, true);
+    }
+
+    private BarState resolveEndurePainShieldBar(AugmentRuntimeManager.AugmentRuntimeState runtimeState,
+            EntityStatMap statMap,
+            long now) {
+        if (!isAugmentSelected(runtimeState, EndurePainAugment.ID)) {
+            return BarState.hidden();
+        }
+
+        AugmentRuntimeManager.AugmentState state = runtimeState.getState(EndurePainAugment.ID);
+        if (state == null || state.getExpiresAt() <= now || state.getStoredValue() <= EPSILON) {
+            return BarState.hidden();
+        }
+
+        double progress = 0.0D;
+        float maxHealth = statMap == null ? 0.0F
+                : com.airijko.endlessleveling.augments.AugmentUtils.getMaxHealth(statMap);
+        if (maxHealth > 0.0F) {
+            progress = clamp01(state.getStoredValue() / maxHealth);
+        }
+
+        if (progress <= 0.0D) {
+            long totalDuration = resolveConfiguredDurationMillis(EndurePainAugment.ID);
+            if (totalDuration > 0L) {
+                long remaining = Math.max(0L, state.getExpiresAt() - now);
+                progress = clamp01(remaining / (double) totalDuration);
+            }
+        }
+
+        if (progress > 0.0D && !isVisiblyFilled(progress)) {
+            progress = MIN_VISIBLE_BAR_PROGRESS * 1.1D;
+        }
+
+        return new BarState(resolveDisplayName(EndurePainAugment.ID), progress, true);
     }
 
     private DurationCandidate resolveSimpleDuration(AugmentRuntimeManager.AugmentRuntimeState runtimeState,
