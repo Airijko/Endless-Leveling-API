@@ -19,7 +19,7 @@ import java.util.UUID;
  */
 public class HudRefreshSystem extends TickingSystem<EntityStore> {
 
-    private static final float REFRESH_INTERVAL_SECONDS = 0.5f; // ~10 ticks at 20 TPS
+    private static final float REFRESH_INTERVAL_SECONDS = 0.1f;
     private static final Query<EntityStore> PLAYER_QUERY = Query.any();
     private float timeSinceLastRefresh = 0f;
 

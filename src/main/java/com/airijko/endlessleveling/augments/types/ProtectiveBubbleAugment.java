@@ -53,6 +53,11 @@ public final class ProtectiveBubbleAugment extends YamlAugment implements Augmen
             return 0f;
         }
 
+        if (state.getStacks() > 0 && state.getExpiresAt() <= now) {
+            state.setStacks(0);
+            state.setExpiresAt(0L);
+        }
+
         if (!AugmentUtils.consumeCooldown(runtime, ID, getName(), cooldownMillis)) {
             return incoming;
         }
@@ -61,8 +66,6 @@ public final class ProtectiveBubbleAugment extends YamlAugment implements Augmen
 
         state.setStacks(1);
         state.setExpiresAt(now + Math.max(1L, immunityWindowMillis));
-        state.setStacks(0);
-        state.setExpiresAt(0L);
         return 0f;
     }
 

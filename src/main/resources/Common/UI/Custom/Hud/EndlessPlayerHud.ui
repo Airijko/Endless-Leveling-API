@@ -4,16 +4,61 @@ $Hotbar = "Hotbar.ui";
 
 Group #EndlessPlayerHud {
   LayoutMode: Bottom;
-  Anchor: (Bottom: 135, Width: 634, Height: 24);
+  Anchor: (Bottom: 135, Width: 634, Height: 66);
+
+  Group #ActiveAugmentPanel {
+    LayoutMode: Top;
+    Anchor: (Bottom: 48, Width: 634, Height: 16);
+    Visible: false;
+
+    Label #ActiveAugmentName {
+      Anchor: (Height: 8, Left: 0, Right: 0);
+      Style: (FontSize: 8, Alignment: Center, TextColor: #dbe4e7, RenderBold: true);
+      Text: "";
+    }
+
+    Group #ActiveAugmentBar {
+      Anchor: (Top: 1, Width: 634, Height: 8);
+      Background: "Endless_DurationBarBackground.png";
+
+      ProgressBar #ActiveAugmentProgress {
+        Anchor: (Width: 634, Height: 8);
+        BarTexturePath: "Endless_DurationBarFill.png";
+      }
+    }
+  }
+
+  Group #ShieldStatusPanel {
+    LayoutMode: Top;
+    Anchor: (Bottom: 30, Width: 634, Height: 16);
+    Visible: false;
+
+    Label #ShieldStatusName {
+      Anchor: (Height: 8, Left: 0, Right: 0);
+      Style: (FontSize: 8, Alignment: Center, TextColor: #dbe4e7, RenderBold: true);
+      Text: "";
+    }
+
+    Group #ShieldStatusBar {
+      Anchor: (Top: 1, Width: 634, Height: 8);
+      Background: "Endless_DurationBarBackground.png";
+
+      ProgressBar #ShieldStatusProgress {
+        Anchor: (Width: 634, Height: 8);
+        BarTexturePath: "Endless_ShieldFill.png";
+      }
+    }
+  }
 
   Label #Level {
-    Anchor: (Left: 0, Width: 4, Height: 18, Right: 4);
+    Anchor: (Bottom: 24, Left: 0, Right: 0, Height: 18);
     Style: (FontSize: 12, Alignment: Center);
     Text: "Level";
   }
 
   Group #Content {
     LayoutMode: Middle;
+    Anchor: (Bottom: 0, Width: 634, Height: 24);
 
     Group #XpBar {
       Anchor: (Left: 0, Width: 634, Height: 24);

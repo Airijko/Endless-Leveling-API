@@ -8,6 +8,8 @@ import com.airijko.endlessleveling.managers.MobLevelingManager;
 import com.airijko.endlessleveling.managers.PlayerDataManager;
 import com.airijko.endlessleveling.managers.ClassManager;
 import com.airijko.endlessleveling.managers.RaceManager;
+import com.airijko.endlessleveling.augments.AugmentManager;
+import com.airijko.endlessleveling.augments.AugmentRuntimeManager;
 import com.airijko.endlessleveling.classes.CharacterClassDefinition;
 import com.airijko.endlessleveling.races.RaceDefinition;
 import com.airijko.endlessleveling.util.Lang;
@@ -50,6 +52,7 @@ public class PlayerHud extends CustomUIHud {
     private final MobLevelingManager mobLevelingManager;
     private final RaceManager raceManager;
     private final ClassManager classManager;
+    private final AugmentHudOverlayController augmentHudOverlayController;
     private final PlayerRef targetPlayerRef;
     private final java.util.concurrent.atomic.AtomicBoolean built = new java.util.concurrent.atomic.AtomicBoolean(
             false);
@@ -61,6 +64,9 @@ public class PlayerHud extends CustomUIHud {
         this.mobLevelingManager = EndlessLeveling.getInstance().getMobLevelingManager();
         this.raceManager = EndlessLeveling.getInstance().getRaceManager();
         this.classManager = EndlessLeveling.getInstance().getClassManager();
+        AugmentManager augmentManager = EndlessLeveling.getInstance().getAugmentManager();
+        AugmentRuntimeManager augmentRuntimeManager = EndlessLeveling.getInstance().getAugmentRuntimeManager();
+        this.augmentHudOverlayController = new AugmentHudOverlayController(augmentManager, augmentRuntimeManager);
         this.targetPlayerRef = playerRef;
     }
 
@@ -121,7 +127,43 @@ public class PlayerHud extends CustomUIHud {
         uiCommandBuilder.set("#PrimaryIcon.Visible", false);
         uiCommandBuilder.set("#SecondaryIcon.Visible", false);
 
+        applyAugmentOverlay(uiCommandBuilder);
+
         update(false, uiCommandBuilder);
+    }
+
+    private void applyAugmentOverlay(@Nonnull UICommandBuilder uiCommandBuilder) {
+        AugmentHudOverlayController.HudOverlayState overlayState = augmentHudOverlayController != null
+                ? augmentHudOverlayController.resolve(targetPlayerRef)
+                : AugmentHudOverlayController.HudOverlayState.hidden();
+
+        applyOverlayBar(uiCommandBuilder,
+                "#ActiveAugmentPanel",
+                "#ActiveAugmentName",
+                "#ActiveAugmentProgress",
+                overlayState.durationBar());
+        applyOverlayBar(uiCommandBuilder,
+                "#ShieldStatusPanel",
+                "#ShieldStatusName",
+                "#ShieldStatusProgress",
+                overlayState.shieldBar());
+    }
+
+    private void applyOverlayBar(@Nonnull UICommandBuilder uiCommandBuilder,
+            @Nonnull String panelSelector,
+            @Nonnull String labelSelector,
+            @Nonnull String progressSelector,
+            @Nonnull AugmentHudOverlayController.BarState state) {
+        boolean visible = state != null && state.visible();
+        uiCommandBuilder.set(panelSelector + ".Visible", visible);
+        if (!visible) {
+            uiCommandBuilder.set(labelSelector + ".Text", "");
+            uiCommandBuilder.set(progressSelector + ".Value", 0.0D);
+            return;
+        }
+
+        uiCommandBuilder.set(labelSelector + ".Text", state.label());
+        uiCommandBuilder.set(progressSelector + ".Value", state.progress());
     }
 
     private String resolveRaceLabel() {
