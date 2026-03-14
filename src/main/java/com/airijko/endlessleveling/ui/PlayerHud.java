@@ -13,6 +13,7 @@ import com.airijko.endlessleveling.augments.AugmentRuntimeManager;
 import com.airijko.endlessleveling.classes.CharacterClassDefinition;
 import com.airijko.endlessleveling.races.RaceDefinition;
 import com.airijko.endlessleveling.util.Lang;
+import com.airijko.endlessleveling.util.LocalizationKey;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
@@ -133,6 +134,10 @@ public class PlayerHud extends CustomUIHud {
         if (data == null) {
             return; // Do not push updates when the HUD is disabled or data is unavailable.
         }
+        uiCommandBuilder.set("#InfoMobLevelPrefix.Text",
+                Lang.tr(targetPlayerRef.getUuid(), LocalizationKey.HUD_MOB_PREFIX));
+        uiCommandBuilder.set("#InfoRacePrefix.Text",
+                Lang.tr(targetPlayerRef.getUuid(), LocalizationKey.HUD_RACE_PREFIX));
         uiCommandBuilder.set("#Level.Text", resolveHudLabel());
         double progress = resolveXpProgress();
         uiCommandBuilder.set("#ProgressBar.Value", progress);
@@ -225,11 +230,11 @@ public class PlayerHud extends CustomUIHud {
     private String resolveRaceLabel() {
         PlayerData data = getPlayerData();
         if (data == null) {
-            return Lang.tr(targetPlayerRef.getUuid(), "hud.common.unavailable", "--");
+            return Lang.tr(targetPlayerRef.getUuid(), LocalizationKey.HUD_COMMON_UNAVAILABLE);
         }
         String raceId = data.getRaceId();
         if (raceId == null || raceId.isBlank() || raceId.equalsIgnoreCase("none")) {
-            return Lang.tr(targetPlayerRef.getUuid(), "hud.race.none", "No Race");
+            return Lang.tr(targetPlayerRef.getUuid(), LocalizationKey.HUD_RACE_NONE);
         }
 
         if (raceManager != null && raceManager.isEnabled()) {
@@ -248,7 +253,7 @@ public class PlayerHud extends CustomUIHud {
     private String resolveClassLabel(boolean primary) {
         PlayerData data = getPlayerData();
         if (data == null) {
-            return Lang.tr(targetPlayerRef.getUuid(), "hud.common.unavailable", "--");
+            return Lang.tr(targetPlayerRef.getUuid(), LocalizationKey.HUD_COMMON_UNAVAILABLE);
         }
         if (classManager != null && classManager.isEnabled()) {
             CharacterClassDefinition def = primary
@@ -263,17 +268,17 @@ public class PlayerHud extends CustomUIHud {
             }
         }
         String id = primary ? data.getPrimaryClassId() : data.getSecondaryClassId();
-        return (id == null || id.isBlank()) ? Lang.tr(targetPlayerRef.getUuid(), "hud.class.none", "None") : id;
+        return (id == null || id.isBlank()) ? Lang.tr(targetPlayerRef.getUuid(), LocalizationKey.HUD_CLASS_NONE) : id;
     }
 
     private String resolveMobLevelLabel() {
         if (mobLevelingManager == null || !mobLevelingManager.isMobLevelingEnabled()) {
-            return Lang.tr(targetPlayerRef.getUuid(), "hud.common.unavailable", "--");
+            return Lang.tr(targetPlayerRef.getUuid(), LocalizationKey.HUD_COMMON_UNAVAILABLE);
         }
 
         Ref<EntityStore> ref = targetPlayerRef.getReference();
         if (ref == null) {
-            return Lang.tr(targetPlayerRef.getUuid(), "hud.common.unavailable", "--");
+            return Lang.tr(targetPlayerRef.getUuid(), LocalizationKey.HUD_COMMON_UNAVAILABLE);
         }
 
         // When player-based mob leveling is enabled, show the expected range for this
@@ -281,14 +286,14 @@ public class PlayerHud extends CustomUIHud {
         if (mobLevelingManager.isPlayerBasedMode()) {
             PlayerData data = getPlayerData();
             if (data == null) {
-                return Lang.tr(targetPlayerRef.getUuid(), "hud.common.unavailable", "--");
+                return Lang.tr(targetPlayerRef.getUuid(), LocalizationKey.HUD_COMMON_UNAVAILABLE);
             }
             var range = mobLevelingManager.getPlayerBasedLevelRange(data.getLevel());
             if (range != null) {
                 if (range.min() == range.max()) {
-                    return Lang.tr(targetPlayerRef.getUuid(), "hud.mob.level.single", "Lv. {0}", range.min());
+                    return Lang.tr(targetPlayerRef.getUuid(), LocalizationKey.HUD_MOB_LEVEL_SINGLE, range.min());
                 }
-                return Lang.tr(targetPlayerRef.getUuid(), "hud.mob.level.range", "Lv. {0}-{1}", range.min(),
+                return Lang.tr(targetPlayerRef.getUuid(), LocalizationKey.HUD_MOB_LEVEL_RANGE, range.min(),
                         range.max());
             }
         }
@@ -299,19 +304,19 @@ public class PlayerHud extends CustomUIHud {
                     ? store.getComponent(ref, TransformComponent.getComponentType())
                     : null;
             if (transform == null || transform.getPosition() == null) {
-                return Lang.tr(targetPlayerRef.getUuid(), "hud.common.unavailable", "--");
+                return Lang.tr(targetPlayerRef.getUuid(), LocalizationKey.HUD_COMMON_UNAVAILABLE);
             }
 
             int level = mobLevelingManager.resolveMobLevel(store, transform.getPosition());
             return level > 0
-                    ? Lang.tr(targetPlayerRef.getUuid(), "hud.mob.level.single_compact", "Lv {0}", level)
-                    : Lang.tr(targetPlayerRef.getUuid(), "hud.common.unavailable", "--");
+                    ? Lang.tr(targetPlayerRef.getUuid(), LocalizationKey.HUD_MOB_LEVEL_SINGLE_COMPACT, level)
+                    : Lang.tr(targetPlayerRef.getUuid(), LocalizationKey.HUD_COMMON_UNAVAILABLE);
         } catch (IllegalStateException ex) {
             // Store.assertThread can throw when XP events fire on a different world thread;
             // fall back to no label instead of crashing the server.
             LOGGER.atFine().withCause(ex).log("Skipping mob level resolution off-thread for %s",
                     targetPlayerRef.getUuid());
-            return Lang.tr(targetPlayerRef.getUuid(), "hud.common.unavailable", "--");
+            return Lang.tr(targetPlayerRef.getUuid(), LocalizationKey.HUD_COMMON_UNAVAILABLE);
         }
     }
 
@@ -365,27 +370,28 @@ public class PlayerHud extends CustomUIHud {
     private String resolveHudLabel() {
         PlayerData data = getPlayerData();
         if (data == null) {
-            return "LVL --   XP: 0 / --";
+            return Lang.tr(targetPlayerRef.getUuid(), LocalizationKey.HUD_LEVEL_NO_DATA);
         }
 
         double currentXp = Math.max(0.0, data.getXp());
         if (levelingManager == null) {
-            return "LVL " + data.getLevel() + "   XP: " + formatXpValue(currentXp);
+            return Lang.tr(targetPlayerRef.getUuid(), LocalizationKey.HUD_LEVEL_WITHOUT_LEVELING,
+                    data.getLevel(), formatXpValue(currentXp));
         }
 
         int effectiveCap = levelingManager.getLevelCap(data);
 
         if (data.getLevel() >= effectiveCap) {
-            return "LVL " + effectiveCap + "   MAX LEVEL";
+            return Lang.tr(targetPlayerRef.getUuid(), LocalizationKey.HUD_LEVEL_MAX, effectiveCap);
         }
 
         double xpNeeded = levelingManager.getXpForNextLevel(data, data.getLevel());
         if (!Double.isFinite(xpNeeded) || xpNeeded <= 0.0) {
-            return "LVL " + data.getLevel() + "   MAX LEVEL";
+            return Lang.tr(targetPlayerRef.getUuid(), LocalizationKey.HUD_LEVEL_MAX, data.getLevel());
         }
 
-        return "LVL " + data.getLevel() + "   XP: "
-                + formatXpValue(currentXp) + " / " + formatXpValue(xpNeeded);
+        return Lang.tr(targetPlayerRef.getUuid(), LocalizationKey.HUD_LEVEL_PROGRESS, data.getLevel(),
+                formatXpValue(currentXp), formatXpValue(xpNeeded));
     }
 
     private double resolveXpProgress() {

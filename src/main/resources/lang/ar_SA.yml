@@ -1,5 +1,5 @@
 meta:
-  locale_name: العربية (SA)
+  locale_name: "\u0627\u0644\u0639\u0631\u0628\u064A\u0629 (SA)"
 notify:
   skills:
     unspent:
@@ -58,6 +58,7 @@ hud:
     unavailable: --
   race:
     none: No Race
+    prefix: 'Race: '
   class:
     none: None
   mob:
@@ -65,12 +66,20 @@ hud:
       single: Lv. {0}
       single_compact: Lv {0}
       range: Lv. {0}-{1}
+    prefix: 'Local mobs: '
+  level:
+    no_data: 'LVL --   XP: 0 / --'
+    without_leveling: 'LVL {0}   XP: {1}'
+    max: LVL {0}   MAX LEVEL
+    progress: 'LVL {0}   XP: {1} / {2}'
 ui:
   common:
     toggle:
       true: 'ON'
       false: 'OFF'
       disabled: DISABLED
+      'on': 'ON'
+      'off': 'OFF'
     state:
       enabled: enabled
       disabled: disabled
@@ -142,10 +151,11 @@ ui:
       prestige: Prestige
       level: Level
       xp: XP
-    summary: 'Showing {0}/{1} players • Sort: {2} {3} • Filters: Race={4}, Class={5}'
+    summary: "Showing {0}/{1} players \u2022 Sort: {2} {3} \u2022 Filters: Race={4}, Class={5}"
   augments:
     tier:
       default: AUGMENTS
+      common: COMMON
     actions:
       choose: Choose
     selected: 'Selected augment: {0} ({1})'
@@ -185,6 +195,13 @@ ui:
         full_at_ratio: ' (full at {0}x ratio)'
         range: ' (range {0}-{1})'
         full_at_distance: ' (full at {0} distance)'
+        at_max_stacks: ' (at max stacks)'
+        max_value_at_health: ' (max value at {0}% health)'
+        missing_health: ' (scales with missing health)'
+        condition:
+          above: ' (above {0}% {1})'
+          below: ' (below {0}% {1})'
+        missing_health_line: Scales with missing health
       label:
         strength: Strength
         sorcery: Sorcery
@@ -230,6 +247,55 @@ ui:
         trigger_threshold: Trigger Threshold
         full_value_at_health_percent: Full Value Threshold
         max_distance: Max distance (full bonus)
+        common: Common Stat
+      rule:
+        under_rage_prefix: 'Under Rage:'
+        mana_from_sorcery: 'Mana: +{0}% of Sorcery'
+        sorcery_from_mana: 'Sorcery: +{0}% of Mana'
+        wither_per_second: 'Wither: +{0}% max health damage per second'
+        immunity_window: 'Immunity Window: {0}'
+        min_health_hp: 'Under Rage: You can''t drop below {0} health'
+      section:
+        above_health:
+          generic: 'Above Health Threshold:'
+        below_health:
+          generic: 'Below Health Threshold:'
+      resource:
+        generic: Resource
+      duration_conqueror: 'Duration: {0} (refreshes cooldown when stacking)'
+    common_stat:
+      card_name: '{0}'
+    page:
+      brand: ENDLESS LEVELING
+      choose_button: CHOOSE AUGMENTS
+      left:
+        description: Augments are powerful passive enhancements that permanently strengthen your character. Earn them by reaching level milestones and through prestige.
+        collection_title: YOUR COLLECTION
+        rerolls_title: REROLLS USED
+        hover_hint: Hover over an augment to preview it.
+      title: AUGMENTS
+      search_placeholder: Search augments...
+      section:
+        unlocked: UNLOCKED
+        mythic: MYTHIC
+        elite: ELITE
+        common: COMMON
+      info_title: AUGMENT INFO
+      results: 'Results: {0}'
+      choose_unavailable: No augments available to choose.
+      info_select_prompt: Select an augment
+      choose_available: Augments available to choose.
+      stats:
+        total: 'Total: {0} / {1}'
+        mythic: 'Mythic: {0} / {1}'
+        elite: 'Elite: {0} / {1}'
+        common: 'Common: {0}'
+      rerolls:
+        mythic: 'Mythic: {0}'
+        elite: 'Elite: {0}'
+        common: 'Common: {0}'
+    unlocked:
+      count_suffix: '{0} x{1}'
   races:
     count: '{0} {1}'
     count_none: 0 available
@@ -250,6 +316,7 @@ ui:
       lore_title: Lore Preview
       stats_title: Race Stats
       passives_title: Passives
+      evolution_title: Evolution Paths
     offline:
       title: Races Offline
       subtitle: Races are currently disabled in config.yml.
@@ -271,6 +338,7 @@ ui:
       view: VIEW
       choose: CHOOSE
       swap: SWAP
+      view_paths: VIEW PATHS
     passives:
       none_selected: No race selected.
       none_defined: This race does not define passive bonuses.
@@ -288,6 +356,7 @@ ui:
       unrestricted: Race swapping is unrestricted right now.
       try_again_prefix: 'You can swap again in '
       unlocks_in: Swap unlocks in {0}.
+      exhausted: No changes left
     chat:
       prefix: '[Races] '
       changed_prefix: 'You are now a '
@@ -298,6 +367,8 @@ ui:
       unknown: 'Unknown race: {0}'
       already_selected: You already belong to that race.
       no_changes_remaining: No race changes remaining.
+      cannot_ascend: 'Cannot switch race yet:'
+      cannot_ascend_simple: Cannot switch race yet.
     attribute_tagline:
       life_force: Base health
       strength: Damage scaling
@@ -358,6 +429,7 @@ ui:
         swiftness: '{0} speed'
         wither: '{0} max HP/sec'
         crit_defense: '{0} dmg reduction'
+        absorb: '{0} dmg reduction'
       detail:
         threshold: <{0}% {1}
         slow: '{0} slow'
@@ -368,6 +440,57 @@ ui:
         cooldown: '{0}s cd'
         window: '{0}s window'
         stacks: '{0} stacks'
+    evolution:
+      summary:
+        placeholder: Select a race to inspect evolution branches.
+        final: 'Stage: {0} - Final form reached.'
+        expanded: 'Stage: {0} - Path: {1} - Paths: {2} ({3})'
+      none_selected: No race selected.
+      stage:
+        base: Base
+      path:
+        none: None
+        adventure: Adventure
+        damage: Damage
+        sorcery: Sorcery
+        tank: Tank
+      none: No further evolutions
+      none_value: FINAL
+      none_meta: This race is at the end of its ascension branch.
+      none_criteria: No additional upgrade criteria.
+      progress:
+        active: Currently active form.
+        unlocked: Previously completed and unlocked.
+        unknown: Unable to evaluate current progress.
+        ready: All criteria met. Can evolve immediately.
+        ready_after: All criteria met. Reach this branch by progressing through earlier path nodes.
+        missing_generic: Missing requirements.
+        missing_header: 'Missing requirements:'
+        missing_any_skill_specific: 'Requires at least one skill option set to be met: {0}.'
+      status:
+        active: ACTIVE
+        unlocked: UNLOCKED
+        available: AVAILABLE
+        eligible: ELIGIBLE
+        locked: LOCKED
+      meta: 'Type: {0} | Stage: {1} | Tier: {2} | From: {3}'
+      criteria:
+        prestige: '- Prestige: >= {0}'
+        min_skills: '- Minimum skill levels: {0}'
+        max_skills: '- Skill caps: {0}'
+        any_skills: '- Any one set: {0}'
+        forms: '- Required forms: {0}'
+        augments: '- Required augments: {0}'
+        none: 'Requirements: none'
+        general:
+          none: 'Requirements: skill targets only'
+          prefix: 'Requirements:
+
+            {0}'
+        skills:
+          prefix: 'Trainable Skill Targets:
+
+            {0}'
   classes:
     count: '{0} {1}'
     count_none: 0 available
@@ -394,6 +517,7 @@ ui:
       weapons_title: Weapon Affinities
       innate_title: Innate Attribute Gains
       passives_title: Passives
+      evolution_title: Class Paths
     none_selected: No class selected.
     offline:
       title: Classes Offline
@@ -443,10 +567,12 @@ ui:
       each_swap: Each swap triggers a {0} cooldown per slot.
       unrestricted: Class swapping is unrestricted right now.
       ready: Ready
+      exhausted: No changes left
     actions:
       view: VIEW
       set_primary: SET PRIMARY
       set_secondary: SET SECONDARY
+      view_paths: VIEW PATHS
     detail:
       select_prompt: Select a class to preview bonuses.
       primary_slot: Primary
@@ -482,6 +608,57 @@ ui:
       unknown: 'Unknown class: {0}'
       cooldown_remaining: You can change your {0} class again in {1}.
       no_changes_remaining: You have no class changes remaining.
+    evolution:
+      summary:
+        placeholder: Select a class to inspect ascension branches.
+        final: 'Stage: {0} - Final form reached.'
+        expanded: 'Stage: {0} - Path: {1} - Paths: {2} ({3})'
+      none_selected: No class selected.
+      stage:
+        base: Base
+      path:
+        none: None
+        damage: Damage
+        sorcery: Sorcery
+        tank: Tank
+        support: Support
+      none: No further class paths
+      none_value: FINAL
+      none_meta: This class is at the end of its ascension branch.
+      none_criteria: No additional upgrade criteria.
+      progress:
+        active: Currently active class form.
+        unlocked: Previously completed and unlocked.
+        unknown: Unable to evaluate current progress.
+        ready: All criteria met. Can switch immediately.
+        ready_after: All criteria met. Reach this branch by progressing through earlier path nodes.
+        missing_generic: Missing requirements.
+        missing_header: 'Missing requirements:'
+        missing_any_skill_specific: 'Requires at least one skill option set to be met: {0}.'
+      status:
+        active: ACTIVE
+        unlocked: UNLOCKED
+        available: AVAILABLE
+        eligible: ELIGIBLE
+        locked: LOCKED
+      meta: 'Type: {0} | Stage: {1} | Tier: {2} | From: {3}'
+      criteria:
+        prestige: '- Prestige: >= {0}'
+        min_skills: '- Minimum skill levels: {0}'
+        max_skills: '- Skill caps: {0}'
+        any_skills: '- Any one set: {0}'
+        forms: '- Required forms: {0}'
+        augments: '- Required augments: {0}'
+        none: 'Requirements: none'
+        general:
+          none: 'Requirements: skill targets only'
+          prefix: 'Requirements:
+
+            {0}'
+        skills:
+          prefix: 'Trainable Skill Targets:
+
+            {0}'
   skills:
     unknown: Unknown
     points: 'SKILL POINTS: {0}'
@@ -552,6 +729,7 @@ ui:
     classes: CLASSES
     leaderboards: LEADERBOARDS
     settings: SETTINGS
+    augments: AUGMENTS
   profile:
     playerdata:
       unavailable: Player data unavailable.
@@ -601,6 +779,9 @@ ui:
       delete_prompt: Press CONFIRM to delete profile slot {0}.
       deleted: Deleted profile slot {0}.
       delete_canceled: Profile deletion canceled.
+    classes:
+      primary_weapon_none: No primary class weapon bonuses
+      none: None
 command:
   language:
     unavailable: Language manager is unavailable.

@@ -9,10 +9,10 @@ import com.airijko.endlessleveling.enums.themes.AugmentTheme;
  */
 public final class ChatMessageStrings {
 
-    public static final String PREFIX_TEXT = "[EndlessLeveling] ";
+    public static final String PREFIX_TEXT = FixedValue.CHAT_PREFIX.value();
 
     public static final class Command {
-        public static final String ROOT = "/lvl";
+        public static final String ROOT = FixedValue.ROOT_COMMAND.value();
 
         private Command() {
         }
@@ -31,56 +31,6 @@ public final class ChatMessageStrings {
         public static final String TIER_MYTHIC = AugmentTheme.gridOwnedColor(PassiveTier.MYTHIC);
 
         private Color() {
-        }
-    }
-
-    public static final class Keys {
-        public static final String SKILLS_CHAT_HAVE = "notify.skills.chat.have";
-        public static final String SKILLS_CHAT_USE = "notify.skills.chat.use";
-        public static final String SKILLS_CHAT_END = "notify.skills.chat.end";
-        public static final String SKILLS_COMMAND = "notify.skills.command";
-
-        public static final String AUGMENTS_AVAILABLE_HEADER = "notify.augments.available.header";
-        public static final String AUGMENTS_AVAILABLE_FOOTER = "notify.augments.available.footer";
-
-        public static final String SWIFTNESS_FADED = "notify.passives.swiftness.faded";
-        public static final String AUGMENT_READY_AGAIN = "notify.augments.cooldown.ready";
-        public static final String ADRENALINE_TRIGGERED = "notify.passives.adrenaline.triggered";
-
-        public static final String PASSIVE_GENERIC = "notify.passives.generic";
-        public static final String AUGMENT_GENERIC = "notify.augments.generic";
-
-        public static final String AUGMENT_SYNC_SUMMARY = "notify.augments.sync.summary";
-        public static final String AUGMENT_SYNC_ENTRY = "notify.augments.sync.entry";
-        public static final String AUGMENT_SYNC_FIX_ALL = "notify.augments.sync.fixall";
-
-        private Keys() {
-        }
-    }
-
-    public static final class Fallback {
-        public static final String SKILLS_CHAT_HAVE = "You still have ";
-        public static final String SKILLS_CHAT_USE = " skill points. Use ";
-        public static final String SKILLS_CHAT_END = " to spend them.";
-        public static final String SKILLS_COMMAND = Command.ROOT;
-
-        public static final String AUGMENTS_AVAILABLE_HEADER = "You have augments available to choose from:";
-        public static final String AUGMENTS_AVAILABLE_FOOTER = "Use " + Command.ROOT + " augments to choose.";
-
-        public static final String SWIFTNESS_FADED = "Swiftness has faded.";
-        public static final String AUGMENT_READY_AGAIN = "{0} is ready again!";
-        public static final String ADRENALINE_TRIGGERED = "Adrenaline triggered! Restoring {0}% stamina over {1}s";
-
-        public static final String PASSIVE_GENERIC = "{0}";
-        public static final String AUGMENT_GENERIC = "{0}";
-
-        public static final String AUGMENT_SYNC_SUMMARY = "{0} player(s) have mismatched augment slot counts:";
-        public static final String AUGMENT_SYNC_ENTRY = "- {0} [{1}: has {2}, should have {3}] -> " + Command.ROOT
-                + " augments reset {0}";
-        public static final String AUGMENT_SYNC_FIX_ALL = "To fix all at once: " + Command.ROOT
-                + " augments resetallplayers";
-
-        private Fallback() {
         }
     }
 

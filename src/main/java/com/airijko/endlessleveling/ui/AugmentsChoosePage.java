@@ -9,6 +9,7 @@ import com.airijko.endlessleveling.data.PlayerData;
 import com.airijko.endlessleveling.enums.PassiveTier;
 import com.airijko.endlessleveling.managers.PlayerDataManager;
 import com.airijko.endlessleveling.util.Lang;
+import com.airijko.endlessleveling.util.LocalizationKey;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
@@ -207,12 +208,13 @@ public class AugmentsChoosePage extends InteractiveCustomUIPage<SkillsUIPage.Dat
         List<PassiveTier> remainingTiers = augmentUnlockManager.getPendingOfferTiers(playerData);
         if (!remainingTiers.isEmpty()) {
             StringBuilder builder = new StringBuilder();
-            builder.append(tr("ui.augments.remaining.header",
-                    "[EndlessLeveling] You still have more augments to choose from:")).append("\n");
+            builder.append(tr(LocalizationKey.UI_AUGMENTS_REMAINING_HEADER.key(),
+                    LocalizationKey.UI_AUGMENTS_REMAINING_HEADER.fallback())).append("\n");
             for (PassiveTier remainingTier : remainingTiers) {
                 builder.append("- ").append(remainingTier.name()).append("\n");
             }
-            builder.append(tr("ui.augments.remaining.footer", "Choose again now."));
+            builder.append(tr(LocalizationKey.UI_AUGMENTS_REMAINING_FOOTER.key(),
+                    LocalizationKey.UI_AUGMENTS_REMAINING_FOOTER.fallback()));
             playerRef.sendMessage(Message.raw(builder.toString()).color("#4fd7f7"));
         }
 

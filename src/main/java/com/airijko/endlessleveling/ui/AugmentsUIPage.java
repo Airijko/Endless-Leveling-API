@@ -76,8 +76,8 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             @Nonnull Store<EntityStore> store) {
         ui.append("Pages/Augments/AugmentsPage.ui");
         NavUIHelper.applyNavVersion(ui, playerRef);
+        applyStaticLabels(ui);
         ui.set("#SearchInput.Value", this.searchQuery);
-        ui.set("#OpenAugmentsChooseButton.Text", "CHOOSE AUGMENTS");
         NavUIHelper.bindNavEvents(events);
         events.addEventBinding(ValueChanged, "#SearchInput", of("@SearchQuery", "#SearchInput.Value"), false);
         events.addEventBinding(Activating, "#OpenAugmentsChooseButton", of("Action", "augment:open_choose"),
@@ -85,6 +85,24 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
         buildGrid(ui, events);
         applyInfoPanel(ui, selectedAugmentId);
+    }
+
+    private void applyStaticLabels(@Nonnull UICommandBuilder ui) {
+        ui.set("#AugmentActionInfo.Text", tr("ui.augments.page.brand", "ENDLESS LEVELING"));
+        ui.set("#OpenAugmentsChooseButton.Text", tr("ui.augments.page.choose_button", "CHOOSE AUGMENTS"));
+        ui.set("#AugmentsOverviewDescription.Text", tr("ui.augments.page.left.description",
+                "Augments are powerful passive enhancements that permanently strengthen your character. Earn them by reaching level milestones and through prestige."));
+        ui.set("#AugmentsCollectionTitle.Text", tr("ui.augments.page.left.collection_title", "YOUR COLLECTION"));
+        ui.set("#AugmentsRerollsTitle.Text", tr("ui.augments.page.left.rerolls_title", "REROLLS USED"));
+        ui.set("#AugmentsInfoText.Text",
+                tr("ui.augments.page.left.hover_hint", "Hover over an augment to preview it."));
+        ui.set("#AugmentsPageTitle.Text", tr("ui.augments.page.title", "AUGMENTS"));
+        ui.set("#SearchInput.PlaceholderText", tr("ui.augments.page.search_placeholder", "Search augments..."));
+        ui.set("#UnlockedHeader.Text", tr("ui.augments.page.section.unlocked", "UNLOCKED"));
+        ui.set("#MythicHeader.Text", tr("ui.augments.page.section.mythic", "MYTHIC"));
+        ui.set("#EliteHeader.Text", tr("ui.augments.page.section.elite", "ELITE"));
+        ui.set("#CommonHeader.Text", tr("ui.augments.page.section.common", "COMMON"));
+        ui.set("#AugmentInfoPanel.Text", tr("ui.augments.page.info_title", "AUGMENT INFO"));
     }
 
     @Override
@@ -153,8 +171,9 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         ui.clear("#CommonCards");
 
         if (augmentManager == null) {
-            ui.set("#AugmentsResultLabel.Text", "Results: 0");
-            ui.set("#AugmentsChooseAvailabilityLabel.Text", "No augments available to choose.");
+            ui.set("#AugmentsResultLabel.Text", tr("ui.augments.page.results", "Results: {0}", 0));
+            ui.set("#AugmentsChooseAvailabilityLabel.Text",
+                    tr("ui.augments.page.choose_unavailable", "No augments available to choose."));
             ui.set("#AugmentsChooseAvailabilityLabel.Style.TextColor", AugmentTheme.chooseAvailabilityColor(false));
             ui.set("#UnlockedSection.Visible", false);
             ui.set("#MythicSection.Visible", false);
@@ -208,7 +227,7 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
         int totalResults = unlockedCards.size() + mythicAugments.size() + eliteAugments.size()
                 + commonAugments.size();
-        ui.set("#AugmentsResultLabel.Text", "Results: " + totalResults);
+        ui.set("#AugmentsResultLabel.Text", tr("ui.augments.page.results", "Results: {0}", totalResults));
 
         // Build UNLOCKED section
         buildOwnedSection(ui, events, unlockedCards, "#UnlockedCards", "#UnlockedSection");
@@ -230,7 +249,7 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
         if (def == null) {
             ui.set("#AugmentInfoIcon.Visible", false);
-            ui.set("#AugmentInfoName.Text", "Select an augment");
+            ui.set("#AugmentInfoName.Text", tr("ui.augments.page.info_select_prompt", "Select an augment"));
             ui.set("#AugmentInfoName.Style.TextColor", "#9fb6d3");
             ui.set("#AugmentInfoTier.Visible", false);
             ui.set("#AugmentInfoDivider.Visible", false);
@@ -959,12 +978,14 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     private void applyChooseAvailability(@Nonnull UICommandBuilder ui, PlayerData playerData) {
         boolean available = hasPendingAugmentChoices(playerData);
         if (available) {
-            ui.set("#AugmentsChooseAvailabilityLabel.Text", "Augments available to choose.");
+            ui.set("#AugmentsChooseAvailabilityLabel.Text",
+                    tr("ui.augments.page.choose_available", "Augments available to choose."));
             ui.set("#AugmentsChooseAvailabilityLabel.Style.TextColor", AugmentTheme.chooseAvailabilityColor(true));
             return;
         }
 
-        ui.set("#AugmentsChooseAvailabilityLabel.Text", "No augments available to choose.");
+        ui.set("#AugmentsChooseAvailabilityLabel.Text",
+                tr("ui.augments.page.choose_unavailable", "No augments available to choose."));
         ui.set("#AugmentsChooseAvailabilityLabel.Style.TextColor", AugmentTheme.chooseAvailabilityColor(false));
     }
 
@@ -998,15 +1019,21 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         int commonOwned = countSelectedForTier(playerData, PassiveTier.COMMON);
         int totalOwned = mythicOwned + eliteOwned + commonOwned;
 
-        ui.set("#AugmentStatTotal.Text", "Total: " + totalOwned + " / " + allDefs.size());
-        ui.set("#AugmentStatMythic.Text", "Mythic: " + mythicOwned + " / " + totalMythic);
-        ui.set("#AugmentStatElite.Text", "Elite: " + eliteOwned + " / " + totalElite);
-        ui.set("#AugmentStatCommon.Text", "Common: " + commonOwned);
+        ui.set("#AugmentStatTotal.Text",
+                tr("ui.augments.page.stats.total", "Total: {0} / {1}", totalOwned, allDefs.size()));
+        ui.set("#AugmentStatMythic.Text",
+                tr("ui.augments.page.stats.mythic", "Mythic: {0} / {1}", mythicOwned, totalMythic));
+        ui.set("#AugmentStatElite.Text",
+                tr("ui.augments.page.stats.elite", "Elite: {0} / {1}", eliteOwned, totalElite));
+        ui.set("#AugmentStatCommon.Text", tr("ui.augments.page.stats.common", "Common: {0}", commonOwned));
 
         Map<String, Integer> rerolls = playerData != null ? playerData.getAugmentRerollsUsedSnapshot() : Map.of();
-        ui.set("#AugmentRerollMythic.Text", "Mythic: " + rerolls.getOrDefault("MYTHIC", 0));
-        ui.set("#AugmentRerollElite.Text", "Elite: " + rerolls.getOrDefault("ELITE", 0));
-        ui.set("#AugmentRerollCommon.Text", "Common: " + rerolls.getOrDefault("COMMON", 0));
+        ui.set("#AugmentRerollMythic.Text",
+                tr("ui.augments.page.rerolls.mythic", "Mythic: {0}", rerolls.getOrDefault("MYTHIC", 0)));
+        ui.set("#AugmentRerollElite.Text",
+                tr("ui.augments.page.rerolls.elite", "Elite: {0}", rerolls.getOrDefault("ELITE", 0)));
+        ui.set("#AugmentRerollCommon.Text",
+                tr("ui.augments.page.rerolls.common", "Common: {0}", rerolls.getOrDefault("COMMON", 0)));
     }
 
     private int countSelectedForTier(PlayerData playerData, PassiveTier tier) {

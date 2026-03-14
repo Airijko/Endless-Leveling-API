@@ -4,6 +4,7 @@ import com.airijko.endlessleveling.data.PlayerData;
 import com.airijko.endlessleveling.enums.PassiveTier;
 import com.airijko.endlessleveling.managers.PlayerDataManager;
 import com.airijko.endlessleveling.util.ChatMessageTemplate;
+import com.airijko.endlessleveling.util.FixedValue;
 import com.airijko.endlessleveling.util.OperatorHelper;
 import com.airijko.endlessleveling.util.PlayerChatNotifier;
 import com.hypixel.hytale.logger.HytaleLogger;
@@ -160,7 +161,8 @@ public class AugmentSyncValidator {
                     e.status, e.name, e.expected, e.actual);
         }
         LOGGER.atWarning().log(
-                "AugmentSyncValidator: to fix all players run:  /lvl augments resetallplayers");
+                "AugmentSyncValidator: to fix all players run:  %s augments resetallplayers",
+                FixedValue.ROOT_COMMAND.value());
 
         // Notify any operators who are already online (unlikely at startup, but
         // possible

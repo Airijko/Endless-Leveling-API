@@ -24,6 +24,13 @@ public final class Lang {
         return languageManager.tr(key, fallback, args);
     }
 
+    public static String tr(LocalizationKey localizationKey, Object... args) {
+        if (localizationKey == null) {
+            return "";
+        }
+        return tr(localizationKey.key(), localizationKey.fallback(), args);
+    }
+
     public static String tr(UUID playerUuid, String key, String fallback, Object... args) {
         EndlessLeveling plugin = EndlessLeveling.getInstance();
         if (plugin == null) {
@@ -36,6 +43,13 @@ public final class Lang {
         }
 
         return languageManager.tr(playerUuid, key, fallback, args);
+    }
+
+    public static String tr(UUID playerUuid, LocalizationKey localizationKey, Object... args) {
+        if (localizationKey == null) {
+            return "";
+        }
+        return tr(playerUuid, localizationKey.key(), localizationKey.fallback(), args);
     }
 
     private static String fallbackOrKey(String fallback, String key, Object... args) {

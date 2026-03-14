@@ -19,7 +19,7 @@ import java.util.regex.Pattern;
  */
 public final class PlayerChatNotifier {
 
-    private static final String PREFIX_TEXT = ChatMessageStrings.PREFIX_TEXT;
+    private static final String PREFIX_TEXT = FixedValue.CHAT_PREFIX.value();
     private static final String PREFIX_COLOR = ChatMessageStrings.Color.PREFIX_RED;
 
     private static final Pattern LEGACY_PREFIX_PATTERN = Pattern.compile("^\\s*\\[[^\\]]+\\]\\s*");
@@ -85,12 +85,12 @@ public final class PlayerChatNotifier {
             return "";
         }
         if (template == ChatMessageTemplate.SKILLS_COMMAND) {
-            return ChatMessageStrings.Command.ROOT;
+            return FixedValue.ROOT_COMMAND.value();
         }
         UUID uuid = playerRef != null ? playerRef.getUuid() : null;
-        String translated = Lang.tr(uuid, template.key(), template.fallback(), args);
+        String translated = Lang.tr(uuid, template.localizationKey(), args);
         if (template.lockCommandPrefix()) {
-            translated = COMMAND_TOKEN_PATTERN.matcher(translated).replaceAll(ChatMessageStrings.Command.ROOT);
+            translated = COMMAND_TOKEN_PATTERN.matcher(translated).replaceAll(FixedValue.ROOT_COMMAND.value());
         }
         return stripKnownPrefix(translated);
     }

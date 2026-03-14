@@ -254,7 +254,7 @@ public final class AugmentValueFormatter {
             return null;
         }
 
-        return tr("ui.augments.effect.duration.conqueror",
+        return tr("ui.augments.effect.duration_conqueror",
                 "Duration: {0} (refreshes cooldown when stacking)",
                 formatSeconds(seconds));
     }
@@ -591,7 +591,7 @@ public final class AugmentValueFormatter {
             if (missingHealthScaling) {
                 return maxValueAtHealth
                         + "\n"
-                        + tr("ui.augments.effect.note.missing_health.line", "Scales with missing health")
+                        + tr("ui.augments.effect.note.missing_health_line", "Scales with missing health")
                         + "\n\n";
             }
             return maxValueAtHealth;

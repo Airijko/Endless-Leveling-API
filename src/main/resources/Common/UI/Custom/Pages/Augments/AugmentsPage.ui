@@ -50,7 +50,7 @@ $C.@PageOverlay {
 
                                 Group { Anchor: (Height: 10); }
 
-                                Label {
+                                Label #AugmentsOverviewDescription {
                                     Text: "Augments are powerful passive enhancements that permanently strengthen your character. Earn them by reaching level milestones and through prestige.";
                                     Style: (FontSize: 12, TextColor: #7a9abf, Wrap: true);
                                     Anchor: (Bottom: 10);
@@ -62,7 +62,7 @@ $C.@PageOverlay {
                                     Background: #ffffff(0.08);
                                 }
 
-                                Label {
+                                Label #AugmentsCollectionTitle {
                                     Text: "YOUR COLLECTION";
                                     Style: (FontSize: 11, TextColor: #9fb6d3, RenderBold: true, HorizontalAlignment: Center);
                                     Anchor: (Height: 16, Bottom: 8);
@@ -102,7 +102,7 @@ $C.@PageOverlay {
                                     Background: #ffffff(0.08);
                                 }
 
-                                Label {
+                                Label #AugmentsRerollsTitle {
                                     Text: "REROLLS USED";
                                     Style: (FontSize: 11, TextColor: #9fb6d3, RenderBold: true, HorizontalAlignment: Center);
                                     Anchor: (Height: 16, Bottom: 8);
@@ -150,7 +150,7 @@ $C.@PageOverlay {
                                 Group {
                                     LayoutMode: Left;
 
-                                    $C.@Title {
+                                    $C.@Title #AugmentsPageTitle {
                                         @Text = "AUGMENTS";
                                     }
 
