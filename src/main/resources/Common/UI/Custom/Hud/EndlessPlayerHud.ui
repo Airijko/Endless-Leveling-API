@@ -86,61 +86,61 @@ Group #EndlessPlayerHud {
     
     ItemIcon #StackingAugmentIconCommonStat {
       ItemId: "Ingredient_Crystal_White";
-      Anchor: (Width: 32, Height: 32, Left: 3, Top: 3);
+      Anchor: (Width: 32, Height: 32, Left: 0, Top: 0);
       Visible: false;
     }
 
     ItemIcon #StackingAugmentIconPassiveStat {
       ItemId: "Ingredient_Life_Essence";
-      Anchor: (Width: 32, Height: 32, Left: 3, Top: 3);
+      Anchor: (Width: 32, Height: 32, Left: 0, Top: 0);
       Visible: false;
     }
 
     ItemIcon #StackingAugmentIconMagicStat {
       ItemId: "Weapon_Staff_Bronze";
-      Anchor: (Width: 32, Height: 32, Left: 3, Top: 3);
+      Anchor: (Width: 32, Height: 32, Left: 0, Top: 0);
       Visible: false;
     }
 
     ItemIcon #StackingAugmentIconOnHit {
       ItemId: "Weapon_Daggers_Fang_Doomed";
-      Anchor: (Width: 32, Height: 32, Left: 3, Top: 3);
+      Anchor: (Width: 32, Height: 32, Left: 0, Top: 0);
       Visible: false;
     }
 
     ItemIcon #StackingAugmentIconOnRangedHit {
       ItemId: "Weapon_Shortbow_Crude";
-      Anchor: (Width: 32, Height: 32, Left: 3, Top: 3);
+      Anchor: (Width: 32, Height: 32, Left: 0, Top: 0);
       Visible: false;
     }
 
     ItemIcon #StackingAugmentIconOnDamageTaken {
       ItemId: "Weapon_Shield_Orbis_Knight";
-      Anchor: (Width: 32, Height: 32, Left: 3, Top: 3);
+      Anchor: (Width: 32, Height: 32, Left: 0, Top: 0);
       Visible: false;
     }
 
     ItemIcon #StackingAugmentIconOnLowHp {
       ItemId: "Potion_Health_Lesser";
-      Anchor: (Width: 32, Height: 32, Left: 3, Top: 3);
+      Anchor: (Width: 32, Height: 32, Left: 0, Top: 0);
       Visible: false;
     }
 
     ItemIcon #StackingAugmentIconOnCrit {
       ItemId: "Weapon_Battleaxe_Mithril";
-      Anchor: (Width: 32, Height: 32, Left: 3, Top: 3);
+      Anchor: (Width: 32, Height: 32, Left: 0, Top: 0);
       Visible: false;
     }
 
     ItemIcon #StackingAugmentIconOnKill {
       ItemId: "Ingredient_Fire_Essence";
-      Anchor: (Width: 32, Height: 32, Left: 3, Top: 3);
+      Anchor: (Width: 32, Height: 32, Left: 0, Top: 0);
       Visible: false;
     }
 
     ItemIcon #StackingAugmentIconOnLifesteal {
       ItemId: "Potion_Health_Greater";
-      Anchor: (Width: 32, Height: 32, Left: 3, Top: 3);
+      Anchor: (Width: 32, Height: 32, Left: 0, Top: 0);
       Visible: false;
     }
 
