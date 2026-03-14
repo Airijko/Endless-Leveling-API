@@ -49,6 +49,33 @@ Group #EndlessPlayerHud {
       }
     }
   }
+
+  Group #ConquerorIconPanel {
+    Anchor: (Bottom: 24, Width: 28, Height: 28, Left: 303);
+    Visible: false;
+
+    Group #ConquerorIconBackground {
+      Anchor: (Width: 28, Height: 28);
+      Background: #0f1824(0.82);
+    }
+    
+    ItemIcon #ConquerorIcon {
+      ItemId: "Weapon_Daggers_Fang_Doomed";
+      Anchor: (Width: 22, Height: 22, Left: 3, Top: 3);
+      Visible: false;
+    }
+
+    Group #ConquerorStackBadge {
+      Anchor: (Width: 12, Height: 12, Right: 0, Bottom: 0);
+      Background: #000000(0.85);
+    }
+
+    Label #ConquerorStackCount {
+      Anchor: (Width: 12, Height: 12, Right: 0, Bottom: 0);
+      Style: (FontSize: 11, Alignment: Center, TextColor: #ffffff, RenderBold: true);
+      Text: "1";
+    }
+  }
 }
 
 Group #EndlessPlayerLevel {

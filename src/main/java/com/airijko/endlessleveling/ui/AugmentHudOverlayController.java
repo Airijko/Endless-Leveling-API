@@ -5,6 +5,7 @@ import com.airijko.endlessleveling.augments.AugmentManager;
 import com.airijko.endlessleveling.augments.AugmentRuntimeManager;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
 import com.airijko.endlessleveling.augments.types.BurnAugment;
+import com.airijko.endlessleveling.augments.types.ConquerorAugment;
 import com.airijko.endlessleveling.augments.types.EndurePainAugment;
 import com.airijko.endlessleveling.augments.types.FleetFootworkAugment;
 import com.airijko.endlessleveling.augments.types.FortressAugment;
@@ -67,7 +68,22 @@ public final class AugmentHudOverlayController {
         AugmentRuntimeManager.AugmentRuntimeState runtimeState = runtimeManager.getRuntimeState(uuid);
         EntityStatMap statMap = resolveStatMap(playerRef);
 
-        return new HudOverlayState(resolveDurationBar(runtimeState, now), resolveShieldBar(runtimeState, statMap, now));
+        return new HudOverlayState(resolveDurationBar(runtimeState, now),
+                resolveShieldBar(runtimeState, statMap, now),
+                resolveConquerorActive(runtimeState, now));
+    }
+
+    private boolean resolveConquerorActive(AugmentRuntimeManager.AugmentRuntimeState runtimeState, long now) {
+        if (runtimeState == null || !isAugmentSelected(runtimeState, ConquerorAugment.ID)) {
+            return false;
+        }
+
+        AugmentRuntimeManager.AugmentState state = runtimeState.getState(ConquerorAugment.ID);
+        if (state == null || state.getStacks() <= 0) {
+            return false;
+        }
+
+        return state.getExpiresAt() <= 0L || state.getExpiresAt() > now;
     }
 
     private BarState resolveDurationBar(AugmentRuntimeManager.AugmentRuntimeState runtimeState, long now) {
@@ -446,9 +462,9 @@ public final class AugmentHudOverlayController {
         return wrappedSignature.contains("|" + normalizedAugmentId + "|");
     }
 
-    public record HudOverlayState(BarState durationBar, BarState shieldBar) {
+    public record HudOverlayState(BarState durationBar, BarState shieldBar, boolean conquerorActive) {
         public static HudOverlayState hidden() {
-            return new HudOverlayState(BarState.hidden(), BarState.hidden());
+            return new HudOverlayState(BarState.hidden(), BarState.hidden(), false);
         }
     }
 

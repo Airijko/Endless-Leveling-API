@@ -147,6 +147,10 @@ public class PlayerHud extends CustomUIHud {
                 "#ShieldStatusName",
                 "#ShieldStatusProgress",
                 overlayState.shieldBar());
+
+        uiCommandBuilder.set("#ConquerorIconPanel.Visible", overlayState.conquerorActive());
+        uiCommandBuilder.set("#ConquerorIcon.Visible", overlayState.conquerorActive());
+        uiCommandBuilder.set("#ConquerorStackCount.Visible", overlayState.conquerorActive());
     }
 
     private void applyOverlayBar(@Nonnull UICommandBuilder uiCommandBuilder,
