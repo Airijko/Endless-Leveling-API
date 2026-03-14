@@ -11,9 +11,16 @@ public final class ChatMessageStrings {
 
     public static final String PREFIX_TEXT = "[EndlessLeveling] ";
 
+    public static final class Command {
+        public static final String ROOT = "/lvl";
+
+        private Command() {
+        }
+    }
+
     public static final class Color {
         public static final String PREFIX_RED = "#ff3b30";
-        public static final String INFO_CYAN = "#4fd7f7";
+        public static final String INFO_CYAN = "#c9c9c9";
         public static final String HIGHLIGHT_GOLD = "#ffc300";
         public static final String WARNING_ORANGE = "#ff9d00";
         public static final String WARNING_RED = "#ff6666";
@@ -55,10 +62,10 @@ public final class ChatMessageStrings {
         public static final String SKILLS_CHAT_HAVE = "You still have ";
         public static final String SKILLS_CHAT_USE = " skill points. Use ";
         public static final String SKILLS_CHAT_END = " to spend them.";
-        public static final String SKILLS_COMMAND = "/el";
+        public static final String SKILLS_COMMAND = Command.ROOT;
 
         public static final String AUGMENTS_AVAILABLE_HEADER = "You have augments available to choose from:";
-        public static final String AUGMENTS_AVAILABLE_FOOTER = "Use /el augments to choose.";
+        public static final String AUGMENTS_AVAILABLE_FOOTER = "Use " + Command.ROOT + " augments to choose.";
 
         public static final String SWIFTNESS_FADED = "Swiftness has faded.";
         public static final String AUGMENT_READY_AGAIN = "{0} is ready again!";
@@ -68,8 +75,10 @@ public final class ChatMessageStrings {
         public static final String AUGMENT_GENERIC = "{0}";
 
         public static final String AUGMENT_SYNC_SUMMARY = "{0} player(s) have mismatched augment slot counts:";
-        public static final String AUGMENT_SYNC_ENTRY = "- {0} [{1}: has {2}, should have {3}] -> /el augments reset {0}";
-        public static final String AUGMENT_SYNC_FIX_ALL = "To fix all at once: /el augments resetallplayers";
+        public static final String AUGMENT_SYNC_ENTRY = "- {0} [{1}: has {2}, should have {3}] -> " + Command.ROOT
+                + " augments reset {0}";
+        public static final String AUGMENT_SYNC_FIX_ALL = "To fix all at once: " + Command.ROOT
+                + " augments resetallplayers";
 
         private Fallback() {
         }

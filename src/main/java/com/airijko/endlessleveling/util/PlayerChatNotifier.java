@@ -1,9 +1,13 @@
 package com.airijko.endlessleveling.util;
 
+import com.airijko.endlessleveling.enums.PassiveTier;
+import com.airijko.endlessleveling.enums.themes.AugmentTheme;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 
 import javax.annotation.Nonnull;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
@@ -20,6 +24,7 @@ public final class PlayerChatNotifier {
 
     private static final Pattern LEGACY_PREFIX_PATTERN = Pattern.compile(
             "^\\s*\\[(?:EndlessLeveling|Passive|Luck|Races|Classes)\\]\\s*");
+    private static final Pattern COMMAND_TOKEN_PATTERN = Pattern.compile("/[A-Za-z][A-Za-z0-9_-]*");
 
     private PlayerChatNotifier() {
     }
@@ -51,6 +56,30 @@ public final class PlayerChatNotifier {
         send(playerRef, text, template.colorHex());
     }
 
+    public static void sendAugmentAvailability(PlayerRef playerRef, List<PassiveTier> tiers) {
+        if (playerRef == null || !playerRef.isValid() || tiers == null || tiers.isEmpty()) {
+            return;
+        }
+
+        List<Message> parts = new ArrayList<>();
+        parts.add(Message.raw(text(playerRef, ChatMessageTemplate.AUGMENTS_AVAILABLE_HEADER))
+                .color(ChatMessageTemplate.AUGMENTS_AVAILABLE_HEADER.colorHex()));
+
+        for (PassiveTier tier : tiers) {
+            if (tier == null) {
+                continue;
+            }
+            parts.add(Message.raw("\n- ").color(ChatMessageStrings.Color.MUTED));
+            parts.add(Message.raw(tier.name()).color(AugmentTheme.gridOwnedColor(tier)));
+        }
+
+        parts.add(Message.raw("\n").color(ChatMessageStrings.Color.MUTED));
+        parts.add(Message.raw(text(playerRef, ChatMessageTemplate.AUGMENTS_AVAILABLE_FOOTER))
+                .color(ChatMessageTemplate.AUGMENTS_AVAILABLE_FOOTER.colorHex()));
+
+        send(playerRef, Message.join(parts.toArray(Message[]::new)));
+    }
+
     @Nonnull
     public static String text(PlayerRef playerRef, ChatMessageTemplate template, Object... args) {
         if (template == null) {
@@ -58,6 +87,9 @@ public final class PlayerChatNotifier {
         }
         UUID uuid = playerRef != null ? playerRef.getUuid() : null;
         String translated = Lang.tr(uuid, template.key(), template.fallback(), args);
+        if (template.lockCommandPrefix()) {
+            translated = COMMAND_TOKEN_PATTERN.matcher(translated).replaceAll(ChatMessageStrings.Command.ROOT);
+        }
         return stripKnownPrefix(translated);
     }
 

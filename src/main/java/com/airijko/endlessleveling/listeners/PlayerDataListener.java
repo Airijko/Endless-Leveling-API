@@ -10,6 +10,7 @@ import com.airijko.endlessleveling.managers.PlayerDataManager;
 import com.airijko.endlessleveling.managers.RaceManager;
 import com.airijko.endlessleveling.managers.SkillManager;
 import com.airijko.endlessleveling.ui.PlayerHud;
+import com.airijko.endlessleveling.util.ChatMessageStrings;
 import com.airijko.endlessleveling.util.ChatMessageTemplate;
 import com.airijko.endlessleveling.util.Lang;
 import com.airijko.endlessleveling.util.PlayerChatNotifier;
@@ -194,7 +195,7 @@ public class PlayerDataListener {
         var secondaryMessage = Message.join(
                 Message.raw(Lang.tr(playerRef.getUuid(), "notify.skills.unspent.secondary.open", "Open "))
                         .color("#ff9d00"),
-                Message.raw(Lang.tr(playerRef.getUuid(), "notify.skills.command", "/el")).color("#4fd7f7"),
+                Message.raw(ChatMessageStrings.Command.ROOT).color("#4fd7f7"),
                 Message.raw(Lang.tr(playerRef.getUuid(), "notify.skills.unspent.secondary.close", " to invest them"))
                         .color("#ff9d00"));
         var icon = new ItemStack("Ingredient_Ice_Essence", 1).toPacket();
@@ -222,13 +223,6 @@ public class PlayerDataListener {
             return;
         }
 
-        StringBuilder builder = new StringBuilder();
-        builder.append(PlayerChatNotifier.text(playerRef, ChatMessageTemplate.AUGMENTS_AVAILABLE_HEADER))
-                .append("\n");
-        for (PassiveTier tier : tiers) {
-            builder.append("- ").append(tier.name()).append("\n");
-        }
-        builder.append(PlayerChatNotifier.text(playerRef, ChatMessageTemplate.AUGMENTS_AVAILABLE_FOOTER));
-        PlayerChatNotifier.send(playerRef, Message.raw(builder.toString()).color("#4fd7f7"));
+        PlayerChatNotifier.sendAugmentAvailability(playerRef, tiers);
     }
 }

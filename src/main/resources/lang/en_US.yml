@@ -4,7 +4,7 @@ meta:
 notify:
   prefix: "[EndlessLeveling] "
   skills:
-    command: "/el"
+    command: "/lvl"
     unspent:
       primary: "You have {0} unspent skill points!"
       secondary:
@@ -17,7 +17,20 @@ notify:
   augments:
     available:
       header: "[EndlessLeveling] You have augments available to choose from:"
-      footer: "Use /el augments to choose."
+      footer: "Use /lvl augments to choose."
+    cooldown:
+      ready: "{0} is ready again!"
+    generic: "{0}"
+    sync:
+      summary: "{0} player(s) have mismatched augment slot counts:"
+      entry: "- {0} [{1}: has {2}, should have {3}] -> /lvl augments reset {0}"
+      fixall: "To fix all at once: /lvl augments resetallplayers"
+  passives:
+    swiftness:
+      faded: "Swiftness has faded."
+    adrenaline:
+      triggered: "Adrenaline triggered! Restoring {0}% stamina over {1}s"
+    generic: "{0}"
   xp_suppressed:
     mob_label: "this mob"
     mob_label_level: "this mob (level {0})"

@@ -26,8 +26,8 @@ import java.util.UUID;
  * Unsynced players are reported to all online operators with the exact
  * commands needed to fix them:
  * <ul>
- * <li>{@code /el augments reset <name>} — reset one player</li>
- * <li>{@code /el augments resetallplayers} — bulk-fix everyone</li>
+ * <li>{@code /lvl augments reset <name>} — reset one player</li>
+ * <li>{@code /lvl augments resetallplayers} — bulk-fix everyone</li>
  * </ul>
  *
  * <p>
@@ -160,7 +160,7 @@ public class AugmentSyncValidator {
                     e.status, e.name, e.expected, e.actual);
         }
         LOGGER.atWarning().log(
-                "AugmentSyncValidator: to fix all players run:  /el augments resetallplayers");
+                "AugmentSyncValidator: to fix all players run:  /lvl augments resetallplayers");
 
         // Notify any operators who are already online (unlikely at startup, but
         // possible

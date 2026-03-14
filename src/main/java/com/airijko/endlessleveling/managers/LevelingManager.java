@@ -10,6 +10,7 @@ import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveManager;
 import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveSnapshot;
 import com.airijko.endlessleveling.ui.PlayerHud;
 import com.airijko.endlessleveling.systems.PlayerRaceStatSystem;
+import com.airijko.endlessleveling.util.ChatMessageStrings;
 import com.airijko.endlessleveling.util.ChatMessageTemplate;
 import com.airijko.endlessleveling.util.PlayerChatNotifier;
 import com.hypixel.hytale.logger.HytaleLogger;
@@ -282,14 +283,7 @@ public class LevelingManager {
             return;
         }
 
-        StringBuilder builder = new StringBuilder();
-        builder.append(PlayerChatNotifier.text(playerRef, ChatMessageTemplate.AUGMENTS_AVAILABLE_HEADER))
-                .append("\n");
-        for (PassiveTier tier : tiers) {
-            builder.append("- ").append(tier.name()).append("\n");
-        }
-        builder.append(PlayerChatNotifier.text(playerRef, ChatMessageTemplate.AUGMENTS_AVAILABLE_FOOTER));
-        PlayerChatNotifier.send(playerRef, Message.raw(builder.toString()).color("#4fd7f7"));
+        PlayerChatNotifier.sendAugmentAvailability(playerRef, tiers);
     }
 
     private void notifyXpGain(PlayerData player, double xpAmount) {
@@ -326,7 +320,7 @@ public class LevelingManager {
                 .color("#ffc300");
         var notifSecondary = Message.join(
                 Message.raw("Use ").color("#ff9d00"),
-                Message.raw("/el").color("#4fd7f7"),
+                Message.raw(ChatMessageStrings.Command.ROOT).color("#4fd7f7"),
                 Message.raw(" to allocate your points").color("#ff9d00"));
         var icon = new ItemStack("Ingredient_Ice_Essence", 1).toPacket();
         NotificationUtil.sendNotification(playerRef.getPacketHandler(), notifPrimary, notifSecondary, icon);
