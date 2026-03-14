@@ -7,10 +7,15 @@ import com.airijko.endlessleveling.data.PlayerData;
 import com.airijko.endlessleveling.enums.ArchetypePassiveType;
 import com.airijko.endlessleveling.enums.ClassAssignmentSlot;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
+import com.airijko.endlessleveling.enums.themes.EvolutionRequirementTheme;
+import com.airijko.endlessleveling.enums.themes.EvolutionStatusTheme;
 import com.airijko.endlessleveling.managers.ClassManager;
 import com.airijko.endlessleveling.managers.LevelingManager;
 import com.airijko.endlessleveling.managers.PlayerDataManager;
 import com.airijko.endlessleveling.managers.SkillManager;
+import com.airijko.endlessleveling.races.RaceAscensionDefinition;
+import com.airijko.endlessleveling.races.RaceAscensionEligibility;
+import com.airijko.endlessleveling.races.RaceAscensionRequirements;
 import com.airijko.endlessleveling.races.RacePassiveDefinition;
 import com.airijko.endlessleveling.systems.PlayerRaceStatSystem;
 import com.airijko.endlessleveling.util.Lang;
@@ -28,12 +33,15 @@ import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import javax.annotation.Nonnull;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 import static com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType.Activating;
 import static com.hypixel.hytale.server.core.ui.builder.EventData.of;
@@ -46,6 +54,7 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     private static final Map<String, String> DEFAULT_CLASS_ICONS = new HashMap<>();
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
+    private static final String EVOLUTION_ENTRY_TEMPLATE = "Pages/Classes/ClassEvolutionEntry.ui";
 
     private final ClassManager classManager;
     private final PlayerDataManager playerDataManager;
@@ -105,6 +114,7 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             ui.clear("#ClassRows");
             ui.clear("#ClassWeaponEntries");
             ui.clear("#ClassPassiveEntries");
+            ui.clear("#ClassEvolutionEntries");
             ui.set("#ClassWeaponSummary.Text", tr("ui.classes.offline.weapons", "Weapon bonuses unavailable."));
             ui.set("#ClassPassiveSummary.Text", tr("ui.classes.offline.passives", "Passive bonuses unavailable."));
             return;
@@ -125,6 +135,7 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             ui.clear("#ClassRows");
             ui.clear("#ClassWeaponEntries");
             ui.clear("#ClassPassiveEntries");
+            ui.clear("#ClassEvolutionEntries");
             return;
         }
 
@@ -400,6 +411,9 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         ui.set("#ViewClassPathsButton.Text", tr("ui.classes.actions.view_paths", "VIEW PATHS"));
         ui.set("#ConfirmPrimaryButton.Text", tr("ui.classes.actions.set_primary", "SET PRIMARY"));
         ui.set("#ConfirmSecondaryButton.Text", tr("ui.classes.actions.set_secondary", "SET SECONDARY"));
+        ui.set("#ClassEvolutionTitle.Text", tr("ui.classes.page.evolution_title", "Class Paths"));
+        ui.set("#ClassEvolutionSummary.Text",
+                tr("ui.classes.evolution.summary.placeholder", "Select a class to inspect ascension branches."));
     }
 
     private String resolveClassIcon(CharacterClassDefinition definition) {
@@ -453,6 +467,8 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             ui.set("#ConfirmPrimaryButton.Visible", false);
             ui.set("#ConfirmSecondaryButton.Visible", false);
             ui.set("#ViewClassPathsButton.Visible", false);
+            ui.set("#ClassEvolutionSummary.Text", tr("ui.classes.evolution.none_selected", "No class selected."));
+            ui.clear("#ClassEvolutionEntries");
 
             String status = tr("ui.classes.detail.select_prompt", "Select a class to preview bonuses.");
             if (operatorBypass) {
@@ -498,6 +514,7 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
         buildWeaponList(ui, selection);
         buildPassiveList(ui, selection, data);
+        updateClassEvolutionPreview(ui, data, selection, primary);
 
         boolean canPrimary = primary == null || !primary.getId().equalsIgnoreCase(selection.getId());
         boolean canSecondary = (secondary == null || !secondary.getId().equalsIgnoreCase(selection.getId()))
@@ -1288,5 +1305,480 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             return localizeAttributeName(attributeType);
         }
         return toDisplay(rawAttribute);
+    }
+
+    // -------------------------------------------------------------------------
+    // Class evolution preview (mirrors RacesUIPage.updateEvolutionPreview)
+    // -------------------------------------------------------------------------
+
+    private void updateClassEvolutionPreview(@Nonnull UICommandBuilder ui,
+            @Nonnull PlayerData data,
+            @Nonnull CharacterClassDefinition selection,
+            CharacterClassDefinition primaryClass) {
+        RaceAscensionDefinition ascension = selection.getAscension();
+        String stageLabel = ascension == null ? "" : toDisplay(ascension.getStage());
+        if (stageLabel.isBlank()) {
+            stageLabel = tr("ui.classes.evolution.stage.base", "Base");
+        }
+        String pathLabel = ascension == null ? "" : toDisplay(ascension.getPath());
+        if (pathLabel.isBlank()) {
+            pathLabel = tr("ui.classes.evolution.path.none", "None");
+        }
+
+        ui.clear("#ClassEvolutionEntries");
+        List<ClassEvolutionNode> evolutionNodes = collectClassEvolutionNodes(selection);
+
+        if (ascension != null && ascension.isFinalForm()) {
+            ui.set("#ClassEvolutionSummary.Text",
+                    tr("ui.classes.evolution.summary.final", "Stage: {0} - Final form reached.", stageLabel));
+        } else if (evolutionNodes.isEmpty()) {
+            ui.set("#ClassEvolutionSummary.Text",
+                    tr("ui.classes.evolution.summary", "Stage: {0} - Path: {1}", stageLabel, pathLabel));
+        } else {
+            String pathTypes = collectClassPathTypeSummary(evolutionNodes);
+            ui.set("#ClassEvolutionSummary.Text",
+                    tr("ui.classes.evolution.summary.expanded",
+                            "Stage: {0} - Path: {1} - Paths: {2} ({3})",
+                            stageLabel, pathLabel, evolutionNodes.size(), pathTypes));
+        }
+
+        if (evolutionNodes.isEmpty()) {
+            ui.append("#ClassEvolutionEntries", EVOLUTION_ENTRY_TEMPLATE);
+            ui.set("#ClassEvolutionEntries[0] #EvolutionName.Text",
+                    tr("ui.classes.evolution.none", "No further class paths"));
+            ui.set("#ClassEvolutionEntries[0] #EvolutionStatus.Text",
+                    tr("ui.classes.evolution.none_value", "FINAL"));
+            ui.set("#ClassEvolutionEntries[0] #EvolutionStatus.Style.TextColor",
+                    EvolutionStatusTheme.FINAL.statusColor());
+            ui.set("#ClassEvolutionEntries[0] #EvolutionMeta.Text",
+                    tr("ui.classes.evolution.none_meta", "This class is at the end of its ascension branch."));
+            ui.set("#ClassEvolutionEntries[0] #EvolutionCriteria.Text",
+                    tr("ui.classes.evolution.none_criteria", "No additional upgrade criteria."));
+            ui.set("#ClassEvolutionEntries[0] #EvolutionCriteria.Style.TextColor",
+                    EvolutionRequirementTheme.NEUTRAL.color());
+            ui.set("#ClassEvolutionEntries[0] #EvolutionSkillCriteria.Text", "");
+            ui.set("#ClassEvolutionEntries[0] #EvolutionSkillCriteria.Visible", false);
+            ui.set("#ClassEvolutionEntries[0] #EvolutionProgress.Style.TextColor",
+                    EvolutionRequirementTheme.NEUTRAL.color());
+            ui.set("#ClassEvolutionEntries[0] #EvolutionProgress.Text", "");
+            return;
+        }
+
+        int rowIndex = 0;
+        for (ClassEvolutionNode node : evolutionNodes) {
+            CharacterClassDefinition nextClass = node.classDef();
+            if (nextClass == null) {
+                continue;
+            }
+
+            RaceAscensionEligibility eligibility = classManager == null
+                    ? null
+                    : classManager.evaluateAscensionEligibility(data, selection.getId(), nextClass.getId(), false);
+
+            boolean active = isActiveClassForm(nextClass, primaryClass);
+            boolean unlocked = isClassFormCompleted(nextClass, primaryClass, data);
+            boolean available = eligibility != null && eligibility.isEligible();
+            boolean directPath = isDirectClassEvolutionPath(selection, nextClass);
+
+            EvolutionStatusTheme statusTheme = resolveClassEvolutionStatusTheme(active, unlocked, available,
+                    directPath);
+            String statusLabel = localizeClassEvolutionStatus(statusTheme);
+            ClassEvolutionCriteriaContent criteriaContent = buildClassEvolutionCriteriaContent(nextClass);
+
+            String progressText;
+            String progressColor = statusTheme.progressColor();
+            if (active) {
+                progressText = tr("ui.classes.evolution.progress.active", "Currently active class form.");
+            } else if (unlocked) {
+                progressText = tr("ui.classes.evolution.progress.unlocked", "Previously completed and unlocked.");
+            } else if (eligibility == null) {
+                progressText = tr("ui.classes.evolution.progress.unknown", "Unable to evaluate current progress.");
+                progressColor = EvolutionRequirementTheme.NEUTRAL.color();
+            } else if (eligibility.isEligible() && directPath) {
+                progressText = tr("ui.classes.evolution.progress.ready", "All criteria met. Can switch immediately.");
+                progressColor = EvolutionRequirementTheme.READY.color();
+            } else if (eligibility.isEligible()) {
+                progressText = tr("ui.classes.evolution.progress.ready_after",
+                        "All criteria met. Reach this branch by progressing through earlier path nodes.");
+                progressColor = EvolutionRequirementTheme.READY.color();
+            } else {
+                progressText = formatClassMissingProgress(eligibility, nextClass);
+                progressColor = EvolutionRequirementTheme.MISSING.color();
+            }
+
+            ui.append("#ClassEvolutionEntries", EVOLUTION_ENTRY_TEMPLATE);
+            String base = "#ClassEvolutionEntries[" + rowIndex + "]";
+            ui.set(base + " #EvolutionName.Text", buildClassEvolutionLabel(nextClass));
+            ui.set(base + " #EvolutionStatus.Text", statusLabel);
+            ui.set(base + " #EvolutionStatus.Style.TextColor", statusTheme.statusColor());
+            ui.set(base + " #EvolutionMeta.Text", buildClassEvolutionMeta(nextClass, node));
+            ui.set(base + " #EvolutionCriteria.Text", criteriaContent.generalText());
+            ui.set(base + " #EvolutionCriteria.Style.TextColor", EvolutionRequirementTheme.GENERAL.color());
+            ui.set(base + " #EvolutionSkillCriteria.Text", criteriaContent.skillText());
+            ui.set(base + " #EvolutionSkillCriteria.Visible", !criteriaContent.skillText().isBlank());
+            ui.set(base + " #EvolutionSkillCriteria.Style.TextColor",
+                    EvolutionRequirementTheme.TRAINABLE_SKILLS.color());
+            ui.set(base + " #EvolutionProgress.Text", progressText);
+            ui.set(base + " #EvolutionProgress.Style.TextColor", progressColor);
+            rowIndex++;
+        }
+    }
+
+    private EvolutionStatusTheme resolveClassEvolutionStatusTheme(boolean active,
+            boolean unlocked, boolean available, boolean directPath) {
+        if (active)
+            return EvolutionStatusTheme.ACTIVE;
+        if (unlocked)
+            return EvolutionStatusTheme.UNLOCKED;
+        if (available && directPath)
+            return EvolutionStatusTheme.AVAILABLE;
+        if (available)
+            return EvolutionStatusTheme.ELIGIBLE;
+        return EvolutionStatusTheme.LOCKED;
+    }
+
+    private String localizeClassEvolutionStatus(@Nonnull EvolutionStatusTheme theme) {
+        return switch (theme) {
+            case ACTIVE -> tr("ui.classes.evolution.status.active", "ACTIVE");
+            case UNLOCKED -> tr("ui.classes.evolution.status.unlocked", "UNLOCKED");
+            case AVAILABLE -> tr("ui.classes.evolution.status.available", "AVAILABLE");
+            case ELIGIBLE -> tr("ui.classes.evolution.status.eligible", "ELIGIBLE");
+            case FINAL -> tr("ui.classes.evolution.none_value", "FINAL");
+            case LOCKED, UNKNOWN -> tr("ui.classes.evolution.status.locked", "LOCKED");
+        };
+    }
+
+    private List<ClassEvolutionNode> collectClassEvolutionNodes(@Nonnull CharacterClassDefinition root) {
+        if (classManager == null || root == null) {
+            return List.of();
+        }
+
+        List<ClassEvolutionNode> nodes = new ArrayList<>();
+        ArrayDeque<ClassEvolutionNode> frontier = new ArrayDeque<>();
+        Set<String> seen = new LinkedHashSet<>();
+
+        for (CharacterClassDefinition next : classManager.getNextAscensionClasses(root.getId())) {
+            if (next == null)
+                continue;
+            String key = classEvolutionPathKey(next);
+            if (!seen.add(key))
+                continue;
+            ClassEvolutionNode node = new ClassEvolutionNode(next, 1, root.getId());
+            frontier.addLast(node);
+            nodes.add(node);
+        }
+
+        while (!frontier.isEmpty()) {
+            ClassEvolutionNode current = frontier.removeFirst();
+            for (CharacterClassDefinition child : classManager.getNextAscensionClasses(current.classDef().getId())) {
+                if (child == null)
+                    continue;
+                String key = classEvolutionPathKey(child);
+                if (!seen.add(key))
+                    continue;
+                ClassEvolutionNode childNode = new ClassEvolutionNode(child, current.depth() + 1,
+                        current.classDef().getId());
+                frontier.addLast(childNode);
+                nodes.add(childNode);
+            }
+        }
+
+        return nodes;
+    }
+
+    private String classEvolutionPathKey(@Nonnull CharacterClassDefinition classDef) {
+        if (classDef == null)
+            return "";
+        String key = classManager != null ? classManager.resolveAscensionPathId(classDef.getId()) : classDef.getId();
+        return key == null ? "" : key.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private boolean isDirectClassEvolutionPath(@Nonnull CharacterClassDefinition source,
+            @Nonnull CharacterClassDefinition target) {
+        if (classManager == null)
+            return false;
+        for (CharacterClassDefinition candidate : classManager.getNextAscensionClasses(source.getId())) {
+            if (candidate != null && candidate.getId().equalsIgnoreCase(target.getId())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isActiveClassForm(@Nonnull CharacterClassDefinition candidate,
+            CharacterClassDefinition primaryClass) {
+        if (candidate == null || primaryClass == null)
+            return false;
+        String candidatePath = classManager == null ? candidate.getId()
+                : classManager.resolveAscensionPathId(candidate.getId());
+        String activePath = classManager == null ? primaryClass.getId()
+                : classManager.resolveAscensionPathId(primaryClass.getId());
+        return candidatePath != null && activePath != null && candidatePath.equalsIgnoreCase(activePath);
+    }
+
+    private boolean isClassFormCompleted(@Nonnull CharacterClassDefinition classDef,
+            CharacterClassDefinition primaryClass, PlayerData data) {
+        if (classDef == null)
+            return false;
+        if (isActiveClassForm(classDef, primaryClass))
+            return true;
+        if (data == null || classManager == null)
+            return false;
+        String pathId = classManager.resolveAscensionPathId(classDef.getId());
+        if (pathId != null && data.hasCompletedClassForm(pathId))
+            return true;
+        return data.hasCompletedClassForm(classDef.getId());
+    }
+
+    private String buildClassEvolutionLabel(@Nonnull CharacterClassDefinition classDef) {
+        String display = classDef.getDisplayName();
+        if (display == null || display.isBlank())
+            display = classDef.getId();
+        RaceAscensionDefinition ascension = classDef.getAscension();
+        if (ascension == null)
+            return display;
+        if (ascension.isFinalForm())
+            return display + " (Final)";
+        String pathLabel = toDisplay(ascension.getPath());
+        return pathLabel.isBlank() ? display : display + " (" + pathLabel + ")";
+    }
+
+    private String buildClassEvolutionMeta(@Nonnull CharacterClassDefinition classDef,
+            @Nonnull ClassEvolutionNode node) {
+        String pathType = resolveClassPathType(classDef);
+        RaceAscensionDefinition ascension = classDef.getAscension();
+        String stage = ascension == null ? tr("ui.classes.evolution.stage.base", "Base")
+                : toDisplay(ascension.getStage());
+        if (stage.isBlank())
+            stage = tr("ui.classes.evolution.stage.base", "Base");
+        String parentName = resolveClassDisplayName(node.parentClassId());
+        return tr("ui.classes.evolution.meta",
+                "Type: {0} | Stage: {1} | Tier: {2} | From: {3}",
+                pathType, stage, node.depth(), parentName);
+    }
+
+    private ClassEvolutionCriteriaContent buildClassEvolutionCriteriaContent(
+            @Nonnull CharacterClassDefinition classDef) {
+        RaceAscensionDefinition ascension = classDef.getAscension();
+        RaceAscensionRequirements requirements = ascension == null
+                ? RaceAscensionRequirements.none()
+                : ascension.getRequirements();
+
+        List<String> generalSections = new ArrayList<>();
+        List<String> skillSections = new ArrayList<>();
+
+        if (requirements.getRequiredPrestige() > 0) {
+            generalSections.add(tr("ui.classes.evolution.criteria.prestige",
+                    "- Prestige: >= {0}", requirements.getRequiredPrestige()));
+        }
+
+        String minSkillLine = formatClassSkillThresholds(requirements.getMinSkillLevels(), ">=");
+        if (!minSkillLine.isBlank()) {
+            skillSections.add(tr("ui.classes.evolution.criteria.min_skills",
+                    "- Minimum skill levels: {0}", minSkillLine));
+        }
+
+        String maxSkillLine = formatClassSkillThresholds(requirements.getMaxSkillLevels(), "<=");
+        if (!maxSkillLine.isBlank()) {
+            skillSections.add(tr("ui.classes.evolution.criteria.max_skills",
+                    "- Skill caps: {0}", maxSkillLine));
+        }
+
+        if (!requirements.getMinAnySkillLevels().isEmpty()) {
+            List<String> anyGroups = new ArrayList<>();
+            for (Map<SkillAttributeType, Integer> group : requirements.getMinAnySkillLevels()) {
+                String renderedGroup = formatClassSkillThresholds(group, ">=");
+                if (!renderedGroup.isBlank())
+                    anyGroups.add(renderedGroup);
+            }
+            if (!anyGroups.isEmpty()) {
+                skillSections.add(tr("ui.classes.evolution.criteria.any_skills",
+                        "- Any one set: {0}", String.join(" OR ", anyGroups)));
+            }
+        }
+
+        if (!requirements.getRequiredForms().isEmpty()) {
+            List<String> forms = new ArrayList<>();
+            for (String form : requirements.getRequiredForms()) {
+                forms.add(resolveClassDisplayName(form));
+            }
+            generalSections.add(tr("ui.classes.evolution.criteria.forms",
+                    "- Required forms: {0}", String.join(", ", forms)));
+        }
+
+        if (!requirements.getRequiredAugments().isEmpty()) {
+            generalSections.add(tr("ui.classes.evolution.criteria.augments",
+                    "- Required augments: {0}", String.join(", ", requirements.getRequiredAugments())));
+        }
+
+        if (generalSections.isEmpty() && skillSections.isEmpty()) {
+            return new ClassEvolutionCriteriaContent(
+                    tr("ui.classes.evolution.criteria.none", "Requirements: none"), "");
+        }
+
+        String generalText = generalSections.isEmpty()
+                ? tr("ui.classes.evolution.criteria.general.none", "Requirements: skill targets only")
+                : tr("ui.classes.evolution.criteria.general.prefix",
+                        "Requirements:\n{0}", String.join("\n", generalSections));
+
+        String skillText = skillSections.isEmpty() ? ""
+                : tr("ui.classes.evolution.criteria.skills.prefix",
+                        "Trainable Skill Targets:\n{0}", String.join("\n", skillSections));
+
+        return new ClassEvolutionCriteriaContent(generalText, skillText);
+    }
+
+    private String formatClassSkillThresholds(Map<SkillAttributeType, Integer> thresholds, String operator) {
+        if (thresholds == null || thresholds.isEmpty())
+            return "";
+        List<Map.Entry<SkillAttributeType, Integer>> entries = new ArrayList<>(thresholds.entrySet());
+        entries.removeIf(e -> e.getKey() == null || e.getValue() == null);
+        if (entries.isEmpty())
+            return "";
+        entries.sort(Comparator.comparingInt(e -> e.getKey().ordinal()));
+        List<String> rendered = new ArrayList<>();
+        for (Map.Entry<SkillAttributeType, Integer> entry : entries) {
+            rendered.add(localizeAttributeName(entry.getKey()) + " " + operator + " " + entry.getValue());
+        }
+        return String.join(", ", rendered);
+    }
+
+    private String formatClassMissingProgress(@Nonnull RaceAscensionEligibility eligibility,
+            @Nonnull CharacterClassDefinition targetClass) {
+        List<String> blockers = eligibility.getBlockers();
+        if (blockers == null || blockers.isEmpty()) {
+            return tr("ui.classes.evolution.progress.missing_generic", "Missing requirements.");
+        }
+        List<String> lines = new ArrayList<>();
+        lines.add(tr("ui.classes.evolution.progress.missing_header", "Missing requirements:"));
+        for (String blocker : blockers) {
+            if (blocker == null || blocker.isBlank())
+                continue;
+            String normalized = blocker.trim();
+            if (isAnySkillSetBlocker(normalized)) {
+                String anySkillOptions = buildAnyClassSkillOptions(targetClass);
+                if (!anySkillOptions.isBlank()) {
+                    normalized = tr("ui.classes.evolution.progress.missing_any_skill_specific",
+                            "Requires at least one skill option set to be met: {0}.", anySkillOptions);
+                }
+            }
+            lines.add("- " + abbreviateText(normalized, 180));
+        }
+        if (lines.size() == 1) {
+            lines.add(tr("ui.classes.evolution.progress.missing_generic", "- Requirement unmet."));
+        }
+        return String.join("\n", lines);
+    }
+
+    private boolean isAnySkillSetBlocker(@Nonnull String blocker) {
+        String normalized = blocker.toLowerCase(Locale.ROOT);
+        return normalized.contains("at least one or skill requirement set")
+                || normalized.contains("at least one skill requirement set")
+                || normalized.contains("any one skill requirement set")
+                || normalized.contains("one or skill requirement set");
+    }
+
+    private String buildAnyClassSkillOptions(@Nonnull CharacterClassDefinition targetClass) {
+        RaceAscensionDefinition ascension = targetClass.getAscension();
+        RaceAscensionRequirements requirements = ascension == null
+                ? RaceAscensionRequirements.none()
+                : ascension.getRequirements();
+        List<String> groups = new ArrayList<>();
+        for (Map<SkillAttributeType, Integer> group : requirements.getMinAnySkillLevels()) {
+            String rendered = formatClassSkillThresholds(group, ">=");
+            if (!rendered.isBlank())
+                groups.add(rendered);
+        }
+        return String.join(" OR ", groups);
+    }
+
+    private String resolveClassDisplayName(String classIdOrPathId) {
+        if (classIdOrPathId == null || classIdOrPathId.isBlank()) {
+            return tr("hud.common.unavailable", "--");
+        }
+        if (classManager != null) {
+            CharacterClassDefinition direct = classManager.getClass(classIdOrPathId);
+            if (direct != null && direct.getDisplayName() != null && !direct.getDisplayName().isBlank()) {
+                return direct.getDisplayName();
+            }
+            String normalizedTarget = classIdOrPathId.trim().toLowerCase(Locale.ROOT);
+            for (CharacterClassDefinition candidate : classManager.getLoadedClasses()) {
+                if (candidate == null)
+                    continue;
+                String candidatePath = classManager.resolveAscensionPathId(candidate.getId());
+                if (candidatePath != null && candidatePath.equalsIgnoreCase(normalizedTarget)) {
+                    String displayName = candidate.getDisplayName();
+                    return displayName == null || displayName.isBlank() ? candidate.getId() : displayName;
+                }
+            }
+        }
+        return toDisplay(classIdOrPathId);
+    }
+
+    private String collectClassPathTypeSummary(@Nonnull List<ClassEvolutionNode> nodes) {
+        Set<String> uniqueTypes = new LinkedHashSet<>();
+        for (ClassEvolutionNode node : nodes) {
+            if (node == null || node.classDef() == null)
+                continue;
+            uniqueTypes.add(resolveClassPathType(node.classDef()));
+        }
+        if (uniqueTypes.isEmpty())
+            return tr("ui.classes.evolution.path.none", "None");
+        return String.join(", ", uniqueTypes);
+    }
+
+    private String resolveClassPathType(@Nonnull CharacterClassDefinition classDef) {
+        RaceAscensionDefinition ascension = classDef.getAscension();
+        if (ascension == null)
+            return tr("ui.classes.evolution.path.none", "None");
+        String path = ascension.getPath();
+        if (path == null || path.isBlank() || "none".equalsIgnoreCase(path)) {
+            return tr("ui.classes.evolution.path.none", "None");
+        }
+        return switch (path.trim().toLowerCase(Locale.ROOT)) {
+            case "damage" -> tr("ui.classes.evolution.path.damage", "Damage");
+            case "sorcery" -> tr("ui.classes.evolution.path.sorcery", "Sorcery");
+            case "tank" -> tr("ui.classes.evolution.path.tank", "Tank");
+            case "support" -> tr("ui.classes.evolution.path.support", "Support");
+            default -> toDisplay(path);
+        };
+    }
+
+    private String abbreviateText(String value, int maxLength) {
+        if (value == null)
+            return "";
+        String normalized = value.replace('\n', ' ').trim();
+        if (normalized.length() <= maxLength)
+            return normalized;
+        if (maxLength <= 3)
+            return normalized.substring(0, Math.max(0, maxLength));
+        return normalized.substring(0, maxLength - 3) + "...";
+    }
+
+    private static final class ClassEvolutionNode {
+        private final CharacterClassDefinition classDef;
+        private final int depth;
+        private final String parentClassId;
+
+        private ClassEvolutionNode(CharacterClassDefinition classDef, int depth, String parentClassId) {
+            this.classDef = classDef;
+            this.depth = Math.max(1, depth);
+            this.parentClassId = parentClassId;
+        }
+
+        private CharacterClassDefinition classDef() {
+            return classDef;
+        }
+
+        private int depth() {
+            return depth;
+        }
+
+        private String parentClassId() {
+            return parentClassId;
+        }
+    }
+
+    private record ClassEvolutionCriteriaContent(String generalText, String skillText) {
     }
 }
