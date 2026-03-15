@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
 
 /**
@@ -162,6 +163,20 @@ public final class AugmentRuntimeManager {
         }
 
         public double getAttributeBonus(SkillAttributeType type, long now) {
+            return getAttributeBonusInternal(type, now, null);
+        }
+
+        public double getAttributeBonusBySourcePrefix(SkillAttributeType type, long now, String sourcePrefix) {
+            String normalizedPrefix = normalizeId(sourcePrefix);
+            if (normalizedPrefix == null || normalizedPrefix.isBlank()) {
+                return 0.0D;
+            }
+            return getAttributeBonusInternal(type, now, sourceId -> sourceId.startsWith(normalizedPrefix));
+        }
+
+        private double getAttributeBonusInternal(SkillAttributeType type,
+                long now,
+                Predicate<String> sourceFilter) {
             if (type == null) {
                 return 0.0D;
             }
@@ -171,7 +186,12 @@ public final class AugmentRuntimeManager {
             }
             double total = 0.0D;
             bonuses.entrySet().removeIf(entry -> entry.getValue() != null && entry.getValue().isExpired(now));
-            for (AttributeBonus bonus : bonuses.values()) {
+            for (Map.Entry<String, AttributeBonus> entry : bonuses.entrySet()) {
+                String sourceId = entry.getKey();
+                if (sourceFilter != null && (sourceId == null || !sourceFilter.test(sourceId))) {
+                    continue;
+                }
+                AttributeBonus bonus = entry.getValue();
                 if (bonus == null) {
                     continue;
                 }

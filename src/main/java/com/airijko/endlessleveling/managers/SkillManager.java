@@ -40,6 +40,7 @@ public class SkillManager {
     private static final double DEFENSE_FINAL_SEGMENT_SLOPE = 0.2;
     private static final double DEFAULT_DISCIPLINE_XP_BONUS_PER_LEVEL_PERCENT = 0.5D;
     private static final double DEFAULT_FLOW_PER_LEVEL = 0.5D;
+    private static final String COMMON_AUGMENT_SOURCE_PREFIX = "common_";
     private static final String CLASS_INNATE_CAPS_PATH = "classes.innate_attribute_gain_level_caps";
     private static final int DEFAULT_CLASS_INNATE_LEVEL_CAP = 100;
 
@@ -264,6 +265,19 @@ public class SkillManager {
         LOGGER.atFine().log("Augment bonus query: type=%s bonus=%.2f player=%s", attributeType, bonus,
                 playerData.getPlayerName());
         return bonus;
+    }
+
+    private double getCommonAugmentAttributeBonus(PlayerData playerData, SkillAttributeType attributeType) {
+        if (augmentRuntimeManager == null || playerData == null || attributeType == null) {
+            return 0.0D;
+        }
+        var runtime = augmentRuntimeManager.getRuntimeState(playerData.getUuid());
+        if (runtime == null) {
+            return 0.0D;
+        }
+        return runtime.getAttributeBonusBySourcePrefix(attributeType,
+                System.currentTimeMillis(),
+                COMMON_AUGMENT_SOURCE_PREFIX);
     }
 
     private record AttributeConfig(boolean enabled, double perLevel) {
@@ -832,7 +846,9 @@ public class SkillManager {
             float skillValue,
             float innateValue,
             float totalValue,
-            float resistance) {
+            float resistance,
+            float curvedResistance,
+            float commonLinearResistance) {
     }
 
     public record CapRefundResult(int totalRefunded, int precisionRefunded, int defenseRefunded) {
@@ -852,11 +868,13 @@ public class SkillManager {
 
         DefenseBreakdown breakdown = getDefenseBreakdown(playerData);
         LOGGER.atInfo().log(
-                "calculatePlayerDefense: raceMultiplier=%.2f, skill=%.2f, innate=%.2f, total=%.2f, resistance=%.2f%% for player %s",
+                "calculatePlayerDefense: raceMultiplier=%.2f, skill=%.2f, innate=%.2f, total=%.2f, curvedRes=%.2f%%, commonRes=%.2f%%, resistance=%.2f%% for player %s",
                 breakdown.raceMultiplier(),
                 breakdown.skillValue(),
                 breakdown.innateValue(),
                 breakdown.totalValue(),
+                breakdown.curvedResistance() * 100.0f,
+                breakdown.commonLinearResistance() * 100.0f,
                 breakdown.resistance() * 100.0f,
                 playerData.getPlayerName());
 
@@ -869,7 +887,7 @@ public class SkillManager {
 
     public DefenseBreakdown getDefenseBreakdown(PlayerData playerData, int overrideLevel) {
         if (playerData == null) {
-            return new DefenseBreakdown(1.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+            return new DefenseBreakdown(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
         }
         int defenseLevel = overrideLevel >= 0 ? overrideLevel
                 : playerData.getPlayerSkillAttributeLevel(SkillAttributeType.DEFENSE);
@@ -881,11 +899,26 @@ public class SkillManager {
 
         float skillValue = (float) (defenseLevel * perPointValue);
         float innateValue = (float) getInnateAttributeBonus(playerData, SkillAttributeType.DEFENSE);
-        double augmentBonus = getAugmentAttributeBonus(playerData, SkillAttributeType.DEFENSE);
-        float defenseAttributeValue = (float) (skillValue + innateValue + augmentBonus);
+        double augmentBonusTotal = getAugmentAttributeBonus(playerData, SkillAttributeType.DEFENSE);
+        double commonLinearDefenseBonus = Math.max(0.0D,
+                getCommonAugmentAttributeBonus(playerData, SkillAttributeType.DEFENSE));
+        double nonCommonAugmentBonus = augmentBonusTotal - commonLinearDefenseBonus;
+        float defenseAttributeValue = (float) (skillValue + innateValue + nonCommonAugmentBonus);
         float scaledValue = defenseAttributeValue * raceMultiplier;
-        float resistance = (float) (applyDefenseCurve(scaledValue) / 100.0D);
-        return new DefenseBreakdown(raceMultiplier, skillValue, innateValue, scaledValue, resistance);
+        double curvedResistancePercent = applyDefenseCurve(scaledValue);
+        double commonLinearResistancePercent = Math.min(DEFENSE_MAX_REDUCTION, commonLinearDefenseBonus);
+        double totalResistancePercent = Math.min(DEFENSE_MAX_REDUCTION,
+                curvedResistancePercent + commonLinearResistancePercent);
+        float curvedResistance = (float) (curvedResistancePercent / 100.0D);
+        float commonLinearResistance = (float) (commonLinearResistancePercent / 100.0D);
+        float resistance = (float) (totalResistancePercent / 100.0D);
+        return new DefenseBreakdown(raceMultiplier,
+                skillValue,
+                innateValue,
+                scaledValue,
+                resistance,
+                curvedResistance,
+                commonLinearResistance);
     }
 
     private double applyDefenseCurve(double defenseValue) {
