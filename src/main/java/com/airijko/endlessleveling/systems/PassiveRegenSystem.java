@@ -16,6 +16,7 @@ import com.airijko.endlessleveling.managers.SkillManager;
 import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveManager;
 import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveSnapshot;
 import com.airijko.endlessleveling.passives.settings.AdrenalineSettings;
+import com.airijko.endlessleveling.passives.type.SecondWindPassive;
 import com.airijko.endlessleveling.util.ChatMessageTemplate;
 import com.airijko.endlessleveling.util.ChatMessageStrings;
 import com.airijko.endlessleveling.util.PlayerChatNotifier;
@@ -633,62 +634,7 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
     private void applySecondWindHealing(@Nonnull EntityStatMap statMap,
             PassiveRuntimeState runtimeState,
             float deltaSeconds) {
-        if (runtimeState == null || deltaSeconds <= 0) {
-            return;
-        }
-
-        double perSecond = runtimeState.getSecondWindHealPerSecond();
-        double remaining = runtimeState.getSecondWindHealRemaining();
-        if (perSecond <= 0.0D || remaining <= 0.0D) {
-            return;
-        }
-
-        long activeUntil = runtimeState.getSecondWindActiveUntil();
-        if (activeUntil > 0 && System.currentTimeMillis() > activeUntil) {
-            runtimeState.setSecondWindHealPerSecond(0.0D);
-            runtimeState.setSecondWindHealRemaining(0.0D);
-            return;
-        }
-
-        EntityStatValue healthStat = statMap.get(DefaultEntityStatTypes.getHealth());
-        if (healthStat == null) {
-            return;
-        }
-
-        float current = healthStat.get();
-        float max = healthStat.getMax();
-        if (current >= max) {
-            return;
-        }
-
-        double potential = perSecond * deltaSeconds;
-        if (potential <= 0.0D) {
-            return;
-        }
-
-        double allowed = Math.min(remaining, potential);
-        if (current >= max) {
-            if (allowed > 0.0D) {
-                OverhealAugment.recordOverhealOverflow(statMap, allowed);
-            }
-            return;
-        }
-
-        float applied = (float) Math.min(max - current, allowed);
-        double overflow = Math.max(0.0D, allowed - applied);
-        if (overflow > 0.0D) {
-            OverhealAugment.recordOverhealOverflow(statMap, overflow);
-        }
-        if (applied <= 0f) {
-            return;
-        }
-
-        statMap.setStatValue(DefaultEntityStatTypes.getHealth(), current + applied);
-        runtimeState.setSecondWindHealRemaining(remaining - applied);
-        if (runtimeState.getSecondWindHealRemaining() <= 0.0001D) {
-            runtimeState.setSecondWindHealPerSecond(0.0D);
-            runtimeState.setSecondWindHealRemaining(0.0D);
-        }
+        SecondWindPassive.tickHealing(statMap, runtimeState, deltaSeconds);
     }
 
     private void notifyPassiveCooldowns(PlayerRef playerRef, PassiveRuntimeState runtimeState) {

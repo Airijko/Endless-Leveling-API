@@ -1,7 +1,6 @@
 package com.airijko.endlessleveling.combat;
 
 import com.airijko.endlessleveling.augments.AugmentExecutor;
-import com.airijko.endlessleveling.augments.AugmentHooks;
 import com.airijko.endlessleveling.augments.types.ExecutionerAugment;
 import com.airijko.endlessleveling.augments.types.FirstStrikeAugment;
 import com.airijko.endlessleveling.classes.ClassWeaponResolver;
@@ -17,11 +16,13 @@ import com.airijko.endlessleveling.managers.PlayerDataManager;
 import com.airijko.endlessleveling.managers.SkillManager;
 import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveManager;
 import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveSnapshot;
-import com.airijko.endlessleveling.passives.settings.AbsorbSettings;
-import com.airijko.endlessleveling.passives.settings.BerzerkerSettings;
-import com.airijko.endlessleveling.passives.settings.ExecutionerSettings;
-import com.airijko.endlessleveling.passives.settings.FirstStrikeSettings;
-import com.airijko.endlessleveling.passives.settings.RetaliationSettings;
+import com.airijko.endlessleveling.passives.type.AbsorbPassive;
+import com.airijko.endlessleveling.passives.type.BerzerkerPassive;
+import com.airijko.endlessleveling.passives.type.ExecutionerPassive;
+import com.airijko.endlessleveling.passives.type.FirstStrikePassive;
+import com.airijko.endlessleveling.passives.type.RavenousStrikePassive;
+import com.airijko.endlessleveling.passives.type.RetaliationPassive;
+import com.airijko.endlessleveling.passives.type.SecondWindPassive;
 import com.airijko.endlessleveling.passives.util.PassiveContributionBlueprint;
 import com.airijko.endlessleveling.races.RacePassiveDefinition;
 import com.airijko.endlessleveling.util.ChatMessageTemplate;
@@ -30,7 +31,6 @@ import com.airijko.endlessleveling.util.PlayerChatNotifier;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.logger.HytaleLogger;
-import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.modules.entity.damage.Damage;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
@@ -41,7 +41,6 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import javax.annotation.Nonnull;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Centralized combat hook processing so listeners share ordering between
@@ -97,10 +96,10 @@ public final class CombatHookProcessor {
                         ? archetypePassiveManager.getSnapshot(playerData)
                         : ArchetypePassiveSnapshot.empty();
 
-        FirstStrikeSettings firstStrikeSettings = FirstStrikeSettings.fromSnapshot(archetypeSnapshot);
-        BerzerkerSettings berzerkerSettings = BerzerkerSettings.fromSnapshot(archetypeSnapshot);
-        ExecutionerSettings executionerSettings = ExecutionerSettings.fromSnapshot(archetypeSnapshot);
-        RetaliationSettings retaliationSettings = RetaliationSettings.fromSnapshot(archetypeSnapshot);
+        FirstStrikePassive firstStrikePassive = FirstStrikePassive.fromSnapshot(archetypeSnapshot);
+        BerzerkerPassive berzerkerPassive = BerzerkerPassive.fromSnapshot(archetypeSnapshot);
+        ExecutionerPassive executionerPassive = ExecutionerPassive.fromSnapshot(archetypeSnapshot);
+        RetaliationPassive retaliationPassive = RetaliationPassive.fromSnapshot(archetypeSnapshot);
 
         boolean firstStrikeAugmentSelected = hasSelectedAugment(playerData, FirstStrikeAugment.ID);
         boolean executionerAugmentSelected = hasSelectedAugment(playerData, ExecutionerAugment.ID);
@@ -123,9 +122,11 @@ public final class CombatHookProcessor {
         DamageLayerBuffer layerBuffer = new DamageLayerBuffer();
         float prospectiveDamage = critDamage;
 
-        if (runtimeState != null && firstStrikeSettings.enabled() && !firstStrikeAugmentSelected) {
-            float bonusDamage = applyFirstStrike(runtimeState, firstStrikeSettings, ctx.attackerPlayerRef(),
-                    critDamage);
+        if (runtimeState != null && firstStrikePassive.enabled() && !firstStrikeAugmentSelected) {
+            float bonusDamage = firstStrikePassive.apply(runtimeState,
+                    ctx.attackerPlayerRef(),
+                    critDamage,
+                    this::sendPassiveMessage);
             if (bonusDamage > 0f) {
                 registerLayerBonus(layerBuffer,
                         resolveBlueprint(archetypeSnapshot, ArchetypePassiveType.FIRST_STRIKE),
@@ -135,8 +136,7 @@ public final class CombatHookProcessor {
             }
         }
 
-        float berzerkerBonus = computeBerzerkerBonus(berzerkerSettings, ctx.attackerRef(), ctx.commandBuffer(),
-                critDamage);
+        float berzerkerBonus = berzerkerPassive.computeBonus(ctx.attackerRef(), ctx.commandBuffer(), critDamage);
         if (berzerkerBonus > 0f) {
             registerLayerBonus(layerBuffer,
                     resolveBlueprint(archetypeSnapshot, ArchetypePassiveType.BERZERKER),
@@ -146,8 +146,9 @@ public final class CombatHookProcessor {
         }
 
         if (runtimeState != null) {
-            float retaliationBonus = consumeRetaliationBonus(runtimeState, retaliationSettings,
-                    ctx.attackerPlayerRef());
+            float retaliationBonus = retaliationPassive.consumeBonus(runtimeState,
+                    ctx.attackerPlayerRef(),
+                    this::sendPassiveMessage);
             if (retaliationBonus > 0f) {
                 registerLayerBonus(layerBuffer,
                         resolveBlueprint(archetypeSnapshot, ArchetypePassiveType.RETALIATION),
@@ -159,12 +160,12 @@ public final class CombatHookProcessor {
 
         float executionerBonus = executionerAugmentSelected
                 ? 0f
-                : applyExecutionerBonus(runtimeState,
-                        executionerSettings,
+                : executionerPassive.apply(runtimeState,
                         ctx.attackerPlayerRef(),
                         ctx.targetRef(),
                         ctx.commandBuffer(),
-                        prospectiveDamage);
+                        prospectiveDamage,
+                        this::sendPassiveMessage);
         if (executionerBonus > 0f) {
             registerLayerBonus(layerBuffer,
                     resolveBlueprint(archetypeSnapshot, ArchetypePassiveType.EXECUTIONER),
@@ -234,9 +235,10 @@ public final class CombatHookProcessor {
                         ? archetypePassiveManager.getSnapshot(defender)
                         : ArchetypePassiveSnapshot.empty();
 
-        FirstStrikeSettings firstStrikeSettings = FirstStrikeSettings.fromSnapshot(archetypeSnapshot);
-        RetaliationSettings retaliationSettings = RetaliationSettings.fromSnapshot(archetypeSnapshot);
-        AbsorbSettings absorbSettings = AbsorbSettings.fromSnapshot(archetypeSnapshot);
+        FirstStrikePassive firstStrikePassive = FirstStrikePassive.fromSnapshot(archetypeSnapshot);
+        RetaliationPassive retaliationPassive = RetaliationPassive.fromSnapshot(archetypeSnapshot);
+        AbsorbPassive absorbPassive = AbsorbPassive.fromSnapshot(archetypeSnapshot);
+        SecondWindPassive secondWindPassive = SecondWindPassive.fromSnapshot(archetypeSnapshot);
         boolean firstStrikeAugmentSelected = hasSelectedAugment(defender, FirstStrikeAugment.ID);
 
         float originalAmount = damage.getAmount();
@@ -257,17 +259,19 @@ public final class CombatHookProcessor {
         }
 
         if (runtimeState != null) {
-            postAugmentAmount = applyAbsorb(runtimeState, absorbSettings, ctx.defenderPlayer(), postAugmentAmount);
+            postAugmentAmount = absorbPassive.apply(runtimeState,
+                    ctx.defenderPlayer(),
+                    postAugmentAmount,
+                    this::sendPassiveMessage);
         }
 
         float adjustedAmount = postAugmentAmount;
         if (runtimeState != null && ctx.statMap() != null && !archetypeSnapshot.isEmpty()) {
-            adjustedAmount = applySecondWind(defender,
+            adjustedAmount = secondWindPassive.tryTrigger(runtimeState,
                     ctx.defenderPlayer(),
-                    runtimeState,
-                    archetypeSnapshot,
                     ctx.statMap(),
-                    postAugmentAmount);
+                    postAugmentAmount,
+                    this::sendPassiveMessage);
         }
 
         double drLevel = defenseReducedAmount > 0f
@@ -289,11 +293,11 @@ public final class CombatHookProcessor {
                 adjustedAmount);
 
         if (runtimeState != null) {
-            handleRetaliation(runtimeState, retaliationSettings, adjustedAmount);
+            retaliationPassive.onDamageTaken(runtimeState, adjustedAmount);
         }
 
         if (runtimeState != null && !firstStrikeAugmentSelected) {
-            suppressFirstStrikeIfHit(runtimeState, firstStrikeSettings);
+            firstStrikePassive.suppressOnHit(runtimeState);
         }
 
         if (passiveManager != null) {
@@ -352,188 +356,6 @@ public final class CombatHookProcessor {
         return fallbackLevel;
     }
 
-    private float applyFirstStrike(@Nonnull PassiveRuntimeState runtimeState,
-            @Nonnull FirstStrikeSettings settings,
-            PlayerRef playerRef,
-            float currentDamage) {
-        if (!settings.enabled() || currentDamage <= 0) {
-            return 0f;
-        }
-
-        double bonusPercent = Math.max(0.0D, settings.bonusPercent());
-        double flatBonusDamage = Math.max(0.0D, settings.flatBonusDamage());
-        if (bonusPercent <= 0 || flatBonusDamage <= 0.0D) {
-            return 0f;
-        }
-
-        long now = System.currentTimeMillis();
-        if (now < runtimeState.getFirstStrikeCooldownExpiresAt()) {
-            return 0f;
-        }
-
-        float bonusDamage = (float) flatBonusDamage;
-        if (bonusDamage <= 0) {
-            return 0f;
-        }
-
-        runtimeState.setFirstStrikeCooldownExpiresAt(now + settings.cooldownMillis());
-        runtimeState.setFirstStrikeReadyNotified(false);
-        sendPassiveMessage(playerRef,
-                String.format("First Strike triggered! +%.0f flat damage (+%.0f%%). Cooldown: %.0fs",
-                        flatBonusDamage,
-                        bonusPercent * 100.0D,
-                        settings.cooldownMillis() / 1000.0D));
-        return bonusDamage;
-    }
-
-    private float computeBerzerkerBonus(@Nonnull BerzerkerSettings settings,
-            Ref<EntityStore> attackerRef,
-            @Nonnull CommandBuffer<EntityStore> commandBuffer,
-            float baseDamage) {
-        if (!settings.enabled() || attackerRef == null || baseDamage <= 0f) {
-            return 0f;
-        }
-        EntityStatMap statMap = EntityRefUtil.tryGetComponent(commandBuffer, attackerRef,
-                EntityStatMap.getComponentType());
-        if (statMap == null) {
-            return 0f;
-        }
-        EntityStatValue healthStat = statMap.get(DefaultEntityStatTypes.getHealth());
-        if (healthStat == null) {
-            return 0f;
-        }
-        float max = healthStat.getMax();
-        float current = healthStat.get();
-        if (max <= 0f || current <= 0f) {
-            return 0f;
-        }
-        float ratio = current / max;
-        double totalBonus = 0.0D;
-        for (BerzerkerSettings.Entry entry : settings.entries()) {
-            double maxBonus = Math.max(0.0D, entry.bonusPercent());
-            if (maxBonus <= 0.0D) {
-                continue;
-            }
-
-            double threshold = Math.min(Math.max(0.0D, entry.thresholdPercent()), 0.999D);
-            double scale;
-            if (ratio <= threshold) {
-                scale = 1.0D;
-            } else if (ratio >= 1.0D) {
-                scale = 0.0D;
-            } else {
-                double denominator = 1.0D - threshold;
-                scale = denominator <= 0.0D ? 0.0D : (1.0D - ratio) / denominator;
-            }
-
-            scale = Math.max(0.0D, Math.min(1.0D, scale));
-            totalBonus += maxBonus * scale;
-        }
-        if (totalBonus <= 0.0D) {
-            return 0f;
-        }
-        float bonusDamage = (float) (baseDamage * totalBonus);
-        return bonusDamage > 0f ? bonusDamage : 0f;
-    }
-
-    private float consumeRetaliationBonus(@Nonnull PassiveRuntimeState runtimeState,
-            @Nonnull RetaliationSettings settings,
-            PlayerRef playerRef) {
-        if (!settings.enabled()) {
-            return 0f;
-        }
-
-        long now = System.currentTimeMillis();
-        long windowExpiresAt = runtimeState.getRetaliationWindowExpiresAt();
-        if (windowExpiresAt <= 0L) {
-            return 0f;
-        }
-        if (now > windowExpiresAt) {
-            runtimeState.setRetaliationWindowExpiresAt(0L);
-            runtimeState.setRetaliationDamageStored(0.0D);
-            return 0f;
-        }
-        if (now < runtimeState.getRetaliationCooldownExpiresAt()) {
-            return 0f;
-        }
-
-        double bonus = runtimeState.getRetaliationDamageStored();
-        if (bonus <= 0.0D) {
-            return 0f;
-        }
-
-        runtimeState.setRetaliationDamageStored(0.0D);
-        runtimeState.setRetaliationWindowExpiresAt(0L);
-        runtimeState.setRetaliationCooldownExpiresAt(now + settings.cooldownMillis());
-        runtimeState.setRetaliationReadyNotified(false);
-
-        sendPassiveMessage(playerRef,
-                String.format("Retaliation unleashed! Added %.0f flat damage.", bonus));
-
-        return (float) bonus;
-    }
-
-    private float applyExecutionerBonus(PassiveRuntimeState runtimeState,
-            @Nonnull ExecutionerSettings settings,
-            PlayerRef playerRef,
-            Ref<EntityStore> targetRef,
-            @Nonnull CommandBuffer<EntityStore> commandBuffer,
-            float currentDamage) {
-        if (runtimeState == null || !settings.enabled() || targetRef == null || currentDamage <= 0f) {
-            return 0f;
-        }
-        EntityStatMap statMap = commandBuffer.getComponent(targetRef, EntityStatMap.getComponentType());
-        if (statMap == null) {
-            return 0f;
-        }
-        EntityStatValue healthStat = statMap.get(DefaultEntityStatTypes.getHealth());
-        if (healthStat == null) {
-            return 0f;
-        }
-        float current = healthStat.get();
-        float max = healthStat.getMax();
-        if (max <= 0f || current <= 0f) {
-            return 0f;
-        }
-        float predicted = Math.max(0f, current - currentDamage);
-        double flatBonusDamage = 0.0D;
-        for (ExecutionerSettings.Entry entry : settings.entries()) {
-            double threshold = entry.thresholdPercent();
-            if (threshold <= 0.0D) {
-                continue;
-            }
-            float thresholdHealth = (float) (max * threshold);
-            if (current <= thresholdHealth || predicted <= thresholdHealth) {
-                flatBonusDamage += Math.max(0.0D, entry.flatBonusDamage());
-            }
-        }
-
-        if (flatBonusDamage <= 0.0D) {
-            return 0f;
-        }
-
-        long cooldownMillis = settings.cooldownMillis();
-        long now = System.currentTimeMillis();
-        if (cooldownMillis > 0 && now < runtimeState.getExecutionerCooldownExpiresAt()) {
-            return 0f;
-        }
-
-        float bonusDamage = (float) flatBonusDamage;
-        if (bonusDamage <= 0f) {
-            return 0f;
-        }
-
-        if (cooldownMillis > 0) {
-            runtimeState.setExecutionerCooldownExpiresAt(now + cooldownMillis);
-            runtimeState.setExecutionerReadyNotified(false);
-        }
-
-        sendPassiveMessage(playerRef,
-                String.format("Executioner triggered! +%.0f flat damage.", flatBonusDamage));
-
-        return bonusDamage;
-    }
-
     private void applyLifeSteal(@Nonnull PlayerData playerData,
             @Nonnull Ref<EntityStore> attackerRef,
             @Nonnull CommandBuffer<EntityStore> commandBuffer,
@@ -544,13 +366,13 @@ public final class CombatHookProcessor {
         }
 
         double lifeStealPercent = Math.max(0.0D, archetypeSnapshot.getValue(ArchetypePassiveType.LIFE_STEAL));
-        double vampiricBladeHeal = resolveVampiricBladeHeal(archetypeSnapshot, playerData);
-        if (lifeStealPercent <= 0.0D && vampiricBladeHeal <= 0.0D) {
+        double ravenousStrikeHeal = RavenousStrikePassive.resolveHeal(archetypeSnapshot, playerData, skillManager);
+        if (lifeStealPercent <= 0.0D && ravenousStrikeHeal <= 0.0D) {
             return;
         }
 
         double healPercent = lifeStealPercent / 100.0D;
-        double healAmount = (damageDealt * healPercent) + vampiricBladeHeal;
+        double healAmount = (damageDealt * healPercent) + ravenousStrikeHeal;
         if (healAmount <= 0) {
             return;
         }
@@ -574,41 +396,6 @@ public final class CombatHookProcessor {
         }
     }
 
-    private double resolveVampiricBladeHeal(@Nonnull ArchetypePassiveSnapshot snapshot,
-            @Nonnull PlayerData playerData) {
-        List<RacePassiveDefinition> definitions = snapshot.getDefinitions(ArchetypePassiveType.RAVENOUS_STRIKE);
-        if (definitions.isEmpty()) {
-            return 0.0D;
-        }
-
-        double strength = 0.0D;
-        double sorcery = 0.0D;
-        if (skillManager != null) {
-            strength = Math.max(0.0D, skillManager.calculatePlayerStrength(playerData));
-            sorcery = Math.max(0.0D, skillManager.calculatePlayerSorcery(playerData));
-        }
-
-        double totalHeal = 0.0D;
-        for (RacePassiveDefinition definition : definitions) {
-            if (definition == null) {
-                continue;
-            }
-
-            Map<String, Object> props = definition.properties();
-            double flatHeal = Math.max(0.0D, definition.value());
-            double configuredFlat = parsePositiveDouble(props == null ? null : props.get("flat_heal"));
-            if (configuredFlat > 0.0D) {
-                flatHeal = configuredFlat;
-            }
-
-            double strengthScaling = parsePositiveDouble(props == null ? null : props.get("strength_scaling"));
-            double sorceryScaling = parsePositiveDouble(props == null ? null : props.get("sorcery_scaling"));
-            double scaledHeal = (strength * strengthScaling) + (sorcery * sorceryScaling);
-            totalHeal += flatHeal + scaledHeal;
-        }
-        return Math.max(0.0D, totalHeal);
-    }
-
     private PassiveContributionBlueprint resolveBlueprint(ArchetypePassiveSnapshot snapshot,
             ArchetypePassiveType type) {
         List<RacePassiveDefinition> definitions = snapshot == null
@@ -630,216 +417,6 @@ public final class CombatHookProcessor {
         }
         double percent = bonusDamage / baseDamage;
         buffer.addPercent(blueprint.layer(), blueprint.tag(), percent, blueprint.stackingStyle());
-    }
-
-    private float applySecondWind(@Nonnull PlayerData playerData,
-            @Nonnull PlayerRef defenderPlayer,
-            @Nonnull PassiveRuntimeState runtimeState,
-            @Nonnull ArchetypePassiveSnapshot snapshot,
-            @Nonnull EntityStatMap statMap,
-            float incomingDamage) {
-        SecondWindSettings settings = resolveSecondWindSettings(snapshot);
-        if (!settings.enabled() || incomingDamage <= 0) {
-            return incomingDamage;
-        }
-
-        EntityStatValue healthStat = statMap.get(DefaultEntityStatTypes.getHealth());
-        if (healthStat == null) {
-            return incomingDamage;
-        }
-
-        float maxHealth = healthStat.getMax();
-        float currentHealth = healthStat.get();
-        if (maxHealth <= 0 || currentHealth <= 0) {
-            return incomingDamage;
-        }
-
-        float predictedHealth = Math.max(0f, currentHealth - incomingDamage);
-        if (predictedHealth <= 0f) {
-            return incomingDamage;
-        }
-
-        float thresholdHealth = (float) (maxHealth * settings.thresholdPercent());
-        if (thresholdHealth <= 0 || predictedHealth > thresholdHealth) {
-            return incomingDamage;
-        }
-
-        long now = System.currentTimeMillis();
-        if (now < runtimeState.getSecondWindCooldownExpiresAt()
-                || now < runtimeState.getSecondWindActiveUntil()) {
-            return incomingDamage;
-        }
-
-        float healAmount = (float) Math.max(0.0D, maxHealth * settings.healPercent());
-        if (healAmount <= 0f) {
-            return incomingDamage;
-        }
-
-        double durationSeconds = Math.max(0.1D, settings.durationSeconds());
-        double totalHeal = Math.min(healAmount, maxHealth);
-        double perSecond = totalHeal / durationSeconds;
-        runtimeState.setSecondWindHealPerSecond(perSecond);
-        runtimeState.setSecondWindHealRemaining(totalHeal);
-
-        runtimeState.setSecondWindCooldownExpiresAt(now + settings.cooldownMillis());
-        runtimeState.setSecondWindActiveUntil(now + settings.durationMillis());
-        runtimeState.setSecondWindReadyNotified(false);
-        sendPassiveMessage(defenderPlayer,
-                String.format("Second Wind triggered! Healing %.0f%% HP over %.0fs",
-                        settings.healPercent() * 100.0D,
-                        settings.durationSeconds()));
-        return incomingDamage;
-    }
-
-    private SecondWindSettings resolveSecondWindSettings(ArchetypePassiveSnapshot snapshot) {
-        double healPercent = Math.max(0.0D, snapshot.getValue(ArchetypePassiveType.SECOND_WIND));
-        if (healPercent <= 0) {
-            return SecondWindSettings.disabled();
-        }
-
-        List<RacePassiveDefinition> definitions = snapshot.getDefinitions(ArchetypePassiveType.SECOND_WIND);
-        double thresholdSum = 0.0D;
-        int thresholdSources = 0;
-        double durationSum = 0.0D;
-        int durationSources = 0;
-        double cooldownSum = 0.0D;
-        int cooldownSources = 0;
-
-        for (RacePassiveDefinition definition : definitions) {
-            Map<String, Object> props = definition.properties();
-            double thresholdValue = parsePositiveDouble(props.get("threshold"));
-            if (thresholdValue > 0.0D) {
-                thresholdSum += thresholdValue;
-                thresholdSources++;
-            }
-            double durationValue = parsePositiveDouble(props.get("duration"));
-            if (durationValue > 0.0D) {
-                durationSum += durationValue;
-                durationSources++;
-            }
-            double cooldownCandidate = parsePositiveDouble(props.get("cooldown"));
-            if (cooldownCandidate > 0.0D) {
-                cooldownSum += cooldownCandidate;
-                cooldownSources++;
-            }
-        }
-
-        double resolvedThreshold = thresholdSources > 0 ? thresholdSum / thresholdSources : 0.2D;
-        double resolvedDuration = durationSources > 0 ? durationSum / durationSources : 5.0D;
-        double resolvedCooldown = cooldownSources > 0 ? cooldownSum / cooldownSources : 60.0D;
-        return new SecondWindSettings(true, healPercent, resolvedThreshold, resolvedDuration, resolvedCooldown);
-    }
-
-    private double parsePositiveDouble(Object raw) {
-        if (raw instanceof Number number) {
-            double value = number.doubleValue();
-            return value > 0 ? value : 0.0D;
-        }
-        if (raw instanceof String string) {
-            try {
-                double parsed = Double.parseDouble(string.trim());
-                return parsed > 0 ? parsed : 0.0D;
-            } catch (NumberFormatException ignored) {
-            }
-        }
-        return 0.0D;
-    }
-
-    private void handleRetaliation(@Nonnull PassiveRuntimeState runtimeState,
-            @Nonnull RetaliationSettings settings,
-            float damageTaken) {
-        double reflectPercent = Math.max(0.0D, settings.reflectPercent());
-        if (!settings.enabled() || reflectPercent <= 0.0D) {
-            clearRetaliationState(runtimeState);
-            return;
-        }
-        if (damageTaken <= 0f) {
-            return;
-        }
-
-        double contribution = damageTaken * reflectPercent;
-        if (contribution <= 0.0D) {
-            return;
-        }
-
-        long now = System.currentTimeMillis();
-        expireRetaliationWindowIfNeeded(runtimeState, now);
-
-        if (now < runtimeState.getRetaliationCooldownExpiresAt()) {
-            return;
-        }
-
-        long windowMillis = settings.windowMillis();
-        if (windowMillis <= 0L) {
-            return;
-        }
-
-        double stored = runtimeState.getRetaliationDamageStored();
-        long windowExpiresAt = runtimeState.getRetaliationWindowExpiresAt();
-        if (stored <= 0.0D || windowExpiresAt <= 0L || now > windowExpiresAt) {
-            runtimeState.setRetaliationDamageStored(contribution);
-            runtimeState.setRetaliationWindowExpiresAt(now + windowMillis);
-        } else {
-            runtimeState.setRetaliationDamageStored(stored + contribution);
-        }
-    }
-
-    private void expireRetaliationWindowIfNeeded(@Nonnull PassiveRuntimeState runtimeState, long now) {
-        long windowExpiresAt = runtimeState.getRetaliationWindowExpiresAt();
-        if (windowExpiresAt > 0L && now > windowExpiresAt) {
-            runtimeState.setRetaliationWindowExpiresAt(0L);
-            runtimeState.setRetaliationDamageStored(0.0D);
-        }
-    }
-
-    private void clearRetaliationState(@Nonnull PassiveRuntimeState runtimeState) {
-        runtimeState.setRetaliationWindowExpiresAt(0L);
-        runtimeState.setRetaliationDamageStored(0.0D);
-        runtimeState.setRetaliationCooldownExpiresAt(0L);
-        runtimeState.setRetaliationReadyNotified(true);
-    }
-
-    private void suppressFirstStrikeIfHit(PassiveRuntimeState runtimeState,
-            FirstStrikeSettings settings) {
-        if (runtimeState == null || !settings.enabled() || settings.cooldownMillis() <= 0) {
-            return;
-        }
-
-        long now = System.currentTimeMillis();
-        if (now < runtimeState.getFirstStrikeCooldownExpiresAt()) {
-            return;
-        }
-
-        runtimeState.setFirstStrikeCooldownExpiresAt(now + settings.cooldownMillis());
-        runtimeState.setFirstStrikeReadyNotified(false);
-    }
-
-    private float applyAbsorb(@Nonnull PassiveRuntimeState runtimeState,
-            @Nonnull AbsorbSettings settings,
-            PlayerRef defenderPlayer,
-            float incomingDamage) {
-        if (!settings.enabled() || incomingDamage <= 0f) {
-            return incomingDamage;
-        }
-
-        long now = System.currentTimeMillis();
-        if (now < runtimeState.getAbsorbCooldownExpiresAt()) {
-            return incomingDamage;
-        }
-
-        double reduction = Math.max(0.0D, Math.min(1.0D, settings.reductionPercent()));
-        if (reduction <= 0.0D) {
-            return incomingDamage;
-        }
-
-        runtimeState.setAbsorbCooldownExpiresAt(now + settings.cooldownMillis());
-        float reduced = (float) (incomingDamage * (1.0D - reduction));
-
-        sendPassiveMessage(defenderPlayer,
-                String.format("Absorb triggered! Reduced incoming damage by %.0f%%. Cooldown: %.0fs",
-                        reduction * 100.0D,
-                        settings.cooldownMillis() / 1000.0D));
-        return Math.max(0.0f, reduced);
     }
 
     private void sendPassiveMessage(PlayerRef playerRef, String text) {
@@ -889,24 +466,5 @@ public final class CombatHookProcessor {
     }
 
     public record IncomingResult(float originalDamage, float resistance, float finalDamage) {
-    }
-
-    private record SecondWindSettings(boolean enabled,
-            double healPercent,
-            double thresholdPercent,
-            double durationSeconds,
-            double cooldownSeconds) {
-
-        static SecondWindSettings disabled() {
-            return new SecondWindSettings(false, 0.0D, 0.0D, 0.0D, 0.0D);
-        }
-
-        long durationMillis() {
-            return (long) Math.max(0L, Math.round(durationSeconds * 1000.0D));
-        }
-
-        long cooldownMillis() {
-            return (long) Math.max(0L, Math.round(cooldownSeconds * 1000.0D));
-        }
     }
 }
