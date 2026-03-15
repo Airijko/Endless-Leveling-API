@@ -9,6 +9,8 @@ import com.airijko.endlessleveling.managers.PartyManager;
 import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveSnapshot;
 import com.airijko.endlessleveling.races.RacePassiveDefinition;
 import com.airijko.endlessleveling.util.EntityRefUtil;
+import com.airijko.endlessleveling.util.ChatMessageTemplate;
+import com.airijko.endlessleveling.util.PlayerChatNotifier;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
@@ -36,6 +38,7 @@ public final class PartyMendingAuraPassive {
     private static final double HEAL_FROM_TOTAL_MANA = 0.10D;
     private static final double HEAL_FROM_TOTAL_STAMINA = 0.20D;
     private static final double DEFAULT_SELF_HEAL_EFFECTIVENESS = 1.0D;
+    private static final double DEFAULT_DAMAGE_PAUSE_SECONDS = 4.0D;
 
     private PartyMendingAuraPassive() {
     }
@@ -58,6 +61,23 @@ public final class PartyMendingAuraPassive {
         HealingAuraConfig config = resolveConfig(archetypeSnapshot);
 
         long now = System.currentTimeMillis();
+        PlayerRef sourcePlayer = EntityRefUtil.tryGetComponent(commandBuffer, sourceRef, PlayerRef.getComponentType());
+
+        if (isPausedByDamage(runtimeState, now, config.damagePauseMillis())) {
+            if (!runtimeState.isHealingAuraPaused()) {
+                runtimeState.setHealingAuraPaused(true);
+                notifyPassive(sourcePlayer,
+                        "Healing Aura paused after taking damage.");
+            }
+            return;
+        }
+
+        if (runtimeState.isHealingAuraPaused()) {
+            runtimeState.setHealingAuraPaused(false);
+            notifyPassive(sourcePlayer,
+                    "Healing Aura reactivated.");
+        }
+
         long lastPulse = runtimeState.getPartyMendingLastPulseMillis();
         if (lastPulse > 0L && now - lastPulse < PULSE_INTERVAL_MILLIS) {
             return;
@@ -169,6 +189,7 @@ public final class PartyMendingAuraPassive {
         double baseRadius = BASE_RANGE_BLOCKS;
         double manaPerBlock = MANA_PER_RANGE_BLOCK;
         double selfHealEffectiveness = DEFAULT_SELF_HEAL_EFFECTIVENESS;
+        long damagePauseMillis = (long) Math.max(0L, Math.round(DEFAULT_DAMAGE_PAUSE_SECONDS * 1000.0D));
 
         if (snapshot == null) {
             return new HealingAuraConfig(flatHealValue,
@@ -176,7 +197,8 @@ public final class PartyMendingAuraPassive {
                     staminaRatio,
                     baseRadius,
                     manaPerBlock,
-                    selfHealEffectiveness);
+                    selfHealEffectiveness,
+                    damagePauseMillis);
         }
 
         RacePassiveDefinition strongestDefinition = resolveStrongestDefinition(
@@ -188,7 +210,8 @@ public final class PartyMendingAuraPassive {
                     staminaRatio,
                     baseRadius,
                     manaPerBlock,
-                    selfHealEffectiveness);
+                    selfHealEffectiveness,
+                    damagePauseMillis);
         }
 
         Map<String, Object> props = strongestDefinition.properties();
@@ -205,12 +228,36 @@ public final class PartyMendingAuraPassive {
         Object selfEffectRaw = firstNonNull(props.get("self_heal_effectiveness"), props.get("self_heal_ratio"));
         selfHealEffectiveness = parseBoundedRatio(selfEffectRaw, selfHealEffectiveness);
 
+        Object damagePauseRaw = firstNonNull(props.get("damage_pause_seconds"),
+                firstNonNull(props.get("pause_after_damage_seconds"), props.get("combat_pause_seconds")));
+        double damagePauseSeconds = parseNonNegative(damagePauseRaw, DEFAULT_DAMAGE_PAUSE_SECONDS);
+        damagePauseMillis = (long) Math.max(0L, Math.round(damagePauseSeconds * 1000.0D));
+
         return new HealingAuraConfig(flatHealValue,
                 manaRatio,
                 staminaRatio,
                 baseRadius,
                 manaPerBlock,
-                selfHealEffectiveness);
+                selfHealEffectiveness,
+                damagePauseMillis);
+    }
+
+    private static boolean isPausedByDamage(PassiveRuntimeState runtimeState, long now, long pauseMillis) {
+        if (runtimeState == null || pauseMillis <= 0L) {
+            return false;
+        }
+        long lastDamageTakenMillis = runtimeState.getLastDamageTakenMillis();
+        if (lastDamageTakenMillis <= 0L) {
+            return false;
+        }
+        return now - lastDamageTakenMillis < pauseMillis;
+    }
+
+    private static void notifyPassive(PlayerRef playerRef, String message) {
+        if (playerRef == null || !playerRef.isValid() || message == null || message.isBlank()) {
+            return;
+        }
+        PlayerChatNotifier.send(playerRef, ChatMessageTemplate.PASSIVE_GENERIC, message);
     }
 
     private static RacePassiveDefinition resolveStrongestDefinition(List<RacePassiveDefinition> definitions) {
@@ -348,7 +395,8 @@ public final class PartyMendingAuraPassive {
             double staminaRatio,
             double baseRadius,
             double manaPerBlock,
-            double selfHealEffectiveness) {
+            double selfHealEffectiveness,
+            long damagePauseMillis) {
     }
 
     private record HealingAuraTarget(EntityStatMap statMap, boolean selfTarget) {

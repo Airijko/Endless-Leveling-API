@@ -405,6 +405,8 @@ public class PassiveManager {
         private int swiftnessStacks;
         private long lastMobKillMillis;
         private long partyMendingLastPulseMillis;
+        private boolean healingAuraPaused;
+        private long lastDamageTakenMillis;
 
         PassiveRuntimeState(UUID ignored) {
         }
@@ -572,6 +574,8 @@ public class PassiveManager {
             this.lastStaminaSample = Float.NaN;
             this.lastMobKillMillis = 0L;
             this.partyMendingLastPulseMillis = 0L;
+            this.healingAuraPaused = false;
+            this.lastDamageTakenMillis = 0L;
         }
 
         public long getAdrenalineCooldownExpiresAt() {
@@ -695,6 +699,22 @@ public class PassiveManager {
 
         public void setPartyMendingLastPulseMillis(long partyMendingLastPulseMillis) {
             this.partyMendingLastPulseMillis = Math.max(0L, partyMendingLastPulseMillis);
+        }
+
+        public boolean isHealingAuraPaused() {
+            return healingAuraPaused;
+        }
+
+        public void setHealingAuraPaused(boolean healingAuraPaused) {
+            this.healingAuraPaused = healingAuraPaused;
+        }
+
+        public long getLastDamageTakenMillis() {
+            return lastDamageTakenMillis;
+        }
+
+        public void setLastDamageTakenMillis(long lastDamageTakenMillis) {
+            this.lastDamageTakenMillis = Math.max(0L, lastDamageTakenMillis);
         }
 
     }

@@ -18,6 +18,7 @@ passives:
     mana_ratio: 0.175
     stamina_ratio: 0.275
     self_heal_effectiveness: 0.25
+    damage_pause_seconds: 4
     radius: 5 # base radius in blocks
     radius_mana_scaling:
       mana_per_block: 75

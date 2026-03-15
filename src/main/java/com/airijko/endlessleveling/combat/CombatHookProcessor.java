@@ -293,6 +293,7 @@ public final class CombatHookProcessor {
                 adjustedAmount);
 
         if (runtimeState != null) {
+            runtimeState.setLastDamageTakenMillis(System.currentTimeMillis());
             retaliationPassive.onDamageTaken(runtimeState, adjustedAmount);
         }
 
