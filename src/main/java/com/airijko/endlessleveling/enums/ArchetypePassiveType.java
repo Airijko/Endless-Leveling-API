@@ -11,7 +11,7 @@ public enum ArchetypePassiveType {
     HEALTH_REGEN("HEALTH_REGEN"),
     MANA_REGEN("MANA_REGEN"),
     MANA_REGEN_FLAT("MANA_REGEN_FLAT"),
-    PARTY_MENDING_AURA("PARTY_MENDING_AURA"),
+    HEALING_AURA("HEALING_AURA"),
     REGENERATION("REGENERATION"),
     HEALING_BONUS("HEALING_BONUS"),
     LIFE_STEAL("LIFE_STEAL"),
@@ -50,6 +50,9 @@ public enum ArchetypePassiveType {
         // Legacy alias retained for backward compatibility with older configs.
         if ("VAMPIRIC_BLADE".equals(normalized)) {
             return RAVENOUS_STRIKE;
+        }
+        if ("PARTY_MENDING_AURA".equals(normalized)) {
+            return HEALING_AURA;
         }
         for (ArchetypePassiveType type : values()) {
             if (type.configKey.equals(normalized)) {

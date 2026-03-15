@@ -46,7 +46,7 @@ public final class PartyMendingAuraPassive {
             return;
         }
 
-        double passiveValue = archetypeSnapshot.getValue(ArchetypePassiveType.PARTY_MENDING_AURA);
+        double passiveValue = archetypeSnapshot.getValue(ArchetypePassiveType.HEALING_AURA);
         if (passiveValue <= 0.0D) {
             return;
         }

@@ -1137,7 +1137,7 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             case HEALTH_REGEN -> tr("ui.races.passive.desc.health_regen", "{0} HP/5s", formatPercentValue(value));
             case MANA_REGEN -> tr("ui.races.passive.desc.mana_regen", "{0} mana/5s", formatPercentValue(value));
             case MANA_REGEN_FLAT -> tr("ui.races.passive.desc.mana_regen_flat", "{0} mana/s", formatSigned(value));
-            case PARTY_MENDING_AURA -> appendDetails(
+            case HEALING_AURA -> appendDetails(
                     tr("ui.races.passive.desc.party_mending_aura", "Party healing pulse"),
                     tr("ui.races.passive.detail.party_mending_heal", "heal: 10% mana + 20% stamina"),
                     tr("ui.races.passive.detail.party_mending_radius", "radius: 5 +1/75 mana"));
