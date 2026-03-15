@@ -29,7 +29,7 @@ public class SupportUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             @Nonnull Store<EntityStore> store) {
 
         ui.append("Pages/SupportPage.ui");
-        NavUIHelper.applyNavVersion(ui, playerRef);
+        NavUIHelper.applyNavVersion(ui, playerRef, "support");
         NavUIHelper.bindNavEvents(events);
 
         ui.set("#SupportTitleLabel.Text",

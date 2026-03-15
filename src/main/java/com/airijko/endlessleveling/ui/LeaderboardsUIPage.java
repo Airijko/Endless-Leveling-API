@@ -52,7 +52,7 @@ public class LeaderboardsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Dat
             @Nonnull Store<EntityStore> store) {
 
         ui.append("Pages/Leaderboards/LeaderboardsPage.ui");
-        NavUIHelper.applyNavVersion(ui, playerRef);
+        NavUIHelper.applyNavVersion(ui, playerRef, "leaderboards");
         NavUIHelper.bindNavEvents(events);
 
         events.addEventBinding(Activating, "#SortByButton", of("Action", "lb:sort:field"), false);

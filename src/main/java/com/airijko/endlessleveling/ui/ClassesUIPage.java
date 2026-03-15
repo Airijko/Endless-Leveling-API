@@ -93,7 +93,7 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             @Nonnull UIEventBuilder events,
             @Nonnull Store<EntityStore> store) {
         ui.append("Pages/Classes/ClassesPage.ui");
-        NavUIHelper.applyNavVersion(ui, playerRef);
+        NavUIHelper.applyNavVersion(ui, playerRef, "classes");
         applyStaticLabels(ui);
         NavUIHelper.bindNavEvents(events);
 

@@ -71,7 +71,7 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             @Nonnull Store<EntityStore> store) {
 
         ui.append("Pages/Races/RacesPage.ui");
-        NavUIHelper.applyNavVersion(ui, playerRef);
+        NavUIHelper.applyNavVersion(ui, playerRef, "races");
         NavUIHelper.bindNavEvents(events);
         applyStaticLabels(ui);
         events.addEventBinding(Activating,

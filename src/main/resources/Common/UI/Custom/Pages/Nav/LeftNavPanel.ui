@@ -1,38 +1,50 @@
+@LeftNavButtonStyle = (
+  Default: (
+    LabelStyle: (
+      FontSize: 14,
+      TextColor: #6e7da1,
+      VerticalAlignment: Center,
+      RenderBold: true
+    )
+  ),
+  Hovered: (
+    Background: #121a26,
+    LabelStyle: (
+      FontSize: 14,
+      TextColor: #ffffff,
+      VerticalAlignment: Center,
+      RenderBold: true
+    )
+  )
+);
+
+@LeftNavButtonStyleSelected = (
+  Default: (
+    Background: #121a26,
+    LabelStyle: (
+      FontSize: 14,
+      TextColor: #ffffff,
+      VerticalAlignment: Center,
+      RenderBold: true
+    )
+  ),
+  Hovered: (
+    Background: #121a26,
+    LabelStyle: (
+      FontSize: 14,
+      TextColor: #ffffff,
+      VerticalAlignment: Center,
+      RenderBold: true
+    )
+  )
+);
+
 @LeftNavButton = MenuItem {
   Anchor: (Height: 36);
   Padding: (Left: 16, Right: 16);
 
-  Style: (
-    Default: (
-      LabelStyle: (
-        FontSize: 14,
-        TextColor: #6e7da1,
-        VerticalAlignment: Center,
-        RenderBold: true
-      )
-    ),
-    Hovered: (
-      Background: #121a26,
-      LabelStyle: (
-        FontSize: 14,
-        TextColor: #ffffff,
-        VerticalAlignment: Center,
-        RenderBold: true
-      )
-    )
-  );
-
-  SelectedStyle: (
-    Default: (
-      Background: #121a26,
-      LabelStyle: (
-        FontSize: 14,
-        TextColor: #ffffff,
-        VerticalAlignment: Center,
-        RenderBold: true
-      )
-    )
-  );
+  Style: @LeftNavButtonStyle;
+  SelectedStyle: @LeftNavButtonStyleSelected;
 };
 
 @LeftNavPanel = Group {

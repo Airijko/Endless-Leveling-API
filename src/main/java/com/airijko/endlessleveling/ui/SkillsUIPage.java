@@ -60,7 +60,7 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
                 // Load UI
                 ui.append("Pages/SkillsPage.ui");
-                NavUIHelper.applyNavVersion(ui, playerRef);
+                NavUIHelper.applyNavVersion(ui, playerRef, "skills");
 
                 // Bind left navigation events (Profile / Skills / Party / Leaderboards /
                 // Settings)

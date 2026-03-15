@@ -75,7 +75,7 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             @Nonnull UIEventBuilder events,
             @Nonnull Store<EntityStore> store) {
         ui.append("Pages/Augments/AugmentsPage.ui");
-        NavUIHelper.applyNavVersion(ui, playerRef);
+        NavUIHelper.applyNavVersion(ui, playerRef, "augments");
         applyStaticLabels(ui);
         ui.set("#SearchInput.Value", this.searchQuery);
         NavUIHelper.bindNavEvents(events);

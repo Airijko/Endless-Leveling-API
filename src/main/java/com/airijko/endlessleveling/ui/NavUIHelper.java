@@ -7,6 +7,7 @@ import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
 import com.hypixel.hytale.server.core.entity.entities.Player;
+import com.hypixel.hytale.server.core.ui.Value;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
@@ -23,6 +24,10 @@ public final class NavUIHelper {
 
         private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
         private static final String NAV_VERSION = resolveVersion();
+        private static final Value<String> NAV_BUTTON_STYLE = Value.ref("Pages/Nav/LeftNavPanel.ui",
+                        "LeftNavButtonStyle");
+        private static final Value<String> NAV_BUTTON_STYLE_SELECTED = Value.ref("Pages/Nav/LeftNavPanel.ui",
+                        "LeftNavButtonStyleSelected");
 
         private NavUIHelper() {
         }
@@ -30,7 +35,10 @@ public final class NavUIHelper {
         /**
          * Write the current plugin version into the shared nav panel.
          */
-        public static void applyNavVersion(@Nonnull UICommandBuilder ui, @Nonnull PlayerRef playerRef) {
+        public static void applyNavVersion(
+                        @Nonnull UICommandBuilder ui,
+                        @Nonnull PlayerRef playerRef,
+                        @Nonnull String activeNav) {
                 ui.set("#NavProfile.Text", Lang.tr(playerRef.getUuid(), "ui.nav.profile", "PROFILE"));
                 ui.set("#NavSkills.Text", Lang.tr(playerRef.getUuid(), "ui.nav.skills", "SKILLS"));
                 ui.set("#NavRaces.Text", Lang.tr(playerRef.getUuid(), "ui.nav.races", "RACES"));
@@ -40,6 +48,23 @@ public final class NavUIHelper {
                 ui.set("#NavSupport.Text", Lang.tr(playerRef.getUuid(), "ui.nav.support", "SUPPORT"));
                 ui.set("#NavSettings.Text", Lang.tr(playerRef.getUuid(), "ui.nav.settings", "SETTINGS"));
                 ui.set("#NavVersion.Text", NAV_VERSION);
+                applySelectedNavStyle(ui, activeNav);
+        }
+
+        private static void applySelectedNavStyle(@Nonnull UICommandBuilder ui, @Nonnull String activeNav) {
+                setNavButtonSelected(ui, "#NavProfile", "profile".equalsIgnoreCase(activeNav));
+                setNavButtonSelected(ui, "#NavSkills", "skills".equalsIgnoreCase(activeNav));
+                setNavButtonSelected(ui, "#NavAugments", "augments".equalsIgnoreCase(activeNav));
+                setNavButtonSelected(ui, "#NavRaces", "races".equalsIgnoreCase(activeNav));
+                setNavButtonSelected(ui, "#NavClasses", "classes".equalsIgnoreCase(activeNav));
+                setNavButtonSelected(ui, "#NavLeaderboards", "leaderboards".equalsIgnoreCase(activeNav));
+                setNavButtonSelected(ui, "#NavSupport", "support".equalsIgnoreCase(activeNav));
+                setNavButtonSelected(ui, "#NavSettings", "settings".equalsIgnoreCase(activeNav));
+        }
+
+        private static void setNavButtonSelected(@Nonnull UICommandBuilder ui, @Nonnull String selector,
+                        boolean selected) {
+                ui.set(selector + ".Style", selected ? NAV_BUTTON_STYLE_SELECTED : NAV_BUTTON_STYLE);
         }
 
         /**
