@@ -12,6 +12,26 @@ weapons:
     damage: 1.365
 
 passives:
+  - type: SHIELDING_AURA
+    value: 1
+    activation: on_hit
+    flat_shield_value: 45
+    stamina_ratio: 1.0
+    self_shield_effectiveness: 0.25
+    duration: 10
+    cooldown: 25
+    radius: 5 # base radius in blocks
+    radius_mana_scaling:
+      mana_per_block: 75
+  - type: BUFFING_AURA
+    value: 1.0
+    stamina_ratio: 2.0
+    max_buffed_value_per_ally: 1.0 # 100% damage buff
+    self_buff_effectiveness: 0.25
+    damage_pause_seconds: 10
+    radius: 5 # base radius in blocks
+    radius_mana_scaling:
+      mana_per_block: 75
   - type: MANA_REGEN
     value: 0.098
   - type: HEALING_BONUS
