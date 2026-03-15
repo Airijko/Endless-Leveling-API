@@ -3,6 +3,7 @@ package com.airijko.endlessleveling.passives.type;
 import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.data.PlayerData;
 import com.airijko.endlessleveling.enums.ArchetypePassiveType;
+import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.airijko.endlessleveling.managers.PartyManager;
 import com.airijko.endlessleveling.managers.PassiveManager;
 import com.airijko.endlessleveling.managers.PassiveManager.PassiveRuntimeState;
@@ -11,6 +12,7 @@ import com.airijko.endlessleveling.races.RacePassiveDefinition;
 import com.airijko.endlessleveling.util.EntityRefUtil;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue;
@@ -30,13 +32,15 @@ import java.util.UUID;
  */
 public final class PartyBuffingAuraPassive {
 
+    private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
+
     private static final long PULSE_INTERVAL_MILLIS = 1000L;
-    private static final long BUFF_DURATION_MILLIS = 2000L;
     private static final double DEFAULT_STAMINA_RATIO = 0.4D;
     private static final double DEFAULT_MAX_BUFFED_VALUE_PER_ALLY = 1.0D;
     private static final double DEFAULT_SELF_BUFF_EFFECTIVENESS = 0.25D;
     private static final double DEFAULT_BASE_RADIUS = PartyHealingDistributor.DEFAULT_BASE_RADIUS_BLOCKS;
     private static final double DEFAULT_MANA_PER_BLOCK = PartyHealingDistributor.DEFAULT_MANA_PER_RADIUS_BLOCK;
+    private static final double DEFAULT_DURATION_SECONDS = 4.0D;
     private static final double DEFAULT_DAMAGE_PAUSE_SECONDS = 10.0D;
     private static final double EPSILON = 0.000001D;
 
@@ -51,11 +55,16 @@ public final class PartyBuffingAuraPassive {
             PassiveRuntimeState sourceRuntimeState) {
         if (sourcePlayerData == null || sourceRef == null || commandBuffer == null
                 || sourceStats == null || archetypeSnapshot == null || sourceRuntimeState == null) {
+            LOGGER.atFine().log("[BUFFING_AURA] Skip pulse: missing required runtime inputs.");
             return;
         }
 
+        UUID sourceUuid = sourcePlayerData.getUuid();
         double passiveValue = archetypeSnapshot.getValue(ArchetypePassiveType.BUFFING_AURA);
         if (passiveValue <= 0.0D) {
+            LOGGER.atFine().log("[BUFFING_AURA] Skip pulse for %s: passive value %.3f is not active.",
+                    sourceUuid,
+                    passiveValue);
             return;
         }
 
@@ -63,23 +72,47 @@ public final class PartyBuffingAuraPassive {
         long now = System.currentTimeMillis();
 
         if (isPausedByDamage(sourceRuntimeState, now, config.damagePauseMillis())) {
+            long lastDamageTakenMillis = sourceRuntimeState.getLastDamageTakenMillis();
+            long elapsedSinceDamage = Math.max(0L, now - lastDamageTakenMillis);
+            long remainingPauseMillis = Math.max(0L, config.damagePauseMillis() - elapsedSinceDamage);
+            if (elapsedSinceDamage <= 250L) {
+                LOGGER.atInfo().log(
+                        "[BUFFING_AURA] Paused for %s after taking damage (remaining %.2fs, lastHitAgo=%dms).",
+                        sourceUuid,
+                        remainingPauseMillis / 1000.0D,
+                        elapsedSinceDamage);
+            } else {
+                LOGGER.atFiner().log("[BUFFING_AURA] Skip pulse for %s: paused by damage (remaining %.2fs).",
+                        sourceUuid,
+                        remainingPauseMillis / 1000.0D);
+            }
             return;
         }
 
         long lastPulse = sourceRuntimeState.getBuffingAuraLastPulseMillis();
         if (lastPulse > 0L && now - lastPulse < PULSE_INTERVAL_MILLIS) {
+            LOGGER.atFiner().log("[BUFFING_AURA] Skip pulse for %s: waiting for pulse interval (%dms/%dms).",
+                    sourceUuid,
+                    now - lastPulse,
+                    PULSE_INTERVAL_MILLIS);
             return;
         }
 
         EntityStatValue sourceHealth = sourceStats.get(DefaultEntityStatTypes.getHealth());
         if (sourceHealth == null || sourceHealth.getMax() <= 0f || sourceHealth.get() <= 0f) {
+            LOGGER.atFine().log("[BUFFING_AURA] Skip pulse for %s: source is not alive.", sourceUuid);
             return;
         }
 
-        EntityStatValue sourceStamina = sourceStats.get(DefaultEntityStatTypes.getStamina());
-        double totalStamina = sourceStamina != null ? Math.max(0.0D, sourceStamina.getMax()) : 0.0D;
+        double totalStamina = resolveSourceStamina(sourcePlayerData, sourceStats);
         double pooledBuff = (totalStamina * config.staminaRatio()) * passiveValue;
         if (pooledBuff <= 0.0D) {
+            LOGGER.atFine().log(
+                    "[BUFFING_AURA] Skip pulse for %s: pooled buff is zero (stamina=%.3f ratio=%.3f value=%.3f).",
+                    sourceUuid,
+                    totalStamina,
+                    config.staminaRatio(),
+                    passiveValue);
             return;
         }
 
@@ -90,14 +123,28 @@ public final class PartyBuffingAuraPassive {
                 config.baseRadius(),
                 config.manaPerBlock());
         if (targets.isEmpty()) {
+            LOGGER.atFine().log("[BUFFING_AURA] Skip pulse for %s: no valid party targets in radius %.2f.",
+                    sourceUuid,
+                    config.baseRadius());
             return;
         }
 
+        long expiresAt = now + config.durationMillis();
         distributeBuffPool(targets,
                 pooledBuff,
                 config.maxBuffedValuePerAlly(),
                 config.selfBuffEffectiveness(),
-                now + BUFF_DURATION_MILLIS);
+                expiresAt);
+
+        LOGGER.atInfo().log(
+                "[BUFFING_AURA] Activated for %s: targets=%d pooled=%.3f ratio=%.3f duration=%.2fs selfEffect=%.2f maxPerAlly=%.3f.",
+                sourceUuid,
+                targets.size(),
+                pooledBuff,
+                config.staminaRatio(),
+                config.durationMillis() / 1000.0D,
+                config.selfBuffEffectiveness(),
+                config.maxBuffedValuePerAlly());
 
         sourceRuntimeState.setBuffingAuraLastPulseMillis(now);
     }
@@ -118,6 +165,7 @@ public final class PartyBuffingAuraPassive {
         if (expiresAt <= 0L || now < expiresAt) {
             return;
         }
+        LOGGER.atFiner().log("[BUFFING_AURA] Expired active bonus (expiredAt=%d, now=%d).", expiresAt, now);
         runtimeState.clearBuffingAuraBonus();
     }
 
@@ -147,7 +195,7 @@ public final class PartyBuffingAuraPassive {
                 continue;
             }
             double multiplier = target.selfTarget()
-                    ? Math.max(0.0D, Math.min(1.0D, selfBuffEffectiveness))
+                    ? Math.max(0.0D, selfBuffEffectiveness)
                     : 1.0D;
             if (multiplier <= 0.0D) {
                 continue;
@@ -215,12 +263,15 @@ public final class PartyBuffingAuraPassive {
 
         double clampedBonus = Math.max(0.0D, damageBonus);
         if (clampedBonus <= EPSILON) {
+            LOGGER.atFiner().log("[BUFFING_AURA] Clearing target bonus: assigned bonus <= epsilon (%.6f).",
+                    clampedBonus);
             runtimeState.clearBuffingAuraBonus();
             return;
         }
 
         runtimeState.setBuffingAuraDamageBonus(clampedBonus);
         runtimeState.setBuffingAuraBonusExpiresAt(Math.max(0L, expiresAt));
+        LOGGER.atFiner().log("[BUFFING_AURA] Applied target bonus %.3f until %d.", clampedBonus, expiresAt);
     }
 
     private static List<PartyBuffTarget> resolvePartyTargets(PlayerData sourcePlayerData,
@@ -258,6 +309,17 @@ public final class PartyBuffingAuraPassive {
 
         List<PartyBuffTarget> targets = new ArrayList<>();
         HashSet<Integer> visitedEntityIds = new HashSet<>();
+
+        if (sourceRef != null) {
+            visitedEntityIds.add(sourceRef.getIndex());
+        }
+        if (isLivingTarget(sourceStats)) {
+            PassiveRuntimeState sourceRuntimeState = passiveManager.getRuntimeState(sourceUuid);
+            if (sourceRuntimeState != null) {
+                targets.add(new PartyBuffTarget(sourceRuntimeState, true));
+            }
+        }
+
         for (Ref<EntityStore> targetRef : TargetUtil.getAllEntitiesInSphere(
                 sourceTransform.getPosition(),
                 radius,
@@ -298,6 +360,23 @@ public final class PartyBuffingAuraPassive {
         }
 
         return targets;
+    }
+
+    private static double resolveSourceStamina(PlayerData sourcePlayerData, EntityStatMap sourceStats) {
+        double staminaFromStat = 0.0D;
+        if (sourceStats != null) {
+            EntityStatValue sourceStamina = sourceStats.get(DefaultEntityStatTypes.getStamina());
+            if (sourceStamina != null) {
+                staminaFromStat = Math.max(0.0D, sourceStamina.getMax());
+            }
+        }
+        if (staminaFromStat > 0.0D) {
+            return staminaFromStat;
+        }
+        if (sourcePlayerData == null) {
+            return 0.0D;
+        }
+        return Math.max(0.0D, sourcePlayerData.getPlayerSkillAttributeLevel(SkillAttributeType.STAMINA));
     }
 
     private static boolean isLivingTarget(EntityStatMap statMap) {
@@ -362,6 +441,7 @@ public final class PartyBuffingAuraPassive {
         double selfBuffEffectiveness = DEFAULT_SELF_BUFF_EFFECTIVENESS;
         double baseRadius = DEFAULT_BASE_RADIUS;
         double manaPerBlock = DEFAULT_MANA_PER_BLOCK;
+        long durationMillis = secondsToMillis(DEFAULT_DURATION_SECONDS);
         long damagePauseMillis = secondsToMillis(DEFAULT_DAMAGE_PAUSE_SECONDS);
 
         if (snapshot == null) {
@@ -370,6 +450,7 @@ public final class PartyBuffingAuraPassive {
                     selfBuffEffectiveness,
                     baseRadius,
                     manaPerBlock,
+                    durationMillis,
                     damagePauseMillis);
         }
 
@@ -382,14 +463,15 @@ public final class PartyBuffingAuraPassive {
                     selfBuffEffectiveness,
                     baseRadius,
                     manaPerBlock,
+                    durationMillis,
                     damagePauseMillis);
         }
 
         Map<String, Object> props = strongestDefinition.properties();
         staminaRatio = parseNonNegative(props.get("stamina_ratio"), staminaRatio);
-        maxBuffedValuePerAlly = parseBoundedRatio(firstNonNull(props.get("max_buffed_value_per_ally"),
+        maxBuffedValuePerAlly = parseNonNegative(firstNonNull(props.get("max_buffed_value_per_ally"),
                 props.get("max_buff_per_ally")), maxBuffedValuePerAlly);
-        selfBuffEffectiveness = parseBoundedRatio(firstNonNull(props.get("self_buff_effectiveness"),
+        selfBuffEffectiveness = parseNonNegative(firstNonNull(props.get("self_buff_effectiveness"),
                 props.get("self_buff_ratio")), selfBuffEffectiveness);
 
         baseRadius = parseNonNegative(props.get("radius"), baseRadius);
@@ -397,6 +479,11 @@ public final class PartyBuffingAuraPassive {
         if (radiusScalingRaw instanceof Map<?, ?> radiusScaling) {
             manaPerBlock = parsePositive(radiusScaling.get("mana_per_block"), manaPerBlock);
         }
+
+        double durationSeconds = parseNonNegative(firstNonNull(props.get("duration"),
+                firstNonNull(props.get("buff_duration_seconds"), props.get("bonus_duration_seconds"))),
+                DEFAULT_DURATION_SECONDS);
+        durationMillis = secondsToMillis(durationSeconds);
 
         double damagePauseSeconds = parseNonNegative(firstNonNull(props.get("damage_pause_seconds"),
                 firstNonNull(props.get("pause_after_damage_seconds"), props.get("combat_pause_seconds"))),
@@ -408,6 +495,7 @@ public final class PartyBuffingAuraPassive {
                 selfBuffEffectiveness,
                 baseRadius,
                 manaPerBlock,
+                durationMillis,
                 damagePauseMillis);
     }
 
@@ -432,11 +520,6 @@ public final class PartyBuffingAuraPassive {
 
     private static Object firstNonNull(Object first, Object second) {
         return first != null ? first : second;
-    }
-
-    private static double parseBoundedRatio(Object raw, double fallback) {
-        double value = parseRawDouble(raw, fallback);
-        return Math.max(0.0D, Math.min(1.0D, value));
     }
 
     private static double parseNonNegative(Object raw, double fallback) {
@@ -477,6 +560,7 @@ public final class PartyBuffingAuraPassive {
             double selfBuffEffectiveness,
             double baseRadius,
             double manaPerBlock,
+            long durationMillis,
             long damagePauseMillis) {
     }
 

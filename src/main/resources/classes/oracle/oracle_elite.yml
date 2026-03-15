@@ -28,6 +28,7 @@ passives:
     stamina_ratio: 0.8
     max_buffed_value_per_ally: 1.0 # 100% damage buff
     self_buff_effectiveness: 0.25
+    duration: 4
     damage_pause_seconds: 10
     radius: 5 # base radius in blocks
     radius_mana_scaling:

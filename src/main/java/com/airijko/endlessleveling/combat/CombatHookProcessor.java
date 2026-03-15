@@ -8,7 +8,6 @@ import com.airijko.endlessleveling.data.PlayerData;
 import com.airijko.endlessleveling.enums.ArchetypePassiveType;
 import com.airijko.endlessleveling.enums.ClassWeaponType;
 import com.airijko.endlessleveling.enums.DamageLayer;
-import com.airijko.endlessleveling.enums.PassiveStackingStyle;
 import com.airijko.endlessleveling.managers.ClassManager;
 import com.airijko.endlessleveling.managers.MobLevelingManager;
 import com.airijko.endlessleveling.managers.PassiveManager;
@@ -179,18 +178,6 @@ public final class CombatHookProcessor {
             prospectiveDamage += executionerBonus;
         }
 
-        if (runtimeState != null) {
-            double auraDamageBonus = PartyBuffingAuraPassive.currentDamageBonus(runtimeState,
-                    System.currentTimeMillis());
-            if (auraDamageBonus > 0.0D) {
-                layerBuffer.addPercent(DamageLayer.BONUS,
-                        "buffing_aura",
-                        auraDamageBonus,
-                        PassiveStackingStyle.ADDITIVE);
-                prospectiveDamage += (float) (critDamage * auraDamageBonus);
-            }
-        }
-
         float damageBeforeWeapon = layerBuffer.apply(DamageLayer.BONUS, critDamage);
         float finalDamage = damageBeforeWeapon;
         if (weaponMultiplier > 0f && Math.abs(weaponMultiplier - 1.0f) > 0.0001f) {
@@ -219,6 +206,28 @@ public final class CombatHookProcessor {
                     weaponType);
             finalDamage = onHitResult.damage();
             augmentTrueDamageBonus = Math.max(0.0D, onHitResult.trueDamageBonus());
+        }
+
+        if (runtimeState != null) {
+            double auraDamageBonus = PartyBuffingAuraPassive.currentDamageBonus(runtimeState,
+                    System.currentTimeMillis());
+            if (auraDamageBonus > 0.0D) {
+                float beforeAura = finalDamage;
+                finalDamage = (float) (finalDamage * (1.0D + auraDamageBonus));
+                LOGGER.atFine().log(
+                        "[BUFFING_AURA] Applied outgoing multiplier for %s: base=%.3f bonus=%.3f final=%.3f.",
+                        playerData.getUuid(),
+                        beforeAura,
+                        auraDamageBonus,
+                        finalDamage);
+            } else {
+                LOGGER.atFiner().log("[BUFFING_AURA] No outgoing bonus for %s (active bonus %.3f).",
+                        playerData.getUuid(),
+                        auraDamageBonus);
+            }
+        } else {
+            LOGGER.atFine().log("[BUFFING_AURA] No runtime state while processing outgoing damage for %s.",
+                    playerData.getUuid());
         }
 
         if (runtimeState != null
