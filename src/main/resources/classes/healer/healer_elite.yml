@@ -14,7 +14,7 @@ weapons:
 passives:
   - type: HEALING_AURA
     value: 1
-    flat_heal_value: 10
+    flat_heal_value: 30
     mana_ratio: 0.125
     stamina_ratio: 0.225
     self_heal_effectiveness: 0.25
