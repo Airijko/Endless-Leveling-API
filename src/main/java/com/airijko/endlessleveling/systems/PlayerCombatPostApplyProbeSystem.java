@@ -1,4 +1,4 @@
-package com.airijko.endlessleveling.listeners;
+package com.airijko.endlessleveling.systems;
 
 import com.airijko.endlessleveling.managers.MobLevelingManager;
 import com.airijko.endlessleveling.util.EntityRefUtil;

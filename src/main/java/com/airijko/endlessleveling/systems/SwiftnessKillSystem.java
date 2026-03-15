@@ -1,4 +1,4 @@
-package com.airijko.endlessleveling.listeners;
+package com.airijko.endlessleveling.systems;
 
 import com.airijko.endlessleveling.augments.AugmentExecutor;
 import com.airijko.endlessleveling.data.PlayerData;

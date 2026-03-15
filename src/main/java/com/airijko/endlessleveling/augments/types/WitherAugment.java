@@ -5,7 +5,7 @@ import com.airijko.endlessleveling.augments.AugmentHooks;
 import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
 import com.airijko.endlessleveling.augments.YamlAugment;
-import com.airijko.endlessleveling.listeners.PlayerCombatListener;
+import com.airijko.endlessleveling.systems.PlayerCombatSystem;
 import com.airijko.endlessleveling.util.EntityRefUtil;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
@@ -234,7 +234,7 @@ public final class WitherAugment extends YamlAugment implements AugmentHooks.OnH
         }
 
         Ref<EntityStore> sourceRef = sanitizeSourceRefForTarget(state, ref);
-        Damage witherTickDamage = PlayerCombatListener.createAugmentDotDamage(sourceRef, (float) damage);
+        Damage witherTickDamage = PlayerCombatSystem.createAugmentDotDamage(sourceRef, (float) damage);
         DamageSystems.executeDamage(ref, commandBuffer, witherTickDamage);
         state.nextTickAt = now + TICK_INTERVAL_MILLIS;
     }

@@ -1,4 +1,4 @@
-package com.airijko.endlessleveling.listeners;
+package com.airijko.endlessleveling.systems;
 
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;

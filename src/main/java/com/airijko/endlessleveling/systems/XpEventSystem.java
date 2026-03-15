@@ -1,4 +1,4 @@
-package com.airijko.endlessleveling.listeners;
+package com.airijko.endlessleveling.systems;
 
 import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.managers.LevelingManager;
@@ -31,7 +31,7 @@ import java.util.UUID;
 
 import javax.annotation.Nonnull;
 
-public class XpEventListener extends DeathSystems.OnDeathSystem {
+public class XpEventSystem extends DeathSystems.OnDeathSystem {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
 
@@ -42,7 +42,7 @@ public class XpEventListener extends DeathSystems.OnDeathSystem {
     private final MobLevelingManager mobLevelingManager;
     private final ArchetypePassiveManager archetypePassiveManager;
 
-    public XpEventListener(PlayerDataManager playerDataManager,
+    public XpEventSystem(PlayerDataManager playerDataManager,
             LevelingManager levelingManager,
             PartyManager partyManager,
             PassiveManager passiveManager,

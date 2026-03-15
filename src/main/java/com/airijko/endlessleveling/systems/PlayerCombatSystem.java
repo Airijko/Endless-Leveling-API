@@ -1,4 +1,4 @@
-package com.airijko.endlessleveling.listeners;
+package com.airijko.endlessleveling.systems;
 
 import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.augments.AugmentExecutor;
@@ -50,7 +50,7 @@ import java.util.UUID;
 /**
  * Listens for player-inflicted damage and applies EndlessLeveling combat logic.
  */
-public class PlayerCombatListener extends DamageEventSystem {
+public class PlayerCombatSystem extends DamageEventSystem {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
     private static final long TRUE_EDGE_INTERNAL_COOLDOWN_MILLIS = 400L;
@@ -67,7 +67,7 @@ public class PlayerCombatListener extends DamageEventSystem {
     private final MobLevelingManager mobLevelingManager;
     private final CombatHookProcessor combatHookProcessor;
 
-    public PlayerCombatListener(@Nonnull PlayerDataManager playerDataManager,
+    public PlayerCombatSystem(@Nonnull PlayerDataManager playerDataManager,
             @Nonnull SkillManager skillManager,
             @Nonnull PassiveManager passiveManager,
             ArchetypePassiveManager archetypePassiveManager,

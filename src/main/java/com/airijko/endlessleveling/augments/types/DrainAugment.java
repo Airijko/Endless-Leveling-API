@@ -5,7 +5,7 @@ import com.airijko.endlessleveling.augments.AugmentHooks;
 import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
 import com.airijko.endlessleveling.augments.YamlAugment;
-import com.airijko.endlessleveling.listeners.PlayerCombatListener;
+import com.airijko.endlessleveling.systems.PlayerCombatSystem;
 import com.hypixel.hytale.server.core.modules.entity.damage.DamageSystems;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
 import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
@@ -62,7 +62,7 @@ public final class DrainAugment extends YamlAugment implements AugmentHooks.OnHi
             DamageSystems.executeDamage(
                     context.getTargetRef(),
                     context.getCommandBuffer(),
-                    PlayerCombatListener.createAugmentProcDamage(context.getAttackerRef(), (float) extra));
+                    PlayerCombatSystem.createAugmentProcDamage(context.getAttackerRef(), (float) extra));
             state.setLastProc(now);
             return context.getDamage();
         }

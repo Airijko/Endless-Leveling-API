@@ -14,26 +14,26 @@ import com.airijko.endlessleveling.augments.MobAugmentExecutor;
 import com.airijko.endlessleveling.augments.AugmentRuntimeManager;
 import com.airijko.endlessleveling.augments.AugmentUnlockManager;
 import com.airijko.endlessleveling.compatibility.NameplateBuilderCompatibility;
-import com.airijko.endlessleveling.listeners.LuckDoubleDropSystem;
 import com.airijko.endlessleveling.listeners.OpenPlayerHudListener;
 import com.airijko.endlessleveling.listeners.PartyListener;
-import com.airijko.endlessleveling.listeners.PlayerCombatListener;
-import com.airijko.endlessleveling.listeners.PlayerCombatPostApplyProbeSystem;
 import com.airijko.endlessleveling.listeners.PlayerDataListener;
-import com.airijko.endlessleveling.listeners.PlayerDefenseListener;
-import com.airijko.endlessleveling.listeners.SwiftnessKillSystem;
-import com.airijko.endlessleveling.listeners.XpEventListener;
-import com.airijko.endlessleveling.listeners.BreakBlockEntitySystem;
 import com.airijko.endlessleveling.managers.*;
 import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveManager;
+import com.airijko.endlessleveling.systems.BreakBlockEntitySystem;
 import com.airijko.endlessleveling.systems.PassiveRegenSystem;
 import com.airijko.endlessleveling.systems.MobDamageScalingSystem;
 import com.airijko.endlessleveling.systems.MobLevelingSystem;
+import com.airijko.endlessleveling.systems.LuckDoubleDropSystem;
+import com.airijko.endlessleveling.systems.PlayerCombatPostApplyProbeSystem;
+import com.airijko.endlessleveling.systems.PlayerCombatSystem;
+import com.airijko.endlessleveling.systems.PlayerDefenseSystem;
 import com.airijko.endlessleveling.systems.PlayerNameplateSystem;
 import com.airijko.endlessleveling.systems.PlayerRaceStatSystem;
 import com.airijko.endlessleveling.systems.PeriodicSkillModifierSystem;
+import com.airijko.endlessleveling.systems.SwiftnessKillSystem;
 import com.airijko.endlessleveling.systems.HudRefreshSystem;
 import com.airijko.endlessleveling.systems.WitherEffectSystem;
+import com.airijko.endlessleveling.systems.XpEventSystem;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.event.events.entity.LivingEntityInventoryChangeEvent;
 import com.hypixel.hytale.server.core.event.events.player.PlayerDisconnectEvent;
@@ -248,10 +248,10 @@ public class EndlessLeveling extends JavaPlugin {
                 luckDoubleDropSystem::onInventoryChange);
         this.getEntityStoreRegistry().registerSystem(new BreakBlockEntitySystem(luckDoubleDropSystem));
         this.getEntityStoreRegistry()
-                .registerSystem(new XpEventListener(playerDataManager, levelingManager, partyManager, passiveManager,
+                .registerSystem(new XpEventSystem(playerDataManager, levelingManager, partyManager, passiveManager,
                         mobLevelingManager, archetypePassiveManager));
         this.getEntityStoreRegistry()
-                .registerSystem(new PlayerCombatListener(playerDataManager, skillManager, passiveManager,
+                .registerSystem(new PlayerCombatSystem(playerDataManager, skillManager, passiveManager,
                         archetypePassiveManager, classManager, augmentExecutor, mobAugmentExecutor,
                         mobLevelingManager));
         this.getEntityStoreRegistry()
@@ -261,7 +261,7 @@ public class EndlessLeveling extends JavaPlugin {
                         skillManager, augmentExecutor));
         this.getEntityStoreRegistry().registerSystem(new MobDamageScalingSystem(mobLevelingManager));
         this.getEntityStoreRegistry()
-                .registerSystem(new PlayerDefenseListener(playerDataManager, skillManager, passiveManager,
+                .registerSystem(new PlayerDefenseSystem(playerDataManager, skillManager, passiveManager,
                         archetypePassiveManager, augmentExecutor, mobAugmentExecutor, mobLevelingManager));
         this.getEntityStoreRegistry()
                 .registerSystem(new PassiveRegenSystem(playerDataManager, passiveManager, archetypePassiveManager,

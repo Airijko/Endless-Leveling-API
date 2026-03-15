@@ -1,4 +1,4 @@
-package com.airijko.endlessleveling.listeners;
+package com.airijko.endlessleveling.systems;
 
 import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.augments.AugmentExecutor;
@@ -44,7 +44,7 @@ import javax.annotation.Nonnull;
  * SkillManager.
  * Also reduces incoming damage based on defense stat.
  */
-public class PlayerDefenseListener extends DamageEventSystem {
+public class PlayerDefenseSystem extends DamageEventSystem {
 	private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
 	private final PlayerDataManager playerDataManager;
 	private final SkillManager skillManager;
@@ -55,7 +55,7 @@ public class PlayerDefenseListener extends DamageEventSystem {
 	private final MobLevelingManager mobLevelingManager;
 	private final CombatHookProcessor combatHookProcessor;
 
-	public PlayerDefenseListener(PlayerDataManager playerDataManager, SkillManager skillManager,
+	public PlayerDefenseSystem(PlayerDataManager playerDataManager, SkillManager skillManager,
 			PassiveManager passiveManager,
 			ArchetypePassiveManager archetypePassiveManager,
 			AugmentExecutor augmentExecutor,
@@ -85,7 +85,7 @@ public class PlayerDefenseListener extends DamageEventSystem {
 	@Nonnull
 	public Set<Dependency<EntityStore>> getDependencies() {
 		return Set.of(
-				new SystemDependency<>(Order.AFTER, PlayerCombatListener.class),
+				new SystemDependency<>(Order.AFTER, PlayerCombatSystem.class),
 				new SystemDependency<>(Order.AFTER, MobDamageScalingSystem.class),
 				new SystemDependency<>(Order.BEFORE, DamageSystems.ApplyDamage.class));
 	}
@@ -214,7 +214,7 @@ public class PlayerDefenseListener extends DamageEventSystem {
 		}
 		float reducedBy = result.originalDamage() - result.finalDamage();
 		LOGGER.atInfo().log(
-				"PlayerDefenseListener: Player %s took %.2f damage (original: %.2f, reduced by %.2f, %.1f%% resistance)",
+				"PlayerDefenseSystem: Player %s took %.2f damage (original: %.2f, reduced by %.2f, %.1f%% resistance)",
 				defenderPlayer.getUsername(), result.finalDamage(), result.originalDamage(), reducedBy,
 				result.resistance() * 100);
 	}

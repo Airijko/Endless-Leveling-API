@@ -8,7 +8,7 @@ import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
 import com.airijko.endlessleveling.augments.YamlAugment;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
-import com.airijko.endlessleveling.listeners.PlayerCombatListener;
+import com.airijko.endlessleveling.systems.PlayerCombatSystem;
 import com.airijko.endlessleveling.managers.PartyManager;
 import com.airijko.endlessleveling.util.EntityRefUtil;
 import com.hypixel.hytale.builtin.mounts.NPCMountComponent;
@@ -208,7 +208,7 @@ public final class BurnAugment extends YamlAugment
                 continue;
             }
 
-            Damage burnTickDamage = PlayerCombatListener.createAugmentDotDamage(sourceRef, (float) burnDamage);
+            Damage burnTickDamage = PlayerCombatSystem.createAugmentDotDamage(sourceRef, (float) burnDamage);
             DamageSystems.executeDamage(targetRef, commandBuffer, burnTickDamage);
             applyBurnEffect(targetRef, commandBuffer, burnEffect);
         }
