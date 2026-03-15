@@ -131,6 +131,11 @@ ui:
     notice1: Some redistributed versions alter the UI or remove the Endless Leveling name and credit.
     notice2: These versions are not official.
     notice3: If you enjoy the mod, please support the original project and developer.
+    discord_title: Need help?
+    discord_description: For support, issues, and help, join our Discord community.
+    discord_button: JOIN DISCORD
+    discord_chat_prompt: Need help or want to report an issue? Click below to join Discord.
+    discord_chat_link_label: Endless Leveling Discord
   leaderboards:
     page:
       title: Leaderboards

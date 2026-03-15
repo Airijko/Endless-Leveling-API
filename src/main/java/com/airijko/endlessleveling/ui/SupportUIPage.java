@@ -6,16 +6,22 @@ import com.airijko.endlessleveling.util.Lang;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
+import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.entity.entities.player.pages.InteractiveCustomUIPage;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
+import static com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType.Activating;
+import static com.hypixel.hytale.server.core.ui.builder.EventData.of;
+
 /**
  * Support page displaying project credit and authenticity notice.
  */
 public class SupportUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
+
+    private static final String SUPPORT_DISCORD_URL = "https://discord.gg/hfMeu9KWsh";
 
     public SupportUIPage(@Nonnull PlayerRef playerRef,
             @Nonnull CustomPageLifetime lifetime) {
@@ -31,6 +37,7 @@ public class SupportUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         ui.append("Pages/SupportPage.ui");
         NavUIHelper.applyNavVersion(ui, playerRef, "support");
         NavUIHelper.bindNavEvents(events);
+        events.addEventBinding(Activating, "#SupportDiscordButton", of("Action", "support:discord"), false);
 
         ui.set("#SupportTitleLabel.Text",
                 Lang.tr(playerRef.getUuid(), "ui.support.page.title", "Support"));
@@ -47,6 +54,13 @@ public class SupportUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         ui.set("#SupportNotice3.Text",
                 Lang.tr(playerRef.getUuid(), "ui.support.notice3",
                         "If you enjoy the mod, please support the original project and developer."));
+        ui.set("#SupportDiscordTitle.Text",
+                Lang.tr(playerRef.getUuid(), "ui.support.discord_title", "Need help?"));
+        ui.set("#SupportDiscordDescription.Text",
+                Lang.tr(playerRef.getUuid(), "ui.support.discord_description",
+                        "For support, issues, and help, join our Discord community."));
+        ui.set("#SupportDiscordButton.Text",
+                Lang.tr(playerRef.getUuid(), "ui.support.discord_button", "JOIN DISCORD"));
     }
 
     @Override
@@ -55,8 +69,22 @@ public class SupportUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             @Nonnull SkillsUIPage.Data data) {
         super.handleDataEvent(ref, store, data);
 
-        if (data.action != null && !data.action.isEmpty()) {
-            NavUIHelper.handleNavAction(data.action, ref, store, playerRef);
+        if (data.action == null || data.action.isEmpty()) {
+            return;
         }
+
+        if ("support:discord".equalsIgnoreCase(data.action)) {
+            playerRef.sendMessage(Message.raw(
+                    Lang.tr(playerRef.getUuid(), "ui.support.discord_chat_prompt",
+                            "Need help or want to report an issue? Click below to join Discord."))
+                    .color("#4fd7f7"));
+            playerRef.sendMessage(Message
+                    .raw(Lang.tr(playerRef.getUuid(), "ui.support.discord_chat_link_label", "Endless Leveling Discord"))
+                    .link(SUPPORT_DISCORD_URL)
+                    .color("#6fe3ff"));
+            return;
+        }
+
+        NavUIHelper.handleNavAction(data.action, ref, store, playerRef);
     }
 }

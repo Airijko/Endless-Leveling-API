@@ -99,6 +99,38 @@ $C.@PageOverlay {
                         }
                     }
                 }
+
+                Group #DiscordCard {
+                    LayoutMode: Left;
+                    Background: #0b141f(0.84);
+                    Padding: (Full: 16);
+
+                    Group {
+                        LayoutMode: Top;
+                        FlexWeight: 1;
+
+                        Label #SupportDiscordTitle {
+                            Text: "Need help?";
+                            Anchor: (Height: 24);
+                            Style: (FontSize: 15, TextColor: #ffffff, RenderBold: true, VerticalAlignment: Center);
+                        }
+
+                        Group { Anchor: (Height: 4); }
+
+                        Label #SupportDiscordDescription {
+                            Text: "For support, issues, and help, join our Discord community.";
+                            Style: (TextColor: #c0cee5, FontSize: 13);
+                        }
+                    }
+
+                    Group { Anchor: (Width: 12); }
+
+                    $C.@TextButton #SupportDiscordButton {
+                        Anchor: (Width: 170, Height: 34);
+                        Padding: (Horizontal: 8, Vertical: 4);
+                        Text: "Join Discord";
+                    }
+                }
             }
         }
     }
