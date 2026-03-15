@@ -9,6 +9,7 @@ import com.airijko.endlessleveling.augments.AugmentValueReader;
 import com.airijko.endlessleveling.augments.YamlAugment;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.airijko.endlessleveling.managers.PartyManager;
+import com.airijko.endlessleveling.util.EntityRefUtil;
 import com.hypixel.hytale.builtin.mounts.NPCMountComponent;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
@@ -228,7 +229,8 @@ public final class FrozenDomainAugment extends YamlAugment
 
         CommandBuffer<EntityStore> commandBuffer = context.getCommandBuffer();
         Ref<EntityStore> sourceRef = context.getPlayerRef();
-        TransformComponent sourceTransform = commandBuffer.getComponent(sourceRef,
+        TransformComponent sourceTransform = EntityRefUtil.tryGetComponent(commandBuffer,
+                sourceRef,
                 TransformComponent.getComponentType());
         if (sourceTransform == null || sourceTransform.getPosition() == null) {
             AugmentUtils.setAttributeBonus(context.getRuntimeState(), ID + "_stolen_haste", SkillAttributeType.HASTE,
@@ -265,7 +267,9 @@ public final class FrozenDomainAugment extends YamlAugment
                 continue;
             }
 
-            EntityStatMap targetStats = commandBuffer.getComponent(targetRef, EntityStatMap.getComponentType());
+            EntityStatMap targetStats = EntityRefUtil.tryGetComponent(commandBuffer,
+                    targetRef,
+                    EntityStatMap.getComponentType());
             EntityStatValue targetHp = targetStats == null ? null : targetStats.get(DefaultEntityStatTypes.getHealth());
             if (targetHp == null || targetHp.getMax() <= 0f || targetHp.get() <= 0f) {
                 continue;
@@ -326,7 +330,9 @@ public final class FrozenDomainAugment extends YamlAugment
         String key = keyFor(ref, commandBuffer);
         applyFreezeEffect(state, commandBuffer, ref, key, freezeEffect);
 
-        MovementManager movementManager = commandBuffer.getComponent(ref, MovementManager.getComponentType());
+        MovementManager movementManager = EntityRefUtil.tryGetComponent(commandBuffer,
+                ref,
+                MovementManager.getComponentType());
         if (movementManager == null) {
             if (!state.loggedMissingMovementManager) {
                 LOGGER.atWarning().log(
@@ -385,7 +391,9 @@ public final class FrozenDomainAugment extends YamlAugment
         clearFreezeEffect(state, commandBuffer, ref);
         clearSlowEffectFallback(state, commandBuffer, ref, key);
 
-        MovementManager movementManager = commandBuffer.getComponent(ref, MovementManager.getComponentType());
+        MovementManager movementManager = EntityRefUtil.tryGetComponent(commandBuffer,
+                ref,
+                MovementManager.getComponentType());
         if (movementManager == null) {
             return;
         }
@@ -425,7 +433,8 @@ public final class FrozenDomainAugment extends YamlAugment
             return;
         }
 
-        EffectControllerComponent controller = commandBuffer.getComponent(ref,
+        EffectControllerComponent controller = EntityRefUtil.tryGetComponent(commandBuffer,
+                ref,
                 EffectControllerComponent.getComponentType());
         if (controller == null) {
             if (!state.loggedMissingEffectController) {
@@ -457,7 +466,8 @@ public final class FrozenDomainAugment extends YamlAugment
             return;
         }
 
-        EffectControllerComponent controller = commandBuffer.getComponent(ref,
+        EffectControllerComponent controller = EntityRefUtil.tryGetComponent(commandBuffer,
+                ref,
                 EffectControllerComponent.getComponentType());
         if (controller == null) {
             return;
@@ -476,7 +486,8 @@ public final class FrozenDomainAugment extends YamlAugment
             CommandBuffer<EntityStore> commandBuffer,
             Ref<EntityStore> ref,
             String key) {
-        EffectControllerComponent controller = commandBuffer.getComponent(ref,
+        EffectControllerComponent controller = EntityRefUtil.tryGetComponent(commandBuffer,
+                ref,
                 EffectControllerComponent.getComponentType());
         if (controller == null) {
             if (!state.loggedMissingEffectController) {
@@ -523,7 +534,8 @@ public final class FrozenDomainAugment extends YamlAugment
             return;
         }
 
-        EffectControllerComponent controller = commandBuffer.getComponent(ref,
+        EffectControllerComponent controller = EntityRefUtil.tryGetComponent(commandBuffer,
+                ref,
                 EffectControllerComponent.getComponentType());
         if (controller == null) {
             return;
@@ -575,7 +587,7 @@ public final class FrozenDomainAugment extends YamlAugment
     }
 
     private boolean isPetEntity(Ref<EntityStore> targetRef, CommandBuffer<EntityStore> commandBuffer) {
-        return commandBuffer.getComponent(targetRef, NPCMountComponent.getComponentType()) != null;
+        return EntityRefUtil.tryGetComponent(commandBuffer, targetRef, NPCMountComponent.getComponentType()) != null;
     }
 
     private boolean isSamePartyTarget(UUID sourceUuid,
@@ -587,7 +599,9 @@ public final class FrozenDomainAugment extends YamlAugment
             return false;
         }
 
-        PlayerRef targetPlayer = commandBuffer.getComponent(targetRef, PlayerRef.getComponentType());
+        PlayerRef targetPlayer = EntityRefUtil.tryGetComponent(commandBuffer,
+                targetRef,
+                PlayerRef.getComponentType());
         if (targetPlayer == null || !targetPlayer.isValid()) {
             return false;
         }

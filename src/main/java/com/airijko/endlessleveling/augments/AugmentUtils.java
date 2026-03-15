@@ -5,6 +5,7 @@ import com.airijko.endlessleveling.augments.AugmentRuntimeManager.AugmentRuntime
 import com.airijko.endlessleveling.augments.types.OverhealAugment;
 import com.airijko.endlessleveling.augments.types.UndyingRageAugment;
 import com.airijko.endlessleveling.util.Lang;
+import com.airijko.endlessleveling.util.EntityRefUtil;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
@@ -210,7 +211,7 @@ public final class AugmentUtils {
         if (commandBuffer == null || ref == null) {
             return null;
         }
-        return commandBuffer.getComponent(ref, PlayerRef.getComponentType());
+        return EntityRefUtil.tryGetComponent(commandBuffer, ref, PlayerRef.getComponentType());
     }
 
     public static void sendAugmentMessage(PlayerRef playerRef, String text) {
