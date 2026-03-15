@@ -37,6 +37,7 @@ public final class NavUIHelper {
                 ui.set("#NavClasses.Text", Lang.tr(playerRef.getUuid(), "ui.nav.classes", "CLASSES"));
                 ui.set("#NavAugments.Text", Lang.tr(playerRef.getUuid(), "ui.nav.augments", "AUGMENTS"));
                 ui.set("#NavLeaderboards.Text", Lang.tr(playerRef.getUuid(), "ui.nav.leaderboards", "LEADERBOARDS"));
+                ui.set("#NavSupport.Text", Lang.tr(playerRef.getUuid(), "ui.nav.support", "SUPPORT"));
                 ui.set("#NavSettings.Text", Lang.tr(playerRef.getUuid(), "ui.nav.settings", "SETTINGS"));
                 ui.set("#NavVersion.Text", NAV_VERSION);
         }
@@ -51,6 +52,7 @@ public final class NavUIHelper {
                 events.addEventBinding(Activating, "#NavSkills", of("Action", "nav:skills"), false);
                 events.addEventBinding(Activating, "#NavAugments", of("Action", "nav:augments"), false);
                 events.addEventBinding(Activating, "#NavLeaderboards", of("Action", "nav:leaderboards"), false);
+                events.addEventBinding(Activating, "#NavSupport", of("Action", "nav:support"), false);
                 events.addEventBinding(Activating, "#NavSettings", of("Action", "nav:settings"), false);
         }
 
@@ -103,6 +105,9 @@ public final class NavUIHelper {
                         case "settings" -> player.getPageManager()
                                         .openCustomPage(ref, store,
                                                         new SettingsUIPage(playerRef, CustomPageLifetime.CanDismiss));
+                        case "support" -> player.getPageManager()
+                                        .openCustomPage(ref, store,
+                                                        new SupportUIPage(playerRef, CustomPageLifetime.CanDismiss));
                         default -> {
                                 LOGGER.atWarning().log("NavUIHelper: unknown nav target '%s'", target);
                                 return false;

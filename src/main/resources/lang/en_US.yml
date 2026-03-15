@@ -123,6 +123,14 @@ ui:
       globally_disabled: Race model visuals are disabled by the server configuration.
       enabled: Race model visuals enabled
       disabled: Race model visuals disabled
+  support:
+    page:
+      title: Support
+    mod_name: Endless Leveling
+    developer: "Developer: Airijko"
+    notice1: Some redistributed versions alter the UI or remove the Endless Leveling name and credit.
+    notice2: These versions are not official.
+    notice3: If you enjoy the mod, please support the original project and developer.
   leaderboards:
     page:
       title: Leaderboards
@@ -734,6 +742,7 @@ ui:
     leaderboards: LEADERBOARDS
     settings: SETTINGS
     augments: AUGMENTS
+    support: SUPPORT
   profile:
     playerdata:
       unavailable: Player data unavailable.

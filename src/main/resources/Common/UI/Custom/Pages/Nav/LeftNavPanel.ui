@@ -113,6 +113,10 @@
     Style: (FontSize: 10, TextColor: #4a5568);
   }
 
+  @LeftNavButton #NavSupport {
+    Text: "SUPPORT";
+  }
+
   @LeftNavButton #NavSettings {
     Text: "SETTINGS";
   }
