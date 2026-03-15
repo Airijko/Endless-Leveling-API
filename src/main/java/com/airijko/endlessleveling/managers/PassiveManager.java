@@ -414,6 +414,9 @@ public class PassiveManager {
         private double shieldingAuraShieldAmount;
         private double shieldingAuraShieldMaxAmount;
         private long shieldingAuraShieldExpiresAt;
+        private long buffingAuraLastPulseMillis;
+        private double buffingAuraDamageBonus;
+        private long buffingAuraBonusExpiresAt;
 
         PassiveRuntimeState(UUID ignored) {
         }
@@ -590,6 +593,9 @@ public class PassiveManager {
             this.shieldingAuraShieldAmount = 0.0D;
             this.shieldingAuraShieldMaxAmount = 0.0D;
             this.shieldingAuraShieldExpiresAt = 0L;
+            this.buffingAuraLastPulseMillis = 0L;
+            this.buffingAuraDamageBonus = 0.0D;
+            this.buffingAuraBonusExpiresAt = 0L;
         }
 
         public long getAdrenalineCooldownExpiresAt() {
@@ -791,6 +797,35 @@ public class PassiveManager {
             this.shieldingAuraShieldAmount = 0.0D;
             this.shieldingAuraShieldMaxAmount = 0.0D;
             this.shieldingAuraShieldExpiresAt = 0L;
+        }
+
+        public long getBuffingAuraLastPulseMillis() {
+            return buffingAuraLastPulseMillis;
+        }
+
+        public void setBuffingAuraLastPulseMillis(long buffingAuraLastPulseMillis) {
+            this.buffingAuraLastPulseMillis = Math.max(0L, buffingAuraLastPulseMillis);
+        }
+
+        public double getBuffingAuraDamageBonus() {
+            return buffingAuraDamageBonus;
+        }
+
+        public void setBuffingAuraDamageBonus(double buffingAuraDamageBonus) {
+            this.buffingAuraDamageBonus = Math.max(0.0D, buffingAuraDamageBonus);
+        }
+
+        public long getBuffingAuraBonusExpiresAt() {
+            return buffingAuraBonusExpiresAt;
+        }
+
+        public void setBuffingAuraBonusExpiresAt(long buffingAuraBonusExpiresAt) {
+            this.buffingAuraBonusExpiresAt = Math.max(0L, buffingAuraBonusExpiresAt);
+        }
+
+        public void clearBuffingAuraBonus() {
+            this.buffingAuraDamageBonus = 0.0D;
+            this.buffingAuraBonusExpiresAt = 0L;
         }
 
     }

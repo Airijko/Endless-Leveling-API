@@ -23,6 +23,15 @@ passives:
     radius: 5 # base radius in blocks
     radius_mana_scaling:
       mana_per_block: 75
+  - type: BUFFING_AURA
+    value: 1.0
+    stamina_ratio: 0.4
+    max_buffed_value_per_ally: 1.0 # 100% damage buff
+    self_buff_effectiveness: 0.25
+    damage_pause_seconds: 10
+    radius: 5 # base radius in blocks
+    radius_mana_scaling:
+      mana_per_block: 75
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: flow
     value: 1.75

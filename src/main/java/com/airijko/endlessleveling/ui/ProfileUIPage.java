@@ -1060,6 +1060,10 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                     tr("ui.races.passive.desc.shielding_aura", "Party shielding aura"),
                     tr("ui.races.passive.detail.shielding_aura_effect", "shield: flat + stamina scaling"),
                     tr("ui.races.passive.detail.shielding_aura_duration", "duration + cooldown, party/range only"));
+            case BUFFING_AURA -> appendDetails(
+                    tr("ui.races.passive.desc.buffing_aura", "Party buffing aura"),
+                    tr("ui.races.passive.detail.buffing_aura_effect", "damage bonus from stamina (shared)"),
+                    tr("ui.races.passive.detail.buffing_aura_cap", "up to 100% per ally, self at 25%"));
             case REGENERATION -> tr("ui.races.passive.desc.regeneration", "{0} HP/s", formatSigned(value));
             case HEALING_BONUS -> tr("ui.races.passive.desc.healing_bonus", "{0} healing", formatPercentValue(value));
             case LIFE_STEAL -> tr("ui.races.passive.desc.life_steal", "{0} life steal", formatPercentValue(value));

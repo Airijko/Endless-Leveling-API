@@ -16,6 +16,7 @@ import com.airijko.endlessleveling.managers.SkillManager;
 import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveManager;
 import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveSnapshot;
 import com.airijko.endlessleveling.passives.settings.AdrenalineSettings;
+import com.airijko.endlessleveling.passives.type.PartyBuffingAuraPassive;
 import com.airijko.endlessleveling.passives.type.PartyMendingAuraPassive;
 import com.airijko.endlessleveling.passives.type.PartyShieldingAuraPassive;
 import com.airijko.endlessleveling.passives.type.SecondWindPassive;
@@ -133,6 +134,12 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
                                 archetypeSnapshot,
                                 runtimeState);
                         applyPartyShieldingAura(playerData,
+                                ref,
+                                commandBuffer,
+                                statMap,
+                                archetypeSnapshot,
+                                runtimeState);
+                        applyPartyBuffingAura(playerData,
                                 ref,
                                 commandBuffer,
                                 statMap,
@@ -678,6 +685,21 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
                 archetypeSnapshot,
                 runtimeState);
         PartyShieldingAuraPassive.cleanupExpiredShield(runtimeState, System.currentTimeMillis());
+    }
+
+    private void applyPartyBuffingAura(@Nonnull PlayerData playerData,
+            @Nonnull Ref<EntityStore> ref,
+            @Nonnull CommandBuffer<EntityStore> commandBuffer,
+            @Nonnull EntityStatMap statMap,
+            @Nonnull ArchetypePassiveSnapshot archetypeSnapshot,
+            @Nonnull PassiveRuntimeState runtimeState) {
+        PartyBuffingAuraPassive.pulse(playerData,
+                ref,
+                commandBuffer,
+                statMap,
+                archetypeSnapshot,
+                runtimeState);
+        PartyBuffingAuraPassive.cleanupExpiredBonus(runtimeState, System.currentTimeMillis());
     }
 
     private void notifyPassiveCooldowns(PlayerRef playerRef, PassiveRuntimeState runtimeState) {

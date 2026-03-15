@@ -8,6 +8,7 @@ import com.airijko.endlessleveling.data.PlayerData;
 import com.airijko.endlessleveling.enums.ArchetypePassiveType;
 import com.airijko.endlessleveling.enums.ClassWeaponType;
 import com.airijko.endlessleveling.enums.DamageLayer;
+import com.airijko.endlessleveling.enums.PassiveStackingStyle;
 import com.airijko.endlessleveling.managers.ClassManager;
 import com.airijko.endlessleveling.managers.MobLevelingManager;
 import com.airijko.endlessleveling.managers.PassiveManager;
@@ -21,6 +22,7 @@ import com.airijko.endlessleveling.passives.type.BerzerkerPassive;
 import com.airijko.endlessleveling.passives.type.ExecutionerPassive;
 import com.airijko.endlessleveling.passives.type.FirstStrikePassive;
 import com.airijko.endlessleveling.passives.type.HealingTouchPassive;
+import com.airijko.endlessleveling.passives.type.PartyBuffingAuraPassive;
 import com.airijko.endlessleveling.passives.type.PartyShieldingAuraPassive;
 import com.airijko.endlessleveling.passives.type.RavenousStrikePassive;
 import com.airijko.endlessleveling.passives.type.RetaliationPassive;
@@ -175,6 +177,18 @@ public final class CombatHookProcessor {
                     executionerBonus,
                     critDamage);
             prospectiveDamage += executionerBonus;
+        }
+
+        if (runtimeState != null) {
+            double auraDamageBonus = PartyBuffingAuraPassive.currentDamageBonus(runtimeState,
+                    System.currentTimeMillis());
+            if (auraDamageBonus > 0.0D) {
+                layerBuffer.addPercent(DamageLayer.BONUS,
+                        "buffing_aura",
+                        auraDamageBonus,
+                        PassiveStackingStyle.ADDITIVE);
+                prospectiveDamage += (float) (critDamage * auraDamageBonus);
+            }
         }
 
         float damageBeforeWeapon = layerBuffer.apply(DamageLayer.BONUS, critDamage);
