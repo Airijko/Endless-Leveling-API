@@ -19,6 +19,7 @@ import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.util.TargetUtil;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -100,6 +101,7 @@ public final class PartyMendingAuraPassive {
 
         runtimeState.setPartyMendingLastPulseMillis(now);
 
+        List<HealingAuraTarget> woundedTargets = new ArrayList<>();
         HashSet<Integer> visitedEntityIds = new HashSet<>();
         for (Ref<EntityStore> targetRef : TargetUtil.getAllEntitiesInSphere(
                 sourceTransform.getPosition(),
@@ -126,17 +128,37 @@ public final class PartyMendingAuraPassive {
                 continue;
             }
 
-            double effectiveHeal = selfTarget
-                    ? healPerPulse * config.selfHealEffectiveness()
-                    : healPerPulse;
-            if (effectiveHeal <= 0.0D) {
-                continue;
-            }
-
             EntityStatMap targetStats = EntityRefUtil.tryGetComponent(commandBuffer,
                     targetRef,
                     EntityStatMap.getComponentType());
-            applyHeal(targetStats, effectiveHeal);
+            if (!isWounded(targetStats)) {
+                continue;
+            }
+
+            woundedTargets.add(new HealingAuraTarget(targetStats, selfTarget));
+        }
+
+        if (woundedTargets.isEmpty()) {
+            return;
+        }
+
+        double splitHeal = healPerPulse / woundedTargets.size();
+        if (splitHeal <= 0.0D) {
+            return;
+        }
+
+        for (HealingAuraTarget target : woundedTargets) {
+            if (target == null || target.statMap() == null) {
+                continue;
+            }
+
+            double effectiveHeal = target.selfTarget()
+                    ? splitHeal * config.selfHealEffectiveness()
+                    : splitHeal;
+            if (effectiveHeal <= 0.0D) {
+                continue;
+            }
+            applyHeal(target.statMap(), effectiveHeal);
         }
     }
 
@@ -270,6 +292,17 @@ public final class PartyMendingAuraPassive {
         statMap.setStatValue(DefaultEntityStatTypes.getHealth(), current + applied);
     }
 
+    private static boolean isWounded(EntityStatMap statMap) {
+        if (statMap == null) {
+            return false;
+        }
+        EntityStatValue healthStat = statMap.get(DefaultEntityStatTypes.getHealth());
+        if (healthStat == null || healthStat.getMax() <= 0f || healthStat.get() <= 0f) {
+            return false;
+        }
+        return healthStat.get() < healthStat.getMax();
+    }
+
     private static boolean isSamePartyTarget(UUID sourceUuid,
             UUID sourcePartyLeader,
             UUID targetUuid,
@@ -316,5 +349,8 @@ public final class PartyMendingAuraPassive {
             double baseRadius,
             double manaPerBlock,
             double selfHealEffectiveness) {
+    }
+
+    private record HealingAuraTarget(EntityStatMap statMap, boolean selfTarget) {
     }
 }

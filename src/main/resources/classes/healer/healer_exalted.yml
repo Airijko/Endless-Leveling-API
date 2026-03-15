@@ -15,8 +15,8 @@ passives:
   - type: HEALING_AURA
     value: 1
     flat_heal_value: 25
-    mana_ratio: 0.1
-    stamina_ratio: 0.2
+    mana_ratio: 0.2
+    stamina_ratio: 0.3
     self_heal_effectiveness: 0.25
     radius: 5 # base radius in blocks
     radius_mana_scaling:
