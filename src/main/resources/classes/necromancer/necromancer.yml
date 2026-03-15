@@ -13,6 +13,7 @@ weapons:
 
 passives:
   - type: ARMY_OF_THE_DEAD
+    value: 1.0
     base_summon_amount: 2
     summon_amount_scaling:
       mana_per_summon: 100 # mana grants 1 extra summon, e.g. 200 mana grants 2 summons (3 total), 350 mana grants 3 summons (5 total), etc.

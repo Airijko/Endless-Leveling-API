@@ -17,6 +17,7 @@ import com.airijko.endlessleveling.managers.SkillManager;
 import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveManager;
 import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveSnapshot;
 import com.airijko.endlessleveling.passives.type.AbsorbPassive;
+import com.airijko.endlessleveling.passives.type.ArmyOfTheDeadPassive;
 import com.airijko.endlessleveling.passives.type.BerzerkerPassive;
 import com.airijko.endlessleveling.passives.type.ExecutionerPassive;
 import com.airijko.endlessleveling.passives.type.FirstStrikePassive;
@@ -242,6 +243,8 @@ public final class CombatHookProcessor {
                 attackerStats,
                 skillManager,
                 finalDamage);
+
+        ArmyOfTheDeadPassive.markOnHitTrigger(playerData, archetypeSnapshot);
 
         applyLifeSteal(playerData, ctx.attackerRef(), ctx.commandBuffer(), archetypeSnapshot, finalDamage);
         if (passiveManager != null) {

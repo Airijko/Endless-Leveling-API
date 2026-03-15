@@ -16,6 +16,7 @@ import com.airijko.endlessleveling.managers.SkillManager;
 import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveManager;
 import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveSnapshot;
 import com.airijko.endlessleveling.passives.settings.AdrenalineSettings;
+import com.airijko.endlessleveling.passives.type.ArmyOfTheDeadPassive;
 import com.airijko.endlessleveling.passives.type.PartyBuffingAuraPassive;
 import com.airijko.endlessleveling.passives.type.PartyMendingAuraPassive;
 import com.airijko.endlessleveling.passives.type.PartyShieldingAuraPassive;
@@ -145,6 +146,11 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
                                 statMap,
                                 archetypeSnapshot,
                                 runtimeState);
+                        applyArmyOfTheDead(playerData,
+                                ref,
+                                commandBuffer,
+                                statMap,
+                                archetypeSnapshot);
                         applySecondWindHealing(statMap, runtimeState, deltaSeconds);
                         notifyPassiveCooldowns(playerRef, runtimeState);
                         notifyAugmentCooldowns(playerRef, playerData);
@@ -700,6 +706,18 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
                 archetypeSnapshot,
                 runtimeState);
         PartyBuffingAuraPassive.cleanupExpiredBonus(runtimeState, System.currentTimeMillis());
+    }
+
+    private void applyArmyOfTheDead(@Nonnull PlayerData playerData,
+            @Nonnull Ref<EntityStore> ref,
+            @Nonnull CommandBuffer<EntityStore> commandBuffer,
+            @Nonnull EntityStatMap statMap,
+            @Nonnull ArchetypePassiveSnapshot archetypeSnapshot) {
+        ArmyOfTheDeadPassive.processPendingOnHit(playerData,
+                ref,
+                commandBuffer,
+                statMap,
+                archetypeSnapshot);
     }
 
     private void notifyPassiveCooldowns(PlayerRef playerRef, PassiveRuntimeState runtimeState) {
