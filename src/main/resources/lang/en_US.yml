@@ -389,9 +389,9 @@ ui:
     attribute_tagline:
       life_force: Base health
       strength: Damage scaling
-      sorcery: Magic damage
-      defense: Damage reduction
-      haste: Movement speed
+      sorcery: Magic scaling
+      defense: Defense scaling
+      haste: Movement scaling
       precision: Crit chance
       ferocity: Crit damage
       stamina: Base stamina
