@@ -907,11 +907,10 @@ public class SkillManager {
         float scaledValue = defenseAttributeValue * raceMultiplier;
         double curvedResistancePercent = applyDefenseCurve(scaledValue);
         double commonLinearResistancePercent = Math.min(DEFENSE_MAX_REDUCTION, commonLinearDefenseBonus);
-        double totalResistancePercent = Math.min(DEFENSE_MAX_REDUCTION,
-                curvedResistancePercent + commonLinearResistancePercent);
         float curvedResistance = (float) (curvedResistancePercent / 100.0D);
         float commonLinearResistance = (float) (commonLinearResistancePercent / 100.0D);
-        float resistance = (float) (totalResistancePercent / 100.0D);
+        float combinedResistance = 1.0f - ((1.0f - curvedResistance) * (1.0f - commonLinearResistance));
+        float resistance = Math.max(0.0f, Math.min(1.0f, combinedResistance));
         return new DefenseBreakdown(raceMultiplier,
                 skillValue,
                 innateValue,
