@@ -20,6 +20,7 @@ import com.airijko.endlessleveling.passives.type.AbsorbPassive;
 import com.airijko.endlessleveling.passives.type.BerzerkerPassive;
 import com.airijko.endlessleveling.passives.type.ExecutionerPassive;
 import com.airijko.endlessleveling.passives.type.FirstStrikePassive;
+import com.airijko.endlessleveling.passives.type.HealingTouchPassive;
 import com.airijko.endlessleveling.passives.type.RavenousStrikePassive;
 import com.airijko.endlessleveling.passives.type.RetaliationPassive;
 import com.airijko.endlessleveling.passives.type.SecondWindPassive;
@@ -100,6 +101,7 @@ public final class CombatHookProcessor {
         BerzerkerPassive berzerkerPassive = BerzerkerPassive.fromSnapshot(archetypeSnapshot);
         ExecutionerPassive executionerPassive = ExecutionerPassive.fromSnapshot(archetypeSnapshot);
         RetaliationPassive retaliationPassive = RetaliationPassive.fromSnapshot(archetypeSnapshot);
+        HealingTouchPassive healingTouchPassive = HealingTouchPassive.fromSnapshot(archetypeSnapshot);
 
         boolean firstStrikeAugmentSelected = hasSelectedAugment(playerData, FirstStrikeAugment.ID);
         boolean executionerAugmentSelected = hasSelectedAugment(playerData, ExecutionerAugment.ID);
@@ -203,6 +205,13 @@ public final class CombatHookProcessor {
             finalDamage = onHitResult.damage();
             augmentTrueDamageBonus = Math.max(0.0D, onHitResult.trueDamageBonus());
         }
+
+        healingTouchPassive.apply(playerData,
+                ctx.attackerRef(),
+                ctx.commandBuffer(),
+                attackerStats,
+                skillManager,
+                finalDamage);
 
         applyLifeSteal(playerData, ctx.attackerRef(), ctx.commandBuffer(), archetypeSnapshot, finalDamage);
         if (passiveManager != null) {

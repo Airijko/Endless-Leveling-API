@@ -1027,7 +1027,9 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         Double window = getDoubleProp(props, "window");
         Double stacks = getDoubleProp(props, "max_stacks");
         Double slowPercent = getDoubleProp(props, "slow_percent");
+        Double healingChance = getDoubleProp(props, "healing_chance");
         String scalingStat = getStringProp(props, "scaling_stat");
+        String sourceAttribute = getStringProp(props, "source_attribute");
 
         if (type == null) {
             return value == 0.0D ? tr("ui.races.passive.default_name", "Passive") : formatSigned(value);
@@ -1038,6 +1040,14 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             case HEALTH_REGEN -> tr("ui.races.passive.desc.health_regen", "{0} HP/5s", formatPercentValue(value));
             case MANA_REGEN -> tr("ui.races.passive.desc.mana_regen", "{0} mana/5s", formatPercentValue(value));
             case MANA_REGEN_FLAT -> tr("ui.races.passive.desc.mana_regen_flat", "{0} mana/s", formatSigned(value));
+            case HEALING_TOUCH -> appendDetails(
+                    tr("ui.races.passive.desc.healing_touch", "on-hit heal: {0} of source", formatPercentValue(value)),
+                    healingChance == null ? null
+                            : tr("ui.races.passive.detail.proc_chance", "{0} trigger",
+                                    formatPercentValue(healingChance)),
+                    sourceAttribute == null || sourceAttribute.isBlank() ? null
+                            : tr("ui.races.passive.detail.source", "source: {0}",
+                                    localizeAttributeName(sourceAttribute)));
             case HEALING_AURA -> appendDetails(
                     tr("ui.races.passive.desc.party_mending_aura", "Party healing pulse"),
                     tr("ui.races.passive.detail.party_mending_heal", "heal: 10% mana + 20% stamina"),

@@ -12,6 +12,11 @@ weapons:
     damage: 1.05
 
 passives:
+  - type: HEALING_TOUCH
+    healing_chance: 0.5
+    value: 1.0
+    source_attribute: stamina
+    radius: 15
   - type: HEALING_AURA
     value: 1
     flat_heal_value: 35

@@ -11,6 +11,7 @@ public enum ArchetypePassiveType {
     HEALTH_REGEN("HEALTH_REGEN"),
     MANA_REGEN("MANA_REGEN"),
     MANA_REGEN_FLAT("MANA_REGEN_FLAT"),
+    HEALING_TOUCH("HEALING_TOUCH"),
     HEALING_AURA("HEALING_AURA"),
     REGENERATION("REGENERATION"),
     HEALING_BONUS("HEALING_BONUS"),
@@ -53,6 +54,9 @@ public enum ArchetypePassiveType {
         }
         if ("PARTY_MENDING_AURA".equals(normalized)) {
             return HEALING_AURA;
+        }
+        if ("HEAL_TOUCH".equals(normalized)) {
+            return HEALING_TOUCH;
         }
         for (ArchetypePassiveType type : values()) {
             if (type.configKey.equals(normalized)) {
