@@ -24,7 +24,7 @@ attributes:
   life_force: 98
   strength: 0.85
   defense: 0.85
-  haste: 0.85
+  haste: 1.0
   precision: 7.0
   ferocity: 35.0
   stamina: 7.0

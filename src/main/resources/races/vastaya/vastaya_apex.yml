@@ -30,7 +30,7 @@ attributes: # Base Values
   life_force: 210
   strength: 1.46
   defense: 1.14
-  haste: 1.72
+  haste: 1.25
   precision: 30.0
   ferocity: 70.0
   stamina: 18.0
