@@ -14,7 +14,7 @@ weapons:
 passives:
   - type: HEALING_TOUCH
     healing_chance: 0.5
-    value: 4.0
+    value: 2.5
     source_attribute: stamina
     radius: 17.5
     self_heal_effectiveness: 0.25
