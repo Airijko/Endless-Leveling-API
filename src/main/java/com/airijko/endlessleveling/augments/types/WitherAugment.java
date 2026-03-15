@@ -6,6 +6,7 @@ import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
 import com.airijko.endlessleveling.augments.YamlAugment;
 import com.airijko.endlessleveling.listeners.PlayerCombatListener;
+import com.airijko.endlessleveling.util.EntityRefUtil;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.logger.HytaleLogger;
@@ -178,7 +179,7 @@ public final class WitherAugment extends YamlAugment implements AugmentHooks.OnH
     }
 
     public static void tickTarget(Ref<EntityStore> ref, CommandBuffer<EntityStore> commandBuffer, long now) {
-        if (ref == null || commandBuffer == null) {
+        if (ref == null || commandBuffer == null || !EntityRefUtil.isUsable(ref)) {
             return;
         }
         String key = keyFor(ref, commandBuffer);
@@ -216,7 +217,9 @@ public final class WitherAugment extends YamlAugment implements AugmentHooks.OnH
             return;
         }
 
-        EntityStatMap statMap = commandBuffer.getComponent(ref, EntityStatMap.getComponentType());
+        EntityStatMap statMap = EntityRefUtil.tryGetComponent(commandBuffer,
+                ref,
+                EntityStatMap.getComponentType());
         EntityStatValue hp = statMap == null ? null : statMap.get(DefaultEntityStatTypes.getHealth());
         if (hp == null || hp.getMax() <= 0f || hp.get() <= 0f) {
             return;
@@ -254,10 +257,11 @@ public final class WitherAugment extends YamlAugment implements AugmentHooks.OnH
     }
 
     private static int storeIdentityFor(Ref<EntityStore> ref) {
-        if (ref == null || ref.getStore() == null) {
+        var store = EntityRefUtil.getStore(ref);
+        if (store == null) {
             return 0;
         }
-        return System.identityHashCode(ref.getStore());
+        return System.identityHashCode(store);
     }
 
     private static Ref<EntityStore> sanitizeSourceRefForTarget(ActiveWither state, Ref<EntityStore> targetRef) {
@@ -265,10 +269,10 @@ public final class WitherAugment extends YamlAugment implements AugmentHooks.OnH
         if (sourceRef == null || targetRef == null) {
             return null;
         }
-        if (!sourceRef.isValid() || !targetRef.isValid()) {
+        if (!EntityRefUtil.isUsable(sourceRef) || !EntityRefUtil.isUsable(targetRef)) {
             return null;
         }
-        if (sourceRef.getStore() != targetRef.getStore()) {
+        if (EntityRefUtil.getStore(sourceRef) != EntityRefUtil.getStore(targetRef)) {
             if (state != null && !state.loggedSourceStoreMismatch) {
                 LOGGER.atWarning().log(
                         "Wither source store mismatch; falling back to NULL_SOURCE target=%s source=%s",
@@ -284,11 +288,14 @@ public final class WitherAugment extends YamlAugment implements AugmentHooks.OnH
     private static void applySlowIfPossible(ActiveWither state,
             CommandBuffer<EntityStore> commandBuffer,
             Ref<EntityStore> ref) {
-        if (state == null || commandBuffer == null || ref == null || state.movementSpeedSlowPercent <= 0.0D) {
+        if (state == null || commandBuffer == null || ref == null || !EntityRefUtil.isUsable(ref)
+                || state.movementSpeedSlowPercent <= 0.0D) {
             return;
         }
         String key = keyFor(ref, commandBuffer);
-        MovementManager movementManager = commandBuffer.getComponent(ref, MovementManager.getComponentType());
+        MovementManager movementManager = EntityRefUtil.tryGetComponent(commandBuffer,
+                ref,
+                MovementManager.getComponentType());
         if (movementManager == null) {
             if (!state.loggedMissingMovementManager) {
                 LOGGER.atWarning().log("Wither slow MovementManager missing; trying effect fallback key=%s target=%s",
@@ -344,14 +351,16 @@ public final class WitherAugment extends YamlAugment implements AugmentHooks.OnH
     private static void clearSlowIfPossible(ActiveWither state,
             CommandBuffer<EntityStore> commandBuffer,
             Ref<EntityStore> ref) {
-        if (state == null || commandBuffer == null || ref == null) {
+        if (state == null || commandBuffer == null || ref == null || !EntityRefUtil.isUsable(ref)) {
             return;
         }
         String key = keyFor(ref, commandBuffer);
 
         clearSlowEffectFallback(state, commandBuffer, ref, key);
 
-        MovementManager movementManager = commandBuffer.getComponent(ref, MovementManager.getComponentType());
+        MovementManager movementManager = EntityRefUtil.tryGetComponent(commandBuffer,
+                ref,
+                MovementManager.getComponentType());
         if (movementManager == null) {
             return;
         }
@@ -379,7 +388,8 @@ public final class WitherAugment extends YamlAugment implements AugmentHooks.OnH
             CommandBuffer<EntityStore> commandBuffer,
             Ref<EntityStore> ref,
             String key) {
-        EffectControllerComponent controller = commandBuffer.getComponent(ref,
+        EffectControllerComponent controller = EntityRefUtil.tryGetComponent(commandBuffer,
+                ref,
                 EffectControllerComponent.getComponentType());
         if (controller == null) {
             if (!state.loggedMissingEffectController) {
@@ -429,7 +439,8 @@ public final class WitherAugment extends YamlAugment implements AugmentHooks.OnH
         if (!state.fallbackSlowEffectApplied || state.fallbackSlowEffectId == null) {
             return;
         }
-        EffectControllerComponent controller = commandBuffer.getComponent(ref,
+        EffectControllerComponent controller = EntityRefUtil.tryGetComponent(commandBuffer,
+                ref,
                 EffectControllerComponent.getComponentType());
         if (controller == null) {
             return;

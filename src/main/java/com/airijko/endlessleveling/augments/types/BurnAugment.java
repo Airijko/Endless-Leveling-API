@@ -10,6 +10,7 @@ import com.airijko.endlessleveling.augments.YamlAugment;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.airijko.endlessleveling.listeners.PlayerCombatListener;
 import com.airijko.endlessleveling.managers.PartyManager;
+import com.airijko.endlessleveling.util.EntityRefUtil;
 import com.hypixel.hytale.builtin.mounts.NPCMountComponent;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
@@ -156,7 +157,8 @@ public final class BurnAugment extends YamlAugment
 
         CommandBuffer<EntityStore> commandBuffer = context.getCommandBuffer();
         Ref<EntityStore> sourceRef = context.getPlayerRef();
-        TransformComponent sourceTransform = commandBuffer.getComponent(sourceRef,
+        TransformComponent sourceTransform = EntityRefUtil.tryGetComponent(commandBuffer,
+                sourceRef,
                 TransformComponent.getComponentType());
         if (sourceTransform == null || sourceTransform.getPosition() == null) {
             return;
@@ -193,7 +195,9 @@ public final class BurnAugment extends YamlAugment
                 continue;
             }
 
-            EntityStatMap targetStats = commandBuffer.getComponent(targetRef, EntityStatMap.getComponentType());
+            EntityStatMap targetStats = EntityRefUtil.tryGetComponent(commandBuffer,
+                    targetRef,
+                    EntityStatMap.getComponentType());
             EntityStatValue targetHp = targetStats == null ? null : targetStats.get(DefaultEntityStatTypes.getHealth());
             if (targetHp == null || targetHp.getMax() <= 0f || targetHp.get() <= 0f) {
                 continue;
@@ -217,7 +221,8 @@ public final class BurnAugment extends YamlAugment
             return;
         }
 
-        EffectControllerComponent controller = commandBuffer.getComponent(targetRef,
+        EffectControllerComponent controller = EntityRefUtil.tryGetComponent(commandBuffer,
+                targetRef,
                 EffectControllerComponent.getComponentType());
         if (controller == null) {
             return;
@@ -267,7 +272,7 @@ public final class BurnAugment extends YamlAugment
     }
 
     private boolean isInvulnerableTarget(Ref<EntityStore> targetRef, CommandBuffer<EntityStore> commandBuffer) {
-        if (targetRef == null || commandBuffer == null) {
+        if (targetRef == null || commandBuffer == null || !EntityRefUtil.isUsable(targetRef)) {
             return false;
         }
 
@@ -275,7 +280,8 @@ public final class BurnAugment extends YamlAugment
             return true;
         }
 
-        EffectControllerComponent effectController = commandBuffer.getComponent(targetRef,
+        EffectControllerComponent effectController = EntityRefUtil.tryGetComponent(commandBuffer,
+                targetRef,
                 EffectControllerComponent.getComponentType());
         return effectController != null && effectController.isInvulnerable();
     }
@@ -285,7 +291,9 @@ public final class BurnAugment extends YamlAugment
             Ref<EntityStore> targetRef,
             CommandBuffer<EntityStore> commandBuffer,
             PartyManager partyManager) {
-        NPCMountComponent mountComponent = commandBuffer.getComponent(targetRef, NPCMountComponent.getComponentType());
+        NPCMountComponent mountComponent = EntityRefUtil.tryGetComponent(commandBuffer,
+                targetRef,
+                NPCMountComponent.getComponentType());
         if (mountComponent == null) {
             return false;
         }
@@ -313,7 +321,9 @@ public final class BurnAugment extends YamlAugment
             return false;
         }
 
-        PlayerRef targetPlayer = commandBuffer.getComponent(targetRef, PlayerRef.getComponentType());
+        PlayerRef targetPlayer = EntityRefUtil.tryGetComponent(commandBuffer,
+                targetRef,
+                PlayerRef.getComponentType());
         if (targetPlayer == null || !targetPlayer.isValid()) {
             return false;
         }

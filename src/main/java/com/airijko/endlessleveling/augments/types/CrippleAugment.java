@@ -6,6 +6,7 @@ import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
 import com.airijko.endlessleveling.augments.YamlAugment;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
+import com.airijko.endlessleveling.util.EntityRefUtil;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.server.core.asset.type.entityeffect.config.EntityEffect;
@@ -80,7 +81,11 @@ public final class CrippleAugment extends YamlAugment
     private void applyStunEffect(Ref<EntityStore> targetRef,
             CommandBuffer<EntityStore> commandBuffer,
             EntityEffect stunEffect) {
-        EffectControllerComponent effectController = commandBuffer.getComponent(targetRef,
+        if (targetRef == null || commandBuffer == null) {
+            return;
+        }
+        EffectControllerComponent effectController = EntityRefUtil.tryGetComponent(commandBuffer,
+                targetRef,
                 EffectControllerComponent.getComponentType());
         if (effectController == null) {
             return;

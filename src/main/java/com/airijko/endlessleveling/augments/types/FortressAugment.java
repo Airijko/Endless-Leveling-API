@@ -9,6 +9,7 @@ import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
 import com.airijko.endlessleveling.augments.YamlAugment;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
+import com.airijko.endlessleveling.util.EntityRefUtil;
 import com.hypixel.hytale.protocol.MovementSettings;
 import com.hypixel.hytale.server.core.entity.entities.player.movement.MovementManager;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue;
@@ -219,10 +220,12 @@ public final class FortressAugment extends YamlAugment
             com.hypixel.hytale.component.Ref<com.hypixel.hytale.server.core.universe.world.storage.EntityStore> ref,
             com.hypixel.hytale.component.CommandBuffer<com.hypixel.hytale.server.core.universe.world.storage.EntityStore> commandBuffer,
             boolean locked) {
-        if (ref == null || commandBuffer == null || !ref.isValid()) {
+        if (ref == null || commandBuffer == null || !EntityRefUtil.isUsable(ref)) {
             return;
         }
-        MovementManager movementManager = commandBuffer.getComponent(ref, MovementManager.getComponentType());
+        MovementManager movementManager = EntityRefUtil.tryGetComponent(commandBuffer,
+                ref,
+                MovementManager.getComponentType());
         if (movementManager == null) {
             return;
         }

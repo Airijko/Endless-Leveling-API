@@ -189,7 +189,9 @@ public final class DeathBombAugment extends YamlAugment
                 continue;
             }
 
-            EntityStatMap targetStats = commandBuffer.getComponent(targetRef, EntityStatMap.getComponentType());
+            EntityStatMap targetStats = EntityRefUtil.tryGetComponent(commandBuffer,
+                    targetRef,
+                    EntityStatMap.getComponentType());
             EntityStatValue targetHp = targetStats == null ? null : targetStats.get(DefaultEntityStatTypes.getHealth());
             if (targetHp == null || targetHp.getMax() <= 0f || targetHp.get() <= 0f) {
                 continue;
@@ -223,7 +225,9 @@ public final class DeathBombAugment extends YamlAugment
             return Math.max(0.0D, incomingDamage);
         }
 
-        PlayerRef targetPlayer = commandBuffer.getComponent(targetRef, PlayerRef.getComponentType());
+        PlayerRef targetPlayer = EntityRefUtil.tryGetComponent(commandBuffer,
+                targetRef,
+                PlayerRef.getComponentType());
         if (targetPlayer == null || !targetPlayer.isValid()) {
             return incomingDamage;
         }
@@ -261,7 +265,7 @@ public final class DeathBombAugment extends YamlAugment
             return;
         }
 
-        if (commandBuffer.getComponent(targetRef, DeathComponent.getComponentType()) == null) {
+        if (EntityRefUtil.tryGetComponent(commandBuffer, targetRef, DeathComponent.getComponentType()) == null) {
             Damage damage;
             if (EntityRefUtil.isUsable(sourceRef)) {
                 try {
@@ -290,7 +294,9 @@ public final class DeathBombAugment extends YamlAugment
         List<Ref<EntityStore>> nearbyPlayers = collectNearbyPlayers(commandBuffer, pending.position, broadcastRadius);
 
         if (nearbyPlayers.isEmpty() && sourceRef != null && sourceRef.isValid()) {
-            PlayerRef sourcePlayerRef = commandBuffer.getComponent(sourceRef, PlayerRef.getComponentType());
+            PlayerRef sourcePlayerRef = EntityRefUtil.tryGetComponent(commandBuffer,
+                    sourceRef,
+                    PlayerRef.getComponentType());
             if (sourcePlayerRef != null && sourcePlayerRef.isValid()) {
                 nearbyPlayers.add(sourceRef);
             }
@@ -325,7 +331,9 @@ public final class DeathBombAugment extends YamlAugment
                 continue;
             }
 
-            PlayerRef playerRef = commandBuffer.getComponent(targetRef, PlayerRef.getComponentType());
+            PlayerRef playerRef = EntityRefUtil.tryGetComponent(commandBuffer,
+                    targetRef,
+                    PlayerRef.getComponentType());
             if (playerRef == null || !playerRef.isValid()) {
                 continue;
             }

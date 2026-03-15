@@ -5,6 +5,7 @@ import com.airijko.endlessleveling.augments.AugmentHooks;
 import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
 import com.airijko.endlessleveling.augments.YamlAugment;
+import com.airijko.endlessleveling.util.EntityRefUtil;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue;
@@ -110,7 +111,8 @@ public final class ReckoningAugment extends YamlAugment implements AugmentHooks.
             return stats;
         }
         if (context.getCommandBuffer() != null && context.getAttackerRef() != null) {
-            EntityStatMap fromBuffer = context.getCommandBuffer().getComponent(context.getAttackerRef(),
+            EntityStatMap fromBuffer = EntityRefUtil.tryGetComponent(context.getCommandBuffer(),
+                    context.getAttackerRef(),
                     EntityStatMap.getComponentType());
             LOGGER.atFiner().log("Reckoning attacker stats via command buffer: %s", fromBuffer);
             return fromBuffer;
@@ -126,7 +128,8 @@ public final class ReckoningAugment extends YamlAugment implements AugmentHooks.
             return stats;
         }
         if (context.getCommandBuffer() != null && context.getTargetRef() != null) {
-            EntityStatMap fromBuffer = context.getCommandBuffer().getComponent(context.getTargetRef(),
+            EntityStatMap fromBuffer = EntityRefUtil.tryGetComponent(context.getCommandBuffer(),
+                    context.getTargetRef(),
                     EntityStatMap.getComponentType());
             LOGGER.atFiner().log("Reckoning target stats via command buffer: %s", fromBuffer);
             return fromBuffer;
