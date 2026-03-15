@@ -16,6 +16,7 @@ import com.airijko.endlessleveling.managers.SkillManager;
 import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveManager;
 import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveSnapshot;
 import com.airijko.endlessleveling.passives.settings.AdrenalineSettings;
+import com.airijko.endlessleveling.passives.type.PartyMendingAuraPassive;
 import com.airijko.endlessleveling.passives.type.SecondWindPassive;
 import com.airijko.endlessleveling.util.ChatMessageTemplate;
 import com.airijko.endlessleveling.util.ChatMessageStrings;
@@ -124,6 +125,12 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
                         expireSwiftnessIfNeeded(playerRef, ref, commandBuffer, playerData, runtimeState);
                         applySignatureGainBonus(playerData, statMap, archetypeSnapshot, runtimeState);
                         applyHealingBonus(statMap, archetypeSnapshot, runtimeState);
+                        applyPartyMendingAura(playerData,
+                                ref,
+                                commandBuffer,
+                                statMap,
+                                archetypeSnapshot,
+                                runtimeState);
                         applySecondWindHealing(statMap, runtimeState, deltaSeconds);
                         notifyPassiveCooldowns(playerRef, runtimeState);
                         notifyAugmentCooldowns(playerRef, playerData);
@@ -635,6 +642,20 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
             PassiveRuntimeState runtimeState,
             float deltaSeconds) {
         SecondWindPassive.tickHealing(statMap, runtimeState, deltaSeconds);
+    }
+
+    private void applyPartyMendingAura(@Nonnull PlayerData playerData,
+            @Nonnull Ref<EntityStore> ref,
+            @Nonnull CommandBuffer<EntityStore> commandBuffer,
+            @Nonnull EntityStatMap statMap,
+            @Nonnull ArchetypePassiveSnapshot archetypeSnapshot,
+            @Nonnull PassiveRuntimeState runtimeState) {
+        PartyMendingAuraPassive.pulse(playerData,
+                ref,
+                commandBuffer,
+                statMap,
+                archetypeSnapshot,
+                runtimeState);
     }
 
     private void notifyPassiveCooldowns(PlayerRef playerRef, PassiveRuntimeState runtimeState) {

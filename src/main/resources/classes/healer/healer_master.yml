@@ -12,8 +12,8 @@ weapons:
     damage: 1.05
 
 passives:
-  - type: SPECIAL_CHARGE_BONUS
-    value: 0.75
+  - type: PARTY_MENDING_AURA
+    value: 1
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: flow
     value: 2.5
