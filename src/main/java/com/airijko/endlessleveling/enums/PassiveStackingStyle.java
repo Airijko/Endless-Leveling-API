@@ -60,8 +60,8 @@ public enum PassiveStackingStyle {
                     SWIFTNESS ->
                 DIMINISHING;
             case FIRST_STRIKE, EXECUTIONER -> UNIQUE;
-            case HEALING_TOUCH -> UNIQUE;
-            case HEALING_AURA -> UNIQUE;
+            case HEALING_TOUCH -> ADDITIVE;
+            case HEALING_AURA -> ADDITIVE;
             case WITHER, CRIT_DEFENSE -> ADDITIVE;
             default -> ADDITIVE;
         };
