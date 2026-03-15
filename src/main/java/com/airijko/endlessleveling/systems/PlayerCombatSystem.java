@@ -85,6 +85,8 @@ public class PlayerCombatSystem extends DamageEventSystem {
                 passiveManager,
                 archetypePassiveManager,
                 classManager,
+                playerDataManager,
+                mobLevelingManager,
                 augmentExecutor);
     }
 

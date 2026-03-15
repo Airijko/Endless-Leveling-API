@@ -72,6 +72,8 @@ public class PlayerDefenseSystem extends DamageEventSystem {
 				passiveManager,
 				archetypePassiveManager,
 				null,
+				playerDataManager,
+				mobLevelingManager,
 				augmentExecutor);
 	}
 

@@ -1852,6 +1852,20 @@ public class MobLevelingManager {
         return getExperienceXpMaxDifference(store);
     }
 
+    private int getPlayerCombatScalingLevelDifferenceRange(Store<EntityStore> store) {
+        String preferredPath = "Player_Combat_Scaling.Player_Level_Scaling_Difference.Range";
+        if (hasMobLevelingPath(preferredPath, store, null)) {
+            return Math.max(0, getConfigInt(preferredPath, 10, store));
+        }
+
+        String aliasPath = "Player_Combat_Scaling.Level_Scaling_Difference.Range";
+        if (hasMobLevelingPath(aliasPath, store, null)) {
+            return Math.max(0, getConfigInt(aliasPath, 10, store));
+        }
+
+        return getMobScalingLevelDifferenceRange(store);
+    }
+
     private int resolvePlayerBasedLevelWithPartySystem(Store<EntityStore> store, Vector3d mobPos, Integer entityId) {
         double radius = Math.max(0.0D, getPlayerPartyInfluenceRadius(store));
         List<PlayerContext> nearbyPlayers = getPlayersWithinRadius(store, mobPos, radius);
@@ -3212,6 +3226,60 @@ public class MobLevelingManager {
         return baseReduction;
     }
 
+    /**
+     * Resolve incoming player defense reduction from relative level difference
+     * (player - attacker).
+     * Positive differences mean the player outlevels the attacker and gains
+     * mitigation.
+     */
+    public double getPlayerCombatDefenseReductionForLevels(Ref<EntityStore> ref,
+            CommandBuffer<EntityStore> commandBuffer,
+            int attackerLevel,
+            int playerLevel) {
+        Store<EntityStore> store = ref != null ? ref.getStore() : null;
+        int safeAttackerLevel = Math.max(1, attackerLevel);
+        int safePlayerLevel = Math.max(1, playerLevel);
+        int levelDifference = safePlayerLevel - safeAttackerLevel;
+        return getPlayerCombatDefenseReductionForLevelDifference(store, levelDifference);
+    }
+
+    private double getPlayerCombatDefenseReductionForLevelDifference(Store<EntityStore> store, int levelDifference) {
+        int maxDifference = getPlayerCombatScalingLevelDifferenceRange(store);
+
+        double atNegativeMax = clampReduction(
+                getConfigDouble("Player_Combat_Scaling.Defense_Max_Difference.At_Negative_Max_Difference", 0.0D,
+                        store));
+        double atPositiveMax = clampReduction(
+                getConfigDouble("Player_Combat_Scaling.Defense_Max_Difference.At_Positive_Max_Difference", 0.0D,
+                        store));
+        double belowNegativeMax = clampReduction(
+                getConfigDouble("Player_Combat_Scaling.Defense_Max_Difference.Below_Negative_Max_Difference",
+                        atNegativeMax, store));
+        double abovePositiveMax = clampReduction(
+                getConfigDouble("Player_Combat_Scaling.Defense_Max_Difference.Above_Positive_Max_Difference",
+                        atPositiveMax, store));
+
+        if (maxDifference <= 0) {
+            if (levelDifference > 0) {
+                return abovePositiveMax;
+            }
+            if (levelDifference < 0) {
+                return belowNegativeMax;
+            }
+            return atNegativeMax;
+        }
+
+        if (levelDifference < -maxDifference) {
+            return belowNegativeMax;
+        }
+        if (levelDifference > maxDifference) {
+            return abovePositiveMax;
+        }
+
+        double ratio = (levelDifference + maxDifference) / (double) (maxDifference * 2);
+        return lerp(atNegativeMax, atPositiveMax, ratio);
+    }
+
     private Double resolveMobOverrideLinearScaling(MobOverrideLinearScaling scaling,
             int level,
             String basePath,
@@ -3902,7 +3970,7 @@ public class MobLevelingManager {
     }
 
     private Object getWorldOverrideValue(String path, Store<EntityStore> store, Object worldHint) {
-        if (path == null || !path.startsWith("Mob_Leveling.")) {
+        if (path == null) {
             return null;
         }
 
@@ -3911,7 +3979,14 @@ public class MobLevelingManager {
             return null;
         }
 
-        String relativePath = path.substring("Mob_Leveling.".length());
+        String relativePath;
+        if (path.startsWith("Mob_Leveling.")) {
+            relativePath = path.substring("Mob_Leveling.".length());
+        } else if (path.startsWith("Player_Combat_Scaling.")) {
+            relativePath = path;
+        } else {
+            return null;
+        }
         String worldId = resolveWorldId(store, worldHint);
 
         if (worldId != null && !worldId.isBlank()) {

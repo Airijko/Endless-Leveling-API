@@ -10,8 +10,10 @@ import com.airijko.endlessleveling.enums.ArchetypePassiveType;
 import com.airijko.endlessleveling.enums.ClassWeaponType;
 import com.airijko.endlessleveling.enums.DamageLayer;
 import com.airijko.endlessleveling.managers.ClassManager;
+import com.airijko.endlessleveling.managers.MobLevelingManager;
 import com.airijko.endlessleveling.managers.PassiveManager;
 import com.airijko.endlessleveling.managers.PassiveManager.PassiveRuntimeState;
+import com.airijko.endlessleveling.managers.PlayerDataManager;
 import com.airijko.endlessleveling.managers.SkillManager;
 import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveManager;
 import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveSnapshot;
@@ -53,17 +55,23 @@ public final class CombatHookProcessor {
     private final PassiveManager passiveManager;
     private final ArchetypePassiveManager archetypePassiveManager;
     private final ClassManager classManager;
+    private final PlayerDataManager playerDataManager;
+    private final MobLevelingManager mobLevelingManager;
     private final AugmentExecutor augmentExecutor;
 
     public CombatHookProcessor(SkillManager skillManager,
             PassiveManager passiveManager,
             ArchetypePassiveManager archetypePassiveManager,
             ClassManager classManager,
+            PlayerDataManager playerDataManager,
+            MobLevelingManager mobLevelingManager,
             AugmentExecutor augmentExecutor) {
         this.skillManager = skillManager;
         this.passiveManager = passiveManager;
         this.archetypePassiveManager = archetypePassiveManager;
         this.classManager = classManager;
+        this.playerDataManager = playerDataManager;
+        this.mobLevelingManager = mobLevelingManager;
         this.augmentExecutor = augmentExecutor;
     }
 
@@ -235,15 +243,17 @@ public final class CombatHookProcessor {
         float resistance = skillManager != null ? skillManager.calculatePlayerDefense(defender) : 0f;
         resistance = Math.max(-0.95f, Math.min(0.95f, resistance));
         float defenseReducedAmount = originalAmount * (1.0f - resistance);
+        float levelDifferenceReduction = resolvePlayerCombatScalingReduction(ctx, defender);
+        float levelDifferenceReducedAmount = defenseReducedAmount * (1.0f - levelDifferenceReduction);
 
-        float postAugmentAmount = defenseReducedAmount;
+        float postAugmentAmount = levelDifferenceReducedAmount;
         if (augmentExecutor != null && ctx.statMap() != null) {
             postAugmentAmount = augmentExecutor.applyOnDamageTaken(defender,
                     ctx.defenderRef(),
                     ctx.attackerRef(),
                     ctx.commandBuffer(),
                     ctx.statMap(),
-                    defenseReducedAmount);
+                    levelDifferenceReducedAmount);
         }
 
         if (runtimeState != null) {
@@ -260,15 +270,20 @@ public final class CombatHookProcessor {
                     postAugmentAmount);
         }
 
-        double dr2 = defenseReducedAmount > 0f
-                ? Math.max(0.0D, Math.min(1.0D, 1.0D - (postAugmentAmount / defenseReducedAmount)))
+        double drLevel = defenseReducedAmount > 0f
+                ? Math.max(0.0D, Math.min(1.0D, 1.0D - (levelDifferenceReducedAmount / defenseReducedAmount)))
+                : 0.0D;
+        double dr2 = levelDifferenceReducedAmount > 0f
+                ? Math.max(0.0D, Math.min(1.0D, 1.0D - (postAugmentAmount / levelDifferenceReducedAmount)))
                 : 0.0D;
         LOGGER.atFine().log(
-                "Incoming DR chain: player=%s base=%.2f dr1(defense)=%.2f%% afterDr1=%.2f dr2(augments)=%.2f%% afterDr2=%.2f final=%.2f",
+                "Incoming DR chain: player=%s base=%.2f dr1(defense)=%.2f%% afterDr1=%.2f dr2(levelDiff)=%.2f%% afterDr2=%.2f dr3(augments)=%.2f%% afterDr3=%.2f final=%.2f",
                 defender != null ? defender.getUuid() : "unknown",
                 originalAmount,
                 resistance * 100.0f,
                 defenseReducedAmount,
+                drLevel * 100.0D,
+                levelDifferenceReducedAmount,
                 dr2 * 100.0D,
                 postAugmentAmount,
                 adjustedAmount);
@@ -286,6 +301,55 @@ public final class CombatHookProcessor {
         }
 
         return new IncomingResult(originalAmount, resistance, adjustedAmount);
+    }
+
+    private float resolvePlayerCombatScalingReduction(@Nonnull IncomingContext ctx, @Nonnull PlayerData defender) {
+        if (mobLevelingManager == null || ctx.commandBuffer() == null || ctx.defenderRef() == null) {
+            return 0.0f;
+        }
+
+        int defenderLevel = Math.max(1, defender.getLevel());
+        int attackerLevel = resolveIncomingAttackerLevel(ctx, defenderLevel);
+        if (attackerLevel <= 0) {
+            attackerLevel = defenderLevel;
+        }
+
+        double reduction = mobLevelingManager.getPlayerCombatDefenseReductionForLevels(
+                ctx.defenderRef(),
+                ctx.commandBuffer(),
+                attackerLevel,
+                defenderLevel);
+        if (Double.isNaN(reduction) || Double.isInfinite(reduction)) {
+            return 0.0f;
+        }
+        return (float) Math.max(-0.95D, Math.min(0.95D, reduction));
+    }
+
+    private int resolveIncomingAttackerLevel(@Nonnull IncomingContext ctx, int fallbackLevel) {
+        Ref<EntityStore> attackerRef = ctx.attackerRef();
+        if (attackerRef == null || !EntityRefUtil.isUsable(attackerRef) || ctx.commandBuffer() == null) {
+            return fallbackLevel;
+        }
+
+        PlayerRef attackerPlayer = EntityRefUtil.tryGetComponent(ctx.commandBuffer(), attackerRef,
+                PlayerRef.getComponentType());
+        if (attackerPlayer != null && attackerPlayer.isValid()) {
+            if (playerDataManager != null) {
+                PlayerData attackerData = playerDataManager.get(attackerPlayer.getUuid());
+                if (attackerData != null) {
+                    return Math.max(1, attackerData.getLevel());
+                }
+            }
+            return fallbackLevel;
+        }
+
+        if (mobLevelingManager != null) {
+            int mobLevel = mobLevelingManager.resolveMobLevel(attackerRef, ctx.commandBuffer());
+            if (mobLevel > 0) {
+                return mobLevel;
+            }
+        }
+        return fallbackLevel;
     }
 
     private float applyFirstStrike(@Nonnull PassiveRuntimeState runtimeState,
