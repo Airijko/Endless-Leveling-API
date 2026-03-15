@@ -14,6 +14,8 @@ import com.airijko.endlessleveling.augments.types.PhaseRushAugment;
 import com.airijko.endlessleveling.augments.types.ProtectiveBubbleAugment;
 import com.airijko.endlessleveling.augments.types.UndyingRageAugment;
 import com.airijko.endlessleveling.enums.PassiveCategory;
+import com.airijko.endlessleveling.managers.PassiveManager;
+import com.airijko.endlessleveling.passives.type.PartyShieldingAuraPassive;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
@@ -50,13 +52,17 @@ public final class AugmentHudOverlayController {
 
     private final AugmentManager augmentManager;
     private final AugmentRuntimeManager runtimeManager;
+    private final PassiveManager passiveManager;
     private final Map<String, Long> durationCache = new ConcurrentHashMap<>();
     private final Map<String, Double> overhealShieldPercentCache = new ConcurrentHashMap<>();
     private final Map<String, Integer> maxStacksCache = new ConcurrentHashMap<>();
 
-    public AugmentHudOverlayController(AugmentManager augmentManager, AugmentRuntimeManager runtimeManager) {
+    public AugmentHudOverlayController(AugmentManager augmentManager,
+            AugmentRuntimeManager runtimeManager,
+            PassiveManager passiveManager) {
         this.augmentManager = augmentManager;
         this.runtimeManager = runtimeManager;
+        this.passiveManager = passiveManager;
     }
 
     public HudOverlayState resolve(@Nonnull PlayerRef playerRef) {
@@ -71,11 +77,14 @@ public final class AugmentHudOverlayController {
 
         long now = System.currentTimeMillis();
         AugmentRuntimeManager.AugmentRuntimeState runtimeState = runtimeManager.getRuntimeState(uuid);
+        PassiveManager.PassiveRuntimeState passiveRuntimeState = passiveManager != null
+                ? passiveManager.getRuntimeState(uuid)
+                : null;
         EntityStatMap statMap = resolveStatMap(playerRef);
         List<StackingHudState> stackingSlots = resolveStackingHudStates(runtimeState, now);
 
         return new HudOverlayState(resolveDurationBar(runtimeState, now),
-                resolveShieldBar(runtimeState, statMap, now),
+                resolveShieldBar(runtimeState, passiveRuntimeState, statMap, now),
                 stackingSlots);
     }
 
@@ -298,26 +307,51 @@ public final class AugmentHudOverlayController {
     }
 
     private BarState resolveShieldBar(AugmentRuntimeManager.AugmentRuntimeState runtimeState,
+            PassiveManager.PassiveRuntimeState passiveRuntimeState,
             EntityStatMap statMap,
             long now) {
-        if (runtimeState == null) {
-            return BarState.hidden();
-        }
-
-        for (String augmentId : SHIELD_PRIORITY) {
-            BarState candidate = switch (augmentId) {
-                case ProtectiveBubbleAugment.ID -> resolveProtectiveBubbleBar(runtimeState, now);
-                case FortressAugment.ID -> resolveFortressShieldBar(runtimeState, now);
-                case EndurePainAugment.ID -> resolveEndurePainShieldBar(runtimeState, statMap, now);
-                case OverhealAugment.ID -> resolveOverhealShieldBar(runtimeState, statMap, now);
-                default -> BarState.hidden();
-            };
-            if (candidate.visible()) {
-                return candidate;
+        if (runtimeState != null) {
+            for (String augmentId : SHIELD_PRIORITY) {
+                BarState candidate = switch (augmentId) {
+                    case ProtectiveBubbleAugment.ID -> resolveProtectiveBubbleBar(runtimeState, now);
+                    case FortressAugment.ID -> resolveFortressShieldBar(runtimeState, now);
+                    case EndurePainAugment.ID -> resolveEndurePainShieldBar(runtimeState, statMap, now);
+                    case OverhealAugment.ID -> resolveOverhealShieldBar(runtimeState, statMap, now);
+                    default -> BarState.hidden();
+                };
+                if (candidate.visible()) {
+                    return candidate;
+                }
             }
         }
 
+        BarState shieldingAuraBar = resolveShieldingAuraShieldBar(passiveRuntimeState, now);
+        if (shieldingAuraBar.visible()) {
+            return shieldingAuraBar;
+        }
+
         return BarState.hidden();
+    }
+
+    private BarState resolveShieldingAuraShieldBar(PassiveManager.PassiveRuntimeState passiveRuntimeState, long now) {
+        if (passiveRuntimeState == null) {
+            return BarState.hidden();
+        }
+
+        PartyShieldingAuraPassive.cleanupExpiredShield(passiveRuntimeState, now);
+        double currentShield = Math.max(0.0D, passiveRuntimeState.getShieldingAuraShieldAmount());
+        double maxShield = Math.max(0.0D, passiveRuntimeState.getShieldingAuraShieldMaxAmount());
+        long expiresAt = passiveRuntimeState.getShieldingAuraShieldExpiresAt();
+        if (currentShield <= EPSILON || maxShield <= EPSILON || expiresAt <= now) {
+            return BarState.hidden();
+        }
+
+        double progress = clamp01(currentShield / maxShield);
+        if (!isVisiblyFilled(progress)) {
+            progress = MIN_VISIBLE_BAR_PROGRESS * 1.1D;
+        }
+
+        return new BarState("Shielding Aura", progress, true);
     }
 
     private BarState resolveProtectiveBubbleBar(AugmentRuntimeManager.AugmentRuntimeState runtimeState, long now) {

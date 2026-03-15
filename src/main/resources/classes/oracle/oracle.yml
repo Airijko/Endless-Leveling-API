@@ -11,21 +11,24 @@ weapons:
   - type: DAGGER
     damage: 1.05
 
-
 passives:
-  - type: MANA_REGEN
-    value: 0.052
-  - type: HEALING_BONUS
-    value: 0.35 # +50% healing dealt/received
-  - type: SPECIAL_CHARGE_BONUS
-    value: 0.525
+  - type: SHIELDING_AURA
+    value: 1
+    activation: on_hit
+    flat_shield_value: 45
+    stamina_ratio: 0.2
+    self_shield_effectiveness: 0.25
+    duration: 10
+    cooldown: 25
+    radius: 5 # base radius in blocks
+    radius_mana_scaling:
+      mana_per_block: 75
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: flow
     value: 1.75
   - type: INNATE_ATTRIBUTE_GAIN
-    attribute: sorcery
+    attribute: stamina
     value: 0.7
-
 
 ascension:
   id: class_oracle_base

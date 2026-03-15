@@ -7,6 +7,7 @@ import com.airijko.endlessleveling.managers.LevelingManager;
 import com.airijko.endlessleveling.managers.MobLevelingManager;
 import com.airijko.endlessleveling.managers.PlayerDataManager;
 import com.airijko.endlessleveling.managers.ClassManager;
+import com.airijko.endlessleveling.managers.PassiveManager;
 import com.airijko.endlessleveling.managers.RaceManager;
 import com.airijko.endlessleveling.augments.AugmentManager;
 import com.airijko.endlessleveling.augments.AugmentRuntimeManager;
@@ -93,9 +94,12 @@ public class PlayerHud extends CustomUIHud {
         this.mobLevelingManager = EndlessLeveling.getInstance().getMobLevelingManager();
         this.raceManager = EndlessLeveling.getInstance().getRaceManager();
         this.classManager = EndlessLeveling.getInstance().getClassManager();
+        PassiveManager passiveManager = EndlessLeveling.getInstance().getPassiveManager();
         AugmentManager augmentManager = EndlessLeveling.getInstance().getAugmentManager();
         AugmentRuntimeManager augmentRuntimeManager = EndlessLeveling.getInstance().getAugmentRuntimeManager();
-        this.augmentHudOverlayController = new AugmentHudOverlayController(augmentManager, augmentRuntimeManager);
+        this.augmentHudOverlayController = new AugmentHudOverlayController(augmentManager,
+                augmentRuntimeManager,
+                passiveManager);
         this.targetPlayerRef = playerRef;
     }
 

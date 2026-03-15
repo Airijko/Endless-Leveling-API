@@ -1052,6 +1052,10 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                     tr("ui.races.passive.desc.party_mending_aura", "Party healing pulse"),
                     tr("ui.races.passive.detail.party_mending_heal", "heal: 10% mana + 20% stamina"),
                     tr("ui.races.passive.detail.party_mending_radius", "radius: 5 +1/75 mana"));
+            case SHIELDING_AURA -> appendDetails(
+                    tr("ui.races.passive.desc.shielding_aura", "Party shielding aura"),
+                    tr("ui.races.passive.detail.shielding_aura_effect", "shield: flat + stamina scaling"),
+                    tr("ui.races.passive.detail.shielding_aura_duration", "duration + cooldown, party/range only"));
             case REGENERATION -> tr("ui.races.passive.desc.regeneration", "{0} HP/s", formatSigned(value));
             case HEALING_BONUS -> tr("ui.races.passive.desc.healing_bonus", "{0} healing", formatPercentValue(value));
             case LIFE_STEAL -> tr("ui.races.passive.desc.life_steal", "{0} life steal", formatPercentValue(value));

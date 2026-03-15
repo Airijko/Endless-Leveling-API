@@ -21,6 +21,7 @@ import com.airijko.endlessleveling.passives.type.BerzerkerPassive;
 import com.airijko.endlessleveling.passives.type.ExecutionerPassive;
 import com.airijko.endlessleveling.passives.type.FirstStrikePassive;
 import com.airijko.endlessleveling.passives.type.HealingTouchPassive;
+import com.airijko.endlessleveling.passives.type.PartyShieldingAuraPassive;
 import com.airijko.endlessleveling.passives.type.RavenousStrikePassive;
 import com.airijko.endlessleveling.passives.type.RetaliationPassive;
 import com.airijko.endlessleveling.passives.type.SecondWindPassive;
@@ -206,6 +207,12 @@ public final class CombatHookProcessor {
             augmentTrueDamageBonus = Math.max(0.0D, onHitResult.trueDamageBonus());
         }
 
+        if (runtimeState != null
+                && finalDamage > 0f
+                && archetypeSnapshot.getValue(ArchetypePassiveType.SHIELDING_AURA) > 0.0D) {
+            runtimeState.setLastDamageDealtMillis(System.currentTimeMillis());
+        }
+
         healingTouchPassive.apply(playerData,
                 ctx.attackerRef(),
                 ctx.commandBuffer(),
@@ -265,6 +272,10 @@ public final class CombatHookProcessor {
                     ctx.commandBuffer(),
                     ctx.statMap(),
                     levelDifferenceReducedAmount);
+        }
+
+        if (runtimeState != null && postAugmentAmount > 0f) {
+            postAugmentAmount = PartyShieldingAuraPassive.absorbIncomingDamage(runtimeState, postAugmentAmount);
         }
 
         if (runtimeState != null) {

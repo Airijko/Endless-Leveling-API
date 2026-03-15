@@ -62,6 +62,7 @@ public enum PassiveStackingStyle {
             case FIRST_STRIKE, EXECUTIONER -> UNIQUE;
             case HEALING_TOUCH -> ADDITIVE;
             case HEALING_AURA -> ADDITIVE;
+            case SHIELDING_AURA -> ADDITIVE;
             case WITHER, CRIT_DEFENSE -> ADDITIVE;
             default -> ADDITIVE;
         };

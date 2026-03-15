@@ -22,9 +22,8 @@ passives:
     attribute: flow
     value: 2.5
   - type: INNATE_ATTRIBUTE_GAIN
-    attribute: sorcery
+    attribute: stamina
     value: 1
-
 
 ascension:
   id: class_oracle_master

@@ -11,7 +11,6 @@ weapons:
   - type: DAGGER
     damage: 1.05
 
-
 passives:
   - type: MANA_REGEN
     value: 0.064
@@ -23,9 +22,8 @@ passives:
     attribute: flow
     value: 2.125
   - type: INNATE_ATTRIBUTE_GAIN
-    attribute: sorcery
+    attribute: stamina
     value: 0.85
-
 
 ascension:
   id: class_oracle_elite

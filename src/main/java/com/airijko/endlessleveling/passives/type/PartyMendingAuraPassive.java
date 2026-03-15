@@ -85,9 +85,9 @@ public final class PartyMendingAuraPassive {
         double totalMana = sourceMana != null ? Math.max(0.0D, sourceMana.getMax()) : 0.0D;
         double totalStamina = sourceStamina != null ? Math.max(0.0D, sourceStamina.getMax()) : 0.0D;
 
-        double healPerPulse = config.flatHealValue()
+        double healPerPulse = (config.flatHealValue()
                 + (totalMana * config.manaRatio())
-                + (totalStamina * config.staminaRatio());
+                + (totalStamina * config.staminaRatio())) * passiveValue;
         if (healPerPulse <= 0.0D) {
             return;
         }

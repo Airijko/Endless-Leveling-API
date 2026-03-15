@@ -407,6 +407,13 @@ public class PassiveManager {
         private long partyMendingLastPulseMillis;
         private boolean healingAuraPaused;
         private long lastDamageTakenMillis;
+        private long shieldingAuraLastPulseMillis;
+        private long shieldingAuraActiveUntil;
+        private long shieldingAuraCooldownExpiresAt;
+        private long lastDamageDealtMillis;
+        private double shieldingAuraShieldAmount;
+        private double shieldingAuraShieldMaxAmount;
+        private long shieldingAuraShieldExpiresAt;
 
         PassiveRuntimeState(UUID ignored) {
         }
@@ -576,6 +583,13 @@ public class PassiveManager {
             this.partyMendingLastPulseMillis = 0L;
             this.healingAuraPaused = false;
             this.lastDamageTakenMillis = 0L;
+            this.shieldingAuraLastPulseMillis = 0L;
+            this.shieldingAuraActiveUntil = 0L;
+            this.shieldingAuraCooldownExpiresAt = 0L;
+            this.lastDamageDealtMillis = 0L;
+            this.shieldingAuraShieldAmount = 0.0D;
+            this.shieldingAuraShieldMaxAmount = 0.0D;
+            this.shieldingAuraShieldExpiresAt = 0L;
         }
 
         public long getAdrenalineCooldownExpiresAt() {
@@ -715,6 +729,68 @@ public class PassiveManager {
 
         public void setLastDamageTakenMillis(long lastDamageTakenMillis) {
             this.lastDamageTakenMillis = Math.max(0L, lastDamageTakenMillis);
+        }
+
+        public long getShieldingAuraLastPulseMillis() {
+            return shieldingAuraLastPulseMillis;
+        }
+
+        public void setShieldingAuraLastPulseMillis(long shieldingAuraLastPulseMillis) {
+            this.shieldingAuraLastPulseMillis = Math.max(0L, shieldingAuraLastPulseMillis);
+        }
+
+        public long getShieldingAuraActiveUntil() {
+            return shieldingAuraActiveUntil;
+        }
+
+        public void setShieldingAuraActiveUntil(long shieldingAuraActiveUntil) {
+            this.shieldingAuraActiveUntil = Math.max(0L, shieldingAuraActiveUntil);
+        }
+
+        public long getShieldingAuraCooldownExpiresAt() {
+            return shieldingAuraCooldownExpiresAt;
+        }
+
+        public void setShieldingAuraCooldownExpiresAt(long shieldingAuraCooldownExpiresAt) {
+            this.shieldingAuraCooldownExpiresAt = Math.max(0L, shieldingAuraCooldownExpiresAt);
+        }
+
+        public long getLastDamageDealtMillis() {
+            return lastDamageDealtMillis;
+        }
+
+        public void setLastDamageDealtMillis(long lastDamageDealtMillis) {
+            this.lastDamageDealtMillis = Math.max(0L, lastDamageDealtMillis);
+        }
+
+        public double getShieldingAuraShieldAmount() {
+            return shieldingAuraShieldAmount;
+        }
+
+        public void setShieldingAuraShieldAmount(double shieldingAuraShieldAmount) {
+            this.shieldingAuraShieldAmount = Math.max(0.0D, shieldingAuraShieldAmount);
+        }
+
+        public double getShieldingAuraShieldMaxAmount() {
+            return shieldingAuraShieldMaxAmount;
+        }
+
+        public void setShieldingAuraShieldMaxAmount(double shieldingAuraShieldMaxAmount) {
+            this.shieldingAuraShieldMaxAmount = Math.max(0.0D, shieldingAuraShieldMaxAmount);
+        }
+
+        public long getShieldingAuraShieldExpiresAt() {
+            return shieldingAuraShieldExpiresAt;
+        }
+
+        public void setShieldingAuraShieldExpiresAt(long shieldingAuraShieldExpiresAt) {
+            this.shieldingAuraShieldExpiresAt = Math.max(0L, shieldingAuraShieldExpiresAt);
+        }
+
+        public void clearShieldingAuraShield() {
+            this.shieldingAuraShieldAmount = 0.0D;
+            this.shieldingAuraShieldMaxAmount = 0.0D;
+            this.shieldingAuraShieldExpiresAt = 0L;
         }
 
     }
