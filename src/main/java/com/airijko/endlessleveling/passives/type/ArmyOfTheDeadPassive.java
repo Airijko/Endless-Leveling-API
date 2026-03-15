@@ -44,7 +44,7 @@ public final class ArmyOfTheDeadPassive {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
 
-    private static final String DEFAULT_SKELETON_TYPE = "Skeleton_Soldier";
+    private static final String DEFAULT_SKELETON_TYPE = "EndlessLeveling_ArmyOfTheDead_Pet";
     private static final int DEFAULT_BASE_SUMMON_AMOUNT = 2;
     private static final double DEFAULT_MANA_PER_SUMMON = 100.0D;
     private static final double DEFAULT_COOLDOWN_SECONDS = 15.0D;
@@ -233,23 +233,24 @@ public final class ArmyOfTheDeadPassive {
                 cleanupSlot(ownerUuid, slot, now, commandBuffer, sourceRef);
             }
 
-            int spawned = 0;
+            int queuedSpawns = 0;
             for (int slotIndex = 0; slotIndex < maxSummons; slotIndex++) {
                 SummonSlot slot = ownerState.getSlot(slotIndex);
-                if (slot == null || slot.activeSummonUuid != null || now < slot.cooldownExpiresAt) {
+                if (slot == null || slot.spawnPending || slot.activeSummonUuid != null
+                        || now < slot.cooldownExpiresAt) {
                     continue;
                 }
 
                 slot.cooldownDurationMillis = config.cooldownMillis();
                 slot.spawnPending = true;
                 queuedRequests.add(new QueuedSpawnRequest(ownerUuid, slotIndex, now, config, sourceSnapshot));
-                spawned++;
+                queuedSpawns++;
             }
 
-            if (spawned > 0) {
+            if (queuedSpawns > 0) {
                 LOGGER.atFine().log(
-                        "[ARMY_OF_THE_DEAD] Spawned %d skeletons for %s (max=%d, base=%d, manaPerSummon=%.2f, type=%s).",
-                        spawned,
+                        "[ARMY_OF_THE_DEAD] Queued %d summon spawns for %s (max=%d, base=%d, manaPerSummon=%.2f, type=%s).",
+                        queuedSpawns,
                         ownerUuid,
                         maxSummons,
                         config.baseSummonAmount(),
@@ -381,13 +382,24 @@ public final class ArmyOfTheDeadPassive {
             }
 
             try {
+                String spawnRoleType = resolveSpawnRoleType(request.config().skeletonType());
+                if (spawnRoleType == null || spawnRoleType.isBlank()) {
+                    slot.spawnPending = false;
+                    return;
+                }
+
                 var spawned = NPCPlugin.get().spawnNPC(store,
-                        request.config().skeletonType(),
+                        spawnRoleType,
                         null,
                         request.source().position(),
                         request.source().rotation());
                 if (spawned == null || !EntityRefUtil.isUsable(spawned.first())) {
                     slot.spawnPending = false;
+                    LOGGER.atWarning().log(
+                            "[ARMY_OF_THE_DEAD] SpawnNPC returned no active entity for owner %s slot %d type=%s.",
+                            request.ownerUuid(),
+                            request.slotIndex(),
+                            spawnRoleType);
                     return;
                 }
 
@@ -397,11 +409,16 @@ public final class ArmyOfTheDeadPassive {
                         UUIDComponent.getComponentType());
                 if (summonUuidComponent == null || summonUuidComponent.getUuid() == null) {
                     slot.spawnPending = false;
+                    LOGGER.atWarning().log(
+                            "[ARMY_OF_THE_DEAD] Spawned summon missing UUID for owner %s slot %d type=%s.",
+                            request.ownerUuid(),
+                            request.slotIndex(),
+                            spawnRoleType);
                     return;
                 }
 
                 attachSummonToOwnerFlock(request.source().ownerRef(), summonRef, store,
-                        request.config().skeletonType());
+                        spawnRoleType);
 
                 applySummonScaling(summonRef,
                         store,
@@ -418,6 +435,12 @@ public final class ArmyOfTheDeadPassive {
                 slot.spawnPending = false;
                 SUMMON_BINDINGS.put(summonUuidComponent.getUuid(),
                         new SummonBinding(request.ownerUuid(), request.slotIndex()));
+                LOGGER.atFine().log(
+                        "[ARMY_OF_THE_DEAD] Activated summon %s for owner %s slot %d type=%s.",
+                        summonUuidComponent.getUuid(),
+                        request.ownerUuid(),
+                        request.slotIndex(),
+                        spawnRoleType);
             } catch (Throwable throwable) {
                 slot.spawnPending = false;
                 LOGGER.atWarning().withCause(throwable)
@@ -425,6 +448,25 @@ public final class ArmyOfTheDeadPassive {
                                 request.ownerUuid(),
                                 request.slotIndex());
             }
+        }
+    }
+
+    private static String resolveSpawnRoleType(String preferredRoleType) {
+        NPCPlugin npcPlugin = NPCPlugin.get();
+        if (npcPlugin == null) {
+            return preferredRoleType;
+        }
+
+        String roleType = preferredRoleType == null || preferredRoleType.isBlank()
+                ? DEFAULT_SKELETON_TYPE
+                : preferredRoleType.trim();
+        try {
+            npcPlugin.validateSpawnableRole(roleType);
+            return roleType;
+        } catch (Throwable throwable) {
+            LOGGER.atWarning().withCause(throwable)
+                    .log("[ARMY_OF_THE_DEAD] Spawn role '%s' failed validation before spawn.", roleType);
+            return null;
         }
     }
 
