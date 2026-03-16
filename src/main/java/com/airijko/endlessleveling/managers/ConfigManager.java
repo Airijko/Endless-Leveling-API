@@ -313,6 +313,9 @@ public class ConfigManager {
         if ("events.yml".equalsIgnoreCase(resourceName)) {
             return "force_builtin_events";
         }
+        if ("worlds.yml".equalsIgnoreCase(resourceName)) {
+            return "force_builtin_worlds";
+        }
         return null;
     }
 
@@ -399,6 +402,7 @@ public class ConfigManager {
             target.put("force_builtin_config", parseBoolean(configMap.get("force_builtin_config"), false));
             target.put("force_builtin_leveling", parseBoolean(configMap.get("force_builtin_leveling"), false));
             target.put("force_builtin_events", parseBoolean(configMap.get("force_builtin_events"), false));
+            target.put("force_builtin_worlds", parseBoolean(configMap.get("force_builtin_worlds"), false));
         }
 
         return target;
@@ -412,6 +416,7 @@ public class ConfigManager {
             normalized.remove("force_builtin_config");
             normalized.remove("force_builtin_leveling");
             normalized.remove("force_builtin_events");
+            normalized.remove("force_builtin_worlds");
         }
 
         return normalized;
@@ -493,6 +498,7 @@ public class ConfigManager {
     private void mergeBundledDefaultsPreservingUserValues() throws IOException {
         Map<String, Object> bundledMap = loadBundledConfigMap();
         Map<String, Object> merged = mergeMapsPreservingUserValues(bundledMap, configMap);
+        preserveResourceSpecificCustomKeys(merged, configMap, bundledMap);
         applyResourceSpecificMigrationFixups(merged, bundledMap);
         merged.put(VersionRegistry.CONFIG_VERSION_KEY, bundledConfigVersion);
         writeMergedWithBundledTemplate(merged, bundledMap);
@@ -673,10 +679,49 @@ public class ConfigManager {
     private void rebuildFromBundledTemplatePreservingCurrentValues() throws IOException {
         Map<String, Object> bundledMap = loadBundledConfigMap();
         Map<String, Object> merged = mergeMapsPreservingUserValues(bundledMap, configMap);
+        preserveResourceSpecificCustomKeys(merged, configMap, bundledMap);
         applyResourceSpecificMigrationFixups(merged, bundledMap);
         merged.put(VersionRegistry.CONFIG_VERSION_KEY, bundledConfigVersion);
         writeMergedWithBundledTemplate(merged, bundledMap);
         configMap = merged;
+    }
+
+    private void preserveResourceSpecificCustomKeys(Map<String, Object> merged,
+            Map<String, Object> existing,
+            Map<String, Object> bundled) {
+        if (!"worlds.yml".equalsIgnoreCase(resourceName) || merged == null || existing == null) {
+            return;
+        }
+
+        Map<String, Object> extras = collectKeysMissingFromTemplate(existing, bundled);
+        if (extras.isEmpty()) {
+            return;
+        }
+
+        mergeMissingKeys(merged, extras);
+    }
+
+    private void mergeMissingKeys(Map<String, Object> target, Map<String, Object> extras) {
+        if (target == null || extras == null || extras.isEmpty()) {
+            return;
+        }
+
+        for (Map.Entry<String, Object> entry : extras.entrySet()) {
+            String key = entry.getKey();
+            Object extraValue = entry.getValue();
+
+            if (!target.containsKey(key)) {
+                target.put(key, deepCopyValue(extraValue));
+                continue;
+            }
+
+            Object targetValue = target.get(key);
+            if (targetValue instanceof Map<?, ?> targetMap && extraValue instanceof Map<?, ?> extraMap) {
+                Map<String, Object> mutableTarget = toMutableMap(targetMap);
+                mergeMissingKeys(mutableTarget, toMutableMap(extraMap));
+                target.put(key, mutableTarget);
+            }
+        }
     }
 
     private void applyResourceSpecificMigrationFixups(Map<String, Object> merged, Map<String, Object> bundled) {
@@ -847,6 +892,13 @@ public class ConfigManager {
 
     private void writeMergedWithBundledTemplate(Map<String, Object> merged,
             Map<String, Object> bundled) throws IOException {
+        if ("worlds.yml".equalsIgnoreCase(resourceName)) {
+            try (FileWriter writer = new FileWriter(configFile)) {
+                yaml.dump(merged, writer);
+            }
+            return;
+        }
+
         String template = loadBundledTemplateText();
         if (template == null || template.isBlank()) {
             try (FileWriter writer = new FileWriter(configFile)) {
