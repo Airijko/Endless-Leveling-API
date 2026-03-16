@@ -51,6 +51,8 @@ public final class ArmyOfTheDeadPassive {
     private static final double DEFAULT_LIFETIME_SECONDS = 30.0D;
     private static final double DEFAULT_STAT_INHERITANCE = 0.10D;
     private static final int MAX_SUMMON_CAP = 64;
+    private static final double TELEPORT_RANGE = 32.0D;
+    private static final double TELEPORT_RANGE_SQ = TELEPORT_RANGE * TELEPORT_RANGE;
 
     private static final Map<UUID, OwnerSummonState> OWNER_STATES = new ConcurrentHashMap<>();
     private static final Map<UUID, SummonBinding> SUMMON_BINDINGS = new ConcurrentHashMap<>();
@@ -812,6 +814,13 @@ public final class ArmyOfTheDeadPassive {
                 }
 
                 summonNpc.setLeashPoint(ownerPosition);
+
+                TransformComponent summonTransform = EntityRefUtil.tryGetComponent(store, slot.activeRef,
+                        TransformComponent.getComponentType());
+                if (summonTransform != null && summonTransform.getPosition() != null
+                        && summonTransform.getPosition().distanceSquaredTo(ownerPosition) > TELEPORT_RANGE_SQ) {
+                    summonTransform.teleportPosition(ownerPosition);
+                }
             }
         }
     }
