@@ -27,7 +27,6 @@ passives:
     attribute: sorcery
     value: 1.4
 
-
 ascension:
   id: class_arcanist_master
   stage: master

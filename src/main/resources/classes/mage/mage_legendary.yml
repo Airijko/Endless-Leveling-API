@@ -24,8 +24,6 @@ passives:
     attribute: sorcery
     value: 1.38
 
-
-
 ascension:
   id: class_mage_legendary
   stage: legendary

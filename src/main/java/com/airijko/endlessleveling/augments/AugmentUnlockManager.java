@@ -34,6 +34,15 @@ public class AugmentUnlockManager {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
     private static final int DEFAULT_OFFER_COUNT = 3;
+    private static final String DEFENSE_STAT_KEY = "defense";
+    private static final Set<String> DEFENSE_COMMON_BLOCKED_PRIMARY_CLASSES = Set.of(
+            "mage",
+            "arcanist",
+            "marksman",
+            "assassin",
+            "oracle",
+            "healer",
+            "necromancer");
 
     private final ConfigManager configManager;
     private final ConfigManager levelingConfigManager;
@@ -129,7 +138,7 @@ public class AugmentUnlockManager {
 
             List<String> offers = new ArrayList<>(playerData.getAugmentOffersForTier(tierKey));
             for (int i = 0; i < missing; i++) {
-                List<String> rolled = rollOffers(tier, excludedAugmentIds);
+                List<String> rolled = rollOffers(playerData, tier, excludedAugmentIds);
                 if (rolled.isEmpty()) {
                     LOGGER.atWarning().log("Failed to roll augments for tier %s (pool empty?) for %s (level %d)",
                             tierKey, playerData.getPlayerName(), playerLevel);
@@ -210,7 +219,7 @@ public class AugmentUnlockManager {
         }
 
         Set<String> excludedAugmentIds = collectOwnedAugmentIds(playerData);
-        String rolled = rollSingleOffer(tier, excludedAugmentIds);
+        String rolled = rollSingleOffer(playerData, tier, excludedAugmentIds);
         if (rolled == null || rolled.isBlank()) {
             return null;
         }
@@ -251,7 +260,7 @@ public class AugmentUnlockManager {
         Set<String> excludedAugmentIds = collectOwnedAugmentIds(playerData);
         List<String> rerolledOffers = new ArrayList<>();
         for (int i = 0; i < bundleCount; i++) {
-            List<String> rolled = rollOffers(tier, excludedAugmentIds);
+            List<String> rolled = rollOffers(playerData, tier, excludedAugmentIds);
             if (rolled.isEmpty()) {
                 continue;
             }
@@ -436,9 +445,9 @@ public class AugmentUnlockManager {
         return total;
     }
 
-    private List<String> rollOffers(PassiveTier tier, Set<String> excludedAugmentIds) {
+    private List<String> rollOffers(PlayerData playerData, PassiveTier tier, Set<String> excludedAugmentIds) {
         if (tier == PassiveTier.COMMON) {
-            List<String> commonOffers = rollCommonStatOffers();
+            List<String> commonOffers = rollCommonStatOffers(playerData);
             if (!commonOffers.isEmpty()) {
                 return commonOffers;
             }
@@ -468,7 +477,7 @@ public class AugmentUnlockManager {
         return rolled;
     }
 
-    private List<String> rollCommonStatOffers() {
+    private List<String> rollCommonStatOffers(PlayerData playerData) {
         AugmentDefinition commonAugmentDefinition = augmentManager.getAugment(CommonAugment.ID);
         if (commonAugmentDefinition == null || commonAugmentDefinition.getTier() != PassiveTier.COMMON) {
             return List.of();
@@ -479,10 +488,15 @@ public class AugmentUnlockManager {
             return List.of();
         }
 
+        boolean blockDefenseOffer = shouldBlockDefenseCommonOffer(playerData);
         List<String> statKeys = new ArrayList<>();
         for (String key : buffs.keySet()) {
             if (key != null && !key.isBlank()) {
-                statKeys.add(key.trim().toLowerCase(Locale.ROOT));
+                String normalized = key.trim().toLowerCase(Locale.ROOT);
+                if (blockDefenseOffer && DEFENSE_STAT_KEY.equals(normalized)) {
+                    continue;
+                }
+                statKeys.add(normalized);
             }
         }
         if (statKeys.isEmpty()) {
@@ -536,12 +550,35 @@ public class AugmentUnlockManager {
         return Math.abs(value - Math.rint(value)) < 0.0001D;
     }
 
-    private String rollSingleOffer(PassiveTier tier, Set<String> excludedAugmentIds) {
-        List<String> rolled = rollOffers(tier, excludedAugmentIds);
+    private String rollSingleOffer(PlayerData playerData, PassiveTier tier, Set<String> excludedAugmentIds) {
+        List<String> rolled = rollOffers(playerData, tier, excludedAugmentIds);
         if (rolled.isEmpty()) {
             return null;
         }
         return rolled.get(0);
+    }
+
+    private boolean shouldBlockDefenseCommonOffer(PlayerData playerData) {
+        String basePrimaryClassId = normalizePrimaryClassBaseId(playerData);
+        return basePrimaryClassId != null && DEFENSE_COMMON_BLOCKED_PRIMARY_CLASSES.contains(basePrimaryClassId);
+    }
+
+    private String normalizePrimaryClassBaseId(PlayerData playerData) {
+        if (playerData == null) {
+            return null;
+        }
+
+        String primaryClassId = playerData.getPrimaryClassId();
+        if (primaryClassId == null || primaryClassId.isBlank()) {
+            return null;
+        }
+
+        String normalized = primaryClassId.trim().toLowerCase(Locale.ROOT);
+        int separatorIndex = normalized.indexOf('_');
+        if (separatorIndex > 0) {
+            return normalized.substring(0, separatorIndex);
+        }
+        return normalized;
     }
 
     private OfferLocation findOfferLocation(PlayerData playerData, PassiveTier expectedTier, String offerId) {

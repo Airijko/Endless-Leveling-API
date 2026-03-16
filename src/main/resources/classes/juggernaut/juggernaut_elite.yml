@@ -14,7 +14,6 @@ weapons:
   - type: SWORD
     damage: 1.05
 
-
 passives:
   - type: RETALIATION
     value: 0.212 # Reflect 25% of damage taken in the window
@@ -28,7 +27,6 @@ passives:
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: strength
     value: 1.7
-
 
 ascension:
   id: class_juggernaut_elite

@@ -31,7 +31,6 @@ passives:
     attribute: life_force
     value: 2.587
 
-
 ascension:
   id: class_battlemage_legendary
   stage: legendary

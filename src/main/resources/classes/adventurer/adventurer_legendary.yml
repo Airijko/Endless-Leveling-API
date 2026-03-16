@@ -33,7 +33,6 @@ passives:
     attribute: stamina
     value: 0.805
 
-
 ascension:
   id: class_adventurer_legendary
   stage: legendary

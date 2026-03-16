@@ -16,7 +16,6 @@ weapons:
   - type: SPEAR
     damage: 1.05
 
-
 passives:
   - type: SECOND_WIND
     value: 0.35

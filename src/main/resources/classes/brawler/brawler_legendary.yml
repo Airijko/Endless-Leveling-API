@@ -27,7 +27,6 @@ passives:
     attribute: strength
     value: 1.38
 
-
 ascension:
   id: class_brawler_legendary
   stage: legendary

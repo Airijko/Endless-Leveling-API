@@ -24,8 +24,6 @@ passives:
     attribute: sorcery
     value: 1.56
 
-
-
 ascension:
   id: class_mage_exalted
   stage: exalted

@@ -12,7 +12,6 @@ weapons:
   - type: DAGGER
     damage: 1.05
 
-
 passives:
   - type: MANA_REGEN
     value: 0.025
@@ -27,7 +26,6 @@ passives:
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: sorcery
     value: 1.19
-
 
 ascension:
   id: class_arcanist_elite

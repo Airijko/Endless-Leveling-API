@@ -32,7 +32,6 @@ passives:
     attribute: ferocity
     value: 1.56
 
-
 ascension:
   id: class_marksman_exalted
   stage: exalted

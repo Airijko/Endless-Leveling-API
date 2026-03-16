@@ -35,7 +35,6 @@ passives:
     attribute: ferocity
     value: 1.2
 
-
 ascension:
   id: class_assassin_master
   stage: master

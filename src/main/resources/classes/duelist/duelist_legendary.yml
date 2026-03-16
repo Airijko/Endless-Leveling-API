@@ -29,7 +29,6 @@ passives:
     attribute: life_force
     value: 1.725
 
-
 ascension:
   id: class_duelist_legendary
   stage: legendary

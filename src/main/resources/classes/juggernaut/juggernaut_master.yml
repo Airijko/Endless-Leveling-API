@@ -28,7 +28,6 @@ passives:
     attribute: strength
     value: 2
 
-
 ascension:
   id: class_juggernaut_master
   stage: master

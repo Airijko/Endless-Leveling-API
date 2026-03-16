@@ -36,7 +36,6 @@ passives:
     attribute: life_force
     value: 2.25
 
-
 ascension:
   id: class_vanguard_master
   stage: master

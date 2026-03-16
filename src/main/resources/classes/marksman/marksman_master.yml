@@ -32,7 +32,6 @@ passives:
     attribute: ferocity
     value: 1.2
 
-
 ascension:
   id: class_marksman_master
   stage: master

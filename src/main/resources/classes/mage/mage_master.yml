@@ -24,8 +24,6 @@ passives:
     attribute: sorcery
     value: 1.2
 
-
-
 ascension:
   id: class_mage_master
   stage: master

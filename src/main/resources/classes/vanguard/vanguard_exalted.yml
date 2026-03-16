@@ -36,7 +36,6 @@ passives:
     attribute: life_force
     value: 2.925
 
-
 ascension:
   id: class_vanguard_exalted
   stage: exalted

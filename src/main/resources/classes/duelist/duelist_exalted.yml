@@ -29,7 +29,6 @@ passives:
     attribute: life_force
     value: 1.95
 
-
 ascension:
   id: class_duelist_exalted
   stage: exalted

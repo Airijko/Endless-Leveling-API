@@ -14,7 +14,6 @@ weapons:
   - type: DAGGER
     damage: 1.05
 
-
 passives:
   - type: HEALTH_REGEN
     value: 0.025
@@ -31,7 +30,6 @@ passives:
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: life_force
     value: 1.912
-
 
 ascension:
   id: class_battlemage_elite

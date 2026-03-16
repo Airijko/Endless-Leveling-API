@@ -12,7 +12,6 @@ weapons:
   - type: DAGGER
     damage: 1.05
 
-
 passives:
   - type: RETALIATION
     value: 0.212
@@ -27,7 +26,6 @@ passives:
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: strength
     value: 1.02
-
 
 ascension:
   id: class_brawler_elite

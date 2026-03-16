@@ -35,7 +35,6 @@ passives:
     attribute: ferocity
     value: 1.38
 
-
 ascension:
   id: class_assassin_legendary
   stage: legendary

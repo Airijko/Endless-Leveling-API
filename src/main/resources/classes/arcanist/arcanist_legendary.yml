@@ -27,7 +27,6 @@ passives:
     attribute: sorcery
     value: 1.61
 
-
 ascension:
   id: class_arcanist_legendary
   stage: legendary

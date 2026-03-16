@@ -12,7 +12,6 @@ weapons:
   - type: DAGGER
     damage: 1.05
 
-
 passives:
   - type: MANA_REGEN
     value: 0.034
@@ -24,8 +23,6 @@ passives:
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: sorcery
     value: 1.02
-
-
 
 ascension:
   id: class_mage_elite

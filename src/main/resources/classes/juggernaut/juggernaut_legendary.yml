@@ -28,7 +28,6 @@ passives:
     attribute: strength
     value: 2.3
 
-
 ascension:
   id: class_juggernaut_legendary
   stage: legendary

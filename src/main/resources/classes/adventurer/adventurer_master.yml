@@ -33,7 +33,6 @@ passives:
     attribute: stamina
     value: 0.7
 
-
 ascension:
   id: class_adventurer_master
   stage: master

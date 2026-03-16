@@ -27,7 +27,6 @@ passives:
     attribute: sorcery
     value: 1.82
 
-
 ascension:
   id: class_arcanist_exalted
   stage: exalted

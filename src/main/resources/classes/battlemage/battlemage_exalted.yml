@@ -31,7 +31,6 @@ passives:
     attribute: life_force
     value: 2.925
 
-
 ascension:
   id: class_battlemage_exalted
   stage: exalted

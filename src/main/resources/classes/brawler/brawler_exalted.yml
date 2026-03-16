@@ -27,7 +27,6 @@ passives:
     attribute: strength
     value: 1.56
 
-
 ascension:
   id: class_brawler_exalted
   stage: exalted

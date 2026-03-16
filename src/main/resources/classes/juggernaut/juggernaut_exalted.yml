@@ -28,7 +28,6 @@ passives:
     attribute: strength
     value: 2.6
 
-
 ascension:
   id: class_juggernaut_exalted
   stage: exalted

@@ -14,7 +14,6 @@ weapons:
   - type: DAGGER
     damage: 1.05
 
-
 passives:
   - type: SWIFTNESS
     value: 0.064
@@ -29,7 +28,6 @@ passives:
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: life_force
     value: 1.275
-
 
 ascension:
   id: class_duelist_elite

@@ -31,7 +31,6 @@ passives:
     attribute: life_force
     value: 2.25
 
-
 ascension:
   id: class_battlemage_master
   stage: master

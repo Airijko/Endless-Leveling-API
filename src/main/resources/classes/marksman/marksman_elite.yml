@@ -14,7 +14,6 @@ weapons:
   - type: DAGGER
     damage: 1.05
 
-
 passives:
   - type: FIRST_STRIKE
     value: 1.275 # +150% first-strike bonus descriptor
@@ -32,7 +31,6 @@ passives:
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: ferocity
     value: 1.02
-
 
 ascension:
   id: class_marksman_elite
