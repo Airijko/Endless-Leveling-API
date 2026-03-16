@@ -2,7 +2,7 @@
   "Type": "Generic",
   "Appearance": "Skeleton_Soldier",
   "NameTranslationKey": "server.npcRoles.Skeleton_Soldier.name",
-  "MaxHealth": 61,
+  "MaxHealth": 50,
   "DropList": "Empty",
   "DefaultPlayerAttitude": "Hostile",
   "DefaultNPCAttitude": "Hostile",
@@ -10,10 +10,10 @@
   "FlockCanLead": false,
   "ApplySeparation": true,
   "HotbarItems": [
-    "Weapon_Axe_Iron_Rusty"
+    "Weapon_Sword_Thorium"
   ],
   "Weapons": [
-    "Weapon_Axe_Iron_Rusty"
+    "Weapon_Sword_Thorium"
   ],
   "Armor": [
     "Armor_Thorium_Head",
@@ -35,7 +35,7 @@
       "Sensor": {
         "Type": "Target",
         "TargetSlot": "LockedTarget",
-        "Range": 3.0
+        "Range": 2.0
       },
       "ActionsBlocking": true,
       "Actions": [
@@ -49,9 +49,20 @@
       "Sensor": {
         "Type": "Target",
         "TargetSlot": "LockedTarget",
-        "Range": 100
+        "Range": 24
       },
       "HeadMotion": { "Type": "Watch" },
+      "BodyMotion": {
+        "Type": "Seek",
+        "SlowDownDistance": 4,
+        "StopDistance": 2
+      }
+    },
+    {
+      "Sensor": {
+        "Type": "Leash",
+        "Range": 12
+      },
       "BodyMotion": {
         "Type": "Seek",
         "SlowDownDistance": 4,
@@ -62,7 +73,7 @@
       "Sensor": { "Type": "Any" },
       "BodyMotion": {
         "Type": "WanderInCircle",
-        "Radius": 4
+        "Radius": 8
       }
     }
   ]

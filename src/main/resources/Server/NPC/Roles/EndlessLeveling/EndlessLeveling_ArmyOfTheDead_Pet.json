@@ -10,10 +10,10 @@
   "FlockCanLead": false,
   "ApplySeparation": true,
   "HotbarItems": [
-    "Weapon_Axe_Iron_Rusty"
+    "Weapon_Sword_Copper"
   ],
   "Weapons": [
-    "Weapon_Axe_Iron_Rusty"
+    "Weapon_Sword_Copper"
   ],
   "Armor": [
     "Armor_Copper_Head",
@@ -35,7 +35,7 @@
       "Sensor": {
         "Type": "Target",
         "TargetSlot": "LockedTarget",
-        "Range": 2.5
+        "Range": 2.0
       },
       "ActionsBlocking": true,
       "Actions": [
@@ -49,9 +49,20 @@
       "Sensor": {
         "Type": "Target",
         "TargetSlot": "LockedTarget",
-        "Range": 50
+        "Range": 16
       },
       "HeadMotion": { "Type": "Watch" },
+      "BodyMotion": {
+        "Type": "Seek",
+        "SlowDownDistance": 4,
+        "StopDistance": 2
+      }
+    },
+    {
+      "Sensor": {
+        "Type": "Leash",
+        "Range": 12
+      },
       "BodyMotion": {
         "Type": "Seek",
         "SlowDownDistance": 4,
@@ -62,7 +73,7 @@
       "Sensor": { "Type": "Any" },
       "BodyMotion": {
         "Type": "WanderInCircle",
-        "Radius": 4
+        "Radius": 8
       }
     }
   ]
