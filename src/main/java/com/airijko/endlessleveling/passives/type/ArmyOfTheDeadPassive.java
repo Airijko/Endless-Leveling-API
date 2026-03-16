@@ -44,7 +44,7 @@ public final class ArmyOfTheDeadPassive {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
 
-    private static final String DEFAULT_SKELETON_TYPE = "EndlessLeveling_ArmyOfTheDead_Pet";
+    private static final String DEFAULT_SKELETON_TYPE = "EndlessLeveling_ArmyOfTheDead_Pet_Copper";
     private static final int DEFAULT_BASE_SUMMON_AMOUNT = 2;
     private static final double DEFAULT_MANA_PER_SUMMON = 100.0D;
     private static final double DEFAULT_COOLDOWN_SECONDS = 15.0D;
@@ -768,6 +768,52 @@ public final class ArmyOfTheDeadPassive {
     private static PartyManager resolvePartyManager() {
         EndlessLeveling plugin = EndlessLeveling.getInstance();
         return plugin != null ? plugin.getPartyManager() : null;
+    }
+
+    public static void updateSummonLeashPositions(PlayerData playerData,
+            Ref<EntityStore> ownerRef,
+            CommandBuffer<EntityStore> commandBuffer) {
+        if (playerData == null || !EntityRefUtil.isUsable(ownerRef) || commandBuffer == null) {
+            return;
+        }
+
+        UUID ownerUuid = playerData.getUuid();
+        if (ownerUuid == null) {
+            return;
+        }
+
+        OwnerSummonState ownerState = OWNER_STATES.get(ownerUuid);
+        if (ownerState == null) {
+            return;
+        }
+
+        TransformComponent ownerTransform = EntityRefUtil.tryGetComponent(commandBuffer, ownerRef,
+                TransformComponent.getComponentType());
+        if (ownerTransform == null || ownerTransform.getPosition() == null) {
+            return;
+        }
+
+        Vector3d ownerPosition = ownerTransform.getPosition();
+        synchronized (ownerState) {
+            for (SummonSlot slot : ownerState.slots) {
+                if (slot == null || slot.activeRef == null || !EntityRefUtil.isUsable(slot.activeRef)) {
+                    continue;
+                }
+
+                Store<EntityStore> store = EntityRefUtil.getStore(slot.activeRef);
+                if (store == null) {
+                    continue;
+                }
+
+                NPCEntity summonNpc = EntityRefUtil.tryGetComponent(store, slot.activeRef,
+                        NPCEntity.getComponentType());
+                if (summonNpc == null) {
+                    continue;
+                }
+
+                summonNpc.setLeashPoint(ownerPosition);
+            }
+        }
     }
 
     private static void clearPendingSlot(UUID ownerUuid, int slotIndex) {

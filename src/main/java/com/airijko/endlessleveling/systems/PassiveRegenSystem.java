@@ -718,6 +718,7 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
                 commandBuffer,
                 statMap,
                 archetypeSnapshot);
+        ArmyOfTheDeadPassive.updateSummonLeashPositions(playerData, ref, commandBuffer);
     }
 
     private void notifyPassiveCooldowns(PlayerRef playerRef, PassiveRuntimeState runtimeState) {

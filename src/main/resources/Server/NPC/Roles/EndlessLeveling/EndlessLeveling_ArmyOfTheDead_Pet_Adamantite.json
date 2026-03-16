@@ -10,16 +10,16 @@
   "FlockCanLead": false,
   "ApplySeparation": true,
   "HotbarItems": [
-    "Weapon_Sword_Cobalt"
+    "Weapon_Sword_Adamantite"
   ],
   "Weapons": [
-    "Weapon_Sword_Cobalt"
+    "Weapon_Sword_Adamantite"
   ],
   "Armor": [
-    "Armor_Cobalt_Head",
-    "Armor_Cobalt_Chest",
-    "Armor_Cobalt_Legs",
-    "Armor_Cobalt_Hands"
+    "Armor_Adamantite_Head",
+    "Armor_Adamantite_Chest",
+    "Armor_Adamantite_Legs",
+    "Armor_Adamantite_Hands"
   ],
   "MotionControllerList": [
     {

@@ -10,16 +10,16 @@
   "FlockCanLead": false,
   "ApplySeparation": true,
   "HotbarItems": [
-    "Weapon_Sword_Thorium"
+    "Weapon_Sword_Mithril"
   ],
   "Weapons": [
-    "Weapon_Sword_Thorium"
+    "Weapon_Sword_Mithril"
   ],
   "Armor": [
-    "Armor_Thorium_Head",
-    "Armor_Thorium_Chest",
-    "Armor_Thorium_Legs",
-    "Armor_Thorium_Hands"
+    "Armor_Mithril_Head",
+    "Armor_Mithril_Chest",
+    "Armor_Mithril_Legs",
+    "Armor_Mithril_Hands"
   ],
   "MotionControllerList": [
     {
