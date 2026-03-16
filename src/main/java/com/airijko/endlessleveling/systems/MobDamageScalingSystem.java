@@ -1,6 +1,7 @@
 package com.airijko.endlessleveling.systems;
 
 import com.airijko.endlessleveling.managers.MobLevelingManager;
+import com.airijko.endlessleveling.passives.type.ArmyOfTheDeadPassive.SummonInheritedStats;
 import com.airijko.endlessleveling.passives.type.ArmyOfTheDeadPassive;
 import com.airijko.endlessleveling.util.EntityRefUtil;
 import com.hypixel.hytale.component.ArchetypeChunk;
@@ -17,6 +18,9 @@ import com.hypixel.hytale.server.core.modules.entity.damage.DamageSystems;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import javax.annotation.Nonnull;
+import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.Set;
 import java.util.Objects;
 
@@ -28,6 +32,9 @@ public class MobDamageScalingSystem extends DamageEventSystem {
 
     private final MobLevelingManager levelingManager;
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
+    private static final long SUMMON_DEBUG_LOG_COOLDOWN_MS = 2000L;
+    private static final Map<Integer, Long> OUTGOING_DEBUG_LAST_LOG = new ConcurrentHashMap<>();
+    private static final Map<Integer, Long> INCOMING_DEBUG_LAST_LOG = new ConcurrentHashMap<>();
 
     public MobDamageScalingSystem(MobLevelingManager levelingManager) {
         this.levelingManager = Objects.requireNonNull(levelingManager);
@@ -49,9 +56,6 @@ public class MobDamageScalingSystem extends DamageEventSystem {
     public void handle(int index, @Nonnull ArchetypeChunk<EntityStore> archetypeChunk,
             @Nonnull Store<EntityStore> store,
             @Nonnull CommandBuffer<EntityStore> commandBuffer, @Nonnull Damage damage) {
-        if (!levelingManager.isMobDamageScalingEnabled())
-            return;
-        // If the source is an entity but not a player, scale the damage
         if (damage.getSource() instanceof Damage.EntitySource entitySource) {
             Ref<EntityStore> attackerRef = entitySource.getRef();
             Ref<EntityStore> targetRef = archetypeChunk.getReferenceTo(index);
@@ -59,12 +63,21 @@ public class MobDamageScalingSystem extends DamageEventSystem {
                 return;
             }
 
+            if (ArmyOfTheDeadPassive.shouldPreventFriendlyDamage(attackerRef, targetRef, store, commandBuffer)) {
+                damage.setAmount(0.0f);
+                return;
+            }
+
+            boolean managedSummonAttacker = ArmyOfTheDeadPassive.isManagedSummon(attackerRef, store, commandBuffer);
+            if (managedSummonAttacker) {
+                applySummonOutgoingScaling(damage, attackerRef, store, commandBuffer);
+            }
+
             PlayerRef attackerPlayer = EntityRefUtil.tryGetComponent(commandBuffer, attackerRef,
                     PlayerRef.getComponentType());
-            if (attackerPlayer == null || !attackerPlayer.isValid()) {
-                if (ArmyOfTheDeadPassive.isManagedSummon(attackerRef, store, commandBuffer)) {
-                    return;
-                }
+            if ((attackerPlayer == null || !attackerPlayer.isValid())
+                    && !managedSummonAttacker
+                    && levelingManager.isMobDamageScalingEnabled()) {
 
                 // Treat as mob source
                 int mobLevel = levelingManager.resolveMobLevel(attackerRef, commandBuffer);
@@ -92,6 +105,96 @@ public class MobDamageScalingSystem extends DamageEventSystem {
                 } catch (Throwable ignored) {
                 }
             }
+
+            if (ArmyOfTheDeadPassive.isManagedSummon(targetRef, store, commandBuffer)) {
+                applySummonIncomingDefenseScaling(damage, targetRef, store, commandBuffer);
+            }
         }
+    }
+
+    private void applySummonOutgoingScaling(@Nonnull Damage damage,
+            @Nonnull Ref<EntityStore> summonRef,
+            @Nonnull Store<EntityStore> store,
+            @Nonnull CommandBuffer<EntityStore> commandBuffer) {
+        SummonInheritedStats inherited = ArmyOfTheDeadPassive.resolveManagedSummonInheritedStats(
+                summonRef,
+                store,
+                commandBuffer);
+
+        double inheritanceValue = ArmyOfTheDeadPassive.getManagedSummonStatInheritance(
+                summonRef,
+                store,
+                commandBuffer);
+        java.util.UUID ownerUuid = ArmyOfTheDeadPassive.getManagedSummonOwnerUuid(summonRef, store, commandBuffer);
+
+        float before = Math.max(0.0f, damage.getAmount());
+        float amount = before * Math.max(0.0f, inherited.damageMultiplier());
+        boolean critApplied = false;
+
+        if (amount > 0.0f && inherited.critChance() > 0.0f
+                && ThreadLocalRandom.current().nextDouble() < inherited.critChance()) {
+            amount *= Math.max(1.0f, inherited.critDamageMultiplier());
+            critApplied = true;
+        }
+
+        float after = Math.max(0.0f, amount);
+        damage.setAmount(after);
+
+        if (shouldLogSummonDebug(OUTGOING_DEBUG_LAST_LOG, summonRef.getIndex())) {
+            LOGGER.atInfo().log(
+                    "[ARMY_OF_THE_DEAD][DEBUG-HIT][OUT] summonRef=%d owner=%s inheritance=%.3f before=%.3f after=%.3f dmgMult=%.3f critChance=%.3f critDmgMult=%.3f critApplied=%s",
+                    summonRef.getIndex(),
+                    ownerUuid,
+                    inheritanceValue,
+                    before,
+                    after,
+                    inherited.damageMultiplier(),
+                    inherited.critChance(),
+                    inherited.critDamageMultiplier(),
+                    critApplied);
+        }
+    }
+
+    private void applySummonIncomingDefenseScaling(@Nonnull Damage damage,
+            @Nonnull Ref<EntityStore> summonRef,
+            @Nonnull Store<EntityStore> store,
+            @Nonnull CommandBuffer<EntityStore> commandBuffer) {
+        SummonInheritedStats inherited = ArmyOfTheDeadPassive.resolveManagedSummonInheritedStats(
+                summonRef,
+                store,
+                commandBuffer);
+
+        double inheritanceValue = ArmyOfTheDeadPassive.getManagedSummonStatInheritance(
+                summonRef,
+                store,
+                commandBuffer);
+        java.util.UUID ownerUuid = ArmyOfTheDeadPassive.getManagedSummonOwnerUuid(summonRef, store, commandBuffer);
+
+        float before = Math.max(0.0f, damage.getAmount());
+        float amount = before;
+        float reduction = Math.max(0.0f, Math.min(0.95f, inherited.defenseReduction()));
+        float after = Math.max(0.0f, amount * (1.0f - reduction));
+        damage.setAmount(after);
+
+        if (shouldLogSummonDebug(INCOMING_DEBUG_LAST_LOG, summonRef.getIndex())) {
+            LOGGER.atInfo().log(
+                    "[ARMY_OF_THE_DEAD][DEBUG-HIT][IN] summonRef=%d owner=%s inheritance=%.3f before=%.3f after=%.3f defenseReduction=%.3f",
+                    summonRef.getIndex(),
+                    ownerUuid,
+                    inheritanceValue,
+                    before,
+                    after,
+                    reduction);
+        }
+    }
+
+    private boolean shouldLogSummonDebug(Map<Integer, Long> logMap, int entityIndex) {
+        long now = System.currentTimeMillis();
+        Long last = logMap.get(entityIndex);
+        if (last != null && now - last < SUMMON_DEBUG_LOG_COOLDOWN_MS) {
+            return false;
+        }
+        logMap.put(entityIndex, now);
+        return true;
     }
 }

@@ -4,7 +4,9 @@ import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.data.PlayerData;
 import com.airijko.endlessleveling.enums.ArchetypePassiveType;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
+import com.airijko.endlessleveling.managers.PlayerDataManager;
 import com.airijko.endlessleveling.managers.PartyManager;
+import com.airijko.endlessleveling.managers.SkillManager;
 import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveSnapshot;
 import com.airijko.endlessleveling.races.RacePassiveDefinition;
 import com.airijko.endlessleveling.util.EntityRefUtil;
@@ -26,6 +28,8 @@ import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.hypixel.hytale.server.core.entity.entities.player.movement.MovementManager;
+import com.hypixel.hytale.protocol.MovementSettings;
 import com.hypixel.hytale.server.flock.FlockMembershipSystems;
 import com.hypixel.hytale.server.flock.FlockPlugin;
 import com.hypixel.hytale.server.npc.NPCPlugin;
@@ -53,10 +57,14 @@ public final class ArmyOfTheDeadPassive {
     private static final int MAX_SUMMON_CAP = 64;
     private static final double TELEPORT_RANGE = 32.0D;
     private static final double TELEPORT_RANGE_SQ = TELEPORT_RANGE * TELEPORT_RANGE;
+    private static final float MIN_RESOURCE_VALUE = 1.0f;
+    private static final boolean DEBUG_SUMMON_INHERITANCE = true;
+    private static final long INHERITANCE_DEBUG_LOG_COOLDOWN_MS = 5000L;
 
     private static final Map<UUID, OwnerSummonState> OWNER_STATES = new ConcurrentHashMap<>();
     private static final Map<UUID, SummonBinding> SUMMON_BINDINGS = new ConcurrentHashMap<>();
     private static final Map<UUID, Long> PENDING_ON_HIT_TRIGGERS = new ConcurrentHashMap<>();
+    private static final Map<UUID, Long> INHERITANCE_DEBUG_LAST_LOG = new ConcurrentHashMap<>();
 
     private ArmyOfTheDeadPassive() {
     }
@@ -158,6 +166,135 @@ public final class ArmyOfTheDeadPassive {
             Store<EntityStore> store,
             CommandBuffer<EntityStore> commandBuffer) {
         return resolveSummonOwnerUuid(ref, store, commandBuffer);
+    }
+
+    public static double getManagedSummonStatInheritance(Ref<EntityStore> ref,
+            Store<EntityStore> store,
+            CommandBuffer<EntityStore> commandBuffer) {
+        if (!EntityRefUtil.isUsable(ref)) {
+            return 0.0D;
+        }
+
+        UUID summonUuid = resolveEntityUuid(ref, store, commandBuffer);
+        if (summonUuid == null) {
+            return 0.0D;
+        }
+
+        SummonBinding binding = SUMMON_BINDINGS.get(summonUuid);
+        if (binding == null) {
+            return 0.0D;
+        }
+
+        OwnerSummonState ownerState = OWNER_STATES.get(binding.ownerUuid());
+        if (ownerState == null) {
+            return 0.0D;
+        }
+
+        synchronized (ownerState) {
+            SummonSlot slot = ownerState.getSlot(binding.slotIndex());
+            if (slot == null) {
+                return 0.0D;
+            }
+            return Math.max(0.0D, slot.statInheritance);
+        }
+    }
+
+    public static SummonInheritedStats resolveManagedSummonInheritedStats(Ref<EntityStore> summonRef,
+            Store<EntityStore> store,
+            CommandBuffer<EntityStore> commandBuffer) {
+        if (!EntityRefUtil.isUsable(summonRef)) {
+            return SummonInheritedStats.none();
+        }
+
+        UUID ownerUuid = resolveSummonOwnerUuid(summonRef, store, commandBuffer);
+        if (ownerUuid == null) {
+            return SummonInheritedStats.none();
+        }
+
+        double inheritance = getManagedSummonStatInheritance(summonRef, store, commandBuffer);
+        return resolveOwnerSummonInheritedStats(ownerUuid, inheritance);
+    }
+
+    public static SummonInheritedStats resolveOwnerSummonInheritedStats(UUID ownerUuid,
+            double inheritanceRaw) {
+        if (ownerUuid == null) {
+            return SummonInheritedStats.none();
+        }
+
+        double inheritance = Math.max(0.0D, inheritanceRaw);
+        if (inheritance <= 0.0D) {
+            return SummonInheritedStats.none();
+        }
+
+        EndlessLeveling plugin = EndlessLeveling.getInstance();
+        if (plugin == null) {
+            return SummonInheritedStats.none();
+        }
+
+        PlayerDataManager playerDataManager = plugin.getPlayerDataManager();
+        SkillManager skillManager = plugin.getSkillManager();
+        if (playerDataManager == null || skillManager == null) {
+            return SummonInheritedStats.none();
+        }
+
+        PlayerData ownerData = playerDataManager.get(ownerUuid);
+        if (ownerData == null) {
+            return SummonInheritedStats.none();
+        }
+
+        double strength = Math.max(0.0D, skillManager.calculatePlayerStrength(ownerData));
+        double sorcery = Math.max(0.0D, skillManager.calculatePlayerSorcery(ownerData));
+        double combinedDamagePercent = strength + sorcery;
+
+        SkillManager.PrecisionBreakdown precision = skillManager.getPrecisionBreakdown(ownerData);
+        double precisionPercent = precision != null ? Math.max(0.0D, precision.totalPercent()) : 0.0D;
+
+        SkillManager.FerocityBreakdown ferocity = skillManager.getFerocityBreakdown(ownerData);
+        double ferocityPercent = ferocity != null ? Math.max(0.0D, ferocity.totalValue()) : 0.0D;
+
+        SkillManager.DefenseBreakdown defense = skillManager.getDefenseBreakdown(ownerData);
+        double defenseResistance = defense != null ? Math.max(0.0D, defense.resistance()) : 0.0D;
+
+        SkillManager.HasteBreakdown haste = skillManager.getHasteBreakdown(ownerData);
+        double hasteMultiplier = haste != null ? Math.max(0.0D, haste.totalMultiplier()) : 1.0D;
+
+        double lifeForceFlat = Math.max(0.0D,
+                skillManager.calculateSkillAttributeTotalBonus(ownerData, SkillAttributeType.LIFE_FORCE, -1));
+
+        float damageMultiplier = (float) Math.max(0.0D, 1.0D + ((combinedDamagePercent * inheritance) / 100.0D));
+        float critChance = (float) Math.max(0.0D,
+                Math.min(1.0D, ((precisionPercent * inheritance) / 100.0D)));
+        float critDamageMultiplier = (float) Math.max(1.0D, 1.0D + ((ferocityPercent * inheritance) / 100.0D));
+        float defenseReduction = (float) Math.max(0.0D,
+                Math.min(0.95D, defenseResistance * inheritance));
+        float movementMultiplier = (float) Math.max(0.0D,
+                1.0D + ((Math.max(0.0D, hasteMultiplier - 1.0D) * inheritance)));
+        float lifeForceFlatHealthBonus = (float) Math.max(0.0D, lifeForceFlat * inheritance);
+
+        if (DEBUG_SUMMON_INHERITANCE) {
+            logInheritanceComputation(ownerUuid,
+                    inheritance,
+                    strength,
+                    sorcery,
+                    precisionPercent,
+                    ferocityPercent,
+                    defenseResistance,
+                    hasteMultiplier,
+                    lifeForceFlat,
+                    damageMultiplier,
+                    critChance,
+                    critDamageMultiplier,
+                    defenseReduction,
+                    movementMultiplier,
+                    lifeForceFlatHealthBonus);
+        }
+
+        return new SummonInheritedStats(damageMultiplier,
+                critChance,
+                critDamageMultiplier,
+                defenseReduction,
+                movementMultiplier,
+                lifeForceFlatHealthBonus);
     }
 
     public static boolean shouldPreventFriendlyDamage(Ref<EntityStore> attackerRef,
@@ -445,6 +582,7 @@ public final class ArmyOfTheDeadPassive {
                 slot.activeRef = summonRef;
                 slot.activeSummonUuid = summonUuidComponent.getUuid();
                 slot.summonExpiresAt = expiresAt;
+                slot.statInheritance = Math.max(0.0D, request.config().statInheritance());
                 slot.spawnPending = false;
                 SUMMON_BINDINGS.put(summonUuidComponent.getUuid(),
                         new SummonBinding(request.ownerUuid(), request.slotIndex()));
@@ -454,6 +592,22 @@ public final class ArmyOfTheDeadPassive {
                         request.ownerUuid(),
                         request.slotIndex(),
                         spawnRoleType);
+                if (DEBUG_SUMMON_INHERITANCE) {
+                    SummonInheritedStats inherited = resolveOwnerSummonInheritedStats(request.ownerUuid(),
+                            slot.statInheritance);
+                    LOGGER.atInfo().log(
+                            "[ARMY_OF_THE_DEAD][DEBUG] Summon activated summon=%s owner=%s slot=%d inheritance=%.3f dmgMult=%.3f critChance=%.3f critDmgMult=%.3f defenseReduction=%.3f moveMult=%.3f lifeForceHp=%.3f",
+                            summonUuidComponent.getUuid(),
+                            request.ownerUuid(),
+                            request.slotIndex(),
+                            slot.statInheritance,
+                            inherited.damageMultiplier(),
+                            inherited.critChance(),
+                            inherited.critDamageMultiplier(),
+                            inherited.defenseReduction(),
+                            inherited.movementMultiplier(),
+                            inherited.lifeForceFlatHealthBonus());
+                }
             } catch (Throwable throwable) {
                 slot.spawnPending = false;
                 LOGGER.atWarning().withCause(throwable)
@@ -497,9 +651,10 @@ public final class ArmyOfTheDeadPassive {
             return;
         }
 
-        double scalingPool = source.healthMax() + source.manaMax() + source.staminaMax();
-        double healthBonus = Math.max(0.0D, scalingPool * inheritance);
+        SummonInheritedStats inheritedStats = resolveOwnerSummonInheritedStats(source.ownerUuid(), inheritance);
+        double healthBonus = Math.max(0.0D, inheritedStats.lifeForceFlatHealthBonus());
         if (healthBonus <= 0.0D) {
+            applySummonMovementSpeedBonus(summonRef, store, inheritedStats.movementMultiplier());
             return;
         }
 
@@ -512,8 +667,50 @@ public final class ArmyOfTheDeadPassive {
 
         EntityStatValue updatedHp = summonStats.get(DefaultEntityStatTypes.getHealth());
         if (updatedHp != null) {
-            summonStats.setStatValue(DefaultEntityStatTypes.getHealth(), Math.max(1.0f, updatedHp.getMax()));
+            summonStats.setStatValue(DefaultEntityStatTypes.getHealth(),
+                    Math.max(MIN_RESOURCE_VALUE, updatedHp.getMax()));
         }
+
+        applySummonMovementSpeedBonus(summonRef, store, inheritedStats.movementMultiplier());
+    }
+
+    private static void applySummonMovementSpeedBonus(Ref<EntityStore> summonRef,
+            Store<EntityStore> store,
+            float requestedMultiplier) {
+        if (!EntityRefUtil.isUsable(summonRef) || store == null || requestedMultiplier <= 0.0f) {
+            return;
+        }
+
+        MovementManager movementManager = EntityRefUtil.tryGetComponent(store, summonRef,
+                MovementManager.getComponentType());
+        if (movementManager == null) {
+            return;
+        }
+
+        MovementSettings defaults = movementManager.getDefaultSettings();
+        MovementSettings settings = movementManager.getSettings();
+        if (defaults == null || settings == null) {
+            return;
+        }
+
+        float clampedMultiplier = requestedMultiplier;
+        if (settings.maxSpeedMultiplier > 0.0F) {
+            clampedMultiplier = Math.min(clampedMultiplier, settings.maxSpeedMultiplier);
+        }
+        if (settings.minSpeedMultiplier > 0.0F) {
+            clampedMultiplier = Math.max(clampedMultiplier, settings.minSpeedMultiplier);
+        }
+
+        settings.forwardWalkSpeedMultiplier = defaults.forwardWalkSpeedMultiplier * clampedMultiplier;
+        settings.backwardWalkSpeedMultiplier = defaults.backwardWalkSpeedMultiplier * clampedMultiplier;
+        settings.strafeWalkSpeedMultiplier = defaults.strafeWalkSpeedMultiplier * clampedMultiplier;
+        settings.forwardRunSpeedMultiplier = defaults.forwardRunSpeedMultiplier * clampedMultiplier;
+        settings.backwardRunSpeedMultiplier = defaults.backwardRunSpeedMultiplier * clampedMultiplier;
+        settings.strafeRunSpeedMultiplier = defaults.strafeRunSpeedMultiplier * clampedMultiplier;
+        settings.forwardCrouchSpeedMultiplier = defaults.forwardCrouchSpeedMultiplier * clampedMultiplier;
+        settings.backwardCrouchSpeedMultiplier = defaults.backwardCrouchSpeedMultiplier * clampedMultiplier;
+        settings.strafeCrouchSpeedMultiplier = defaults.strafeCrouchSpeedMultiplier * clampedMultiplier;
+        settings.forwardSprintSpeedMultiplier = defaults.forwardSprintSpeedMultiplier * clampedMultiplier;
     }
 
     private static int resolveMaxSummons(ArmyOfTheDeadConfig config,
@@ -630,6 +827,7 @@ public final class ArmyOfTheDeadPassive {
         Vector3f rotation = sourceTransform.getRotation();
         return new SummonSourceSnapshot(store.getExternalData().getWorld().getName(),
                 sourceRef,
+                sourcePlayerData.getUuid(),
                 new Vector3d(position.getX(), position.getY(), position.getZ()),
                 new Vector3f(rotation.getX(), rotation.getY(), rotation.getZ()),
                 healthMax,
@@ -672,6 +870,49 @@ public final class ArmyOfTheDeadPassive {
     private static double unitFromSeed(long seed) {
         long bits = (seed >>> 11) & ((1L << 53) - 1L);
         return bits / (double) (1L << 53);
+    }
+
+    private static void logInheritanceComputation(UUID ownerUuid,
+            double inheritance,
+            double strength,
+            double sorcery,
+            double precisionPercent,
+            double ferocityPercent,
+            double defenseResistance,
+            double hasteMultiplier,
+            double lifeForceFlat,
+            float damageMultiplier,
+            float critChance,
+            float critDamageMultiplier,
+            float defenseReduction,
+            float movementMultiplier,
+            float lifeForceFlatHealthBonus) {
+        if (ownerUuid == null) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        Long last = INHERITANCE_DEBUG_LAST_LOG.get(ownerUuid);
+        if (last != null && now - last < INHERITANCE_DEBUG_LOG_COOLDOWN_MS) {
+            return;
+        }
+        INHERITANCE_DEBUG_LAST_LOG.put(ownerUuid, now);
+        LOGGER.atInfo().log(
+                "[ARMY_OF_THE_DEAD][DEBUG] owner=%s inheritance=%.3f strength=%.3f sorcery=%.3f precision=%.3f ferocity=%.3f defenseRes=%.3f hasteMult=%.3f lifeForce=%.3f -> dmgMult=%.3f critChance=%.3f critDmgMult=%.3f defenseReduction=%.3f moveMult=%.3f lifeForceHp=%.3f",
+                ownerUuid,
+                inheritance,
+                strength,
+                sorcery,
+                precisionPercent,
+                ferocityPercent,
+                defenseResistance,
+                hasteMultiplier,
+                lifeForceFlat,
+                damageMultiplier,
+                critChance,
+                critDamageMultiplier,
+                defenseReduction,
+                movementMultiplier,
+                lifeForceFlatHealthBonus);
     }
 
     private static void attachSummonToOwnerFlock(Ref<EntityStore> ownerRef,
@@ -837,6 +1078,12 @@ public final class ArmyOfTheDeadPassive {
                 if (summonTransform != null && summonTransform.getPosition() != null
                         && summonTransform.getPosition().distanceSquaredTo(ownerPosition) > TELEPORT_RANGE_SQ) {
                     summonTransform.teleportPosition(ownerPosition);
+                }
+
+                if (slot.statInheritance > 0.0D) {
+                    SummonInheritedStats inheritedStats = resolveOwnerSummonInheritedStats(ownerUuid,
+                            slot.statInheritance);
+                    applySummonMovementSpeedBonus(slot.activeRef, store, inheritedStats.movementMultiplier());
                 }
             }
         }
@@ -1030,11 +1277,23 @@ public final class ArmyOfTheDeadPassive {
 
     private record SummonSourceSnapshot(String worldId,
             Ref<EntityStore> ownerRef,
+            UUID ownerUuid,
             Vector3d position,
             Vector3f rotation,
             double healthMax,
             double manaMax,
             double staminaMax) {
+    }
+
+    public record SummonInheritedStats(float damageMultiplier,
+            float critChance,
+            float critDamageMultiplier,
+            float defenseReduction,
+            float movementMultiplier,
+            float lifeForceFlatHealthBonus) {
+        public static SummonInheritedStats none() {
+            return new SummonInheritedStats(1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f);
+        }
     }
 
     private record QueuedSpawnRequest(UUID ownerUuid,
@@ -1067,6 +1326,7 @@ public final class ArmyOfTheDeadPassive {
         private long summonExpiresAt;
         private long cooldownExpiresAt;
         private long cooldownDurationMillis;
+        private double statInheritance = DEFAULT_STAT_INHERITANCE;
         private boolean spawnPending;
     }
 }
