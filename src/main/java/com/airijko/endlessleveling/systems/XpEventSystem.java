@@ -10,6 +10,7 @@ import com.airijko.endlessleveling.managers.SkillManager;
 import com.airijko.endlessleveling.data.PlayerData;
 import com.airijko.endlessleveling.enums.PassiveType;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
+import com.airijko.endlessleveling.passives.type.ArmyOfTheDeadPassive;
 import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveManager;
 import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveSnapshot;
 import com.airijko.endlessleveling.enums.ArchetypePassiveType;
@@ -67,11 +68,11 @@ public class XpEventSystem extends DeathSystems.OnDeathSystem {
             @Nonnull DeathComponent component,
             @Nonnull Store<EntityStore> store,
             @Nonnull CommandBuffer<EntityStore> commandBuffer) {
-        LOGGER.atInfo().log("onComponentAdded called for entity: %s", ref);
-
         var deathInfo = component.getDeathInfo();
-        if (deathInfo == null)
+        if (deathInfo == null) {
+            XpKillCreditTracker.clearTarget(ref, store, commandBuffer);
             return;
+        }
 
         UUID playerUuid = null;
 
@@ -81,24 +82,38 @@ public class XpEventSystem extends DeathSystems.OnDeathSystem {
                 PlayerRef player = EntityRefUtil.tryGetComponent(store, attackerRef, PlayerRef.getComponentType());
                 if (player != null && player.isValid()) {
                     playerUuid = player.getUuid();
+                } else {
+                    playerUuid = ArmyOfTheDeadPassive.getManagedSummonOwnerUuid(attackerRef, store, commandBuffer);
                 }
             }
         }
 
-        if (playerUuid == null)
+        if (playerUuid == null) {
+            playerUuid = XpKillCreditTracker.resolveRecentKiller(ref, store, commandBuffer);
+        }
+
+        if (playerUuid == null) {
+            XpKillCreditTracker.clearTarget(ref, store, commandBuffer);
             return;
+        }
 
         var playerData = playerDataManager.get(playerUuid);
-        if (playerData == null)
+        if (playerData == null) {
+            XpKillCreditTracker.clearTarget(ref, store, commandBuffer);
             return;
+        }
 
         EntityStatMap statMap = store.getComponent(ref, EntityStatMap.getComponentType());
-        if (statMap == null)
+        if (statMap == null) {
+            XpKillCreditTracker.clearTarget(ref, store, commandBuffer);
             return;
+        }
 
         var healthStat = statMap.get(DefaultEntityStatTypes.getHealth());
-        if (healthStat == null)
+        if (healthStat == null) {
+            XpKillCreditTracker.clearTarget(ref, store, commandBuffer);
             return;
+        }
 
         boolean mobIsBlacklisted = mobLevelingManager != null
                 && mobLevelingManager.isEntityBlacklisted(ref, store, commandBuffer);
@@ -115,6 +130,7 @@ public class XpEventSystem extends DeathSystems.OnDeathSystem {
             String mobLevelText = mobIsBlacklisted ? "N/A" : Integer.toString(Math.max(1, mobLevel));
             LOGGER.atFine().log("XP gain blocked for player %s due to level gap (player=%d, mob=%s)",
                     playerUuid, playerData.getLevel(), mobLevelText);
+            XpKillCreditTracker.clearTarget(ref, store, commandBuffer);
             return;
         }
 
@@ -175,6 +191,8 @@ public class XpEventSystem extends DeathSystems.OnDeathSystem {
         if (passiveManager != null && totalLuck > 0.0D) {
             passiveManager.openMobDropWindow(playerUuid);
         }
+
+        XpKillCreditTracker.clearTarget(ref, store, commandBuffer);
     }
 
     private double getLuckValue(PlayerData playerData, ArchetypePassiveSnapshot snapshot) {

@@ -68,6 +68,8 @@ public class MobDamageScalingSystem extends DamageEventSystem {
                 return;
             }
 
+            XpKillCreditTracker.recordDamage(targetRef, attackerRef, store, commandBuffer);
+
             ArmyOfTheDeadPassive.focusSummonsOnSummonAttacker(targetRef, attackerRef, store, commandBuffer);
 
             boolean managedSummonAttacker = ArmyOfTheDeadPassive.isManagedSummon(attackerRef, store, commandBuffer);

@@ -7,9 +7,9 @@ icon: "Weapon_Spellbook_Grimoire_Brown"
 
 weapons:
   - type: STAFF
-    damage: 1.495
+    damage: 1.19
   - type: DAGGER
-    damage: 1.208
+    damage: 1.11
 
 passives:
   - type: ARMY_OF_THE_DEAD

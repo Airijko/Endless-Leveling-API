@@ -1026,6 +1026,33 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         Double cooldown = getDoubleProp(props, "cooldown");
         Double window = getDoubleProp(props, "window");
         Double stacks = getDoubleProp(props, "max_stacks");
+        Double baseSummonAmount = getDoubleProp(props, "base_summon_amount");
+        if (baseSummonAmount == null) {
+            baseSummonAmount = getDoubleProp(props, "base_summons");
+        }
+        Double manaPerSummon = getDoubleProp(props, "mana_per_summon");
+        if (manaPerSummon == null) {
+            manaPerSummon = getNestedDoubleProp(props, "summon_amount_scaling", "mana_per_summon");
+        }
+        if (manaPerSummon == null) {
+            manaPerSummon = getNestedDoubleProp(props, "summon_amount_scaling", "mana_ratio");
+        }
+        Double summonLifetime = getDoubleProp(props, "minion_lifetime_seconds");
+        if (summonLifetime == null) {
+            summonLifetime = getDoubleProp(props, "lifetime_seconds");
+        }
+        Double summonCooldown = getDoubleProp(props, "cooldown_seconds");
+        if (summonCooldown == null) {
+            summonCooldown = cooldown;
+        }
+        Double summonStatInheritance = getDoubleProp(props, "summon_stat_inheritance");
+        if (summonStatInheritance == null) {
+            summonStatInheritance = getDoubleProp(props, "stat_inheritance");
+        }
+        Double maxSummons = getDoubleProp(props, "max_summons");
+        if (maxSummons == null) {
+            maxSummons = getDoubleProp(props, "summon_cap");
+        }
         Double slowPercent = getDoubleProp(props, "slow_percent");
         Double healingChance = getDoubleProp(props, "healing_chance");
         Double selfHealEffectiveness = getDoubleProp(props, "self_heal_effectiveness");
@@ -1057,6 +1084,45 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             case HEALTH_REGEN -> tr("ui.races.passive.desc.health_regen", "{0} HP/5s", formatPercentValue(value));
             case MANA_REGEN -> tr("ui.races.passive.desc.mana_regen", "{0} mana/5s", formatPercentValue(value));
             case MANA_REGEN_FLAT -> tr("ui.races.passive.desc.mana_regen_flat", "{0} mana/s", formatSigned(value));
+            case ARMY_OF_THE_DEAD -> appendLines(
+                    tr("ui.classes.passive.pretty.army_of_the_dead.title", "Undead summon command"),
+                    baseSummonAmount == null
+                            ? null
+                            : tr("ui.classes.passive.pretty.army_of_the_dead.base",
+                                    "- Base summons: {0}",
+                                    formatNumber(baseSummonAmount)),
+                    manaPerSummon == null
+                            ? null
+                            : tr("ui.classes.passive.pretty.army_of_the_dead.mana_scaling",
+                                    "- Scaling: +1 summon per {0} mana",
+                                    formatNumber(manaPerSummon)),
+                    maxSummons == null || maxSummons <= 0.0D
+                            ? null
+                            : tr("ui.classes.passive.pretty.army_of_the_dead.cap",
+                                    "- Summon cap: {0}",
+                                    formatNumber(maxSummons)),
+                    activation == null || activation.isBlank()
+                            ? null
+                            : tr("ui.classes.passive.pretty.army_of_the_dead.trigger",
+                                    "- Trigger: {0}",
+                                    "on_hit".equalsIgnoreCase(activation)
+                                            ? tr("ui.classes.passive.pretty.army_of_the_dead.trigger_on_hit", "On hit")
+                                            : toDisplay(activation)),
+                    summonLifetime == null
+                            ? null
+                            : tr("ui.classes.passive.pretty.army_of_the_dead.lifetime",
+                                    "- Lifetime: {0}s each",
+                                    formatNumber(summonLifetime)),
+                    summonCooldown == null
+                            ? null
+                            : tr("ui.classes.passive.pretty.army_of_the_dead.cooldown",
+                                    "- Respawn cooldown: {0}s per summon",
+                                    formatNumber(summonCooldown)),
+                    summonStatInheritance == null
+                            ? null
+                            : tr("ui.classes.passive.pretty.army_of_the_dead.inheritance",
+                                    "- Stat inheritance: {0}% of your stats",
+                                    formatNumber(summonStatInheritance * 100.0D)));
             case HEALING_TOUCH -> appendLines(
                     tr("ui.classes.passive.pretty.healing_touch.title", "On-hit burst heal"),
                     tr("ui.classes.passive.pretty.healing_touch.amount", "- Heal: {0} of source",
@@ -1200,6 +1266,24 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
     private Double getDoubleProp(Map<String, Object> props, String key) {
         Object raw = props.get(key);
+        if (raw instanceof Number number) {
+            return number.doubleValue();
+        }
+        if (raw instanceof String str) {
+            try {
+                return Double.parseDouble(str);
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return null;
+    }
+
+    private Double getNestedDoubleProp(Map<String, Object> props, String parentKey, String childKey) {
+        Object parent = props.get(parentKey);
+        if (!(parent instanceof Map<?, ?> nested)) {
+            return null;
+        }
+        Object raw = nested.get(childKey);
         if (raw instanceof Number number) {
             return number.doubleValue();
         }

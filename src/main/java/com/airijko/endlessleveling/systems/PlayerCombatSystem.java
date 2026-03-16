@@ -125,6 +125,8 @@ public class PlayerCombatSystem extends DamageEventSystem {
             return;
         }
 
+        XpKillCreditTracker.recordDamage(targetRef, attackerRef, store, commandBuffer);
+
         ArmyOfTheDeadPassive.focusSummonsOnSummonAttacker(targetRef, attackerRef, store, commandBuffer);
 
         PlayerRef attackerPlayer = EntityRefUtil.tryGetComponent(commandBuffer, attackerRef,

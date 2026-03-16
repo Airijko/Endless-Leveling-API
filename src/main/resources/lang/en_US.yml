@@ -421,6 +421,7 @@ ui:
         executioner: Executioner
         swiftness: Swiftness
         wither: Wither
+        army_of_the_dead: Army of the Dead
         crit_defense: Critical Defense
       scope:
         hp: HP
@@ -611,6 +612,18 @@ ui:
     passive:
       detail:
         threshold: <{0}% {1}
+      pretty:
+        na: n/a
+        army_of_the_dead:
+          title: Undead summon command
+          base: "- Base summons: {0}"
+          mana_scaling: "- Scaling: +1 summon per {0} mana"
+          cap: "- Summon cap: {0}"
+          trigger: "- Trigger: {0}"
+          trigger_on_hit: On hit
+          lifetime: "- Lifetime: {0}s each"
+          cooldown: "- Respawn cooldown: {0}s per summon"
+          inheritance: "- Stat inheritance: {0}% of your stats"
     error:
       disabled: Classes are currently disabled.
       playerdata: Unable to load your class info right now.
