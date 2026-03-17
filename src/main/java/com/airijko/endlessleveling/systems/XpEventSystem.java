@@ -23,6 +23,7 @@ import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.modules.entity.damage.Damage;
 import com.hypixel.hytale.server.core.modules.entity.damage.DeathComponent;
 import com.hypixel.hytale.server.core.modules.entity.damage.DeathSystems;
+import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
 import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
@@ -42,19 +43,22 @@ public class XpEventSystem extends DeathSystems.OnDeathSystem {
     private final PassiveManager passiveManager;
     private final MobLevelingManager mobLevelingManager;
     private final ArchetypePassiveManager archetypePassiveManager;
+    private final LuckDoubleDropSystem luckDoubleDropSystem;
 
     public XpEventSystem(PlayerDataManager playerDataManager,
             LevelingManager levelingManager,
             PartyManager partyManager,
             PassiveManager passiveManager,
             MobLevelingManager mobLevelingManager,
-            ArchetypePassiveManager archetypePassiveManager) {
+            ArchetypePassiveManager archetypePassiveManager,
+            LuckDoubleDropSystem luckDoubleDropSystem) {
         this.playerDataManager = playerDataManager;
         this.levelingManager = levelingManager;
         this.partyManager = partyManager;
         this.passiveManager = passiveManager;
         this.mobLevelingManager = mobLevelingManager;
         this.archetypePassiveManager = archetypePassiveManager;
+        this.luckDoubleDropSystem = luckDoubleDropSystem;
     }
 
     @Override
@@ -93,9 +97,23 @@ public class XpEventSystem extends DeathSystems.OnDeathSystem {
         }
 
         if (playerUuid == null) {
+            PlayerRef deadPlayerRef = EntityRefUtil.tryGetComponent(store, ref, PlayerRef.getComponentType());
+            if (deadPlayerRef == null || !deadPlayerRef.isValid()) {
+                Object source = deathInfo.getSource();
+                String sourceName = source == null ? "unknown" : source.getClass().getSimpleName();
+                LOGGER.atWarning().log(
+                        "[MOB_LUCK] onDeath: no killer resolved for mob target=%d (source=%s); skipping XP and mob-drop registration",
+                        ref.getIndex(), sourceName);
+            }
             XpKillCreditTracker.clearTarget(ref, store, commandBuffer);
             return;
         }
+
+        PlayerRef deadPlayerRef = EntityRefUtil.tryGetComponent(store, ref, PlayerRef.getComponentType());
+        Object source = deathInfo.getSource();
+        String sourceName = source == null ? "unknown" : source.getClass().getSimpleName();
+        LOGGER.atFine().log("[MOB_LUCK] onDeath: killer=%s target=%d targetIsPlayer=%s source=%s",
+                playerUuid, ref.getIndex(), deadPlayerRef != null && deadPlayerRef.isValid(), sourceName);
 
         var playerData = playerDataManager.get(playerUuid);
         if (playerData == null) {
@@ -188,8 +206,12 @@ public class XpEventSystem extends DeathSystems.OnDeathSystem {
         } else {
             levelingManager.addXp(playerUuid, xpAfterKillRules);
         }
-        if (passiveManager != null && totalLuck > 0.0D) {
-            passiveManager.openMobDropWindow(playerUuid);
+        if (luckDoubleDropSystem != null) {
+            PlayerRef targetPlayerRef = EntityRefUtil.tryGetComponent(store, ref, PlayerRef.getComponentType());
+            if (targetPlayerRef == null) {
+                ItemStack[] mobDrops = resolveMobDrops(component);
+                luckDoubleDropSystem.registerMobKillLoot(playerUuid, ref, store, commandBuffer, mobDrops);
+            }
         }
 
         XpKillCreditTracker.clearTarget(ref, store, commandBuffer);
@@ -200,5 +222,18 @@ public class XpEventSystem extends DeathSystems.OnDeathSystem {
             return passiveManager.getLuckValue(playerData);
         }
         return snapshot == null ? 0.0D : snapshot.getValue(ArchetypePassiveType.LUCK);
+    }
+
+    private ItemStack[] resolveMobDrops(@Nonnull DeathComponent component) {
+        var deathItemLoss = component.getDeathItemLoss();
+        if (deathItemLoss != null && deathItemLoss.getItemsLost() != null && deathItemLoss.getItemsLost().length > 0) {
+            ItemStack[] drops = deathItemLoss.getItemsLost();
+            LOGGER.atFine().log("[MOB_LUCK] resolveMobDrops: using deathItemLoss (%d drops)", drops.length);
+            return drops;
+        }
+        ItemStack[] drops = component.getItemsLostOnDeath();
+        LOGGER.atFine().log("[MOB_LUCK] resolveMobDrops: using itemsLostOnDeath (%d drops)",
+                drops == null ? 0 : drops.length);
+        return drops;
     }
 }

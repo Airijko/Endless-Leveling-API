@@ -21,6 +21,7 @@ import com.airijko.endlessleveling.managers.*;
 import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveManager;
 import com.airijko.endlessleveling.systems.BreakBlockEntitySystem;
 import com.airijko.endlessleveling.systems.ArmyOfTheDeadDeathSystem;
+import com.airijko.endlessleveling.systems.MobDropTaggingSystem;
 import com.airijko.endlessleveling.systems.PassiveRegenSystem;
 import com.airijko.endlessleveling.systems.MobDamageScalingSystem;
 import com.airijko.endlessleveling.systems.MobLevelingSystem;
@@ -260,9 +261,10 @@ public class EndlessLeveling extends JavaPlugin {
         this.getEventRegistry().registerGlobal(LivingEntityInventoryChangeEvent.class,
                 luckDoubleDropSystem::onInventoryChange);
         this.getEntityStoreRegistry().registerSystem(new BreakBlockEntitySystem(luckDoubleDropSystem));
+        this.getEntityStoreRegistry().registerSystem(new MobDropTaggingSystem(luckDoubleDropSystem));
         this.getEntityStoreRegistry()
                 .registerSystem(new XpEventSystem(playerDataManager, levelingManager, partyManager, passiveManager,
-                        mobLevelingManager, archetypePassiveManager));
+                        mobLevelingManager, archetypePassiveManager, luckDoubleDropSystem));
         this.getEntityStoreRegistry()
                 .registerSystem(new PlayerCombatSystem(playerDataManager, skillManager, passiveManager,
                         archetypePassiveManager, classManager, augmentExecutor, mobAugmentExecutor,

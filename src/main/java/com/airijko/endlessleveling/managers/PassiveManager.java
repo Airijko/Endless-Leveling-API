@@ -29,7 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class PassiveManager {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
-    private static final long LUCK_MOB_DROP_WINDOW_MS = 3500L;
+    private static final long LUCK_MOB_DROP_WINDOW_MS = 10_000L;
     private static final int LUCK_MOB_DROP_STACK_BUDGET = 6;
 
     private final ConfigManager configManager;
