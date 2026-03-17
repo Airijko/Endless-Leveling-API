@@ -63,6 +63,7 @@ public class RaceManager {
     private final ConfigManager configManager;
     private final boolean racesEnabled;
     private final boolean forceBuiltinRaces;
+    private final boolean enableBuiltinRaces;
     private final Map<String, RaceDefinition> fileRacesByKey = new LinkedHashMap<>();
     private final Map<String, RaceDefinition> externalRacesByKey = new LinkedHashMap<>();
     private final Map<String, RaceDefinition> racesByKey = new HashMap<>();
@@ -84,6 +85,8 @@ public class RaceManager {
         this.racesEnabled = parseBoolean(configManager.get("enable_races", Boolean.TRUE, false), true);
         this.forceBuiltinRaces = parseBoolean(configManager.get("force_builtin_races", Boolean.FALSE, false),
                 false);
+        this.enableBuiltinRaces = parseBoolean(configManager.get("enable_builtin_races", Boolean.TRUE, false),
+                true);
         Object raceModelDefaultConfig = configManager.get("global_race_visuals_setting", "off", false);
         this.raceModelDefaultMode = parseRaceModelDefault(raceModelDefaultConfig);
         Object defaultRaceConfig = configManager.get("default_race", PlayerData.DEFAULT_RACE_ID, false);
@@ -815,6 +818,11 @@ public class RaceManager {
     }
 
     private void syncBuiltinRacesIfNeeded() {
+        if (!enableBuiltinRaces) {
+            // Builtin races are disabled; don't sync them
+            LOGGER.atInfo().log("Builtin races are disabled (enable_builtin_races=false)");
+            return;
+        }
         if (!forceBuiltinRaces) {
             return;
         }

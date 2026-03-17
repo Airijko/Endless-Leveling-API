@@ -58,6 +58,7 @@ public class ClassManager {
     private final boolean classesEnabled;
     private boolean secondaryClassEnabled = true;
     private final boolean forceBuiltinClasses;
+    private final boolean enableBuiltinClasses;
     private final Map<String, CharacterClassDefinition> fileClassesByKey = new LinkedHashMap<>();
     private final Map<String, CharacterClassDefinition> externalClassesByKey = new LinkedHashMap<>();
     private final Map<String, CharacterClassDefinition> classesByKey = new HashMap<>();
@@ -111,6 +112,8 @@ public class ClassManager {
                 true);
         this.forceBuiltinClasses = parseBoolean(configManager.get("force_builtin_classes", Boolean.FALSE, false),
                 false);
+        this.enableBuiltinClasses = parseBoolean(configManager.get("enable_builtin_classes", Boolean.TRUE, false),
+                true);
 
         Object primaryConfig = configManager.get("default_primary_class", PlayerData.DEFAULT_PRIMARY_CLASS_ID, false);
         if (isNoneLiteral(primaryConfig)) {
@@ -841,6 +844,11 @@ public class ClassManager {
     }
 
     private void syncBuiltinClassesIfNeeded() {
+        if (!enableBuiltinClasses) {
+            // Builtin classes are disabled; don't sync them
+            LOGGER.atInfo().log("Builtin classes are disabled (enable_builtin_classes=false)");
+            return;
+        }
         if (!forceBuiltinClasses) {
             return;
         }

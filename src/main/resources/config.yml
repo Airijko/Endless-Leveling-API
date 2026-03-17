@@ -127,6 +127,14 @@ force_builtin_classes: true # If true, replace classes with bundled defaults dur
 force_builtin_augments: true # If true, ignore custom augment files and keep bundled augments in sync with updates
 force_builtin_languages: true # If true, keep bundled language files in sync with updates and archive prior versions to old/
 
+# Builtin content enable/disable (separate from sync settings above)
+# These flags control whether EndlessLeveling's default/bundled content is loaded and registered.
+# When false, only custom/external content is available; external mods can still register via API.
+# Enabled by default if not specified.
+enable_builtin_races: true # If false, EndlessLeveling's built-in races are not loaded; custom races and API-registered races still work
+enable_builtin_classes: true # If false, EndlessLeveling's built-in classes are not loaded; custom classes and API-registered classes still work
+enable_builtin_augments: true # If false, EndlessLeveling's built-in augments are not loaded; custom augments and API-registered augments still work
+
 # Debug / logging
 enable_logging: false # Master toggle: true enables ALL mod logs (debug + info + warnings)
 logging:

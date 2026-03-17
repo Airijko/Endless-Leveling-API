@@ -29,6 +29,7 @@ public class AugmentManager {
     private final Path root;
     private final PluginFilesManager filesManager;
     private final boolean forceBuiltinAugments;
+    private final boolean enableBuiltinAugments;
     private final Map<String, AugmentDefinition> externalDefinitions;
     private volatile Map<String, AugmentDefinition> fileDefinitions;
     private volatile Map<String, AugmentDefinition> cache;
@@ -40,7 +41,11 @@ public class AugmentManager {
         Object forceFlag = configManager != null
                 ? configManager.get("force_builtin_augments", Boolean.TRUE, false)
                 : Boolean.TRUE;
+        Object enableFlag = configManager != null
+                ? configManager.get("enable_builtin_augments", Boolean.TRUE, false)
+                : Boolean.TRUE;
         this.forceBuiltinAugments = parseBoolean(forceFlag, true);
+        this.enableBuiltinAugments = parseBoolean(enableFlag, true);
         this.externalDefinitions = new LinkedHashMap<>();
         this.fileDefinitions = Collections.emptyMap();
         this.cache = Collections.emptyMap();
@@ -145,6 +150,11 @@ public class AugmentManager {
     }
 
     private void syncBuiltinAugmentsIfNeeded() {
+        if (!enableBuiltinAugments) {
+            // Builtin augments are disabled; don't sync them
+            LOGGER.atInfo().log("Builtin augments are disabled (enable_builtin_augments=false)");
+            return;
+        }
         if (!forceBuiltinAugments) {
             return;
         }
