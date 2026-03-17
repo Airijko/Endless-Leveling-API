@@ -1,6 +1,10 @@
 package com.airijko.endlessleveling.api;
 
 import com.airijko.endlessleveling.EndlessLeveling;
+import com.airijko.endlessleveling.augments.Augment;
+import com.airijko.endlessleveling.augments.AugmentDefinition;
+import com.airijko.endlessleveling.augments.AugmentManager;
+import com.airijko.endlessleveling.augments.AugmentRegistry;
 import com.airijko.endlessleveling.player.PlayerData;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.airijko.endlessleveling.leveling.LevelingManager;
@@ -15,6 +19,7 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
 
 /**
  * Lightweight public API surface for other mods to query EndlessLeveling state
@@ -24,23 +29,7 @@ public final class EndlessLevelingAPI {
 
     private static final EndlessLevelingAPI INSTANCE = new EndlessLevelingAPI();
 
-    private final PlayerDataManager playerDataManager;
-    private final SkillManager skillManager;
-    private final LevelingManager levelingManager;
-    private final RaceManager raceManager;
-    private final PlayerAttributeManager attributeManager;
-    private final MobLevelingManager mobLevelingManager;
-    private final PartyManager partyManager;
-
     private EndlessLevelingAPI() {
-        EndlessLeveling plugin = EndlessLeveling.getInstance();
-        this.playerDataManager = plugin != null ? plugin.getPlayerDataManager() : null;
-        this.skillManager = plugin != null ? plugin.getSkillManager() : null;
-        this.levelingManager = plugin != null ? plugin.getLevelingManager() : null;
-        this.raceManager = plugin != null ? plugin.getRaceManager() : null;
-        this.attributeManager = plugin != null ? plugin.getPlayerAttributeManager() : null;
-        this.mobLevelingManager = plugin != null ? plugin.getMobLevelingManager() : null;
-        this.partyManager = plugin != null ? plugin.getPartyManager() : null;
     }
 
     /** Global access point. */
@@ -60,6 +49,7 @@ public final class EndlessLevelingAPI {
             levels.put(type, data.getPlayerSkillAttributeLevel(type));
         }
 
+        SkillManager skillManager = skillManager();
         double xpMultiplier = skillManager != null ? skillManager.getXpGainMultiplier(data) : 1.0D;
 
         return new PlayerSnapshot(
@@ -90,6 +80,7 @@ public final class EndlessLevelingAPI {
      */
     public double getSkillAttributeBonus(UUID uuid, SkillAttributeType type) {
         PlayerData data = getData(uuid);
+        SkillManager skillManager = skillManager();
         if (data == null || skillManager == null || type == null) {
             return 0.0D;
         }
@@ -102,6 +93,7 @@ public final class EndlessLevelingAPI {
      */
     public double getCombinedAttribute(UUID uuid, SkillAttributeType type, double fallback) {
         PlayerData data = getData(uuid);
+        PlayerAttributeManager attributeManager = attributeManager();
         if (data == null || attributeManager == null || type == null) {
             return fallback;
         }
@@ -117,6 +109,7 @@ public final class EndlessLevelingAPI {
     public AttributeBreakdown getAttributeBreakdown(UUID uuid, SkillAttributeType type,
             double externalBonus, double fallback) {
         PlayerData data = getData(uuid);
+        RaceManager raceManager = raceManager();
         if (data == null || type == null) {
             return new AttributeBreakdown(fallback, 0.0D, externalBonus, fallback + externalBonus);
         }
@@ -152,11 +145,13 @@ public final class EndlessLevelingAPI {
 
     /** Maximum configured level cap. */
     public int getLevelCap() {
+        LevelingManager levelingManager = levelingManager();
         return levelingManager != null ? levelingManager.getLevelCap() : 0;
     }
 
     /** Player-specific level cap (includes prestige scaling). */
     public int getLevelCap(UUID uuid) {
+        LevelingManager levelingManager = levelingManager();
         if (levelingManager == null) {
             return 0;
         }
@@ -168,6 +163,7 @@ public final class EndlessLevelingAPI {
      * Level needed XP; returns POSITIVE_INFINITY if at/above cap or unavailable.
      */
     public double getXpForNextLevel(int level) {
+        LevelingManager levelingManager = levelingManager();
         return levelingManager != null ? levelingManager.getXpForNextLevel(level) : Double.POSITIVE_INFINITY;
     }
 
@@ -176,6 +172,7 @@ public final class EndlessLevelingAPI {
      * Returns POSITIVE_INFINITY if unavailable or at/above cap.
      */
     public double getXpForNextLevel(UUID uuid, int level) {
+        LevelingManager levelingManager = levelingManager();
         if (levelingManager == null) {
             return Double.POSITIVE_INFINITY;
         }
@@ -202,6 +199,7 @@ public final class EndlessLevelingAPI {
      * Underlying per-point config value for a skill attribute (from config.yml).
      */
     public double getSkillAttributeConfigValue(SkillAttributeType type) {
+        SkillManager skillManager = skillManager();
         if (skillManager == null || type == null) {
             return 0.0D;
         }
@@ -214,6 +212,7 @@ public final class EndlessLevelingAPI {
 
     /** Grant raw XP to a player (passes through EL's XP bonuses and level cap). */
     public void grantXp(UUID playerUuid, double xpAmount) {
+        LevelingManager levelingManager = levelingManager();
         if (playerUuid == null || levelingManager == null || xpAmount <= 0) {
             return;
         }
@@ -225,6 +224,8 @@ public final class EndlessLevelingAPI {
      * (same world). If no party or no one in range, only the source receives XP.
      */
     public void grantSharedXpInRange(UUID sourcePlayerUuid, double totalXp, double maxDistance) {
+        PartyManager partyManager = partyManager();
+        LevelingManager levelingManager = levelingManager();
         if (sourcePlayerUuid == null || totalXp <= 0) {
             return;
         }
@@ -249,6 +250,7 @@ public final class EndlessLevelingAPI {
      */
     public boolean registerMobAreaLevelOverride(String id, String worldId,
             double centerX, double centerZ, double radius, int minLevel, int maxLevel) {
+        MobLevelingManager mobLevelingManager = mobLevelingManager();
         return mobLevelingManager != null
                 && mobLevelingManager.registerAreaLevelOverride(id, worldId, centerX, centerZ, radius, minLevel,
                         maxLevel);
@@ -259,17 +261,20 @@ public final class EndlessLevelingAPI {
      * normal Level_Source resolver.
      */
     public boolean registerMobWorldLevelOverride(String id, String worldId, int minLevel, int maxLevel) {
+        MobLevelingManager mobLevelingManager = mobLevelingManager();
         return mobLevelingManager != null
                 && mobLevelingManager.registerWorldLevelOverride(id, worldId, minLevel, maxLevel);
     }
 
     /** Remove a previously registered area/world override. */
     public boolean removeMobAreaLevelOverride(String id) {
+        MobLevelingManager mobLevelingManager = mobLevelingManager();
         return mobLevelingManager != null && mobLevelingManager.removeAreaLevelOverride(id);
     }
 
     /** Clear all area/world overrides. */
     public void clearMobAreaLevelOverrides() {
+        MobLevelingManager mobLevelingManager = mobLevelingManager();
         if (mobLevelingManager != null) {
             mobLevelingManager.clearAreaLevelOverrides();
         }
@@ -280,6 +285,7 @@ public final class EndlessLevelingAPI {
      * is checked before any Level_Source logic.
      */
     public void setMobEntityLevelOverride(int entityIndex, int level) {
+        MobLevelingManager mobLevelingManager = mobLevelingManager();
         if (mobLevelingManager != null) {
             mobLevelingManager.setEntityLevelOverride(entityIndex, level);
         }
@@ -287,6 +293,7 @@ public final class EndlessLevelingAPI {
 
     /** Remove a specific entity override. */
     public void clearMobEntityLevelOverride(int entityIndex) {
+        MobLevelingManager mobLevelingManager = mobLevelingManager();
         if (mobLevelingManager != null) {
             mobLevelingManager.clearEntityLevelOverride(entityIndex);
         }
@@ -294,12 +301,117 @@ public final class EndlessLevelingAPI {
 
     /** Clear all per-entity overrides. */
     public void clearAllMobEntityLevelOverrides() {
+        MobLevelingManager mobLevelingManager = mobLevelingManager();
         if (mobLevelingManager != null) {
             mobLevelingManager.clearAllEntityLevelOverrides();
         }
     }
 
+    /** Resolve a registered augment definition by id; returns null if missing. */
+    public AugmentDefinition getAugmentDefinition(String id) {
+        AugmentManager augmentManager = augmentManager();
+        return augmentManager == null ? null : augmentManager.getAugment(id);
+    }
+
+    /**
+     * Register a custom augment definition backed by EndlessLeveling's default
+     * YamlAugment fallback unless a custom factory is also registered.
+     */
+    public boolean registerAugment(AugmentDefinition definition) {
+        return registerAugment(definition, null, false);
+    }
+
+    /** Register a custom augment definition and Java factory. */
+    public boolean registerAugment(AugmentDefinition definition,
+            Function<AugmentDefinition, Augment> factory) {
+        return registerAugment(definition, factory, false);
+    }
+
+    /**
+     * Register a custom augment definition and optional Java factory.
+     * When replaceExisting is true, external registrations may override built-in
+     * or file-backed augments using the same id.
+     */
+    public boolean registerAugment(AugmentDefinition definition,
+            Function<AugmentDefinition, Augment> factory,
+            boolean replaceExisting) {
+        if (definition == null) {
+            return false;
+        }
+
+        AugmentManager augmentManager = augmentManager();
+        String augmentId = definition.getId();
+        if (augmentManager == null || augmentId == null || augmentId.isBlank()) {
+            return false;
+        }
+        if (!augmentManager.canRegisterExternalAugment(augmentId, replaceExisting)) {
+            return false;
+        }
+        if (factory != null && !AugmentRegistry.canRegisterFactory(augmentId, replaceExisting)) {
+            return false;
+        }
+
+        augmentManager.registerExternalAugment(definition);
+        if (factory != null) {
+            AugmentRegistry.registerFactory(augmentId, factory);
+        }
+        return true;
+    }
+
+    /** Remove a previously registered external augment definition and factory. */
+    public boolean unregisterAugment(String id) {
+        AugmentManager augmentManager = augmentManager();
+        boolean definitionRemoved = augmentManager != null && augmentManager.unregisterExternalAugment(id);
+        boolean factoryRemoved = AugmentRegistry.unregisterFactory(id) != null;
+        return definitionRemoved || factoryRemoved;
+    }
+
     private PlayerData getData(UUID uuid) {
+        PlayerDataManager playerDataManager = playerDataManager();
         return uuid == null || playerDataManager == null ? null : playerDataManager.get(uuid);
+    }
+
+    private EndlessLeveling plugin() {
+        return EndlessLeveling.getInstance();
+    }
+
+    private PlayerDataManager playerDataManager() {
+        EndlessLeveling plugin = plugin();
+        return plugin != null ? plugin.getPlayerDataManager() : null;
+    }
+
+    private SkillManager skillManager() {
+        EndlessLeveling plugin = plugin();
+        return plugin != null ? plugin.getSkillManager() : null;
+    }
+
+    private LevelingManager levelingManager() {
+        EndlessLeveling plugin = plugin();
+        return plugin != null ? plugin.getLevelingManager() : null;
+    }
+
+    private RaceManager raceManager() {
+        EndlessLeveling plugin = plugin();
+        return plugin != null ? plugin.getRaceManager() : null;
+    }
+
+    private PlayerAttributeManager attributeManager() {
+        EndlessLeveling plugin = plugin();
+        return plugin != null ? plugin.getPlayerAttributeManager() : null;
+    }
+
+    private MobLevelingManager mobLevelingManager() {
+        EndlessLeveling plugin = plugin();
+        return plugin != null ? plugin.getMobLevelingManager() : null;
+    }
+
+    private PartyManager partyManager() {
+        EndlessLeveling plugin = plugin();
+        return plugin != null ? plugin.getPartyManager() : null;
+    }
+
+    private AugmentManager augmentManager() {
+        EndlessLeveling plugin = plugin();
+        return plugin != null ? plugin.getAugmentManager() : null;
     }
 }

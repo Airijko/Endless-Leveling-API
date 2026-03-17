@@ -4,6 +4,7 @@ import com.airijko.endlessleveling.augments.types.*;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 /**
@@ -11,7 +12,7 @@ import java.util.function.Function;
  */
 public final class AugmentRegistry {
 
-    private static final Map<String, Function<AugmentDefinition, Augment>> FACTORIES = Map.ofEntries(
+    private static final Map<String, Function<AugmentDefinition, Augment>> BUILTIN_FACTORIES = Map.ofEntries(
             Map.entry(AbsoluteFocusAugment.ID, AbsoluteFocusAugment::new),
             Map.entry(ArcaneInstabilityAugment.ID, ArcaneInstabilityAugment::new),
             Map.entry(ArcaneMasteryAugment.ID, ArcaneMasteryAugment::new),
@@ -62,18 +63,64 @@ public final class AugmentRegistry {
             Map.entry(VampiricStrikeAugment.ID, VampiricStrikeAugment::new),
             Map.entry(VampirismAugment.ID, VampirismAugment::new),
             Map.entry(WitherAugment.ID, WitherAugment::new));
+    private static final Map<String, Function<AugmentDefinition, Augment>> EXTERNAL_FACTORIES = new ConcurrentHashMap<>();
 
     private AugmentRegistry() {
+    }
+
+    public static boolean canRegisterFactory(String id, boolean replaceExisting) {
+        String augmentId = normalizeId(id);
+        if (augmentId == null) {
+            return false;
+        }
+        if (replaceExisting) {
+            return true;
+        }
+        return !BUILTIN_FACTORIES.containsKey(augmentId) && !EXTERNAL_FACTORIES.containsKey(augmentId);
+    }
+
+    public static Function<AugmentDefinition, Augment> registerFactory(String id,
+            Function<AugmentDefinition, Augment> factory) {
+        String augmentId = requireValidId(id);
+        return EXTERNAL_FACTORIES.put(augmentId, Objects.requireNonNull(factory, "factory"));
+    }
+
+    public static Function<AugmentDefinition, Augment> unregisterFactory(String id) {
+        String augmentId = normalizeId(id);
+        if (augmentId == null) {
+            return null;
+        }
+        return EXTERNAL_FACTORIES.remove(augmentId);
     }
 
     public static Augment create(AugmentDefinition definition) {
         if (definition == null) {
             return null;
         }
-        Function<AugmentDefinition, Augment> factory = FACTORIES.get(definition.getId());
+        String augmentId = normalizeId(definition.getId());
+        Function<AugmentDefinition, Augment> factory = augmentId == null ? null : EXTERNAL_FACTORIES.get(augmentId);
+        if (factory == null && augmentId != null) {
+            factory = BUILTIN_FACTORIES.get(augmentId);
+        }
         if (factory == null) {
             return new YamlAugment(definition);
         }
         return Objects.requireNonNull(factory.apply(definition));
+    }
+
+    private static String requireValidId(String id) {
+        String augmentId = normalizeId(id);
+        if (augmentId == null) {
+            throw new IllegalArgumentException("augment id cannot be null or blank");
+        }
+        return augmentId;
+    }
+
+    private static String normalizeId(String id) {
+        if (id == null) {
+            return null;
+        }
+        String trimmed = id.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }

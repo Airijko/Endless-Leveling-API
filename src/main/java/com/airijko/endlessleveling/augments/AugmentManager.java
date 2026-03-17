@@ -14,6 +14,7 @@ import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -28,7 +29,9 @@ public class AugmentManager {
     private final Path root;
     private final PluginFilesManager filesManager;
     private final boolean forceBuiltinAugments;
-    private Map<String, AugmentDefinition> cache;
+    private final Map<String, AugmentDefinition> externalDefinitions;
+    private volatile Map<String, AugmentDefinition> fileDefinitions;
+    private volatile Map<String, AugmentDefinition> cache;
 
     public AugmentManager(Path root, PluginFilesManager filesManager, ConfigManager configManager) {
         this.yaml = new Yaml();
@@ -38,17 +41,20 @@ public class AugmentManager {
                 ? configManager.get("force_builtin_augments", Boolean.TRUE, false)
                 : Boolean.TRUE;
         this.forceBuiltinAugments = parseBoolean(forceFlag, true);
+        this.externalDefinitions = new LinkedHashMap<>();
+        this.fileDefinitions = Collections.emptyMap();
         this.cache = Collections.emptyMap();
     }
 
-    public void load() {
+    public synchronized void load() {
         syncBuiltinAugmentsIfNeeded();
         if (!Files.isDirectory(root)) {
             LOGGER.atWarning().log("Augment directory %s does not exist or is not a directory", root);
-            this.cache = Collections.emptyMap();
+            this.fileDefinitions = Collections.emptyMap();
+            rebuildCache();
             return;
         }
-        Map<String, AugmentDefinition> loaded = new HashMap<>();
+        Map<String, AugmentDefinition> loaded = new LinkedHashMap<>();
         try (Stream<Path> paths = Files.list(root)) {
             List<Path> yamlFiles = paths
                     .filter(path -> !Files.isDirectory(path))
@@ -60,7 +66,12 @@ public class AugmentManager {
             for (Path file : yamlFiles) {
                 try {
                     AugmentDefinition def = AugmentParser.parse(file, yaml);
-                    loaded.put(def.getId(), def);
+                    String augmentId = normalizeRegisteredId(def.getId());
+                    if (augmentId == null) {
+                        LOGGER.atWarning().log("Skipping augment %s because its id is blank", file.getFileName());
+                        continue;
+                    }
+                    loaded.put(augmentId, def);
                 } catch (Exception ex) {
                     LOGGER.atWarning().withCause(ex).log("Failed to parse augment %s", file.getFileName());
                 }
@@ -68,7 +79,8 @@ public class AugmentManager {
         } catch (IOException ex) {
             LOGGER.atSevere().withCause(ex).log("Error reading augment directory %s", root);
         }
-        this.cache = Collections.unmodifiableMap(loaded);
+        this.fileDefinitions = Collections.unmodifiableMap(new LinkedHashMap<>(loaded));
+        rebuildCache();
         LOGGER.atInfo().log("Loaded %d augments from %s", cache.size(), root);
     }
 
@@ -88,12 +100,48 @@ public class AugmentManager {
         return AugmentRegistry.create(definition);
     }
 
+    public synchronized boolean canRegisterExternalAugment(String id, boolean replaceExisting) {
+        String augmentId = normalizeRegisteredId(id);
+        if (augmentId == null) {
+            return false;
+        }
+        return replaceExisting || !cache.containsKey(augmentId);
+    }
+
+    public synchronized void registerExternalAugment(AugmentDefinition definition) {
+        Objects.requireNonNull(definition, "definition");
+        String augmentId = requireRegisteredId(definition.getId());
+        boolean overridingFileDefinition = fileDefinitions.containsKey(augmentId);
+        externalDefinitions.put(augmentId, definition);
+        rebuildCache();
+        if (overridingFileDefinition) {
+            LOGGER.atInfo().log("Registered API augment '%s' and overrode the file-backed definition", augmentId);
+        } else {
+            LOGGER.atInfo().log("Registered API augment '%s'", augmentId);
+        }
+    }
+
+    public synchronized boolean unregisterExternalAugment(String id) {
+        String augmentId = normalizeRegisteredId(id);
+        if (augmentId == null) {
+            return false;
+        }
+        AugmentDefinition removed = externalDefinitions.remove(augmentId);
+        if (removed == null) {
+            return false;
+        }
+        rebuildCache();
+        LOGGER.atInfo().log("Unregistered API augment '%s'", augmentId);
+        return true;
+    }
+
     private String resolveLookupId(String id) {
         if (id == null || id.isBlank()) {
             return id;
         }
-        String resolved = CommonAugment.resolveBaseAugmentId(id);
-        return resolved == null ? id : resolved;
+        String candidate = id.trim();
+        String resolved = CommonAugment.resolveBaseAugmentId(candidate);
+        return resolved == null ? candidate : resolved;
     }
 
     private void syncBuiltinAugmentsIfNeeded() {
@@ -173,5 +221,27 @@ public class AugmentManager {
             return number.intValue() != 0;
         }
         return defaultValue;
+    }
+
+    private void rebuildCache() {
+        Map<String, AugmentDefinition> merged = new LinkedHashMap<>(fileDefinitions);
+        merged.putAll(externalDefinitions);
+        this.cache = Collections.unmodifiableMap(merged);
+    }
+
+    private String requireRegisteredId(String id) {
+        String augmentId = normalizeRegisteredId(id);
+        if (augmentId == null) {
+            throw new IllegalArgumentException("augment id cannot be null or blank");
+        }
+        return augmentId;
+    }
+
+    private String normalizeRegisteredId(String id) {
+        if (id == null) {
+            return null;
+        }
+        String trimmed = id.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }

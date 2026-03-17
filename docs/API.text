@@ -123,6 +123,39 @@ double totalHealth = life.total();
     // Only members in the same world within 30 blocks get a share
     api.grantSharedXpInRange(killerUuid, mobXpTotal, 30.0);
 
+- Augment registration for integrations
+    import com.airijko.endlessleveling.augments.Augment;
+    import com.airijko.endlessleveling.augments.AugmentDefinition;
+    import com.airijko.endlessleveling.enums.PassiveCategory;
+    import com.airijko.endlessleveling.enums.PassiveTier;
+
+    var definition = new AugmentDefinition(
+            "crit_mastery",
+            "Crit Mastery",
+            PassiveTier.RARE,
+            PassiveCategory.PASSIVE_STAT,
+            false,
+            "Gain critical strike chance.",
+            Map.of("buffs", Map.of("precision", Map.of("value", 0.20))));
+
+    // Data-only registration (falls back to YamlAugment unless you also register a factory)
+    boolean registered = api.registerAugment(definition);
+
+    // Custom Java behavior
+    boolean registeredWithFactory = api.registerAugment(definition, MyCritMasteryAugment::new);
+
+    // Override an existing built-in or file-backed augment id
+    boolean replaced = api.registerAugment(definition, MyCritMasteryAugment::new, true);
+
+    // Cleanup on your plugin shutdown / reload
+    api.unregisterAugment("crit_mastery");
+
+    Notes:
+    - Metadata is required via AugmentDefinition; YAML is optional for external mods.
+    - A custom factory is required for hook-driven behavior (OnHit, OnCrit, passive stat logic, etc.).
+    - Register during plugin startup, before players begin rolling or equipping augments.
+    - External registrations survive EndlessLeveling reloads because file-backed augments and API augments are merged.
+
 4) Integration tips
 -------------------
 - Missing data returns safe defaults (0, null, or your fallback).
