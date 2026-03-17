@@ -45,6 +45,7 @@ public final class BurnAugment extends YamlAugment
     private final long activeDurationMillis;
     private final long cooldownMillis;
     private final double lifeForceFlatBonus;
+    private final double maxDamagePerTick;
 
     public BurnAugment(AugmentDefinition definition) {
         super(definition);
@@ -65,6 +66,7 @@ public final class BurnAugment extends YamlAugment
                 .secondsToMillis(AugmentValueReader.getDouble(auraBurn, "duration", 0.0D));
         this.cooldownMillis = AugmentUtils.secondsToMillis(AugmentValueReader.getDouble(auraBurn, "cooldown", 0.0D));
         this.lifeForceFlatBonus = Math.max(0.0D, AugmentValueReader.getDouble(lifeForce, "value", 0.0D));
+        this.maxDamagePerTick = Math.max(0.0D, AugmentValueReader.getDouble(auraBurn, "max_damage_per_tick", 0.0D));
     }
 
     @Override
@@ -206,6 +208,9 @@ public final class BurnAugment extends YamlAugment
             double burnDamage = targetHp.getMax() * ratioThisTick;
             if (burnDamage <= 0.0D) {
                 continue;
+            }
+            if (maxDamagePerTick > 0.0D && burnDamage > maxDamagePerTick) {
+                burnDamage = maxDamagePerTick;
             }
 
             Damage burnTickDamage = PlayerCombatSystem.createAugmentDotDamage(sourceRef, (float) burnDamage);
