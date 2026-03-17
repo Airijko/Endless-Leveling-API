@@ -58,6 +58,8 @@ public class ClassManager {
     private final boolean classesEnabled;
     private boolean secondaryClassEnabled = true;
     private final boolean forceBuiltinClasses;
+    private final Map<String, CharacterClassDefinition> fileClassesByKey = new LinkedHashMap<>();
+    private final Map<String, CharacterClassDefinition> externalClassesByKey = new LinkedHashMap<>();
     private final Map<String, CharacterClassDefinition> classesByKey = new HashMap<>();
     private final Map<String, CharacterClassDefinition> classesByAscensionId = new HashMap<>();
     private final Map<String, List<String>> ascensionParentsByChild = new HashMap<>();
@@ -148,7 +150,6 @@ public class ClassManager {
         }
 
         reloadDefaultsFromConfig();
-        classesByKey.clear();
         syncBuiltinClassesIfNeeded();
         loadClasses();
     }
@@ -163,6 +164,41 @@ public class ClassManager {
 
     public Collection<CharacterClassDefinition> getLoadedClasses() {
         return Collections.unmodifiableCollection(classesByKey.values());
+    }
+
+    public synchronized boolean canRegisterExternalClass(String id, boolean replaceExisting) {
+        String classId = normalizeKey(id);
+        if (classId == null || classId.isBlank()) {
+            return false;
+        }
+        return replaceExisting || !classesByKey.containsKey(classId);
+    }
+
+    public synchronized void registerExternalClass(CharacterClassDefinition definition) {
+        Objects.requireNonNull(definition, "definition");
+        String classId = requireExternalClassId(definition.getId());
+        boolean overridingFileDefinition = fileClassesByKey.containsKey(classId);
+        externalClassesByKey.put(classId, definition);
+        rebuildMergedClassCache();
+        if (overridingFileDefinition) {
+            LOGGER.atInfo().log("Registered API class '%s' and overrode the file-backed definition", classId);
+        } else {
+            LOGGER.atInfo().log("Registered API class '%s'", classId);
+        }
+    }
+
+    public synchronized boolean unregisterExternalClass(String id) {
+        String classId = normalizeKey(id);
+        if (classId == null || classId.isBlank()) {
+            return false;
+        }
+        CharacterClassDefinition removed = externalClassesByKey.remove(classId);
+        if (removed == null) {
+            return false;
+        }
+        rebuildMergedClassCache();
+        LOGGER.atInfo().log("Unregistered API class '%s'", classId);
+        return true;
     }
 
     public String resolveAscensionPathId(String classInput) {
@@ -785,9 +821,11 @@ public class ClassManager {
     }
 
     private void loadClasses() {
+        fileClassesByKey.clear();
         File classesFolder = filesManager.getClassesFolder();
         if (classesFolder == null || !classesFolder.exists()) {
             LOGGER.atWarning().log("Classes folder is missing; cannot load class definitions.");
+            rebuildMergedClassCache();
             return;
         }
         try (Stream<Path> files = Files.walk(classesFolder.toPath())) {
@@ -798,17 +836,7 @@ public class ClassManager {
             LOGGER.atSevere().log("Failed to walk classes directory: %s", e.getMessage());
         }
 
-        rebuildAscensionIndexes();
-
-        if (!classesByKey.containsKey(normalizeKey(defaultPrimaryClassId)) && !classesByKey.isEmpty()) {
-            defaultPrimaryClassId = classesByKey.values().iterator().next().getId();
-            LOGGER.atInfo().log("Default primary class set to %s", defaultPrimaryClassId);
-        }
-        if (defaultSecondaryClassId != null
-                && !classesByKey.containsKey(normalizeKey(defaultSecondaryClassId))) {
-            defaultSecondaryClassId = null;
-        }
-
+        rebuildMergedClassCache();
         LOGGER.atInfo().log("Loaded %d class definition(s).", classesByKey.size());
     }
 
@@ -890,7 +918,7 @@ public class ClassManager {
                 LOGGER.atInfo().log("Skipping disabled class %s from %s", definition.getId(), path.getFileName());
                 return;
             }
-            classesByKey.put(normalizeKey(definition.getId()), definition);
+            fileClassesByKey.put(normalizeKey(definition.getId()), definition);
             LOGGER.atInfo().log("Loaded class %s", definition.getId());
         } catch (IOException e) {
             LOGGER.atSevere().log("Failed to read class file %s: %s", path.getFileName(), e.getMessage());
@@ -1276,6 +1304,31 @@ public class ClassManager {
         } catch (NumberFormatException ignored) {
             return null;
         }
+    }
+
+    private void rebuildMergedClassCache() {
+        classesByKey.clear();
+        classesByKey.putAll(fileClassesByKey);
+        classesByKey.putAll(externalClassesByKey);
+
+        rebuildAscensionIndexes();
+
+        if (!classesByKey.containsKey(normalizeKey(defaultPrimaryClassId)) && !classesByKey.isEmpty()) {
+            defaultPrimaryClassId = classesByKey.values().iterator().next().getId();
+            LOGGER.atInfo().log("Default primary class set to %s", defaultPrimaryClassId);
+        }
+        if (defaultSecondaryClassId != null
+                && !classesByKey.containsKey(normalizeKey(defaultSecondaryClassId))) {
+            defaultSecondaryClassId = null;
+        }
+    }
+
+    private String requireExternalClassId(String id) {
+        String classId = normalizeKey(id);
+        if (classId == null || classId.isBlank()) {
+            throw new IllegalArgumentException("class id cannot be null or blank");
+        }
+        return classId;
     }
 
     private double parseDouble(Object value, double defaultValue) {

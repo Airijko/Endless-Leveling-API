@@ -156,6 +156,107 @@ double totalHealth = life.total();
     - Register during plugin startup, before players begin rolling or equipping augments.
     - External registrations survive EndlessLeveling reloads because file-backed augments and API augments are merged.
 
+    - Class / race registration for integrations
+        import com.airijko.endlessleveling.classes.CharacterClassDefinition;
+        import com.airijko.endlessleveling.enums.SkillAttributeType;
+        import com.airijko.endlessleveling.races.RaceAscensionDefinition;
+        import com.airijko.endlessleveling.races.RaceDefinition;
+
+        var customRace = new RaceDefinition(
+            "stormborn",
+            "Stormborn",
+            "A race attuned to storm magic.",
+            "Ingredient_Life_Essence",
+            null,
+            1.0,
+            true,
+            Map.of(SkillAttributeType.SORCERY, 12.0),
+            List.of(),
+            List.of(),
+            RaceAscensionDefinition.baseFallback("stormborn"));
+
+        api.registerRace(customRace);
+
+        var customClass = new CharacterClassDefinition(
+            "tempestblade",
+            "Tempestblade",
+            "A mobile melee caster.",
+            "Striker",
+            "fighter",
+            true,
+            "Weapon_Sword_T1",
+            Map.of("sword", 1.2),
+            List.of(),
+            List.of(),
+            RaceAscensionDefinition.baseFallback("tempestblade"));
+
+        api.registerClass(customClass);
+
+        // Override an existing definition if needed
+        api.registerRace(customRace, true);
+        api.registerClass(customClass, true);
+
+        // Read back definitions that EL currently recognizes
+        RaceDefinition race = api.getRaceDefinition("stormborn");
+        CharacterClassDefinition clazz = api.getClassDefinition("tempestblade");
+
+        // Remove on your plugin shutdown / reload
+        api.unregisterRace("stormborn");
+        api.unregisterClass("tempestblade");
+
+        Notes:
+        - These registrations are definition-level; they become first-class in EndlessLeveling UI, lookups, and passive aggregation.
+        - External registrations survive EndlessLeveling reloads because file-backed and API-registered definitions are merged.
+        - Custom gameplay logic for those races/classes should live in your own plugin systems, keyed off api.getRaceId(uuid), api.getPrimaryClassId(uuid), and api.getSecondaryClassId(uuid).
+        - This keeps EndlessLeveling responsible for archetype data while your mod stays responsible for custom behavior.
+
+3d) Custom Archetype Passive Sources
+--------------------------------------
+
+For more advanced scenarios, register custom passive contribution sources to provide context-dependent passives
+(e.g., seasonal bonuses, guild bonuses, achievement-based buffs). Implement ArchetypePassiveSource to collect
+passives on a per-player basis.
+
+Example:
+
+    import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveSource;
+    import com.airijko.endlessleveling.enums.ArchetypePassiveType;
+    import com.airijko.endlessleveling.races.RacePassiveDefinition;
+    import java.util.EnumMap;
+    import java.util.List;
+    
+    // Custom seasonal bonus source
+    class SeasonalBonusSource implements ArchetypePassiveSource {
+        @Override
+        public void collect(PlayerData playerData,
+                EnumMap<ArchetypePassiveType, StackAccumulator> totals,
+                EnumMap<ArchetypePassiveType, List<RacePassiveDefinition>> grouped) {
+            if (isWinterSeason()) {
+                // Add 10% crit damage boost in winter
+                StackAccumulator accumulator = totals.computeIfAbsent(
+                    ArchetypePassiveType.FEROCITY,
+                    key -> new StackAccumulator(PassiveStackingStyle.ADDITIVE)
+                );
+                accumulator.addValue(10.0); // 10 ferocity points
+            }
+        }
+    }
+
+    // Register with EndlessLeveling
+    var api = EndlessLevelingAPI.get();
+    var seasonalSource = new SeasonalBonusSource();
+    api.registerArchetypePassiveSource(seasonalSource);
+    
+    // Unregister when your plugin shuts down
+    api.unregisterArchetypePassiveSource(seasonalSource);
+
+Notes:
+- Your source is called during snapshot generation for every player query.
+- Use StackAccumulator to add values safely with proper stacking logic.
+- Refer to RacePassiveDefinition for the passive data structure.
+- Return early if not applicable (e.g., player not in your guild).
+- Multiple sources are supported; they all contribute to the final snapshot.
+
 4) Integration tips
 -------------------
 - Missing data returns safe defaults (0, null, or your fallback).

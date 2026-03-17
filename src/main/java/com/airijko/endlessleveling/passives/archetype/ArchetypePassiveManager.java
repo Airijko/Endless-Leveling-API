@@ -11,10 +11,12 @@ import com.airijko.endlessleveling.races.RacePassiveDefinition;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.ConcurrentModificationException;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Aggregates passive modifiers contributed by player archetypes (races,
@@ -25,9 +27,11 @@ public class ArchetypePassiveManager {
     public static final String PASSIVE_SOURCE_PROPERTY = "__el_source";
     public static final String PASSIVE_SOURCE_RACE = "race";
     public static final String PASSIVE_SOURCE_CLASS = "class";
+    public static final String PASSIVE_SOURCE_EXTERNAL = "external";
     public static final String PASSIVE_CLASS_ID_PROPERTY = "__el_class_id";
 
-    private final List<PassiveSource> sources;
+    private final List<PassiveSource> builtinSources;
+    private final List<ArchetypePassiveSource> externalSources;
 
     public ArchetypePassiveManager(RaceManager raceManager, ClassManager classManager) {
         List<PassiveSource> builder = new ArrayList<>();
@@ -37,18 +41,29 @@ public class ArchetypePassiveManager {
         if (classManager != null) {
             builder.add(new ClassPassiveSource(classManager));
         }
-        this.sources = List.copyOf(builder);
+        this.builtinSources = List.copyOf(builder);
+        this.externalSources = new CopyOnWriteArrayList<>();
     }
 
     public ArchetypePassiveSnapshot getSnapshot(PlayerData playerData) {
-        if (playerData == null || sources.isEmpty()) {
+        if (playerData == null || (builtinSources.isEmpty() && externalSources.isEmpty())) {
             return ArchetypePassiveSnapshot.empty();
         }
 
-        EnumMap<ArchetypePassiveType, StackAccumulator> totals = new EnumMap<>(ArchetypePassiveType.class);
+        EnumMap<ArchetypePassiveType, ArchetypePassiveSource.StackAccumulator> totals = new EnumMap<>(
+                ArchetypePassiveType.class);
         EnumMap<ArchetypePassiveType, List<RacePassiveDefinition>> grouped = new EnumMap<>(ArchetypePassiveType.class);
-        for (PassiveSource source : sources) {
+
+        // Collect from builtin sources
+        for (PassiveSource source : builtinSources) {
             source.collect(playerData, totals, grouped);
+        }
+
+        // Collect from external sources
+        for (ArchetypePassiveSource source : externalSources) {
+            if (source != null) {
+                source.collect(playerData, totals, grouped);
+            }
         }
 
         if (totals.isEmpty() && grouped.isEmpty()) {
@@ -66,10 +81,29 @@ public class ArchetypePassiveManager {
         return new ArchetypePassiveSnapshot(immutableTotals, Collections.unmodifiableMap(immutableDefinitions));
     }
 
-    private interface PassiveSource {
-        void collect(PlayerData playerData,
-                EnumMap<ArchetypePassiveType, StackAccumulator> totals,
-                EnumMap<ArchetypePassiveType, List<RacePassiveDefinition>> grouped);
+    /**
+     * Register a custom archetype passive source.
+     * The source will be called during snapshot generation for each player.
+     */
+    public boolean registerArchetypePassiveSource(ArchetypePassiveSource source) {
+        if (source == null) {
+            return false;
+        }
+        return externalSources.add(source);
+    }
+
+    /**
+     * Unregister a previously registered custom archetype passive source.
+     */
+    public boolean unregisterArchetypePassiveSource(ArchetypePassiveSource source) {
+        if (source == null) {
+            return false;
+        }
+        return externalSources.remove(source);
+    }
+
+    private interface PassiveSource extends ArchetypePassiveSource {
+        // Extends public interface, same contract
     }
 
     private static final class RacePassiveSource implements PassiveSource {
@@ -129,7 +163,7 @@ public class ArchetypePassiveManager {
     private static void addPassive(RacePassiveDefinition passive,
             double scale,
             String classId,
-            EnumMap<ArchetypePassiveType, StackAccumulator> totals,
+            EnumMap<ArchetypePassiveType, ArchetypePassiveSource.StackAccumulator> totals,
             EnumMap<ArchetypePassiveType, List<RacePassiveDefinition>> grouped) {
         if (passive == null || passive.type() == null) {
             return;
@@ -139,8 +173,8 @@ public class ArchetypePassiveManager {
         if (scaledValue == 0.0D) {
             return;
         }
-        StackAccumulator accumulator = totals.computeIfAbsent(passive.type(),
-                key -> new StackAccumulator(passive.effectiveStackingStyle()));
+        ArchetypePassiveSource.StackAccumulator accumulator = totals.computeIfAbsent(passive.type(),
+                key -> new ArchetypePassiveSource.StackAccumulator(passive.effectiveStackingStyle()));
         accumulator.addValue(scaledValue);
 
         Map<String, Object> effectiveProperties = new LinkedHashMap<>(passive.properties());
@@ -162,23 +196,5 @@ public class ArchetypePassiveManager {
                 passive.tier(),
                 passive.classValues());
         grouped.computeIfAbsent(passive.type(), key -> new ArrayList<>()).add(effectiveDefinition);
-    }
-
-    private static final class StackAccumulator {
-        private final PassiveStackingStyle stackingStyle;
-        private double value;
-
-        StackAccumulator(PassiveStackingStyle stackingStyle) {
-            this.stackingStyle = stackingStyle == null ? PassiveStackingStyle.ADDITIVE : stackingStyle;
-            this.value = 0.0D;
-        }
-
-        void addValue(double newValue) {
-            value = stackingStyle.combine(value, newValue);
-        }
-
-        double value() {
-            return value;
-        }
     }
 }

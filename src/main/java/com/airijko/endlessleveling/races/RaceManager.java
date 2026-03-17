@@ -63,6 +63,8 @@ public class RaceManager {
     private final ConfigManager configManager;
     private final boolean racesEnabled;
     private final boolean forceBuiltinRaces;
+    private final Map<String, RaceDefinition> fileRacesByKey = new LinkedHashMap<>();
+    private final Map<String, RaceDefinition> externalRacesByKey = new LinkedHashMap<>();
     private final Map<String, RaceDefinition> racesByKey = new HashMap<>();
     private final Map<String, RaceDefinition> racesByAscensionId = new HashMap<>();
     private final Map<String, List<String>> ascensionParentsByChild = new HashMap<>();
@@ -133,7 +135,6 @@ public class RaceManager {
         }
 
         reloadDefaultsFromConfig();
-        racesByKey.clear();
         racesByAscensionId.clear();
         ascensionParentsByChild.clear();
         syncBuiltinRacesIfNeeded();
@@ -149,6 +150,41 @@ public class RaceManager {
             return null;
         }
         return racesByKey.get(normalizeKey(raceId));
+    }
+
+    public synchronized boolean canRegisterExternalRace(String id, boolean replaceExisting) {
+        String raceId = normalizeKey(id);
+        if (raceId == null || raceId.isBlank()) {
+            return false;
+        }
+        return replaceExisting || !racesByKey.containsKey(raceId);
+    }
+
+    public synchronized void registerExternalRace(RaceDefinition definition) {
+        Objects.requireNonNull(definition, "definition");
+        String raceId = requireExternalRaceId(definition.getId());
+        boolean overridingFileDefinition = fileRacesByKey.containsKey(raceId);
+        externalRacesByKey.put(raceId, definition);
+        rebuildMergedRaceCache();
+        if (overridingFileDefinition) {
+            LOGGER.atInfo().log("Registered API race '%s' and overrode the file-backed definition", raceId);
+        } else {
+            LOGGER.atInfo().log("Registered API race '%s'", raceId);
+        }
+    }
+
+    public synchronized boolean unregisterExternalRace(String id) {
+        String raceId = normalizeKey(id);
+        if (raceId == null || raceId.isBlank()) {
+            return false;
+        }
+        RaceDefinition removed = externalRacesByKey.remove(raceId);
+        if (removed == null) {
+            return false;
+        }
+        rebuildMergedRaceCache();
+        LOGGER.atInfo().log("Unregistered API race '%s'", raceId);
+        return true;
     }
 
     public RaceDefinition getDefaultRace() {
@@ -695,9 +731,11 @@ public class RaceManager {
     }
 
     private void loadRaces() {
+        fileRacesByKey.clear();
         File racesFolder = filesManager.getRacesFolder();
         if (racesFolder == null || !racesFolder.exists()) {
             LOGGER.atWarning().log("Races folder is missing; cannot load race definitions.");
+            rebuildMergedRaceCache();
             return;
         }
 
@@ -709,13 +747,7 @@ public class RaceManager {
             LOGGER.atSevere().log("Failed to walk races directory: %s", e.getMessage());
         }
 
-        rebuildAscensionIndexes();
-
-        if (!racesByKey.containsKey(normalizeKey(defaultRaceId)) && !racesByKey.isEmpty()) {
-            defaultRaceId = racesByKey.values().iterator().next().getId();
-            LOGGER.atInfo().log("Default race set to %s", defaultRaceId);
-        }
-
+        rebuildMergedRaceCache();
         LOGGER.atInfo().log("Loaded %d race definition(s).", racesByKey.size());
     }
 
@@ -861,7 +893,7 @@ public class RaceManager {
                 return;
             }
 
-            racesByKey.put(normalizeKey(definition.getId()), definition);
+            fileRacesByKey.put(normalizeKey(definition.getId()), definition);
             LOGGER.atInfo().log("Loaded race %s", definition.getId());
         } catch (IOException e) {
             LOGGER.atSevere().log("Failed to read race file %s: %s", path.getFileName(), e.getMessage());
@@ -1212,6 +1244,27 @@ public class RaceManager {
         } catch (NumberFormatException ignored) {
             return null;
         }
+    }
+
+    private void rebuildMergedRaceCache() {
+        racesByKey.clear();
+        racesByKey.putAll(fileRacesByKey);
+        racesByKey.putAll(externalRacesByKey);
+
+        rebuildAscensionIndexes();
+
+        if (!racesByKey.containsKey(normalizeKey(defaultRaceId)) && !racesByKey.isEmpty()) {
+            defaultRaceId = racesByKey.values().iterator().next().getId();
+            LOGGER.atInfo().log("Default race set to %s", defaultRaceId);
+        }
+    }
+
+    private String requireExternalRaceId(String id) {
+        String raceId = normalizeKey(id);
+        if (raceId == null || raceId.isBlank()) {
+            throw new IllegalArgumentException("race id cannot be null or blank");
+        }
+        return raceId;
     }
 
     /**

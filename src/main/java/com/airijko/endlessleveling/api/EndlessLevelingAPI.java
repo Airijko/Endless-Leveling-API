@@ -5,6 +5,8 @@ import com.airijko.endlessleveling.augments.Augment;
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentManager;
 import com.airijko.endlessleveling.augments.AugmentRegistry;
+import com.airijko.endlessleveling.classes.CharacterClassDefinition;
+import com.airijko.endlessleveling.classes.ClassManager;
 import com.airijko.endlessleveling.player.PlayerData;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.airijko.endlessleveling.leveling.LevelingManager;
@@ -12,11 +14,16 @@ import com.airijko.endlessleveling.leveling.MobLevelingManager;
 import com.airijko.endlessleveling.player.PlayerAttributeManager;
 import com.airijko.endlessleveling.player.PlayerDataManager;
 import com.airijko.endlessleveling.leveling.PartyManager;
+import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveManager;
+import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveSource;
+import com.airijko.endlessleveling.races.RaceDefinition;
 import com.airijko.endlessleveling.races.RaceManager;
 import com.airijko.endlessleveling.player.SkillManager;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
@@ -195,6 +202,34 @@ public final class EndlessLevelingAPI {
         return data != null ? data.getSecondaryClassId() : null;
     }
 
+    /** Resolve a registered race definition by id; returns null if missing. */
+    public RaceDefinition getRaceDefinition(String id) {
+        RaceManager raceManager = raceManager();
+        return raceManager == null ? null : raceManager.getRace(id);
+    }
+
+    /** Resolve a registered class definition by id; returns null if missing. */
+    public CharacterClassDefinition getClassDefinition(String id) {
+        ClassManager classManager = classManager();
+        return classManager == null ? null : classManager.getClass(id);
+    }
+
+    /**
+     * Return all currently loaded race definitions, including API-registered ones.
+     */
+    public Collection<RaceDefinition> getRaceDefinitions() {
+        RaceManager raceManager = raceManager();
+        return raceManager == null ? List.of() : List.copyOf(raceManager.getLoadedRaces());
+    }
+
+    /**
+     * Return all currently loaded class definitions, including API-registered ones.
+     */
+    public Collection<CharacterClassDefinition> getClassDefinitions() {
+        ClassManager classManager = classManager();
+        return classManager == null ? List.of() : List.copyOf(classManager.getLoadedClasses());
+    }
+
     /**
      * Underlying per-point config value for a skill attribute (from config.yml).
      */
@@ -366,6 +401,100 @@ public final class EndlessLevelingAPI {
         return definitionRemoved || factoryRemoved;
     }
 
+    /** Register a custom race definition. */
+    public boolean registerRace(RaceDefinition definition) {
+        return registerRace(definition, false);
+    }
+
+    /**
+     * Register a custom race definition.
+     * When replaceExisting is true, external registrations may override built-in
+     * or file-backed races using the same id.
+     */
+    public boolean registerRace(RaceDefinition definition, boolean replaceExisting) {
+        if (definition == null) {
+            return false;
+        }
+        RaceManager raceManager = raceManager();
+        String raceId = definition.getId();
+        if (raceManager == null || raceId == null || raceId.isBlank()) {
+            return false;
+        }
+        if (!raceManager.canRegisterExternalRace(raceId, replaceExisting)) {
+            return false;
+        }
+        raceManager.registerExternalRace(definition);
+        return true;
+    }
+
+    /** Remove a previously registered external race definition. */
+    public boolean unregisterRace(String id) {
+        RaceManager raceManager = raceManager();
+        return raceManager != null && raceManager.unregisterExternalRace(id);
+    }
+
+    /** Register a custom class definition. */
+    public boolean registerClass(CharacterClassDefinition definition) {
+        return registerClass(definition, false);
+    }
+
+    /**
+     * Register a custom class definition.
+     * When replaceExisting is true, external registrations may override built-in
+     * or file-backed classes using the same id.
+     */
+    public boolean registerClass(CharacterClassDefinition definition, boolean replaceExisting) {
+        if (definition == null) {
+            return false;
+        }
+        ClassManager classManager = classManager();
+        String classId = definition.getId();
+        if (classManager == null || classId == null || classId.isBlank()) {
+            return false;
+        }
+        if (!classManager.canRegisterExternalClass(classId, replaceExisting)) {
+            return false;
+        }
+        classManager.registerExternalClass(definition);
+        return true;
+    }
+
+    /** Remove a previously registered external class definition. */
+    public boolean unregisterClass(String id) {
+        ClassManager classManager = classManager();
+        return classManager != null && classManager.unregisterExternalClass(id);
+    }
+
+    // ----------------------
+    // Archetype Passive APIs
+    // ----------------------
+
+    /**
+     * Register a custom archetype passive source.
+     * The source will be called during snapshot generation for each player to
+     * provide
+     * additional passives. Use this to add conditional passives based on external
+     * criteria.
+     */
+    public boolean registerArchetypePassiveSource(ArchetypePassiveSource source) {
+        if (source == null) {
+            return false;
+        }
+        ArchetypePassiveManager manager = archetypePassiveManager();
+        return manager != null && manager.registerArchetypePassiveSource(source);
+    }
+
+    /**
+     * Unregister a previously registered custom archetype passive source.
+     */
+    public boolean unregisterArchetypePassiveSource(ArchetypePassiveSource source) {
+        if (source == null) {
+            return false;
+        }
+        ArchetypePassiveManager manager = archetypePassiveManager();
+        return manager != null && manager.unregisterArchetypePassiveSource(source);
+    }
+
     private PlayerData getData(UUID uuid) {
         PlayerDataManager playerDataManager = playerDataManager();
         return uuid == null || playerDataManager == null ? null : playerDataManager.get(uuid);
@@ -395,6 +524,11 @@ public final class EndlessLevelingAPI {
         return plugin != null ? plugin.getRaceManager() : null;
     }
 
+    private ClassManager classManager() {
+        EndlessLeveling plugin = plugin();
+        return plugin != null ? plugin.getClassManager() : null;
+    }
+
     private PlayerAttributeManager attributeManager() {
         EndlessLeveling plugin = plugin();
         return plugin != null ? plugin.getPlayerAttributeManager() : null;
@@ -413,5 +547,10 @@ public final class EndlessLevelingAPI {
     private AugmentManager augmentManager() {
         EndlessLeveling plugin = plugin();
         return plugin != null ? plugin.getAugmentManager() : null;
+    }
+
+    private ArchetypePassiveManager archetypePassiveManager() {
+        EndlessLeveling plugin = plugin();
+        return plugin != null ? plugin.getArchetypePassiveManager() : null;
     }
 }
