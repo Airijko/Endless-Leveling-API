@@ -39,8 +39,6 @@ public final class FrozenDomainAugment extends YamlAugment
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
     private static final long REAPPLY_GRACE_MILLIS = 1500L;
     private static final float MIN_MOVEMENT_MULTIPLIER = 0.0001F;
-    private static final float FREEZE_EFFECT_DURATION_SECONDS = 1.25F;
-    private static final String[] FREEZE_EFFECT_IDS = new String[] { "freeze", "Freeze" };
     private static final String[] SLOW_EFFECT_IDS = new String[] { "slowness", "slow" };
     private static final Map<String, ActiveFrozen> ACTIVE_FROST = new ConcurrentHashMap<>();
 
@@ -116,10 +114,7 @@ public final class FrozenDomainAugment extends YamlAugment
         boolean loggedMissingMovementSettings;
         boolean loggedMissingEffectController;
         boolean loggedMissingSlowEffectAsset;
-        boolean loggedMissingFreezeEffectAsset;
         boolean loggedEffectApplyFailure;
-        boolean freezeEffectApplied;
-        String freezeEffectId;
     }
 
     public FrozenDomainAugment(AugmentDefinition definition) {
@@ -242,7 +237,6 @@ public final class FrozenDomainAugment extends YamlAugment
         UUID sourceUuid = context.getPlayerData() != null ? context.getPlayerData().getUuid() : null;
         PartyManager partyManager = resolvePartyManager();
         UUID sourcePartyLeader = resolvePartyLeader(partyManager, sourceUuid);
-        EntityEffect freezeEffect = resolveFreezeEffect();
 
         int affectedTargets = 0;
         HashSet<Integer> visitedEntityIds = new HashSet<>();
@@ -280,7 +274,7 @@ public final class FrozenDomainAugment extends YamlAugment
             state.targetRef = targetRef;
             state.expiresAt = Math.min(activeUntil, now + REAPPLY_GRACE_MILLIS);
             state.slowPercent = slowPercent;
-            applySlowIfPossible(state, commandBuffer, targetRef, freezeEffect);
+            applySlowIfPossible(state, commandBuffer, targetRef);
             affectedTargets++;
         }
 
@@ -321,15 +315,12 @@ public final class FrozenDomainAugment extends YamlAugment
 
     private static void applySlowIfPossible(ActiveFrozen state,
             CommandBuffer<EntityStore> commandBuffer,
-            Ref<EntityStore> ref,
-            EntityEffect freezeEffect) {
+            Ref<EntityStore> ref) {
         if (state == null || commandBuffer == null || ref == null || state.slowPercent <= 0.0D) {
             return;
         }
 
         String key = keyFor(ref, commandBuffer);
-        applyFreezeEffect(state, commandBuffer, ref, key, freezeEffect);
-
         MovementManager movementManager = EntityRefUtil.tryGetComponent(commandBuffer,
                 ref,
                 MovementManager.getComponentType());
@@ -378,6 +369,9 @@ public final class FrozenDomainAugment extends YamlAugment
         if (playerRef != null && playerRef.isValid()) {
             movementManager.update(playerRef.getPacketHandler());
         }
+
+        // Always apply the visual slow effect in addition to the movement manager slow.
+        applySlowEffectFallback(state, commandBuffer, ref, key);
     }
 
     private static void clearSlowIfPossible(ActiveFrozen state,
@@ -388,7 +382,6 @@ public final class FrozenDomainAugment extends YamlAugment
         }
 
         String key = keyFor(ref, commandBuffer);
-        clearFreezeEffect(state, commandBuffer, ref);
         clearSlowEffectFallback(state, commandBuffer, ref, key);
 
         MovementManager movementManager = EntityRefUtil.tryGetComponent(commandBuffer,
@@ -411,75 +404,6 @@ public final class FrozenDomainAugment extends YamlAugment
         if (playerRef != null && playerRef.isValid()) {
             movementManager.update(playerRef.getPacketHandler());
         }
-    }
-
-    private static void applyFreezeEffect(ActiveFrozen state,
-            CommandBuffer<EntityStore> commandBuffer,
-            Ref<EntityStore> ref,
-            String key,
-            EntityEffect freezeEffect) {
-        if (state == null || commandBuffer == null || ref == null) {
-            return;
-        }
-
-        if (freezeEffect == null) {
-            if (!state.loggedMissingFreezeEffectAsset) {
-                LOGGER.atWarning().log(
-                        "Frozen Domain freeze effect unavailable: no freeze effect asset found key=%s target=%s",
-                        key,
-                        ref);
-                state.loggedMissingFreezeEffectAsset = true;
-            }
-            return;
-        }
-
-        EffectControllerComponent controller = EntityRefUtil.tryGetComponent(commandBuffer,
-                ref,
-                EffectControllerComponent.getComponentType());
-        if (controller == null) {
-            if (!state.loggedMissingEffectController) {
-                LOGGER.atWarning().log(
-                        "Frozen Domain freeze effect unavailable: EffectController missing key=%s target=%s",
-                        key,
-                        ref);
-                state.loggedMissingEffectController = true;
-            }
-            return;
-        }
-
-        boolean applied = controller.addEffect(ref,
-                freezeEffect,
-                FREEZE_EFFECT_DURATION_SECONDS,
-                OverlapBehavior.OVERWRITE,
-                commandBuffer);
-        if (applied) {
-            state.freezeEffectApplied = true;
-            state.freezeEffectId = freezeEffect.getId();
-        }
-    }
-
-    private static void clearFreezeEffect(ActiveFrozen state,
-            CommandBuffer<EntityStore> commandBuffer,
-            Ref<EntityStore> ref) {
-        if (state == null || commandBuffer == null || ref == null || !state.freezeEffectApplied
-                || state.freezeEffectId == null) {
-            return;
-        }
-
-        EffectControllerComponent controller = EntityRefUtil.tryGetComponent(commandBuffer,
-                ref,
-                EffectControllerComponent.getComponentType());
-        if (controller == null) {
-            return;
-        }
-
-        int idx = EntityEffect.getAssetMap().getIndex(state.freezeEffectId);
-        if (idx != Integer.MIN_VALUE) {
-            controller.removeEffect(ref, idx, commandBuffer);
-        }
-
-        state.freezeEffectApplied = false;
-        state.freezeEffectId = null;
     }
 
     private static void applySlowEffectFallback(ActiveFrozen state,
@@ -552,24 +476,6 @@ public final class FrozenDomainAugment extends YamlAugment
 
     private static EntityEffect resolveSlowEffect() {
         for (String candidate : SLOW_EFFECT_IDS) {
-            EntityEffect effect = EntityEffect.getAssetMap().getAsset(candidate);
-            if (effect != null) {
-                return effect;
-            }
-            effect = EntityEffect.getAssetMap().getAsset(candidate.toLowerCase());
-            if (effect != null) {
-                return effect;
-            }
-            effect = EntityEffect.getAssetMap().getAsset(candidate.toUpperCase());
-            if (effect != null) {
-                return effect;
-            }
-        }
-        return null;
-    }
-
-    private static EntityEffect resolveFreezeEffect() {
-        for (String candidate : FREEZE_EFFECT_IDS) {
             EntityEffect effect = EntityEffect.getAssetMap().getAsset(candidate);
             if (effect != null) {
                 return effect;
