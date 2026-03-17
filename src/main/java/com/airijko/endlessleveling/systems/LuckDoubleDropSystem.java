@@ -36,6 +36,24 @@ public class LuckDoubleDropSystem {
     private final PassiveManager passiveManager;
     private final Set<UUID> suppressedPlayers = ConcurrentHashMap.newKeySet();
     private final ConcurrentMap<UUID, Long> recentOreBreaks = new ConcurrentHashMap<>();
+    /**
+     * Tracks item IDs released from any player's inventory. This blocks staged-item
+     * exploits where players (or their allies) drop loot before a kill and pick it
+     * up during the kill window.
+     */
+    private final ConcurrentMap<String, Long> globallyDroppedItems = new ConcurrentHashMap<>();
+    /**
+     * Tracks recent container/chest breaks per player for strict anti-container
+     * gating.
+     */
+    private final ConcurrentMap<UUID, Long> recentContainerBreaks = new ConcurrentHashMap<>();
+    /** How long to remember a released item ID for staged-item detection. */
+    private static final long PLAYER_DROP_TRACK_TTL_MS = 30_000L;
+    /**
+     * Strict guard window after breaking a container where mob-drop luck is
+     * blocked.
+     */
+    private static final long CONTAINER_BREAK_GUARD_MS = 12_000L;
 
     public LuckDoubleDropSystem(@Nonnull PlayerDataManager playerDataManager,
             @Nonnull PassiveManager passiveManager) {
@@ -50,6 +68,15 @@ public class LuckDoubleDropSystem {
      */
     public void markRecentOreBreak(@Nonnull UUID uuid) {
         recentOreBreaks.put(uuid, System.currentTimeMillis());
+    }
+
+    /**
+     * Record that a player broke a loot container (chest/barrel/etc.). Mob-drop
+     * luck is temporarily blocked to prevent container loot from piggy-backing on a
+     * kill window.
+     */
+    public void markRecentContainerBreak(@Nonnull UUID uuid) {
+        recentContainerBreaks.put(uuid, System.currentTimeMillis());
     }
 
     /**
@@ -76,6 +103,10 @@ public class LuckDoubleDropSystem {
         if (!(transaction instanceof ItemStackTransaction stackTransaction)) {
             return;
         }
+
+        // Track items the player releases from their inventory so we can detect
+        // pre-staged items later. Must run before the addedAmount guard below.
+        trackRemovedItems(uuid, stackTransaction);
 
         ItemStack sourceStack = resolveSourceStack(stackTransaction);
         if (sourceStack == null || ItemStack.isEmpty(sourceStack)) {
@@ -219,12 +250,32 @@ public class LuckDoubleDropSystem {
             return Optional.of(DropType.ORE);
         }
 
-        boolean hasMobBudget = passiveManager.hasMobDropStack(uuid);
-        if (!hasMobBudget && passiveManager.hasRecentMobKill(uuid)) {
-            passiveManager.openMobDropWindow(uuid);
-            hasMobBudget = passiveManager.hasMobDropStack(uuid);
+        // Ores are only eligible from mining markers, never from mob fallback.
+        if (isOreStack(stack)) {
+            return Optional.empty();
         }
-        return hasMobBudget ? Optional.of(DropType.MOB) : Optional.empty();
+
+        if (!passiveManager.hasMobDropStack(uuid)) {
+            return Optional.empty();
+        }
+
+        // Reject items staged on the ground before the mob kill (from any player).
+        long killTimestamp = passiveManager.getLastMobKillMillis(uuid);
+        if (isItemStagedByAnyPlayer(stack, killTimestamp)) {
+            LOGGER.atFine().log(
+                    "Luck double-drop blocked for %s: item '%s' was released before mob kill (staged item exploit)",
+                    uuid, stack.getItemId());
+            return Optional.empty();
+        }
+
+        if (isContainerBreakGuardActive(uuid)) {
+            LOGGER.atFine().log(
+                    "Luck double-drop blocked for %s: recent container break guard active (item=%s)",
+                    uuid, stack.getItemId());
+            return Optional.empty();
+        }
+
+        return Optional.of(DropType.MOB);
     }
 
     private boolean isRecentOreDrop(@Nonnull UUID uuid, @Nonnull ItemStack stack) {
@@ -251,6 +302,76 @@ public class LuckDoubleDropSystem {
             }
         }
         return false;
+    }
+
+    /**
+     * Records item IDs leaving any player's inventory for staged-item detection.
+     */
+    private void trackRemovedItems(@Nonnull UUID uuid, @Nonnull ItemStackTransaction transaction) {
+        long now = System.currentTimeMillis();
+        for (ItemStackSlotTransaction slot : transaction.getSlotTransactions()) {
+            ItemStack before = slot.getSlotBefore();
+            if (before == null || ItemStack.isEmpty(before)) {
+                continue;
+            }
+            String itemId = normalizeItemId(before.getItemId());
+            if (itemId == null || itemId.isBlank()) {
+                continue;
+            }
+            ItemStack after = slot.getSlotAfter();
+            int beforeQty = before.getQuantity();
+            int afterQty = after == null ? 0 : after.getQuantity();
+            if (afterQty < beforeQty) {
+                // Items left a player's inventory in this slot.
+                globallyDroppedItems.put(itemId, now);
+            }
+        }
+    }
+
+    /**
+     * Returns {@code true} when the item ID was removed from any player's
+     * inventory before the current mob kill, indicating it may have been
+     * pre-staged on the ground to exploit the luck double-drop window.
+     */
+    private boolean isItemStagedByAnyPlayer(@Nonnull ItemStack stack, long killTimestamp) {
+        if (killTimestamp <= 0L) {
+            return false;
+        }
+        String itemId = normalizeItemId(stack.getItemId());
+        if (itemId == null || itemId.isBlank()) {
+            return false;
+        }
+        Long releaseTime = globallyDroppedItems.get(itemId);
+        if (releaseTime == null) {
+            return false;
+        }
+        long now = System.currentTimeMillis();
+        if (now - releaseTime > PLAYER_DROP_TRACK_TTL_MS) {
+            globallyDroppedItems.remove(itemId);
+            return false;
+        }
+        // Block if the item was removed from inventory before the mob was killed.
+        return releaseTime < killTimestamp;
+    }
+
+    private boolean isContainerBreakGuardActive(@Nonnull UUID uuid) {
+        Long breakTime = recentContainerBreaks.get(uuid);
+        if (breakTime == null) {
+            return false;
+        }
+        long now = System.currentTimeMillis();
+        if (now - breakTime > CONTAINER_BREAK_GUARD_MS) {
+            recentContainerBreaks.remove(uuid);
+            return false;
+        }
+        return true;
+    }
+
+    private String normalizeItemId(String itemId) {
+        if (itemId == null || itemId.isBlank()) {
+            return null;
+        }
+        return itemId.trim().toLowerCase(Locale.ROOT);
     }
 
     private String formatDropName(@Nonnull ItemStack stack) {

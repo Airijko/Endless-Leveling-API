@@ -75,6 +75,11 @@ public class PassiveManager {
         return System.currentTimeMillis() - lastKill <= LUCK_MOB_DROP_WINDOW_MS;
     }
 
+    public long getLastMobKillMillis(@Nonnull UUID uuid) {
+        PassiveRuntimeState state = runtimeStates.get(uuid);
+        return state == null ? 0L : state.getLastMobKillMillis();
+    }
+
     public boolean hasMobDropStack(@Nonnull UUID uuid) {
         PassiveRuntimeState state = runtimeStates.get(uuid);
         if (state == null) {

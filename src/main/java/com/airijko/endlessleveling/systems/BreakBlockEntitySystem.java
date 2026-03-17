@@ -47,8 +47,18 @@ public class BreakBlockEntitySystem extends EntityEventSystem<EntityStore, Break
         if (blockId == null || blockId.isBlank())
             return;
 
-        if (blockId.toUpperCase(Locale.ROOT).contains("ORE")) {
+        String normalized = blockId.toUpperCase(Locale.ROOT);
+
+        if (normalized.contains("ORE")) {
             luckSystem.markRecentOreBreak(uuid);
+            return;
+        }
+
+        if (normalized.contains("CHEST")
+                || normalized.contains("BARREL")
+                || normalized.contains("CRATE")
+                || normalized.contains("CONTAINER")) {
+            luckSystem.markRecentContainerBreak(uuid);
         }
     }
 }
