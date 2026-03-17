@@ -7,6 +7,10 @@ pom.xml.versionsBackup
 pom.xml.next
 release.properties
 
+# Gradle
+.gradle/
+build/
+
 # IDE
 .idea/
 *.iml

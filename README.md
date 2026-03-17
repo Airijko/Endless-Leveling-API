@@ -1,17 +1,15 @@
 # Endlessleveling
 
-
-
 ## Building
 
 ```bash
-./mvnw clean package
+./gradlew clean build
 ```
 
 Or on Windows:
 
 ```cmd
-mvnw.cmd clean package
+.\\gradlew.bat clean build
 ```
 
 ## Development
@@ -19,7 +17,7 @@ mvnw.cmd clean package
 ### Run Server with Plugin
 
 ```bash
-./mvnw clean package -Prun-server
+./gradlew runServer
 ```
 
 This will build your plugin, copy it to the server's mods folder, and start the Hytale server.
@@ -27,18 +25,29 @@ This will build your plugin, copy it to the server's mods folder, and start the 
 ### Install Plugin Only (Hot Reload)
 
 ```bash
-./mvnw clean package -Pinstall-plugin
+./gradlew installPlugin
 ```
 
 This builds and copies the plugin to the server without starting it.
 
 ## Requirements
 
-- **JDK 25** - Required for Maven and compilation
-- Maven 3.9.9 or newer (included via wrapper)
+- **JDK 25** - Required for Gradle and compilation
+- Gradle wrapper (included), or Gradle 8.10+ if you prefer a global install
 - Hytale Server installation
 
-The Hytale installation path is configured in `pom.xml` properties.
+The Hytale installation path is configured in gradle.properties.
+
+## Git Bash note
+
+In Git Bash, run wrapper scripts with ./ prefix:
+
+```bash
+./gradlew clean build
+./gradlew.bat clean build
+```
+
+Do not use .\ in Git Bash. That syntax is for cmd/PowerShell.
 
 ## License
 

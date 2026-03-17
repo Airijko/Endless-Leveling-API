@@ -1,0 +1,89 @@
+plugins {
+    id 'java'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+}
+
+group = 'com.airijko'
+version = '6.0.5-BETA'
+description = 'EndlessLevelingHytale'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
+def hytaleInstallPath = providers.gradleProperty('hytaleInstallPath')
+        .orElse('C:/Users/jojoj/AppData/Roaming/Hytale/install/release/package/game/latest')
+def hytaleToolkitPath = providers.gradleProperty('hytaleToolkitPath')
+        .orElse('C:/Users/jojoj/AppData/Local/Hytale-Toolkit')
+def hytaleJdkPath = providers.gradleProperty('hytaleJdkPath')
+        .orElse('C:/Program Files/Eclipse Adoptium/jdk-25.0.1.8-hotspot')
+
+repositories {
+    maven {
+        url = uri('https://maven.hytale-mods.dev/releases')
+    }
+    mavenCentral()
+}
+
+dependencies {
+    compileOnly files("${hytaleInstallPath.get()}/Server/HytaleServer.jar")
+    implementation 'org.yaml:snakeyaml:2.2'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = 25
+    options.encoding = 'UTF-8'
+}
+
+jar {
+    manifest {
+        attributes(
+                'Plugin-Group': project.group,
+                'Plugin-Name': project.name,
+                'Plugin-Version': project.version
+        )
+    }
+}
+
+shadowJar {
+    archiveClassifier.set('')
+    manifest {
+        attributes(
+                'Plugin-Group': project.group,
+                'Plugin-Name': project.name,
+                'Plugin-Version': project.version
+        )
+    }
+}
+
+tasks.named('build') {
+    dependsOn tasks.named('shadowJar')
+}
+
+tasks.register('installPlugin', Copy) {
+    group = 'build'
+    description = 'Builds and copies plugin to Hytale Server/mods folder'
+    dependsOn tasks.named('shadowJar')
+    from(tasks.named('shadowJar').flatMap { it.archiveFile })
+    into(file("${hytaleInstallPath.get()}/Server/mods"))
+}
+
+tasks.register('runServer', Exec) {
+    group = 'application'
+    description = 'Builds, installs plugin, and starts Hytale server'
+    dependsOn tasks.named('installPlugin')
+    workingDir file("${hytaleInstallPath.get()}/Server")
+    commandLine(
+            "${hytaleJdkPath.get()}/bin/java",
+            '--enable-native-access=ALL-UNNAMED',
+            '-jar',
+            'HytaleServer.jar',
+            '--assets',
+            "${hytaleInstallPath.get()}/Assets.zip",
+            '--assets',
+            "${projectDir}/src/main/resources",
+            '--allow-op'
+    )
+}
