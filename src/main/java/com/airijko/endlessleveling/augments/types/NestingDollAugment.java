@@ -59,7 +59,7 @@ public final class NestingDollAugment extends YamlAugment
         }
 
         AugmentState state = context.getRuntimeState().getState(ID);
-        if (isWithinStackGrantImmunity(state, System.currentTimeMillis())) {
+        if (state.getStacks() < maxRevives && isWithinStackGrantImmunity(state, System.currentTimeMillis())) {
             return 0f;
         }
         return context.getIncomingDamage();
@@ -86,7 +86,7 @@ public final class NestingDollAugment extends YamlAugment
 
         AugmentState state = context.getRuntimeState().getState(ID);
         long now = System.currentTimeMillis();
-        if (isWithinStackGrantImmunity(state, now)) {
+        if (state.getStacks() < maxRevives && isWithinStackGrantImmunity(state, now)) {
             LOGGER.atFine().log(
                     "[NestingDoll] Immunity window blocked duplicate lethal event: player=%s stacks=%d hp=%.2f incoming=%.2f elapsedMs=%d",
                     context.getRuntimeState().getPlayerId(),
@@ -173,6 +173,7 @@ public final class NestingDollAugment extends YamlAugment
         if (hp.get() <= 0f) {
             long now = System.currentTimeMillis();
             if (state.getStacks() > 0
+                    && state.getStacks() < maxRevives
                     && state.getLastProc() > 0L
                     && now - state.getLastProc() <= POST_PROC_SURVIVAL_WINDOW_MS) {
                 float recoveredMax = applyMaxHealthPenalty(context.getStatMap(), state);
