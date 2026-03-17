@@ -203,32 +203,68 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                                                                                 .valueOf(attrName);
                                                                 int current = getPreviewLevel(type);
                                                                 if ("add".equals(op)) {
-                                                                        int toAdd = Math.min(amount,
-                                                                                        previewSkillPoints);
-                                                                        if (toAdd > 0) {
-                                                                                previewLevels.put(type,
-                                                                                                current + toAdd);
-                                                                                previewSkillPoints -= toAdd;
+                                                                        if (isVanguardCritAttributeLocked(playerData,
+                                                                                        type)) {
                                                                                 player.sendMessage(Message.raw(tr(
-                                                                                                "ui.skills.message.added",
-                                                                                                "Added {0} point(s) to {1}",
-                                                                                                toAdd,
+                                                                                                "ui.skills.error.vanguard_crit_locked",
+                                                                                                "Vanguard cannot invest in {0}.",
                                                                                                 type.name()))
-                                                                                                .color("#00ff00"));
+                                                                                                .color("#ff0000"));
                                                                                 LOGGER.atInfo().log(
-                                                                                                "Added %d to %s for player %s",
-                                                                                                toAdd, type.name(),
-                                                                                                playerRef.getUuid());
-                                                                                refreshUI = true;
+                                                                                                "Blocked Vanguard add for %s attribute %s",
+                                                                                                playerRef.getUuid(),
+                                                                                                type.name());
                                                                         } else {
-                                                                                Message response = Message.raw(tr(
-                                                                                                "ui.skills.error.not_enough_points",
-                                                                                                "Not enough skill points"))
-                                                                                                .color("#ff0000");
-                                                                                player.sendMessage(response);
-                                                                                LOGGER.atSevere().log(
-                                                                                                "Not enough skill points for add: %s",
-                                                                                                playerRef.getUuid());
+                                                                                int requested = Math.min(amount,
+                                                                                                previewSkillPoints);
+                                                                                int toAdd = clampAddByEffectiveCap(
+                                                                                                playerData,
+                                                                                                type,
+                                                                                                current,
+                                                                                                requested);
+                                                                                if (toAdd > 0) {
+                                                                                        previewLevels.put(type,
+                                                                                                        current + toAdd);
+                                                                                        previewSkillPoints -= toAdd;
+                                                                                        player.sendMessage(Message
+                                                                                                        .raw(tr(
+                                                                                                                        "ui.skills.message.added",
+                                                                                                                        "Added {0} point(s) to {1}",
+                                                                                                                        toAdd,
+                                                                                                                        type.name()))
+                                                                                                        .color("#00ff00"));
+                                                                                        LOGGER.atInfo().log(
+                                                                                                        "Added %d to %s for player %s",
+                                                                                                        toAdd,
+                                                                                                        type.name(),
+                                                                                                        playerRef.getUuid());
+                                                                                        refreshUI = true;
+                                                                                } else {
+                                                                                        boolean capReached = requested > 0
+                                                                                                        && isEffectiveCapLimitedAttribute(
+                                                                                                                        type);
+                                                                                        Message response = capReached
+                                                                                                        ? Message.raw(tr(
+                                                                                                                        "ui.skills.error.effective_cap_reached",
+                                                                                                                        "{0} is already at its effective cap.",
+                                                                                                                        type.name()))
+                                                                                                                        .color("#ff0000")
+                                                                                                        : Message.raw(tr(
+                                                                                                                        "ui.skills.error.not_enough_points",
+                                                                                                                        "Not enough skill points"))
+                                                                                                                        .color("#ff0000");
+                                                                                        player.sendMessage(response);
+                                                                                        if (capReached) {
+                                                                                                LOGGER.atInfo().log(
+                                                                                                                "Blocked add at effective cap for %s attribute %s",
+                                                                                                                playerRef.getUuid(),
+                                                                                                                type.name());
+                                                                                        } else {
+                                                                                                LOGGER.atSevere().log(
+                                                                                                                "Not enough skill points for add: %s",
+                                                                                                                playerRef.getUuid());
+                                                                                        }
+                                                                                }
                                                                         }
                                                                 } else if ("sub".equals(op)) {
                                                                         int originalLevel = Math.max(
@@ -237,6 +273,10 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                                                                                                         type));
                                                                         int availableToSub = Math.max(0,
                                                                                         current - originalLevel);
+                                                                        if (isVanguardCritAttributeLocked(playerData,
+                                                                                        type)) {
+                                                                                availableToSub = Math.max(0, current);
+                                                                        }
                                                                         int overflowRefund = 0;
                                                                         boolean overflowOnlyAttribute = type == SkillAttributeType.PRECISION
                                                                                         || type == SkillAttributeType.DEFENSE;
@@ -443,7 +483,22 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                         @Nonnull PlayerData playerData) {
                 previewLevels.forEach(playerData::setPlayerSkillAttributeLevel);
                 playerData.setSkillPoints(previewSkillPoints);
+
+                if (skillManager != null) {
+                        SkillManager.VanguardCritRestrictionResult restrictionResult = skillManager
+                                        .enforceVanguardCritRestrictions(playerData);
+                        if (restrictionResult.adjusted()) {
+                                LOGGER.atInfo().log(
+                                                "Applied Vanguard crit restriction refund for %s (total=%d precision=%d ferocity=%d)",
+                                                playerRef.getUuid(),
+                                                restrictionResult.totalRefunded(),
+                                                restrictionResult.precisionRefunded(),
+                                                restrictionResult.ferocityRefunded());
+                        }
+                }
+
                 playerDataManager.save(playerData);
+                syncPreviewFromPlayerData(playerData);
                 if (ref != null && store != null) {
                         boolean applied = skillManager.applyAllSkillModifiers(ref, store, playerData);
                         if (!applied) {
@@ -495,6 +550,61 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                         return 0;
                 }
                 return Math.max(0, skillManager.getOverflowRefundablePoints(playerData, type, currentLevel));
+        }
+
+        private int clampAddByEffectiveCap(@Nonnull PlayerData playerData,
+                        @Nonnull SkillAttributeType type,
+                        int currentLevel,
+                        int requestedPoints) {
+                int requested = Math.max(0, requestedPoints);
+                if (requested <= 0 || !isEffectiveCapLimitedAttribute(type) || skillManager == null) {
+                        return requested;
+                }
+
+                int safeCurrentLevel = Math.max(0, currentLevel);
+                int accepted = 0;
+                double metricAtCurrent = getEffectiveCapMetric(playerData, type, safeCurrentLevel);
+                for (int i = 0; i < requested; i++) {
+                        int candidateLevel = safeCurrentLevel + accepted + 1;
+                        double metricAtCandidate = getEffectiveCapMetric(playerData, type, candidateLevel);
+                        if (metricAtCandidate <= metricAtCurrent + 1e-6D) {
+                                break;
+                        }
+                        accepted++;
+                        metricAtCurrent = metricAtCandidate;
+                }
+                return accepted;
+        }
+
+        private boolean isEffectiveCapLimitedAttribute(@Nonnull SkillAttributeType type) {
+                return type == SkillAttributeType.PRECISION || type == SkillAttributeType.DEFENSE;
+        }
+
+        private double getEffectiveCapMetric(@Nonnull PlayerData playerData,
+                        @Nonnull SkillAttributeType type,
+                        int previewLevel) {
+                return switch (type) {
+                        case PRECISION -> {
+                                SkillManager.PrecisionBreakdown breakdown = skillManager.getPrecisionBreakdown(
+                                                playerData,
+                                                previewLevel);
+                                yield breakdown != null ? breakdown.totalPercent() : 0.0D;
+                        }
+                        case DEFENSE -> {
+                                SkillManager.DefenseBreakdown breakdown = skillManager.getDefenseBreakdown(playerData,
+                                                previewLevel);
+                                yield breakdown != null ? (breakdown.resistance() * 100.0D) : 0.0D;
+                        }
+                        default -> 0.0D;
+                };
+        }
+
+        private boolean isVanguardCritAttributeLocked(@Nonnull PlayerData playerData,
+                        @Nonnull SkillAttributeType type) {
+                if (skillManager == null) {
+                        return false;
+                }
+                return skillManager.isVanguardCritAttributeLocked(playerData, type);
         }
 
         private String formatResourceDisplay(double total, String label) {

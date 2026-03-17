@@ -38,6 +38,9 @@ public class AugmentUnlockManager {
     private static final String DEFENSE_STAT_KEY = "defense";
     private static final String STRENGTH_STAT_KEY = "strength";
     private static final String SORCERY_STAT_KEY = "sorcery";
+    private static final String PRECISION_STAT_KEY = "precision";
+    private static final String FEROCITY_STAT_KEY = "ferocity";
+    private static final String VANGUARD_BASE_CLASS_ID = "vanguard";
     private static final Set<String> DEFENSE_COMMON_BLOCKED_PRIMARY_CLASSES = Set.of(
             "mage",
             "arcanist",
@@ -117,12 +120,13 @@ public class AugmentUnlockManager {
         LOGGER.atFiner().log("ensureUnlocks: player=%s level=%d rules=%d", playerData.getPlayerName(),
                 playerData.getLevel(), unlockRules.size());
 
+        boolean updated = sanitizeVanguardCommonCritSelections(playerData);
+
         int playerLevel = playerData.getLevel();
         Map<PassiveTier, Integer> eligibleByTier = buildEligibleByTier(playerData, playerLevel);
         Set<String> excludedAugmentIds = collectOwnedAugmentIds(playerData);
         excludedAugmentIds.addAll(collectArchetypeBlockedAugmentIds(playerData));
 
-        boolean updated = false;
         for (Map.Entry<PassiveTier, Integer> entry : eligibleByTier.entrySet()) {
             PassiveTier tier = entry.getKey();
             int eligibleMilestones = entry.getValue();
@@ -493,6 +497,7 @@ public class AugmentUnlockManager {
 
         DamageBuildFocus damageBuildFocus = resolveDamageBuildFocus(playerData);
         boolean blockDefenseOffer = shouldBlockDefenseCommonOffer(playerData);
+        boolean blockCritOffers = shouldBlockVanguardCritCommonOffers(playerData);
         List<String> statKeys = new ArrayList<>();
         for (String key : buffs.keySet()) {
             if (key != null && !key.isBlank()) {
@@ -504,6 +509,10 @@ public class AugmentUnlockManager {
                     continue;
                 }
                 if (blockDefenseOffer && DEFENSE_STAT_KEY.equals(normalized)) {
+                    continue;
+                }
+                if (blockCritOffers
+                        && (PRECISION_STAT_KEY.equals(normalized) || FEROCITY_STAT_KEY.equals(normalized))) {
                     continue;
                 }
                 statKeys.add(normalized);
@@ -571,6 +580,71 @@ public class AugmentUnlockManager {
     private boolean shouldBlockDefenseCommonOffer(PlayerData playerData) {
         String basePrimaryClassId = normalizePrimaryClassBaseId(playerData);
         return basePrimaryClassId != null && DEFENSE_COMMON_BLOCKED_PRIMARY_CLASSES.contains(basePrimaryClassId);
+    }
+
+    private boolean shouldBlockVanguardCritCommonOffers(PlayerData playerData) {
+        String basePrimaryClassId = normalizePrimaryClassBaseId(playerData);
+        return VANGUARD_BASE_CLASS_ID.equals(basePrimaryClassId);
+    }
+
+    private boolean sanitizeVanguardCommonCritSelections(PlayerData playerData) {
+        if (!shouldBlockVanguardCritCommonOffers(playerData)) {
+            return false;
+        }
+
+        boolean updated = false;
+        int removedSelections = 0;
+        for (Map.Entry<String, String> selectedEntry : playerData.getSelectedAugmentsSnapshot().entrySet()) {
+            String selectionKey = selectedEntry.getKey();
+            String selectedAugmentId = selectedEntry.getValue();
+            CommonAugment.CommonStatOffer offer = CommonAugment.parseStatOfferId(selectedAugmentId);
+            if (offer == null || !isBlockedVanguardCritCommonStat(offer.attributeKey())) {
+                continue;
+            }
+            playerData.setSelectedAugmentForTier(selectionKey, null);
+            removedSelections++;
+            updated = true;
+        }
+
+        List<String> currentCommonOffers = new ArrayList<>(
+                playerData.getAugmentOffersForTier(PassiveTier.COMMON.name()));
+        if (!currentCommonOffers.isEmpty()) {
+            List<String> filteredCommonOffers = new ArrayList<>(currentCommonOffers.size());
+            int removedOffers = 0;
+            for (String offerId : currentCommonOffers) {
+                CommonAugment.CommonStatOffer offer = CommonAugment.parseStatOfferId(offerId);
+                if (offer != null && isBlockedVanguardCritCommonStat(offer.attributeKey())) {
+                    removedOffers++;
+                    continue;
+                }
+                filteredCommonOffers.add(offerId);
+            }
+            if (removedOffers > 0) {
+                playerData.setAugmentOffersForTier(PassiveTier.COMMON.name(), filteredCommonOffers);
+                updated = true;
+                LOGGER.atInfo().log(
+                        "Removed %d blocked Vanguard COMMON offers for %s (precision/ferocity)",
+                        removedOffers,
+                        playerData.getPlayerName());
+            }
+        }
+
+        if (removedSelections > 0) {
+            LOGGER.atInfo().log(
+                    "Refunded %d blocked Vanguard COMMON selections for %s (precision/ferocity)",
+                    removedSelections,
+                    playerData.getPlayerName());
+        }
+
+        return updated;
+    }
+
+    private boolean isBlockedVanguardCritCommonStat(String attributeKey) {
+        if (attributeKey == null || attributeKey.isBlank()) {
+            return false;
+        }
+        String normalized = attributeKey.trim().toLowerCase(Locale.ROOT);
+        return PRECISION_STAT_KEY.equals(normalized) || FEROCITY_STAT_KEY.equals(normalized);
     }
 
     private DamageBuildFocus resolveDamageBuildFocus(PlayerData playerData) {

@@ -106,6 +106,20 @@ public class PlayerDataListener {
             playerDataManager.save(playerData);
         }
 
+        if (skillManager != null) {
+            SkillManager.VanguardCritRestrictionResult restrictionResult = skillManager
+                    .enforceVanguardCritRestrictions(playerData);
+            if (restrictionResult.adjusted()) {
+                LOGGER.atInfo().log(
+                        "Applied Vanguard crit restriction refund on login for %s (total=%d precision=%d ferocity=%d)",
+                        playerRef.getUsername(),
+                        restrictionResult.totalRefunded(),
+                        restrictionResult.precisionRefunded(),
+                        restrictionResult.ferocityRefunded());
+                playerDataManager.save(playerData);
+            }
+        }
+
         if (skillManager != null && entityRef != null && store != null) {
             try {
                 boolean applied = skillManager.applyAllSkillModifiers(entityRef, store, playerData);

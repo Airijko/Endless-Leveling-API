@@ -43,6 +43,7 @@ public class SkillManager {
     private static final double DEFAULT_DISCIPLINE_XP_BONUS_PER_LEVEL_PERCENT = 0.5D;
     private static final double DEFAULT_FLOW_PER_LEVEL = 0.5D;
     private static final String COMMON_AUGMENT_SOURCE_PREFIX = "common_";
+    private static final String VANGUARD_BASE_CLASS_ID = "vanguard";
     private static final String CLASS_INNATE_CAPS_PATH = "classes.innate_attribute_gain_level_caps";
     private static final String DEFENSE_CAPS_PATH = "defense_caps";
     private static final String DEFENSE_CAPS_DEFAULT_CATEGORY_PATH = DEFENSE_CAPS_PATH + ".default_category";
@@ -392,6 +393,63 @@ public class SkillManager {
         return runtime.getAttributeBonusBySourcePrefix(attributeType,
                 System.currentTimeMillis(),
                 COMMON_AUGMENT_SOURCE_PREFIX);
+    }
+
+    private double getVanguardBlockedCommonCritBonus(PlayerData playerData, SkillAttributeType attributeType) {
+        if (!isVanguardCritAttributeLocked(playerData, attributeType)) {
+            return 0.0D;
+        }
+        return getCommonAugmentAttributeBonus(playerData, attributeType);
+    }
+
+    public boolean isVanguardCritAttributeLocked(PlayerData playerData, SkillAttributeType attributeType) {
+        if (playerData == null || attributeType == null) {
+            return false;
+        }
+        if (attributeType != SkillAttributeType.PRECISION && attributeType != SkillAttributeType.FEROCITY) {
+            return false;
+        }
+        return isVanguardPrimaryClass(playerData);
+    }
+
+    public VanguardCritRestrictionResult enforceVanguardCritRestrictions(PlayerData playerData) {
+        if (playerData == null || !isVanguardPrimaryClass(playerData)) {
+            return VanguardCritRestrictionResult.none();
+        }
+
+        int precisionLevel = Math.max(0, playerData.getPlayerSkillAttributeLevel(SkillAttributeType.PRECISION));
+        int ferocityLevel = Math.max(0, playerData.getPlayerSkillAttributeLevel(SkillAttributeType.FEROCITY));
+        if (precisionLevel <= 0 && ferocityLevel <= 0) {
+            return VanguardCritRestrictionResult.none();
+        }
+
+        playerData.setPlayerSkillAttributeLevel(SkillAttributeType.PRECISION, 0);
+        playerData.setPlayerSkillAttributeLevel(SkillAttributeType.FEROCITY, 0);
+
+        int refunded = precisionLevel + ferocityLevel;
+        if (refunded > 0) {
+            playerData.setSkillPoints(playerData.getSkillPoints() + refunded);
+        }
+
+        return new VanguardCritRestrictionResult(refunded, precisionLevel, ferocityLevel);
+    }
+
+    private boolean isVanguardPrimaryClass(PlayerData playerData) {
+        String basePrimaryClassId = normalizePrimaryClassBaseId(
+                playerData == null ? null : playerData.getPrimaryClassId());
+        return VANGUARD_BASE_CLASS_ID.equals(basePrimaryClassId);
+    }
+
+    private String normalizePrimaryClassBaseId(String primaryClassId) {
+        if (primaryClassId == null || primaryClassId.isBlank()) {
+            return null;
+        }
+        String normalized = primaryClassId.trim().toLowerCase(Locale.ROOT);
+        int separatorIndex = normalized.indexOf('_');
+        if (separatorIndex > 0) {
+            return normalized.substring(0, separatorIndex);
+        }
+        return normalized;
     }
 
     private record AttributeConfig(boolean enabled, double perLevel) {
@@ -865,12 +923,19 @@ public class SkillManager {
         if (playerData == null) {
             return new PrecisionBreakdown(0.0f, 0.0f, 0.0f, 0.0f);
         }
-        int precisionLevel = overrideLevel >= 0 ? overrideLevel
-                : playerData.getPlayerSkillAttributeLevel(SkillAttributeType.PRECISION);
+        boolean critLocked = isVanguardCritAttributeLocked(playerData, SkillAttributeType.PRECISION);
+        int precisionLevel = critLocked
+                ? 0
+                : (overrideLevel >= 0 ? overrideLevel
+                        : playerData.getPlayerSkillAttributeLevel(SkillAttributeType.PRECISION));
         double perPointChance = getSkillAttributeConfigValue(SkillAttributeType.PRECISION);
         float racePercent = (float) attributeManager.getRaceAttribute(playerData, SkillAttributeType.PRECISION, 0.0D);
         double innateBonus = getInnateAttributeBonus(playerData, SkillAttributeType.PRECISION);
-        double augmentBonus = getAugmentAttributeBonus(playerData, SkillAttributeType.PRECISION);
+        double augmentBonus = getAugmentAttributeBonus(playerData, SkillAttributeType.PRECISION)
+                - getVanguardBlockedCommonCritBonus(playerData, SkillAttributeType.PRECISION);
+        if (augmentBonus < 0.0D) {
+            augmentBonus = 0.0D;
+        }
         float skillPercent = (float) ((precisionLevel * perPointChance) + innateBonus + augmentBonus);
         float rawTotalPercent = racePercent + skillPercent;
         float totalPercent = Math.min(100.0f, rawTotalPercent);
@@ -900,12 +965,19 @@ public class SkillManager {
         if (playerData == null) {
             return new FerocityBreakdown(0.0f, 0.0f, 0.0f);
         }
-        int ferocityLevel = overrideLevel >= 0 ? overrideLevel
-                : playerData.getPlayerSkillAttributeLevel(SkillAttributeType.FEROCITY);
+        boolean critLocked = isVanguardCritAttributeLocked(playerData, SkillAttributeType.FEROCITY);
+        int ferocityLevel = critLocked
+                ? 0
+                : (overrideLevel >= 0 ? overrideLevel
+                        : playerData.getPlayerSkillAttributeLevel(SkillAttributeType.FEROCITY));
         double perPointFerocity = getSkillAttributeConfigValue(SkillAttributeType.FEROCITY);
         float raceValue = (float) attributeManager.getRaceAttribute(playerData, SkillAttributeType.FEROCITY, 0.0D);
         double innateBonus = getInnateAttributeBonus(playerData, SkillAttributeType.FEROCITY);
-        double augmentBonus = getAugmentAttributeBonus(playerData, SkillAttributeType.FEROCITY);
+        double augmentBonus = getAugmentAttributeBonus(playerData, SkillAttributeType.FEROCITY)
+                - getVanguardBlockedCommonCritBonus(playerData, SkillAttributeType.FEROCITY);
+        if (augmentBonus < 0.0D) {
+            augmentBonus = 0.0D;
+        }
         float skillValue = (float) ((ferocityLevel * perPointFerocity) + innateBonus + augmentBonus);
         return new FerocityBreakdown(raceValue, skillValue, raceValue + skillValue);
     }
@@ -1019,6 +1091,16 @@ public class SkillManager {
         }
     }
 
+    public record VanguardCritRestrictionResult(int totalRefunded, int precisionRefunded, int ferocityRefunded) {
+        public static VanguardCritRestrictionResult none() {
+            return new VanguardCritRestrictionResult(0, 0, 0);
+        }
+
+        public boolean adjusted() {
+            return totalRefunded > 0;
+        }
+    }
+
     // Defense / skill modifiers
     public float calculatePlayerDefense(PlayerData playerData) {
         if (playerData == null)
@@ -1063,12 +1145,14 @@ public class SkillManager {
         double nonCommonAugmentBonus = augmentBonusTotal - commonLinearDefenseBonus;
         float defenseAttributeValue = (float) (skillValue + innateValue + nonCommonAugmentBonus);
         float scaledValue = defenseAttributeValue * raceMultiplier;
-        double curvedResistancePercent = applyDefenseCurve(scaledValue, resolvePrimaryDefenseMaxReduction(playerData));
+        double classCapPercent = resolvePrimaryDefenseMaxReduction(playerData);
+        double curvedResistancePercent = applyDefenseCurve(scaledValue, classCapPercent);
         double commonLinearResistancePercent = Math.min(DEFENSE_MAX_REDUCTION, commonLinearDefenseBonus);
         float curvedResistance = (float) (curvedResistancePercent / 100.0D);
         float commonLinearResistance = (float) (commonLinearResistancePercent / 100.0D);
-        float combinedResistance = 1.0f - (1.0f - curvedResistance + commonLinearResistance);
-        float resistance = Math.max(0.0f, Math.min(1.0f, combinedResistance));
+        float classCapResistance = (float) Math.max(0.0D, Math.min(1.0D, classCapPercent / 100.0D));
+        float combinedResistance = curvedResistance + commonLinearResistance;
+        float resistance = Math.max(0.0f, Math.min(classCapResistance, combinedResistance));
         return new DefenseBreakdown(raceMultiplier,
                 skillValue,
                 innateValue,

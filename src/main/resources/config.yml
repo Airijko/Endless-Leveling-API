@@ -97,7 +97,7 @@ defense_caps:
   default_category: "default" # fallback when class category is missing/unknown
   categories:
     default:
-      max_reduction: 80.0
+      max_reduction: 50.0
     glass_cannon:
       max_reduction: 50.0
     fighter:
