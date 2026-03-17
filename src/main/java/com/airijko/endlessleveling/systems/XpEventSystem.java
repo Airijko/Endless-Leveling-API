@@ -202,7 +202,13 @@ public class XpEventSystem extends DeathSystems.OnDeathSystem {
             double partyShareRange = levelingManager != null
                     ? levelingManager.getPartyXpShareRange()
                     : 25.0D;
-            partyManager.handleXpGainInRange(playerUuid, xpAfterKillRules, partyShareRange);
+            partyManager.handleMobKillXpGainInRange(
+                    playerUuid,
+                    xpAfterKillRules,
+                    partyShareRange,
+                    mobLevel,
+                    baseXp,
+                    mobIsBlacklisted);
         } else {
             levelingManager.addXp(playerUuid, xpAfterKillRules);
         }

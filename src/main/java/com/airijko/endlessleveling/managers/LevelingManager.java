@@ -47,6 +47,7 @@ public class LevelingManager {
     private int xpMaxDifference;
     private double xpBelowRangeMultiplier;
     private double xpAboveRangeMultiplier;
+    private double xpAdditiveMinimum;
     private XpScalingMode xpScalingMode;
     private double xpScalingBonusAtMax;
     private double xpScalingMinMultiplier;
@@ -113,6 +114,7 @@ public class LevelingManager {
         xpMaxDifference = Math.max(0, getInt("Mob_Leveling.Experience.XP_Level_Range.Max_Difference", 10));
         xpBelowRangeMultiplier = getDouble("Mob_Leveling.Experience.XP_Level_Range.Below_Range.Multiplier", 0.0);
         xpAboveRangeMultiplier = getDouble("Mob_Leveling.Experience.XP_Level_Range.Above_Range.Multiplier", 0.0);
+        xpAdditiveMinimum = Math.max(0.0D, getDouble("Mob_Leveling.Experience.Additive_Minimum_XP", 50.0D));
         xpScalingMode = XpScalingMode.fromString(getString("Mob_Leveling.Experience.Scaling.Mode", "NONE"));
         xpScalingBonusAtMax = Math.max(0.0, getDouble("Mob_Leveling.Experience.Scaling.BonusAtMax", 0.0));
         xpScalingMinMultiplier = clampMultiplier(getDouble("Mob_Leveling.Experience.Scaling.MinMultiplier", 0.1));
@@ -532,6 +534,13 @@ public class LevelingManager {
             }
             relativeDiff = diffForScaling;
         }
+
+        // Always add the configured flat amount before scaling so max-difference
+        // multipliers can affect it as well.
+        if (xpAdditiveMinimum > 0.0D) {
+            adjustedXp += xpAdditiveMinimum;
+        }
+
         if (adjustedXp <= 0.0) {
             if (blockedForBeingTooHigh)
                 notifyXpSuppressed(player, mobLevel, levelKnown, XpSuppressionReason.PLAYER_TOO_HIGH);

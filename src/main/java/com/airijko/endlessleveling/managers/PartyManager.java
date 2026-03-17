@@ -193,6 +193,130 @@ public class PartyManager {
     }
 
     /**
+     * Shared XP for mob kills with per-member rule evaluation.
+     *
+     * Killer receives their pre-bonus XP after mob kill rules have been applied.
+     * Party members receive a share of the mob base XP, then run through their own
+     * mob kill rules before personal bonuses are applied by LevelingManager#addXp.
+     */
+    public void handleMobKillXpGainInRange(@Nonnull UUID sourcePlayerUuid,
+            double killerXpAfterKillRules,
+            double maxDistance,
+            int mobLevel,
+            double baseMobXp,
+            boolean skipLevelRangeChecks) {
+        if (killerXpAfterKillRules <= 0.0D) {
+            return;
+        }
+
+        // Killer always gets full XP for their own kill.
+        levelingManager.addXp(sourcePlayerUuid, killerXpAfterKillRules);
+
+        if (!levelingManager.isPartySharedXpEnabled()) {
+            return;
+        }
+
+        double memberShareMultiplier = levelingManager.getPartyMemberSharedXpMultiplier();
+        if (memberShareMultiplier <= 0.0D) {
+            return;
+        }
+
+        PlayerRef sourceRef = Universe.get().getPlayer(sourcePlayerUuid);
+        if (sourceRef == null || !sourceRef.isValid()) {
+            return;
+        }
+
+        Ref<EntityStore> sourceEntity = sourceRef.getReference();
+        Store<EntityStore> sourceStore = sourceEntity != null ? sourceEntity.getStore() : null;
+        Vector3d sourcePos = resolvePosition(sourceEntity, sourceStore);
+
+        PartySnapshot snapshot = partyPro.getPartyByPlayer(sourcePlayerUuid);
+        if (snapshot == null || snapshot.members().isEmpty() || sourcePos == null) {
+            return;
+        }
+
+        double radius = Math.max(0.0D, maxDistance);
+        double radiusSq = radius <= 0.0D ? 0.0D : radius * radius;
+
+        List<UUID> candidates = partyPro.getOnlineMembers(snapshot);
+        if (candidates.isEmpty()) {
+            candidates = new ArrayList<>(snapshot.members());
+        }
+
+        List<UUID> nearbyMembers = new ArrayList<>();
+        for (UUID member : candidates) {
+            if (sourcePlayerUuid.equals(member)) {
+                continue;
+            }
+            PlayerRef memberRef = Universe.get().getPlayer(member);
+            if (memberRef == null || !memberRef.isValid()) {
+                continue;
+            }
+            Ref<EntityStore> memberEntity = memberRef.getReference();
+            if (memberEntity == null) {
+                continue;
+            }
+            if (sourceStore != null && memberEntity.getStore() != sourceStore) {
+                continue;
+            }
+            Vector3d pos = resolvePosition(memberEntity, memberEntity.getStore());
+            if (pos == null) {
+                continue;
+            }
+            if (radiusSq > 0.0D) {
+                double dx = pos.getX() - sourcePos.getX();
+                double dy = pos.getY() - sourcePos.getY();
+                double dz = pos.getZ() - sourcePos.getZ();
+                double distSq = (dx * dx) + (dy * dy) + (dz * dz);
+                if (distSq > radiusSq) {
+                    continue;
+                }
+            }
+            nearbyMembers.add(member);
+        }
+
+        if (nearbyMembers.isEmpty()) {
+            return;
+        }
+
+        double memberBaseShareXp = Math.max(0.0D, baseMobXp) * memberShareMultiplier;
+        if (memberBaseShareXp <= 0.0D) {
+            return;
+        }
+
+        int grantedCount = 0;
+        for (UUID member : nearbyMembers) {
+            PlayerData memberData = playerDataManager.get(member);
+            if (memberData == null) {
+                continue;
+            }
+
+            double memberXpAfterKillRules = levelingManager.applyMobKillXpRules(
+                    memberData,
+                    mobLevel,
+                    memberBaseShareXp,
+                    skipLevelRangeChecks);
+            if (memberXpAfterKillRules <= 0.0D) {
+                continue;
+            }
+
+            levelingManager.addXp(member, memberXpAfterKillRules);
+            grantedCount++;
+        }
+
+        LOGGER.atInfo().log(
+                "Party shared mob XP: killer=%s killerKillRulesXP=%.3f mobBaseXP=%.3f mobLevel=%d membersInRange=%d membersGranted=%d memberShare=%.2f%% radius=%.1f",
+                sourcePlayerUuid,
+                killerXpAfterKillRules,
+                baseMobXp,
+                mobLevel,
+                nearbyMembers.size(),
+                grantedCount,
+                memberShareMultiplier * 100.0D,
+                maxDistance);
+    }
+
+    /**
      * Push custom HUD text to PartyPro: level plus race and primary class.
      */
     public void updatePartyHudCustomText(@Nonnull PlayerData data) {
