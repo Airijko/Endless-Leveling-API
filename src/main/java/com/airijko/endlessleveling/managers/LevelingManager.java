@@ -53,6 +53,9 @@ public class LevelingManager {
     private double globalXpMultiplier;
     private boolean playerBasedMode;
     private int playerBasedOffset;
+    private boolean partySharedXpEnabled;
+    private double partySharedXpRange;
+    private double partyMemberSharedXpMultiplier;
     private boolean prestigeEnabled;
     private Integer prestigeCap;
     private int prestigeLevelCapIncrease;
@@ -94,6 +97,15 @@ public class LevelingManager {
         String levelSourceMode = getString("Mob_Leveling.Level_Source.Mode", "FIXED").toUpperCase(Locale.ROOT);
         playerBasedMode = "PLAYER".equals(levelSourceMode);
         playerBasedOffset = getInt("Mob_Leveling.Level_Source.Player_Based.Offset", 0);
+
+        partySharedXpEnabled = getBoolean("party_xp_share.enabled", true);
+        partySharedXpRange = Math.max(0.0D, getDouble("party_xp_share.range", 25.0D));
+        double configuredMemberShare = getDouble("party_xp_share.member_share_percent", 20.0D);
+        if (configuredMemberShare >= 0.0D && configuredMemberShare <= 1.0D) {
+            // Allow either 20 (percent) or 0.20 (fraction) formats.
+            configuredMemberShare *= 100.0D;
+        }
+        partyMemberSharedXpMultiplier = Math.max(0.0D, configuredMemberShare / 100.0D);
 
         experienceRulesEnabled = getBoolean("Mob_Leveling.Experience.Enabled", true);
         globalXpMultiplier = getDouble("Mob_Leveling.Experience.Global_XP_Multiplier", 1.0);
@@ -464,6 +476,18 @@ public class LevelingManager {
         }
         int diff = Math.abs(recipientLevel - sourceLevel);
         return diff <= xpMaxDifference;
+    }
+
+    public boolean isPartySharedXpEnabled() {
+        return partySharedXpEnabled;
+    }
+
+    public double getPartyXpShareRange() {
+        return partySharedXpRange;
+    }
+
+    public double getPartyMemberSharedXpMultiplier() {
+        return partyMemberSharedXpMultiplier;
     }
 
     public double applyMobKillXpRules(PlayerData player, int mobLevel, double baseXpAmount,

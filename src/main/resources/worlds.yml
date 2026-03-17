@@ -4,15 +4,6 @@
 World_Overrides:
   # Global defaults for all matching worlds unless overridden below.
   Global:
-    Level_Source:
-      Party_System:
-        Enabled: true
-        Level_Calculation: "AVERAGE"
-        # Used for party XP sharing and TIERS party-level adaptation.
-        XP_Share_Range: 25
-        Dominant_Party_Resolution:
-          Mode: "MOST_MEMBERS"
-        Max_Internal_Level_Gap: 999
     # Applies to all mobs in this world override, including Mob_Overrides entries.
     Mob_Scaling:
       Mob_Level_Scaling_Difference:

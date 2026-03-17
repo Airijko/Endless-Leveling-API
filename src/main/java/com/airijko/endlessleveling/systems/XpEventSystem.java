@@ -199,8 +199,8 @@ public class XpEventSystem extends DeathSystems.OnDeathSystem {
         LOGGER.atInfo().log("Granting XP (before party share): %f to player %s", xpAfterKillRules, playerUuid);
 
         if (partyManager != null) {
-            double partyShareRange = mobLevelingManager != null
-                    ? mobLevelingManager.getPartyXpShareRange(store)
+            double partyShareRange = levelingManager != null
+                    ? levelingManager.getPartyXpShareRange()
                     : 25.0D;
             partyManager.handleXpGainInRange(playerUuid, xpAfterKillRules, partyShareRange);
         } else {

@@ -9,6 +9,14 @@ skillPointsPerLevel: 5
 
 player_level_cap: 75
 
+# Party XP sharing (simple shared model).
+# - Killer always receives 100% of kill XP (solo logic/bonuses still apply).
+# - Each in-range party member receives this percentage of the killer's base kill XP.
+party_xp_share:
+  enabled: true
+  range: 25
+  member_share_percent: 20
+
 # Optional cap controls for class innate attribute gains.
 # These caps apply to class INNATE_ATTRIBUTE_GAIN scaling only.
 # - default: fallback cap for attributes not explicitly listed.
@@ -64,6 +72,13 @@ prestige:
       prestige_levels: [5, 15]
 
 Mob_Leveling:
+  Level_Source:
+    Party_System:
+      Enabled: true
+      Level_Calculation: "AVERAGE"
+      Dominant_Party_Resolution:
+        Mode: "MOST_MEMBERS"
+      Max_Internal_Level_Gap: 999
   Experience:
     Enabled: true
     Scaling:

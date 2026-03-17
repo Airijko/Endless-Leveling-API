@@ -28,15 +28,6 @@ public class PartyManager {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
 
-    // Bonus weight for the player who dealt the killing blow.
-    private static final double KILLER_BONUS_WEIGHT = 0.35D;
-    // Level gap where we begin scaling down XP share for outliers.
-    private static final int LEVEL_GAP_SOFT = 5;
-    // Level gap where scaling bottoms out.
-    private static final int LEVEL_GAP_HARD = 15;
-    // Minimum multiplier applied to a party member far outside the killer's level.
-    private static final double LEVEL_GAP_MIN_MULT = 0.25D;
-
     private final PlayerDataManager playerDataManager;
     private final LevelingManager levelingManager;
     private final PartyProBridge partyPro;
@@ -99,48 +90,38 @@ public class PartyManager {
     }
 
     /**
-     * Split XP among party members with weighting. Falls back to self if PartyPro
-     * is unavailable.
+     * Shared XP distribution without range filtering. Killer always receives 100%
+     * of the kill XP, and eligible party members each receive the configured member
+     * share.
      */
     public void handleXpGain(@Nonnull UUID sourcePlayerUuid, double totalXp) {
-        if (totalXp <= 0.0D) {
-            return;
-        }
-
-        PartySnapshot snapshot = partyPro.getPartyByPlayer(sourcePlayerUuid);
-        if (snapshot == null || snapshot.members().isEmpty()) {
-            levelingManager.addXp(sourcePlayerUuid, totalXp);
-            return;
-        }
-
-        List<UUID> recipients = partyPro.getOnlineMembers(snapshot);
-        if (recipients.isEmpty()) {
-            recipients = new ArrayList<>(snapshot.members());
-        }
-
-        if (recipients.isEmpty()) {
-            levelingManager.addXp(sourcePlayerUuid, totalXp);
-            return;
-        }
-
-        distributeWeightedXp(recipients, sourcePlayerUuid, totalXp);
-
-        LOGGER.atInfo().log("Distributed %f XP from %s among %d PartyPro members.",
-                totalXp, sourcePlayerUuid, recipients.size());
+        handleXpGainInRange(sourcePlayerUuid, totalXp, 0.0D);
     }
 
     /**
-     * XP sharing with a range limit using PartyPro membership. Only online party
-     * members in the same world and within maxDistance of the source receive XP.
+     * Shared XP with range filtering using PartyPro membership. Killer always keeps
+     * the full kill XP. Each in-range eligible party member receives a fixed share
+     * of the killer's kill XP (configured in leveling.yml).
      */
     public void handleXpGainInRange(@Nonnull UUID sourcePlayerUuid, double totalXp, double maxDistance) {
         if (totalXp <= 0.0D) {
             return;
         }
 
+        // Killer always gets full XP for their own kill.
+        levelingManager.addXp(sourcePlayerUuid, totalXp);
+
+        if (!levelingManager.isPartySharedXpEnabled()) {
+            return;
+        }
+
+        double memberShareMultiplier = levelingManager.getPartyMemberSharedXpMultiplier();
+        if (memberShareMultiplier <= 0.0D) {
+            return;
+        }
+
         PlayerRef sourceRef = Universe.get().getPlayer(sourcePlayerUuid);
         if (sourceRef == null || !sourceRef.isValid()) {
-            levelingManager.addXp(sourcePlayerUuid, totalXp);
             return;
         }
 
@@ -150,7 +131,6 @@ public class PartyManager {
 
         PartySnapshot snapshot = partyPro.getPartyByPlayer(sourcePlayerUuid);
         if (snapshot == null || snapshot.members().isEmpty() || sourcePos == null) {
-            levelingManager.addXp(sourcePlayerUuid, totalXp);
             return;
         }
 
@@ -164,6 +144,9 @@ public class PartyManager {
 
         List<UUID> nearbyMembers = new ArrayList<>();
         for (UUID member : candidates) {
+            if (sourcePlayerUuid.equals(member)) {
+                continue;
+            }
             PlayerRef memberRef = Universe.get().getPlayer(member);
             if (memberRef == null || !memberRef.isValid()) {
                 continue;
@@ -192,15 +175,21 @@ public class PartyManager {
         }
 
         if (nearbyMembers.isEmpty()) {
-            levelingManager.addXp(sourcePlayerUuid, totalXp);
             return;
         }
 
-        distributeWeightedXp(nearbyMembers, sourcePlayerUuid, totalXp);
+        double memberShareXp = totalXp * memberShareMultiplier;
+        if (memberShareXp <= 0.0D) {
+            return;
+        }
+
+        for (UUID member : nearbyMembers) {
+            levelingManager.addXp(member, memberShareXp);
+        }
 
         LOGGER.atInfo().log(
-                "Distributed %f XP in-range from %s among %d PartyPro members (radius=%.1f).",
-                totalXp, sourcePlayerUuid, nearbyMembers.size(), maxDistance);
+                "Party shared XP: killer=%s baseXP=%.3f membersInRange=%d memberShare=%.2f%% radius=%.1f",
+                sourcePlayerUuid, totalXp, nearbyMembers.size(), memberShareMultiplier * 100.0D, maxDistance);
     }
 
     /**
@@ -223,80 +212,6 @@ public class PartyManager {
 
         // No secondary line when classes are hidden.
         partyPro.setCustomText(uuid, text1, null);
-    }
-
-    /**
-     * Distribute XP using a weighted share: killer gets a bonus, and members far
-     * outside the killer's level range get scaled down to reduce boosting.
-     */
-    private void distributeWeightedXp(List<UUID> recipients, UUID killerUuid, double totalXp) {
-        if (recipients == null || recipients.isEmpty() || totalXp <= 0.0D) {
-            levelingManager.addXp(killerUuid, totalXp);
-            return;
-        }
-
-        PlayerData killerData = playerDataManager.get(killerUuid);
-        List<UUID> eligible = new ArrayList<>(recipients.size());
-        double totalWeight = 0.0D;
-        List<Share> shares = new ArrayList<>(recipients.size());
-
-        for (UUID member : recipients) {
-            PlayerData memberData = playerDataManager.get(member);
-
-            // Respect anti-exploit XP level window from config.yml.
-            if (killerData != null && memberData != null
-                    && !levelingManager.isWithinXpShareRange(memberData.getLevel(), killerData.getLevel())) {
-                continue;
-            }
-
-            eligible.add(member);
-            double weight = 1.0D;
-
-            if (killerUuid.equals(member)) {
-                weight += KILLER_BONUS_WEIGHT;
-            }
-
-            if (killerData != null && memberData != null) {
-                int levelDiff = Math.abs(memberData.getLevel() - killerData.getLevel());
-                weight *= resolveGapMultiplier(levelDiff);
-            }
-
-            shares.add(new Share(member, weight));
-            totalWeight += weight;
-        }
-
-        if (eligible.isEmpty()) {
-            levelingManager.addXp(killerUuid, totalXp);
-            return;
-        }
-
-        if (totalWeight <= 0.0D) {
-            double equalShare = totalXp / eligible.size();
-            for (UUID member : eligible) {
-                levelingManager.addXp(member, equalShare);
-            }
-            return;
-        }
-
-        for (Share share : shares) {
-            double portion = (share.weight / totalWeight) * totalXp;
-            levelingManager.addXp(share.member, portion);
-        }
-    }
-
-    private double resolveGapMultiplier(int levelDiff) {
-        if (levelDiff <= LEVEL_GAP_SOFT) {
-            return 1.0D;
-        }
-        if (levelDiff >= LEVEL_GAP_HARD) {
-            return LEVEL_GAP_MIN_MULT;
-        }
-        double t = (double) (levelDiff - LEVEL_GAP_SOFT) / (double) (LEVEL_GAP_HARD - LEVEL_GAP_SOFT);
-        double scaled = 1.0D - t * (1.0D - LEVEL_GAP_MIN_MULT);
-        return Math.max(LEVEL_GAP_MIN_MULT, scaled);
-    }
-
-    private record Share(UUID member, double weight) {
     }
 
     private static String safeLabel(String value) {
