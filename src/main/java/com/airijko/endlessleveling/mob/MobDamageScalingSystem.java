@@ -1,6 +1,7 @@
-package com.airijko.endlessleveling.systems;
+package com.airijko.endlessleveling.mob;
 
-import com.airijko.endlessleveling.managers.MobLevelingManager;
+import com.airijko.endlessleveling.leveling.MobLevelingManager;
+import com.airijko.endlessleveling.leveling.XpKillCreditTracker;
 import com.airijko.endlessleveling.passives.type.ArmyOfTheDeadPassive.SummonInheritedStats;
 import com.airijko.endlessleveling.passives.type.ArmyOfTheDeadPassive;
 import com.airijko.endlessleveling.util.EntityRefUtil;

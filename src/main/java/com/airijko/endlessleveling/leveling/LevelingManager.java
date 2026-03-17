@@ -1,7 +1,7 @@
-package com.airijko.endlessleveling.managers;
+package com.airijko.endlessleveling.leveling;
 
 import com.airijko.endlessleveling.EndlessLeveling;
-import com.airijko.endlessleveling.data.PlayerData;
+import com.airijko.endlessleveling.player.PlayerData;
 import com.airijko.endlessleveling.util.Lang;
 import com.airijko.endlessleveling.enums.ArchetypePassiveType;
 import com.airijko.endlessleveling.enums.PassiveTier;
@@ -26,6 +26,12 @@ import java.util.Locale;
 import java.util.UUID;
 
 import org.bson.BsonString;
+import com.airijko.endlessleveling.player.PlayerDataManager;
+import com.airijko.endlessleveling.player.SkillManager;
+import com.airijko.endlessleveling.passives.PassiveManager;
+import com.airijko.endlessleveling.managers.EventHookManager;
+import com.airijko.endlessleveling.managers.PluginFilesManager;
+import com.airijko.endlessleveling.managers.ConfigManager;
 
 public class LevelingManager {
 

@@ -1,6 +1,6 @@
-package com.airijko.endlessleveling.managers;
+package com.airijko.endlessleveling.races;
 
-import com.airijko.endlessleveling.data.PlayerData;
+import com.airijko.endlessleveling.player.PlayerData;
 import com.airijko.endlessleveling.races.RaceAscensionDefinition;
 import com.airijko.endlessleveling.races.RaceAscensionEligibility;
 import com.airijko.endlessleveling.races.RaceAscensionPathLink;
@@ -48,6 +48,9 @@ import java.util.stream.Stream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import com.airijko.endlessleveling.managers.ConfigManager;
+import com.airijko.endlessleveling.managers.PluginFilesManager;
+import com.airijko.endlessleveling.managers.VersionRegistry;
 
 public class RaceManager {
 

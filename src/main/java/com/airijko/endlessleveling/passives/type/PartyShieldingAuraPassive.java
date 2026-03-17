@@ -1,11 +1,11 @@
 package com.airijko.endlessleveling.passives.type;
 
 import com.airijko.endlessleveling.EndlessLeveling;
-import com.airijko.endlessleveling.data.PlayerData;
+import com.airijko.endlessleveling.player.PlayerData;
 import com.airijko.endlessleveling.enums.ArchetypePassiveType;
-import com.airijko.endlessleveling.managers.PartyManager;
-import com.airijko.endlessleveling.managers.PassiveManager;
-import com.airijko.endlessleveling.managers.PassiveManager.PassiveRuntimeState;
+import com.airijko.endlessleveling.leveling.PartyManager;
+import com.airijko.endlessleveling.passives.PassiveManager;
+import com.airijko.endlessleveling.passives.PassiveManager.PassiveRuntimeState;
 import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveSnapshot;
 import com.airijko.endlessleveling.races.RacePassiveDefinition;
 import com.airijko.endlessleveling.util.EntityRefUtil;

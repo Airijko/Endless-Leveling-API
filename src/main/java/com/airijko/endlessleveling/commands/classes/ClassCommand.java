@@ -2,9 +2,9 @@ package com.airijko.endlessleveling.commands.classes;
 
 import com.airijko.endlessleveling.classes.CharacterClassDefinition;
 import com.airijko.endlessleveling.commands.subcommands.OpenPageSubCommand;
-import com.airijko.endlessleveling.data.PlayerData;
-import com.airijko.endlessleveling.managers.ClassManager;
-import com.airijko.endlessleveling.managers.PlayerDataManager;
+import com.airijko.endlessleveling.player.PlayerData;
+import com.airijko.endlessleveling.classes.ClassManager;
+import com.airijko.endlessleveling.player.PlayerDataManager;
 import com.airijko.endlessleveling.ui.ClassesUIPage;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;

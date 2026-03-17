@@ -1,9 +1,9 @@
 package com.airijko.endlessleveling.passives.type;
 
-import com.airijko.endlessleveling.data.PlayerData;
+import com.airijko.endlessleveling.player.PlayerData;
 import com.airijko.endlessleveling.enums.ArchetypePassiveType;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
-import com.airijko.endlessleveling.managers.SkillManager;
+import com.airijko.endlessleveling.player.SkillManager;
 import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveSnapshot;
 import com.airijko.endlessleveling.races.RacePassiveDefinition;
 import com.airijko.endlessleveling.util.EntityRefUtil;

@@ -8,7 +8,7 @@ import com.airijko.endlessleveling.augments.AugmentRuntimeManager.AugmentRuntime
 import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
 import com.airijko.endlessleveling.augments.YamlAugment;
-import com.airijko.endlessleveling.data.PlayerData;
+import com.airijko.endlessleveling.player.PlayerData;
 import com.airijko.endlessleveling.util.EntityRefUtil;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;

@@ -2,9 +2,9 @@ package com.airijko.endlessleveling.commands.subcommands;
 
 import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.augments.AugmentUnlockManager;
-import com.airijko.endlessleveling.data.PlayerData;
-import com.airijko.endlessleveling.managers.LevelingManager;
-import com.airijko.endlessleveling.managers.PlayerDataManager;
+import com.airijko.endlessleveling.player.PlayerData;
+import com.airijko.endlessleveling.leveling.LevelingManager;
+import com.airijko.endlessleveling.player.PlayerDataManager;
 import com.airijko.endlessleveling.ui.PlayerHud;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;

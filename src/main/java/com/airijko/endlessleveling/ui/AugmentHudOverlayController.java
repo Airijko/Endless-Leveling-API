@@ -14,7 +14,7 @@ import com.airijko.endlessleveling.augments.types.PhaseRushAugment;
 import com.airijko.endlessleveling.augments.types.ProtectiveBubbleAugment;
 import com.airijko.endlessleveling.augments.types.UndyingRageAugment;
 import com.airijko.endlessleveling.enums.PassiveCategory;
-import com.airijko.endlessleveling.managers.PassiveManager;
+import com.airijko.endlessleveling.passives.PassiveManager;
 import com.airijko.endlessleveling.passives.type.PartyShieldingAuraPassive;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;

@@ -1,14 +1,14 @@
 package com.airijko.endlessleveling.ui;
 
 import com.airijko.endlessleveling.EndlessLeveling;
-import com.airijko.endlessleveling.data.PlayerData;
+import com.airijko.endlessleveling.player.PlayerData;
 import com.airijko.endlessleveling.enums.ArchetypePassiveType;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.airijko.endlessleveling.enums.themes.AttributeTheme;
 import com.airijko.endlessleveling.enums.themes.EvolutionRequirementTheme;
 import com.airijko.endlessleveling.enums.themes.EvolutionStatusTheme;
-import com.airijko.endlessleveling.managers.PlayerDataManager;
-import com.airijko.endlessleveling.managers.RaceManager;
+import com.airijko.endlessleveling.player.PlayerDataManager;
+import com.airijko.endlessleveling.races.RaceManager;
 import com.airijko.endlessleveling.races.RaceAscensionDefinition;
 import com.airijko.endlessleveling.races.RaceAscensionEligibility;
 import com.airijko.endlessleveling.races.RaceAscensionRequirements;

@@ -1,4 +1,4 @@
-package com.airijko.endlessleveling.systems;
+package com.airijko.endlessleveling.leveling;
 
 import com.airijko.endlessleveling.passives.type.ArmyOfTheDeadPassive;
 import com.airijko.endlessleveling.util.EntityRefUtil;

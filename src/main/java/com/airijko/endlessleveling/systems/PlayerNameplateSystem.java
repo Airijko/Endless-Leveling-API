@@ -1,8 +1,8 @@
 package com.airijko.endlessleveling.systems;
 
 import com.airijko.endlessleveling.compatibility.NameplateBuilderCompatibility;
-import com.airijko.endlessleveling.data.PlayerData;
-import com.airijko.endlessleveling.managers.PlayerDataManager;
+import com.airijko.endlessleveling.player.PlayerData;
+import com.airijko.endlessleveling.player.PlayerDataManager;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;

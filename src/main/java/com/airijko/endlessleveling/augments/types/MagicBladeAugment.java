@@ -6,7 +6,7 @@ import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
 import com.airijko.endlessleveling.augments.YamlAugment;
 import com.airijko.endlessleveling.enums.ClassWeaponType;
-import com.airijko.endlessleveling.managers.SkillManager;
+import com.airijko.endlessleveling.player.SkillManager;
 
 import java.util.Map;
 

@@ -1,10 +1,10 @@
-package com.airijko.endlessleveling.managers;
+package com.airijko.endlessleveling.player;
 
 import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
 import com.airijko.endlessleveling.augments.types.GlassCannonAugment;
-import com.airijko.endlessleveling.data.PlayerData;
+import com.airijko.endlessleveling.player.PlayerData;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.hypixel.hytale.component.ComponentAccessor;
 import com.hypixel.hytale.component.Ref;
@@ -19,6 +19,9 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import javax.annotation.Nonnull;
 import java.util.Map;
+import com.airijko.endlessleveling.races.RaceManager;
+import com.airijko.endlessleveling.classes.ClassManager;
+import com.airijko.endlessleveling.managers.ConfigManager;
 
 /**
  * Centralizes computation of player attributes by merging the live Hytale

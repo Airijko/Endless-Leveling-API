@@ -6,7 +6,7 @@ import com.airijko.endlessleveling.augments.AugmentRuntimeManager.AugmentRuntime
 import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
 import com.airijko.endlessleveling.augments.YamlAugment;
-import com.airijko.endlessleveling.managers.SkillManager;
+import com.airijko.endlessleveling.player.SkillManager;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue;
 import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;

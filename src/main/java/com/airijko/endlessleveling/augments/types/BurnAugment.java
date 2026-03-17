@@ -9,7 +9,7 @@ import com.airijko.endlessleveling.augments.AugmentValueReader;
 import com.airijko.endlessleveling.augments.YamlAugment;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.airijko.endlessleveling.systems.PlayerCombatSystem;
-import com.airijko.endlessleveling.managers.PartyManager;
+import com.airijko.endlessleveling.leveling.PartyManager;
 import com.airijko.endlessleveling.util.EntityRefUtil;
 import com.hypixel.hytale.builtin.mounts.NPCMountComponent;
 import com.hypixel.hytale.component.CommandBuffer;

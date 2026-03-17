@@ -3,9 +3,9 @@ package com.airijko.endlessleveling.commands.races;
 import javax.annotation.Nonnull;
 
 import com.airijko.endlessleveling.EndlessLeveling;
-import com.airijko.endlessleveling.data.PlayerData;
-import com.airijko.endlessleveling.managers.PlayerDataManager;
-import com.airijko.endlessleveling.managers.RaceManager;
+import com.airijko.endlessleveling.player.PlayerData;
+import com.airijko.endlessleveling.player.PlayerDataManager;
+import com.airijko.endlessleveling.races.RaceManager;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
 import com.hypixel.hytale.server.core.command.system.basecommands.AbstractPlayerCommand;

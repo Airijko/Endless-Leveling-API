@@ -1,9 +1,9 @@
-package com.airijko.endlessleveling.managers;
+package com.airijko.endlessleveling.passives;
 
 import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
-import com.airijko.endlessleveling.data.PlayerData;
+import com.airijko.endlessleveling.player.PlayerData;
 import com.airijko.endlessleveling.enums.ArchetypePassiveType;
 import com.airijko.endlessleveling.enums.PassiveType;
 import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveManager;
@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import com.airijko.endlessleveling.managers.ConfigManager;
+import com.airijko.endlessleveling.managers.PluginFilesManager;
 
 /**
  * Handles player passives that scale automatically with player level.

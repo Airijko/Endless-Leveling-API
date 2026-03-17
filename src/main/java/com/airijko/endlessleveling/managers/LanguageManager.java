@@ -1,7 +1,7 @@
 package com.airijko.endlessleveling.managers;
 
 import com.airijko.endlessleveling.EndlessLeveling;
-import com.airijko.endlessleveling.data.PlayerData;
+import com.airijko.endlessleveling.player.PlayerData;
 import com.hypixel.hytale.logger.HytaleLogger;
 import org.yaml.snakeyaml.Yaml;
 

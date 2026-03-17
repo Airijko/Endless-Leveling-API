@@ -1,6 +1,6 @@
 package com.airijko.endlessleveling.systems;
 
-import com.airijko.endlessleveling.managers.MobLevelingManager;
+import com.airijko.endlessleveling.leveling.MobLevelingManager;
 import com.airijko.endlessleveling.util.EntityRefUtil;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;

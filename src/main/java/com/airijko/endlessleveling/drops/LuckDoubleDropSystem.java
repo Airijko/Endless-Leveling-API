@@ -1,8 +1,8 @@
-package com.airijko.endlessleveling.systems;
+package com.airijko.endlessleveling.drops;
 
-import com.airijko.endlessleveling.data.PlayerData;
-import com.airijko.endlessleveling.managers.PlayerDataManager;
-import com.airijko.endlessleveling.managers.PassiveManager;
+import com.airijko.endlessleveling.player.PlayerData;
+import com.airijko.endlessleveling.player.PlayerDataManager;
+import com.airijko.endlessleveling.passives.PassiveManager;
 import com.airijko.endlessleveling.util.EntityRefUtil;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;

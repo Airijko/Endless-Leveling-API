@@ -1,8 +1,8 @@
 package com.airijko.endlessleveling.commands.races;
 
-import com.airijko.endlessleveling.data.PlayerData;
-import com.airijko.endlessleveling.managers.PlayerDataManager;
-import com.airijko.endlessleveling.managers.RaceManager;
+import com.airijko.endlessleveling.player.PlayerData;
+import com.airijko.endlessleveling.player.PlayerDataManager;
+import com.airijko.endlessleveling.races.RaceManager;
 import com.airijko.endlessleveling.races.RaceDefinition;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;

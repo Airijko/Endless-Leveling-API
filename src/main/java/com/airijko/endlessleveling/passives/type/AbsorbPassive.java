@@ -1,6 +1,6 @@
 package com.airijko.endlessleveling.passives.type;
 
-import com.airijko.endlessleveling.managers.PassiveManager.PassiveRuntimeState;
+import com.airijko.endlessleveling.passives.PassiveManager.PassiveRuntimeState;
 import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveSnapshot;
 import com.airijko.endlessleveling.passives.settings.AbsorbSettings;
 import com.hypixel.hytale.server.core.universe.PlayerRef;

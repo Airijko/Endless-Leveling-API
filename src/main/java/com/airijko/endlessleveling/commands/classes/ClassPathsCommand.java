@@ -1,7 +1,7 @@
 package com.airijko.endlessleveling.commands.classes;
 
 import com.airijko.endlessleveling.classes.CharacterClassDefinition;
-import com.airijko.endlessleveling.managers.ClassManager;
+import com.airijko.endlessleveling.classes.ClassManager;
 import com.airijko.endlessleveling.ui.ClassPathsUIPage;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;

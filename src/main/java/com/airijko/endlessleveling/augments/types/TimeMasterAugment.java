@@ -8,9 +8,9 @@ import com.airijko.endlessleveling.augments.AugmentRuntimeManager.CooldownState;
 import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
 import com.airijko.endlessleveling.augments.YamlAugment;
-import com.airijko.endlessleveling.data.PlayerData;
-import com.airijko.endlessleveling.managers.PassiveManager;
-import com.airijko.endlessleveling.managers.PassiveManager.PassiveRuntimeState;
+import com.airijko.endlessleveling.player.PlayerData;
+import com.airijko.endlessleveling.passives.PassiveManager;
+import com.airijko.endlessleveling.passives.PassiveManager.PassiveRuntimeState;
 
 import java.util.Map;
 

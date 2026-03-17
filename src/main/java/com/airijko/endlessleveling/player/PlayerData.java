@@ -1,4 +1,4 @@
-package com.airijko.endlessleveling.data;
+package com.airijko.endlessleveling.player;
 
 import com.airijko.endlessleveling.enums.PassiveType;
 import com.airijko.endlessleveling.enums.SkillAttributeType;

@@ -1,6 +1,6 @@
 package com.airijko.endlessleveling.managers;
 
-import com.airijko.endlessleveling.data.PlayerData;
+import com.airijko.endlessleveling.player.PlayerData;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.command.system.CommandManager;
 import com.hypixel.hytale.server.core.console.ConsoleSender;

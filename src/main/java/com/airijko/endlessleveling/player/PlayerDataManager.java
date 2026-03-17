@@ -1,7 +1,7 @@
-package com.airijko.endlessleveling.managers;
+package com.airijko.endlessleveling.player;
 
-import com.airijko.endlessleveling.data.PlayerData;
-import com.airijko.endlessleveling.data.PlayerData.PlayerProfile;
+import com.airijko.endlessleveling.player.PlayerData;
+import com.airijko.endlessleveling.player.PlayerData.PlayerProfile;
 import com.airijko.endlessleveling.enums.PassiveType;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.airijko.endlessleveling.races.RaceDefinition;
@@ -31,6 +31,11 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import com.airijko.endlessleveling.classes.ClassManager;
+import com.airijko.endlessleveling.races.RaceManager;
+import com.airijko.endlessleveling.managers.ConfigManager;
+import com.airijko.endlessleveling.managers.PluginFilesManager;
+import com.airijko.endlessleveling.managers.VersionRegistry;
 
 public class PlayerDataManager {
 

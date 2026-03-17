@@ -1,8 +1,8 @@
 package com.airijko.endlessleveling.augments;
 
-import com.airijko.endlessleveling.data.PlayerData;
+import com.airijko.endlessleveling.player.PlayerData;
 import com.airijko.endlessleveling.enums.ClassWeaponType;
-import com.airijko.endlessleveling.managers.SkillManager;
+import com.airijko.endlessleveling.player.SkillManager;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;

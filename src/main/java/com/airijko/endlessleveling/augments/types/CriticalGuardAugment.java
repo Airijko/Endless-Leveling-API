@@ -4,7 +4,7 @@ import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentHooks;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
 import com.airijko.endlessleveling.augments.YamlAugment;
-import com.airijko.endlessleveling.managers.SkillManager;
+import com.airijko.endlessleveling.player.SkillManager;
 import com.hypixel.hytale.logger.HytaleLogger;
 
 import java.util.Map;

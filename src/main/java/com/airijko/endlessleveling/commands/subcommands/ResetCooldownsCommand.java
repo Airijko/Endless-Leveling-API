@@ -2,7 +2,7 @@ package com.airijko.endlessleveling.commands.subcommands;
 
 import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.augments.AugmentRuntimeManager;
-import com.airijko.endlessleveling.managers.PassiveManager;
+import com.airijko.endlessleveling.passives.PassiveManager;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.Message;

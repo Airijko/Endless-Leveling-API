@@ -2,7 +2,7 @@ package com.airijko.endlessleveling.ui;
 
 import javax.annotation.Nonnull;
 
-import com.airijko.endlessleveling.data.PlayerData;
+import com.airijko.endlessleveling.player.PlayerData;
 import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.util.Lang;
 import com.hypixel.hytale.component.Ref;

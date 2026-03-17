@@ -1,8 +1,8 @@
-package com.airijko.endlessleveling.managers;
+package com.airijko.endlessleveling.player;
 
 import com.airijko.endlessleveling.augments.AugmentRuntimeManager;
 import com.airijko.endlessleveling.classes.CharacterClassDefinition;
-import com.airijko.endlessleveling.data.PlayerData;
+import com.airijko.endlessleveling.player.PlayerData;
 import com.airijko.endlessleveling.enums.ArchetypePassiveType;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveManager;
@@ -27,6 +27,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Locale;
+import com.airijko.endlessleveling.classes.ClassManager;
+import com.airijko.endlessleveling.managers.ConfigManager;
+import com.airijko.endlessleveling.managers.PluginFilesManager;
+import com.airijko.endlessleveling.passives.PassiveManager;
 
 /**
  * Handles all skill points and modifiers.

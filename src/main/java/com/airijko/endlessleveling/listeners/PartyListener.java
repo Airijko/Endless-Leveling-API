@@ -1,6 +1,6 @@
 package com.airijko.endlessleveling.listeners;
 
-import com.airijko.endlessleveling.managers.PartyManager;
+import com.airijko.endlessleveling.leveling.PartyManager;
 import com.hypixel.hytale.server.core.event.events.player.PlayerDisconnectEvent;
 
 import javax.annotation.Nonnull;

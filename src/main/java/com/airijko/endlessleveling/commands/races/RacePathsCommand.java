@@ -1,6 +1,6 @@
 package com.airijko.endlessleveling.commands.races;
 
-import com.airijko.endlessleveling.managers.RaceManager;
+import com.airijko.endlessleveling.races.RaceManager;
 import com.airijko.endlessleveling.races.RaceDefinition;
 import com.airijko.endlessleveling.ui.RacePathsUIPage;
 import com.hypixel.hytale.component.Ref;

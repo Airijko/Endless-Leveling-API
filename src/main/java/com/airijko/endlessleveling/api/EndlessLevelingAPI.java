@@ -1,15 +1,15 @@
 package com.airijko.endlessleveling.api;
 
 import com.airijko.endlessleveling.EndlessLeveling;
-import com.airijko.endlessleveling.data.PlayerData;
+import com.airijko.endlessleveling.player.PlayerData;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
-import com.airijko.endlessleveling.managers.LevelingManager;
-import com.airijko.endlessleveling.managers.MobLevelingManager;
-import com.airijko.endlessleveling.managers.PlayerAttributeManager;
-import com.airijko.endlessleveling.managers.PlayerDataManager;
-import com.airijko.endlessleveling.managers.PartyManager;
-import com.airijko.endlessleveling.managers.RaceManager;
-import com.airijko.endlessleveling.managers.SkillManager;
+import com.airijko.endlessleveling.leveling.LevelingManager;
+import com.airijko.endlessleveling.leveling.MobLevelingManager;
+import com.airijko.endlessleveling.player.PlayerAttributeManager;
+import com.airijko.endlessleveling.player.PlayerDataManager;
+import com.airijko.endlessleveling.leveling.PartyManager;
+import com.airijko.endlessleveling.races.RaceManager;
+import com.airijko.endlessleveling.player.SkillManager;
 
 import java.util.Collections;
 import java.util.EnumMap;

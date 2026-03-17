@@ -1,4 +1,4 @@
-package com.airijko.endlessleveling.systems;
+package com.airijko.endlessleveling.drops;
 
 import com.hypixel.hytale.component.AddReason;
 import com.hypixel.hytale.component.CommandBuffer;

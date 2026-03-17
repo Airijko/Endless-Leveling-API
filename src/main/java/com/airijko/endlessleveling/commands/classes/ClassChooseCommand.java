@@ -2,12 +2,12 @@ package com.airijko.endlessleveling.commands.classes;
 
 import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.classes.CharacterClassDefinition;
-import com.airijko.endlessleveling.data.PlayerData;
+import com.airijko.endlessleveling.player.PlayerData;
 import com.airijko.endlessleveling.enums.ClassAssignmentSlot;
-import com.airijko.endlessleveling.managers.ClassManager;
-import com.airijko.endlessleveling.managers.PlayerDataManager;
+import com.airijko.endlessleveling.classes.ClassManager;
+import com.airijko.endlessleveling.player.PlayerDataManager;
 import com.airijko.endlessleveling.systems.PlayerRaceStatSystem;
-import com.airijko.endlessleveling.managers.SkillManager;
+import com.airijko.endlessleveling.player.SkillManager;
 import com.airijko.endlessleveling.util.OperatorHelper;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;

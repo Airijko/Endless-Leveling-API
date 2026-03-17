@@ -1,13 +1,13 @@
-package com.airijko.endlessleveling.systems;
+package com.airijko.endlessleveling.leveling;
 
 import com.airijko.endlessleveling.EndlessLeveling;
-import com.airijko.endlessleveling.managers.LevelingManager;
-import com.airijko.endlessleveling.managers.PartyManager;
-import com.airijko.endlessleveling.managers.PassiveManager;
-import com.airijko.endlessleveling.managers.PlayerDataManager;
-import com.airijko.endlessleveling.managers.MobLevelingManager;
-import com.airijko.endlessleveling.managers.SkillManager;
-import com.airijko.endlessleveling.data.PlayerData;
+import com.airijko.endlessleveling.leveling.LevelingManager;
+import com.airijko.endlessleveling.leveling.PartyManager;
+import com.airijko.endlessleveling.passives.PassiveManager;
+import com.airijko.endlessleveling.player.PlayerDataManager;
+import com.airijko.endlessleveling.leveling.MobLevelingManager;
+import com.airijko.endlessleveling.player.SkillManager;
+import com.airijko.endlessleveling.player.PlayerData;
 import com.airijko.endlessleveling.enums.PassiveType;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.airijko.endlessleveling.passives.type.ArmyOfTheDeadPassive;
@@ -32,6 +32,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import java.util.UUID;
 
 import javax.annotation.Nonnull;
+import com.airijko.endlessleveling.drops.LuckDoubleDropSystem;
 
 public class XpEventSystem extends DeathSystems.OnDeathSystem {
 

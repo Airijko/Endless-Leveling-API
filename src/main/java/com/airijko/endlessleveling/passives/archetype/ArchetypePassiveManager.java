@@ -1,11 +1,11 @@
 package com.airijko.endlessleveling.passives.archetype;
 
 import com.airijko.endlessleveling.classes.CharacterClassDefinition;
-import com.airijko.endlessleveling.data.PlayerData;
+import com.airijko.endlessleveling.player.PlayerData;
 import com.airijko.endlessleveling.enums.ArchetypePassiveType;
 import com.airijko.endlessleveling.enums.PassiveStackingStyle;
-import com.airijko.endlessleveling.managers.ClassManager;
-import com.airijko.endlessleveling.managers.RaceManager;
+import com.airijko.endlessleveling.classes.ClassManager;
+import com.airijko.endlessleveling.races.RaceManager;
 import com.airijko.endlessleveling.races.RaceDefinition;
 import com.airijko.endlessleveling.races.RacePassiveDefinition;
 

@@ -1,8 +1,8 @@
-package com.airijko.endlessleveling.managers;
+package com.airijko.endlessleveling.classes;
 
 import com.airijko.endlessleveling.classes.CharacterClassDefinition;
 import com.airijko.endlessleveling.classes.WeaponConfig;
-import com.airijko.endlessleveling.data.PlayerData;
+import com.airijko.endlessleveling.player.PlayerData;
 import com.airijko.endlessleveling.enums.ArchetypePassiveType;
 import com.airijko.endlessleveling.enums.ClassAssignmentSlot;
 import com.airijko.endlessleveling.enums.DamageLayer;
@@ -41,6 +41,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
+import com.airijko.endlessleveling.managers.PluginFilesManager;
+import com.airijko.endlessleveling.managers.VersionRegistry;
 
 /**
  * Loads and resolves EndlessLeveling character class definitions.

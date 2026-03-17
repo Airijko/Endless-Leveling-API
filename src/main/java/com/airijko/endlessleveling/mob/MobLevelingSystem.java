@@ -1,9 +1,9 @@
-package com.airijko.endlessleveling.systems;
+package com.airijko.endlessleveling.mob;
 
 import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.compatibility.NameplateBuilderCompatibility;
-import com.airijko.endlessleveling.managers.MobLevelingManager;
-import com.airijko.endlessleveling.managers.PlayerDataManager;
+import com.airijko.endlessleveling.leveling.MobLevelingManager;
+import com.airijko.endlessleveling.player.PlayerDataManager;
 import com.airijko.endlessleveling.passives.type.ArmyOfTheDeadPassive;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;

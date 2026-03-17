@@ -1,4 +1,6 @@
-package com.airijko.endlessleveling.managers;
+package com.airijko.endlessleveling.leveling;
+import com.airijko.endlessleveling.managers.ConfigManager;
+import com.airijko.endlessleveling.managers.PluginFilesManager;
 
 /**
  * Backwards-compatible wrapper around {@link ConfigManager} for leveling.yml.

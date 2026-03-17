@@ -1,6 +1,6 @@
-package com.airijko.endlessleveling.managers;
+package com.airijko.endlessleveling.leveling;
 
-import com.airijko.endlessleveling.data.PlayerData;
+import com.airijko.endlessleveling.player.PlayerData;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.logger.HytaleLogger;
@@ -19,6 +19,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import com.airijko.endlessleveling.player.PlayerDataManager;
 
 /**
  * Party integration backed by the external PartyPro mod. Membership and party
