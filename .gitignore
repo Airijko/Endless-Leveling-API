@@ -27,3 +27,5 @@ logs/
 
 # Runtime
 run/
+
+bin

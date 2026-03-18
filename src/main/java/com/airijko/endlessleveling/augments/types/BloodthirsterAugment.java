@@ -7,9 +7,13 @@ import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
 import com.airijko.endlessleveling.augments.YamlAugment;
 import com.airijko.endlessleveling.player.SkillManager;
+import com.airijko.endlessleveling.util.EntityRefUtil;
+import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue;
 import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
+import com.hypixel.hytale.server.core.asset.type.soundevent.config.SoundEvent;
+import com.hypixel.hytale.server.core.universe.world.SoundUtil;
 
 import java.util.Map;
 
@@ -19,6 +23,10 @@ public final class BloodthirsterAugment extends YamlAugment implements AugmentHo
     private static final int MODE_NONE = 0;
     private static final int MODE_HEALTHY = 1;
     private static final int MODE_WOUNDED = 2;
+
+    // Placeholder SFX for testing — differentiate healthy/wounded sounds below later
+    private static final String TRIGGER_SFX_HEALTHY = "SFX_Sword_T2_Signature_Part_2";
+    private static final String TRIGGER_SFX_WOUNDED = "SFX_Sword_T2_Signature_Part_2";
 
     private final double healthyThresholdAbove;
     private final int sharedHitCounter;
@@ -120,6 +128,7 @@ public final class BloodthirsterAugment extends YamlAugment implements AugmentHo
                     context.getBaseDamage(),
                     healthyBonusDamage);
             applyHealthySelfDamage(attackerStats, healthySelfDamagePercentOfCurrent);
+            playTriggerSound(context, TRIGGER_SFX_HEALTHY);
             if (playerRef != null && playerRef.isValid()) {
                 AugmentUtils.sendAugmentMessage(playerRef,
                         String.format("%s activated! +%.0f%% damage (healthy state).",
@@ -130,11 +139,34 @@ public final class BloodthirsterAugment extends YamlAugment implements AugmentHo
 
         double healAmount = resolveWoundedHealing(context, hp);
         float healed = AugmentUtils.heal(attackerStats, healAmount);
+        playTriggerSound(context, TRIGGER_SFX_WOUNDED);
         if (playerRef != null && playerRef.isValid()) {
             AugmentUtils.sendAugmentMessage(playerRef,
                     String.format("%s activated! Healed %.1f HP (wounded state).", getName(), healed));
         }
         return context.getDamage();
+    }
+
+    private static int resolveSoundIndex(String id) {
+        int index = SoundEvent.getAssetMap().getIndex(id);
+        return index == Integer.MIN_VALUE ? 0 : index;
+    }
+
+    private void playTriggerSound(AugmentHooks.HitContext context, String soundId) {
+        int soundIndex = resolveSoundIndex(soundId);
+        if (soundIndex == 0) {
+            return;
+        }
+        var attackerRef = context.getAttackerRef();
+        if (!EntityRefUtil.isUsable(attackerRef)) {
+            return;
+        }
+        TransformComponent attackerTransform = EntityRefUtil.tryGetComponent(
+            context.getCommandBuffer(), attackerRef, TransformComponent.getComponentType());
+        if (attackerTransform == null || attackerTransform.getPosition() == null) {
+            return;
+        }
+        SoundUtil.playSoundEvent3d(null, soundIndex, attackerTransform.getPosition(), attackerRef.getStore());
     }
 
     private double resolveWoundedHealing(AugmentHooks.HitContext context, EntityStatValue hp) {
