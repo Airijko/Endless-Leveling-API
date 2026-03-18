@@ -1,0 +1,6 @@
+Group {
+    Group #EmptyHud {
+        Anchor: (Width: 1, Height: 1);
+        Visible: false;
+    }
+}
