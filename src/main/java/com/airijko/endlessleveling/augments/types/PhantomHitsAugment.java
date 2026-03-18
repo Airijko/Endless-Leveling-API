@@ -6,6 +6,7 @@ import com.airijko.endlessleveling.augments.AugmentRuntimeManager.AugmentState;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
 import com.airijko.endlessleveling.augments.YamlAugment;
 import com.airijko.endlessleveling.systems.PlayerCombatSystem;
+import com.airijko.endlessleveling.util.EntityRefUtil;
 import com.airijko.endlessleveling.player.SkillManager;
 import com.hypixel.hytale.server.core.modules.entity.damage.Damage;
 import com.hypixel.hytale.server.core.modules.entity.damage.DamageSystems;
@@ -70,7 +71,8 @@ public final class PhantomHitsAugment extends YamlAugment implements AugmentHook
             }
         }
 
-        if (context.getCommandBuffer() != null && context.getTargetRef() != null && context.getTargetRef().isValid()) {
+        if (context.getCommandBuffer() != null && context.getTargetRef() != null
+                && EntityRefUtil.isUsable(context.getTargetRef())) {
             if (state != null) {
                 state.setLastProc(System.currentTimeMillis());
             }

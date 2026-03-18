@@ -214,6 +214,13 @@ public final class BurnAugment extends YamlAugment
             }
 
             Damage burnTickDamage = PlayerCombatSystem.createAugmentDotDamage(sourceRef, (float) burnDamage);
+
+            // Validate entity is still usable before applying damage (entity may have
+            // become invisible)
+            if (!EntityRefUtil.isUsable(targetRef)) {
+                continue;
+            }
+
             DamageSystems.executeDamage(targetRef, commandBuffer, burnTickDamage);
             applyBurnEffect(targetRef, commandBuffer, burnEffect);
         }
