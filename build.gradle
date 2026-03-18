@@ -1,6 +1,6 @@
 plugins {
     id 'java'
-    id 'com.github.johnrengelman.shadow' version '8.1.1'
+    id 'com.gradleup.shadow' version '8.3.0'
 }
 
 group = 'com.airijko'
@@ -17,16 +17,25 @@ def hytaleInstallPath = providers.gradleProperty('hytaleInstallPath')
         .orElse('C:/Users/jojoj/AppData/Roaming/Hytale/install/release/package/game/latest')
 def hytaleToolkitPath = providers.gradleProperty('hytaleToolkitPath')
         .orElse('C:/Users/jojoj/AppData/Local/Hytale-Toolkit')
-def hytaleJdkPath = providers.gradleProperty('hytaleJdkPath')
-        .orElse('C:/Program Files/Eclipse Adoptium/jdk-25.0.1.8-hotspot')
 
 repositories {
     mavenCentral()
+    // Official Hytale Maven repository
+    maven {
+        name = 'hytale-release'
+        url = 'https://maven.hytale.com/release'
+    }
+    maven {
+        name = 'hytale-pre-release'
+        url = 'https://maven.hytale.com/pre-release'
+    }
 }
 
 dependencies {
     compileOnly files("${hytaleInstallPath.get()}/Server/HytaleServer.jar")
     implementation 'org.yaml:snakeyaml:2.2'
+    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+    implementation 'com.google.code.gson:gson:2.10.1'
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -34,53 +43,37 @@ tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }
 
-jar {
-    manifest {
-        attributes(
-                'Plugin-Group': project.group,
-                'Plugin-Name': project.name,
-                'Plugin-Version': project.version
-        )
+shadowJar {
+    archiveClassifier.set('')
+    // Exclude server classes from the final JAR
+    dependencies {
+        exclude(dependency { it.moduleGroup == 'com.hypixel' })
     }
 }
 
-shadowJar {
-    archiveClassifier.set('')
-    manifest {
-        attributes(
-                'Plugin-Group': project.group,
-                'Plugin-Name': project.name,
-                'Plugin-Version': project.version
-        )
-    }
+// Disable the default jar task to avoid conflicts with shadowJar
+tasks.named('jar') {
+    enabled = false
 }
 
 tasks.named('build') {
-    dependsOn tasks.named('shadowJar')
+    dependsOn shadowJar
 }
 
-tasks.register('installPlugin', Copy) {
-    group = 'build'
-    description = 'Builds and copies plugin to Hytale Server/mods folder'
-    dependsOn tasks.named('shadowJar')
-    from(tasks.named('shadowJar').flatMap { it.archiveFile })
-    into(file("${hytaleInstallPath.get()}/Server/mods"))
+// Deploy plugin JAR to server mods folder
+tasks.register('deployToServer', Copy) {
+    // Using 'from shadowJar' automatically adds task dependency and proper input tracking
+    from shadowJar
+    into 'server/mods'
+    doLast {
+        println "Deployed to server/mods/"
+    }
 }
 
-tasks.register('runServer', Exec) {
-    group = 'application'
-    description = 'Builds, installs plugin, and starts Hytale server'
-    dependsOn tasks.named('installPlugin')
-    workingDir file("${hytaleInstallPath.get()}/Server")
-    commandLine(
-            "${hytaleJdkPath.get()}/bin/java",
-            '--enable-native-access=ALL-UNNAMED',
-            '-jar',
-            'HytaleServer.jar',
-            '--assets',
-            "${hytaleInstallPath.get()}/Assets.zip",
-            '--assets',
-            "${projectDir}/src/main/resources",
-            '--allow-op'
-    )
+// Watch for changes and auto-rebuild (useful during development)
+tasks.register('watch') {
+    doLast {
+        println "Watching for changes... Press Ctrl+C to stop."
+        println "Run 'gradle build --continuous' for auto-rebuild on file changes."
+    }
 }
