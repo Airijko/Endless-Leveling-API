@@ -59,6 +59,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
     private static final int PLAYER_VIEW_RADIUS_BUFFER_CHUNKS = 1;
     private static final long SUMMON_HEALTH_ANOMALY_LOG_COOLDOWN_MS = 3000L;
     private static final long SUMMON_NAMEPLATE_LOG_COOLDOWN_MS = 3000L;
+    private static final float DAMAGE_LOCK_HEALTH_EPSILON = 0.001f;
 
     private final MobLevelingManager mobLevelingManager = EndlessLeveling.getInstance().getMobLevelingManager();
     private final PlayerDataManager playerDataManager = EndlessLeveling.getInstance().getPlayerDataManager();
@@ -80,6 +81,9 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         private Store<EntityStore> trackedStore;
         private String lastKnownEntitySignature;
         private boolean deathHandled;
+        private boolean damageLockedLevel;
+        private float lastObservedHealth = Float.NaN;
+        private float lastObservedMaxHealth = Float.NaN;
 
         private boolean hasTrackedState() {
             return appliedLevel > 0
@@ -90,6 +94,9 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
                     || resolveAssignments > 0
                     || lastKnownEntitySignature != null
                     || deathHandled
+                    || damageLockedLevel
+                    || Float.isFinite(lastObservedHealth)
+                    || Float.isFinite(lastObservedMaxHealth)
                     || trackedStore != null
                     || trackedEntityId >= 0;
         }
@@ -173,6 +180,11 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
                                 commandBuffer,
                                 playerChunkViewports);
                         if (!hasNearbyPlayerChunk) {
+                            if (existingState != null && existingState.damageLockedLevel && existingState.appliedLevel > 0) {
+                                existingState.lastSeenTimeMillis = currentTimeMillis;
+                                continue;
+                            }
+
                             boolean hasTrackedState = existingState != null && existingState.hasTrackedState();
                             if (hasTrackedState || hasLockedLevel) {
                                 clearLevelingStateForEntity(
@@ -245,6 +257,10 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
                                 state.settledHealthLevel = 0;
                             }
                             continue;
+                        }
+
+                        if (!managedSummon && appliedLevel != null && appliedLevel > 0) {
+                            lockLevelIfEntityDamaged(ref, commandBuffer, entityId, state, appliedLevel);
                         }
 
                         boolean initializationSettled = false;
@@ -593,6 +609,45 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         clearOrRemoveNameplate(ref, commandBuffer, entityKey, state);
         entityStates.remove(entityKey);
         mobLevelingManager.forgetEntity(ref.getStore(), entityId);
+    }
+
+    private void lockLevelIfEntityDamaged(Ref<EntityStore> ref,
+            CommandBuffer<EntityStore> commandBuffer,
+            int entityId,
+            EntityRuntimeState state,
+            int appliedLevel) {
+        if (ref == null || commandBuffer == null || state == null || mobLevelingManager == null || entityId < 0
+                || appliedLevel <= 0) {
+            return;
+        }
+
+        EntityStatMap statMap = commandBuffer.getComponent(ref, EntityStatMap.getComponentType());
+        if (statMap == null) {
+            return;
+        }
+
+        EntityStatValue hp = statMap.get(DefaultEntityStatTypes.getHealth());
+        if (hp == null) {
+            return;
+        }
+
+        float currentHealth = hp.get();
+        float currentMaxHealth = hp.getMax();
+        if (!Float.isFinite(currentHealth) || !Float.isFinite(currentMaxHealth) || currentMaxHealth <= 0.0f) {
+            return;
+        }
+
+        boolean belowMax = currentHealth < (currentMaxHealth - DAMAGE_LOCK_HEALTH_EPSILON);
+        boolean droppedSinceLastTick = Float.isFinite(state.lastObservedHealth)
+                && currentHealth < (state.lastObservedHealth - DAMAGE_LOCK_HEALTH_EPSILON);
+
+        if (!state.damageLockedLevel && (belowMax || droppedSinceLastTick)) {
+            state.damageLockedLevel = true;
+            mobLevelingManager.setEntityLevelOverride(ref.getStore(), entityId, appliedLevel);
+        }
+
+        state.lastObservedHealth = currentHealth;
+        state.lastObservedMaxHealth = currentMaxHealth;
     }
 
     private boolean applyNameplate(Ref<EntityStore> ref,
