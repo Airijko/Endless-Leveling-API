@@ -180,11 +180,6 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
                                 commandBuffer,
                                 playerChunkViewports);
                         if (!hasNearbyPlayerChunk) {
-                            if (existingState != null && existingState.damageLockedLevel && existingState.appliedLevel > 0) {
-                                existingState.lastSeenTimeMillis = currentTimeMillis;
-                                continue;
-                            }
-
                             boolean hasTrackedState = existingState != null && existingState.hasTrackedState();
                             if (hasTrackedState || hasLockedLevel) {
                                 clearLevelingStateForEntity(
