@@ -235,6 +235,14 @@ public final class WitherAugment extends YamlAugment implements AugmentHooks.OnH
 
         Ref<EntityStore> sourceRef = sanitizeSourceRefForTarget(state, ref);
         Damage witherTickDamage = PlayerCombatSystem.createAugmentDotDamage(sourceRef, (float) damage);
+
+        // Validate entity is still usable before applying damage (entity may have
+        // become invisible)
+        if (!EntityRefUtil.isUsable(ref)) {
+            LOGGER.atFine().log("Wither damage skipped: entity no longer usable key=%s target=%s", key, ref);
+            return;
+        }
+
         DamageSystems.executeDamage(ref, commandBuffer, witherTickDamage);
         state.nextTickAt = now + TICK_INTERVAL_MILLIS;
     }
