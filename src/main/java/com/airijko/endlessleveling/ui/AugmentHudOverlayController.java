@@ -50,9 +50,6 @@ public final class AugmentHudOverlayController {
             FortressAugment.ID,
             EndurePainAugment.ID,
             OverhealAugment.ID);
-        private static final List<String> STACKING_RIGHT_ALWAYS_ACTIVE_PRIORITY = List.of(
-            PhaseRushAugment.ID,
-            BloodthirsterAugment.ID);
 
     private final AugmentManager augmentManager;
     private final AugmentRuntimeManager runtimeManager;
@@ -106,19 +103,6 @@ public final class AugmentHudOverlayController {
         List<StackingHudState> leftSlots = new ArrayList<>();
         List<StackingHudState> rightSlots = new ArrayList<>();
 
-        for (String prioritizedAugmentId : STACKING_RIGHT_ALWAYS_ACTIVE_PRIORITY) {
-            if (rightSlots.size() >= STACKING_RIGHT_SLOT_COUNT || !selectedAugmentIds.contains(prioritizedAugmentId)) {
-                continue;
-            }
-
-            AugmentDefinition definition = augmentManager.getAugment(prioritizedAugmentId);
-            if (definition == null) {
-                continue;
-            }
-
-            rightSlots.add(resolveAlwaysActiveOnHitRightState(runtimeState, definition));
-        }
-
         for (String augmentId : selectedAugmentIds) {
             AugmentDefinition definition = augmentManager.getAugment(augmentId);
             if (definition == null) {
@@ -129,28 +113,26 @@ public final class AugmentHudOverlayController {
                 AugmentRuntimeManager.AugmentState state = runtimeState.getState(augmentId);
                 if (state != null) {
                     int stacks = Math.max(0, state.getStacks());
-                    boolean stacksVisible = stacks > 0
-                        && (PhaseRushAugment.ID.equals(augmentId)
-                            || state.getExpiresAt() <= 0L
-                            || state.getExpiresAt() > now);
+                    int maxStacks = resolveConfiguredMaxStacks(definition.getId(), definition.getPassives());
+                    boolean nextHitTriggerIndicator = usesNextHitTriggerIndicator(definition.getId());
+                    boolean stacksVisible = nextHitTriggerIndicator
+                            ? shouldShowNextHitTrigger(definition.getId(), state, stacks, maxStacks, now)
+                            : stacks > 0 && (state.getExpiresAt() <= 0L || state.getExpiresAt() > now);
                     if (stacksVisible) {
-                        int maxStacks = resolveConfiguredMaxStacks(definition.getId(), definition.getPassives());
-                        boolean atMaxStacks = maxStacks > 0 && stacks >= maxStacks;
+                        boolean atMaxStacks = nextHitTriggerIndicator
+                                ? true
+                                : maxStacks > 0 && stacks >= maxStacks;
                         leftSlots.add(new StackingHudState(
                                 true,
                                 stacks,
                                 atMaxStacks,
                                 resolveCategoryIconItemId(definition),
-                                true));
+                                !nextHitTriggerIndicator));
                     }
                 }
             }
 
             if (rightSlots.size() >= STACKING_RIGHT_SLOT_COUNT) {
-                continue;
-            }
-
-            if (STACKING_RIGHT_ALWAYS_ACTIVE_PRIORITY.contains(augmentId)) {
                 continue;
             }
 
@@ -188,30 +170,6 @@ public final class AugmentHudOverlayController {
             layout.add(rightIndex < rightVisibleCount ? rightSlots.get(rightIndex) : StackingHudState.hidden());
         }
         return layout;
-    }
-
-    private StackingHudState resolveAlwaysActiveOnHitRightState(
-            AugmentRuntimeManager.AugmentRuntimeState runtimeState,
-            AugmentDefinition definition) {
-        int triggerHitsRequired = resolveConfiguredMaxStacks(definition.getId(), definition.getPassives());
-        int currentStacks = 0;
-
-        if (runtimeState != null) {
-            AugmentRuntimeManager.AugmentState state = runtimeState.getState(definition.getId());
-            if (state != null) {
-                currentStacks = Math.max(0, state.getStacks());
-            }
-        }
-
-        boolean nextHitTriggersSpecialEffect = triggerHitsRequired > 0
-                && currentStacks >= Math.max(0, triggerHitsRequired - 1);
-
-        return new StackingHudState(
-                true,
-                0,
-                nextHitTriggersSpecialEffect,
-                resolveCategoryIconItemId(definition),
-                false);
     }
 
     private List<String> resolveSelectedAugmentIds(AugmentRuntimeManager.AugmentRuntimeState runtimeState) {
@@ -713,6 +671,30 @@ public final class AugmentHudOverlayController {
                         .getCategory();
         String iconItemId = category.getIconItemId();
         return iconItemId == null || iconItemId.isBlank() ? STACKING_ICON_FALLBACK : iconItemId;
+    }
+
+    private boolean usesNextHitTriggerIndicator(String augmentId) {
+        return PhaseRushAugment.ID.equals(augmentId) || BloodthirsterAugment.ID.equals(augmentId);
+    }
+
+    private boolean shouldShowNextHitTrigger(String augmentId,
+            AugmentRuntimeManager.AugmentState state,
+            int stacks,
+            int maxStacks,
+            long now) {
+        if (!usesNextHitTriggerIndicator(augmentId) || state == null) {
+            return false;
+        }
+
+        if (maxStacks <= 1 || stacks < (maxStacks - 1)) {
+            return false;
+        }
+
+        if (BloodthirsterAugment.ID.equals(augmentId)) {
+            return state.getExpiresAt() <= 0L || state.getExpiresAt() > now;
+        }
+
+        return true;
     }
 
     private String resolveDisplayName(String augmentId) {
