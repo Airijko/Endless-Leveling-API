@@ -5,6 +5,18 @@ description: "Provides Life Steal and Haste."
 category: LIFESTEAL
 enabled: true
 
+ui:
+  sections:
+    - title: "Overview"
+      body: "Provides Life Steal and Haste."
+      color: "#8adf9e"
+    - title: "Effects"
+      body: "Review the sections below for exact buff, debuff, duration, and cooldown details."
+      color: "#9ecbff"
+    - title: "Build Tip"
+      body: "Pair this augment with stats and passives that amplify its strongest scaling."
+      color: "#ffd56b"
+
 passives:
   buffs:
     life_steal:

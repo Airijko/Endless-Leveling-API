@@ -5,6 +5,18 @@ description: "Periodically empower your next strike to heal you and grant a burs
 category: ON_HIT
 enabled: true
 
+ui:
+  sections:
+    - title: "Overview"
+      body: "Periodically empower your next strike to heal you and grant a burst of speed."
+      color: "#8adf9e"
+    - title: "Effects"
+      body: "Review the sections below for exact buff, debuff, duration, and cooldown details."
+      color: "#9ecbff"
+    - title: "Build Tip"
+      body: "Pair this augment with stats and passives that amplify its strongest scaling."
+      color: "#ffd56b"
+
 passives:
   empowered_hit:
     cooldown: 8 # seconds before the effect can trigger again

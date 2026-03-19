@@ -5,6 +5,18 @@ description: "Your strikes grow stronger while healthy and sustain you when woun
 category: LIFESTEAL
 enabled: true
 
+ui:
+  sections:
+    - title: "Overview"
+      body: "Your strikes grow stronger while healthy and sustain you when wounded."
+      color: "#8adf9e"
+    - title: "Effects"
+      body: "Review the sections below for exact buff, debuff, duration, and cooldown details."
+      color: "#9ecbff"
+    - title: "Build Tip"
+      body: "Pair this augment with stats and passives that amplify its strongest scaling."
+      color: "#ffd56b"
+
 passives:
   hit_counter: 3
   hit_counter_duration: 5 # seconds to complete the shared hit counter before it resets

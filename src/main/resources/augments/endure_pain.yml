@@ -5,6 +5,18 @@ description: "A portion of incoming damage is deferred as Bleed and applied over
 category: ON_DAMAGE_TAKEN
 enabled: true
 
+ui:
+  sections:
+    - title: "Overview"
+      body: "A portion of incoming damage is deferred as Bleed and applied over time. Killing a target cleanses all Bleed and heals you for a percentage of the execute damage dealt."
+      color: "#8adf9e"
+    - title: "Effects"
+      body: "Review the sections below for exact buff, debuff, duration, and cooldown details."
+      color: "#9ecbff"
+    - title: "Build Tip"
+      body: "Pair this augment with stats and passives that amplify its strongest scaling."
+      color: "#ffd56b"
+
 passives:
   heal_over_time:
     value: 0.30 # 30% of incoming damage is deferred as Bleed

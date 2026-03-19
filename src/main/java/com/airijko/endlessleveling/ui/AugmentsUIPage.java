@@ -45,6 +45,28 @@ import static com.hypixel.hytale.server.core.ui.builder.EventData.of;
 public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
     private static final int GRID_ITEMS_PER_ROW = 5;
+    private static final int INFO_SECTION_LIMIT = 5;
+    private static final String[] INFO_SECTION_CONTAINERS = {
+        "#AugmentInfoSection1",
+        "#AugmentInfoSection2",
+        "#AugmentInfoSection3",
+        "#AugmentInfoSection4",
+        "#AugmentInfoSection5"
+    };
+    private static final String[] INFO_SECTION_TITLES = {
+        "#AugmentInfoSection1Title",
+        "#AugmentInfoSection2Title",
+        "#AugmentInfoSection3Title",
+        "#AugmentInfoSection4Title",
+        "#AugmentInfoSection5Title"
+    };
+    private static final String[] INFO_SECTION_BODIES = {
+        "#AugmentInfoSection1Body",
+        "#AugmentInfoSection2Body",
+        "#AugmentInfoSection3Body",
+        "#AugmentInfoSection4Body",
+        "#AugmentInfoSection5Body"
+    };
 
     private static final Map<String, String> BUFF_NAME_OVERRIDES = createBuffNameOverrides();
 
@@ -254,7 +276,7 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             ui.set("#AugmentInfoTier.Visible", false);
             ui.set("#AugmentInfoDivider.Visible", false);
             ui.set("#AugmentInfoDescription.Visible", false);
-            applyInfoValues(ui, null, null, null, null);
+            applyInfoSections(ui, List.of());
             return;
         }
 
@@ -278,6 +300,12 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         boolean hasDesc = desc != null && !desc.isBlank();
         ui.set("#AugmentInfoDescription.Text", hasDesc ? desc : "");
         ui.set("#AugmentInfoDescription.Visible", hasDesc);
+
+        List<InfoSection> yamlSections = buildYamlInfoSections(def);
+        if (!yamlSections.isEmpty()) {
+            applyInfoSections(ui, yamlSections);
+            return;
+        }
 
         if (commonStatOffer != null && CommonAugment.ID.equalsIgnoreCase(def.getId())) {
             String singleValue = valueFormatter.formatSingleValueLine(commonStatOffer.attributeKey(),
@@ -315,25 +343,108 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         boolean hasRule = !ruleText.isBlank();
         boolean hasDuration = !durationText.isBlank();
         boolean hasCooldown = !cooldownText.isBlank();
-        boolean hasAny = hasBuffs || hasDebuffs || hasRule || hasDuration || hasCooldown;
+        List<InfoSection> sections = new ArrayList<>();
+        if (hasBuffs) {
+            sections.add(new InfoSection(
+                    tr("ui.augments.info.section.buffs", "Buffs"),
+                    buffsText,
+                    "#8adf9e"));
+        }
+        if (hasDebuffs) {
+            sections.add(new InfoSection(
+                    tr("ui.augments.info.section.debuffs", "Debuffs"),
+                    debuffsText,
+                    "#ff9a9a"));
+        }
+        if (hasRule) {
+            sections.add(new InfoSection(
+                    tr("ui.augments.info.section.rules", "Rules"),
+                    ruleText,
+                    "#ffb86b"));
+        }
+        if (hasDuration) {
+            sections.add(new InfoSection(
+                    tr("ui.augments.info.section.duration", "Duration"),
+                    durationText,
+                    "#9ecbff"));
+        }
+        if (hasCooldown) {
+            sections.add(new InfoSection(
+                    tr("ui.augments.info.section.cooldown", "Cooldown"),
+                    cooldownText,
+                    "#ffd56b"));
+        }
+        applyInfoSections(ui, sections);
+    }
+
+    private List<InfoSection> buildYamlInfoSections(@Nonnull AugmentDefinition definition) {
+        List<InfoSection> sections = new ArrayList<>();
+        for (AugmentDefinition.UiSection section : definition.getUiSections()) {
+            if (section == null) {
+                continue;
+            }
+            String title = section.title() == null ? "" : section.title().trim();
+            String body = normalizeMultilineText(section.body());
+            if (title.isBlank() && body.isBlank()) {
+                continue;
+            }
+            sections.add(new InfoSection(title, body, normalizeColor(section.color(), "#c5d4e8")));
+            if (sections.size() >= INFO_SECTION_LIMIT) {
+                break;
+            }
+        }
+        return sections;
+    }
+
+    private void applyInfoSections(@Nonnull UICommandBuilder ui, @Nonnull List<InfoSection> sections) {
+        List<InfoSection> safeSections = sections == null ? List.of() : sections;
+        boolean hasAny = false;
+
+        for (int index = 0; index < INFO_SECTION_LIMIT; index++) {
+            String containerSelector = INFO_SECTION_CONTAINERS[index];
+            String titleSelector = INFO_SECTION_TITLES[index];
+            String bodySelector = INFO_SECTION_BODIES[index];
+
+            if (index >= safeSections.size()) {
+                ui.set(containerSelector + ".Visible", false);
+                ui.set(titleSelector + ".Visible", false);
+                ui.set(bodySelector + ".Visible", false);
+                continue;
+            }
+
+            InfoSection section = safeSections.get(index);
+            String title = section.title() == null ? "" : section.title().trim();
+            String body = normalizeMultilineText(section.body());
+            String color = normalizeColor(section.color(), "#c5d4e8");
+            boolean hasTitle = !title.isBlank();
+            boolean hasBody = !body.isBlank();
+            boolean visible = hasTitle || hasBody;
+
+            ui.set(containerSelector + ".Visible", visible);
+            ui.set(titleSelector + ".Text", title);
+            ui.set(titleSelector + ".Visible", hasTitle);
+            ui.set(bodySelector + ".Text", body);
+            ui.set(bodySelector + ".Visible", hasBody);
+            ui.set(bodySelector + ".Style.TextColor", color);
+
+            if (visible) {
+                hasAny = true;
+            }
+        }
 
         ui.set("#AugmentInfoDivider2.Visible", hasAny);
         ui.set("#AugmentInfoValues.Visible", hasAny);
+    }
 
-        ui.set("#AugmentInfoBuffs.Text", buffsText);
-        ui.set("#AugmentInfoBuffs.Visible", hasBuffs);
-
-        ui.set("#AugmentInfoDebuffs.Text", debuffsText);
-        ui.set("#AugmentInfoDebuffs.Visible", hasDebuffs);
-
-        ui.set("#AugmentInfoRule.Text", ruleText);
-        ui.set("#AugmentInfoRule.Visible", hasRule);
-
-        ui.set("#AugmentInfoDuration.Text", durationText);
-        ui.set("#AugmentInfoDuration.Visible", hasDuration);
-
-        ui.set("#AugmentInfoCooldown.Text", cooldownText);
-        ui.set("#AugmentInfoCooldown.Visible", hasCooldown);
+    private String normalizeColor(String color, String fallback) {
+        if (color == null) {
+            return fallback;
+        }
+        String trimmed = color.trim();
+        if (trimmed.matches("#?[0-9a-fA-F]{6}")) {
+            return trimmed.startsWith("#") ? trimmed : "#" + trimmed;
+        }
+        return fallback;
     }
 
     private String normalizeMultilineText(String text) {
@@ -424,6 +535,9 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     }
 
     private record BuffRuleSplit(String buffs, String rules) {
+    }
+
+    private record InfoSection(String title, String body, String color) {
     }
 
     private String formatCooldown(Map<String, Object> passives) {

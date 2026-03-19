@@ -5,6 +5,18 @@ description: "Missing health increases your Life Steal, and part of applied heal
 category: LIFESTEAL
 enabled: true
 
+ui:
+  sections:
+    - title: "Overview"
+      body: "Missing health increases your Life Steal, and part of applied healing is fed into your attacks."
+      color: "#8adf9e"
+    - title: "Effects"
+      body: "Review the sections below for exact buff, debuff, duration, and cooldown details."
+      color: "#9ecbff"
+    - title: "Build Tip"
+      body: "Pair this augment with stats and passives that amplify its strongest scaling."
+      color: "#ffd56b"
+
 passives:
   life_steal_scaling:
     max_value: 0.40 # 40% life steal at max missing HP

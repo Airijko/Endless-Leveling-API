@@ -5,6 +5,18 @@ description: "Periodically guarantee a critical strike. Excess critical chance i
 category: PASSIVE_STAT
 enabled: true
 
+ui:
+  sections:
+    - title: "Core Effect"
+      body: "Periodically guarantees your next attack is a critical strike."
+      color: "#8adf9e"
+    - title: "Scaling"
+      body: "Any critical chance above 100% is converted into bonus damage."
+      color: "#9ecbff"
+    - title: "Timing"
+      body: "Activates once every 8 seconds."
+      color: "#ffd56b"
+
 passives:
   guaranteed_crit:
     cooldown: 8 # every 8 seconds

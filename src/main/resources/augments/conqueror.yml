@@ -5,6 +5,18 @@ description: "Sustained combat builds momentum, increasing your damage. At full 
 category: ON_HIT
 enabled: true
 
+ui:
+  sections:
+    - title: "Overview"
+      body: "Sustained combat builds momentum, increasing your damage. At full stacks your attacks pierce defenses with true damage."
+      color: "#8adf9e"
+    - title: "Effects"
+      body: "Review the sections below for exact buff, debuff, duration, and cooldown details."
+      color: "#9ecbff"
+    - title: "Build Tip"
+      body: "Pair this augment with stats and passives that amplify its strongest scaling."
+      color: "#ffd56b"
+
 passives:
   buffs:
     bonus_damage:

@@ -5,6 +5,18 @@ description: "For a short window you cannot drop below a sliver of health and hi
 category: ON_LOW_HP
 enabled: true
 
+ui:
+  sections:
+    - title: "Overview"
+      body: "For a short window you cannot drop below a sliver of health and hit harder as you get lower."
+      color: "#8adf9e"
+    - title: "Effects"
+      body: "Review the sections below for exact buff, debuff, duration, and cooldown details."
+      color: "#9ecbff"
+    - title: "Build Tip"
+      body: "Pair this augment with stats and passives that amplify its strongest scaling."
+      color: "#ffd56b"
+
 passives:
   rage:
     duration: 10 # lasts 10 seconds

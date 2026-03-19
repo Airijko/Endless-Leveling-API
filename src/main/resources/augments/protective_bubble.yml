@@ -5,6 +5,18 @@ description: "Negate one incoming attack and become briefly immune when the bubb
 category: ON_DAMAGE_TAKEN
 enabled: true
 
+ui:
+  sections:
+    - title: "Overview"
+      body: "Negate one incoming attack and become briefly immune when the bubble pops."
+      color: "#8adf9e"
+    - title: "Effects"
+      body: "Review the sections below for exact buff, debuff, duration, and cooldown details."
+      color: "#9ecbff"
+    - title: "Build Tip"
+      body: "Pair this augment with stats and passives that amplify its strongest scaling."
+      color: "#ffd56b"
+
 passives:
   immunity_bubble:
     immunity_window: 0.25 # seconds of immunity for the triggering attack window

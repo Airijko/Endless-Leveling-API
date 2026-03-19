@@ -6,6 +6,18 @@ description: "Small raw boosts to your core stats."
 category: COMMON_STAT
 enabled: true
 
+ui:
+  sections:
+    - title: "What You Get"
+      body: "Common augments roll a single stat boost from the list below."
+      color: "#8adf9e"
+    - title: "Roll Range"
+      body: "The rolled value is chosen between each stat's minimum and maximum value."
+      color: "#9ecbff"
+    - title: "Tip"
+      body: "Use rerolls to chase better values for your build."
+      color: "#ffd56b"
+
 passives:
   buffs:
     life_force:

@@ -5,6 +5,18 @@ description: "Sacrifice durability for overwhelming speed and damage."
 category: PASSIVE_STAT
 enabled: true
 
+ui:
+  sections:
+    - title: "Overview"
+      body: "Sacrifice durability for overwhelming speed and damage."
+      color: "#8adf9e"
+    - title: "Effects"
+      body: "Review the sections below for exact buff, debuff, duration, and cooldown details."
+      color: "#9ecbff"
+    - title: "Build Tip"
+      body: "Pair this augment with stats and passives that amplify its strongest scaling."
+      color: "#ffd56b"
+
 passives:
   health_penalty:
     max_health_percent: -0.20 # lose 20% max HP

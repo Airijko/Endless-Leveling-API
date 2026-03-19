@@ -8,7 +8,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 public final class AugmentParser {
@@ -33,8 +35,38 @@ public final class AugmentParser {
             Map<String, Object> passives = passivesNode instanceof Map<?, ?> m
                     ? (Map<String, Object>) m
                     : Collections.emptyMap();
-            return new AugmentDefinition(id, name, tier, category, stackable, description, passives);
+            List<AugmentDefinition.UiSection> uiSections = parseUiSections(root);
+            return new AugmentDefinition(id, name, tier, category, stackable, description, passives, uiSections);
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<AugmentDefinition.UiSection> parseUiSections(Map<String, Object> root) {
+        Object uiNode = root.get("ui");
+        if (!(uiNode instanceof Map<?, ?> uiRaw)) {
+            return Collections.emptyList();
+        }
+
+        Object sectionsNode = ((Map<String, Object>) uiRaw).get("sections");
+        if (!(sectionsNode instanceof List<?> sectionList) || sectionList.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<AugmentDefinition.UiSection> sections = new ArrayList<>();
+        for (Object sectionNode : sectionList) {
+            if (!(sectionNode instanceof Map<?, ?> rawSection)) {
+                continue;
+            }
+            Map<String, Object> section = (Map<String, Object>) rawSection;
+            String title = stringVal(section.get("title"), "");
+            String body = stringVal(section.get("body"), "");
+            String color = stringVal(section.get("color"), "");
+            if (title.isBlank() && body.isBlank()) {
+                continue;
+            }
+            sections.add(new AugmentDefinition.UiSection(title, body, color));
+        }
+        return sections;
     }
 
     private static String stripExtension(String filename) {

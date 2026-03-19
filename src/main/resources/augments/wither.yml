@@ -5,6 +5,18 @@ description: "Inflict a lingering wither that slows targets and deals a percent 
 category: ON_HIT
 enabled: true
 
+ui:
+  sections:
+    - title: "Overview"
+      body: "Inflict a lingering wither that slows targets and deals a percent of their max health as damage each second."
+      color: "#8adf9e"
+    - title: "Effects"
+      body: "Review the sections below for exact buff, debuff, duration, and cooldown details."
+      color: "#9ecbff"
+    - title: "Build Tip"
+      body: "Pair this augment with stats and passives that amplify its strongest scaling."
+      color: "#ffd56b"
+
 passives:
   wither:
     value: 0.015 # 1.5% max health per second as damage

@@ -5,6 +5,18 @@ description: "On hit, deal bonus damage based on the target's current health."
 category: ON_HIT
 enabled: true
 
+ui:
+  sections:
+    - title: "Overview"
+      body: "On hit, deal bonus damage based on the target's current health."
+      color: "#8adf9e"
+    - title: "Effects"
+      body: "Review the sections below for exact buff, debuff, duration, and cooldown details."
+      color: "#9ecbff"
+    - title: "Build Tip"
+      body: "Pair this augment with stats and passives that amplify its strongest scaling."
+      color: "#ffd56b"
+
 passives:
   bonus_damage_on_hit:
     value: 0.1 # 10% of target's current HP as bonus damage

@@ -3,8 +3,10 @@ package com.airijko.endlessleveling.augments;
 import com.airijko.endlessleveling.enums.PassiveCategory;
 import com.airijko.endlessleveling.enums.PassiveTier;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -20,6 +22,7 @@ public final class AugmentDefinition {
     private final boolean stackable;
     private final String description;
     private final Map<String, Object> passives;
+    private final List<UiSection> uiSections;
 
     public AugmentDefinition(String id,
             String name,
@@ -28,6 +31,17 @@ public final class AugmentDefinition {
             boolean stackable,
             String description,
             Map<String, Object> passives) {
+        this(id, name, tier, category, stackable, description, passives, Collections.emptyList());
+    }
+
+    public AugmentDefinition(String id,
+            String name,
+            PassiveTier tier,
+            PassiveCategory category,
+            boolean stackable,
+            String description,
+            Map<String, Object> passives,
+            List<UiSection> uiSections) {
         this.id = Objects.requireNonNull(id, "id");
         this.name = name == null ? id : name;
         this.tier = tier == null ? PassiveTier.COMMON : tier;
@@ -36,6 +50,8 @@ public final class AugmentDefinition {
         this.description = description == null ? "" : description;
         Map<String, Object> safe = passives == null ? Collections.emptyMap() : new LinkedHashMap<>(passives);
         this.passives = Collections.unmodifiableMap(safe);
+        List<UiSection> safeSections = uiSections == null ? Collections.emptyList() : new ArrayList<>(uiSections);
+        this.uiSections = Collections.unmodifiableList(safeSections);
     }
 
     public String getId() {
@@ -64,5 +80,17 @@ public final class AugmentDefinition {
 
     public Map<String, Object> getPassives() {
         return passives;
+    }
+
+    public List<UiSection> getUiSections() {
+        return uiSections;
+    }
+
+    public record UiSection(String title, String body, String color) {
+        public UiSection {
+            title = title == null ? "" : title;
+            body = body == null ? "" : body;
+            color = color == null ? "" : color;
+        }
     }
 }
