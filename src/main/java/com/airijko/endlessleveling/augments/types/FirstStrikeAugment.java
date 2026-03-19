@@ -23,15 +23,16 @@ public final class FirstStrikeAugment extends YamlAugment
     private static final double TRIGGER_VFX_Y_OFFSET = 1.0D;
     private static final double TRIGGER_VFX_OVERHEAD_OFFSET = 1.15D;
     private static final String[] TRIGGER_VFX_CORE_IDS = new String[] {
-        "Explosion_Big",
-        "Explosion_Medium"
+        "Impact_Critical",
+        "Impact_Dagger_Slash",
+        "Impact_Blade_01"
     };
     private static final String[] TRIGGER_VFX_ACCENT_IDS = new String[] {
-        "Impact_Critical",
-        "Impact_Sword_Basic"
+        "Impact_Sword_Basic",
+        "Impact_Blade_01"
     };
-    private static final int TRIGGER_VFX_CORE_BURST_COUNT = 1;
-    private static final int TRIGGER_VFX_ACCENT_BURST_COUNT = 1;
+    private static final int TRIGGER_VFX_CORE_BURST_COUNT = 2;
+    private static final int TRIGGER_VFX_ACCENT_BURST_COUNT = 2;
     private static final String[] TRIGGER_SFX_PRIMARY_IDS = new String[] {
         "SFX_Sword_T2_Signature_Part_2",
         "SFX_Sword_T2_Impact"
