@@ -58,7 +58,7 @@
     LayoutMode: Top;
     Padding: (Left: 16, Right: 16);
 
-    Label {
+    Label #NavHeader {
       Text: "ENDLESS";
       Anchor: (Height: 22);
       Style: (
@@ -69,7 +69,7 @@
       );
     }
 
-    Label {
+    Label #NavSubHeader {
       Text: "LEVELING";
       Anchor: (Height: 28);
       Style: (
