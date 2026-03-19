@@ -5,6 +5,7 @@ import com.airijko.endlessleveling.augments.AugmentManager;
 import com.airijko.endlessleveling.augments.AugmentRuntimeManager;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
 import com.airijko.endlessleveling.augments.types.BurnAugment;
+import com.airijko.endlessleveling.augments.types.BloodthirsterAugment;
 import com.airijko.endlessleveling.augments.types.EndurePainAugment;
 import com.airijko.endlessleveling.augments.types.FleetFootworkAugment;
 import com.airijko.endlessleveling.augments.types.FortressAugment;
@@ -112,7 +113,11 @@ public final class AugmentHudOverlayController {
                 AugmentRuntimeManager.AugmentState state = runtimeState.getState(augmentId);
                 if (state != null) {
                     int stacks = Math.max(0, state.getStacks());
-                    if (stacks > 0 && (state.getExpiresAt() <= 0L || state.getExpiresAt() > now)) {
+                    boolean stacksVisible = stacks > 0
+                        && (PhaseRushAugment.ID.equals(augmentId)
+                            || state.getExpiresAt() <= 0L
+                            || state.getExpiresAt() > now);
+                    if (stacksVisible) {
                         int maxStacks = resolveConfiguredMaxStacks(definition.getId(), definition.getPassives());
                         boolean atMaxStacks = maxStacks > 0 && stacks >= maxStacks;
                         leftSlots.add(new StackingHudState(
@@ -617,6 +622,34 @@ public final class AugmentHudOverlayController {
             Map<String, Object> deathStacks = AugmentValueReader.getMap(passives, "death_stacks");
             if (deathStacks != null) {
                 int configured = AugmentValueReader.getInt(deathStacks, "max_deaths", 0);
+                if (configured > 0) {
+                    return configured;
+                }
+            }
+
+            Map<String, Object> hitCounter = AugmentValueReader.getMap(passives, "hit_counter");
+            if (hitCounter != null && !hitCounter.isEmpty()) {
+                int configured = AugmentValueReader.getInt(hitCounter, "hits_required", 0);
+                if (configured > 0) {
+                    return configured;
+                }
+            }
+
+            int topLevelHitCounter = AugmentValueReader.getInt(passives, "hit_counter", 0);
+            if (topLevelHitCounter > 0) {
+                return topLevelHitCounter;
+            }
+
+            if (BloodthirsterAugment.ID.equals(augmentId)) {
+                int healthyHitCounter = AugmentValueReader.getInt(
+                        AugmentValueReader.getMap(passives, "healthy_state"),
+                        "hit_counter",
+                        0);
+                int woundedHitCounter = AugmentValueReader.getInt(
+                        AugmentValueReader.getMap(passives, "wounded_state"),
+                        "hit_counter",
+                        0);
+                int configured = Math.max(healthyHitCounter, woundedHitCounter);
                 if (configured > 0) {
                     return configured;
                 }

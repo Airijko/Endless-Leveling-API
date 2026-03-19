@@ -25,6 +25,8 @@ import java.util.Map;
 
 public final class BloodthirsterAugment extends YamlAugment implements AugmentHooks.OnHitAugment {
     public static final String ID = "bloodthirster";
+    private static final long INTERNAL_STACKING_DELAY_MILLIS = 400L;
+    private static final String STACK_DELAY_STATE_ID = ID + "_stack_delay";
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
 
     private static final int MODE_NONE = 0;
@@ -124,17 +126,23 @@ public final class BloodthirsterAugment extends YamlAugment implements AugmentHo
             state.setExpiresAt(0L);
         }
 
+        if (!isStackDelayReady(runtime, now)) {
+            return context.getDamage();
+        }
+
         int nextHits = state.getStacks() + 1;
         if (nextHits < sharedHitCounter) {
             state.setStacks(nextHits);
             if (sharedHitCounterDurationMillis > 0L) {
                 state.setExpiresAt(now + sharedHitCounterDurationMillis);
             }
+            markStackDelay(runtime, now);
             return context.getDamage();
         }
 
         state.setStacks(0);
         state.setExpiresAt(0L);
+        markStackDelay(runtime, now);
         var playerRef = AugmentUtils.getPlayerRef(context.getCommandBuffer(), context.getAttackerRef());
 
         if (mode == MODE_HEALTHY) {
@@ -261,6 +269,15 @@ public final class BloodthirsterAugment extends YamlAugment implements AugmentHo
         float selfDamage = (float) (current * percentOfCurrent);
         float updated = Math.max(1.0f, current - selfDamage);
         statMap.setStatValue(DefaultEntityStatTypes.getHealth(), updated);
+    }
+
+    private static boolean isStackDelayReady(AugmentRuntimeState runtime, long now) {
+        var delayState = runtime.getState(STACK_DELAY_STATE_ID);
+        return delayState.getLastProc() <= 0L || now - delayState.getLastProc() >= INTERNAL_STACKING_DELAY_MILLIS;
+    }
+
+    private static void markStackDelay(AugmentRuntimeState runtime, long now) {
+        runtime.getState(STACK_DELAY_STATE_ID).setLastProc(now);
     }
 
     private double clampRatio(double value) {

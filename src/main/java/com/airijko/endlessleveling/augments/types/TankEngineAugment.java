@@ -21,6 +21,8 @@ import java.util.Map;
 public final class TankEngineAugment extends YamlAugment
         implements AugmentHooks.PassiveStatAugment, AugmentHooks.OnHitAugment, AugmentHooks.OnDamageTakenAugment {
     public static final String ID = "tank_engine";
+    private static final long INTERNAL_STACKING_DELAY_MILLIS = 400L;
+    private static final String STACK_DELAY_STATE_ID = ID + "_stack_delay";
     private static final String MAX_HP_BONUS_KEY = "EL_" + ID + "_max_hp_bonus";
     private static final String LEGACY_MAX_HP_BONUS_KEY = ID + "_max_hp_bonus";
 
@@ -171,6 +173,11 @@ public final class TankEngineAugment extends YamlAugment
             return;
         }
 
+        long now = System.currentTimeMillis();
+        if (!isStackDelayReady(runtime, now)) {
+            return;
+        }
+
         var state = runtime.getState(ID);
         int current = Math.max(0, state.getStacks());
         if (current < maxStacks) {
@@ -184,7 +191,17 @@ public final class TankEngineAugment extends YamlAugment
             }
         }
         if (durationMillis > 0L) {
-            state.setExpiresAt(System.currentTimeMillis() + durationMillis);
+            state.setExpiresAt(now + durationMillis);
         }
+        markStackDelay(runtime, now);
+    }
+
+    private static boolean isStackDelayReady(AugmentRuntimeState runtime, long now) {
+        var delayState = runtime.getState(STACK_DELAY_STATE_ID);
+        return delayState.getLastProc() <= 0L || now - delayState.getLastProc() >= INTERNAL_STACKING_DELAY_MILLIS;
+    }
+
+    private static void markStackDelay(AugmentRuntimeState runtime, long now) {
+        runtime.getState(STACK_DELAY_STATE_ID).setLastProc(now);
     }
 }

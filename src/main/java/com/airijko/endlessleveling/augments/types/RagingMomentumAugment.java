@@ -26,6 +26,8 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 public final class RagingMomentumAugment extends YamlAugment
     implements AugmentHooks.OnHitAugment, AugmentHooks.PassiveStatAugment {
     public static final String ID = "raging_momentum";
+    private static final long INTERNAL_STACKING_DELAY_MILLIS = 400L;
+    private static final String STACK_DELAY_STATE_ID = ID + "_stack_delay";
     private static final String AURA_STATE_ID = ID + "_aura";
     private static final double TRIGGER_VFX_Y_OFFSET = 0.8D;
     private static final long AURA_REFRESH_INTERVAL_MILLIS = 900L;
@@ -80,7 +82,7 @@ public final class RagingMomentumAugment extends YamlAugment
         int stacks = Math.max(0, state.getStacks());
         boolean wasAtFullStacks = isAtFullStacks(stacks);
         boolean gainedStack = false;
-        if (stacks < maxStacks) {
+        if (stacks < maxStacks && isStackDelayReady(runtime, now)) {
             stacks = AugmentUtils.setStacksWithNotify(runtime,
                     ID,
                     stacks + 1,
@@ -88,14 +90,16 @@ public final class RagingMomentumAugment extends YamlAugment
                     AugmentUtils.getPlayerRef(context.getCommandBuffer(), context.getAttackerRef()),
                     getName());
             gainedStack = stacks > 0;
+            markStackDelay(runtime, now);
         }
 
-        // Refresh stack duration window
-        long extendMillis = AugmentUtils.secondsToMillis(durationPerStackSeconds);
-        if (extendMillis > 0L) {
-            state.setExpiresAt(now + extendMillis);
+        if (gainedStack) {
+            long extendMillis = AugmentUtils.secondsToMillis(durationPerStackSeconds);
+            if (extendMillis > 0L) {
+                state.setExpiresAt(now + extendMillis);
+            }
+            state.setLastProc(now);
         }
-        state.setLastProc(now);
 
         double strengthBonus = stacks * perStackStrength;
         double sorceryBonus = stacks * perStackSorcery;
@@ -204,6 +208,15 @@ public final class RagingMomentumAugment extends YamlAugment
 
     private boolean isAtFullStacks(int stacks) {
         return maxStacks > 0 && stacks >= maxStacks;
+    }
+
+    private static boolean isStackDelayReady(AugmentRuntimeState runtime, long now) {
+        var delayState = runtime.getState(STACK_DELAY_STATE_ID);
+        return delayState.getLastProc() <= 0L || now - delayState.getLastProc() >= INTERNAL_STACKING_DELAY_MILLIS;
+    }
+
+    private static void markStackDelay(AugmentRuntimeState runtime, long now) {
+        runtime.getState(STACK_DELAY_STATE_ID).setLastProc(now);
     }
 
     private void playTriggerSound(AugmentHooks.HitContext context) {
