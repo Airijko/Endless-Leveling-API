@@ -70,7 +70,6 @@ public class ClassManager {
     private boolean hasConfiguredDefaultPrimaryClass = true;
     private String defaultSecondaryClassId = null;
     private final double secondaryPassiveScale = 0.5D;
-    private final double secondaryWeaponScale = 0.5D;
     private final long chooseClassCooldownSeconds;
     private final int maxClassSwitches;
 
@@ -508,13 +507,6 @@ public class ClassManager {
         if (primary != null) {
             double primaryBonus = Math.max(0.0D, primary.getWeaponMultiplier(weaponCategoryKey) - 1.0D);
             totalBonus += primaryBonus;
-        }
-        CharacterClassDefinition secondary = getPlayerSecondaryClass(data);
-        if (secondary != null && secondary != primary) {
-            double secondaryBonus = Math.max(0.0D, secondary.getWeaponMultiplier(weaponCategoryKey) - 1.0D);
-            if (secondaryBonus > 0.0D) {
-                totalBonus += secondaryBonus * secondaryWeaponScale;
-            }
         }
         return 1.0D + totalBonus;
     }

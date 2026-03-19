@@ -507,7 +507,7 @@ ui:
       cooldown_title: Kasztváltás töltési ideje
       available: Elérhető kasztok
       assignments: Kaszt-hozzárendelések
-      secondary_share_hint: A másodlagos kasztok a bónuszok 50%-át adják.
+      secondary_share_hint: A másodlagos kasztok a passzív bónuszok 50%-át adják.
       sorcery_label: Varázserő bónusz
       lore_title: Történet
       weapons_title: Fegyver-affinitások
@@ -539,7 +539,7 @@ ui:
       missing: Ehhez a kaszthoz nincs történet.
     subtitle:
       primary: Jelenlegi elsődleges kasztod
-      secondary: Jelenlegi másodlagos kasztod (50% hatás)
+      secondary: Jelenlegi másodlagos kasztod
       preview: Csak előnézet
     weapons:
       none_defined: Ez a kaszt nem rendelkezik fegyverbónuszokkal.
@@ -575,7 +575,7 @@ ui:
       secondary_slot: Másodlagos
       swap_triggers: A kasztváltások {0} töltési időt váltanak ki.
       primary_bonus: Az elsődleges kasztok a bónuszok 100%-át adják.
-      secondary_bonus: A másodlagos kasztok a fegyver- és passzív hatások 50%-át adják.
+      secondary_bonus: A másodlagos kasztok a passzív hatások 50%-át adják.
       secondary_disabled: A másodlagos kasztok le vannak tiltva.
     passives:
       none_defined: Ez a kaszt nem rendelkezik passzív bónuszokkal.

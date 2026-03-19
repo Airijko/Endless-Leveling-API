@@ -507,7 +507,7 @@ ui:
       cooldown_title: Temps de recharge (Classe)
       available: Classes Disponibles
       assignments: Assignations de Classe
-      secondary_share_hint: Les classes secondaires partagent 50% des bonus.
+      secondary_share_hint: Les classes secondaires partagent 50% des bonus passifs.
       sorcery_label: Bonus de Sorcellerie
       lore_title: Histoire
       weapons_title: Affinités d'Armes
@@ -539,7 +539,7 @@ ui:
       missing: Aucune histoire pour cette classe.
     subtitle:
       primary: Classe primaire actuelle
-      secondary: Classe secondaire actuelle (50% d'effet)
+      secondary: Classe secondaire actuelle
       preview: Aperçu uniquement
     weapons:
       none_defined: Cette classe n'a pas de bonus d'armes.
@@ -575,7 +575,7 @@ ui:
       secondary_slot: Secondaire
       swap_triggers: Les changements déclenchent {0} de recharge.
       primary_bonus: Les classes primaires donnent 100% des bonus.
-      secondary_bonus: Les secondaires donnent 50% des effets d'armes + passifs.
+      secondary_bonus: Les secondaires donnent 50% des effets passifs.
       secondary_disabled: Les classes secondaires sont désactivées.
     passives:
       none_defined: Cette classe n'a pas de bonus passifs.

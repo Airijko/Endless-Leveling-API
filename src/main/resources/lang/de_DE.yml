@@ -507,7 +507,7 @@ ui:
       cooldown_title: Klassenwechsel Abklingzeit
       available: Verfügbare Klassen
       assignments: Klassenzuweisungen
-      secondary_share_hint: Sekundärklassen teilen 50% der Boni.
+      secondary_share_hint: Sekundärklassen gewähren 50% der passiven Boni.
       sorcery_label: Zauberkraft-Bonus
       lore_title: Lore-Vorschau
       weapons_title: Waffenaffinitäten
@@ -539,7 +539,7 @@ ui:
       missing: Keine Lore für diese Klasse hinterlegt.
     subtitle:
       primary: Aktuell deine Primärklasse
-      secondary: Aktuell deine Sekundärklasse (50% Effekt)
+      secondary: Aktuell deine Sekundärklasse
       preview: Nur Vorschau
     weapons:
       none_defined: Diese Klasse hat keine Waffenboni.
@@ -575,7 +575,7 @@ ui:
       secondary_slot: Sekundär
       swap_triggers: Klassenwechsel lösen {0} Abklingzeit aus.
       primary_bonus: Primärklassen gewähren 100% der Boni.
-      secondary_bonus: Sekundärklassen gewähren 50% der Waffen- + Passiveffekte.
+      secondary_bonus: Sekundärklassen gewähren 50% der Passiveffekte.
       secondary_disabled: Sekundärklassen sind deaktiviert.
     passives:
       none_defined: Diese Klasse hat keine passiven Boni.

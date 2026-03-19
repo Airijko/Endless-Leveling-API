@@ -507,7 +507,7 @@ ui:
       cooldown_title: Enfriamiento de Cambio de Clase
       available: Clases Disponibles
       assignments: Asignaciones de Clase
-      secondary_share_hint: Las clases secundarias comparten el 50% de los bonos.
+      secondary_share_hint: Las clases secundarias comparten el 50% de los bonos pasivos.
       sorcery_label: Bono de Hechicería
       lore_title: Vista de Historia
       weapons_title: Afinidades de Armas
@@ -539,7 +539,7 @@ ui:
       missing: No hay historia para esta clase.
     subtitle:
       primary: Tu clase primaria actual
-      secondary: Tu clase secundaria actual (50% de efecto)
+      secondary: Tu clase secundaria actual
       preview: Solo vista previa
     weapons:
       none_defined: Esta clase no tiene bonos de armas.
@@ -575,7 +575,7 @@ ui:
       secondary_slot: Secundaria
       swap_triggers: Los cambios de clase activan {0} de enfriamiento.
       primary_bonus: Las clases primarias otorgan el 100% de los bonos.
-      secondary_bonus: Las secundarias otorgan el 50% de efectos de armas y pasivas.
+      secondary_bonus: Las secundarias otorgan el 50% de efectos pasivos.
       secondary_disabled: Las clases secundarias están desactivadas.
     passives:
       none_defined: Esta clase no tiene bonos pasivos.

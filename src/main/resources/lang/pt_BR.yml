@@ -507,7 +507,7 @@ ui:
       cooldown_title: Recarga de Troca de Classe
       available: Classes Disponíveis
       assignments: Atribuições de Classe
-      secondary_share_hint: Classes secundárias concedem 50% dos bônus.
+      secondary_share_hint: Classes secundárias concedem 50% dos bônus passivos.
       sorcery_label: Bônus de Magia
       lore_title: Lore
       weapons_title: Afinidades de Arma
@@ -539,7 +539,7 @@ ui:
       missing: Não há registros de lore para esta classe.
     subtitle:
       primary: Sua Classe Primária Atual
-      secondary: Sua Classe Secundária Atual (50% de efeito)
+      secondary: Sua Classe Secundária Atual
       preview: Apenas Visualização
     weapons:
       none_defined: Esta classe não possui bônus de arma.
@@ -575,7 +575,7 @@ ui:
       secondary_slot: Secundária
       swap_triggers: Trocas de classe geram {0} de recarga.
       primary_bonus: Classes primárias utilizam 100% de seus bônus.
-      secondary_bonus: Classes secundárias têm efeitos de arma e passivas reduzidos para 50%.
+      secondary_bonus: Classes secundárias têm efeitos passivos reduzidos para 50%.
       secondary_disabled: Classes secundárias estão desativadas.
     passives:
       none_defined: Esta classe não possui bônus passivos.

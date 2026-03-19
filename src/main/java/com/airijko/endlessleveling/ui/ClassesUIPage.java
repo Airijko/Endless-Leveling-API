@@ -402,7 +402,7 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         ui.set("#ClassPrimaryStatusLabel.Text", tr("ui.classes.detail.primary_slot", "Primary"));
         ui.set("#ClassSecondaryStatusLabel.Text", tr("ui.classes.detail.secondary_slot", "Secondary"));
         ui.set("#ClassSecondaryShareHint.Text",
-                tr("ui.classes.page.secondary_share_hint", "Secondary classes share 50% of bonuses."));
+            tr("ui.classes.page.secondary_share_hint", "Secondary classes share 50% of passive bonuses."));
         ui.set("#ClassSorceryLabel.Text", tr("ui.classes.page.sorcery_label", "Sorcery Bonus"));
         ui.set("#ClassLoreTitle.Text", tr("ui.classes.page.lore_title", "Lore Preview"));
         ui.set("#ClassWeaponsTitle.Text", tr("ui.classes.page.weapons_title", "Weapon Affinities"));
@@ -498,7 +498,7 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             ui.set("#SelectedClassSubtitle.Text", tr("ui.classes.subtitle.primary", "Currently your primary class"));
         } else if (secondary != null && secondary.getId().equalsIgnoreCase(selection.getId())) {
             ui.set("#SelectedClassSubtitle.Text",
-                    tr("ui.classes.subtitle.secondary", "Currently your secondary class (50% effect)"));
+                    tr("ui.classes.subtitle.secondary", "Currently your secondary class"));
         } else {
             ui.set("#SelectedClassSubtitle.Text", tr("ui.classes.subtitle.preview", "Preview only"));
         }
@@ -531,7 +531,7 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         if (secondaryEnabled) {
             statusBuilder.append(' ').append(
                     tr("ui.classes.detail.secondary_bonus",
-                            "Secondary classes grant 50% of weapon + passive effects."));
+                    "Secondary classes grant 50% of passive effects."));
         } else {
             statusBuilder.append(' ')
                     .append(tr("ui.classes.detail.secondary_disabled", "Secondary classes are disabled in config."));
