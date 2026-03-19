@@ -228,6 +228,16 @@ public class PlayerDataManager {
             // Migrate file if it's an older schema version. This will create
             // a backup of the original file and write a migrated file in-place.
             map = PlayerDataMigration.migrateIfNeeded(file, map, yaml, VersionRegistry.PLAYERDATA_SCHEMA_VERSION);
+        } catch (LinkageError e) {
+            LOGGER.atSevere().log(
+                "PlayerData migration helper is unavailable for UUID %s while loading %s: %s",
+                uuid,
+                file.getName(),
+                e.getMessage());
+            e.printStackTrace();
+            LOGGER.atWarning().log(
+                "Continuing to load PlayerData for UUID %s without migration to avoid crashing the world thread.",
+                uuid);
         } catch (Exception e) {
             LOGGER.atSevere().log("Failed to migrate PlayerData for UUID %s from %s: %s", uuid,
                     file.getName(), e.getMessage());

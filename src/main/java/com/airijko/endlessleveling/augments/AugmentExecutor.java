@@ -25,6 +25,7 @@ import com.airijko.endlessleveling.augments.types.BailoutAugment;
 import com.airijko.endlessleveling.player.PlayerData;
 import com.airijko.endlessleveling.enums.ClassWeaponType;
 import com.airijko.endlessleveling.player.SkillManager;
+import com.airijko.endlessleveling.augments.types.DeathBombAugment;
 import com.airijko.endlessleveling.util.ChatMessageTemplate;
 import com.airijko.endlessleveling.util.ChatMessageStrings;
 import com.airijko.endlessleveling.util.PlayerChatNotifier;
@@ -337,6 +338,8 @@ public final class AugmentExecutor {
             CommandBuffer<EntityStore> commandBuffer,
             EntityStatMap statMap,
             double deltaSeconds) {
+        DeathBombAugment.tickPendingBombs(commandBuffer, playerRef);
+
         var runtime = runtimeManager.getRuntimeState(playerData.getUuid());
         runtime.clearPermanentAttributeBonuses();
 
