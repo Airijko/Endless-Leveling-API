@@ -45,17 +45,20 @@ public final class FrozenDomainAugment extends YamlAugment
     private static final float MIN_MOVEMENT_MULTIPLIER = 0.0001F;
     private static final String[] SLOW_EFFECT_IDS = new String[] { "slowness", "slow" };
     private static final String[] TRIGGER_PULSE_VFX_IDS = new String[] { "Impact_Blade_01" };
-        private static final String[] TRIGGER_PULSE_SFX_IDS = new String[] {
+    private static final String[] TRIGGER_PULSE_SFX_IDS = new String[] {
             "SFX_Arrow_Frost_Miss",
             "SFX_Arrow_Frost_Hit",
             "SFX_Ice_Ball_Death"
-        };
+    };
     private static final long TRIGGER_PULSE_DURATION_MILLIS = 250L;
     private static final long TRIGGER_PULSE_STEP_MILLIS = 50L;
-    private static final int TRIGGER_PULSE_MIN_POINT_COUNT = 8;
-    private static final int TRIGGER_PULSE_MAX_POINT_COUNT = 18;
-    private static final int TRIGGER_PULSE_MIN_LAYER_COUNT = 1;
+    private static final int TRIGGER_PULSE_MIN_POINT_COUNT = 10;
+    private static final int TRIGGER_PULSE_MAX_POINT_COUNT = 36;
+    private static final int TRIGGER_PULSE_MIN_LAYER_COUNT = 2;
+    private static final int TRIGGER_PULSE_MAX_LAYER_COUNT = 4;
     private static final double TRIGGER_PULSE_START_RADIUS = 0.1D;
+    private static final double TRIGGER_PULSE_MIN_LAYER_SPACING = 0.2D;
+    private static final double TRIGGER_PULSE_MAX_LAYER_SPACING = 0.45D;
     private static final double TRIGGER_PULSE_Y_OFFSET = 0.3D;
     private static final Map<String, ActiveFrozen> ACTIVE_FROST = new ConcurrentHashMap<>();
     private static final Map<String, ActivePulse> ACTIVE_PULSES = new ConcurrentHashMap<>();
@@ -613,15 +616,20 @@ public final class FrozenDomainAugment extends YamlAugment
 
     private int resolveTriggerPulsePointCount(double targetRadius) {
         return Math.max(TRIGGER_PULSE_MIN_POINT_COUNT,
-                Math.min(TRIGGER_PULSE_MAX_POINT_COUNT, (int) Math.ceil(targetRadius * 3.0D)));
+                Math.min(TRIGGER_PULSE_MAX_POINT_COUNT, (int) Math.ceil(targetRadius * 6.0D)));
     }
 
     private int resolveTriggerPulseLayerCount(double targetRadius) {
-        return TRIGGER_PULSE_MIN_LAYER_COUNT;
+        return Math.max(TRIGGER_PULSE_MIN_LAYER_COUNT,
+                Math.min(TRIGGER_PULSE_MAX_LAYER_COUNT, (int) Math.ceil(targetRadius / 2.5D)));
     }
 
     private double resolveTriggerPulseLayerSpacing(double targetRadius, int layerCount) {
-        return 0.0D;
+        if (layerCount <= 1) {
+            return 0.0D;
+        }
+        return Math.max(TRIGGER_PULSE_MIN_LAYER_SPACING,
+                Math.min(TRIGGER_PULSE_MAX_LAYER_SPACING, targetRadius / (layerCount * 6.0D)));
     }
 
     private static void spawnTriggerPulseParticle(Ref<EntityStore> sourceRef, Vector3d position) {
