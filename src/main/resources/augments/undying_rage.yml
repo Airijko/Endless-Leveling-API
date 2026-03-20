@@ -19,7 +19,7 @@ ui:
         Full Value Threshold: +5%
       color: "#ffb86b"
     - title: "Duration"
-      body: "Duration: 10x"
+      body: "Duration: 10s"
       color: "#9ecbff"
     - title: "Cooldown"
       body: "Cooldown: +100"

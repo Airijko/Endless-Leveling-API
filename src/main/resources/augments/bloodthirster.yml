@@ -10,7 +10,7 @@ ui:
     - title: "Buffs"
       body: |
         Hit Counter: +3
-        Hit Counter Duration: 5x
+        Hit Counter Duration: 5s
         Above 50% Health:
         Value: +80%
         Below 50% Health:

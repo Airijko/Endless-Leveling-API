@@ -19,7 +19,7 @@ ui:
       body: "Exclude Flat From Percent Scaling: Yes"
       color: "#ffb86b"
     - title: "Duration"
-      body: "Duration: 8x"
+      body: "Duration: 8s"
       color: "#9ecbff"
 passives:
   stacking_health:

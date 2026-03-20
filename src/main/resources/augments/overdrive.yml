@@ -19,7 +19,7 @@ ui:
         On Damage Taken: Yes
       color: "#ffb86b"
     - title: "Duration"
-      body: "Seconds: +8"
+      body: "Duration: 8s"
       color: "#9ecbff"
 passives:
   buffs:

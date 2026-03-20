@@ -17,7 +17,7 @@ ui:
       body: "Category: ON_HIT"
       color: "#ffb86b"
     - title: "Duration"
-      body: "Duration: 5x"
+      body: "Duration: 5s"
       color: "#9ecbff"
 passives:
   wither:

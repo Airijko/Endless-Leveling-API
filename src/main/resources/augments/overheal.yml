@@ -10,7 +10,7 @@ ui:
     - title: "Buffs"
       body: |
         Max Shield Percent: +15%
-        Decay Duration: 8x
+        Decay Duration: 8s
         Value: +5%
       color: "#8adf9e"
 passives:

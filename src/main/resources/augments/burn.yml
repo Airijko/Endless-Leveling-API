@@ -17,7 +17,7 @@ ui:
         Value: +100
       color: "#8adf9e"
     - title: "Duration"
-      body: "Duration: 10x"
+      body: "Duration: 10s"
       color: "#9ecbff"
     - title: "Cooldown"
       body: "Cooldown: +10"

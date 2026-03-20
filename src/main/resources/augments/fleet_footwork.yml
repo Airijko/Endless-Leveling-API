@@ -13,7 +13,7 @@ ui:
         Value: +50%
       color: "#8adf9e"
     - title: "Duration"
-      body: "Duration: 3x"
+      body: "Duration: 3s"
       color: "#9ecbff"
     - title: "Cooldown"
       body: "Cooldown: +8"

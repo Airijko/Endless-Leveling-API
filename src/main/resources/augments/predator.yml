@@ -20,7 +20,7 @@ ui:
       body: "Active Until Max Stacks: Yes"
       color: "#ffb86b"
     - title: "Duration"
-      body: "Seconds: +10"
+      body: "Duration: 10s"
       color: "#9ecbff"
 passives:
   buffs:

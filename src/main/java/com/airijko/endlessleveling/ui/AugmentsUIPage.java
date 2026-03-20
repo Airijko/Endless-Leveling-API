@@ -66,6 +66,8 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         "#AugmentInfoSection4Body",
         "#AugmentInfoSection5Body"
     };
+    private static final String DURATION_TITLE = "duration";
+    private static final String COOLDOWN_TITLE = "cooldown";
 
     private final AugmentManager augmentManager;
     private final AugmentUnlockManager augmentUnlockManager;
@@ -303,8 +305,13 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             if (section == null) {
                 continue;
             }
-            String title = section.title() == null ? "" : section.title().trim();
+            String rawTitle = section.title() == null ? "" : section.title().trim();
             String body = normalizeMultilineText(section.body());
+            String title = rawTitle;
+            if (isCompactTimingSection(rawTitle)) {
+                title = "";
+                body = compactTimingBody(rawTitle, body);
+            }
             if (title.isBlank() && body.isBlank()) {
                 continue;
             }
@@ -390,6 +397,35 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             lines.remove(lines.size() - 1);
         }
         return String.join("\n", lines);
+    }
+
+    private boolean isCompactTimingSection(String title) {
+        String normalized = title == null ? "" : title.trim().toLowerCase(Locale.ROOT);
+        return DURATION_TITLE.equals(normalized) || COOLDOWN_TITLE.equals(normalized);
+    }
+
+    private String compactTimingBody(String title, String body) {
+        if (body == null || body.isBlank()) {
+            return "";
+        }
+
+        boolean isDuration = DURATION_TITLE.equals(title == null ? "" : title.trim().toLowerCase(Locale.ROOT));
+        List<String> compactLines = new ArrayList<>();
+        for (String rawLine : body.split("\\n", -1)) {
+            String line = rawLine == null ? "" : rawLine.trim();
+            if (line.isBlank()) {
+                continue;
+            }
+            compactLines.add(isDuration ? normalizeDurationLine(line) : line);
+        }
+        return String.join(" | ", compactLines);
+    }
+
+    private String normalizeDurationLine(String line) {
+        String normalized = line.replaceFirst("(?i)^duration\\s+per\\s+stack\\s*:\\s*\\+?([0-9]+(?:\\.[0-9]+)?)x?$", "Duration: $1s");
+        normalized = normalized.replaceFirst("(?i)^duration\\s*:\\s*\\+?([0-9]+(?:\\.[0-9]+)?)x$", "Duration: $1s");
+        normalized = normalized.replaceFirst("(?i)^seconds\\s*:\\s*\\+?([0-9]+(?:\\.[0-9]+)?)$", "Duration: $1s");
+        return normalized;
     }
 
     private record InfoSection(String title, String body, String color) {
