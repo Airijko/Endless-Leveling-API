@@ -2,6 +2,8 @@ package com.airijko.endlessleveling.ui;
 
 import javax.annotation.Nonnull;
 
+import com.airijko.endlessleveling.EndlessLeveling;
+import com.airijko.endlessleveling.security.PartnerBrandingAllowlist;
 import com.airijko.endlessleveling.util.Lang;
 import com.airijko.endlessleveling.util.DiscordLinkResolver;
 import com.hypixel.hytale.component.Ref;
@@ -55,6 +57,36 @@ public class SupportUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         ui.set("#SupportNotice3.Text",
                 Lang.tr(playerRef.getUuid(), "ui.support.notice3",
                         "If you enjoy the mod, please support the original project and developer."));
+
+        EndlessLeveling plugin = EndlessLeveling.getInstance();
+        boolean partnerAddonDetected = isPartnerAddonDetected();
+        boolean partnerAddonValid = partnerAddonDetected && plugin != null && plugin.isPartnerAddonAuthorized();
+
+        ui.set("#SupportPartnerSectionTitle.Text",
+                Lang.tr(playerRef.getUuid(), "ui.support.partner.section", "Official Endless Partners"));
+
+        ui.set("#SupportPartnerAddonValidationLabel.Text",
+                Lang.tr(playerRef.getUuid(), "ui.support.partner.valid.label", "Addon Validation"));
+        if (!partnerAddonDetected) {
+            ui.set("#SupportPartnerAddonValidationValue.Text",
+                    Lang.tr(playerRef.getUuid(), "ui.support.partner.valid.na", "N/A (addon not present)"));
+            ui.set("#SupportPartnerAddonValidationValue.Style.TextColor", "#9fb6d3");
+        } else if (partnerAddonValid) {
+            ui.set("#SupportPartnerAddonValidationValue.Text",
+                    Lang.tr(playerRef.getUuid(), "ui.support.partner.valid.ok", "Valid (authorized)"));
+            ui.set("#SupportPartnerAddonValidationValue.Style.TextColor", "#6ee7b7");
+        } else {
+            ui.set("#SupportPartnerAddonValidationValue.Text",
+                    Lang.tr(playerRef.getUuid(), "ui.support.partner.valid.fail", "Invalid (not authorized)"));
+            ui.set("#SupportPartnerAddonValidationValue.Style.TextColor", "#ff6b6b");
+        }
+
+        ui.set("#SupportPartnerServerListLabel.Text",
+                Lang.tr(playerRef.getUuid(), "ui.support.partner.servers.label", "Authorized Partner Servers"));
+        String partnerServerNames = PartnerBrandingAllowlist.getPartnerServerNames().isEmpty()
+                ? Lang.tr(playerRef.getUuid(), "ui.support.partner.servers.none", "None")
+                : String.join(", ", PartnerBrandingAllowlist.getPartnerServerNames());
+        ui.set("#SupportPartnerServerListValue.Text", partnerServerNames);
         ui.set("#SupportDiscordTitle.Text",
                 Lang.tr(playerRef.getUuid(), "ui.support.discord_title", "Need help?"));
         ui.set("#SupportDiscordDescription.Text",
@@ -89,4 +121,13 @@ public class SupportUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
         NavUIHelper.handleNavAction(data.action, ref, store, playerRef);
     }
+
+        private boolean isPartnerAddonDetected() {
+                try {
+                        Class.forName("com.airijko.endlessleveling.EndlessLevelingPartnerAddon");
+                        return true;
+                } catch (Throwable ignored) {
+                        return false;
+                }
+        }
 }

@@ -97,6 +97,49 @@ $C.@PageOverlay {
                             Text: "If you enjoy the mod, please support the original project and developer.";
                             Style: (TextColor: #c0cee5, FontSize: 14);
                         }
+
+                        Group { Anchor: (Height: 16); }
+
+                        Group {
+                            Anchor: (Height: 1);
+                            Background: #2b3542;
+                        }
+
+                        Group { Anchor: (Height: 12); }
+
+                        Label #SupportPartnerSectionTitle {
+                            Text: "Official Endless Partners";
+                            Anchor: (Height: 20);
+                            Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true, VerticalAlignment: Center);
+                        }
+
+                        Group { Anchor: (Height: 6); }
+
+                        Label #SupportPartnerAddonValidationLabel {
+                            Text: "Addon Validation";
+                            Anchor: (Height: 16);
+                            Style: (FontSize: 12, TextColor: #8aa1bf, RenderBold: true);
+                        }
+
+                        Label #SupportPartnerAddonValidationValue {
+                            Text: "--";
+                            Anchor: (Height: 18);
+                            Style: (FontSize: 13, TextColor: #c0cee5, RenderBold: true);
+                        }
+
+                        Group { Anchor: (Height: 6); }
+
+                        Label #SupportPartnerServerListLabel {
+                            Text: "Authorized Partner Servers";
+                            Anchor: (Height: 16);
+                            Style: (FontSize: 12, TextColor: #8aa1bf, RenderBold: true);
+                        }
+
+                        Label #SupportPartnerServerListValue {
+                            Text: "--";
+                            Anchor: (Height: 34);
+                            Style: (TextColor: #c0cee5, FontSize: 13, Wrap: true);
+                        }
                     }
                 }
 

@@ -1,6 +1,7 @@
 package com.airijko.endlessleveling.security;
 
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
@@ -12,6 +13,9 @@ import java.util.Set;
  */
 public final class PartnerBrandingAllowlist {
 
+    private static final List<String> PARTNER_SERVER_NAMES = List.of(
+            "Histatu");
+
     private static final Set<String> ALLOWED_EXACT_HOSTS = Set.of(
             "play.histatu.net");
 
@@ -19,6 +23,10 @@ public final class PartnerBrandingAllowlist {
             ".histatu.net");
 
     private PartnerBrandingAllowlist() {
+    }
+
+    public static List<String> getPartnerServerNames() {
+        return PARTNER_SERVER_NAMES;
     }
 
     public static Set<String> parseDeclaredHostsCsv(String declaredServerHostsCsv) {
