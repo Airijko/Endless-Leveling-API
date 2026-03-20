@@ -1,10 +1,11 @@
 package com.airijko.endlessleveling.augments.types;
 
+import com.airijko.endlessleveling.augments.Augment;
+
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentHooks;
 import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
-import com.airijko.endlessleveling.augments.YamlAugment;
 import com.airijko.endlessleveling.player.SkillManager;
 import com.airijko.endlessleveling.util.EntityRefUtil;
 import com.hypixel.hytale.component.Ref;
@@ -17,7 +18,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import java.util.Map;
 
-public final class AbsoluteFocusAugment extends YamlAugment implements AugmentHooks.OnHitAugment {
+public final class AbsoluteFocusAugment extends Augment implements AugmentHooks.OnHitAugment {
     public static final String ID = "absolute_focus";
     private static final double TRIGGER_VFX_Y_OFFSET = 1.0D;
     private static final String[] TRIGGER_VFX_IDS = new String[] {

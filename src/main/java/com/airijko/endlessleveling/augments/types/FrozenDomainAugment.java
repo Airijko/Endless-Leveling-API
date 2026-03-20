@@ -1,12 +1,13 @@
 package com.airijko.endlessleveling.augments.types;
 
+import com.airijko.endlessleveling.augments.Augment;
+
 import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentHooks;
 import com.airijko.endlessleveling.augments.AugmentRuntimeManager.AugmentRuntimeState;
 import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
-import com.airijko.endlessleveling.augments.YamlAugment;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.airijko.endlessleveling.leveling.PartyManager;
 import com.airijko.endlessleveling.util.EntityRefUtil;
@@ -36,7 +37,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-public final class FrozenDomainAugment extends YamlAugment
+public final class FrozenDomainAugment extends Augment
         implements AugmentHooks.OnDamageTakenAugment, AugmentHooks.PassiveStatAugment {
     public static final String ID = "frozen_domain";
 

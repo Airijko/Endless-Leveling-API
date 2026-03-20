@@ -1,15 +1,16 @@
 package com.airijko.endlessleveling.augments.types;
 
+import com.airijko.endlessleveling.augments.Augment;
+
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentHooks;
 import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
-import com.airijko.endlessleveling.augments.YamlAugment;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 
 import java.util.Map;
 
-public final class SnipersReachAugment extends YamlAugment implements AugmentHooks.OnHitAugment {
+public final class SnipersReachAugment extends Augment implements AugmentHooks.OnHitAugment {
     public static final String ID = "snipers_reach";
 
     private final double maxValue;

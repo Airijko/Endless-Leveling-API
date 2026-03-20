@@ -1,13 +1,14 @@
 package com.airijko.endlessleveling.augments.types;
 
+import com.airijko.endlessleveling.augments.Augment;
+
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentHooks;
 import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
-import com.airijko.endlessleveling.augments.YamlAugment;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
 
-public final class ManaInfusionAugment extends YamlAugment implements AugmentHooks.PassiveStatAugment {
+public final class ManaInfusionAugment extends Augment implements AugmentHooks.PassiveStatAugment {
     public static final String ID = "mana_infusion";
 
     private final double percentOfManaToSorcery;

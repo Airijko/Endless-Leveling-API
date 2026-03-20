@@ -1,13 +1,14 @@
 package com.airijko.endlessleveling.augments.types;
 
+import com.airijko.endlessleveling.augments.Augment;
+
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentHooks;
 import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
-import com.airijko.endlessleveling.augments.YamlAugment;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
 
-public final class ArcaneInstabilityAugment extends YamlAugment implements AugmentHooks.PassiveStatAugment {
+public final class ArcaneInstabilityAugment extends Augment implements AugmentHooks.PassiveStatAugment {
     public static final String ID = "arcane_instability";
 
     private final double highManaBonus;
@@ -37,7 +38,7 @@ public final class ArcaneInstabilityAugment extends YamlAugment implements Augme
         var low = AugmentValueReader.getMap(debuffs, "sorcery_penalty_low");
         var lowCond = AugmentValueReader.getMap(low, "condition");
         this.lowManaPenalty = AugmentUtils
-            .normalizeConfiguredDebuffMultiplier(AugmentValueReader.getDouble(low, "value", 0.0D));
+                .normalizeConfiguredDebuffMultiplier(AugmentValueReader.getDouble(low, "value", 0.0D));
         this.lowManaThreshold = normalizePercentThreshold(
                 AugmentValueReader.getNestedDouble(lowCond, 0.0D, "max_percent"));
     }

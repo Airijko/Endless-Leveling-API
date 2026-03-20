@@ -1,11 +1,12 @@
 package com.airijko.endlessleveling.augments.types;
 
+import com.airijko.endlessleveling.augments.Augment;
+
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentHooks;
 import com.airijko.endlessleveling.augments.AugmentRuntimeManager.AugmentRuntimeState;
 import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
-import com.airijko.endlessleveling.augments.YamlAugment;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
@@ -18,7 +19,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import java.util.Map;
 
-public final class TankEngineAugment extends YamlAugment
+public final class TankEngineAugment extends Augment
         implements AugmentHooks.PassiveStatAugment, AugmentHooks.OnHitAugment, AugmentHooks.OnDamageTakenAugment {
     public static final String ID = "tank_engine";
     private static final long INTERNAL_STACKING_DELAY_MILLIS = 400L;

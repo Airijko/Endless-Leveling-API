@@ -1,12 +1,13 @@
 package com.airijko.endlessleveling.augments.types;
 
+import com.airijko.endlessleveling.augments.Augment;
+
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.util.Lang;
 import com.airijko.endlessleveling.augments.AugmentHooks;
 import com.airijko.endlessleveling.augments.AugmentRuntimeManager.AugmentRuntimeState;
 import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
-import com.airijko.endlessleveling.augments.YamlAugment;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue;
 import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
@@ -14,7 +15,7 @@ import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntitySta
 import java.util.HashMap;
 import java.util.Map;
 
-public final class UndyingRageAugment extends YamlAugment
+public final class UndyingRageAugment extends Augment
         implements AugmentHooks.OnLowHpAugment, AugmentHooks.PassiveStatAugment {
     public static final String ID = "undying_rage";
 

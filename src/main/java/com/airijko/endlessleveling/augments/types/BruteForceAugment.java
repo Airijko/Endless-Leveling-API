@@ -1,15 +1,16 @@
 package com.airijko.endlessleveling.augments.types;
 
+import com.airijko.endlessleveling.augments.Augment;
+
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentHooks;
 import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
-import com.airijko.endlessleveling.augments.YamlAugment;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
 
 import java.util.Map;
 
-public final class BruteForceAugment extends YamlAugment
+public final class BruteForceAugment extends Augment
         implements AugmentHooks.PassiveStatAugment, AugmentHooks.OnHitAugment {
     public static final String ID = "brute_force";
 

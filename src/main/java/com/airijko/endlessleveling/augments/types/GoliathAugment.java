@@ -1,10 +1,11 @@
 package com.airijko.endlessleveling.augments.types;
 
+import com.airijko.endlessleveling.augments.Augment;
+
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentHooks;
 import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
-import com.airijko.endlessleveling.augments.YamlAugment;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue;
@@ -15,7 +16,7 @@ import com.hypixel.hytale.server.core.modules.entitystats.modifier.StaticModifie
 
 import java.util.Map;
 
-public final class GoliathAugment extends YamlAugment implements AugmentHooks.PassiveStatAugment {
+public final class GoliathAugment extends Augment implements AugmentHooks.PassiveStatAugment {
     public static final String ID = "goliath";
     private static final String MAX_HP_BONUS_KEY = "EL_" + ID + "_max_hp_bonus";
     private static final String LEGACY_MAX_HP_BONUS_KEY = ID + "_max_hp_bonus";

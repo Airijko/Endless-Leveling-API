@@ -4,7 +4,6 @@ import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.augments.Augment;
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentManager;
-import com.airijko.endlessleveling.augments.AugmentRegistry;
 import com.airijko.endlessleveling.classes.CharacterClassDefinition;
 import com.airijko.endlessleveling.classes.ClassManager;
 import com.airijko.endlessleveling.player.PlayerData;
@@ -350,7 +349,7 @@ public final class EndlessLevelingAPI {
 
     /**
      * Register a custom augment definition backed by EndlessLeveling's default
-     * YamlAugment fallback unless a custom factory is also registered.
+     * augment fallback unless a custom factory is also registered.
      */
     public boolean registerAugment(AugmentDefinition definition) {
         return registerAugment(definition, null, false);
@@ -382,13 +381,13 @@ public final class EndlessLevelingAPI {
         if (!augmentManager.canRegisterExternalAugment(augmentId, replaceExisting)) {
             return false;
         }
-        if (factory != null && !AugmentRegistry.canRegisterFactory(augmentId, replaceExisting)) {
+        if (factory != null && !AugmentManager.canRegisterFactory(augmentId, replaceExisting)) {
             return false;
         }
 
         augmentManager.registerExternalAugment(definition);
         if (factory != null) {
-            AugmentRegistry.registerFactory(augmentId, factory);
+            AugmentManager.registerFactory(augmentId, factory);
         }
         return true;
     }
@@ -397,7 +396,7 @@ public final class EndlessLevelingAPI {
     public boolean unregisterAugment(String id) {
         AugmentManager augmentManager = augmentManager();
         boolean definitionRemoved = augmentManager != null && augmentManager.unregisterExternalAugment(id);
-        boolean factoryRemoved = AugmentRegistry.unregisterFactory(id) != null;
+        boolean factoryRemoved = AugmentManager.unregisterFactory(id) != null;
         return definitionRemoved || factoryRemoved;
     }
 

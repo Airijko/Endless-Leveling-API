@@ -1,13 +1,14 @@
 package com.airijko.endlessleveling.augments.types;
 
+import com.airijko.endlessleveling.augments.Augment;
+
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentHooks;
 import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
-import com.airijko.endlessleveling.augments.YamlAugment;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
 
-public final class TitansWisdomAugment extends YamlAugment implements AugmentHooks.PassiveStatAugment {
+public final class TitansWisdomAugment extends Augment implements AugmentHooks.PassiveStatAugment {
     public static final String ID = "titans_wisdom";
 
     private final double percentOfHealthToSorcery;
@@ -27,7 +28,7 @@ public final class TitansWisdomAugment extends YamlAugment implements AugmentHoo
                 : conversionPercentFallback;
         var debuffs = AugmentValueReader.getMap(passives, "debuffs");
         this.hasteDebuff = AugmentUtils.normalizeConfiguredDebuffMultiplier(
-            AugmentValueReader.getNestedDouble(debuffs, 0.0D, "haste", "value"));
+                AugmentValueReader.getNestedDouble(debuffs, 0.0D, "haste", "value"));
     }
 
     @Override

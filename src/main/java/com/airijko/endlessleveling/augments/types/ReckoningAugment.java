@@ -1,10 +1,11 @@
 package com.airijko.endlessleveling.augments.types;
 
+import com.airijko.endlessleveling.augments.Augment;
+
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentHooks;
 import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
-import com.airijko.endlessleveling.augments.YamlAugment;
 import com.airijko.endlessleveling.util.EntityRefUtil;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
@@ -15,7 +16,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-public final class ReckoningAugment extends YamlAugment implements AugmentHooks.OnHitAugment {
+public final class ReckoningAugment extends Augment implements AugmentHooks.OnHitAugment {
     public static final String ID = "reckoning";
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
     private static final Map<UUID, Map<String, Long>> EXECUTION_HEAL_COOLDOWNS = new ConcurrentHashMap<>();

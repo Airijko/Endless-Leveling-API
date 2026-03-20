@@ -1,11 +1,12 @@
 package com.airijko.endlessleveling.augments.types;
 
+import com.airijko.endlessleveling.augments.Augment;
+
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentHooks;
 import com.airijko.endlessleveling.augments.AugmentRuntimeManager.AugmentState;
 import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
-import com.airijko.endlessleveling.augments.YamlAugment;
 import com.airijko.endlessleveling.util.EntityRefUtil;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.math.vector.Vector3d;
@@ -23,7 +24,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import java.util.Map;
 
-public final class BailoutAugment extends YamlAugment
+public final class BailoutAugment extends Augment
         implements AugmentHooks.OnLowHpAugment, AugmentHooks.PassiveStatAugment, AugmentHooks.OnKillAugment {
     public static final String ID = "bailout";
     private static final double TRIGGER_VFX_Y_OFFSET = 1.0D;

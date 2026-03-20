@@ -1,12 +1,13 @@
 package com.airijko.endlessleveling.augments.types;
 
+import com.airijko.endlessleveling.augments.Augment;
+
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentHooks;
 import com.airijko.endlessleveling.augments.AugmentRuntimeManager.AugmentRuntimeState;
 import com.airijko.endlessleveling.augments.AugmentRuntimeManager.AugmentState;
 import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
-import com.airijko.endlessleveling.augments.YamlAugment;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.airijko.endlessleveling.util.EntityRefUtil;
 import com.hypixel.hytale.component.CommandBuffer;
@@ -24,7 +25,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import java.util.Map;
 
-public final class PredatorAugment extends YamlAugment
+public final class PredatorAugment extends Augment
     implements AugmentHooks.OnKillAugment, AugmentHooks.OnHitAugment, AugmentHooks.PassiveStatAugment {
     public static final String ID = "predator";
     private static final String AURA_STATE_ID = ID + "_aura";

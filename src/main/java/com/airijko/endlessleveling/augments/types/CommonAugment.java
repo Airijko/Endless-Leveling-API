@@ -1,17 +1,18 @@
 package com.airijko.endlessleveling.augments.types;
 
+import com.airijko.endlessleveling.augments.Augment;
+
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentHooks;
 import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
-import com.airijko.endlessleveling.augments.YamlAugment;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
 
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
-public final class CommonAugment extends YamlAugment implements AugmentHooks.PassiveStatAugment {
+public final class CommonAugment extends Augment implements AugmentHooks.PassiveStatAugment {
     public static final String ID = "common";
     private static final String LEGACY_ID = "basic";
     private static final String OFFER_DELIMITER = "::";

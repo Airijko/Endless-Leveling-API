@@ -1,13 +1,14 @@
 package com.airijko.endlessleveling.augments.types;
 
+import com.airijko.endlessleveling.augments.Augment;
+
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentHooks;
 import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
-import com.airijko.endlessleveling.augments.YamlAugment;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
 
-public final class SupersonicAugment extends YamlAugment implements AugmentHooks.PassiveStatAugment {
+public final class SupersonicAugment extends Augment implements AugmentHooks.PassiveStatAugment {
     public static final String ID = "supersonic";
 
     private final double hasteBonus;
@@ -20,7 +21,7 @@ public final class SupersonicAugment extends YamlAugment implements AugmentHooks
         var debuffs = AugmentValueReader.getMap(passives, "debuffs");
         this.hasteBonus = AugmentValueReader.getNestedDouble(buffs, 0.0D, "haste", "value");
         this.strengthPenalty = AugmentUtils.normalizeConfiguredDebuffMultiplier(
-            AugmentValueReader.getNestedDouble(debuffs, 0.0D, "strength", "value"));
+                AugmentValueReader.getNestedDouble(debuffs, 0.0D, "strength", "value"));
     }
 
     @Override

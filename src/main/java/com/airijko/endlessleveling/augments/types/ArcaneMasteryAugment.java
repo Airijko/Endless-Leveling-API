@@ -1,13 +1,14 @@
 package com.airijko.endlessleveling.augments.types;
 
+import com.airijko.endlessleveling.augments.Augment;
+
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentHooks;
 import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
-import com.airijko.endlessleveling.augments.YamlAugment;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
 
-public final class ArcaneMasteryAugment extends YamlAugment implements AugmentHooks.PassiveStatAugment {
+public final class ArcaneMasteryAugment extends Augment implements AugmentHooks.PassiveStatAugment {
     public static final String ID = "arcane_mastery";
 
     private final double sorceryToFlowRatio;

@@ -1,5 +1,7 @@
 package com.airijko.endlessleveling.augments.types;
 
+import com.airijko.endlessleveling.augments.Augment;
+
 import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentHooks;
@@ -7,14 +9,13 @@ import com.airijko.endlessleveling.augments.AugmentRuntimeManager.AugmentRuntime
 import com.airijko.endlessleveling.augments.AugmentRuntimeManager.CooldownState;
 import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
-import com.airijko.endlessleveling.augments.YamlAugment;
 import com.airijko.endlessleveling.player.PlayerData;
 import com.airijko.endlessleveling.passives.PassiveManager;
 import com.airijko.endlessleveling.passives.PassiveManager.PassiveRuntimeState;
 
 import java.util.Map;
 
-public final class TimeMasterAugment extends YamlAugment implements AugmentHooks.OnKillAugment {
+public final class TimeMasterAugment extends Augment implements AugmentHooks.OnKillAugment {
     public static final String ID = "time_master";
 
     private final long flatReductionMillis;

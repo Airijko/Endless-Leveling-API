@@ -1,10 +1,11 @@
 package com.airijko.endlessleveling.augments.types;
 
+import com.airijko.endlessleveling.augments.Augment;
+
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentHooks;
 import com.airijko.endlessleveling.augments.AugmentRuntimeManager.AugmentState;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
-import com.airijko.endlessleveling.augments.YamlAugment;
 import com.airijko.endlessleveling.systems.PlayerCombatSystem;
 import com.airijko.endlessleveling.util.EntityRefUtil;
 import com.airijko.endlessleveling.player.SkillManager;
@@ -21,7 +22,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
-public final class PhantomHitsAugment extends YamlAugment implements AugmentHooks.OnHitAugment {
+public final class PhantomHitsAugment extends Augment implements AugmentHooks.OnHitAugment {
     public static final String ID = "phantom_hits";
     public static final long INTERNAL_COOLDOWN_MILLIS = 400L;
     private static final double TRIGGER_VFX_Y_OFFSET = 1.0D;

@@ -1,10 +1,11 @@
 package com.airijko.endlessleveling.augments.types;
 
+import com.airijko.endlessleveling.augments.Augment;
+
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentHooks;
 import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
-import com.airijko.endlessleveling.augments.YamlAugment;
 import com.airijko.endlessleveling.systems.PlayerCombatSystem;
 import com.airijko.endlessleveling.util.EntityRefUtil;
 import com.hypixel.hytale.component.CommandBuffer;
@@ -26,7 +27,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public final class WitherAugment extends YamlAugment implements AugmentHooks.OnHitAugment {
+public final class WitherAugment extends Augment implements AugmentHooks.OnHitAugment {
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
     public static final String ID = "wither";
     private static final long TICK_INTERVAL_MILLIS = 1000L;

@@ -1,16 +1,17 @@
 package com.airijko.endlessleveling.augments.types;
 
+import com.airijko.endlessleveling.augments.Augment;
+
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentHooks;
 import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
-import com.airijko.endlessleveling.augments.YamlAugment;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue;
 import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
 
 import java.util.Map;
 
-public final class SoulReaverAugment extends YamlAugment
+public final class SoulReaverAugment extends Augment
         implements AugmentHooks.OnKillAugment, AugmentHooks.PassiveStatAugment {
     public static final String ID = "soul_reaver";
     private static final long HEAL_WINDOW_MILLIS = 3000L;

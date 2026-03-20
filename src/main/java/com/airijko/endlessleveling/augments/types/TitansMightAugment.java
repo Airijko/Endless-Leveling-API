@@ -1,13 +1,14 @@
 package com.airijko.endlessleveling.augments.types;
 
+import com.airijko.endlessleveling.augments.Augment;
+
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentHooks;
 import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
-import com.airijko.endlessleveling.augments.YamlAugment;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
 
-public final class TitansMightAugment extends YamlAugment implements AugmentHooks.PassiveStatAugment {
+public final class TitansMightAugment extends Augment implements AugmentHooks.PassiveStatAugment {
     public static final String ID = "titans_might";
 
     private final double percentOfHealthToStrength;
@@ -21,7 +22,7 @@ public final class TitansMightAugment extends YamlAugment implements AugmentHook
                 .getNestedDouble(buffs, 0.0D, "strength_from_max_health", "value");
         var debuffs = AugmentValueReader.getMap(passives, "debuffs");
         this.hasteDebuff = AugmentUtils.normalizeConfiguredDebuffMultiplier(
-            AugmentValueReader.getNestedDouble(debuffs, 0.0D, "haste", "value"));
+                AugmentValueReader.getNestedDouble(debuffs, 0.0D, "haste", "value"));
     }
 
     @Override

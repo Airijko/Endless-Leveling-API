@@ -1,11 +1,12 @@
 package com.airijko.endlessleveling.augments.types;
 
+import com.airijko.endlessleveling.augments.Augment;
+
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentHooks;
 import com.airijko.endlessleveling.augments.AugmentRuntimeManager.AugmentRuntimeState;
 import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
-import com.airijko.endlessleveling.augments.YamlAugment;
 import com.airijko.endlessleveling.player.SkillManager;
 import com.airijko.endlessleveling.util.EntityRefUtil;
 import com.hypixel.hytale.component.Ref;
@@ -23,7 +24,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import java.util.Map;
 
-public final class BloodthirsterAugment extends YamlAugment implements AugmentHooks.OnHitAugment {
+public final class BloodthirsterAugment extends Augment implements AugmentHooks.OnHitAugment {
     public static final String ID = "bloodthirster";
     private static final long INTERNAL_STACKING_DELAY_MILLIS = 400L;
     private static final String STACK_DELAY_STATE_ID = ID + "_stack_delay";

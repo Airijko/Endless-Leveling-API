@@ -80,7 +80,7 @@ public class AugmentUnlockManager {
     }
 
     /**
-     * Reload unlock milestone rules from leveling.yml with legacy config fallback.
+     * Reload unlock milestone rules from leveling.yml.
      */
     public synchronized void reload() {
         configManager.load();
@@ -818,18 +818,10 @@ public class AugmentUnlockManager {
         Object raw = levelingConfigManager.get("augments.unlocks", null, false);
         List<?> list = raw instanceof List<?> parsedList ? parsedList : null;
         if (list == null || list.isEmpty()) {
-            Object legacyRaw = configManager.get("augments.unlocks", Collections.emptyList(), false);
-            List<?> legacyList = legacyRaw instanceof List<?> parsedLegacyList ? parsedLegacyList : null;
-            if (legacyList == null || legacyList.isEmpty()) {
-                LOGGER.atWarning().log(
-                        "Augment unlock rules are missing from leveling.yml augments.unlocks and legacy config.yml augments.unlocks (leveling type=%s, legacy type=%s)",
-                        raw == null ? "null" : raw.getClass().getSimpleName(),
-                        legacyRaw == null ? "null" : legacyRaw.getClass().getSimpleName());
-                return List.of();
-            }
             LOGGER.atWarning().log(
-                    "Using legacy config.yml augments.unlocks. Move this section to leveling.yml augments.unlocks.");
-            list = legacyList;
+                "Augment unlock rules are missing from leveling.yml augments.unlocks (type=%s)",
+                raw == null ? "null" : raw.getClass().getSimpleName());
+            return List.of();
         }
         List<UnlockRule> rules = new ArrayList<>();
         for (Object entry : list) {

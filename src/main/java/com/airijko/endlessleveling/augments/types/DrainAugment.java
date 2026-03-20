@@ -1,17 +1,18 @@
 package com.airijko.endlessleveling.augments.types;
 
+import com.airijko.endlessleveling.augments.Augment;
+
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentHooks;
 import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
-import com.airijko.endlessleveling.augments.YamlAugment;
 import com.airijko.endlessleveling.systems.PlayerCombatSystem;
 import com.airijko.endlessleveling.util.EntityRefUtil;
 import com.hypixel.hytale.server.core.modules.entity.damage.DamageSystems;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
 import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
 
-public final class DrainAugment extends YamlAugment implements AugmentHooks.OnHitAugment {
+public final class DrainAugment extends Augment implements AugmentHooks.OnHitAugment {
     public static final String ID = "drain";
 
     private final double percent;

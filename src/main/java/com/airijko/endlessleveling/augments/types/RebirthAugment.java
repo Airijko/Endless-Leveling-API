@@ -1,17 +1,18 @@
 package com.airijko.endlessleveling.augments.types;
 
+import com.airijko.endlessleveling.augments.Augment;
+
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.util.Lang;
 import com.airijko.endlessleveling.augments.AugmentHooks;
 import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
-import com.airijko.endlessleveling.augments.YamlAugment;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
 
 import java.util.Map;
 
-public final class RebirthAugment extends YamlAugment implements AugmentHooks.OnLowHpAugment {
+public final class RebirthAugment extends Augment implements AugmentHooks.OnLowHpAugment {
     public static final String ID = "rebirth";
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();

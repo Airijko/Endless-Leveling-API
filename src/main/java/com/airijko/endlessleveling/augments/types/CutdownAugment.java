@@ -1,10 +1,11 @@
 package com.airijko.endlessleveling.augments.types;
 
+import com.airijko.endlessleveling.augments.Augment;
+
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentHooks;
 import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
-import com.airijko.endlessleveling.augments.YamlAugment;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue;
 import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
 
@@ -13,7 +14,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
-public final class CutdownAugment extends YamlAugment implements AugmentHooks.OnHitAugment {
+public final class CutdownAugment extends Augment implements AugmentHooks.OnHitAugment {
     public static final String ID = "cutdown";
 
     private record Threshold(double targetHealthPercentAbove, double value) {

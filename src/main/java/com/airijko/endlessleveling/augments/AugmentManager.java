@@ -1,29 +1,92 @@
 package com.airijko.endlessleveling.augments;
 
+import com.airijko.endlessleveling.augments.types.*;
+import com.airijko.endlessleveling.enums.PassiveCategory;
+import com.airijko.endlessleveling.enums.PassiveTier;
 import com.airijko.endlessleveling.managers.ConfigManager;
 import com.airijko.endlessleveling.managers.PluginFilesManager;
 import com.airijko.endlessleveling.managers.VersionRegistry;
-import com.airijko.endlessleveling.augments.types.CommonAugment;
 import com.hypixel.hytale.logger.HytaleLogger;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Comparator;
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class AugmentManager {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
+
+    // ── Factory registry ────────────────────────────────────────────────────
+
+    private static final Map<String, Function<AugmentDefinition, Augment>> BUILTIN_FACTORIES = Map.ofEntries(
+            Map.entry(AbsoluteFocusAugment.ID, AbsoluteFocusAugment::new),
+            Map.entry(ArcaneInstabilityAugment.ID, ArcaneInstabilityAugment::new),
+            Map.entry(ArcaneMasteryAugment.ID, ArcaneMasteryAugment::new),
+            Map.entry(BailoutAugment.ID, BailoutAugment::new),
+            Map.entry(CommonAugment.ID, CommonAugment::new),
+            Map.entry(BruteForceAugment.ID, BruteForceAugment::new),
+            Map.entry(DeathBombAugment.ID, DeathBombAugment::new),
+            Map.entry(EndurePainAugment.ID, EndurePainAugment::new),
+            Map.entry(BloodFrenzyAugment.ID, BloodFrenzyAugment::new),
+            Map.entry(BloodSurgeAugment.ID, BloodSurgeAugment::new),
+            Map.entry(BloodthirsterAugment.ID, BloodthirsterAugment::new),
+            Map.entry(BurnAugment.ID, BurnAugment::new),
+            Map.entry(ConquerorAugment.ID, ConquerorAugment::new),
+            Map.entry(CrippleAugment.ID, CrippleAugment::new),
+            Map.entry(CriticalGuardAugment.ID, CriticalGuardAugment::new),
+            Map.entry(CutdownAugment.ID, CutdownAugment::new),
+            Map.entry(DrainAugment.ID, DrainAugment::new),
+            Map.entry(ExecutionerAugment.ID, ExecutionerAugment::new),
+            Map.entry(FleetFootworkAugment.ID, FleetFootworkAugment::new),
+            Map.entry(FirstStrikeAugment.ID, FirstStrikeAugment::new),
+            Map.entry(FortressAugment.ID, FortressAugment::new),
+            Map.entry(FourLeafCloverAugment.ID, FourLeafCloverAugment::new),
+            Map.entry(FrozenDomainAugment.ID, FrozenDomainAugment::new),
+            Map.entry(GoliathAugment.ID, GoliathAugment::new),
+            Map.entry(GiantSlayerAugment.ID, GiantSlayerAugment::new),
+            Map.entry(GlassCannonAugment.ID, GlassCannonAugment::new),
+            Map.entry(MagicBladeAugment.ID, MagicBladeAugment::new),
+            Map.entry(ManaInfusionAugment.ID, ManaInfusionAugment::new),
+            Map.entry(NestingDollAugment.ID, NestingDollAugment::new),
+            Map.entry(OverdriveAugment.ID, OverdriveAugment::new),
+            Map.entry(OverhealAugment.ID, OverhealAugment::new),
+            Map.entry(PhaseRushAugment.ID, PhaseRushAugment::new),
+            Map.entry(PhantomHitsAugment.ID, PhantomHitsAugment::new),
+            Map.entry(PredatorAugment.ID, PredatorAugment::new),
+            Map.entry(ProtectiveBubbleAugment.ID, ProtectiveBubbleAugment::new),
+            Map.entry(RaidBossAugment.ID, RaidBossAugment::new),
+            Map.entry(RagingMomentumAugment.ID, RagingMomentumAugment::new),
+            Map.entry(RebirthAugment.ID, RebirthAugment::new),
+            Map.entry(ReckoningAugment.ID, ReckoningAugment::new),
+            Map.entry(SnipersReachAugment.ID, SnipersReachAugment::new),
+            Map.entry(SoulReaverAugment.ID, SoulReaverAugment::new),
+            Map.entry(SupersonicAugment.ID, SupersonicAugment::new),
+            Map.entry(TankEngineAugment.ID, TankEngineAugment::new),
+            Map.entry(TimeMasterAugment.ID, TimeMasterAugment::new),
+            Map.entry(TitansMightAugment.ID, TitansMightAugment::new),
+            Map.entry(TitansWisdomAugment.ID, TitansWisdomAugment::new),
+            Map.entry(UndyingRageAugment.ID, UndyingRageAugment::new),
+            Map.entry(VampiricStrikeAugment.ID, VampiricStrikeAugment::new),
+            Map.entry(VampirismAugment.ID, VampirismAugment::new),
+            Map.entry(WitherAugment.ID, WitherAugment::new));
+
+    private static final Map<String, Function<AugmentDefinition, Augment>> EXTERNAL_FACTORIES = new ConcurrentHashMap<>();
+
+    // ── Instance state ──────────────────────────────────────────────────────
 
     private final Yaml yaml;
     private final Path root;
@@ -51,6 +114,8 @@ public class AugmentManager {
         this.cache = Collections.emptyMap();
     }
 
+    // ── Loading ─────────────────────────────────────────────────────────────
+
     public synchronized void load() {
         syncBuiltinAugmentsIfNeeded();
         if (!Files.isDirectory(root)) {
@@ -70,8 +135,8 @@ public class AugmentManager {
                     .collect(Collectors.toList());
             for (Path file : yamlFiles) {
                 try {
-                    AugmentDefinition def = AugmentParser.parse(file, yaml);
-                    String augmentId = normalizeRegisteredId(def.getId());
+                    AugmentDefinition def = parseDefinition(file);
+                    String augmentId = normalizeId(def.getId());
                     if (augmentId == null) {
                         LOGGER.atWarning().log("Skipping augment %s because its id is blank", file.getFileName());
                         continue;
@@ -89,6 +154,8 @@ public class AugmentManager {
         LOGGER.atInfo().log("Loaded %d augments from %s", cache.size(), root);
     }
 
+    // ── Queries ─────────────────────────────────────────────────────────────
+
     public Map<String, AugmentDefinition> getAugments() {
         return cache;
     }
@@ -102,11 +169,13 @@ public class AugmentManager {
         if (definition == null) {
             return null;
         }
-        return AugmentRegistry.create(definition);
+        return createFromDefinition(definition);
     }
 
+    // ── External augment registration ───────────────────────────────────────
+
     public synchronized boolean canRegisterExternalAugment(String id, boolean replaceExisting) {
-        String augmentId = normalizeRegisteredId(id);
+        String augmentId = normalizeId(id);
         if (augmentId == null) {
             return false;
         }
@@ -115,7 +184,7 @@ public class AugmentManager {
 
     public synchronized void registerExternalAugment(AugmentDefinition definition) {
         Objects.requireNonNull(definition, "definition");
-        String augmentId = requireRegisteredId(definition.getId());
+        String augmentId = requireValidId(definition.getId());
         boolean overridingFileDefinition = fileDefinitions.containsKey(augmentId);
         externalDefinitions.put(augmentId, definition);
         rebuildCache();
@@ -127,7 +196,7 @@ public class AugmentManager {
     }
 
     public synchronized boolean unregisterExternalAugment(String id) {
-        String augmentId = normalizeRegisteredId(id);
+        String augmentId = normalizeId(id);
         if (augmentId == null) {
             return false;
         }
@@ -140,6 +209,139 @@ public class AugmentManager {
         return true;
     }
 
+    // ── Factory registration (external API) ─────────────────────────────────
+
+    public static boolean canRegisterFactory(String id, boolean replaceExisting) {
+        String augmentId = normalizeId(id);
+        if (augmentId == null) {
+            return false;
+        }
+        if (replaceExisting) {
+            return true;
+        }
+        return !BUILTIN_FACTORIES.containsKey(augmentId) && !EXTERNAL_FACTORIES.containsKey(augmentId);
+    }
+
+    public static Function<AugmentDefinition, Augment> registerFactory(String id,
+            Function<AugmentDefinition, Augment> factory) {
+        String augmentId = requireValidId(id);
+        return EXTERNAL_FACTORIES.put(augmentId, Objects.requireNonNull(factory, "factory"));
+    }
+
+    public static Function<AugmentDefinition, Augment> unregisterFactory(String id) {
+        String augmentId = normalizeId(id);
+        if (augmentId == null) {
+            return null;
+        }
+        return EXTERNAL_FACTORIES.remove(augmentId);
+    }
+
+    // ── Private: factory instantiation ──────────────────────────────────────
+
+    private static Augment createFromDefinition(AugmentDefinition definition) {
+        if (definition == null) {
+            return null;
+        }
+        String augmentId = normalizeId(definition.getId());
+        Function<AugmentDefinition, Augment> factory = augmentId == null ? null : EXTERNAL_FACTORIES.get(augmentId);
+        if (factory == null && augmentId != null) {
+            factory = BUILTIN_FACTORIES.get(augmentId);
+        }
+        if (factory == null) {
+            return new Augment(definition);
+        }
+        return Objects.requireNonNull(factory.apply(definition));
+    }
+
+    // ── Private: YAML parsing (absorbed from AugmentParser) ─────────────────
+
+    @SuppressWarnings("unchecked")
+    private AugmentDefinition parseDefinition(Path file) throws IOException {
+        try (InputStream in = Files.newInputStream(file)) {
+            Map<String, Object> root = yaml.load(in);
+            if (root == null) {
+                root = Collections.emptyMap();
+            }
+            String id = stringVal(root.get("id"), stripExtension(file.getFileName().toString()));
+            String name = stringVal(root.get("name"), id);
+            String description = stringVal(root.get("description"), "");
+            PassiveTier tier = PassiveTier.fromConfig(root.get("tier"), PassiveTier.COMMON);
+            PassiveCategory category = PassiveCategory.fromConfig(root.get("category"), null);
+            boolean stackable = booleanVal(root.get("stackable"), false);
+            Object passivesNode = root.getOrDefault("passives", Collections.emptyMap());
+            Map<String, Object> passives = passivesNode instanceof Map<?, ?> m
+                    ? (Map<String, Object>) m
+                    : Collections.emptyMap();
+            List<AugmentDefinition.UiSection> uiSections = parseUiSections(root);
+            return new AugmentDefinition(id, name, tier, category, stackable, description, passives, uiSections);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<AugmentDefinition.UiSection> parseUiSections(Map<String, Object> root) {
+        Object uiNode = root.get("ui");
+        List<AugmentDefinition.UiSection> sections = new ArrayList<>();
+        if (uiNode instanceof Map<?, ?> uiRaw) {
+            Object sectionsNode = ((Map<String, Object>) uiRaw).get("sections");
+            if (sectionsNode instanceof List<?> sectionList) {
+                for (Object sectionNode : sectionList) {
+                    if (!(sectionNode instanceof Map<?, ?> rawSection)) {
+                        continue;
+                    }
+                    Map<String, Object> section = (Map<String, Object>) rawSection;
+                    String title = stringVal(section.get("title"), "");
+                    String body = textVal(section.get("body"), "");
+                    String color = stringVal(section.get("color"), "");
+                    if (title.isBlank() && body.isBlank()) {
+                        continue;
+                    }
+                    sections.add(new AugmentDefinition.UiSection(title, body, color));
+                }
+            }
+        }
+        return sections;
+    }
+
+    private String textVal(Object raw, String fallback) {
+        if (raw instanceof String str && !str.isBlank()) {
+            return str.trim();
+        }
+        if (raw == null) {
+            return fallback;
+        }
+        String dumped = dumpYamlBlock(raw);
+        return dumped.isBlank() ? fallback : dumped;
+    }
+
+    private String dumpYamlBlock(Object value) {
+        if (value == null) {
+            return "";
+        }
+        String dumped;
+        try {
+            dumped = yaml.dump(value);
+        } catch (Exception ex) {
+            dumped = String.valueOf(value);
+        }
+        if (dumped == null || dumped.isBlank()) {
+            return "";
+        }
+
+        String normalized = dumped.replace("\r\n", "\n").replace('\r', '\n').trim();
+        if (normalized.startsWith("---\n")) {
+            normalized = normalized.substring(4).trim();
+        }
+        if (normalized.equals("...")) {
+            return "";
+        }
+        if (normalized.endsWith("\n...")) {
+            normalized = normalized.substring(0, normalized.length() - 4).trim();
+        }
+        return normalized;
+    }
+
+    // ── Private: helpers ────────────────────────────────────────────────────
+
     private String resolveLookupId(String id) {
         if (id == null || id.isBlank()) {
             return id;
@@ -151,7 +353,6 @@ public class AugmentManager {
 
     private void syncBuiltinAugmentsIfNeeded() {
         if (!enableBuiltinAugments) {
-            // Builtin augments are disabled; don't sync them
             LOGGER.atInfo().log("Builtin augments are disabled (enable_builtin_augments=false)");
             return;
         }
@@ -239,19 +440,44 @@ public class AugmentManager {
         this.cache = Collections.unmodifiableMap(merged);
     }
 
-    private String requireRegisteredId(String id) {
-        String augmentId = normalizeRegisteredId(id);
+    private static String requireValidId(String id) {
+        String augmentId = normalizeId(id);
         if (augmentId == null) {
             throw new IllegalArgumentException("augment id cannot be null or blank");
         }
         return augmentId;
     }
 
-    private String normalizeRegisteredId(String id) {
+    private static String normalizeId(String id) {
         if (id == null) {
             return null;
         }
         String trimmed = id.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private static String stripExtension(String filename) {
+        int idx = filename.lastIndexOf('.');
+        return idx > 0 ? filename.substring(0, idx) : filename;
+    }
+
+    private static String stringVal(Object raw, String fallback) {
+        if (raw instanceof String str && !str.isBlank()) {
+            return str.trim();
+        }
+        return fallback;
+    }
+
+    private static boolean booleanVal(Object raw, boolean fallback) {
+        if (raw instanceof Boolean bool) {
+            return bool;
+        }
+        if (raw instanceof String str && !str.isBlank()) {
+            return Boolean.parseBoolean(str.trim());
+        }
+        if (raw instanceof Number number) {
+            return number.intValue() != 0;
+        }
+        return fallback;
     }
 }

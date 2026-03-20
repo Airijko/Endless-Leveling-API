@@ -1,16 +1,17 @@
 package com.airijko.endlessleveling.augments.types;
 
+import com.airijko.endlessleveling.augments.Augment;
+
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentHooks;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
-import com.airijko.endlessleveling.augments.YamlAugment;
 import com.airijko.endlessleveling.player.SkillManager;
 import com.hypixel.hytale.logger.HytaleLogger;
 
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
-public final class CriticalGuardAugment extends YamlAugment implements AugmentHooks.OnDamageTakenAugment {
+public final class CriticalGuardAugment extends Augment implements AugmentHooks.OnDamageTakenAugment {
     public static final String ID = "critical_guard";
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
 

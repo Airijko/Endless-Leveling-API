@@ -1,16 +1,17 @@
 package com.airijko.endlessleveling.augments.types;
 
+import com.airijko.endlessleveling.augments.Augment;
+
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentHooks;
 import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
-import com.airijko.endlessleveling.augments.YamlAugment;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.hypixel.hytale.logger.HytaleLogger;
 
 import java.util.Map;
 
-public final class VampiricStrikeAugment extends YamlAugment
+public final class VampiricStrikeAugment extends Augment
         implements AugmentHooks.OnHitAugment, AugmentHooks.OnCritAugment, AugmentHooks.PassiveStatAugment {
     public static final String ID = "vampiric_strike";
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();

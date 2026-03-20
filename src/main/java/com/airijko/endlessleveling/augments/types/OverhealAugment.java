@@ -1,12 +1,13 @@
 package com.airijko.endlessleveling.augments.types;
 
+import com.airijko.endlessleveling.augments.Augment;
+
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentHooks;
 import com.airijko.endlessleveling.augments.AugmentRuntimeManager.AugmentRuntimeState;
 import com.airijko.endlessleveling.augments.AugmentRuntimeManager.AugmentState;
 import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
-import com.airijko.endlessleveling.augments.YamlAugment;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
@@ -17,7 +18,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.WeakHashMap;
 
-public final class OverhealAugment extends YamlAugment
+public final class OverhealAugment extends Augment
         implements AugmentHooks.OnHitAugment, AugmentHooks.OnDamageTakenAugment, AugmentHooks.PassiveStatAugment {
     public static final String ID = "overheal";
     private static final double SHIELD_EPSILON = 0.0001D;

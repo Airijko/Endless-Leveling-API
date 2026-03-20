@@ -12,17 +12,6 @@ import com.airijko.endlessleveling.augments.AugmentHooks.OnLowHpAugment;
 import com.airijko.endlessleveling.augments.AugmentHooks.OnTargetConditionAugment;
 import com.airijko.endlessleveling.augments.AugmentHooks.OnMissAugment;
 import com.airijko.endlessleveling.augments.AugmentHooks.PassiveStatAugment;
-import com.airijko.endlessleveling.augments.types.FleetFootworkAugment;
-import com.airijko.endlessleveling.augments.types.FortressAugment;
-import com.airijko.endlessleveling.augments.types.GlassCannonAugment;
-import com.airijko.endlessleveling.augments.types.GoliathAugment;
-import com.airijko.endlessleveling.augments.types.NestingDollAugment;
-import com.airijko.endlessleveling.augments.types.RaidBossAugment;
-import com.airijko.endlessleveling.augments.types.RebirthAugment;
-import com.airijko.endlessleveling.augments.types.CommonAugment;
-import com.airijko.endlessleveling.augments.types.TankEngineAugment;
-import com.airijko.endlessleveling.augments.types.UndyingRageAugment;
-import com.airijko.endlessleveling.augments.types.BailoutAugment;
 import com.airijko.endlessleveling.player.PlayerData;
 import com.airijko.endlessleveling.enums.ClassWeaponType;
 import com.airijko.endlessleveling.player.SkillManager;
@@ -55,12 +44,19 @@ import java.util.Set;
  */
 public final class AugmentExecutor {
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
+    private static final String COMMON_AUGMENT_ID = "common";
+    private static final String FLEET_FOOTWORK_ID = "fleet_footwork";
+    private static final String REBIRTH_ID = "rebirth";
+    private static final String FORTRESS_ID = "fortress";
+    private static final String UNDYING_RAGE_ID = "undying_rage";
+    private static final String NESTING_DOLL_ID = "nesting_doll";
+    private static final String BAILOUT_ID = "bailout";
     private static final List<HealthModifierSpec> PASSIVE_HEALTH_MODIFIERS = List.of(
-            new HealthModifierSpec(RaidBossAugment.ID, "max_hp_bonus"),
-            new HealthModifierSpec(GoliathAugment.ID, "max_hp_bonus"),
-            new HealthModifierSpec(TankEngineAugment.ID, "max_hp_bonus"),
-            new HealthModifierSpec(GlassCannonAugment.ID, "max_hp_penalty"),
-            new HealthModifierSpec(NestingDollAugment.ID, "max_hp_penalty"));
+            new HealthModifierSpec("raid_boss", "max_hp_bonus"),
+            new HealthModifierSpec("goliath", "max_hp_bonus"),
+            new HealthModifierSpec("tank_engine", "max_hp_bonus"),
+            new HealthModifierSpec("glass_cannon", "max_hp_penalty"),
+            new HealthModifierSpec(NESTING_DOLL_ID, "max_hp_penalty"));
 
     private final AugmentManager augmentManager;
     private final AugmentRuntimeManager runtimeManager;
@@ -285,32 +281,16 @@ public final class AugmentExecutor {
     }
 
     private int lowHpPriority(Augment augment) {
-        if (augment instanceof RebirthAugment) {
-            return 0;
-        }
-        if (augment instanceof FortressAugment) {
-            return 1;
-        }
-        if (augment instanceof UndyingRageAugment) {
-            return 2;
-        }
-        if (augment instanceof NestingDollAugment) {
-            return 3;
-        }
-        if (augment instanceof BailoutAugment) {
-            return 4;
-        }
-
         String augmentId = augment == null ? null : augment.getId();
         if (augmentId == null) {
             return Integer.MAX_VALUE;
         }
         return switch (augmentId.trim().toLowerCase()) {
-            case RebirthAugment.ID -> 0;
-            case FortressAugment.ID -> 1;
-            case UndyingRageAugment.ID -> 2;
-            case NestingDollAugment.ID -> 3;
-            case BailoutAugment.ID -> 4;
+            case REBIRTH_ID -> 0;
+            case FORTRESS_ID -> 1;
+            case UNDYING_RAGE_ID -> 2;
+            case NESTING_DOLL_ID -> 3;
+            case BAILOUT_ID -> 4;
             default -> Integer.MAX_VALUE;
         };
     }
@@ -456,7 +436,7 @@ public final class AugmentExecutor {
             normalized = normalized.substring(0, encodedDelimiter);
         }
         if ("basic".equals(normalized)) {
-            return CommonAugment.ID;
+            return COMMON_AUGMENT_ID;
         }
         return normalized;
     }
@@ -510,7 +490,7 @@ public final class AugmentExecutor {
                         ChatMessageTemplate.AUGMENT_READY_AGAIN,
                         display != null ? display : ChatMessageStrings.Name.AUGMENT);
                 sendAugmentMessage(playerRef, readyText);
-                if (FleetFootworkAugment.ID.equalsIgnoreCase(cooldown.getAugmentId())) {
+                if (FLEET_FOOTWORK_ID.equalsIgnoreCase(cooldown.getAugmentId())) {
                     LOGGER.atInfo().log("Fleet Footwork available for player=%s", playerData.getUuid());
                 }
                 cooldown.setReadyNotified(true);

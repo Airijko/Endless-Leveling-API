@@ -1,16 +1,17 @@
 package com.airijko.endlessleveling.augments.types;
 
+import com.airijko.endlessleveling.augments.Augment;
+
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentHooks;
 import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
-import com.airijko.endlessleveling.augments.YamlAugment;
 import com.airijko.endlessleveling.enums.ClassWeaponType;
 import com.airijko.endlessleveling.player.SkillManager;
 
 import java.util.Map;
 
-public final class MagicBladeAugment extends YamlAugment implements AugmentHooks.OnHitAugment {
+public final class MagicBladeAugment extends Augment implements AugmentHooks.OnHitAugment {
     public static final String ID = "magic_blade";
 
     private final double sorceryWeaponConversionPercent;

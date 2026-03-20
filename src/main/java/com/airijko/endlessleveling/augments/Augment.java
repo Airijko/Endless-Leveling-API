@@ -4,19 +4,41 @@ import com.airijko.endlessleveling.enums.PassiveCategory;
 import com.airijko.endlessleveling.enums.PassiveTier;
 
 import java.util.Map;
+import java.util.Objects;
 
-public interface Augment {
-    String getId();
+public class Augment {
 
-    String getName();
+    private final AugmentDefinition definition;
 
-    PassiveTier getTier();
+    protected Augment(AugmentDefinition definition) {
+        this.definition = Objects.requireNonNull(definition, "definition");
+    }
 
-    PassiveCategory getCategory();
+    public String getId() {
+        return definition.getId();
+    }
 
-    String getDescription();
+    public String getName() {
+        return definition.getName();
+    }
 
-    Map<String, Object> getPassives();
+    public PassiveTier getTier() {
+        return definition.getTier();
+    }
 
-    AugmentDefinition definition();
+    public PassiveCategory getCategory() {
+        return definition.getCategory();
+    }
+
+    public String getDescription() {
+        return definition.getDescription();
+    }
+
+    public Map<String, Object> getPassives() {
+        return definition.getPassives();
+    }
+
+    public AugmentDefinition definition() {
+        return definition;
+    }
 }
