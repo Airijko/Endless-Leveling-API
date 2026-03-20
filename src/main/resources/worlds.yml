@@ -195,9 +195,9 @@ World_Overrides:
             Per_Level: 0.1
           Damage:
             Base_Multiplier: 1.0
-            Per_Level: 0.075
+            Per_Level: 0.07
           Defense:
-            At_Negative_Max_Difference: 0.45
+            At_Negative_Max_Difference: 0.35
             At_Positive_Max_Difference: 0.9
             Below_Negative_Max_Difference: 0.0
             Above_Positive_Max_Difference: 0.975
@@ -238,9 +238,9 @@ World_Overrides:
             Per_Level: 0.1
           Damage:
             Base_Multiplier: 1.0
-            Per_Level: 0.075
+            Per_Level: 0.07
           Defense:
-            At_Negative_Max_Difference: 0.45
+            At_Negative_Max_Difference: 0.35
             At_Positive_Max_Difference: 0.9
             Below_Negative_Max_Difference: 0.0
             Above_Positive_Max_Difference: 0.975
@@ -295,9 +295,9 @@ World_Overrides:
             Per_Level: 0.1
           Damage:
             Base_Multiplier: 1.0
-            Per_Level: 0.075
+            Per_Level: 0.07
           Defense:
-            At_Negative_Max_Difference: 0.45
+            At_Negative_Max_Difference: 0.35
             At_Positive_Max_Difference: 0.9
             Below_Negative_Max_Difference: 0.0
             Above_Positive_Max_Difference: 0.975
@@ -373,7 +373,7 @@ World_Overrides:
             Base_Multiplier: 1.0
             Per_Level: 0.07
           Defense:
-            At_Negative_Max_Difference: 0.45
+            At_Negative_Max_Difference: 0.35
             At_Positive_Max_Difference: 0.9
             Below_Negative_Max_Difference: 0.0
             Above_Positive_Max_Difference: 0.975
@@ -416,7 +416,7 @@ World_Overrides:
             Base_Multiplier: 1.0
             Per_Level: 0.07
           Defense:
-            At_Negative_Max_Difference: 0.45
+            At_Negative_Max_Difference: 0.35
             At_Positive_Max_Difference: 0.9
             Below_Negative_Max_Difference: 0.0
             Above_Positive_Max_Difference: 0.975
@@ -460,9 +460,9 @@ World_Overrides:
             Per_Level: 0.1
           Damage:
             Base_Multiplier: 1.0
-            Per_Level: 0.075
+            Per_Level: 0.07
           Defense:
-            At_Negative_Max_Difference: 0.45
+            At_Negative_Max_Difference: 0.35
             At_Positive_Max_Difference: 0.9
             Below_Negative_Max_Difference: 0.0
             Above_Positive_Max_Difference: 0.975
@@ -504,9 +504,9 @@ World_Overrides:
             Per_Level: 0.1
           Damage:
             Base_Multiplier: 1.0
-            Per_Level: 0.075
+            Per_Level: 0.07
           Defense:
-            At_Negative_Max_Difference: 0.45
+            At_Negative_Max_Difference: 0.35
             At_Positive_Max_Difference: 0.9
             Below_Negative_Max_Difference: 0.0
             Above_Positive_Max_Difference: 0.975
@@ -520,9 +520,9 @@ World_Overrides:
             Per_Level: 0.1
           Damage:
             Base_Multiplier: 1.0
-            Per_Level: 0.075
+            Per_Level: 0.07
           Defense:
-            At_Negative_Max_Difference: 0.45
+            At_Negative_Max_Difference: 0.35
             At_Positive_Max_Difference: 0.9
             Below_Negative_Max_Difference: 0.0
             Above_Positive_Max_Difference: 0.975
