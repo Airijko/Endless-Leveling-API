@@ -36,6 +36,7 @@ import com.airijko.endlessleveling.races.RacePassiveDefinition;
 import com.airijko.endlessleveling.passives.settings.SwiftnessSettings;
 import com.airijko.endlessleveling.util.ChatMessageTemplate;
 import com.airijko.endlessleveling.util.EntityRefUtil;
+import com.airijko.endlessleveling.util.FinalIncantationTriggerEffects;
 import com.airijko.endlessleveling.util.PlayerChatNotifier;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
@@ -140,6 +141,8 @@ public final class CombatHookProcessor {
         if (runtimeState != null && firstStrikePassive.enabled()) {
                 FocusedStrikePassive.TriggerResult firstStrikeResult = firstStrikePassive.apply(runtimeState,
             ctx.attackerPlayerRef(),
+                ctx.targetRef(),
+                ctx.commandBuffer(),
                     critDamage,
                     this::sendPassiveMessage);
             float bonusDamage = firstStrikeResult.bonusDamage();
@@ -180,6 +183,7 @@ public final class CombatHookProcessor {
                     ctx.attackerPlayerRef(),
                     this::sendPassiveMessage);
             if (retaliationBonus > 0f) {
+            FinalIncantationTriggerEffects.play(ctx.targetRef(), ctx.commandBuffer());
                 registerLayerBonus(layerBuffer,
                         resolveBlueprint(archetypeSnapshot, ArchetypePassiveType.RETALIATION),
                         retaliationBonus,

@@ -230,6 +230,61 @@ public final class ArmyOfTheDeadPassive {
         return resolveSummonOwnerUuid(ref, store, commandBuffer);
     }
 
+    public static SummonHudState resolveHudState(PlayerData sourcePlayerData,
+            EntityStatMap sourceStats,
+            ArchetypePassiveSnapshot archetypeSnapshot) {
+        if (sourcePlayerData == null || archetypeSnapshot == null) {
+            return SummonHudState.none();
+        }
+
+        double passiveValue = archetypeSnapshot.getValue(ArchetypePassiveType.ARMY_OF_THE_DEAD);
+        if (passiveValue <= 0.0D && archetypeSnapshot.getDefinitions(ArchetypePassiveType.ARMY_OF_THE_DEAD).isEmpty()) {
+            return SummonHudState.none();
+        }
+
+        ArmyOfTheDeadConfig config = resolveConfig(archetypeSnapshot);
+        int maxSummons = resolveMaxSummons(config, sourcePlayerData, sourceStats);
+        if (maxSummons <= 0) {
+            return SummonHudState.none();
+        }
+
+        UUID ownerUuid = sourcePlayerData.getUuid();
+        if (ownerUuid == null) {
+            return new SummonHudState(0, maxSummons, maxSummons);
+        }
+
+        OwnerSummonState ownerState = OWNER_STATES.get(ownerUuid);
+        if (ownerState == null) {
+            return new SummonHudState(0, maxSummons, maxSummons);
+        }
+
+        long now = System.currentTimeMillis();
+        synchronized (ownerState) {
+            ownerState.ensureSlots(maxSummons);
+
+            int deployedCount = 0;
+            int availableCount = 0;
+            for (int slotIndex = 0; slotIndex < maxSummons; slotIndex++) {
+                SummonSlot slot = ownerState.getSlot(slotIndex);
+                if (slot == null) {
+                    availableCount++;
+                    continue;
+                }
+
+                if (isSummonSlotDeployed(slot, now)) {
+                    deployedCount++;
+                    continue;
+                }
+
+                if (!slot.spawnPending && slot.cooldownExpiresAt <= now) {
+                    availableCount++;
+                }
+            }
+
+            return new SummonHudState(deployedCount, availableCount, maxSummons);
+        }
+    }
+
     public static double getManagedSummonStatInheritance(Ref<EntityStore> ref,
             Store<EntityStore> store,
             CommandBuffer<EntityStore> commandBuffer) {
@@ -898,6 +953,19 @@ public final class ArmyOfTheDeadPassive {
             total = Math.min(total, config.maxSummons());
         }
         return Math.min(MAX_SUMMON_CAP, Math.max(0, total));
+    }
+
+    private static boolean isSummonSlotDeployed(SummonSlot slot, long now) {
+        if (slot == null || slot.activeSummonUuid == null || slot.activeRef == null) {
+            return false;
+        }
+        if (!SUMMON_BINDINGS.containsKey(slot.activeSummonUuid)) {
+            return false;
+        }
+        if (!EntityRefUtil.isUsable(slot.activeRef)) {
+            return false;
+        }
+        return slot.summonExpiresAt <= 0L || slot.summonExpiresAt > now;
     }
 
     private static void cleanupSlot(UUID ownerUuid,
@@ -1585,6 +1653,12 @@ public final class ArmyOfTheDeadPassive {
             float lifeForceFlatHealthBonus) {
         public static SummonInheritedStats none() {
             return new SummonInheritedStats(1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f);
+        }
+    }
+
+    public record SummonHudState(int deployedCount, int availableCount, int maxSummons) {
+        public static SummonHudState none() {
+            return new SummonHudState(0, 0, 0);
         }
     }
 

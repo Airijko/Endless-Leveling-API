@@ -48,7 +48,17 @@ public final class FirstStrikePassive {
             return TriggerResult.none();
         }
         long now = System.currentTimeMillis();
+        long cooldownExpiresAt = runtimeState.getFirstStrikeCooldownExpiresAt();
+        if (cooldownExpiresAt > now) {
+            return TriggerResult.none();
+        }
+
         runtimeState.setFirstStrikeHasteActiveUntil(now + settings.hasteDurationMillis());
+        if (settings.cooldownMillis() > 0L) {
+            runtimeState.setFirstStrikeCooldownExpiresAt(now + settings.cooldownMillis());
+            runtimeState.setFirstStrikeReadyNotified(false);
+            runtimeState.setFirstStrikeKillResetReady(false);
+        }
         return TriggerResult.none();
     }
 

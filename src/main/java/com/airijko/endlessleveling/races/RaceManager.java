@@ -1185,7 +1185,14 @@ public class RaceManager {
             String tag = PassiveDefinitionParser.resolveTag(type, passive);
             PassiveStackingStyle stacking = PassiveDefinitionParser.resolveStacking(type, passive);
             PassiveTier tier = PassiveTier.fromConfig(passive.get("tier"), PassiveTier.COMMON);
-            PassiveCategory category = PassiveCategory.fromConfig(passive.get("category"), null);
+                Object rawCategory = passive.get("category");
+                PassiveCategory category = PassiveCategory.fromConfigOrNull(rawCategory);
+                if (rawCategory != null && category == null) {
+                LOGGER.atWarning().log("Race %s passive %s has unknown category '%s'",
+                    raceId,
+                    type,
+                    rawCategory);
+                }
             Map<String, Double> classValues = parseClassValues(passive.get("class_values"));
             definitions.add(new RacePassiveDefinition(type,
                     value,

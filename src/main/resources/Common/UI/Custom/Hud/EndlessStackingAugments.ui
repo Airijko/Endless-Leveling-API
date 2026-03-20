@@ -40,7 +40,8 @@ Group #StackingAugmentsHud {
     ItemIcon #StackingSlot0IconOnLowHp { ItemId: "Potion_Health_Lesser"; Anchor: (Width: 32, Height: 32, Left: 0, Top: 0); Visible: false; }
     ItemIcon #StackingSlot0IconOnCrit { ItemId: "Weapon_Battleaxe_Mithril"; Anchor: (Width: 32, Height: 32, Left: 0, Top: 0); Visible: false; }
     ItemIcon #StackingSlot0IconOnKill { ItemId: "Ingredient_Fire_Essence"; Anchor: (Width: 32, Height: 32, Left: 0, Top: 0); Visible: false; }
-    ItemIcon #StackingSlot0IconOnLifesteal { ItemId: "Potion_Health_Greater"; Anchor: (Width: 32, Height: 32, Left: 0, Top: 0); Visible: false; }
+    ItemIcon #StackingSlot0IconOnLifesteal { ItemId: "Weapon_Sword_Adamantite"; Anchor: (Width: 32, Height: 32, Left: 0, Top: 0); Visible: false; }
+    ItemIcon #StackingSlot0IconOnNecromancy { ItemId: "Weapon_Spellbook_Demon"; Anchor: (Width: 32, Height: 32, Left: 0, Top: 0); Visible: false; }
 
     Group #StackingSlot0StackBadge {
       Anchor: (Width: 16, Height: 16, Right: 0, Bottom: 0);
@@ -80,7 +81,8 @@ Group #StackingAugmentsHud {
     ItemIcon #StackingSlot1IconOnLowHp { ItemId: "Potion_Health_Lesser"; Anchor: (Width: 32, Height: 32, Left: 0, Top: 0); Visible: false; }
     ItemIcon #StackingSlot1IconOnCrit { ItemId: "Weapon_Battleaxe_Mithril"; Anchor: (Width: 32, Height: 32, Left: 0, Top: 0); Visible: false; }
     ItemIcon #StackingSlot1IconOnKill { ItemId: "Ingredient_Fire_Essence"; Anchor: (Width: 32, Height: 32, Left: 0, Top: 0); Visible: false; }
-    ItemIcon #StackingSlot1IconOnLifesteal { ItemId: "Potion_Health_Greater"; Anchor: (Width: 32, Height: 32, Left: 0, Top: 0); Visible: false; }
+    ItemIcon #StackingSlot1IconOnLifesteal { ItemId: "Weapon_Sword_Adamantite"; Anchor: (Width: 32, Height: 32, Left: 0, Top: 0); Visible: false; }
+    ItemIcon #StackingSlot1IconOnNecromancy { ItemId: "Weapon_Spellbook_Demon"; Anchor: (Width: 32, Height: 32, Left: 0, Top: 0); Visible: false; }
 
     Group #StackingSlot1StackBadge {
       Anchor: (Width: 16, Height: 16, Right: 0, Bottom: 0);
@@ -120,7 +122,8 @@ Group #StackingAugmentsHud {
     ItemIcon #StackingSlot2IconOnLowHp { ItemId: "Potion_Health_Lesser"; Anchor: (Width: 32, Height: 32, Left: 0, Top: 0); Visible: false; }
     ItemIcon #StackingSlot2IconOnCrit { ItemId: "Weapon_Battleaxe_Mithril"; Anchor: (Width: 32, Height: 32, Left: 0, Top: 0); Visible: false; }
     ItemIcon #StackingSlot2IconOnKill { ItemId: "Ingredient_Fire_Essence"; Anchor: (Width: 32, Height: 32, Left: 0, Top: 0); Visible: false; }
-    ItemIcon #StackingSlot2IconOnLifesteal { ItemId: "Potion_Health_Greater"; Anchor: (Width: 32, Height: 32, Left: 0, Top: 0); Visible: false; }
+    ItemIcon #StackingSlot2IconOnLifesteal { ItemId: "Weapon_Sword_Adamantite"; Anchor: (Width: 32, Height: 32, Left: 0, Top: 0); Visible: false; }
+    ItemIcon #StackingSlot2IconOnNecromancy { ItemId: "Weapon_Spellbook_Demon"; Anchor: (Width: 32, Height: 32, Left: 0, Top: 0); Visible: false; }
 
     Group #StackingSlot2StackBadge {
       Anchor: (Width: 16, Height: 16, Right: 0, Bottom: 0);
@@ -165,7 +168,8 @@ Group #StackingAugmentsHud {
     ItemIcon #StackingSlot3IconOnLowHp { ItemId: "Potion_Health_Lesser"; Anchor: (Width: 32, Height: 32, Left: 0, Top: 0); Visible: false; }
     ItemIcon #StackingSlot3IconOnCrit { ItemId: "Weapon_Battleaxe_Mithril"; Anchor: (Width: 32, Height: 32, Left: 0, Top: 0); Visible: false; }
     ItemIcon #StackingSlot3IconOnKill { ItemId: "Ingredient_Fire_Essence"; Anchor: (Width: 32, Height: 32, Left: 0, Top: 0); Visible: false; }
-    ItemIcon #StackingSlot3IconOnLifesteal { ItemId: "Potion_Health_Greater"; Anchor: (Width: 32, Height: 32, Left: 0, Top: 0); Visible: false; }
+    ItemIcon #StackingSlot3IconOnLifesteal { ItemId: "Weapon_Sword_Adamantite"; Anchor: (Width: 32, Height: 32, Left: 0, Top: 0); Visible: false; }
+    ItemIcon #StackingSlot3IconOnNecromancy { ItemId: "Weapon_Spellbook_Demon"; Anchor: (Width: 32, Height: 32, Left: 0, Top: 0); Visible: false; }
 
     Group #StackingSlot3StackBadge {
       Anchor: (Width: 16, Height: 16, Right: 0, Bottom: 0);
@@ -205,7 +209,8 @@ Group #StackingAugmentsHud {
     ItemIcon #StackingSlot4IconOnLowHp { ItemId: "Potion_Health_Lesser"; Anchor: (Width: 32, Height: 32, Left: 0, Top: 0); Visible: false; }
     ItemIcon #StackingSlot4IconOnCrit { ItemId: "Weapon_Battleaxe_Mithril"; Anchor: (Width: 32, Height: 32, Left: 0, Top: 0); Visible: false; }
     ItemIcon #StackingSlot4IconOnKill { ItemId: "Ingredient_Fire_Essence"; Anchor: (Width: 32, Height: 32, Left: 0, Top: 0); Visible: false; }
-    ItemIcon #StackingSlot4IconOnLifesteal { ItemId: "Potion_Health_Greater"; Anchor: (Width: 32, Height: 32, Left: 0, Top: 0); Visible: false; }
+    ItemIcon #StackingSlot4IconOnLifesteal { ItemId: "Weapon_Sword_Adamantite"; Anchor: (Width: 32, Height: 32, Left: 0, Top: 0); Visible: false; }
+    ItemIcon #StackingSlot4IconOnNecromancy { ItemId: "Weapon_Spellbook_Demon"; Anchor: (Width: 32, Height: 32, Left: 0, Top: 0); Visible: false; }
 
     Group #StackingSlot4StackBadge {
       Anchor: (Width: 16, Height: 16, Right: 0, Bottom: 0);
@@ -245,7 +250,8 @@ Group #StackingAugmentsHud {
     ItemIcon #StackingSlot5IconOnLowHp { ItemId: "Potion_Health_Lesser"; Anchor: (Width: 32, Height: 32, Left: 0, Top: 0); Visible: false; }
     ItemIcon #StackingSlot5IconOnCrit { ItemId: "Weapon_Battleaxe_Mithril"; Anchor: (Width: 32, Height: 32, Left: 0, Top: 0); Visible: false; }
     ItemIcon #StackingSlot5IconOnKill { ItemId: "Ingredient_Fire_Essence"; Anchor: (Width: 32, Height: 32, Left: 0, Top: 0); Visible: false; }
-    ItemIcon #StackingSlot5IconOnLifesteal { ItemId: "Potion_Health_Greater"; Anchor: (Width: 32, Height: 32, Left: 0, Top: 0); Visible: false; }
+    ItemIcon #StackingSlot5IconOnLifesteal { ItemId: "Weapon_Sword_Adamantite"; Anchor: (Width: 32, Height: 32, Left: 0, Top: 0); Visible: false; }
+    ItemIcon #StackingSlot5IconOnNecromancy { ItemId: "Weapon_Spellbook_Demon"; Anchor: (Width: 32, Height: 32, Left: 0, Top: 0); Visible: false; }
 
     Group #StackingSlot5StackBadge {
       Anchor: (Width: 16, Height: 16, Right: 0, Bottom: 0);

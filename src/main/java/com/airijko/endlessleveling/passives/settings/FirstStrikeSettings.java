@@ -36,6 +36,8 @@ public record FirstStrikeSettings(boolean enabled,
 
         double resolvedHasteBonusPercent = DEFAULT_HASTE_BONUS_PERCENT;
         double resolvedHasteDurationSeconds = DEFAULT_HASTE_DURATION_SECONDS;
+        double resolvedCooldownSeconds = 0.0D;
+        boolean resolvedResetOnKill = false;
 
         for (RacePassiveDefinition definition : definitions) {
             if (definition == null) {
@@ -56,9 +58,21 @@ public record FirstStrikeSettings(boolean enabled,
             if (durationCandidate > 0.0D) {
                 resolvedHasteDurationSeconds = durationCandidate;
             }
+
+            double cooldownCandidate = parsePositiveDouble(props == null
+                    ? null
+                    : firstNonNull(props.get("cooldown"), props.get("cooldown_seconds")));
+            if (cooldownCandidate > 0.0D) {
+                resolvedCooldownSeconds = Math.max(resolvedCooldownSeconds, cooldownCandidate);
+            }
+
+            if (props != null && parseBoolean(props.get("reset_on_kill"))) {
+                resolvedResetOnKill = true;
+            }
         }
 
         long resolvedHasteDurationMillis = (long) Math.max(0L, Math.round(resolvedHasteDurationSeconds * 1000.0D));
+        long resolvedCooldownMillis = (long) Math.max(0L, Math.round(resolvedCooldownSeconds * 1000.0D));
         boolean enabled = resolvedHasteBonusPercent > 0.0D && resolvedHasteDurationMillis > 0L;
         if (!enabled) {
             return disabled();
@@ -67,14 +81,14 @@ public record FirstStrikeSettings(boolean enabled,
         return new FirstStrikeSettings(
                 true,
                 0.0D,
-                0L,
+            resolvedCooldownMillis,
                 0.0D,
                 0.0D,
                 0.0D,
                 resolvedHasteBonusPercent,
                 resolvedHasteDurationMillis,
                 false,
-                false);
+            resolvedResetOnKill);
     }
 
     public static FirstStrikeSettings disabled() {
@@ -121,5 +135,22 @@ public record FirstStrikeSettings(boolean enabled,
 
     private static Object firstNonNull(Object first, Object second) {
         return first != null ? first : second;
+    }
+
+    private static boolean parseBoolean(Object raw) {
+        if (raw instanceof Boolean bool) {
+            return bool;
+        }
+        if (raw instanceof Number number) {
+            return number.intValue() != 0;
+        }
+        if (raw instanceof String string) {
+            String normalized = string.trim().toLowerCase();
+            return "true".equals(normalized)
+                    || "yes".equals(normalized)
+                    || "on".equals(normalized)
+                    || "1".equals(normalized);
+        }
+        return false;
     }
 }

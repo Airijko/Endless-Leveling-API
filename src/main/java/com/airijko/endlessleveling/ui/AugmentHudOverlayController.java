@@ -24,6 +24,7 @@ import com.airijko.endlessleveling.passives.PassiveManager;
 import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveSnapshot;
 import com.airijko.endlessleveling.player.PlayerData;
 import com.airijko.endlessleveling.passives.type.ShieldingAuraPassive;
+import com.airijko.endlessleveling.passives.type.ArmyOfTheDeadPassive;
 import com.airijko.endlessleveling.races.RacePassiveDefinition;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
@@ -90,10 +91,13 @@ public final class AugmentHudOverlayController {
         PassiveManager.PassiveRuntimeState passiveRuntimeState = passiveManager != null
                 ? passiveManager.getRuntimeState(uuid)
                 : null;
-        ArchetypePassiveSnapshot archetypeSnapshot = resolveArchetypeSnapshot(uuid);
+        PlayerData playerData = resolvePlayerData(uuid);
+        ArchetypePassiveSnapshot archetypeSnapshot = resolveArchetypeSnapshot(playerData);
         EntityStatMap statMap = resolveStatMap(playerRef);
         List<StackingHudState> stackingSlots = resolveStackingHudStates(runtimeState,
                 passiveRuntimeState,
+            playerData,
+            statMap,
                 archetypeSnapshot,
                 now);
 
@@ -104,6 +108,8 @@ public final class AugmentHudOverlayController {
 
     private List<StackingHudState> resolveStackingHudStates(AugmentRuntimeManager.AugmentRuntimeState runtimeState,
             PassiveManager.PassiveRuntimeState passiveRuntimeState,
+            PlayerData playerData,
+            EntityStatMap statMap,
             ArchetypePassiveSnapshot archetypeSnapshot,
             long now) {
         if (runtimeState == null && passiveRuntimeState == null) {
@@ -112,6 +118,9 @@ public final class AugmentHudOverlayController {
 
         List<StackingHudState> leftSlots = new ArrayList<>();
         List<StackingHudState> rightSlots = new ArrayList<>();
+
+        appendArmyOfTheDeadSummonIndicators(playerData, statMap, archetypeSnapshot, leftSlots, rightSlots);
+        appendRetaliationStoredIndicator(passiveRuntimeState, archetypeSnapshot, leftSlots, now);
 
         if (runtimeState != null && augmentManager != null) {
             List<String> selectedAugmentIds = resolveSelectedAugmentIds(runtimeState);
@@ -195,22 +204,74 @@ public final class AugmentHudOverlayController {
         return layout;
     }
 
-    private ArchetypePassiveSnapshot resolveArchetypeSnapshot(UUID playerUuid) {
+    private PlayerData resolvePlayerData(UUID playerUuid) {
         if (playerUuid == null) {
-            return ArchetypePassiveSnapshot.empty();
+            return null;
         }
 
         EndlessLeveling plugin = EndlessLeveling.getInstance();
-        if (plugin == null || plugin.getPlayerDataManager() == null || plugin.getArchetypePassiveManager() == null) {
-            return ArchetypePassiveSnapshot.empty();
+        if (plugin == null || plugin.getPlayerDataManager() == null) {
+            return null;
         }
 
-        PlayerData playerData = plugin.getPlayerDataManager().get(playerUuid);
+        return plugin.getPlayerDataManager().get(playerUuid);
+    }
+
+    private ArchetypePassiveSnapshot resolveArchetypeSnapshot(PlayerData playerData) {
         if (playerData == null) {
             return ArchetypePassiveSnapshot.empty();
         }
 
+        EndlessLeveling plugin = EndlessLeveling.getInstance();
+        if (plugin == null || plugin.getArchetypePassiveManager() == null) {
+            return ArchetypePassiveSnapshot.empty();
+        }
+
         return plugin.getArchetypePassiveManager().getSnapshot(playerData);
+    }
+
+    private void appendArmyOfTheDeadSummonIndicators(PlayerData playerData,
+            EntityStatMap statMap,
+            ArchetypePassiveSnapshot archetypeSnapshot,
+            List<StackingHudState> leftSlots,
+            List<StackingHudState> rightSlots) {
+        if (leftSlots == null || rightSlots == null || archetypeSnapshot == null || archetypeSnapshot.isEmpty()) {
+            return;
+        }
+        if (!hasArchetypePassive(archetypeSnapshot, ArchetypePassiveType.ARMY_OF_THE_DEAD)) {
+            return;
+        }
+
+        ArmyOfTheDeadPassive.SummonHudState summonHudState = ArmyOfTheDeadPassive.resolveHudState(
+                playerData,
+                statMap,
+                archetypeSnapshot);
+        if (summonHudState == null || summonHudState.maxSummons() <= 0) {
+            return;
+        }
+
+        String iconItemId = resolveArchetypePassiveIconItemId(
+                archetypeSnapshot,
+                ArchetypePassiveType.ARMY_OF_THE_DEAD,
+                PassiveCategory.NECROMANCY.getIconItemId());
+
+        if (leftSlots.size() < STACKING_LEFT_SLOT_COUNT && summonHudState.deployedCount() > 0) {
+            leftSlots.add(new StackingHudState(
+                    true,
+                    Math.max(0, summonHudState.deployedCount()),
+                    summonHudState.deployedCount() >= summonHudState.maxSummons(),
+                    iconItemId,
+                    true));
+        }
+
+        if (rightSlots.size() < STACKING_RIGHT_SLOT_COUNT && summonHudState.availableCount() > 0) {
+            rightSlots.add(new StackingHudState(
+                    true,
+                    Math.max(0, summonHudState.availableCount()),
+                    summonHudState.availableCount() >= summonHudState.maxSummons(),
+                    iconItemId,
+                    true));
+        }
     }
 
     private void appendArchetypePassiveCooldownIndicators(PassiveManager.PassiveRuntimeState passiveRuntimeState,
@@ -230,6 +291,21 @@ public final class AugmentHudOverlayController {
             if (!hasArchetypePassive(archetypeSnapshot, passiveType)) {
                 continue;
             }
+            if (passiveType == ArchetypePassiveType.RETALIATION
+                    && hasActiveRetaliationStoredDamage(passiveRuntimeState, now)) {
+                // While retaliation is charged, it occupies a left slot with stored damage.
+                continue;
+            }
+
+            if (passiveType == ArchetypePassiveType.TRUE_EDGE) {
+                rightSlots.add(new StackingHudState(
+                        true,
+                        0,
+                        false,
+                        resolveArchetypePassiveIconItemId(archetypeSnapshot, entry),
+                        false));
+                continue;
+            }
 
             if (entry.expiresAt(passiveRuntimeState) > now) {
                 continue;
@@ -242,6 +318,47 @@ public final class AugmentHudOverlayController {
                     resolveArchetypePassiveIconItemId(archetypeSnapshot, entry),
                     false));
         }
+    }
+
+    private void appendRetaliationStoredIndicator(PassiveManager.PassiveRuntimeState passiveRuntimeState,
+            ArchetypePassiveSnapshot archetypeSnapshot,
+            List<StackingHudState> leftSlots,
+            long now) {
+        if (leftSlots == null || passiveRuntimeState == null || archetypeSnapshot == null) {
+            return;
+        }
+        if (leftSlots.size() >= STACKING_LEFT_SLOT_COUNT) {
+            return;
+        }
+        if (!hasArchetypePassive(archetypeSnapshot, ArchetypePassiveType.RETALIATION)) {
+            return;
+        }
+        if (!hasActiveRetaliationStoredDamage(passiveRuntimeState, now)) {
+            return;
+        }
+
+        int storedDamage = (int) Math.max(0L,
+                Math.min(Integer.MAX_VALUE,
+                        Math.round(passiveRuntimeState.getRetaliationDamageStored())));
+        String iconItemId = resolveArchetypePassiveIconItemId(
+                archetypeSnapshot,
+                ArchetypePassiveType.RETALIATION,
+                PassiveCategory.ON_DAMAGE_TAKEN.getIconItemId());
+
+        leftSlots.add(new StackingHudState(
+                true,
+                storedDamage,
+                false,
+                iconItemId,
+                true));
+    }
+
+    private boolean hasActiveRetaliationStoredDamage(PassiveManager.PassiveRuntimeState passiveRuntimeState, long now) {
+        if (passiveRuntimeState == null) {
+            return false;
+        }
+        return passiveRuntimeState.getRetaliationDamageStored() > EPSILON
+                && passiveRuntimeState.getRetaliationWindowExpiresAt() > now;
     }
 
     private boolean hasArchetypePassive(ArchetypePassiveSnapshot archetypeSnapshot, ArchetypePassiveType passiveType) {
@@ -260,17 +377,32 @@ public final class AugmentHudOverlayController {
             return STACKING_ICON_FALLBACK;
         }
 
-        for (RacePassiveDefinition definition : archetypeSnapshot.getDefinitions(entry.archetypeType())) {
+        return resolveArchetypePassiveIconItemId(archetypeSnapshot,
+                entry.archetypeType(),
+                entry.fallbackIconItemId());
+    }
+
+    private String resolveArchetypePassiveIconItemId(ArchetypePassiveSnapshot archetypeSnapshot,
+            ArchetypePassiveType passiveType,
+            String fallbackIconItemId) {
+        if (archetypeSnapshot == null || passiveType == null) {
+            return STACKING_ICON_FALLBACK;
+        }
+
+        for (RacePassiveDefinition definition : archetypeSnapshot.getDefinitions(passiveType)) {
             if (definition == null) {
                 continue;
             }
             PassiveCategory category = definition.category();
+            if (category == null && definition.properties() != null) {
+                category = PassiveCategory.fromConfigOrNull(definition.properties().get("category"));
+            }
             if (category != null && category.getIconItemId() != null && !category.getIconItemId().isBlank()) {
                 return category.getIconItemId();
             }
         }
 
-        String fallback = entry.fallbackIconItemId();
+        String fallback = fallbackIconItemId;
         return fallback == null || fallback.isBlank() ? STACKING_ICON_FALLBACK : fallback;
     }
 

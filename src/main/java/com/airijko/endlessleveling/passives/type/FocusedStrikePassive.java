@@ -3,7 +3,11 @@ package com.airijko.endlessleveling.passives.type;
 import com.airijko.endlessleveling.passives.PassiveManager.PassiveRuntimeState;
 import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveSnapshot;
 import com.airijko.endlessleveling.passives.settings.FirstStrikeSettings;
+import com.airijko.endlessleveling.util.FirstStrikeTriggerEffects;
+import com.hypixel.hytale.component.CommandBuffer;
+import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import java.util.function.BiConsumer;
 
@@ -42,13 +46,26 @@ public final class FocusedStrikePassive {
 
     public TriggerResult apply(PassiveRuntimeState runtimeState,
             PlayerRef playerRef,
+            Ref<EntityStore> targetRef,
+            CommandBuffer<EntityStore> commandBuffer,
             float currentDamage,
             BiConsumer<PlayerRef, String> messenger) {
         if (runtimeState == null || !settings.enabled() || currentDamage <= 0f) {
             return TriggerResult.none();
         }
         long now = System.currentTimeMillis();
+        long cooldownExpiresAt = runtimeState.getFirstStrikeCooldownExpiresAt();
+        if (cooldownExpiresAt > now) {
+            return TriggerResult.none();
+        }
+
         runtimeState.setFirstStrikeHasteActiveUntil(now + settings.hasteDurationMillis());
+        FirstStrikeTriggerEffects.play(targetRef, commandBuffer);
+        if (settings.cooldownMillis() > 0L) {
+            runtimeState.setFirstStrikeCooldownExpiresAt(now + settings.cooldownMillis());
+            runtimeState.setFirstStrikeReadyNotified(false);
+            runtimeState.setFirstStrikeKillResetReady(false);
+        }
         return TriggerResult.none();
     }
 

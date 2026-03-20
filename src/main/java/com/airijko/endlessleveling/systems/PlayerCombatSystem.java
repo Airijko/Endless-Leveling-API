@@ -21,6 +21,7 @@ import com.airijko.endlessleveling.passives.type.TrueBoltsPassive;
 import com.airijko.endlessleveling.passives.type.TrueEdgePassive;
 import com.airijko.endlessleveling.leveling.XpKillCreditTracker;
 import com.airijko.endlessleveling.util.EntityRefUtil;
+import com.airijko.endlessleveling.util.FirstStrikeTriggerEffects;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
@@ -233,6 +234,9 @@ public class PlayerCombatSystem extends DamageEventSystem {
                         targetIsPlayer)
                 : TrueEdgeComputation.none();
                 if (!bypassOutgoingAugmentMath && trueEdgeReady && trueEdge.triggered() && trueDamageSettings.sourceType() != null) {
+                    if (trueDamageSettings.sourceType() == ArchetypePassiveType.TRUE_BOLTS) {
+                        FirstStrikeTriggerEffects.play(targetRef, commandBuffer);
+                    }
                     logPassiveTrigger(playerData,
                         trueDamageSettings.sourceType(),
                         "converted=%.2f true=%.2f",

@@ -45,7 +45,8 @@ public class PlayerHud extends CustomUIHud {
             "OnLowHp",
             "OnCrit",
             "OnKill",
-            "OnLifesteal"
+            "OnLifesteal",
+            "OnNecromancy"
     };
     private static final Map<String, String> STACKING_ICON_VARIANT_BY_ITEM_ID = Map.ofEntries(
             Map.entry("Ingredient_Crystal_White", "CommonStat"),
@@ -57,6 +58,8 @@ public class PlayerHud extends CustomUIHud {
             Map.entry("Potion_Health_Lesser", "OnLowHp"),
             Map.entry("Weapon_Battleaxe_Mithril", "OnCrit"),
             Map.entry("Ingredient_Fire_Essence", "OnKill"),
+            Map.entry("Weapon_Sword_Adamantite", "OnLifesteal"),
+            Map.entry("Weapon_Spellbook_Demon", "OnNecromancy"),
             Map.entry("Potion_Health_Greater", "OnLifesteal"));
     private static final int MAX_STACKING_SLOTS = 6;
     private static final Map<UUID, PlayerHud> ACTIVE_HUDS = new ConcurrentHashMap<>();
@@ -208,10 +211,18 @@ public class PlayerHud extends CustomUIHud {
 
     private void setStackingIconVariant(@Nonnull UICommandBuilder uiCommandBuilder, int slotIndex,
             String iconItemId) {
-        String chosenVariant = iconItemId == null
+        String normalizedIconItemId = iconItemId == null || iconItemId.isBlank() ? null : iconItemId;
+        String chosenVariant = normalizedIconItemId == null
                 ? null
-                : STACKING_ICON_VARIANT_BY_ITEM_ID.getOrDefault(iconItemId, "PassiveStat");
+                : STACKING_ICON_VARIANT_BY_ITEM_ID.getOrDefault(normalizedIconItemId, "PassiveStat");
         String prefix = "#StackingSlot" + slotIndex + "Icon";
+
+        if (chosenVariant != null) {
+            // Keep fixed variant styling but allow unknown category icons to render
+            // by reusing the selected variant node with the exact item id.
+            uiCommandBuilder.set(prefix + chosenVariant + ".ItemId", normalizedIconItemId);
+        }
+
         for (String variant : STACKING_ICON_VARIANT_SUFFIXES) {
             uiCommandBuilder.set(prefix + variant + ".Visible", variant.equals(chosenVariant));
         }
