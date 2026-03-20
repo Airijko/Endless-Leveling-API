@@ -47,36 +47,9 @@ public final class FocusedStrikePassive {
         if (runtimeState == null || !settings.enabled() || currentDamage <= 0f) {
             return TriggerResult.none();
         }
-
-        double bonusPercent = settings.normalBonusDamage() ? Math.max(0.0D, settings.bonusPercent()) : 0.0D;
-        double flatBonusDamage = settings.normalBonusDamage() ? Math.max(0.0D, settings.flatBonusDamage()) : 0.0D;
-        double trueDamageFlatBonus = Math.max(0.0D, settings.trueDamageFlatBonus());
-        double trueDamageConversionPercent = Math.max(0.0D, settings.trueDamageConversionPercent());
-
         long now = System.currentTimeMillis();
-        if (now < runtimeState.getFirstStrikeCooldownExpiresAt()) {
-            return TriggerResult.none();
-        }
-
-        double bonusDamageTotal = Math.max(0.0D, flatBonusDamage + (Math.max(0.0D, currentDamage) * bonusPercent));
-        double trueDamageTotal = Math.max(0.0D,
-                trueDamageFlatBonus + (Math.max(0.0D, currentDamage) * trueDamageConversionPercent));
-
-        float bonusDamage = (float) bonusDamageTotal;
-        if (bonusDamage <= 0f && trueDamageTotal <= 0.0D) {
-            return TriggerResult.none();
-        }
-
-        runtimeState.setFirstStrikeCooldownExpiresAt(now + settings.cooldownMillis());
-        runtimeState.setFirstStrikeKillResetReady(false);
-        runtimeState.setFirstStrikeReadyNotified(false);
-
-        if (messenger != null) {
-            messenger.accept(playerRef,
-                    String.format("Focused Strike triggered! +%.0f true damage.",
-                            trueDamageTotal));
-        }
-        return new TriggerResult(bonusDamage, trueDamageTotal);
+        runtimeState.setFirstStrikeHasteActiveUntil(now + settings.hasteDurationMillis());
+        return TriggerResult.none();
     }
 
     public void resetCooldownOnKill(PassiveRuntimeState runtimeState) {

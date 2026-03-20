@@ -59,6 +59,8 @@ import java.util.UUID;
 public final class CombatHookProcessor {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
+    private static final boolean PASSIVE_DEBUG = Boolean
+            .parseBoolean(System.getProperty("el.passive.debug", "true"));
 
     private final SkillManager skillManager;
     private final PassiveManager passiveManager;
@@ -151,6 +153,13 @@ public final class CombatHookProcessor {
             if (firstStrikeResult.trueDamageBonus() > 0.0D) {
                 passiveTrueDamageBonus += firstStrikeResult.trueDamageBonus();
             }
+            if (bonusDamage > 0f || firstStrikeResult.trueDamageBonus() > 0.0D) {
+                logPassiveTrigger(playerData,
+                        ArchetypePassiveType.FOCUSED_STRIKE,
+                        "bonus=%.2f true=%.2f",
+                        bonusDamage,
+                        firstStrikeResult.trueDamageBonus());
+            }
         }
 
         float berzerkerBonus = berzerkerPassive.computeBonus(ctx.attackerRef(), ctx.commandBuffer(), critDamage);
@@ -160,6 +169,10 @@ public final class CombatHookProcessor {
                     berzerkerBonus,
                     critDamage);
             prospectiveDamage += berzerkerBonus;
+            logPassiveTrigger(playerData,
+                ArchetypePassiveType.BERZERKER,
+                "bonus=%.2f",
+                berzerkerBonus);
         }
 
         if (runtimeState != null) {
@@ -172,6 +185,10 @@ public final class CombatHookProcessor {
                         retaliationBonus,
                         critDamage);
                 prospectiveDamage += retaliationBonus;
+                logPassiveTrigger(playerData,
+                        ArchetypePassiveType.RETALIATION,
+                        "consumed_bonus=%.2f",
+                        retaliationBonus);
             }
         }
 
@@ -187,6 +204,10 @@ public final class CombatHookProcessor {
                     executionerBonus,
                     critDamage);
             prospectiveDamage += executionerBonus;
+            logPassiveTrigger(playerData,
+                ArchetypePassiveType.FINAL_INCANTATION,
+                "bonus=%.2f",
+                executionerBonus);
         }
 
         float damageBeforeWeapon = layerBuffer.apply(DamageLayer.BONUS, critDamage);
@@ -200,6 +221,11 @@ public final class CombatHookProcessor {
             double swiftnessDamageMultiplier = swiftnessSettings.damageMultiplierForStacks(swiftnessStacks);
             if (swiftnessDamageMultiplier > 0.0D && Math.abs(swiftnessDamageMultiplier - 1.0D) > 0.0001D) {
                 finalDamage = (float) (finalDamage * swiftnessDamageMultiplier);
+                logPassiveTrigger(playerData,
+                        ArchetypePassiveType.SWIFTNESS,
+                        "stacks=%d multiplier=%.3f",
+                        swiftnessStacks,
+                        swiftnessDamageMultiplier);
             }
         }
 
@@ -208,6 +234,11 @@ public final class CombatHookProcessor {
             double bladeDanceDamageMultiplier = bladeDancePassive.damageMultiplierForStacks(bladeDanceStacks);
             if (bladeDanceDamageMultiplier > 0.0D && Math.abs(bladeDanceDamageMultiplier - 1.0D) > 0.0001D) {
                 finalDamage = (float) (finalDamage * bladeDanceDamageMultiplier);
+                logPassiveTrigger(playerData,
+                        ArchetypePassiveType.BLADE_DANCE,
+                        "stacks=%d multiplier=%.3f",
+                        bladeDanceStacks,
+                        bladeDanceDamageMultiplier);
             }
         }
 
@@ -247,6 +278,10 @@ public final class CombatHookProcessor {
                         beforeAura,
                         auraDamageBonus,
                         finalDamage);
+                    logPassiveTrigger(playerData,
+                        ArchetypePassiveType.BUFFING_AURA,
+                        "multiplier=%.3f",
+                        1.0D + auraDamageBonus);
             } else {
                 LOGGER.atFiner().log("[BUFFING_AURA] No outgoing bonus for %s (active bonus %.3f).",
                         playerData.getUuid(),
@@ -281,11 +316,19 @@ public final class CombatHookProcessor {
         if (runtimeState != null && swiftnessSettings.enabled() && swiftnessSettings.triggerOnHit()) {
             applySwiftnessOnHit(runtimeState, swiftnessSettings);
             refreshMovementSpeed(ctx.attackerRef(), ctx.commandBuffer(), playerData);
+            logPassiveTrigger(playerData,
+                    ArchetypePassiveType.SWIFTNESS,
+                    "on_hit_stacks=%d",
+                    runtimeState.getSwiftnessStacks());
         }
 
         if (runtimeState != null && bladeDancePassive.enabled() && bladeDancePassive.triggerOnHit()) {
             applyBladeDanceOnHit(runtimeState, bladeDancePassive);
             refreshMovementSpeed(ctx.attackerRef(), ctx.commandBuffer(), playerData);
+            logPassiveTrigger(playerData,
+                    ArchetypePassiveType.BLADE_DANCE,
+                    "on_hit_stacks=%d",
+                    runtimeState.getBladeDanceStacks());
         }
 
         applyRetaliationTargetSlowOnHit(retaliationPassive,
@@ -398,7 +441,8 @@ public final class CombatHookProcessor {
                 targetRef,
                 commandBuffer,
                 attackerPlayerRef,
-                sourceKeyPrefix);
+            sourceKeyPrefix,
+            ArchetypePassiveType.RETALIATION);
     }
 
     private void applyRetaliationTargetSlowOnHit(PrimalDominancePassive primalDominancePassive,
@@ -418,7 +462,8 @@ public final class CombatHookProcessor {
                 targetRef,
                 commandBuffer,
                 attackerPlayerRef,
-                sourceKeyPrefix);
+            sourceKeyPrefix,
+            ArchetypePassiveType.PRIMAL_DOMINANCE);
     }
 
     private void applyRetaliationTargetSlowOnHit(ArcaneDominancePassive arcaneDominancePassive,
@@ -438,7 +483,8 @@ public final class CombatHookProcessor {
                 targetRef,
                 commandBuffer,
                 attackerPlayerRef,
-                sourceKeyPrefix);
+            sourceKeyPrefix,
+            ArchetypePassiveType.ARCANE_DOMINANCE);
     }
 
     private void applyTargetHasteSlowOnHit(double slowPercent,
@@ -446,7 +492,8 @@ public final class CombatHookProcessor {
             Ref<EntityStore> targetRef,
             CommandBuffer<EntityStore> commandBuffer,
             PlayerRef attackerPlayerRef,
-            String sourceKeyPrefix) {
+            String sourceKeyPrefix,
+            ArchetypePassiveType sourceType) {
 
         if (slowPercent <= 0.0D || slowDurationMillis <= 0L) {
             return;
@@ -474,6 +521,15 @@ public final class CombatHookProcessor {
             if (targetData != null) {
                 refreshMovementSpeed(targetRef, commandBuffer, targetData);
             }
+        }
+
+        if (PASSIVE_DEBUG && sourceType != null) {
+            LOGGER.atInfo().log("[PASSIVE_DEBUG] player=%s passive=%s target=%s slow=%.2f%% durationMs=%d",
+                    attackerPlayerRef != null ? attackerPlayerRef.getUuid() : "unknown",
+                    sourceType.name(),
+                    targetPlayer.getUuid(),
+                    slowPercent * 100.0D,
+                    slowDurationMillis);
         }
     }
 
@@ -530,23 +586,44 @@ public final class CombatHookProcessor {
         }
 
         if (runtimeState != null && postAugmentAmount > 0f) {
+            float beforeShieldAbsorb = postAugmentAmount;
             postAugmentAmount = ShieldingAuraPassive.absorbIncomingDamage(runtimeState, postAugmentAmount);
+            if (postAugmentAmount < beforeShieldAbsorb) {
+                logPassiveTrigger(defender,
+                        ArchetypePassiveType.SHIELDING_AURA,
+                        "absorbed=%.2f",
+                        beforeShieldAbsorb - postAugmentAmount);
+            }
         }
 
         if (runtimeState != null) {
+            float beforeAbsorb = postAugmentAmount;
             postAugmentAmount = absorbPassive.apply(runtimeState,
                     ctx.defenderPlayer(),
                     postAugmentAmount,
                     this::sendPassiveMessage);
+            if (postAugmentAmount < beforeAbsorb) {
+                logPassiveTrigger(defender,
+                        ArchetypePassiveType.ABSORB,
+                        "reduced=%.2f",
+                        beforeAbsorb - postAugmentAmount);
+            }
         }
 
         float adjustedAmount = postAugmentAmount;
         if (runtimeState != null && ctx.statMap() != null && !archetypeSnapshot.isEmpty()) {
+            float beforeSecondWind = postAugmentAmount;
             adjustedAmount = secondWindPassive.tryTrigger(runtimeState,
                     ctx.defenderPlayer(),
                     ctx.statMap(),
                     postAugmentAmount,
                     this::sendPassiveMessage);
+            if (adjustedAmount < beforeSecondWind) {
+                logPassiveTrigger(defender,
+                        ArchetypePassiveType.SECOND_WIND,
+                        "prevented=%.2f",
+                        beforeSecondWind - adjustedAmount);
+            }
         }
 
         double drLevel = defenseReducedAmount > 0f
@@ -665,6 +742,18 @@ public final class CombatHookProcessor {
         float updatedHealth = (float) Math.min(maxHealth, currentHealth + healAmount);
         if (updatedHealth > currentHealth) {
             statMap.setStatValue(DefaultEntityStatTypes.getHealth(), updatedHealth);
+            if (lifeStealPercent > 0.0D) {
+                logPassiveTrigger(playerData,
+                        ArchetypePassiveType.LIFE_STEAL,
+                        "heal=%.2f",
+                        updatedHealth - currentHealth);
+            }
+            if (ravenousStrikeHeal > 0.0D) {
+                logPassiveTrigger(playerData,
+                        ArchetypePassiveType.RAVENOUS_STRIKE,
+                        "heal=%.2f",
+                        updatedHealth - currentHealth);
+            }
         }
     }
 
@@ -696,6 +785,20 @@ public final class CombatHookProcessor {
             return;
         }
         PlayerChatNotifier.send(playerRef, ChatMessageTemplate.PASSIVE_GENERIC, text);
+    }
+
+    private void logPassiveTrigger(PlayerData playerData,
+            ArchetypePassiveType type,
+            String detailFormat,
+            Object... detailArgs) {
+        if (!PASSIVE_DEBUG || playerData == null || type == null) {
+            return;
+        }
+        String detail = detailFormat == null ? "triggered" : String.format(detailFormat, detailArgs);
+        LOGGER.atInfo().log("[PASSIVE_DEBUG] player=%s passive=%s %s",
+                playerData.getUuid(),
+                type.name(),
+                detail);
     }
 
     private boolean hasSelectedAugment(PlayerData playerData, String augmentId) {

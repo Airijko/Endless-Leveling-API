@@ -1055,9 +1055,24 @@ public class SkillManager {
     }
 
     private double getFocusedStrikeHasteBonusPercent(PlayerData playerData) {
-        if (playerData == null || archetypePassiveManager == null) {
+        if (playerData == null || archetypePassiveManager == null || passiveManager == null) {
             return 0.0D;
         }
+
+        PassiveManager.PassiveRuntimeState runtimeState = passiveManager.getRuntimeState(playerData.getUuid());
+        if (runtimeState == null) {
+            return 0.0D;
+        }
+
+        long activeUntil = runtimeState.getFirstStrikeHasteActiveUntil();
+        long now = System.currentTimeMillis();
+        if (activeUntil <= 0L || now > activeUntil) {
+            if (activeUntil > 0L) {
+                runtimeState.setFirstStrikeHasteActiveUntil(0L);
+            }
+            return 0.0D;
+        }
+
         ArchetypePassiveSnapshot snapshot = archetypePassiveManager.getSnapshot(playerData);
         FocusedStrikePassive settings = FocusedStrikePassive.fromSnapshot(snapshot);
         if (!settings.enabled()) {

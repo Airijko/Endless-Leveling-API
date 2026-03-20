@@ -33,4 +33,20 @@ public final class ArcaneWisdomPassive {
     public double thresholdPercent() {
         return settings.thresholdPercent();
     }
+
+    public double durationSeconds() {
+        return settings.durationSeconds();
+    }
+
+    public double cooldownSeconds() {
+        return settings.cooldownSeconds();
+    }
+
+    public long durationMillis() {
+        return settings.durationMillis();
+    }
+
+    public long cooldownMillis() {
+        return settings.cooldownMillis();
+    }
 }

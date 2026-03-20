@@ -45,6 +45,15 @@ public final class PassiveCooldownRegistry {
                     PassiveRuntimeState::setAdrenalineCooldownExpiresAt,
                     PassiveRuntimeState::isAdrenalineReadyNotified,
                     PassiveRuntimeState::setAdrenalineReadyNotified),
+                Entry.notifiable(
+                    "arcane_wisdom",
+                    "Arcane Wisdom",
+                    ArchetypePassiveType.ARCANE_WISDOM,
+                    PassiveCategory.PASSIVE_STAT.getIconItemId(),
+                    PassiveRuntimeState::getArcaneWisdomCooldownExpiresAt,
+                    PassiveRuntimeState::setArcaneWisdomCooldownExpiresAt,
+                    PassiveRuntimeState::isArcaneWisdomReadyNotified,
+                    PassiveRuntimeState::setArcaneWisdomReadyNotified),
             Entry.notifiable(
                     "final_incantation",
                     "Final Incantation",

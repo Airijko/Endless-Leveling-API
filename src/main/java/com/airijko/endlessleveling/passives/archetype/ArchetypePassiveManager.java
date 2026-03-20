@@ -170,13 +170,12 @@ public class ArchetypePassiveManager {
         }
         double baseValue = passive.resolveValueForClass(classId);
         double scaledValue = baseValue * scale;
-        if (scaledValue == 0.0D) {
-            return;
-        }
         PassiveStackingStyle stackingStyle = passive.effectiveStackingStyle();
-        ArchetypePassiveSource.StackAccumulator accumulator = totals.computeIfAbsent(passive.type(),
-            key -> new ArchetypePassiveSource.StackAccumulator(stackingStyle));
-        accumulator.addValue(scaledValue);
+        if (scaledValue != 0.0D) {
+            ArchetypePassiveSource.StackAccumulator accumulator = totals.computeIfAbsent(passive.type(),
+                key -> new ArchetypePassiveSource.StackAccumulator(stackingStyle));
+            accumulator.addValue(scaledValue);
+        }
 
         Map<String, Object> effectiveProperties = new LinkedHashMap<>(passive.properties());
         if (classId == null || classId.isBlank()) {

@@ -56,6 +56,8 @@ import java.util.UUID;
 public class PlayerCombatSystem extends DamageEventSystem {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
+    private static final boolean PASSIVE_DEBUG = Boolean
+            .parseBoolean(System.getProperty("el.passive.debug", "true"));
     public static final MetaKey<Boolean> AUGMENT_DOT_DAMAGE = Damage.META_REGISTRY
             .registerMetaObject(data -> Boolean.FALSE);
     public static final MetaKey<Boolean> AUGMENT_PROC_DAMAGE = Damage.META_REGISTRY
@@ -230,6 +232,13 @@ public class PlayerCombatSystem extends DamageEventSystem {
                         reduction,
                         targetIsPlayer)
                 : TrueEdgeComputation.none();
+                if (!bypassOutgoingAugmentMath && trueEdgeReady && trueEdge.triggered() && trueDamageSettings.sourceType() != null) {
+                    logPassiveTrigger(playerData,
+                        trueDamageSettings.sourceType(),
+                        "converted=%.2f true=%.2f",
+                        trueEdge.convertedDamageFromNormal(),
+                        trueEdge.reducedTrueDamage());
+                }
         if (!bypassOutgoingAugmentMath
                 && trueEdgeReady
                 && trueEdge.triggered()
@@ -275,6 +284,15 @@ public class PlayerCombatSystem extends DamageEventSystem {
                 targetPlayer,
                 commandBuffer,
                 trueEdge.reducedTrueDamage() + reducedAugmentTrueDamage);
+        if (appliedTrueDamage > 0f) {
+            ArchetypePassiveType sourceType = trueDamageSettings.sourceType();
+            if (sourceType != null) {
+                logPassiveTrigger(playerData,
+                        sourceType,
+                        "applied_true=%.2f",
+                        appliedTrueDamage);
+            }
+        }
 
         float predictedPostHp = Float.NaN;
         boolean predictedLethal = false;
@@ -676,6 +694,20 @@ public class PlayerCombatSystem extends DamageEventSystem {
             return 0.0D;
         }
         return Math.max(-1.0D, Math.min(1.0D, value));
+    }
+
+    private void logPassiveTrigger(PlayerData playerData,
+            ArchetypePassiveType type,
+            String detailFormat,
+            Object... detailArgs) {
+        if (!PASSIVE_DEBUG || playerData == null || type == null) {
+            return;
+        }
+        String detail = detailFormat == null ? "triggered" : String.format(detailFormat, detailArgs);
+        LOGGER.atInfo().log("[PASSIVE_DEBUG] player=%s passive=%s %s",
+                playerData.getUuid(),
+                type.name(),
+                detail);
     }
 
     private record TrueDamageSettings(ArchetypePassiveType sourceType,

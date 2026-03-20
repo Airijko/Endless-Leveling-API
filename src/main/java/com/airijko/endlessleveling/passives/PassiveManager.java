@@ -392,10 +392,12 @@ public class PassiveManager {
         private long secondWindCooldownExpiresAt;
         private long secondWindActiveUntil;
         private long firstStrikeCooldownExpiresAt;
+        private long firstStrikeHasteActiveUntil;
         private boolean firstStrikeKillResetReady;
         private boolean secondWindReadyNotified = true;
         private boolean firstStrikeReadyNotified = true;
         private boolean adrenalineReadyNotified = true;
+        private boolean arcaneWisdomReadyNotified = true;
         private boolean executionerReadyNotified = true;
         private boolean retaliationReadyNotified = true;
         private boolean primalDominanceReadyNotified = true;
@@ -406,6 +408,10 @@ public class PassiveManager {
         private long adrenalineActiveUntil;
         private double adrenalineRestorePerSecond;
         private double adrenalineRestoreRemaining;
+        private long arcaneWisdomCooldownExpiresAt;
+        private long arcaneWisdomActiveUntil;
+        private double arcaneWisdomRestorePerSecond;
+        private double arcaneWisdomRestoreRemaining;
         private long retaliationCooldownExpiresAt;
         private long retaliationWindowExpiresAt;
         private double retaliationDamageStored;
@@ -529,6 +535,14 @@ public class PassiveManager {
             this.firstStrikeCooldownExpiresAt = firstStrikeCooldownExpiresAt;
         }
 
+        public long getFirstStrikeHasteActiveUntil() {
+            return firstStrikeHasteActiveUntil;
+        }
+
+        public void setFirstStrikeHasteActiveUntil(long firstStrikeHasteActiveUntil) {
+            this.firstStrikeHasteActiveUntil = Math.max(0L, firstStrikeHasteActiveUntil);
+        }
+
         public boolean isFirstStrikeKillResetReady() {
             return firstStrikeKillResetReady;
         }
@@ -559,6 +573,14 @@ public class PassiveManager {
 
         public void setAdrenalineReadyNotified(boolean adrenalineReadyNotified) {
             this.adrenalineReadyNotified = adrenalineReadyNotified;
+        }
+
+        public boolean isArcaneWisdomReadyNotified() {
+            return arcaneWisdomReadyNotified;
+        }
+
+        public void setArcaneWisdomReadyNotified(boolean arcaneWisdomReadyNotified) {
+            this.arcaneWisdomReadyNotified = arcaneWisdomReadyNotified;
         }
 
         public boolean isExecutionerReadyNotified() {
@@ -613,10 +635,12 @@ public class PassiveManager {
             this.secondWindCooldownExpiresAt = 0L;
             this.secondWindActiveUntil = 0L;
             this.firstStrikeCooldownExpiresAt = 0L;
+            this.firstStrikeHasteActiveUntil = 0L;
             this.firstStrikeKillResetReady = false;
             this.secondWindReadyNotified = true;
             this.firstStrikeReadyNotified = true;
             this.adrenalineReadyNotified = true;
+            this.arcaneWisdomReadyNotified = true;
             this.executionerReadyNotified = true;
             this.retaliationReadyNotified = true;
             this.primalDominanceReadyNotified = true;
@@ -627,6 +651,10 @@ public class PassiveManager {
             this.adrenalineActiveUntil = 0L;
             this.adrenalineRestorePerSecond = 0.0D;
             this.adrenalineRestoreRemaining = 0.0D;
+            this.arcaneWisdomCooldownExpiresAt = 0L;
+            this.arcaneWisdomActiveUntil = 0L;
+            this.arcaneWisdomRestorePerSecond = 0.0D;
+            this.arcaneWisdomRestoreRemaining = 0.0D;
             this.retaliationCooldownExpiresAt = 0L;
             this.retaliationWindowExpiresAt = 0L;
             this.retaliationDamageStored = 0.0D;
@@ -693,6 +721,38 @@ public class PassiveManager {
 
         public void setAdrenalineRestoreRemaining(double adrenalineRestoreRemaining) {
             this.adrenalineRestoreRemaining = Math.max(0.0D, adrenalineRestoreRemaining);
+        }
+
+        public long getArcaneWisdomCooldownExpiresAt() {
+            return arcaneWisdomCooldownExpiresAt;
+        }
+
+        public void setArcaneWisdomCooldownExpiresAt(long arcaneWisdomCooldownExpiresAt) {
+            this.arcaneWisdomCooldownExpiresAt = arcaneWisdomCooldownExpiresAt;
+        }
+
+        public long getArcaneWisdomActiveUntil() {
+            return arcaneWisdomActiveUntil;
+        }
+
+        public void setArcaneWisdomActiveUntil(long arcaneWisdomActiveUntil) {
+            this.arcaneWisdomActiveUntil = arcaneWisdomActiveUntil;
+        }
+
+        public double getArcaneWisdomRestorePerSecond() {
+            return arcaneWisdomRestorePerSecond;
+        }
+
+        public void setArcaneWisdomRestorePerSecond(double arcaneWisdomRestorePerSecond) {
+            this.arcaneWisdomRestorePerSecond = Math.max(0.0D, arcaneWisdomRestorePerSecond);
+        }
+
+        public double getArcaneWisdomRestoreRemaining() {
+            return arcaneWisdomRestoreRemaining;
+        }
+
+        public void setArcaneWisdomRestoreRemaining(double arcaneWisdomRestoreRemaining) {
+            this.arcaneWisdomRestoreRemaining = Math.max(0.0D, arcaneWisdomRestoreRemaining);
         }
 
         public long getRetaliationCooldownExpiresAt() {

@@ -9,6 +9,7 @@ import com.airijko.endlessleveling.races.RacePassiveDefinition;
 import com.airijko.endlessleveling.util.EntityRefUtil;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue;
 import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
@@ -23,6 +24,10 @@ import java.util.concurrent.ThreadLocalRandom;
  * attribute.
  */
 public final class HealingTouchPassive {
+
+    private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
+    private static final boolean PASSIVE_DEBUG = Boolean
+            .parseBoolean(System.getProperty("el.passive.debug", "true"));
 
     private static final double DEFAULT_TRIGGER_CHANCE = 1.0D;
     private static final SkillAttributeType DEFAULT_SOURCE_ATTRIBUTE = SkillAttributeType.STAMINA;
@@ -151,6 +156,15 @@ public final class HealingTouchPassive {
         double healAmount = sourceValue * healRatio;
         if (healAmount <= 0.0D) {
             return;
+        }
+
+        if (PASSIVE_DEBUG) {
+            LOGGER.atInfo().log("[PASSIVE_DEBUG] player=%s passive=%s heal=%.2f source=%s chance=%.2f",
+                    playerData.getUuid(),
+                    ArchetypePassiveType.HEALING_TOUCH.name(),
+                    healAmount,
+                    sourceAttribute,
+                    triggerChance);
         }
 
         PartyHealingDistributor.applySplitHealingToWoundedParty(playerData,

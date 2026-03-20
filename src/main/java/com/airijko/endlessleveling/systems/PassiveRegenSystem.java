@@ -31,6 +31,7 @@ import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.tick.TickingSystem;
+import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
@@ -52,6 +53,9 @@ import javax.annotation.Nonnull;
  */
 public class PassiveRegenSystem extends TickingSystem<EntityStore> {
 
+    private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
+    private static final boolean PASSIVE_DEBUG = Boolean
+            .parseBoolean(System.getProperty("el.passive.debug", "true"));
     private static final long HEALTH_REGEN_COOLDOWN_MS = TimeUnit.SECONDS.toMillis(10);
     public static final double RESOURCE_REGEN_DIVISOR = 5.0D;
     private static final String ARCANE_WISDOM_MANA_BONUS_KEY = "EL_arcane_wisdom_mana_bonus";
@@ -127,7 +131,7 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
                                 runtimeState,
                                 archetypeSnapshot);
                         applyArchetypeHealthRegeneration(playerData, statMap, deltaSeconds, archetypeSnapshot);
-                        applyArcaneWisdom(statMap, archetypeSnapshot, runtimeState);
+                        applyArcaneWisdom(playerData, statMap, deltaSeconds, archetypeSnapshot, runtimeState);
                         applyManaRegeneration(playerData, statMap, deltaSeconds, archetypeSnapshot);
                         applyAdrenalineStamina(playerRef, statMap, deltaSeconds, archetypeSnapshot, runtimeState);
                         applyStaminaGainBonus(playerData, statMap, archetypeSnapshot, runtimeState);
@@ -359,12 +363,15 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
         addResource(statMap, DefaultEntityStatTypes.getMana(), perSecond, deltaSeconds);
     }
 
-    private void applyArcaneWisdom(@Nonnull EntityStatMap statMap,
+    private void applyArcaneWisdom(@Nonnull PlayerData playerData,
+            @Nonnull EntityStatMap statMap,
+            float deltaSeconds,
             @Nonnull ArchetypePassiveSnapshot archetypeSnapshot,
             @Nonnull PassiveRuntimeState runtimeState) {
         ArcaneWisdomPassive settings = ArcaneWisdomPassive.fromSnapshot(archetypeSnapshot);
         if (!settings.enabled()) {
             applyArcaneWisdomManaMultiplier(statMap, 1.0D);
+            clearArcaneWisdomState(runtimeState);
             runtimeState.setLastManaRatio(Float.NaN);
             return;
         }
@@ -373,28 +380,72 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
 
         EntityStatValue manaStat = statMap.get(DefaultEntityStatTypes.getMana());
         if (manaStat == null || manaStat.getMax() <= 0f) {
+            clearArcaneWisdomState(runtimeState);
             runtimeState.setLastManaRatio(Float.NaN);
             return;
         }
 
+        long now = System.currentTimeMillis();
+        if (runtimeState.getArcaneWisdomActiveUntil() > 0L
+                && now >= runtimeState.getArcaneWisdomActiveUntil()) {
+            clearArcaneWisdomState(runtimeState);
+        }
+
         float current = Math.max(0.0f, manaStat.get());
         float max = manaStat.getMax();
+
+        boolean effectActive = runtimeState.getArcaneWisdomRestorePerSecond() > 0.0D
+                && runtimeState.getArcaneWisdomRestoreRemaining() > 0.0D
+                && runtimeState.getArcaneWisdomActiveUntil() > now;
+        if (effectActive && deltaSeconds > 0f && current < max) {
+            double potential = runtimeState.getArcaneWisdomRestorePerSecond() * deltaSeconds;
+            double allowed = Math.min(runtimeState.getArcaneWisdomRestoreRemaining(), potential);
+            if (allowed > 0.0D) {
+                float applied = (float) Math.min(max - current, allowed);
+                if (applied > 0f) {
+                    current += applied;
+                    statMap.setStatValue(DefaultEntityStatTypes.getMana(), current);
+                    runtimeState.setArcaneWisdomRestoreRemaining(runtimeState.getArcaneWisdomRestoreRemaining()
+                            - applied);
+                }
+            }
+            if (runtimeState.getArcaneWisdomRestoreRemaining() <= 0.0001D || current >= max) {
+                clearArcaneWisdomState(runtimeState);
+            }
+        }
+
         double currentRatio = Math.max(0.0D, Math.min(1.0D, current / max));
         float lastRatioSample = runtimeState.getLastManaRatio();
 
         if (!Float.isNaN(lastRatioSample)
                 && lastRatioSample > settings.thresholdPercent()
-                && currentRatio <= settings.thresholdPercent()) {
+                && currentRatio <= settings.thresholdPercent()
+                && now >= runtimeState.getArcaneWisdomCooldownExpiresAt()) {
             double restoreAmount = Math.max(0.0D, max * settings.restorePercent());
-            if (restoreAmount > 0.0D && current < max) {
-                float restored = (float) Math.min(max, current + restoreAmount);
-                statMap.setStatValue(DefaultEntityStatTypes.getMana(), restored);
-                current = restored;
-                currentRatio = Math.max(0.0D, Math.min(1.0D, current / max));
+            if (restoreAmount > 0.0D) {
+                double durationSeconds = Math.max(0.1D, settings.durationSeconds());
+                runtimeState.setArcaneWisdomRestorePerSecond(restoreAmount / durationSeconds);
+                runtimeState.setArcaneWisdomRestoreRemaining(restoreAmount);
+                runtimeState.setArcaneWisdomActiveUntil(now + settings.durationMillis());
+                runtimeState.setArcaneWisdomCooldownExpiresAt(now + settings.cooldownMillis());
+                runtimeState.setArcaneWisdomReadyNotified(false);
+
+                logPassiveTrigger(playerData,
+                        ArchetypePassiveType.ARCANE_WISDOM,
+                        "restore=%.2f over %.2fs cooldown=%.2fs",
+                        restoreAmount,
+                        durationSeconds,
+                        settings.cooldownSeconds());
             }
         }
 
         runtimeState.setLastManaRatio((float) currentRatio);
+    }
+
+    private void clearArcaneWisdomState(@Nonnull PassiveRuntimeState runtimeState) {
+        runtimeState.setArcaneWisdomActiveUntil(0L);
+        runtimeState.setArcaneWisdomRestorePerSecond(0.0D);
+        runtimeState.setArcaneWisdomRestoreRemaining(0.0D);
     }
 
     private void applyArcaneWisdomManaMultiplier(@Nonnull EntityStatMap statMap, double multiplier) {
@@ -497,6 +548,10 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
         float newValue = current + applied;
         statMap.setStatValue(DefaultEntityStatTypes.getStamina(), newValue);
         runtimeState.setLastStaminaSample(newValue);
+        logPassiveTrigger(playerData,
+            ArchetypePassiveType.STAMINA_GAIN_BONUS,
+            "bonus_stamina=%.2f",
+            applied);
     }
 
     private void applyAdrenalineStamina(@Nonnull PlayerRef playerRef,
@@ -583,6 +638,11 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
         runtimeState.setAdrenalineActiveUntil(now + settings.durationMillis());
         runtimeState.setAdrenalineCooldownExpiresAt(now + settings.cooldownMillis());
         runtimeState.setAdrenalineReadyNotified(false);
+        logPassiveTrigger(null,
+            ArchetypePassiveType.ADRENALINE,
+            "restore=%.2f duration=%.2fs",
+            totalRestore,
+            settings.durationSeconds());
 
         sendAdrenalineMessage(playerRef,
                 restorePercent,
@@ -633,6 +693,10 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
         float newValue = Math.min(maxValue, currentValue + bonus);
         statMap.setStatValue(DefaultEntityStatTypes.getSignatureEnergy(), newValue);
         runtimeState.setLastSignatureValue(newValue);
+        logPassiveTrigger(playerData,
+            ArchetypePassiveType.SPECIAL_CHARGE_BONUS,
+            "bonus_signature=%.2f",
+            bonus);
     }
 
     private void applyHealingBonus(@Nonnull EntityStatMap statMap,
@@ -684,6 +748,10 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
         float newValue = currentHealth + applied;
         statMap.setStatValue(DefaultEntityStatTypes.getHealth(), newValue);
         runtimeState.setLastHealingSample(newValue);
+        logPassiveTrigger(null,
+            ArchetypePassiveType.HEALING_BONUS,
+            "bonus_healing=%.2f",
+            applied);
     }
 
     private double combinedPassiveValue(PlayerData playerData,
@@ -771,12 +839,19 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
             @Nonnull EntityStatMap statMap,
             @Nonnull ArchetypePassiveSnapshot archetypeSnapshot,
             @Nonnull PassiveRuntimeState runtimeState) {
+        long beforePulse = runtimeState.getPartyMendingLastPulseMillis();
         HealingAuraPassive.pulse(playerData,
                 ref,
                 commandBuffer,
                 statMap,
                 archetypeSnapshot,
                 runtimeState);
+        if (runtimeState.getPartyMendingLastPulseMillis() > beforePulse) {
+            logPassiveTrigger(playerData,
+                ArchetypePassiveType.HEALING_AURA,
+                "pulse_at=%d",
+                runtimeState.getPartyMendingLastPulseMillis());
+        }
     }
 
     private void applyPartyShieldingAura(@Nonnull PlayerData playerData,
@@ -785,12 +860,19 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
             @Nonnull EntityStatMap statMap,
             @Nonnull ArchetypePassiveSnapshot archetypeSnapshot,
             @Nonnull PassiveRuntimeState runtimeState) {
+        long beforeActiveUntil = runtimeState.getShieldingAuraActiveUntil();
         ShieldingAuraPassive.pulse(playerData,
                 ref,
                 commandBuffer,
                 statMap,
                 archetypeSnapshot,
                 runtimeState);
+        if (runtimeState.getShieldingAuraActiveUntil() > beforeActiveUntil) {
+            logPassiveTrigger(playerData,
+                ArchetypePassiveType.SHIELDING_AURA,
+                "active_until=%d",
+                runtimeState.getShieldingAuraActiveUntil());
+        }
         ShieldingAuraPassive.cleanupExpiredShield(runtimeState, System.currentTimeMillis());
     }
 
@@ -800,12 +882,19 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
             @Nonnull EntityStatMap statMap,
             @Nonnull ArchetypePassiveSnapshot archetypeSnapshot,
             @Nonnull PassiveRuntimeState runtimeState) {
+        long beforePulse = runtimeState.getBuffingAuraLastPulseMillis();
         BuffingAuraPassive.pulse(playerData,
                 ref,
                 commandBuffer,
                 statMap,
                 archetypeSnapshot,
                 runtimeState);
+        if (runtimeState.getBuffingAuraLastPulseMillis() > beforePulse) {
+            logPassiveTrigger(playerData,
+                ArchetypePassiveType.BUFFING_AURA,
+                "pulse_at=%d",
+                runtimeState.getBuffingAuraLastPulseMillis());
+        }
         BuffingAuraPassive.cleanupExpiredBonus(runtimeState, System.currentTimeMillis());
     }
 
@@ -872,5 +961,17 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
         PlayerChatNotifier.send(playerRef, ChatMessageTemplate.ADRENALINE_TRIGGERED,
                 Math.round(percentDisplay),
                 Math.round(Math.max(0.0D, durationSeconds)));
+    }
+
+    private void logPassiveTrigger(PlayerData playerData,
+            ArchetypePassiveType type,
+            String detailFormat,
+            Object... detailArgs) {
+        if (!PASSIVE_DEBUG || type == null) {
+            return;
+        }
+        String playerId = playerData == null || playerData.getUuid() == null ? "unknown" : playerData.getUuid().toString();
+        String detail = detailFormat == null ? "triggered" : String.format(detailFormat, detailArgs);
+        LOGGER.atInfo().log("[PASSIVE_DEBUG] player=%s passive=%s %s", playerId, type.name(), detail);
     }
 }

@@ -15,10 +15,14 @@ import java.util.Map;
 public record ArcaneWisdomSettings(boolean enabled,
         double manaMultiplier,
         double restorePercent,
-        double thresholdPercent) {
+        double thresholdPercent,
+        double durationSeconds,
+        double cooldownSeconds) {
 
     private static final double DEFAULT_RESTORE_PERCENT = 0.25D;
     private static final double DEFAULT_THRESHOLD_PERCENT = 0.10D;
+    private static final double DEFAULT_DURATION_SECONDS = 5.0D;
+    private static final double DEFAULT_COOLDOWN_SECONDS = 30.0D;
 
     public static ArcaneWisdomSettings fromSnapshot(ArchetypePassiveSnapshot snapshot) {
         if (snapshot == null) {
@@ -32,6 +36,8 @@ public record ArcaneWisdomSettings(boolean enabled,
 
         double restorePercent = DEFAULT_RESTORE_PERCENT;
         double thresholdPercent = DEFAULT_THRESHOLD_PERCENT;
+        double durationSeconds = DEFAULT_DURATION_SECONDS;
+        double cooldownSeconds = DEFAULT_COOLDOWN_SECONDS;
 
         List<RacePassiveDefinition> definitions = snapshot.getDefinitions(ArchetypePassiveType.ARCANE_WISDOM);
         for (RacePassiveDefinition definition : definitions) {
@@ -41,12 +47,17 @@ public record ArcaneWisdomSettings(boolean enabled,
             Map<String, Object> props = definition.properties();
             restorePercent = parsePercent(props, "restore_percent", restorePercent);
             thresholdPercent = parsePercent(props, "threshold", thresholdPercent);
+            durationSeconds = parsePositiveDouble(props, "restore_duration_seconds", durationSeconds);
+            durationSeconds = parsePositiveDouble(props, "duration", durationSeconds);
+            cooldownSeconds = parsePositiveDouble(props, "cooldown", cooldownSeconds);
         }
 
         return new ArcaneWisdomSettings(true,
                 1.0D + bonusPercent,
                 clamp01(restorePercent),
-                clamp01(thresholdPercent));
+                clamp01(thresholdPercent),
+                Math.max(0.1D, durationSeconds),
+                Math.max(0.0D, cooldownSeconds));
     }
 
     private static double parsePercent(Map<String, Object> props, String key, double fallback) {
@@ -55,11 +66,38 @@ public record ArcaneWisdomSettings(boolean enabled,
         }
         Object raw = props.get(key);
         if (raw instanceof Number number) {
-            return number.doubleValue();
+            double value = number.doubleValue();
+            if (value > 1.0D) {
+                value /= 100.0D;
+            }
+            return value;
         }
         if (raw instanceof String string) {
             try {
-                return Double.parseDouble(string.trim());
+                double value = Double.parseDouble(string.trim());
+                if (value > 1.0D) {
+                    value /= 100.0D;
+                }
+                return value;
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return fallback;
+    }
+
+    private static double parsePositiveDouble(Map<String, Object> props, String key, double fallback) {
+        if (props == null || key == null) {
+            return fallback;
+        }
+        Object raw = props.get(key);
+        if (raw instanceof Number number) {
+            double value = number.doubleValue();
+            return value > 0.0D ? value : fallback;
+        }
+        if (raw instanceof String string) {
+            try {
+                double value = Double.parseDouble(string.trim());
+                return value > 0.0D ? value : fallback;
             } catch (NumberFormatException ignored) {
             }
         }
@@ -77,6 +115,19 @@ public record ArcaneWisdomSettings(boolean enabled,
     }
 
     public static ArcaneWisdomSettings disabled() {
-        return new ArcaneWisdomSettings(false, 1.0D, DEFAULT_RESTORE_PERCENT, DEFAULT_THRESHOLD_PERCENT);
+        return new ArcaneWisdomSettings(false,
+                1.0D,
+                DEFAULT_RESTORE_PERCENT,
+                DEFAULT_THRESHOLD_PERCENT,
+                DEFAULT_DURATION_SECONDS,
+                DEFAULT_COOLDOWN_SECONDS);
+    }
+
+    public long durationMillis() {
+        return (long) Math.max(0L, Math.round(durationSeconds * 1000.0D));
+    }
+
+    public long cooldownMillis() {
+        return (long) Math.max(0L, Math.round(cooldownSeconds * 1000.0D));
     }
 }

@@ -4,25 +4,26 @@ import com.airijko.endlessleveling.enums.ArchetypePassiveType;
 import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveSnapshot;
 import com.airijko.endlessleveling.races.RacePassiveDefinition;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 /**
- * Resolved configuration for the First Strike passive, including bonus values
- * and cooldown.
+ * Resolved configuration for Focused Strike.
+ *
+ * Focused Strike is haste-only: on hit, grant haste for a short duration.
  */
 public record FirstStrikeSettings(boolean enabled,
-    double bonusPercent,
-    long cooldownMillis,
-    double flatBonusDamage,
-    double trueDamageFlatBonus,
-    double trueDamageConversionPercent,
-    double hasteBonusPercent,
-    boolean normalBonusDamage,
-    boolean resetOnKill) {
+        double bonusPercent,
+        long cooldownMillis,
+        double flatBonusDamage,
+        double trueDamageFlatBonus,
+        double trueDamageConversionPercent,
+        double hasteBonusPercent,
+        long hasteDurationMillis,
+        boolean normalBonusDamage,
+        boolean resetOnKill) {
 
-    private static final double DEFAULT_COOLDOWN_SECONDS = 30.0D;
-    private static final double DEFAULT_FLAT_BONUS_DAMAGE = 25.0D;
+    private static final double DEFAULT_HASTE_BONUS_PERCENT = 50.0D;
+    private static final double DEFAULT_HASTE_DURATION_SECONDS = 3.0D;
 
     public static FirstStrikeSettings fromSnapshot(ArchetypePassiveSnapshot snapshot) {
         if (snapshot == null) {
@@ -33,15 +34,8 @@ public record FirstStrikeSettings(boolean enabled,
             return disabled();
         }
 
-        double bonusPercent = Math.max(0.0D, snapshot.getValue(ArchetypePassiveType.FOCUSED_STRIKE));
-        double cooldownSum = 0.0D;
-        int cooldownSources = 0;
-        double resolvedFlatBonusDamage = 0.0D;
-        double resolvedTrueDamageFlatBonus = 0.0D;
-        double resolvedTrueDamageConversionPercent = 0.0D;
-        double resolvedHasteBonusPercent = 0.0D;
-        boolean resetOnKill = false;
-        boolean normalBonusDamage = true;
+        double resolvedHasteBonusPercent = DEFAULT_HASTE_BONUS_PERCENT;
+        double resolvedHasteDurationSeconds = DEFAULT_HASTE_DURATION_SECONDS;
 
         for (RacePassiveDefinition definition : definitions) {
             if (definition == null) {
@@ -49,82 +43,51 @@ public record FirstStrikeSettings(boolean enabled,
             }
             Map<String, Object> props = definition.properties();
 
-            double flatCandidate = parsePositiveDouble(props != null ? props.get("flat_bonus_damage") : null);
-            if (flatCandidate > 0) {
-                // Focused Strike stacks as UNIQUE, so keep the highest configured flat bonus.
-                resolvedFlatBonusDamage = Math.max(resolvedFlatBonusDamage, flatCandidate);
+            double hasteCandidate = parsePercent(props == null
+                    ? null
+                    : firstNonNull(props.get("haste_bonus"), props.get("haste_bonus_percent")));
+            if (hasteCandidate > 0.0D) {
+                resolvedHasteBonusPercent = hasteCandidate * 100.0D;
             }
 
-            double trueFlatCandidate = parsePositiveDouble(props != null ? props.get("true_damage_flat_bonus") : null);
-            if (trueFlatCandidate > 0) {
-                resolvedTrueDamageFlatBonus = Math.max(resolvedTrueDamageFlatBonus, trueFlatCandidate);
-            }
-
-            double trueConversionCandidate = parsePercent(props != null
-                    ? firstNonNull(props.get("true_damage_conversion"), props.get("true_damage_conversion_percent"))
-                    : null);
-            if (trueConversionCandidate > 0) {
-                resolvedTrueDamageConversionPercent = Math.max(resolvedTrueDamageConversionPercent,
-                        trueConversionCandidate);
-            }
-
-            double hasteCandidate = parsePercent(props != null
-                    ? firstNonNull(props.get("haste_bonus"), props.get("haste_bonus_percent"))
-                    : null);
-            if (hasteCandidate > 0) {
-                resolvedHasteBonusPercent = Math.max(resolvedHasteBonusPercent, hasteCandidate * 100.0D);
-            }
-
-            normalBonusDamage &= parseBoolean(props != null
-                    ? firstNonNull(props.get("normal_bonus_damage"), props.get("enable_normal_bonus_damage"))
-                    : null, true);
-            resetOnKill |= parseBoolean(props != null ? props.get("reset_on_kill") : null, false);
-
-            double candidate = parsePositiveDouble(props != null ? props.get("cooldown") : null);
-            if (candidate > 0) {
-                cooldownSum += candidate;
-                cooldownSources++;
+            double durationCandidate = parsePositiveDouble(props == null
+                    ? null
+                    : firstNonNull(props.get("haste_duration_seconds"), props.get("haste_duration")));
+            if (durationCandidate > 0.0D) {
+                resolvedHasteDurationSeconds = durationCandidate;
             }
         }
 
-        double resolvedSeconds = cooldownSources > 0
-                ? cooldownSum / cooldownSources
-                : DEFAULT_COOLDOWN_SECONDS;
-        long cooldownMillis = (long) Math.max(0L, Math.round(resolvedSeconds * 1000.0D));
-        if (normalBonusDamage && resolvedFlatBonusDamage <= 0.0D) {
-            resolvedFlatBonusDamage = DEFAULT_FLAT_BONUS_DAMAGE;
-        }
-
-        boolean enabled = (normalBonusDamage && (bonusPercent > 0.0D || resolvedFlatBonusDamage > 0.0D))
-                || resolvedTrueDamageFlatBonus > 0.0D
-                || resolvedTrueDamageConversionPercent > 0.0D
-                || resolvedHasteBonusPercent > 0.0D;
+        long resolvedHasteDurationMillis = (long) Math.max(0L, Math.round(resolvedHasteDurationSeconds * 1000.0D));
+        boolean enabled = resolvedHasteBonusPercent > 0.0D && resolvedHasteDurationMillis > 0L;
         if (!enabled) {
             return disabled();
         }
 
         return new FirstStrikeSettings(
                 true,
-                bonusPercent,
-                cooldownMillis,
-                resolvedFlatBonusDamage,
-                resolvedTrueDamageFlatBonus,
-                resolvedTrueDamageConversionPercent,
+                0.0D,
+                0L,
+                0.0D,
+                0.0D,
+                0.0D,
                 resolvedHasteBonusPercent,
-                normalBonusDamage,
-                resetOnKill);
+                resolvedHasteDurationMillis,
+                false,
+                false);
     }
 
     public static FirstStrikeSettings disabled() {
         return new FirstStrikeSettings(false,
-            0.0D,
-            0L,
-            0.0D,
-            0.0D,
-            0.0D,
-            0.0D,
-            true,
-            false);
+                0.0D,
+                0L,
+                0.0D,
+                0.0D,
+                0.0D,
+                0.0D,
+                0L,
+                true,
+                false);
     }
 
     private static double parsePositiveDouble(Object raw) {
@@ -154,24 +117,6 @@ public record FirstStrikeSettings(boolean enabled,
             value /= 100.0D;
         }
         return Math.min(1.0D, value);
-    }
-
-    private static boolean parseBoolean(Object raw, boolean fallback) {
-        if (raw instanceof Boolean bool) {
-            return bool;
-        }
-        if (raw instanceof String string) {
-            String normalized = string.trim().toLowerCase(Locale.ROOT);
-            if ("true".equals(normalized) || "yes".equals(normalized) || "1".equals(normalized)
-                    || "on".equals(normalized)) {
-                return true;
-            }
-            if ("false".equals(normalized) || "no".equals(normalized) || "0".equals(normalized)
-                    || "off".equals(normalized)) {
-                return false;
-            }
-        }
-        return fallback;
     }
 
     private static Object firstNonNull(Object first, Object second) {

@@ -2,6 +2,7 @@ package com.airijko.endlessleveling.systems;
 
 import com.airijko.endlessleveling.augments.AugmentExecutor;
 import com.airijko.endlessleveling.player.PlayerData;
+import com.airijko.endlessleveling.enums.ArchetypePassiveType;
 import com.airijko.endlessleveling.passives.PassiveManager;
 import com.airijko.endlessleveling.passives.PassiveManager.PassiveRuntimeState;
 import com.airijko.endlessleveling.player.PlayerDataManager;
@@ -16,6 +17,7 @@ import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
+import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.modules.entity.damage.Damage;
 import com.hypixel.hytale.server.core.modules.entity.damage.DeathComponent;
@@ -31,6 +33,10 @@ import javax.annotation.Nonnull;
  * Applies Swiftness stacks only after a player-secured kill has been confirmed.
  */
 public class SwiftnessKillSystem extends DeathSystems.OnDeathSystem {
+
+    private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
+    private static final boolean PASSIVE_DEBUG = Boolean
+            .parseBoolean(System.getProperty("el.passive.debug", "true"));
 
     private final PlayerDataManager playerDataManager;
     private final PassiveManager passiveManager;
@@ -97,6 +103,8 @@ public class SwiftnessKillSystem extends DeathSystems.OnDeathSystem {
 
         FocusedStrikePassive.fromSnapshot(snapshot).resetCooldownOnKill(runtimeState);
         FinalIncantationPassive.fromSnapshot(snapshot).reduceCooldownOnKill(runtimeState);
+        logPassiveTrigger(playerData, ArchetypePassiveType.FOCUSED_STRIKE, "kill_reset");
+        logPassiveTrigger(playerData, ArchetypePassiveType.FINAL_INCANTATION, "kill_cooldown_reduction");
 
         SwiftnessSettings settings = SwiftnessSettings.fromSnapshot(snapshot);
         if (!settings.enabled()) {
@@ -128,6 +136,10 @@ public class SwiftnessKillSystem extends DeathSystems.OnDeathSystem {
         runtimeState.setSwiftnessStacks(newStacks);
         runtimeState.setSwiftnessActiveUntil(System.currentTimeMillis() + durationMillis);
         refreshMovementSpeed(attackerRef, store, playerData);
+        logPassiveTrigger(playerData,
+            ArchetypePassiveType.SWIFTNESS,
+            "kill_stacks=%d",
+            newStacks);
 
         if (wasInactive) {
             double totalBonusPercent = settings.totalBonusPercent(newStacks) * 100.0D;
@@ -170,5 +182,19 @@ public class SwiftnessKillSystem extends DeathSystems.OnDeathSystem {
             return String.format("%.0fs", durationSeconds);
         }
         return String.format("%.1fs", durationSeconds);
+    }
+
+    private void logPassiveTrigger(PlayerData playerData,
+            ArchetypePassiveType type,
+            String detailFormat,
+            Object... detailArgs) {
+        if (!PASSIVE_DEBUG || playerData == null || type == null) {
+            return;
+        }
+        String detail = detailFormat == null ? "triggered" : String.format(detailFormat, detailArgs);
+        LOGGER.atInfo().log("[PASSIVE_DEBUG] player=%s passive=%s %s",
+                playerData.getUuid(),
+                type.name(),
+                detail);
     }
 }

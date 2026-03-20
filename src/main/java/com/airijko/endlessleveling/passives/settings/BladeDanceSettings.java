@@ -26,15 +26,12 @@ public record BladeDanceSettings(boolean enabled,
 
         List<RacePassiveDefinition> definitions = snapshot.getDefinitions(ArchetypePassiveType.BLADE_DANCE);
         double bonusPercent = resolveBonusPercent(snapshot, definitions);
-        if (bonusPercent <= 0.0D) {
-            return disabled();
-        }
 
         double durationSum = 0.0D;
         int durationSources = 0;
         int maxStacks = DEFAULT_MAX_STACKS;
         double damageBonusPerStack = 0.0D;
-        boolean triggerOnHit = false;
+        boolean triggerOnHit = true;
 
         for (RacePassiveDefinition definition : definitions) {
             if (definition == null) {
@@ -52,10 +49,13 @@ public record BladeDanceSettings(boolean enabled,
                             "damage_bonus_per_stack",
                             "bonus_damage_per_stack",
                             "stack_damage_bonus"));
-            triggerOnHit |= parseBoolean(props,
+                Boolean triggerOnHitCandidate = parseOptionalBoolean(props,
                     "trigger_on_hit",
                     "on_hit",
                     "apply_on_hit");
+                if (triggerOnHitCandidate != null) {
+                triggerOnHit = triggerOnHitCandidate;
+                }
         }
 
         if (maxStacks <= 0) {
@@ -160,12 +160,15 @@ public record BladeDanceSettings(boolean enabled,
         return 0.0D;
     }
 
-    private static boolean parseBoolean(Map<String, Object> props, String... keys) {
+    private static Boolean parseOptionalBoolean(Map<String, Object> props, String... keys) {
         if (props == null || keys == null) {
-            return false;
+            return null;
         }
         for (String key : keys) {
             Object raw = props.get(key);
+            if (raw == null) {
+                continue;
+            }
             if (raw instanceof Boolean bool) {
                 return bool;
             }
@@ -184,7 +187,7 @@ public record BladeDanceSettings(boolean enabled,
                 }
             }
         }
-        return false;
+        return null;
     }
 
     public static BladeDanceSettings disabled() {
