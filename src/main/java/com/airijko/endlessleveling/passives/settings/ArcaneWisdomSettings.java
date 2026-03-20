@@ -9,11 +9,10 @@ import java.util.Map;
 /**
  * Resolved settings for Arcane Wisdom passive.
  *
- * Value semantics: ARCANE_WISDOM value is interpreted as bonus mana percent,
- * so 0.20 means a 1.20x mana multiplier.
+ * Value semantics: ARCANE_WISDOM value is interpreted as restore percent.
+ * Example: value=0.50 restores 50% mana over the configured duration.
  */
 public record ArcaneWisdomSettings(boolean enabled,
-        double manaMultiplier,
         double restorePercent,
         double thresholdPercent,
         double durationSeconds,
@@ -29,12 +28,11 @@ public record ArcaneWisdomSettings(boolean enabled,
             return disabled();
         }
 
-        double bonusPercent = Math.max(0.0D, snapshot.getValue(ArchetypePassiveType.ARCANE_WISDOM));
-        if (bonusPercent <= 0.0D) {
+        double restorePercent = normalizePercent(snapshot.getValue(ArchetypePassiveType.ARCANE_WISDOM));
+        if (restorePercent <= 0.0D) {
             return disabled();
         }
 
-        double restorePercent = DEFAULT_RESTORE_PERCENT;
         double thresholdPercent = DEFAULT_THRESHOLD_PERCENT;
         double durationSeconds = DEFAULT_DURATION_SECONDS;
         double cooldownSeconds = DEFAULT_COOLDOWN_SECONDS;
@@ -45,7 +43,6 @@ public record ArcaneWisdomSettings(boolean enabled,
                 continue;
             }
             Map<String, Object> props = definition.properties();
-            restorePercent = parsePercent(props, "restore_percent", restorePercent);
             thresholdPercent = parsePercent(props, "threshold", thresholdPercent);
             durationSeconds = parsePositiveDouble(props, "restore_duration_seconds", durationSeconds);
             durationSeconds = parsePositiveDouble(props, "duration", durationSeconds);
@@ -53,7 +50,6 @@ public record ArcaneWisdomSettings(boolean enabled,
         }
 
         return new ArcaneWisdomSettings(true,
-                1.0D + bonusPercent,
                 clamp01(restorePercent),
                 clamp01(thresholdPercent),
                 Math.max(0.1D, durationSeconds),
@@ -114,9 +110,16 @@ public record ArcaneWisdomSettings(boolean enabled,
         return value;
     }
 
+    private static double normalizePercent(double raw) {
+        double value = Math.max(0.0D, raw);
+        if (value > 1.0D) {
+            value /= 100.0D;
+        }
+        return clamp01(value);
+    }
+
     public static ArcaneWisdomSettings disabled() {
         return new ArcaneWisdomSettings(false,
-                1.0D,
                 DEFAULT_RESTORE_PERCENT,
                 DEFAULT_THRESHOLD_PERCENT,
                 DEFAULT_DURATION_SECONDS,

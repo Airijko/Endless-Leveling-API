@@ -17,7 +17,7 @@ weapons:
 passives:
   - type: PRIMAL_DOMINANCE
     display_name: "Primal Dominance"
-    value: 0.05 # Gain Strength equal to 5% of total health
+    value: 0.08 # Gain Strength equal to 5% of total health
     target_haste_slow_on_hit: 0.20 # On-hit applies -20% haste to the target
     target_haste_slow_duration: 2 # Slow lasts 2 seconds
   - type: HEALTH_REGEN

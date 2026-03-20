@@ -759,9 +759,7 @@ public class SkillManager {
         HasteBreakdown hasteBreakdown = getHasteBreakdown(playerData);
         float requestedMultiplier = hasteBreakdown.totalMultiplier();
         float swiftnessMultiplier = getSwiftnessMultiplier(playerData);
-        float bladeDanceMultiplier = getBladeDanceMultiplier(playerData);
         requestedMultiplier *= swiftnessMultiplier;
-        requestedMultiplier *= bladeDanceMultiplier;
 
         float clampedMultiplier = requestedMultiplier;
         if (settings.maxSpeedMultiplier > 0.0F) {
@@ -1049,7 +1047,13 @@ public class SkillManager {
         double augmentRatio = augmentPercent / 100.0D;
         double focusedStrikeHastePercent = getFocusedStrikeHasteBonusPercent(playerData);
         double focusedStrikeHasteRatio = focusedStrikeHastePercent / 100.0D;
-        float skillBonus = (float) ((hasteLevel * perPointValue) + innateRatio + augmentRatio + focusedStrikeHasteRatio);
+        double bladeDanceHastePercent = getBladeDanceHasteBonusPercent(playerData);
+        double bladeDanceHasteRatio = bladeDanceHastePercent / 100.0D;
+        float skillBonus = (float) ((hasteLevel * perPointValue)
+            + innateRatio
+            + augmentRatio
+            + focusedStrikeHasteRatio
+            + bladeDanceHasteRatio);
         float total = (float) (raceMultiplier * (1.0D + skillBonus));
         return new HasteBreakdown((float) raceMultiplier, skillBonus, total);
     }
@@ -1079,6 +1083,42 @@ public class SkillManager {
             return 0.0D;
         }
         return Math.max(0.0D, settings.hasteBonusPercent());
+    }
+
+    private double getBladeDanceHasteBonusPercent(PlayerData playerData) {
+        if (playerData == null || archetypePassiveManager == null || passiveManager == null) {
+            return 0.0D;
+        }
+
+        PassiveManager.PassiveRuntimeState runtimeState = passiveManager.getRuntimeState(playerData.getUuid());
+        if (runtimeState == null || runtimeState.getBladeDanceStacks() <= 0) {
+            return 0.0D;
+        }
+
+        long activeUntil = runtimeState.getBladeDanceActiveUntil();
+        long now = System.currentTimeMillis();
+        if (activeUntil <= 0L || now > activeUntil) {
+            runtimeState.clearBladeDance();
+            return 0.0D;
+        }
+
+        ArchetypePassiveSnapshot snapshot = archetypePassiveManager.getSnapshot(playerData);
+        BladeDancePassive settings = BladeDancePassive.fromSnapshot(snapshot);
+        if (!settings.enabled()) {
+            return 0.0D;
+        }
+
+        int stacks = Math.max(0, runtimeState.getBladeDanceStacks());
+        if (stacks <= 0) {
+            return 0.0D;
+        }
+
+        double multiplier = settings.multiplierForStacks(stacks);
+        if (multiplier <= 1.0D) {
+            return 0.0D;
+        }
+
+        return (multiplier - 1.0D) * 100.0D;
     }
 
     /**
@@ -1303,37 +1343,6 @@ public class SkillManager {
                     stacks = runtimeState.getSwiftnessStacks();
                 } else {
                     runtimeState.clearSwiftness();
-                }
-            }
-        }
-
-        if (stacks <= 0) {
-            return 1.0F;
-        }
-
-        double multiplier = settings.multiplierForStacks(stacks);
-        return multiplier > 0.0D ? (float) multiplier : 1.0F;
-    }
-
-    private float getBladeDanceMultiplier(PlayerData playerData) {
-        if (playerData == null || archetypePassiveManager == null) {
-            return 1.0F;
-        }
-        ArchetypePassiveSnapshot snapshot = archetypePassiveManager.getSnapshot(playerData);
-        BladeDancePassive settings = BladeDancePassive.fromSnapshot(snapshot);
-        if (!settings.enabled()) {
-            return 1.0F;
-        }
-
-        int stacks = 0;
-        if (passiveManager != null) {
-            PassiveManager.PassiveRuntimeState runtimeState = passiveManager.getRuntimeState(playerData.getUuid());
-            if (runtimeState != null && runtimeState.getBladeDanceStacks() > 0) {
-                long activeUntil = runtimeState.getBladeDanceActiveUntil();
-                if (activeUntil > 0L && System.currentTimeMillis() <= activeUntil) {
-                    stacks = runtimeState.getBladeDanceStacks();
-                } else {
-                    runtimeState.clearBladeDance();
                 }
             }
         }

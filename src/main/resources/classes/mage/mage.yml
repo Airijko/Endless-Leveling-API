@@ -16,9 +16,10 @@ passives:
   - type: MANA_REGEN
     value: 0.028
   - type: ARCANE_WISDOM
-    value: 0.20
+    value: 0.5
     threshold: 0.10
-    restore_percent: 0.25
+    restore_duration_seconds: 5
+    cooldown: 45
   - type: HEALTH_REGEN
     value: 0.014
   - type: INNATE_ATTRIBUTE_GAIN

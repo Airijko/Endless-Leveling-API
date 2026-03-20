@@ -37,9 +37,6 @@ import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue;
 import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
-import com.hypixel.hytale.server.core.modules.entitystats.modifier.Modifier.ModifierTarget;
-import com.hypixel.hytale.server.core.modules.entitystats.modifier.StaticModifier;
-import com.hypixel.hytale.server.core.modules.entitystats.modifier.StaticModifier.CalculationType;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.util.NotificationUtil;
@@ -58,7 +55,6 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
             .parseBoolean(System.getProperty("el.passive.debug", "true"));
     private static final long HEALTH_REGEN_COOLDOWN_MS = TimeUnit.SECONDS.toMillis(10);
     public static final double RESOURCE_REGEN_DIVISOR = 5.0D;
-    private static final String ARCANE_WISDOM_MANA_BONUS_KEY = "EL_arcane_wisdom_mana_bonus";
     private static final Query<EntityStore> PLAYER_QUERY = Query.any();
 
     private final PlayerDataManager playerDataManager;
@@ -370,13 +366,10 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
             @Nonnull PassiveRuntimeState runtimeState) {
         ArcaneWisdomPassive settings = ArcaneWisdomPassive.fromSnapshot(archetypeSnapshot);
         if (!settings.enabled()) {
-            applyArcaneWisdomManaMultiplier(statMap, 1.0D);
             clearArcaneWisdomState(runtimeState);
             runtimeState.setLastManaRatio(Float.NaN);
             return;
         }
-
-        applyArcaneWisdomManaMultiplier(statMap, settings.manaMultiplier());
 
         EntityStatValue manaStat = statMap.get(DefaultEntityStatTypes.getMana());
         if (manaStat == null || manaStat.getMax() <= 0f) {
@@ -446,43 +439,6 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
         runtimeState.setArcaneWisdomActiveUntil(0L);
         runtimeState.setArcaneWisdomRestorePerSecond(0.0D);
         runtimeState.setArcaneWisdomRestoreRemaining(0.0D);
-    }
-
-    private void applyArcaneWisdomManaMultiplier(@Nonnull EntityStatMap statMap, double multiplier) {
-        EntityStatValue manaBefore = statMap.get(DefaultEntityStatTypes.getMana());
-        if (manaBefore == null || manaBefore.getMax() <= 0f) {
-            return;
-        }
-
-        float previousMax = manaBefore.getMax();
-        float previousCurrent = manaBefore.get();
-
-        statMap.removeModifier(DefaultEntityStatTypes.getMana(), ARCANE_WISDOM_MANA_BONUS_KEY);
-        statMap.update();
-
-        EntityStatValue manaBaseline = statMap.get(DefaultEntityStatTypes.getMana());
-        if (manaBaseline == null || manaBaseline.getMax() <= 0f) {
-            return;
-        }
-
-        double safeMultiplier = Math.max(1.0D, multiplier);
-        double bonus = manaBaseline.getMax() * (safeMultiplier - 1.0D);
-        if (bonus > 0.0001D) {
-            statMap.putModifier(DefaultEntityStatTypes.getMana(),
-                    ARCANE_WISDOM_MANA_BONUS_KEY,
-                    new StaticModifier(ModifierTarget.MAX, CalculationType.ADDITIVE, (float) bonus));
-            statMap.update();
-        }
-
-        EntityStatValue manaUpdated = statMap.get(DefaultEntityStatTypes.getMana());
-        if (manaUpdated == null || manaUpdated.getMax() <= 0f) {
-            return;
-        }
-
-        float newMax = manaUpdated.getMax();
-        float ratio = previousMax > 0.01f ? previousCurrent / previousMax : 1.0f;
-        float adjustedCurrent = Math.max(0.0f, Math.min(newMax, ratio * newMax));
-        statMap.setStatValue(DefaultEntityStatTypes.getMana(), adjustedCurrent);
     }
 
     private void applyStaminaGainBonus(@Nonnull PlayerData playerData,

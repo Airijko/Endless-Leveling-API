@@ -22,10 +22,6 @@ public final class ArcaneWisdomPassive {
         return settings.enabled();
     }
 
-    public double manaMultiplier() {
-        return settings.manaMultiplier();
-    }
-
     public double restorePercent() {
         return settings.restorePercent();
     }

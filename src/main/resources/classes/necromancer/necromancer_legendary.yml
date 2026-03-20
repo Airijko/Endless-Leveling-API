@@ -15,13 +15,13 @@ weapons:
 passives:
   - type: ARMY_OF_THE_DEAD
     value: 1.0
-    base_summon_amount: 4
+    base_summon_amount: 2
     summon_amount_scaling:
-      mana_per_summon: 110
+      mana_per_summon: 125
     minion_lifetime_seconds: 50
     activation: on_hit
-    cooldown_seconds: 10
-    summon_stat_inheritance: 0.5
+    cooldown_seconds: 14
+    summon_stat_inheritance: 0.35
     skeleton_type: EndlessLeveling_ArmyOfTheDead_Pet_Mithril
   - type: MANA_REGEN
     value: 0.046

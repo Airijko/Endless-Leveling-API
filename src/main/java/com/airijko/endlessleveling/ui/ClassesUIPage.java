@@ -1038,6 +1038,10 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         if (duration == null) {
             duration = getDoubleProp(props, "target_haste_slow_duration");
         }
+        Double restoreDuration = getDoubleProp(props, "restore_duration_seconds");
+        if (restoreDuration == null) {
+            restoreDuration = duration;
+        }
         Double cooldown = getDoubleProp(props, "cooldown");
         Double window = getDoubleProp(props, "window");
         Double stacks = getDoubleProp(props, "max_stacks");
@@ -1102,6 +1106,9 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         if (restorePercent == null) {
             restorePercent = getDoubleProp(props, "restore_ratio");
         }
+        if (restorePercent == null) {
+            restorePercent = value;
+        }
         Double flatBonusDamage = getDoubleProp(props, "flat_bonus_damage");
         Double trueDamageFlatBonus = getDoubleProp(props, "true_damage_flat_bonus");
         Double trueDamageConversionPercent = getDoubleProp(props, "true_damage_conversion_percent");
@@ -1136,19 +1143,23 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             case MANA_REGEN_FLAT -> tr("ui.races.passive.desc.mana_regen_flat", "{0} mana/s", formatSigned(value));
                 case ARCANE_WISDOM -> appendLines(
                     tr("ui.classes.passive.pretty.arcane_wisdom.title", "Arcane Wisdom"),
-                    tr("ui.classes.passive.pretty.arcane_wisdom.max_mana",
-                        "- Max mana bonus: {0}",
-                        formatPercentValue(value)),
                     restorePercent == null
                         ? null
                         : threshold == null
                             ? tr("ui.classes.passive.pretty.arcane_wisdom.restore_only",
-                                "- Emergency restore: {0} mana",
-                                formatPercentValue(restorePercent))
-                            : tr("ui.classes.passive.pretty.arcane_wisdom.restore_threshold",
-                                "- Emergency restore: {0} mana when below {1}",
+                                "- Emergency restore: {0} mana over {1}",
                                 formatPercentValue(restorePercent),
-                                formatThresholdPercent(threshold, "mana")));
+                                formatDurationDetail(restoreDuration))
+                            : tr("ui.classes.passive.pretty.arcane_wisdom.restore_threshold",
+                                "- Emergency restore: {0} mana over {1} when below {2}",
+                                formatPercentValue(restorePercent),
+                                formatDurationDetail(restoreDuration),
+                                formatThresholdPercent(threshold, "mana")),
+                    cooldown == null
+                        ? null
+                        : tr("ui.classes.passive.pretty.arcane_wisdom.cooldown",
+                                "- Cooldown: {0}",
+                                formatCooldownDetail(cooldown)));
                 case TRUE_EDGE -> appendLines(
                     tr("ui.classes.passive.pretty.true_edge.title", "Defense-piercing strikes"),
                     flatTrueDamage == null || flatTrueDamage <= 0.0D

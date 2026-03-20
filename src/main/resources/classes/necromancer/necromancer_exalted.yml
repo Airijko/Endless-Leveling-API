@@ -15,13 +15,13 @@ weapons:
 passives:
   - type: ARMY_OF_THE_DEAD
     value: 1.0
-    base_summon_amount: 5
+    base_summon_amount: 4
     summon_amount_scaling:
       mana_per_summon: 100
     minion_lifetime_seconds: 60
     activation: on_hit
-    cooldown_seconds: 8
-    summon_stat_inheritance: 0.6
+    cooldown_seconds: 12
+    summon_stat_inheritance: 0.4
     skeleton_type: EndlessLeveling_ArmyOfTheDead_Pet_Onyxium
   - type: MANA_REGEN
     value: 0.052

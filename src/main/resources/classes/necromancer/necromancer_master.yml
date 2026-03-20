@@ -15,13 +15,13 @@ weapons:
 passives:
   - type: ARMY_OF_THE_DEAD
     value: 1.0
-    base_summon_amount: 3
+    base_summon_amount: 2
     summon_amount_scaling:
-      mana_per_summon: 120
+      mana_per_summon: 150
     minion_lifetime_seconds: 40
     activation: on_hit
-    cooldown_seconds: 12
-    summon_stat_inheritance: 0.4
+    cooldown_seconds: 16
+    summon_stat_inheritance: 0.3
     skeleton_type: EndlessLeveling_ArmyOfTheDead_Pet_Adamantite
   - type: MANA_REGEN
     value: 0.04

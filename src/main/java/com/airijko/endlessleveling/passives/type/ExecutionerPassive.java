@@ -95,10 +95,9 @@ public final class ExecutionerPassive {
         }
 
         if (messenger != null) {
+            float totalDamage = Math.max(0f, currentDamage + bonusDamage);
             messenger.accept(playerRef,
-                    String.format("Final Incantation triggered! +%.0f flat, +%.0f%% bonus damage.",
-                            flatBonusDamage,
-                            percentBonusDamage * 100.0D));
+                    String.format("Final Incantation triggered! %.0f total damage dealt.", totalDamage));
         }
 
         return bonusDamage;
