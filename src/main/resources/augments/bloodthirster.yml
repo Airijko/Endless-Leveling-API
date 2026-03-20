@@ -7,29 +7,25 @@ enabled: true
 
 ui:
   sections:
-    - title: "Buffs"
+    - title: "Rules"
       body: |
-        Hit Counter: +3
+        3-Hit Passive
         Hit Counter Duration: 5s
-        Above 50% Health:
+      color: "#ffb86b"
+    - title: "Above 50%"
+      body: |
         Value: +80%
-        Below 50% Health:
+      color: "#8adf9e"
+    - title: "Above 50%"
+      body: |
+        Self Damage: +10%
+      color: "#ff9a9a"
+    - title: "Below 50%"
+      body: |
         Missing Health Heal: +10%
         Healing Ratio from Strength: +10%
         Healing Ratio from Sorcery: +10%
       color: "#8adf9e"
-    - title: "Debuffs"
-      body: |
-        Above 50% Health:
-        Self Damage: +10%
-      color: "#ff9a9a"
-    - title: "Rules"
-      body: |
-        Above 50% Health:
-        Health Threshold Above: +50%
-        Below 50% Health:
-        Health Threshold Below: +50%
-      color: "#ffb86b"
 passives:
   hit_counter: 3
   hit_counter_duration: 5 # seconds to complete the shared hit counter before it resets
