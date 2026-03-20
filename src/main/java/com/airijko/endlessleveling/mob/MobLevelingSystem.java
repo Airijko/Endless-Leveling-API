@@ -1,3 +1,5 @@
+    // Tracks max health snapshots for each entity using composite key
+    private final Map<Long, Float> entityMaxHealthSnapshots = new ConcurrentHashMap<>();
 package com.airijko.endlessleveling.mob;
 
 import com.airijko.endlessleveling.EndlessLeveling;
@@ -603,6 +605,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         EntityRuntimeState state = entityStates.get(entityKey);
         clearOrRemoveNameplate(ref, commandBuffer, entityKey, state);
         entityStates.remove(entityKey);
+        entityMaxHealthSnapshots.remove(entityKey);
         mobLevelingManager.forgetEntity(ref.getStore(), entityId);
     }
 
