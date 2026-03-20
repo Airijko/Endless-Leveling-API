@@ -38,6 +38,7 @@ public final class WitherAugment extends Augment implements AugmentHooks.OnHitAu
     private final double percentPerSecond;
     private final double durationSeconds;
     private final double movementSpeedSlowPercent;
+    private final double movementSpeedSlowCap;
 
     private static final class MovementSnapshot {
         final float forwardWalk;
@@ -118,11 +119,13 @@ public final class WitherAugment extends Augment implements AugmentHooks.OnHitAu
         this.percentPerSecond = AugmentValueReader.getDouble(wither, "value", 0.0D);
         this.durationSeconds = AugmentValueReader.getDouble(wither, "duration", 0.0D);
         Map<String, Object> targetDebuff = AugmentValueReader.getMap(wither, "target_debuff");
+        Map<String, Object> movementSpeed = AugmentValueReader.getMap(targetDebuff, "movement_speed");
+        this.movementSpeedSlowCap = Math.max(0.0D, AugmentValueReader.getDouble(movementSpeed, "max_slow_cap", 0.0D));
         double rawMovementSpeedValue = AugmentValueReader.getNestedDouble(targetDebuff,
                 0.0D,
                 "movement_speed",
                 "value");
-        this.movementSpeedSlowPercent = normalizeSlowPercent(rawMovementSpeedValue);
+        this.movementSpeedSlowPercent = normalizeSlowPercent(rawMovementSpeedValue, movementSpeedSlowCap);
     }
 
     @Override
@@ -484,11 +487,12 @@ public final class WitherAugment extends Augment implements AugmentHooks.OnHitAu
         return null;
     }
 
-    private static double normalizeSlowPercent(double rawValue) {
+    private static double normalizeSlowPercent(double rawValue, double configuredCap) {
         double magnitude = Math.abs(rawValue);
         if (magnitude > 1.0D) {
             magnitude /= 100.0D;
         }
-        return Math.min(0.95D, Math.max(0.0D, magnitude));
+        magnitude = Math.max(0.0D, magnitude);
+        return configuredCap > 0.0D ? Math.min(configuredCap, magnitude) : magnitude;
     }
 }

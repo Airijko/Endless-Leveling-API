@@ -27,3 +27,4 @@ passives:
     target_debuff:
       movement_speed:
         value: -0.20 # 20% max movement speed slow
+        max_slow_cap: 0 # 0 = uncapped; set > 0 to cap applied slow percent

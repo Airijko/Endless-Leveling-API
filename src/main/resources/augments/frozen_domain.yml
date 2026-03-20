@@ -25,6 +25,7 @@ ui:
 passives:
   aura_frozen_domain:
     slow_percent: 0.30 # slows targets by 30% of their total movement speed
+    slow_percent_cap: 0 # 0 = uncapped; set > 0 to cap applied slow percent
     stolen_slow_ratio: 0.20 # 20% of applied slow is gained as movement speed per affected target
     radius: 5 # base radius in blocks
     duration: 10 # effect lasts 10 seconds

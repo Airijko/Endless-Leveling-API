@@ -54,14 +54,14 @@ public final class BailoutAugment extends Augment
         this.cooldownMillis = AugmentUtils
                 .secondsToMillis(AugmentValueReader.getDouble(deathPrevention, "cooldown", 0.0D));
         this.reviveHealthPercent = Math.max(0.0D,
-                Math.min(1.0D, AugmentValueReader.getDouble(deathPrevention, "revive_health_percent", 0.0D)));
+            AugmentValueReader.getDouble(deathPrevention, "revive_health_percent", 0.0D));
 
         this.drainMaxHpPercentPerSecond = resolveDrainRatePerSecond(healthDecay);
         this.drainsToZero = AugmentValueReader.getBoolean(healthDecay, "drains_to_zero", true);
         this.cancelOnKill = AugmentValueReader.getBoolean(healthDecay, "cancel_on_kill", true);
 
         this.emergencyHealMissingPercent = Math.max(0.0D,
-                Math.min(1.0D, AugmentValueReader.getDouble(emergencyHeal, "missing_health_percent", 0.0D)));
+            AugmentValueReader.getDouble(emergencyHeal, "missing_health_percent", 0.0D));
     }
 
     @Override
@@ -262,8 +262,15 @@ public final class BailoutAugment extends Augment
         if (configured > 1.0D && configured <= 100.0D) {
             configured = configured / 100.0D;
         }
-
-        return Math.max(0.0D, Math.min(1.0D, configured));
+        double maxDrainRate = AugmentValueReader.getDouble(healthDecay, "max_drain_rate_per_second", 0.0D);
+        if (maxDrainRate > 1.0D && maxDrainRate <= 100.0D) {
+            maxDrainRate = maxDrainRate / 100.0D;
+        }
+        configured = Math.max(0.0D, configured);
+        if (maxDrainRate > 0.0D) {
+            configured = Math.min(maxDrainRate, configured);
+        }
+        return configured;
     }
 
     @Override

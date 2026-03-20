@@ -47,7 +47,7 @@ public final class AbsoluteFocusAugment extends Augment implements AugmentHooks.
         this.guaranteedCritCooldownMillis = AugmentUtils
                 .secondsToMillis(AugmentValueReader.getDouble(guaranteedCrit, "cooldown", 0.0D));
         this.guaranteedCritChance = Math.max(0.0D,
-                Math.min(1.0D, AugmentValueReader.getDouble(guaranteedCrit, "crit_chance", 1.0D)));
+            AugmentValueReader.getDouble(guaranteedCrit, "crit_chance", 1.0D));
         this.conversionRatio = Math.max(0.0D, AugmentValueReader.getDouble(excessCrit, "conversion_ratio", 0.0D));
     }
 

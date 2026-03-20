@@ -73,6 +73,7 @@ public final class FrozenDomainAugment extends Augment
     private final long cooldownMillis;
     private final long slowTickIntervalMillis;
     private final double lifeForceFlatBonus;
+    private final double slowPercentCap;
 
     private static final class MovementSnapshot {
         final float forwardWalk;
@@ -158,7 +159,10 @@ public final class FrozenDomainAugment extends Augment
         Map<String, Object> buffs = AugmentValueReader.getMap(passives, "buffs");
         Map<String, Object> lifeForce = AugmentValueReader.getMap(buffs, "life_force");
 
-        this.slowPercent = normalizeSlowPercent(AugmentValueReader.getDouble(aura, "slow_percent", 0.0D));
+        this.slowPercentCap = Math.max(0.0D, AugmentValueReader.getDouble(aura, "slow_percent_cap", 0.0D));
+
+        this.slowPercent = normalizeSlowPercent(AugmentValueReader.getDouble(aura, "slow_percent", 0.0D),
+            slowPercentCap);
         this.stolenSlowRatio = clampRatio(AugmentValueReader.getDouble(aura, "stolen_slow_ratio", 0.0D));
         this.baseRadius = Math.max(0.0D, AugmentValueReader.getDouble(aura, "radius", 0.0D));
         this.healthPerRadiusBlock = Math.max(0.0D,
@@ -766,12 +770,13 @@ public final class FrozenDomainAugment extends Augment
         return baseRadius + Math.floor(attackerMaxHealth / healthPerRadiusBlock);
     }
 
-    private static double normalizeSlowPercent(double rawValue) {
+    private static double normalizeSlowPercent(double rawValue, double configuredCap) {
         double magnitude = Math.abs(rawValue);
         if (magnitude > 1.0D) {
             magnitude /= 100.0D;
         }
-        return Math.min(0.95D, Math.max(0.0D, magnitude));
+        magnitude = Math.max(0.0D, magnitude);
+        return configuredCap > 0.0D ? Math.min(configuredCap, magnitude) : magnitude;
     }
 
     private static double clampRatio(double value) {

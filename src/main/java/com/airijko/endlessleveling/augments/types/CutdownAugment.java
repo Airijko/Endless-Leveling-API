@@ -63,8 +63,8 @@ public final class CutdownAugment extends Augment implements AugmentHooks.OnHitA
             }
             @SuppressWarnings("unchecked")
             Map<String, Object> thresholdNode = (Map<String, Object>) map;
-            double healthAbove = Math.max(0.0D,
-                    Math.min(1.0D, AugmentValueReader.getDouble(thresholdNode, "target_health_percent_above", 0.0D)));
+                double healthAbove = Math.max(0.0D,
+                    AugmentValueReader.getDouble(thresholdNode, "target_health_percent_above", 0.0D));
             double value = AugmentUtils
                     .normalizeConfiguredBonusMultiplier(AugmentValueReader.getDouble(thresholdNode, "value", 0.0D));
             if (value > 0.0D) {

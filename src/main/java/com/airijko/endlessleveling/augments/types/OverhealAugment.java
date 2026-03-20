@@ -22,6 +22,7 @@ public final class OverhealAugment extends Augment
         implements AugmentHooks.OnHitAugment, AugmentHooks.OnDamageTakenAugment, AugmentHooks.PassiveStatAugment {
     public static final String ID = "overheal";
     private static final double SHIELD_EPSILON = 0.0001D;
+    private static volatile double OVERFLOW_BUFFER_CAP = 0.0D;
     private static final Map<EntityStatMap, Double> PENDING_OVERHEAL = Collections
             .synchronizedMap(new WeakHashMap<>());
     private static final Map<AugmentState, Boolean> FULL_SHIELD_NOTIFIED = Collections
@@ -46,6 +47,7 @@ public final class OverhealAugment extends Augment
                 shield,
                 "decay_duration",
                 AugmentValueReader.getDouble(shield, "duration", 0.0D)));
+        OVERFLOW_BUFFER_CAP = Math.max(0.0D, AugmentValueReader.getDouble(shield, "overflow_buffer_cap", 0.0D));
         this.lifeStealPercent = normalizePercentPoints(
                 AugmentValueReader.getNestedDouble(buffs, 0.0D, "lifesteal", "value"));
     }
@@ -57,8 +59,10 @@ public final class OverhealAugment extends Augment
         synchronized (PENDING_OVERHEAL) {
             double existing = PENDING_OVERHEAL.getOrDefault(statMap, 0.0D);
             double merged = existing + overflowAmount;
-            // Soft safety cap for malformed heal loops.
-            PENDING_OVERHEAL.put(statMap, Math.min(1_000_000.0D, merged));
+            if (OVERFLOW_BUFFER_CAP > 0.0D) {
+                merged = Math.min(OVERFLOW_BUFFER_CAP, merged);
+            }
+            PENDING_OVERHEAL.put(statMap, merged);
         }
     }
 

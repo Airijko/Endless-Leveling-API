@@ -17,6 +17,7 @@ passives:
   overheal_shield:
     max_shield_percent: 0.15 # store up to 15% of max health as overheal shield
     decay_duration: 8 # shield value decays over 8 seconds
+    overflow_buffer_cap: 0 # 0 = uncapped; set > 0 to cap pending overheal buffer
 
   buffs:
     lifesteal:

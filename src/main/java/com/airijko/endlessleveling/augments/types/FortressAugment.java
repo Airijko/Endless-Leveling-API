@@ -40,7 +40,7 @@ public final class FortressAugment extends Augment
         Map<String, Object> shield = AugmentValueReader.getMap(passives, "shield_phase");
         Map<String, Object> buff = AugmentValueReader.getMap(passives, "buff_phase");
         this.healthThresholdPercent = Math.max(0.0D,
-                Math.min(1.0D, AugmentValueReader.getDouble(shield, "health_threshold", 0.05D)));
+            AugmentValueReader.getDouble(shield, "health_threshold", 0.05D));
         this.minHealthHp = Math.max(0.0D,
                 AugmentValueReader.getDouble(shield,
                         "min_health_hp",

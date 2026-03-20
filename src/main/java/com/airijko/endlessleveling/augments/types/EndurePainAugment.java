@@ -32,10 +32,10 @@ public final class EndurePainAugment extends Augment
         Map<String, Object> passives = definition.getPassives();
         Map<String, Object> heal = AugmentValueReader.getMap(passives, "heal_over_time");
         Map<String, Object> healOnKill = AugmentValueReader.getMap(passives, "heal_on_kill");
-        this.bleedPercent = Math.max(0.0D, Math.min(1.0D, AugmentValueReader.getDouble(heal, "value", 0.0D)));
+        this.bleedPercent = Math.max(0.0D, AugmentValueReader.getDouble(heal, "value", 0.0D));
         this.durationSeconds = AugmentValueReader.getDouble(heal, "duration", 3.0D);
         this.healOnKillPercent = Math.max(0.0D,
-                Math.min(1.0D, AugmentValueReader.getDouble(healOnKill, "value", 0.25D)));
+            AugmentValueReader.getDouble(healOnKill, "value", 0.25D));
         this.resetOnKill = AugmentValueReader.getBoolean(heal, "reset_on_kill", true);
     }
 
