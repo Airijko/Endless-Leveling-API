@@ -16,6 +16,7 @@ passives:
   - type: MANA_REGEN
     value: 0.03
   - type: FINAL_INCANTATION
+    category: MAGIC_ON_HIT
     value: 1.5 # +150% bonus damage scaling
     flat_bonus_damage: 50 # Flat bonus damage when threshold condition is met
     threshold: 15 # Triggers below 15% HP or if this hit pushes target to 15%

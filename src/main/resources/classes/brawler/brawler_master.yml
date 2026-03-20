@@ -14,10 +14,12 @@ weapons:
 
 passives:
   - type: RETALIATION
+    category: ON_DAMAGE_TAKEN
     value: 0.5
     window: 5
     cooldown: 15
   - type: BERZERKER
+    category: PASSIVE_STAT
     value: 0.5
     threshold: 0.4
   - type: INNATE_ATTRIBUTE_GAIN

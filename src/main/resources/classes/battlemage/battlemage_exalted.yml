@@ -21,6 +21,7 @@ passives:
     value: 0.455
     threshold: 0.4
   - type: ARCANE_DOMINANCE
+    category: PASSIVE_STAT
     display_name: "Arcane Dominance"
     value: 0.08 # Gain Sorcery equal to 5% of total health
     target_haste_slow_on_hit: 0.20

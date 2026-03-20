@@ -16,6 +16,7 @@ passives:
   - type: MANA_REGEN
     value: 0.034
   - type: ARCANE_WISDOM
+    category: MAGIC_STAT
     value: 0.5
     threshold: 0.10
     restore_duration_seconds: 5

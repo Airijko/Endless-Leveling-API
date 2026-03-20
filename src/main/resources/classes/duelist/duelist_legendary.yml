@@ -16,6 +16,7 @@ weapons:
 
 passives:
   - type: BLADE_DANCE
+    category: ON_HIT
     display_name: "Blade Dance"
     value: 0.10
     duration: 5

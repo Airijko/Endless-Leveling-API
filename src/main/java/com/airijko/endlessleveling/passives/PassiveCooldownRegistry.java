@@ -58,7 +58,7 @@ public final class PassiveCooldownRegistry {
                     "final_incantation",
                     "Final Incantation",
                     ArchetypePassiveType.FINAL_INCANTATION,
-                    PassiveCategory.ON_HIT.getIconItemId(),
+                    PassiveCategory.MAGIC_ON_HIT.getIconItemId(),
                     PassiveRuntimeState::getExecutionerCooldownExpiresAt,
                     PassiveRuntimeState::setExecutionerCooldownExpiresAt,
                     PassiveRuntimeState::isExecutionerReadyNotified,

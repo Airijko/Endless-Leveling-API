@@ -16,6 +16,7 @@ weapons:
 
 passives:
   - type: FOCUSED_STRIKE
+    category: ON_HIT
     value: 0.2 # +20% true-damage conversion descriptor
     normal_bonus_damage: false # Disables legacy first-strike bonus damage
     true_damage_flat_bonus: 20 # Flat true damage on hit

@@ -58,6 +58,7 @@ passives:
     window: 4 # Collect damage for 4 seconds before retaliating
     cooldown: 25 # Seconds between retaliations
   - type: FINAL_INCANTATION
+    category: MAGIC_ON_HIT
     value: 100 # +10000% damage to targets below the threshold
     threshold: 0.2 # Only applies to targets already below 20% HP
     cooldown: 45 # Seconds between executioner procs

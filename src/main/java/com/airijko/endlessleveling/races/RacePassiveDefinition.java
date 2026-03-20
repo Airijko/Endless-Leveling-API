@@ -36,8 +36,6 @@ public record RacePassiveDefinition(ArchetypePassiveType type,
         PassiveTier resolvedTier = tier == null ? PassiveTier.COMMON : tier;
         tier = resolvedTier;
 
-        category = category == null ? PassiveCategory.PASSIVE_STAT : category;
-
         Map<String, Double> safeClassValues = normalizeClassValues(classValues);
         classValues = Collections.unmodifiableMap(safeClassValues);
 
@@ -68,7 +66,7 @@ public record RacePassiveDefinition(ArchetypePassiveType type,
     }
 
     public PassiveCategory category() {
-        return category == null ? PassiveCategory.PASSIVE_STAT : category;
+        return category;
     }
 
     public Map<String, Double> classValues() {
