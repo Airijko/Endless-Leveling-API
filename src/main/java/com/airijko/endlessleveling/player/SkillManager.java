@@ -7,8 +7,10 @@ import com.airijko.endlessleveling.enums.ArchetypePassiveType;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveManager;
 import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveSnapshot;
+import com.airijko.endlessleveling.passives.settings.ArcaneDominanceSettings;
 import com.airijko.endlessleveling.passives.settings.BladeDanceSettings;
 import com.airijko.endlessleveling.passives.settings.FirstStrikeSettings;
+import com.airijko.endlessleveling.passives.settings.PrimalDominanceSettings;
 import com.airijko.endlessleveling.passives.settings.SwiftnessSettings;
 import com.airijko.endlessleveling.races.RacePassiveDefinition;
 import com.hypixel.hytale.component.ComponentAccessor;
@@ -653,12 +655,21 @@ public class SkillManager {
         double perPointValue = getSkillAttributeConfigValue(SkillAttributeType.SORCERY);
 
         double innateBonus = getInnateAttributeBonus(playerData, SkillAttributeType.SORCERY);
+        double arcaneDominanceBonus = getArcaneDominanceSorceryBonus(playerData);
         double augmentBonus = getAugmentAttributeBonus(playerData, SkillAttributeType.SORCERY);
-        float totalBonusSorcery = (float) ((sorceryLevel * perPointValue) + innateBonus + augmentBonus);
+        float totalBonusSorcery = (float) ((sorceryLevel * perPointValue)
+            + innateBonus
+            + arcaneDominanceBonus
+            + augmentBonus);
 
         LOGGER.atFine().log(
                 "calculatePlayerSorcery: SORCERY level=%d, perPointValue=%.2f, innate=%.2f, augment=%.2f, totalBonusSorcery=%.2f for player %s",
-                sorceryLevel, perPointValue, innateBonus, augmentBonus, totalBonusSorcery, playerData.getPlayerName());
+                sorceryLevel,
+                perPointValue,
+                innateBonus + arcaneDominanceBonus,
+                augmentBonus,
+                totalBonusSorcery,
+                playerData.getPlayerName());
 
         return totalBonusSorcery;
     }
@@ -917,7 +928,8 @@ public class SkillManager {
             raceMultiplier = 0.0f;
         }
         double innateBonus = getInnateAttributeBonus(playerData, SkillAttributeType.STRENGTH);
-        float skillValue = (float) ((strengthLevel * perPointValue) + innateBonus);
+        double primalDominanceBonus = getPrimalDominanceStrengthBonus(playerData);
+        float skillValue = (float) ((strengthLevel * perPointValue) + innateBonus + primalDominanceBonus);
         double augmentBonus = getAugmentAttributeBonus(playerData, SkillAttributeType.STRENGTH);
         float totalValue = (float) (skillValue * raceMultiplier + augmentBonus);
         return new StrengthBreakdown(raceMultiplier, skillValue, totalValue);
@@ -1390,6 +1402,38 @@ public class SkillManager {
                 healthSkillBonus,
                 PlayerAttributeManager.AttributeSlot.LIFE_FORCE.vanillaBase());
         return Math.max(0.0D, combined);
+    }
+
+    private double getPrimalDominanceStrengthBonus(PlayerData playerData) {
+        if (playerData == null || archetypePassiveManager == null) {
+            return 0.0D;
+        }
+        ArchetypePassiveSnapshot snapshot = archetypePassiveManager.getSnapshot(playerData);
+        PrimalDominanceSettings settings = PrimalDominanceSettings.fromSnapshot(snapshot);
+        if (!settings.enabled()) {
+            return 0.0D;
+        }
+        double scaling = Math.max(0.0D, settings.strengthFromTotalHealthPercent());
+        if (scaling <= 0.0D) {
+            return 0.0D;
+        }
+        return resolveTotalHealthForScaling(playerData) * scaling;
+    }
+
+    private double getArcaneDominanceSorceryBonus(PlayerData playerData) {
+        if (playerData == null || archetypePassiveManager == null) {
+            return 0.0D;
+        }
+        ArchetypePassiveSnapshot snapshot = archetypePassiveManager.getSnapshot(playerData);
+        ArcaneDominanceSettings settings = ArcaneDominanceSettings.fromSnapshot(snapshot);
+        if (!settings.enabled()) {
+            return 0.0D;
+        }
+        double scaling = Math.max(0.0D, settings.sorceryFromTotalHealthPercent());
+        if (scaling <= 0.0D) {
+            return 0.0D;
+        }
+        return resolveTotalHealthForScaling(playerData) * scaling;
     }
 
     private double parsePercentProperty(Map<String, Object> props, String... keys) {

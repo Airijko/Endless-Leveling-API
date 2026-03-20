@@ -1032,6 +1032,9 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
         Double threshold = getDoubleProp(props, "threshold");
         Double duration = getDoubleProp(props, "duration");
+        if (duration == null) {
+            duration = getDoubleProp(props, "target_haste_slow_duration");
+        }
         Double cooldown = getDoubleProp(props, "cooldown");
         Double window = getDoubleProp(props, "window");
         Double stacks = getDoubleProp(props, "max_stacks");
@@ -1072,6 +1075,9 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             maxSummons = getDoubleProp(props, "summon_cap");
         }
         Double slowPercent = getDoubleProp(props, "slow_percent");
+        if (slowPercent == null) {
+            slowPercent = getDoubleProp(props, "target_haste_slow_on_hit");
+        }
         Double healingChance = getDoubleProp(props, "healing_chance");
         Double selfHealEffectiveness = getDoubleProp(props, "self_heal_effectiveness");
         if (selfHealEffectiveness == null) {
@@ -1256,13 +1262,17 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                     formatWindowDetail(window),
                     formatCooldownDetail(cooldown));
                 case PRIMAL_DOMINANCE -> appendDetails(
-                    tr("ui.races.passive.desc.retaliation", "{0} reflect", formatPercentValue(value)),
-                    formatWindowDetail(window),
-                    formatCooldownDetail(cooldown));
+                    tr("ui.classes.passive.desc.primal_dominance",
+                        "{0} Strength from total health",
+                        formatPercentValue(value)),
+                    formatSlowDetail(slowPercent),
+                    formatDurationDetail(duration));
                 case ARCANE_DOMINANCE -> appendDetails(
-                    tr("ui.races.passive.desc.retaliation", "{0} reflect", formatPercentValue(value)),
-                    formatWindowDetail(window),
-                    formatCooldownDetail(cooldown));
+                    tr("ui.classes.passive.desc.arcane_dominance",
+                        "{0} Sorcery from total health",
+                        formatPercentValue(value)),
+                    formatSlowDetail(slowPercent),
+                    formatDurationDetail(duration));
             case ABSORB -> appendDetails(
                     tr("ui.races.passive.desc.absorb", "{0} dmg reduction", formatPercentValue(value)),
                     formatCooldownDetail(cooldown));

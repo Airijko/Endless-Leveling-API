@@ -173,28 +173,6 @@ public final class CombatHookProcessor {
                         critDamage);
                 prospectiveDamage += retaliationBonus;
             }
-
-            float primalDominanceBonus = primalDominancePassive.consumeBonus(runtimeState,
-                    ctx.attackerPlayerRef(),
-                    this::sendPassiveMessage);
-            if (primalDominanceBonus > 0f) {
-                registerLayerBonus(layerBuffer,
-                        resolveBlueprint(archetypeSnapshot, ArchetypePassiveType.PRIMAL_DOMINANCE),
-                        primalDominanceBonus,
-                        critDamage);
-                prospectiveDamage += primalDominanceBonus;
-            }
-
-            float arcaneDominanceBonus = arcaneDominancePassive.consumeBonus(runtimeState,
-                    ctx.attackerPlayerRef(),
-                    this::sendPassiveMessage);
-            if (arcaneDominanceBonus > 0f) {
-                registerLayerBonus(layerBuffer,
-                        resolveBlueprint(archetypeSnapshot, ArchetypePassiveType.ARCANE_DOMINANCE),
-                        arcaneDominanceBonus,
-                        critDamage);
-                prospectiveDamage += arcaneDominanceBonus;
-            }
         }
 
         float executionerBonus = executionerPassive.apply(runtimeState,
@@ -594,8 +572,6 @@ public final class CombatHookProcessor {
         if (runtimeState != null) {
             runtimeState.setLastDamageTakenMillis(System.currentTimeMillis());
             retaliationPassive.onDamageTaken(runtimeState, adjustedAmount);
-            primalDominancePassive.onDamageTaken(runtimeState, adjustedAmount);
-            arcaneDominancePassive.onDamageTaken(runtimeState, adjustedAmount);
         }
 
         if (passiveManager != null) {

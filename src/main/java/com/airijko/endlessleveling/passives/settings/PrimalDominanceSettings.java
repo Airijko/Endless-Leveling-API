@@ -7,48 +7,44 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Encapsulates Primal Dominance tuning (window/cooldown/percent).
+ * Encapsulates Primal Dominance tuning (health scaling + on-hit slow).
  */
 public record PrimalDominanceSettings(boolean enabled,
-        double reflectPercent,
-        double windowSeconds,
-        double cooldownSeconds,
+        double strengthFromTotalHealthPercent,
         double targetHasteSlowOnHitPercent,
         double targetHasteSlowDurationSeconds) {
 
-    private static final double DEFAULT_WINDOW = 4.0D;
-    private static final double DEFAULT_COOLDOWN = 25.0D;
+    private static final double DEFAULT_STRENGTH_FROM_TOTAL_HEALTH_PERCENT = 0.05D;
+    private static final double DEFAULT_TARGET_HASTE_SLOW_ON_HIT_PERCENT = 0.20D;
+    private static final double DEFAULT_TARGET_HASTE_SLOW_DURATION_SECONDS = 2.0D;
 
     public static PrimalDominanceSettings fromSnapshot(ArchetypePassiveSnapshot snapshot) {
         if (snapshot == null) {
             return disabled();
         }
-        double reflectPercent = Math.max(0.0D, snapshot.getValue(ArchetypePassiveType.PRIMAL_DOMINANCE));
-        if (reflectPercent <= 0.0D) {
+
+        List<RacePassiveDefinition> definitions = snapshot.getDefinitions(ArchetypePassiveType.PRIMAL_DOMINANCE);
+        if (definitions.isEmpty()) {
             return disabled();
         }
 
-        double windowSum = 0.0D;
-        int windowSources = 0;
-        double cooldownSum = 0.0D;
-        int cooldownSources = 0;
-        double targetSlowPercent = 0.0D;
-        double targetSlowDuration = 0.0D;
-        List<RacePassiveDefinition> definitions = snapshot.getDefinitions(ArchetypePassiveType.PRIMAL_DOMINANCE);
+        double strengthFromTotalHealthPercent = Math.max(0.0D, snapshot.getValue(ArchetypePassiveType.PRIMAL_DOMINANCE));
+        double targetSlowPercent = DEFAULT_TARGET_HASTE_SLOW_ON_HIT_PERCENT;
+        double targetSlowDuration = DEFAULT_TARGET_HASTE_SLOW_DURATION_SECONDS;
+
         for (RacePassiveDefinition definition : definitions) {
             if (definition == null) {
                 continue;
             }
             Map<String, Object> props = definition.properties();
-            double windowCandidate = parsePositiveDouble(props, "window", 0.0D);
-            if (windowCandidate > 0.0D) {
-                windowSum += windowCandidate;
-                windowSources++;
-            }
-            double cooldownCandidate = parsePositiveDouble(props, "cooldown", 0.0D);
-            if (cooldownCandidate > 0.0D) {
-                cooldownSum += cooldownCandidate;
-                cooldownSources++;
+
+            double scalingCandidate = parsePercent(props,
+                    "strength_from_total_health_percent",
+                    "total_health_scaling_percent",
+                    "health_scaling_percent",
+                    "from_total_health_percent");
+            if (scalingCandidate > 0.0D) {
+                strengthFromTotalHealthPercent = Math.max(strengthFromTotalHealthPercent, scalingCandidate);
             }
 
             double slowCandidate = parsePercent(props,
@@ -56,30 +52,23 @@ public record PrimalDominanceSettings(boolean enabled,
                     "target_haste_slow",
                     "on_hit_target_haste_slow");
             if (slowCandidate > 0.0D) {
-                targetSlowPercent = Math.max(targetSlowPercent, slowCandidate);
+                targetSlowPercent = slowCandidate;
             }
 
             double slowDurationCandidate = parsePositiveDouble(props, "target_haste_slow_duration", 0.0D);
             if (slowDurationCandidate > 0.0D) {
-                targetSlowDuration = Math.max(targetSlowDuration, slowDurationCandidate);
+                targetSlowDuration = slowDurationCandidate;
             }
         }
-        double window = windowSources > 0 ? windowSum / windowSources : DEFAULT_WINDOW;
-        double cooldown = cooldownSources > 0 ? cooldownSum / cooldownSources : DEFAULT_COOLDOWN;
+
+        if (strengthFromTotalHealthPercent <= 0.0D) {
+            strengthFromTotalHealthPercent = DEFAULT_STRENGTH_FROM_TOTAL_HEALTH_PERCENT;
+        }
+
         return new PrimalDominanceSettings(true,
-                reflectPercent,
-                window,
-                cooldown,
+                strengthFromTotalHealthPercent,
                 targetSlowPercent,
                 targetSlowDuration);
-    }
-
-    public long windowMillis() {
-        return (long) Math.max(0L, Math.round(windowSeconds * 1000.0D));
-    }
-
-    public long cooldownMillis() {
-        return (long) Math.max(0L, Math.round(cooldownSeconds * 1000.0D));
     }
 
     public long targetHasteSlowDurationMillis() {
@@ -87,7 +76,7 @@ public record PrimalDominanceSettings(boolean enabled,
     }
 
     public static PrimalDominanceSettings disabled() {
-        return new PrimalDominanceSettings(false, 0.0D, DEFAULT_WINDOW, DEFAULT_COOLDOWN, 0.0D, 0.0D);
+        return new PrimalDominanceSettings(false, 0.0D, 0.0D, 0.0D);
     }
 
     private static double parsePercent(Map<String, Object> props, String... keys) {

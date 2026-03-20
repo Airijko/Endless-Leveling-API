@@ -683,10 +683,16 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         }
         Double threshold = averageProperty(definitions, "threshold");
         Double duration = averageProperty(definitions, "duration");
+        if (duration == null) {
+            duration = averageProperty(definitions, "target_haste_slow_duration");
+        }
         Double cooldown = averageProperty(definitions, "cooldown");
         Double window = averageProperty(definitions, "window");
         Double stacks = averageProperty(definitions, "max_stacks");
         Double slowPercent = averageProperty(definitions, "slow_percent");
+        if (slowPercent == null) {
+            slowPercent = averageProperty(definitions, "target_haste_slow_on_hit");
+        }
         String scalingStat = firstStringProperty(definitions, "scaling_stat");
         String displayName = firstStringProperty(definitions, "display_name");
         if (displayName == null || displayName.isBlank()) {
@@ -1121,13 +1127,17 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                     formatWindowDetail(props.window()),
                     formatCooldownDetail(props.cooldown()));
                 case PRIMAL_DOMINANCE -> appendDetails(
-                    tr("ui.races.passive.desc.retaliation", "{0} reflect", formatPercentValue(value)),
-                    formatWindowDetail(props.window()),
-                    formatCooldownDetail(props.cooldown()));
+                    tr("ui.profile.passive.desc.primal_dominance",
+                        "{0} Strength from total health",
+                        formatPercentValue(value)),
+                    formatSlowDetail(props.slowPercent()),
+                    formatDurationDetail(props.duration()));
                 case ARCANE_DOMINANCE -> appendDetails(
-                    tr("ui.races.passive.desc.retaliation", "{0} reflect", formatPercentValue(value)),
-                    formatWindowDetail(props.window()),
-                    formatCooldownDetail(props.cooldown()));
+                    tr("ui.profile.passive.desc.arcane_dominance",
+                        "{0} Sorcery from total health",
+                        formatPercentValue(value)),
+                    formatSlowDetail(props.slowPercent()),
+                    formatDurationDetail(props.duration()));
             case FINAL_INCANTATION -> appendDetails(
                     tr("ui.races.passive.desc.executioner", "Final Incantation: +{0} bonus damage",
                         formatPercentValue(value)),
