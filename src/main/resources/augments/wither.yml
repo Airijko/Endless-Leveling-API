@@ -1,48 +1,48 @@
 id: wither
-name: "Wither"
+name: Wither
 tier: ELITE
-description: "Inflict a lingering wither that slows targets and deals a percent of their max health as damage each second."
+description: Inflict a lingering wither that slows targets and deals a percent of
+  their max health as damage each second.
 category: ON_HIT
 enabled: true
-
-
 weights:
-  default: 15
+  default: 8
   conditions:
-    - when:
-        min_skill_levels:
-          sorcery: 100
-      weight: 45
-    - when:
-        min_skill_levels:
-          strength: 100
-      weight: 35
-
+  - when:
+      strength_higher_than_sorcery: true
+    weight: 60
+  - when:
+      sorcery_higher_than_strength: true
+    weight: 10
 ui:
   sections:
-    - title: "Buffs"
-      body: |
-        +1.5% Max Health as damage per second
-        Max Damage Per Tick Against Monsters: 500
-      color: "#8adf9e"
-    - title: "Debuffs"
-      body: "-20% Haste"
-      color: "#ff9a9a"
-    - title: "Rules"
-      body: |
-        Category: ON_HIT
-        Can Crit: No
-      color: "#ffb86b"
-    - title: "Duration"
-      body: "Duration: 5s"
-      color: "#9ecbff"
+  - title: Buffs
+    body: '+1.5% Max Health as damage per second
+
+      Max Damage Per Tick Against Monsters: 500
+
+      '
+    color: '#8adf9e'
+  - title: Debuffs
+    body: -20% Haste
+    color: '#ff9a9a'
+  - title: Rules
+    body: 'Category: ON_HIT
+
+      Can Crit: No
+
+      '
+    color: '#ffb86b'
+  - title: Duration
+    body: 'Duration: 5s'
+    color: '#9ecbff'
 passives:
   wither:
-    value: 0.015 # 1.5% max health per second as damage
-    duration: 5 # seconds
-    max_damage_per_tick: 500 # cap applies to monsters only (0 = no cap)
+    value: 0.015
+    duration: 5
+    max_damage_per_tick: 500
     category: ON_HIT
     target_debuff:
       movement_speed:
-        value: -0.20 # 20% max movement speed slow
-        max_slow_cap: 0 # 0 = uncapped; set > 0 to cap applied slow percent
+        value: -0.2
+        max_slow_cap: 0

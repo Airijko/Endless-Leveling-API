@@ -1,39 +1,38 @@
 id: snipers_reach
-name: "Sniper's Reach"
+name: Sniper's Reach
 tier: LEGENDARY
-description: "Ranged damage scales with distance, peaking at long range."
+description: Ranged damage scales with distance, peaking at long range.
 category: ON_RANGED_HIT
 enabled: true
-
-
 weights:
   default: 8
   conditions:
-    - when:
-        min_skill_levels:
-          precision: 100
-      weight: 65
-    - when:
-        min_skill_levels:
-          haste: 100
-      weight: 45
-
+  - when:
+      strength_higher_than_sorcery: true
+    weight: 60
+  - when:
+      sorcery_higher_than_strength: true
+    weight: 10
 ui:
   sections:
-    - title: "Buffs"
-      body: "Max Value: 0-150% Bonus Damage at 30 blocks"
-      color: "#8adf9e"
-    - title: "Rules"
-      body: |
-        Min Distance: 5 blocks
-        Max Distance: 30 blocks
-        Scaling Type: linear
-        Attack Type: RANGED
-      color: "#ffb86b"
+  - title: Buffs
+    body: 'Max Value: 0-150% Bonus Damage at 30 blocks'
+    color: '#8adf9e'
+  - title: Rules
+    body: 'Min Distance: 5 blocks
+
+      Max Distance: 30 blocks
+
+      Scaling Type: linear
+
+      Attack Type: RANGED
+
+      '
+    color: '#ffb86b'
 passives:
   bonus_damage_by_distance:
-    max_value: 1.5 # 150% bonus damage at max distance
-    min_distance: 5 # minimum effective range in blocks
-    max_distance: 30 # maximum effective range in blocks
-    scaling_type: linear # scales linearly from 0 to max
-    attack_type: RANGED # only applies to ranged attacks
+    max_value: 1.5
+    min_distance: 5
+    max_distance: 30
+    scaling_type: linear
+    attack_type: RANGED

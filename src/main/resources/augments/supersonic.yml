@@ -1,36 +1,24 @@
 id: supersonic
-name: "Supersonic"
+name: Supersonic
 tier: ELITE
-description: "Trade Strength for blazing Haste."
+description: Trade Strength for blazing Haste.
 category: PASSIVE_STAT
 enabled: true
-
-
 weights:
   default: 10
-  conditions:
-    - when:
-        min_skill_levels:
-          haste: 150
-      weight: 60
-    - when:
-        min_skill_levels:
-          strength: 150
-      weight: 2
-
+  conditions: []
 ui:
   sections:
-    - title: "Buffs"
-      body: "+50% Haste"
-      color: "#8adf9e"
-    - title: "Debuffs"
-      body: "-10% Strength"
-      color: "#ff9a9a"
+  - title: Buffs
+    body: +50% Haste
+    color: '#8adf9e'
+  - title: Debuffs
+    body: -10% Strength
+    color: '#ff9a9a'
 passives:
   buffs:
     haste:
-      value: 0.50 # +50% Haste
-
+      value: 0.5
   debuffs:
     strength:
-      value: -0.10 # -10% Strength
+      value: -0.1

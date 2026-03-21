@@ -1,39 +1,37 @@
 id: overheal
-name: "Overheal"
+name: Overheal
 tier: ELITE
-description: "Any healing beyond max health is stored as a temporary decaying shield. Also grants Life Steal."
+description: Any healing beyond max health is stored as a temporary decaying shield.
+  Also grants Life Steal.
 category: ON_HIT
 enabled: true
-
-
 weights:
-  default: 12
+  default: 8
   conditions:
-    - when:
-        min_skill_levels:
-          ferocity: 100
-      weight: 50
-    - when:
-        min_skill_levels:
-          precision: 100
-      weight: 50
-
+  - when:
+      strength_higher_than_sorcery: true
+    weight: 60
+  - when:
+      sorcery_higher_than_strength: true
+    weight: 10
 ui:
   sections:
-    - title: "Buffs"
-      body: |
-        Overheal Shield Cap: (200% Precision) + (100% Ferocity)
-        Decay Duration: 8s
-        +5% Life Steal
-      color: "#8adf9e"
+  - title: Buffs
+    body: 'Overheal Shield Cap: (200% Precision) + (100% Ferocity)
+
+      Decay Duration: 8s
+
+      +5% Life Steal
+
+      '
+    color: '#8adf9e'
 passives:
   overheal_shield:
-    precision_shield_scaling: 2.0 # 100% precision contributes 200 shield cap
-    ferocity_shield_scaling: 1.0 # 500 ferocity contributes 500 shield cap
-    max_shield_percent: 0.15 # fallback cap used only if player stat resolution is unavailable
-    decay_duration: 8 # shield value decays over 8 seconds
-    overflow_buffer_cap: 0 # 0 = uncapped; set > 0 to cap pending overheal buffer
-
+    precision_shield_scaling: 2.0
+    ferocity_shield_scaling: 1.0
+    max_shield_percent: 0.15
+    decay_duration: 8
+    overflow_buffer_cap: 0
   buffs:
     lifesteal:
-      value: 0.05 # +5% Life Steal
+      value: 0.05

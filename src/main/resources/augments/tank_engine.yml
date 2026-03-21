@@ -1,39 +1,31 @@
 id: tank_engine
-name: "Tank Engine"
+name: Tank Engine
 tier: LEGENDARY
-description: "Sustained combat massively increases your maximum health."
+description: Sustained combat massively increases your maximum health.
 category: PASSIVE_STAT
 enabled: true
-
-
 weights:
-  default: 15
-  conditions:
-    - when:
-        min_skill_levels:
-          life_force: 200
-      weight: 60
-    - when:
-        min_skill_levels:
-          defense: 100
-      weight: 50
-
+  default: 10
+  conditions: []
 ui:
   sections:
-    - title: "Buffs"
-      body: |
-        +5 + (4% Max Health per stack)
-        Max stacks: +25
-        Decay Per Second: 5
-      color: "#8adf9e"
-    - title: "Duration"
-      body: "Duration: 8s"
-      color: "#9ecbff"
+  - title: Buffs
+    body: '+5 + (4% Max Health per stack)
+
+      Max stacks: +25
+
+      Decay Per Second: 5
+
+      '
+    color: '#8adf9e'
+  - title: Duration
+    body: 'Duration: 8s'
+    color: '#9ecbff'
 passives:
   stacking_health:
-    flat_health_per_stack: 5 # +5 HP per stack
-    percent_max_health_per_stack: 0.04 # +4% max HP per stack
+    flat_health_per_stack: 5
+    percent_max_health_per_stack: 0.04
     max_stacks: 25
-    duration: 8 # seconds before stacks begin decaying
-    decay_per_second: 5 # stacks lost per second after duration expires
-    exclude_flat_from_percent_scaling: true # flat HP does not contribute to % scaling
+    duration: 8
+    decay_per_second: 5
+    exclude_flat_from_percent_scaling: true

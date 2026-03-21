@@ -1,47 +1,44 @@
 id: arcane_instability
-name: "Arcane Instability"
+name: Arcane Instability
 tier: ELITE
-description: "Gain Sorcery while high on Mana and suffer a Sorcery penalty when Mana is low."
+description: Gain Sorcery while high on Mana and suffer a Sorcery penalty when Mana
+  is low.
 category: MAGIC_STAT
 enabled: true
-
-
 weights:
-  default: 5
+  default: 8
   conditions:
-    - when:
-        min_skill_levels:
-          sorcery: 100
-      weight: 70
-    - when:
-        max_skill_levels:
-          sorcery: 50
-      weight: 1
-
+  - when:
+      sorcery_higher_than_strength: true
+    weight: 60
+  - when:
+      strength_higher_than_sorcery: true
+    weight: 10
 ui:
   sections:
-    - title: "Buffs"
-      body: |
-        +40% Sorcery when above 75% Mana
-      color: "#8adf9e"
-    - title: "Debuffs"
-      body: "-25% Sorcery when below 25% Mana"
-      color: "#ff9a9a"
-    - title: "Rules"
-      body: |
-        Resource: MANA
-      color: "#ffb86b"
+  - title: Buffs
+    body: '+40% Sorcery when above 75% Mana
+
+      '
+    color: '#8adf9e'
+  - title: Debuffs
+    body: -25% Sorcery when below 25% Mana
+    color: '#ff9a9a'
+  - title: Rules
+    body: 'Resource: MANA
+
+      '
+    color: '#ffb86b'
 passives:
   buffs:
     sorcery_bonus_high:
-      value: 0.40 # +40% Sorcery
+      value: 0.4
       condition:
         resource: MANA
-        min_percent: 0.75 # active above 75% Mana
-
+        min_percent: 0.75
   debuffs:
     sorcery_penalty_low:
-      value: -0.25 # -25% Sorcery
+      value: -0.25
       condition:
         resource: MANA
-        max_percent: 0.25 # active below 25% Mana
+        max_percent: 0.25

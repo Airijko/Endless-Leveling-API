@@ -1,36 +1,35 @@
 id: cripple
-name: "Cripple"
+name: Cripple
 tier: ELITE
-description: "On hit, stun enemies for 2 seconds on cooldown and gain a large health bonus."
+description: On hit, stun enemies for 2 seconds on cooldown and gain a large health
+  bonus.
 category: ON_HIT
 enabled: true
-
-
 weights:
-  default: 15
+  default: 8
   conditions:
-    - when:
-        min_skill_levels:
-          strength: 100
-      weight: 50
-
+  - when:
+      strength_higher_than_sorcery: true
+    weight: 60
+  - when:
+      sorcery_higher_than_strength: true
+    weight: 10
 ui:
   sections:
-    - title: "Buffs"
-      body: "+100 Life Force"
-      color: "#8adf9e"
-    - title: "Stun Duration"
-      body: "Duration: 2s"
-      color: "#9ecbff"
-    - title: "Cooldown"
-      body: "Cooldown: +20"
-      color: "#ffd56b"
+  - title: Buffs
+    body: +100 Life Force
+    color: '#8adf9e'
+  - title: Stun Duration
+    body: 'Duration: 2s'
+    color: '#9ecbff'
+  - title: Cooldown
+    body: 'Cooldown: +20'
+    color: '#ffd56b'
 passives:
   on_hit:
     stun:
-      duration: 2 # seconds
-      cooldown: 20 # seconds
-
+      duration: 2
+      cooldown: 20
   buffs:
     life_force:
-      value: 100 # flat life_force bonus
+      value: 100

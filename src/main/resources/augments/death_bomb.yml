@@ -1,38 +1,37 @@
 id: death_bomb
-name: "Death Bomb"
+name: Death Bomb
 tier: ELITE
-description: "On death, prime a delayed explosion that scales from your vitality and combat stats."
+description: On death, prime a delayed explosion that scales from your vitality and
+  combat stats.
 category: ON_DAMAGE_TAKEN
 enabled: true
-
-
 weights:
-  default: 12
-  conditions:
-    - when:
-        min_skill_levels:
-          ferocity: 100
-      weight: 40
-
+  default: 10
+  conditions: []
 ui:
   sections:
-    - title: "Buffs"
-      body: |
-        Delay: 3s
-        Radius: +5
-        Max Health Ratio: 50%
-        Strength Ratio: 10%
-        Sorcery Ratio: 10%
-      color: "#8adf9e"
-    - title: "Cooldown"
-      body: "Cooldown: 0%"
-      color: "#ffd56b"
+  - title: Buffs
+    body: 'Delay: 3s
+
+      Radius: +5
+
+      Max Health Ratio: 50%
+
+      Strength Ratio: 10%
+
+      Sorcery Ratio: 10%
+
+      '
+    color: '#8adf9e'
+  - title: Cooldown
+    body: 'Cooldown: 0%'
+    color: '#ffd56b'
 passives:
   death_bomb:
-    delay: 3 # seconds after dying before detonation
-    radius: 5 # explosion radius in blocks
-    cooldown: 0 # optional cooldown between death-bomb triggers
+    delay: 3
+    radius: 5
+    cooldown: 0
     damage_scaling:
-      max_health_ratio: 0.50 # 50% of your max health as base damage
-      strength_ratio: 0.10 # +10% of your strength
-      sorcery_ratio: 0.10 # +10% of your sorcery
+      max_health_ratio: 0.5
+      strength_ratio: 0.1
+      sorcery_ratio: 0.1

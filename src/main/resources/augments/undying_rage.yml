@@ -1,53 +1,46 @@
 id: undying_rage
-name: "Undying Rage"
+name: Undying Rage
 tier: MYTHIC
-description: "For a short window you cannot drop below a sliver of health and hit harder as you get lower."
+description: For a short window you cannot drop below a sliver of health and hit harder
+  as you get lower.
 category: ON_LOW_HP
 enabled: true
-
-
 weights:
-  default: 15
-  conditions:
-    - when:
-        min_skill_levels:
-          life_force: 200
-      weight: 60
-    - when:
-        min_skill_levels:
-          strength: 150
-      weight: 50
-
+  default: 10
+  conditions: []
 ui:
   sections:
-    - title: "Buffs"
-      body: |
-        +0-125% Bonus Critical Damage
-        +15% Precision
-      color: "#8adf9e"
-    - title: "Rules"
-      body: |
-        Min Health Hp: 1
-        Scaling Stat: missing_health_percent
-        Full Crit Damage Value Threshold: +5%
-      color: "#ffb86b"
-    - title: "Duration"
-      body: "Duration: 10s"
-      color: "#9ecbff"
-    - title: "Cooldown"
-      body: "Cooldown: +100"
-      color: "#ffd56b"
+  - title: Buffs
+    body: '+0-125% Bonus Critical Damage
+
+      +15% Precision
+
+      '
+    color: '#8adf9e'
+  - title: Rules
+    body: 'Min Health Hp: 1
+
+      Scaling Stat: missing_health_percent
+
+      Full Crit Damage Value Threshold: +5%
+
+      '
+    color: '#ffb86b'
+  - title: Duration
+    body: 'Duration: 10s'
+    color: '#9ecbff'
+  - title: Cooldown
+    body: 'Cooldown: +100'
+    color: '#ffd56b'
 passives:
   rage:
-    duration: 10 # lasts 10 seconds
-    min_health_hp: 1 # flat HP trigger/floor
-    cooldown: 100 # seconds before it can trigger again after ending
-
+    duration: 10
+    min_health_hp: 1
+    cooldown: 100
   bonus_damage:
-    scaling_stat: missing_health_percent # scales with missing HP
-    max_bonus_ferocity: 125 # up to 125% bonus critical damage at full missing HP
-    full_value_at_health_percent: 0.05 # full bonus damage when player health is at or below 5%
-
+    scaling_stat: missing_health_percent
+    max_bonus_ferocity: 125
+    full_value_at_health_percent: 0.05
   buffs:
     precision:
-      value: 0.15 # 15% increased critical hit chance
+      value: 0.15

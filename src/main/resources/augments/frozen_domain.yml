@@ -1,52 +1,47 @@
 id: frozen_domain
-name: "Frozen Domain"
+name: Frozen Domain
 tier: ELITE
-description: "Create a freezing aura that slows nearby enemies, steals part of that speed, and fortifies your life force."
+description: Create a freezing aura that slows nearby enemies, steals part of that
+  speed, and fortifies your life force.
 category: ON_DAMAGE_TAKEN
 enabled: true
-
-
 weights:
-  default: 12
-  conditions:
-    - when:
-        min_skill_levels:
-          defense: 100
-      weight: 50
-    - when:
-        min_skill_levels:
-          life_force: 200
-      weight: 40
-
+  default: 10
+  conditions: []
 ui:
   sections:
-    - title: "Buffs"
-      body: |
-        Slow Percent: +30%
-        Stolen Slow Ratio: 0.2x
-        Slow Interval: +100%
-        Radius: +5
-        +1 Block Radius per 400 Max HP
-        +100 Life Force
-      color: "#8adf9e"
-    - title: "Duration"
-      body: "Duration: 10s"
-      color: "#9ecbff"
-    - title: "Cooldown"
-      body: "Cooldown: +25"
-      color: "#ffd56b"
+  - title: Buffs
+    body: 'Slow Percent: +30%
+
+      Stolen Slow Ratio: 0.2x
+
+      Slow Interval: +100%
+
+      Radius: +5
+
+      +1 Block Radius per 400 Max HP
+
+      +100 Life Force
+
+      '
+    color: '#8adf9e'
+  - title: Duration
+    body: 'Duration: 10s'
+    color: '#9ecbff'
+  - title: Cooldown
+    body: 'Cooldown: +25'
+    color: '#ffd56b'
 passives:
   aura_frozen_domain:
-    slow_percent: 0.30 # slows targets by 30% of their total movement speed
-    slow_percent_cap: 0 # 0 = uncapped; set > 0 to cap applied slow percent
-    stolen_slow_ratio: 0.20 # 20% of applied slow is gained as movement speed per affected target
-    radius: 5 # base radius in blocks
-    duration: 10 # effect lasts 10 seconds
-    cooldown: 25 # effect triggers every 25 seconds
-    slow_interval: 1.0 # seconds between each slow application tick
+    slow_percent: 0.3
+    slow_percent_cap: 0
+    stolen_slow_ratio: 0.2
+    radius: 5
+    duration: 10
+    cooldown: 25
+    slow_interval: 1.0
     radius_health_scaling:
-      health_per_block: 400 # gain +1 block radius per 400 max HP
-
+      health_per_block: 400
   buffs:
     life_force:
-      value: 100 # flat life_force bonus
+      value: 100

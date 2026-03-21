@@ -1,33 +1,30 @@
 id: blood_frenzy
-name: "Blood Frenzy"
+name: Blood Frenzy
 tier: ELITE
-description: "Provides Life Steal and Haste."
+description: Provides Life Steal and Haste.
 category: LIFESTEAL
 enabled: true
-
-
 weights:
-  default: 20
+  default: 8
   conditions:
-    - when:
-        min_skill_levels:
-          strength: 100
-      weight: 45
-    - when:
-        min_skill_levels:
-          haste: 100
-      weight: 45
-
+  - when:
+      strength_higher_than_sorcery: true
+    weight: 60
+  - when:
+      sorcery_higher_than_strength: true
+    weight: 10
 ui:
   sections:
-    - title: "Buffs"
-      body: |
-        +5% Lifesteal
-        +25% Haste
-      color: "#8adf9e"
+  - title: Buffs
+    body: '+5% Lifesteal
+
+      +25% Haste
+
+      '
+    color: '#8adf9e'
 passives:
   buffs:
     life_steal:
-      value: 0.05 # 5% of damage dealt restores HP
+      value: 0.05
     haste:
-      value: 0.25 # 25% increased movement speed
+      value: 0.25

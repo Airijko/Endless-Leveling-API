@@ -1,48 +1,49 @@
 id: predator
-name: "Predator"
+name: Predator
 tier: ELITE
-description: "Kills grant stacking Haste and Strength while a Defense penalty persists until fully stacked."
+description: Kills grant stacking Haste and Strength while a Defense penalty persists
+  until fully stacked.
 category: ON_KILL
 enabled: true
-
-
 weights:
-  default: 12
+  default: 8
   conditions:
-    - when:
-        min_skill_levels:
-          haste: 100
-      weight: 60
-
+  - when:
+      strength_higher_than_sorcery: true
+    weight: 60
+  - when:
+      sorcery_higher_than_strength: true
+    weight: 10
 ui:
   sections:
-    - title: "Buffs"
-      body: |
-        +12% Haste per stack
-        +6% Strength per stack
-        Max stacks: 4
-      color: "#8adf9e"
-    - title: "Debuffs"
-      body: "-10% Defense until max stacks reached"
-      color: "#ff9a9a"
-    - title: "Rules"
-      body: "Active Until Max Stacks: Yes"
-      color: "#ffb86b"
-    - title: "Duration"
-      body: "Duration: 10s"
-      color: "#9ecbff"
+  - title: Buffs
+    body: '+12% Haste per stack
+
+      +6% Strength per stack
+
+      Max stacks: 4
+
+      '
+    color: '#8adf9e'
+  - title: Debuffs
+    body: -10% Defense until max stacks reached
+    color: '#ff9a9a'
+  - title: Rules
+    body: 'Active Until Max Stacks: Yes'
+    color: '#ffb86b'
+  - title: Duration
+    body: 'Duration: 10s'
+    color: '#9ecbff'
 passives:
   buffs:
     haste:
-      value: 0.12 # +12% Haste per stack
+      value: 0.12
     strength:
-      value: 0.06 # +6% Strength per stack
+      value: 0.06
     max_stacks: 4
-
   duration:
-    seconds: 10 # stack duration; refreshed on each kill
-
+    seconds: 10
   debuffs:
     defense:
-      value: -0.10 # -10% Defense
-      active_until_max_stacks: true # penalty removed when max stacks reached
+      value: -0.1
+      active_until_max_stacks: true

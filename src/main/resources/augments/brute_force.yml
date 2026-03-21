@@ -1,34 +1,25 @@
 id: brute_force
-name: "Brute Force"
+name: Brute Force
 tier: LEGENDARY
-description: "Trade all critical potential for overwhelming raw power."
+description: Trade all critical potential for overwhelming raw power.
 category: PASSIVE_STAT
 enabled: true
-
-
 weights:
-  default: 8
-  conditions:
-    - when:
-        min_skill_levels:
-          strength: 200
-      weight: 60
-    - when:
-        min_skill_levels:
-          ferocity: 100
-      weight: 2
-
+  default: 10
+  conditions: []
 ui:
   sections:
-    - title: "Buffs"
-      body: |
-        Strength Multiplier: 2.5x
-        Sorcery Multiplier: 2.5x
-    - title: "Debuffs"
-      body: "Precision Lock Value: 0 (no crits or crit gain)"
-      color: "#ff9a9a"
+  - title: Buffs
+    body: 'Strength Multiplier: 2.5x
+
+      Sorcery Multiplier: 2.5x
+
+      '
+  - title: Debuffs
+    body: 'Precision Lock Value: 0 (no crits or crit gain)'
+    color: '#ff9a9a'
 passives:
   brute_force:
-    precision_lock_value: 0 # locks crit-related stats at 0 (no crits or crit gain)
-    strength_multiplier: 2.5 # 2.5x effective strength
-    sorcery_multiplier: 2.5 # 2.5x effective sorcery
+    precision_lock_value: 0
+    strength_multiplier: 2.5
+    sorcery_multiplier: 2.5

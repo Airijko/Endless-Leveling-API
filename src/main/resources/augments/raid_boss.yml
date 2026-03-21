@@ -1,33 +1,24 @@
 id: raid_boss
-name: "Raid Boss"
+name: Raid Boss
 tier: MYTHIC
-description: "Tower over the battlefield with massive vitality and crushing damage."
+description: Tower over the battlefield with massive vitality and crushing damage.
 category: PASSIVE_STAT
 enabled: true
-
-
 weights:
-  default: 8
-  conditions:
-    - when:
-        min_skill_levels:
-          life_force: 400
-      weight: 70
-    - when:
-        min_skill_levels:
-          defense: 200
-      weight: 60
-
+  default: 10
+  conditions: []
 ui:
   sections:
-    - title: "Buffs"
-      body: |
-        +50% Max Health
-        +15% Bonus Damage
-      color: "#8adf9e"
+  - title: Buffs
+    body: '+50% Max Health
+
+      +15% Bonus Damage
+
+      '
+    color: '#8adf9e'
 passives:
   buffs:
     max_health_percent:
-      value: 0.50 # +50% bonus health
+      value: 0.5
     bonus_damage:
-      value: 0.15 # +15% bonus damage
+      value: 0.15

@@ -1,39 +1,28 @@
 id: titans_might
-name: "Titan's Might"
+name: Titan's Might
 tier: ELITE
-description: "Gain Strength based on your total max Health, but lose some Haste."
+description: Gain Strength based on your total max Health, but lose some Haste.
 category: PASSIVE_STAT
 enabled: true
-
-
 weights:
   default: 10
-  conditions:
-    - when:
-        min_skill_levels:
-          strength: 150
-      weight: 60
-    - when:
-        min_skill_levels:
-          life_force: 300
-      weight: 40
-
+  conditions: []
 ui:
   sections:
-    - title: "Buffs"
-      body: "+15% Strength based on total max Health"
-      color: "#8adf9e"
-    - title: "Debuffs"
-      body: "-15% Haste"
-      color: "#ff9a9a"
-    - title: "Rules"
-      body: "Scaling Stat: MAX_HEALTH"
-      color: "#ffb86b"
+  - title: Buffs
+    body: +15% Strength based on total max Health
+    color: '#8adf9e'
+  - title: Debuffs
+    body: -15% Haste
+    color: '#ff9a9a'
+  - title: Rules
+    body: 'Scaling Stat: MAX_HEALTH'
+    color: '#ffb86b'
 passives:
   buffs:
     strength_from_max_health:
-      value: 0.15 # 15% of total max Health added as Strength
-      scaling_stat: MAX_HEALTH # scales based on total max HP
+      value: 0.15
+      scaling_stat: MAX_HEALTH
   debuffs:
     haste:
-      value: -0.15 # -15% Haste
+      value: -0.15

@@ -1,28 +1,22 @@
 id: protective_bubble
-name: "Protective Bubble"
+name: Protective Bubble
 tier: ELITE
-description: "Negate one incoming attack and become briefly immune when the bubble pops."
+description: Negate one incoming attack and become briefly immune when the bubble
+  pops.
 category: ON_DAMAGE_TAKEN
 enabled: true
-
-
 weights:
-  default: 15
-  conditions:
-    - when:
-        min_skill_levels:
-          defense: 100
-      weight: 55
-
+  default: 10
+  conditions: []
 ui:
   sections:
-    - title: "Shield"
-      body: "Negate one incoming attack and gain brief immunity."
-      color: "#8adf9e"
-    - title: "Cooldown"
-      body: "Cooldown: 30s"
-      color: "#ffd56b"
+  - title: Shield
+    body: Negate one incoming attack and gain brief immunity.
+    color: '#8adf9e'
+  - title: Cooldown
+    body: 'Cooldown: 30s'
+    color: '#ffd56b'
 passives:
   immunity_bubble:
-    immunity_window: 0.25 # seconds of immunity for the triggering attack window
-    cooldown: 30 # seconds
+    immunity_window: 0.25
+    cooldown: 30

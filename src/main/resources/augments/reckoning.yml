@@ -1,39 +1,38 @@
 id: reckoning
-name: "Reckoning"
+name: Reckoning
 tier: MYTHIC
-description: "Your attack damage is enhanced at the cost of your health."
+description: Your attack damage is enhanced at the cost of your health.
 category: ON_HIT
 enabled: true
-
-
 weights:
-  default: 15
+  default: 8
   conditions:
-    - when:
-        min_skill_levels:
-          life_force: 300
-      weight: 60
-
+  - when:
+      strength_higher_than_sorcery: true
+    weight: 60
+  - when:
+      sorcery_higher_than_strength: true
+    weight: 10
 ui:
   sections:
-    - title: "Buffs"
-      body: "Bonus Damage: +0-100% (higher at higher HP)"
-      color: "#8adf9e"
-    - title: "Debuffs"
-      body: "Self Damage: +5% Current HP per hit"
-      color: "#ff9a9a"
-    - title: "Rules"
-      body: |
-        Scaling Stat: current_health_percent
-        0% bonus at 25% HP, 100% bonus at 100% HP
-      color: "#ffb86b"
+  - title: Buffs
+    body: 'Bonus Damage: +0-100% (higher at higher HP)'
+    color: '#8adf9e'
+  - title: Debuffs
+    body: 'Self Damage: +5% Current HP per hit'
+    color: '#ff9a9a'
+  - title: Rules
+    body: 'Scaling Stat: current_health_percent
+
+      0% bonus at 25% HP, 100% bonus at 100% HP
+
+      '
+    color: '#ffb86b'
 passives:
   bonus_damage:
-    scaling_stat: current_health_percent # scales with current HP (higher HP = higher bonus)
-    max_bonus_damage: 1 # up to 100% bonus damage at full HP
-    zero_value_at_health_percent: 0.25 # 0% bonus at or below 25% HP
-    full_value_at_health_percent: 1.0 # 100% bonus at 100% HP
-
+    scaling_stat: current_health_percent
+    max_bonus_damage: 1
+    zero_value_at_health_percent: 0.25
+    full_value_at_health_percent: 1.0
   self_damage:
-    percent_of_current_hp: 0.05 # loses 5% of current HP per hit
-
+    percent_of_current_hp: 0.05

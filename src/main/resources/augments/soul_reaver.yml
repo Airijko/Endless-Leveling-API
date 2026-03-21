@@ -1,32 +1,27 @@
 id: soul_reaver
-name: "Soul Reaver"
+name: Soul Reaver
 tier: ELITE
-description: "Slain enemies heal you based on their max health, gated by a short cooldown."
+description: Slain enemies heal you based on their max health, gated by a short cooldown.
 category: ON_KILL
 enabled: true
-
-
 weights:
-  default: 18
+  default: 8
   conditions:
-    - when:
-        min_skill_levels:
-          life_force: 200
-      weight: 50
-    - when:
-        min_skill_levels:
-          strength: 100
-      weight: 40
-
+  - when:
+      strength_higher_than_sorcery: true
+    weight: 60
+  - when:
+      sorcery_higher_than_strength: true
+    weight: 10
 ui:
   sections:
-    - title: "Buffs"
-      body: "+20% Heal on Kill based on enemy's max HP"
-      color: "#8adf9e"
-    - title: "Cooldown"
-      body: "Cooldown: 7s"
-      color: "#ffd56b"
+  - title: Buffs
+    body: +20% Heal on Kill based on enemy's max HP
+    color: '#8adf9e'
+  - title: Cooldown
+    body: 'Cooldown: 7s'
+    color: '#ffd56b'
 passives:
   heal_on_kill:
-    value: 0.2 # heals 20% of the enemy's max HP
-    cooldown: 7 # 7 seconds cooldown between triggers
+    value: 0.2
+    cooldown: 7

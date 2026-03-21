@@ -1,33 +1,28 @@
 id: vampirism
-name: "Vampirism"
+name: Vampirism
 tier: ELITE
-description: "Steal life from every hit."
+description: Steal life from every hit.
 category: LIFESTEAL
 enabled: true
-
-
 weights:
-  default: 20
+  default: 8
   conditions:
-    - when:
-        min_skill_levels:
-          strength: 100
-      weight: 40
-    - when:
-        min_skill_levels:
-          sorcery: 100
-      weight: 40
-
+  - when:
+      strength_higher_than_sorcery: true
+    weight: 60
+  - when:
+      sorcery_higher_than_strength: true
+    weight: 10
 ui:
   sections:
-    - title: "Buffs"
-      body: "+12.5% Life Steal"
-      color: "#8adf9e"
-    - title: "Rules"
-      body: "Category: LIFESTEAL"
-      color: "#ffb86b"
+  - title: Buffs
+    body: +12.5% Life Steal
+    color: '#8adf9e'
+  - title: Rules
+    body: 'Category: LIFESTEAL'
+    color: '#ffb86b'
 passives:
   buffs:
     life_steal:
-      value: 0.125 # +12.5% life steal on dealt damage
+      value: 0.125
       category: LIFESTEAL

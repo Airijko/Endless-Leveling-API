@@ -9,6 +9,11 @@ enabled: true
 
 weights:
   default: 35
+  conditions:
+    - when:
+        max_precision_value: 0.99
+      weight: 1
+      stat_key: precision
 
 ui:
   sections:

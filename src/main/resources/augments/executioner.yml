@@ -1,32 +1,31 @@
 id: executioner
-name: "Executioner"
+name: Executioner
 tier: ELITE
-description: "Executes low-health targets with a heavy strike on a cooldown."
+description: Executes low-health targets with a heavy strike on a cooldown.
 category: ON_HIT
 enabled: true
-
-
 weights:
-  default: 12
+  default: 8
   conditions:
-    - when:
-        min_skill_levels:
-          ferocity: 100
-      weight: 60
-
+  - when:
+      strength_higher_than_sorcery: true
+    weight: 60
+  - when:
+      sorcery_higher_than_strength: true
+    weight: 10
 ui:
   sections:
-    - title: "Buffs"
-      body: "250% Bonus Damage to targets below 15% HP"
-      color: "#8adf9e"
-    - title: "Rules"
-      body: "Threshold: 15% HP"
-      color: "#ffb86b"
-    - title: "Cooldown"
-      body: "Cooldown: 45s"
-      color: "#ffd56b"
+  - title: Buffs
+    body: 250% Bonus Damage to targets below 15% HP
+    color: '#8adf9e'
+  - title: Rules
+    body: 'Threshold: 15% HP'
+    color: '#ffb86b'
+  - title: Cooldown
+    body: 'Cooldown: 45s'
+    color: '#ffd56b'
 passives:
   bonus_damage_on_hit:
-    value: 2.50 # +250% damage to targets below the threshold
-    threshold: 0.15 # Applies when target is below 15% HP or this hit drops them to/below 15%
-    cooldown: 45 # Seconds between executioner procs
+    value: 2.5
+    threshold: 0.15
+    cooldown: 45

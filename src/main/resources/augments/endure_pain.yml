@@ -1,40 +1,33 @@
 id: endure_pain
-name: "Endure Pain"
+name: Endure Pain
 tier: ELITE
-description: "A portion of incoming damage is deferred as Bleed and applied over time. Killing a target cleanses all Bleed and heals you for a percentage of the execute damage dealt."
+description: A portion of incoming damage is deferred as Bleed and applied over time.
+  Killing a target cleanses all Bleed and heals you for a percentage of the execute
+  damage dealt.
 category: ON_DAMAGE_TAKEN
 enabled: true
-
-
 weights:
-  default: 15
-  conditions:
-    - when:
-        min_skill_levels:
-          defense: 100
-      weight: 55
-    - when:
-        min_skill_levels:
-          life_force: 200
-      weight: 45
-
+  default: 10
+  conditions: []
 ui:
   sections:
-    - title: "Buffs"
-      body: |
-        30% of incoming damage is deferred as Bleed and applied over 3 seconds
-        Heal for 50% of execute damage dealt on kill
-      color: "#8adf9e"
-    - title: "Rules"
-      body: "Reset On Kill: Yes"
-      color: "#ffb86b"
-    - title: "Bleed Duration"
-      body: "Duration: 3s"
-      color: "#9ecbff"
+  - title: Buffs
+    body: '30% of incoming damage is deferred as Bleed and applied over 3 seconds
+
+      Heal for 50% of execute damage dealt on kill
+
+      '
+    color: '#8adf9e'
+  - title: Rules
+    body: 'Reset On Kill: Yes'
+    color: '#ffb86b'
+  - title: Bleed Duration
+    body: 'Duration: 3s'
+    color: '#9ecbff'
 passives:
   heal_over_time:
-    value: 0.30 # 30% of incoming damage is deferred as Bleed
-    duration: 3 # deferred Bleed is applied over this duration
-    reset_on_kill: true # cleanse stored Bleed on kill
+    value: 0.3
+    duration: 3
+    reset_on_kill: true
   heal_on_kill:
-    value: 0.5 # heal for 50% of execute damage dealt on kill
+    value: 0.5

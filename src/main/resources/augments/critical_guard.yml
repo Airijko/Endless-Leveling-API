@@ -1,31 +1,28 @@
 id: critical_guard
-name: "Critical Guard"
+name: Critical Guard
 tier: ELITE
-description: "Your crit chance grants damage reduction, but only when your defense crits. Reduction scales with your crit chance, up to a maximum of 25% damage reduction at 100% crit chance."
+description: Your crit chance grants damage reduction, but only when your defense
+  crits. Reduction scales with your crit chance, up to a maximum of 25% damage reduction
+  at 100% crit chance.
 category: ON_DAMAGE_TAKEN
 enabled: true
-
-
 weights:
-  default: 12
-  conditions:
-    - when:
-        min_skill_levels:
-          ferocity: 100
-      weight: 55
-
+  default: 10
+  conditions: []
 ui:
   sections:
-    - title: "Buffs"
-      body: "0-25% damage reduction based on crit chance"
-      color: "#8adf9e"
-    - title: "Rules"
-      body: |
-        Scaling Stat: crit_rate
-        Category: ON_DAMAGE_TAKEN
-      color: "#ffb86b"
+  - title: Buffs
+    body: 0-25% damage reduction based on crit chance
+    color: '#8adf9e'
+  - title: Rules
+    body: 'Scaling Stat: crit_rate
+
+      Category: ON_DAMAGE_TAKEN
+
+      '
+    color: '#ffb86b'
 passives:
   crit_defense:
-    value: 0.25 # max 25% damage reduction
-    scaling_stat: crit_rate # scales from 0% to 100% crit chance
+    value: 0.25
+    scaling_stat: crit_rate
     category: ON_DAMAGE_TAKEN

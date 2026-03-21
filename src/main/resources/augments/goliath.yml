@@ -1,32 +1,29 @@
 id: goliath
-name: "Goliath"
+name: Goliath
 tier: ELITE
-description: "Become a towering presence with greater vitality and empowered combat stats."
+description: Become a towering presence with greater vitality and empowered combat
+  stats.
 category: PASSIVE_STAT
 enabled: true
-
-
 weights:
-  default: 20
-  conditions:
-    - when:
-        min_skill_levels:
-          life_force: 200
-      weight: 50
-
+  default: 10
+  conditions: []
 ui:
   sections:
-    - title: "Buffs"
-      body: |
-        +20% Maximum Health
-        +7.5% Strength
-        +7.5% Sorcery
-      color: "#8adf9e"
+  - title: Buffs
+    body: '+20% Maximum Health
+
+      +7.5% Strength
+
+      +7.5% Sorcery
+
+      '
+    color: '#8adf9e'
 passives:
   buffs:
     max_health_percent:
-      value: 0.20 # +20% maximum health
+      value: 0.2
     strength:
-      value: 0.075 # +7.5% strength
+      value: 0.075
     sorcery:
-      value: 0.075 # +7.5% sorcery
+      value: 0.075

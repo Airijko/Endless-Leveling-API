@@ -1,32 +1,33 @@
 id: giant_slayer
-name: "Giant Slayer"
+name: Giant Slayer
 tier: MYTHIC
-description: "Deal more damage to enemies with higher health than you, scaling with the health gap."
+description: Deal more damage to enemies with higher health than you, scaling with
+  the health gap.
 category: ON_HIT
 enabled: true
-
-
 weights:
-  default: 15
+  default: 8
   conditions:
-    - when:
-        min_skill_levels:
-          strength: 150
-      weight: 60
-
+  - when:
+      strength_higher_than_sorcery: true
+    weight: 60
+  - when:
+      sorcery_higher_than_strength: true
+    weight: 10
 ui:
   sections:
-    - title: "Buffs"
-      body: "0-180% Bonus Damage based on health difference"
-      color: "#8adf9e"
-    - title: "Rules"
-      body: |
-        Maximum Bonus Damage: 180% at 8x health difference
-      color: "#ffb86b"
+  - title: Buffs
+    body: 0-180% Bonus Damage based on health difference
+    color: '#8adf9e'
+  - title: Rules
+    body: 'Maximum Bonus Damage: 180% at 8x health difference
+
+      '
+    color: '#ffb86b'
 passives:
   bonus_damage_vs_hp_ratio:
-    max_value: 1.8 # 180% max bonus damage
+    max_value: 1.8
     scaling_stat: TARGET_CURRENT_HP
     reference_stat: PLAYER_CURRENT_HP
-    max_ratio: 8.0 # maximum bonus damage is reached when target HP is 8x player HP
-    calculation: "linear" # scales linearly between equal HP and max_ratio
+    max_ratio: 8.0
+    calculation: linear

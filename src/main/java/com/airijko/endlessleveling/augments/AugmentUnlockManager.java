@@ -1,6 +1,7 @@
 package com.airijko.endlessleveling.augments;
 
 import com.airijko.endlessleveling.player.PlayerData;
+import com.airijko.endlessleveling.player.SkillManager;
 import com.airijko.endlessleveling.enums.ArchetypePassiveType;
 import com.airijko.endlessleveling.enums.PassiveTier;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
@@ -48,11 +49,25 @@ public class AugmentUnlockManager {
             "healer",
             "necromancer");
 
+    // Augment categorization for damage type weighting
+    private static final Set<String> SORCERY_AUGMENTS = Set.of(
+            "arcane_cataclysm", "arcane_comet", "arcane_instability", "arcane_mastery",
+            "magic_blade", "magic_missle", "mana_infusion");
+
+    private static final Set<String> STRENGTH_AUGMENTS = Set.of(
+            "bloodthirster", "blood_echo", "blood_frenzy", "blood_surge",
+            "conqueror", "cripple", "drain", "executioner", "first_strike",
+            "fleet_footwork", "giant_slayer", "overdrive", "overheal",
+            "phantom_hits", "phase_rush", "predator", "reckoning",
+            "snipers_reach", "soul_reaver", "time_master", "vampiric_strike",
+            "vampirism", "wither");
+
     private final ConfigManager configManager;
     private final ConfigManager levelingConfigManager;
     private final AugmentManager augmentManager;
     private final PlayerDataManager playerDataManager;
     private final ArchetypePassiveManager archetypePassiveManager;
+    private final SkillManager skillManager;
     private volatile List<UnlockRule> unlockRules;
     private volatile List<PrestigeUnlockRule> prestigeUnlockRules;
     private volatile List<PrestigeRerollRule> prestigeRerollRules;
@@ -63,11 +78,13 @@ public class AugmentUnlockManager {
             @Nonnull ConfigManager levelingConfigManager,
             @Nonnull AugmentManager augmentManager,
             @Nonnull PlayerDataManager playerDataManager,
+            @Nonnull SkillManager skillManager,
             ArchetypePassiveManager archetypePassiveManager) {
         this.configManager = Objects.requireNonNull(configManager, "configManager");
         this.levelingConfigManager = Objects.requireNonNull(levelingConfigManager, "levelingConfigManager");
         this.augmentManager = Objects.requireNonNull(augmentManager, "augmentManager");
         this.playerDataManager = Objects.requireNonNull(playerDataManager, "playerDataManager");
+        this.skillManager = Objects.requireNonNull(skillManager, "skillManager");
         this.archetypePassiveManager = archetypePassiveManager;
         this.unlockRules = List.of();
         this.prestigeUnlockRules = List.of();
@@ -473,13 +490,100 @@ public class AugmentUnlockManager {
             LOGGER.atWarning().log("No augments available for tier %s; unlock roll skipped", tier);
             return List.of();
         }
-        Collections.shuffle(pool, ThreadLocalRandom.current());
         int count = Math.min(DEFAULT_OFFER_COUNT, pool.size());
-        List<String> rolled = new ArrayList<>(count);
-        for (int i = 0; i < count; i++) {
-            rolled.add(pool.get(i).getId());
+        return weightedRandomSelection(pool, playerData, count);
+    }
+
+    /**
+     * Perform weighted random selection from a list of augments.
+     * Higher weights increase the probability of selection.
+     */
+    private List<String> weightedRandomSelection(
+            List<AugmentDefinition> pool,
+            PlayerData playerData,
+            int count) {
+
+        if (pool == null || pool.isEmpty()) {
+            return List.of();
         }
-        return rolled;
+
+        List<String> selected = new ArrayList<>();
+        ThreadLocalRandom rng = ThreadLocalRandom.current();
+        List<AugmentDefinition> remaining = new ArrayList<>(pool);
+
+        // Select 'count' augments without replacement using weighted selection
+        for (int i = 0; i < count && !remaining.isEmpty(); i++) {
+            // Calculate weights for remaining augments
+            List<Integer> weights = new ArrayList<>();
+            int totalWeight = 0;
+
+            for (AugmentDefinition augment : remaining) {
+                int weight = calculateAugmentWeight(augment, playerData);
+                weights.add(weight);
+                totalWeight += weight;
+            }
+
+            if (totalWeight <= 0) {
+                // Fallback to first item if no valid weights
+                selected.add(remaining.get(0).getId());
+                remaining.remove(0);
+                continue;
+            }
+
+            // Pick random value in [0, totalWeight)
+            int pick = rng.nextInt(totalWeight);
+
+            // Find which augment this corresponds to
+            int sum = 0;
+            for (int j = 0; j < weights.size(); j++) {
+                sum += weights.get(j);
+                if (pick < sum) {
+                    selected.add(remaining.get(j).getId());
+                    remaining.remove(j);
+                    break;
+                }
+            }
+        }
+
+        return selected;
+    }
+
+    /**
+     * Calculate weight for an augment based on player's damage type focus.
+     * Evaluates conditions like sorcery_higher_than_strength or strength_higher_than_sorcery.
+     */
+    private int calculateAugmentWeight(AugmentDefinition augment, PlayerData playerData) {
+        if (augment == null || playerData == null || skillManager == null) {
+            return 10; // neutral weight
+        }
+
+        String id = augment.getId().toLowerCase(Locale.ROOT);
+
+        // Get player's damage values
+        float strengthValue = Math.max(0f, skillManager.calculatePlayerStrength(playerData));
+        float sorceryValue = Math.max(0f, skillManager.calculatePlayerSorcery(playerData));
+
+        // Sorcery augments get higher weight when sorcery > strength
+        if (SORCERY_AUGMENTS.contains(id)) {
+            if (sorceryValue > strengthValue) {
+                return 60; // High weight when sorcery is higher
+            } else {
+                return 10; // Low weight when strength is higher
+            }
+        }
+
+        // Strength augments get higher weight when strength > sorcery
+        if (STRENGTH_AUGMENTS.contains(id)) {
+            if (strengthValue > sorceryValue) {
+                return 60; // High weight when strength is higher
+            } else {
+                return 10; // Low weight when sorcery is higher
+            }
+        }
+
+        // Neutral/utility augments have moderate weight
+        return 10;
+    }
     }
 
     private List<String> rollCommonStatOffers(PlayerData playerData) {
@@ -496,6 +600,7 @@ public class AugmentUnlockManager {
         DamageBuildFocus damageBuildFocus = resolveDamageBuildFocus(playerData);
         boolean blockDefenseOffer = shouldBlockDefenseCommonOffer(playerData);
         boolean blockCritOffers = shouldBlockVanguardCritCommonOffers(playerData);
+        boolean blockPrecisionOffer = shouldBlockPrecisionCommonOffer(playerData);
         List<String> statKeys = new ArrayList<>();
         for (String key : buffs.keySet()) {
             if (key != null && !key.isBlank()) {
@@ -511,6 +616,9 @@ public class AugmentUnlockManager {
                 }
                 if (blockCritOffers
                         && (PRECISION_STAT_KEY.equals(normalized) || FEROCITY_STAT_KEY.equals(normalized))) {
+                    continue;
+                }
+                if (blockPrecisionOffer && PRECISION_STAT_KEY.equals(normalized)) {
                     continue;
                 }
                 statKeys.add(normalized);
@@ -583,6 +691,20 @@ public class AugmentUnlockManager {
     private boolean shouldBlockVanguardCritCommonOffers(PlayerData playerData) {
         String basePrimaryClassId = normalizePrimaryClassBaseId(playerData);
         return VANGUARD_BASE_CLASS_ID.equals(basePrimaryClassId);
+    }
+
+    private boolean shouldBlockPrecisionCommonOffer(PlayerData playerData) {
+        if (playerData == null || skillManager == null) {
+            return false;
+        }
+        // Block precision offer if player already has max precision (100% crit chance)
+        SkillManager.PrecisionBreakdown precision = skillManager.getPrecisionBreakdown(playerData);
+        if (precision == null) {
+            return false;
+        }
+        // Precision breakthrough represents total crit chance percentage (0-1.0 scale becomes 0-100%)
+        // Block if already at or above 100%
+        return precision.totalPercent() >= 1.0;
     }
 
     private boolean sanitizeVanguardCommonCritSelections(PlayerData playerData) {
@@ -673,12 +795,12 @@ public class AugmentUnlockManager {
             return DamageBuildFocus.SORCERY;
         }
 
-        int strengthLevel = Math.max(0, playerData.getPlayerSkillAttributeLevel(SkillAttributeType.STRENGTH));
-        int sorceryLevel = Math.max(0, playerData.getPlayerSkillAttributeLevel(SkillAttributeType.SORCERY));
-        if (strengthLevel > sorceryLevel) {
+        float strengthValue = Math.max(0f, skillManager.calculatePlayerStrength(playerData));
+        float sorceryValue = Math.max(0f, skillManager.calculatePlayerSorcery(playerData));
+        if (strengthValue > sorceryValue) {
             return DamageBuildFocus.STRENGTH;
         }
-        if (sorceryLevel > strengthLevel) {
+        if (sorceryValue > strengthValue) {
             return DamageBuildFocus.SORCERY;
         }
 

@@ -1,32 +1,31 @@
 id: first_strike
-name: "First Strike"
+name: First Strike
 tier: ELITE
-description: "Your opening hit after a cooldown delivers a powerful burst."
+description: Your opening hit after a cooldown delivers a powerful burst.
 category: ON_HIT
 enabled: true
-
-
 weights:
-  default: 12
+  default: 8
   conditions:
-    - when:
-        min_skill_levels:
-          ferocity: 100
-      weight: 55
-
+  - when:
+      strength_higher_than_sorcery: true
+    weight: 60
+  - when:
+      sorcery_higher_than_strength: true
+    weight: 10
 ui:
   sections:
-    - title: "Buffs"
-      body: "175% Bonus Damage on first hit after cooldown"
-      color: "#8adf9e"
-    - title: "Rules"
-      body: "Category: ON_HIT"
-      color: "#ffb86b"
-    - title: "Cooldown"
-      body: "Cooldown: 25s"
-      color: "#ffd56b"
+  - title: Buffs
+    body: 175% Bonus Damage on first hit after cooldown
+    color: '#8adf9e'
+  - title: Rules
+    body: 'Category: ON_HIT'
+    color: '#ffb86b'
+  - title: Cooldown
+    body: 'Cooldown: 25s'
+    color: '#ffd56b'
 passives:
   bonus_damage_on_hit:
-    value: 1.75 # +175% damage on first hit
-    cooldown: 25 # seconds between first-strike windows
+    value: 1.75
+    cooldown: 25
     category: ON_HIT
