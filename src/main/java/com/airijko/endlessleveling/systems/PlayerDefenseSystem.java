@@ -58,13 +58,15 @@ public class PlayerDefenseSystem extends DamageEventSystem {
 	private final MobAugmentExecutor mobAugmentExecutor;
 	private final MobLevelingManager mobLevelingManager;
 	private final CombatHookProcessor combatHookProcessor;
+	private final MovementHasteSystem movementHasteSystem;
 
 	public PlayerDefenseSystem(PlayerDataManager playerDataManager, SkillManager skillManager,
 			PassiveManager passiveManager,
 			ArchetypePassiveManager archetypePassiveManager,
 			AugmentExecutor augmentExecutor,
 			MobAugmentExecutor mobAugmentExecutor,
-			MobLevelingManager mobLevelingManager) {
+			MobLevelingManager mobLevelingManager,
+			MovementHasteSystem movementHasteSystem) {
 		this.playerDataManager = playerDataManager;
 		this.skillManager = skillManager;
 		this.passiveManager = passiveManager;
@@ -72,6 +74,7 @@ public class PlayerDefenseSystem extends DamageEventSystem {
 		this.augmentExecutor = augmentExecutor;
 		this.mobAugmentExecutor = mobAugmentExecutor;
 		this.mobLevelingManager = mobLevelingManager;
+		this.movementHasteSystem = movementHasteSystem;
 		this.combatHookProcessor = new CombatHookProcessor(skillManager,
 				passiveManager,
 				archetypePassiveManager,
@@ -214,6 +217,9 @@ public class PlayerDefenseSystem extends DamageEventSystem {
 						statMap));
 
 		damage.setAmount(result.finalDamage());
+		if (movementHasteSystem != null && result.finalDamage() > 0.0f) {
+			movementHasteSystem.onPlayerDamaged(defenderPlayer.getUuid());
+		}
 		if (mobAttackerUuid != null && attackerRef != null && statMap != null) {
 			EntityStatValue hp = statMap.get(DefaultEntityStatTypes.getHealth());
 			if (hp != null && hp.getMax() > 0f && hp.get() > 0f) {

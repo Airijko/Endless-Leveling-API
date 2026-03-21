@@ -46,6 +46,7 @@ import com.airijko.endlessleveling.drops.LuckDoubleDropSystem;
 import com.airijko.endlessleveling.systems.PlayerCombatPostApplyProbeSystem;
 import com.airijko.endlessleveling.systems.PlayerCombatSystem;
 import com.airijko.endlessleveling.systems.PlayerDefenseSystem;
+import com.airijko.endlessleveling.systems.MovementHasteSystem;
 import com.airijko.endlessleveling.systems.PlayerNameplateSystem;
 import com.airijko.endlessleveling.systems.PlayerRaceStatSystem;
 import com.airijko.endlessleveling.systems.PeriodicSkillModifierSystem;
@@ -93,6 +94,7 @@ public class EndlessLeveling extends JavaPlugin {
     private ArchetypePassiveManager archetypePassiveManager;
     private PlayerAttributeManager playerAttributeManager;
     private PlayerRaceStatSystem playerRaceStatSystem;
+    private MovementHasteSystem movementHasteSystem;
     private MobLevelingSystem mobLevelingSystem;
     private AugmentManager augmentManager;
     private AugmentRuntimeManager augmentRuntimeManager;
@@ -166,6 +168,10 @@ public class EndlessLeveling extends JavaPlugin {
 
     public PlayerRaceStatSystem getPlayerRaceStatSystem() {
         return playerRaceStatSystem;
+    }
+
+    public MovementHasteSystem getMovementHasteSystem() {
+        return movementHasteSystem;
     }
 
     public MobLevelingSystem getMobLevelingSystem() {
@@ -477,9 +483,12 @@ public class EndlessLeveling extends JavaPlugin {
                         skillManager, augmentExecutor));
         this.getEntityStoreRegistry().registerSystem(new ArmyOfTheDeadDeathSystem());
         this.getEntityStoreRegistry().registerSystem(new MobDamageScalingSystem(mobLevelingManager));
+        movementHasteSystem = new MovementHasteSystem(playerDataManager, skillManager, augmentRuntimeManager);
+        this.getEntityStoreRegistry().registerSystem(movementHasteSystem);
         this.getEntityStoreRegistry()
                 .registerSystem(new PlayerDefenseSystem(playerDataManager, skillManager, passiveManager,
-                        archetypePassiveManager, augmentExecutor, mobAugmentExecutor, mobLevelingManager));
+                archetypePassiveManager, augmentExecutor, mobAugmentExecutor, mobLevelingManager,
+                movementHasteSystem));
         this.getEntityStoreRegistry()
                 .registerSystem(new PassiveRegenSystem(playerDataManager, passiveManager, archetypePassiveManager,
                         skillManager, augmentRuntimeManager, augmentExecutor));

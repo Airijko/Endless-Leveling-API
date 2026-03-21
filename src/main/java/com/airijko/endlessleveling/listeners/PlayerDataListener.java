@@ -100,6 +100,11 @@ public class PlayerDataListener {
             mobLevelingManager.syncTierLevelOverridesForDungeon(store, uuid);
         }
 
+        var movementHasteSystem = EndlessLeveling.getInstance().getMovementHasteSystem();
+        if (movementHasteSystem != null && entityRef != null) {
+            movementHasteSystem.registerPlayer(uuid, entityRef);
+        }
+
         if (passiveManager != null) {
             passiveManager.resetRuntimeState(uuid);
             passiveManager.syncPassives(playerData);
@@ -194,6 +199,11 @@ public class PlayerDataListener {
         if (passiveManager != null) {
             passiveManager.resetRuntimeState(uuid);
         }
+
+		var movementHasteSystem = EndlessLeveling.getInstance().getMovementHasteSystem();
+		if (movementHasteSystem != null) {
+			movementHasteSystem.clearPlayer(uuid);
+		}
     }
 
     private void notifyAvailableSkillPoints(PlayerRef playerRef, int skillPoints) {
