@@ -325,7 +325,8 @@ public class AugmentsChoosePage extends InteractiveCustomUIPage<SkillsUIPage.Dat
                 CommonAugment.CommonStatOffer statOffer = presentation.commonStatOffer();
                 String statName = augmentPresentationMapper.formatCommonStatDisplayName(statOffer.attributeKey());
                 double value = statOffer.rolledValue();
-                String statValueStr = (value == (long) value) ? String.format(Locale.ROOT, "%d", (long) value) : String.format(Locale.ROOT, "%s", value);
+                double roundedVal = Math.round(value * 100.0D) / 100.0D;
+                String statValueStr = (roundedVal == (long) roundedVal) ? String.format(Locale.ROOT, "%d", (long) roundedVal) : String.format(Locale.ROOT, "%.2f", roundedVal);
                 String statLine = statName + ": " + statValueStr;
                 String selector = sectionSelectors[0];
                 ui.set(selector + ".Text", statLine);

@@ -309,7 +309,8 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             CommonAugment.CommonStatOffer statOffer = presentation.commonStatOffer();
             String statName = augmentPresentationMapper.formatCommonStatDisplayName(statOffer.attributeKey());
             double value = statOffer.rolledValue();
-            String statValueStr = (value == (long) value) ? String.format(Locale.ROOT, "%d", (long) value) : String.format(Locale.ROOT, "%s", value);
+            double roundedVal = Math.round(value * 100.0D) / 100.0D;
+            String statValueStr = (roundedVal == (long) roundedVal) ? String.format(Locale.ROOT, "%d", (long) roundedVal) : String.format(Locale.ROOT, "%.2f", roundedVal);
             String statLine = statName + ": " + statValueStr;
             applyInfoSections(ui, List.of(new InfoSection("", statLine, "#c5d4e8")));
             ui.set("#AugmentInfoDescription.Visible", false);
@@ -762,10 +763,10 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             String displayName = baseCard.displayName();
             if (groupKey.startsWith("common_stat:")) {
                 String attributeKey = groupKey.substring("common_stat:".length());
-                double totalValue = totalCommonValueByGroup.getOrDefault(groupKey, 0.0D);
+                double totalValue = Math.round(totalCommonValueByGroup.getOrDefault(groupKey, 0.0D) * 100.0D) / 100.0D;
                 infoId = CommonAugment.buildStatOfferId(attributeKey, totalValue);
                 // Format value string without trailing zeros
-                String statValueStr = (totalValue == (long) totalValue) ? String.format(Locale.ROOT, "%d", (long) totalValue) : String.format(Locale.ROOT, "%s", totalValue);
+                String statValueStr = (totalValue == (long) totalValue) ? String.format(Locale.ROOT, "%d", (long) totalValue) : String.format(Locale.ROOT, "%.2f", totalValue);
                 displayName = displayName + ": " + statValueStr;
             }
             if (count > 1 && !groupKey.startsWith("common_stat:")) {

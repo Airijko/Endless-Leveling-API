@@ -164,12 +164,12 @@ public final class CommonAugment extends Augment implements AugmentHooks.Passive
             String rollKey,
             BonusRange range) {
         if (range.isFixed()) {
-            return range.min();
+              return roundToTwoDecimals(range.min());
         }
 
         Double existing = context.getPlayerData().getAugmentValueRoll(selectionKey, rollKey);
         if (existing != null && Double.isFinite(existing)) {
-            return existing;
+              return roundToTwoDecimals(existing);
         }
 
         double rolled = roundToTwoDecimals(range.rollRandom());

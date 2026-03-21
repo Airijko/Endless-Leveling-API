@@ -279,21 +279,24 @@ public class MovementHasteSystem extends TickingSystem<EntityStore> {
         if (state.baseHasteRefreshSeconds <= 0.0f || Double.isNaN(state.cachedBaseHastePercent)) {
             var runtimeState = augmentRuntimeManager.getRuntimeState(playerId);
             long now = System.currentTimeMillis();
-            double currentMovementBonus = runtimeState.getAttributeBonusBySourcePrefix(
+            double currentMovementBonusPercent = runtimeState.getAttributeBonusBySourcePrefix(
                     SkillAttributeType.HASTE,
                     now,
                     MOVEMENT_HASTE_SOURCE_ID);
             SkillManager.HasteBreakdown breakdown = skillManager.getHasteBreakdown(playerData);
             double totalHastePercent = (breakdown.totalMultiplier() - 1.0D) * 100.0D;
-            state.cachedBaseHastePercent = Math.max(0.0D, totalHastePercent - currentMovementBonus);
+            double movementContributionPercent = Math.max(0.0D,
+                    breakdown.raceMultiplier() * currentMovementBonusPercent);
+            state.cachedBaseHastePercent = Math.max(0.0D, totalHastePercent - movementContributionPercent);
             state.baseHasteRefreshSeconds = BASE_HASTE_REFRESH_SECONDS;
             if (state.cachedBaseHastePercent <= BONUS_EPSILON) {
                 if (!state.zeroBaseHasteLogged) {
                     LOGGER.atInfo().log(
-                            "MovementHasteSystem: %s has no base haste to ramp (totalHaste=%.3f movementBonus=%.3f)",
+                            "MovementHasteSystem: %s has no base haste to ramp (totalHaste=%.3f movementBonus=%.3f movementContribution=%.3f)",
                             playerData.getPlayerName(),
                             totalHastePercent,
-                            currentMovementBonus);
+                            currentMovementBonusPercent,
+                            movementContributionPercent);
                     state.zeroBaseHasteLogged = true;
                 }
             } else {
