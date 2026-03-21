@@ -51,23 +51,6 @@ public class AugmentUnlockManager {
             "healer",
             "necromancer");
 
-    // Augment categorization for damage type weighting
-    private static final Set<String> SORCERY_AUGMENTS = Set.of(
-            "arcane_cataclysm", "arcane_comet", "arcane_instability", "arcane_mastery",
-            "magic_blade", "magic_missle", "mana_infusion");
-
-    private static final Set<String> STRENGTH_AUGMENTS = Set.of(
-            "bloodthirster", "blood_echo", "blood_frenzy", "blood_surge",
-            "conqueror", "cripple", "drain", "executioner", "first_strike",
-            "fleet_footwork", "giant_slayer", "overdrive", "overheal",
-            "phantom_hits", "phase_rush", "predator", "reckoning",
-            "snipers_reach", "soul_reaver", "time_master", "vampiric_strike",
-            "vampirism", "wither");
-
-        private static final Set<String> SORCERY_FAVORED_ROLES = Set.of("mage", "battlemage", "support");
-        private static final Set<String> STRENGTH_FAVORED_ROLES = Set.of(
-            "assassin", "diver", "skirmisher", "juggernaut", "vanguard", "marksman");
-
     private final ConfigManager configManager;
     private final ConfigManager levelingConfigManager;
     private final AugmentManager augmentManager;
@@ -574,37 +557,32 @@ public class AugmentUnlockManager {
         float strengthValue = Math.max(0f, skillManager.calculatePlayerStrength(playerData));
         float sorceryValue = Math.max(0f, skillManager.calculatePlayerSorcery(playerData));
 
+        // Hybrid augments support both damage paths, so do not penalize based on
+        // whichever damage stat is currently lower.
+        if (AugmentRoleWeightRules.isHybridAugment(id)) {
+            return 45 + AugmentRoleWeightRules.getRoleWeightBonus(primaryClass, id);
+        }
+
         // Sorcery augments get higher weight when sorcery > strength
-        if (SORCERY_AUGMENTS.contains(id)) {
+        if (AugmentRoleWeightRules.isSorceryAugment(id)) {
             if (sorceryValue > strengthValue) {
-                int weight = 60; // High weight when sorcery is higher
-                if (classHasAnyRole(primaryClass, SORCERY_FAVORED_ROLES)) {
-                    weight += 20;
-                }
-                return weight;
+                return 60 + AugmentRoleWeightRules.getRoleWeightBonus(primaryClass, id);
             } else {
                 return 10; // Low weight when strength is higher
             }
         }
 
         // Strength augments get higher weight when strength > sorcery
-        if (STRENGTH_AUGMENTS.contains(id)) {
+        if (AugmentRoleWeightRules.isStrengthAugment(id)) {
             if (strengthValue > sorceryValue) {
-                int weight = 60; // High weight when strength is higher
-                if (classHasAnyRole(primaryClass, STRENGTH_FAVORED_ROLES)) {
-                    weight += 20;
-                }
-                if ("snipers_reach".equals(id) && classHasAnyRole(primaryClass, Set.of("marksman"))) {
-                    weight += 20;
-                }
-                return weight;
+                return 60 + AugmentRoleWeightRules.getRoleWeightBonus(primaryClass, id);
             } else {
                 return 10; // Low weight when sorcery is higher
             }
         }
 
-        // Neutral/utility augments have moderate weight
-        return 10;
+        // Neutral/utility augments can still receive role bonuses (for example, life-force augments).
+        return 10 + AugmentRoleWeightRules.getRoleWeightBonus(primaryClass, id);
     }
 
     private boolean isAugmentAllowedForPrimaryClass(AugmentDefinition augment, PlayerData playerData) {
@@ -617,13 +595,8 @@ public class AugmentUnlockManager {
             return false;
         }
 
-        // Range gate: do not offer Sniper's Reach to melee-only classes.
-        if ("snipers_reach".equals(augmentId)) {
-            CharacterClassDefinition primaryClass = resolvePrimaryClass(playerData);
-            return classSupportsRangedCombat(primaryClass);
-        }
-
-        return true;
+        CharacterClassDefinition primaryClass = resolvePrimaryClass(playerData);
+        return AugmentRoleWeightRules.isAugmentAllowedForClass(primaryClass, augmentId);
     }
 
     private CharacterClassDefinition resolvePrimaryClass(PlayerData playerData) {
@@ -631,34 +604,6 @@ public class AugmentUnlockManager {
             return null;
         }
         return classManager.getPlayerPrimaryClass(playerData);
-    }
-
-    private boolean classSupportsRangedCombat(CharacterClassDefinition definition) {
-        if (definition == null) {
-            return true;
-        }
-        String rangeType = definition.getRangeType();
-        if (rangeType == null || rangeType.isBlank()) {
-            return true;
-        }
-        return rangeType.toLowerCase(Locale.ROOT).contains("range");
-    }
-
-    private boolean classHasAnyRole(CharacterClassDefinition definition, Set<String> normalizedTargetRoles) {
-        if (definition == null || normalizedTargetRoles == null || normalizedTargetRoles.isEmpty()) {
-            return false;
-        }
-
-        for (String role : definition.getRoles()) {
-            if (role == null || role.isBlank()) {
-                continue;
-            }
-            String normalizedRole = role.trim().toLowerCase(Locale.ROOT);
-            if (normalizedTargetRoles.contains(normalizedRole)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private List<String> rollCommonStatOffers(PlayerData playerData) {
