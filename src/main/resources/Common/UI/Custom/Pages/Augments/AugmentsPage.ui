@@ -83,6 +83,13 @@ $C.@PageOverlay {
                                     Padding: (Horizontal: 12);
                                 }
 
+                                Label #AugmentStatLegendary {
+                                    Text: "Legendary: 0 / 0";
+                                    Style: (FontSize: 13, TextColor: #f0c15a);
+                                    Anchor: (Height: 20, Bottom: 4);
+                                    Padding: (Horizontal: 12);
+                                }
+
                                 Label #AugmentStatElite {
                                     Text: "Elite: 0 / 0";
                                     Style: (FontSize: 13, TextColor: #7ec8f5);
@@ -112,6 +119,13 @@ $C.@PageOverlay {
                                 Label #AugmentRerollMythic {
                                     Text: "Mythic: 0";
                                     Style: (FontSize: 13, TextColor: #b084e0);
+                                    Anchor: (Height: 20, Bottom: 4);
+                                    Padding: (Horizontal: 12);
+                                }
+
+                                Label #AugmentRerollLegendary {
+                                    Text: "Legendary: 0";
+                                    Style: (FontSize: 13, TextColor: #f0c15a);
                                     Anchor: (Height: 20, Bottom: 4);
                                     Padding: (Horizontal: 12);
                                 }
@@ -217,6 +231,23 @@ $C.@PageOverlay {
                                         }
 
                                         Group #MythicCards {
+                                            LayoutMode: Top;
+                                        }
+                                    }
+
+                                    // LEGENDARY SECTION
+                                    Group #LegendarySection {
+                                        Anchor: (Bottom: 10);
+                                        LayoutMode: Top;
+                                        Visible: false;
+
+                                        Label #LegendaryHeader {
+                                            Text: "LEGENDARY";
+                                            Style: (FontSize: 16, TextColor: #f0c15a, RenderBold: true);
+                                            Anchor: (Height: 28);
+                                        }
+
+                                        Group #LegendaryCards {
                                             LayoutMode: Top;
                                         }
                                     }

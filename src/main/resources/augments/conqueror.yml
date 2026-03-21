@@ -1,6 +1,6 @@
 id: conqueror
 name: "Conqueror"
-tier: MYTHIC
+tier: LEGENDARY
 description: "Sustained combat builds momentum, increasing your damage. At full stacks your attacks pierce defenses with true damage."
 category: ON_HIT
 enabled: true
@@ -14,7 +14,7 @@ ui:
       color: "#8adf9e"
     - title: "Max Stacks Bonus"
       body: |
-        True Damage: 25 + (15% Damage Dealt)
+        True Damage: 25 + (15% pre-defense hit)
       color: "#8adf9e"
     - title: "Duration"
       body: "Duration: 8s"
@@ -28,7 +28,7 @@ passives:
   max_stack_bonus:
     bonus_true_damage:
       value: 25.0 # Flat true damage added to each hit
-      true_damage_percent: 0.15 # +15% of damage dealt is added as bonus true damage at max stacks
+      true_damage_percent: 0.15 # +15% of pre-defense hit damage is added as bonus true damage at max stacks
 
   duration:
     seconds: 8 # Seconds after hitting a target to maintain stacks, refreshing on each hit

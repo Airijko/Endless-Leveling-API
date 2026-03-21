@@ -189,19 +189,8 @@ public class PlayerCombatSystem extends DamageEventSystem {
         TrueDamageSettings trueDamageSettings = resolveTrueDamageSettings(archetypeSnapshot);
         boolean trueEdgeReady = isTrueEdgeOffCooldown(runtimeState, now, trueDamageSettings);
 
-        TrueEdgeComputation trueEdge = (!bypassOutgoingAugmentMath && trueEdgeReady)
-                ? computeTrueEdgeConversion(
-                        targetRef,
-                        commandBuffer,
-                        trueDamageSettings,
-                        incomingBeforeDefense,
-                        playerLevel,
-                        reduction,
-                        targetIsPlayer)
-                : TrueEdgeComputation.none();
-        float normalAfterConversion = (float) Math.max(0.0D,
-                incomingBeforeDefense - trueEdge.convertedDamageFromNormal());
-        adjusted = normalAfterConversion;
+        TrueEdgeComputation trueEdge = TrueEdgeComputation.none();
+        adjusted = incomingBeforeDefense;
 
         if (mobLevelingManager != null
                 && mobLevelingManager.isMobLevelingEnabled()
@@ -219,10 +208,9 @@ public class PlayerCombatSystem extends DamageEventSystem {
             }
         }
 
-        // Re-resolve using the final matchup reduction (mob or player) so conversion
-        // only
-        // shifts damage buckets and level-difference defense is the sole true-damage
-        // reducer.
+        // Re-resolve using the final matchup reduction (mob or player). Percent-based
+        // true damage is additive bonus damage, while level-difference defense remains
+        // the sole true-damage reducer.
         trueEdge = (!bypassOutgoingAugmentMath && trueEdgeReady)
                 ? computeTrueEdgeConversion(
                         targetRef,
@@ -239,8 +227,8 @@ public class PlayerCombatSystem extends DamageEventSystem {
                     }
                     logPassiveTrigger(playerData,
                         trueDamageSettings.sourceType(),
-                        "converted=%.2f true=%.2f",
-                        trueEdge.convertedDamageFromNormal(),
+                        "bonus_true=%.2f true=%.2f",
+                        trueEdge.bonusTrueDamageFromPercent(),
                         trueEdge.reducedTrueDamage());
                 }
         if (!bypassOutgoingAugmentMath
@@ -528,12 +516,14 @@ public class PlayerCombatSystem extends DamageEventSystem {
             return TrueEdgeComputation.none();
         }
 
-        double convertedDamageFromNormal = Math.min(baseOutgoing, baseOutgoing * settings.trueDamagePercent());
+        // True damage always scales from the hit's pre-defense value. Only
+        // level-difference reduction may reduce the final direct HP loss.
+        double bonusTrueDamageFromPercent = Math.max(0.0D, baseOutgoing * settings.trueDamagePercent());
         double maxHealthTrueDamage = computeMaxHealthTrueDamage(
                 targetRef,
                 commandBuffer,
                 settings.maxHealthTrueDamagePercent());
-        double rawTrueDamage = settings.flatTrueDamage() + convertedDamageFromNormal + maxHealthTrueDamage;
+        double rawTrueDamage = settings.flatTrueDamage() + bonusTrueDamageFromPercent + maxHealthTrueDamage;
         if (!targetIsPlayer && settings.monsterTrueDamageCap() > 0.0D) {
             rawTrueDamage = Math.min(rawTrueDamage, settings.monsterTrueDamageCap());
         }
@@ -549,10 +539,10 @@ public class PlayerCombatSystem extends DamageEventSystem {
                 mobReduction,
                 targetIsPlayer);
         if (reducedTrueDamage <= 0.0D) {
-            return new TrueEdgeComputation(convertedDamageFromNormal, 0.0D);
+            return new TrueEdgeComputation(bonusTrueDamageFromPercent, 0.0D);
         }
 
-        return new TrueEdgeComputation(convertedDamageFromNormal, reducedTrueDamage);
+        return new TrueEdgeComputation(bonusTrueDamageFromPercent, reducedTrueDamage);
     }
 
     private double computeMaxHealthTrueDamage(Ref<EntityStore> targetRef,
@@ -731,7 +721,7 @@ public class PlayerCombatSystem extends DamageEventSystem {
         }
     }
 
-    private record TrueEdgeComputation(double convertedDamageFromNormal, double reducedTrueDamage) {
+    private record TrueEdgeComputation(double bonusTrueDamageFromPercent, double reducedTrueDamage) {
         private static final TrueEdgeComputation NONE = new TrueEdgeComputation(0.0D, 0.0D);
 
         private static TrueEdgeComputation none() {
@@ -739,7 +729,7 @@ public class PlayerCombatSystem extends DamageEventSystem {
         }
 
         private boolean triggered() {
-            return convertedDamageFromNormal > 0.0D || reducedTrueDamage > 0.0D;
+            return bonusTrueDamageFromPercent > 0.0D || reducedTrueDamage > 0.0D;
         }
     }
 }

@@ -8,6 +8,7 @@ import java.util.Locale;
 public enum PassiveTier {
     COMMON,
     ELITE,
+    LEGENDARY,
     MYTHIC;
 
     public static PassiveTier fromConfig(Object raw, PassiveTier fallback) {
@@ -29,6 +30,6 @@ public enum PassiveTier {
     }
 
     public boolean isUniqueTier() {
-        return this == ELITE || this == MYTHIC;
+        return this == ELITE || this == LEGENDARY || this == MYTHIC;
     }
 }

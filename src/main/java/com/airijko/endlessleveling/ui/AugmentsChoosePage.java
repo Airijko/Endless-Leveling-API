@@ -258,7 +258,12 @@ public class AugmentsChoosePage extends InteractiveCustomUIPage<SkillsUIPage.Dat
             return null;
         }
         Map<String, List<String>> offers = playerData.getAugmentOffersSnapshot();
-        PassiveTier[] priority = { PassiveTier.MYTHIC, PassiveTier.ELITE, PassiveTier.COMMON };
+        PassiveTier[] priority = {
+            PassiveTier.MYTHIC,
+            PassiveTier.LEGENDARY,
+            PassiveTier.ELITE,
+            PassiveTier.COMMON
+        };
         for (PassiveTier tier : priority) {
             if (!offers.getOrDefault(tier.name(), List.of()).isEmpty()) {
                 return tier;

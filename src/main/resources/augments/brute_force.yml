@@ -1,6 +1,6 @@
 id: brute_force
 name: "Brute Force"
-tier: ELITE
+tier: LEGENDARY
 description: "Trade all critical potential for overwhelming raw power."
 category: PASSIVE_STAT
 enabled: true

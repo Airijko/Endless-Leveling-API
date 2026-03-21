@@ -18,7 +18,7 @@ passives:
   - type: TRUE_EDGE
     category: ON_HIT
     value: 13 # Flat true damage added to each hit
-    true_damage_percent: 0.18 # +18% of damage dealt is converted to true damage
+    true_damage_percent: 0.18 # +18% of pre-defense hit damage is added as bonus true damage
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: strength
     value: 1.625

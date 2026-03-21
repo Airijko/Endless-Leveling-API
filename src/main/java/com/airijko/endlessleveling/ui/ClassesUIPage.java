@@ -1172,7 +1172,7 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                     trueDamagePercent == null || trueDamagePercent <= 0.0D
                             ? null
                             : tr("ui.classes.passive.pretty.true_edge.ratio",
-                                    "- Damage conversion: {0} of dealt damage as true damage",
+                                    "- Bonus true damage: {0} of pre-defense hit damage",
                                     formatPercentValue(trueDamagePercent)),
                     tr("ui.classes.passive.pretty.true_edge.note",
                             "- Applies as direct health loss after the hit"));
@@ -1186,7 +1186,7 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                                 trueDamagePercent == null || trueDamagePercent <= 0.0D
                                     ? null
                                     : tr("ui.classes.passive.pretty.true_edge.ratio",
-                                        "- Damage conversion: {0} of dealt damage as true damage",
+                                        "- Bonus true damage: {0} of pre-defense hit damage",
                                         formatPercentValue(trueDamagePercent)),
                                 maxHealthTrueDamage == null || maxHealthTrueDamage <= 0.0D
                                     ? null

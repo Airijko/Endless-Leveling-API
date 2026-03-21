@@ -624,7 +624,7 @@ ui:
         true_edge:
           title: Defense-piercing strikes
           flat: "- Flat true damage: {0} per hit"
-          ratio: "- Damage conversion: {0} of dealt damage as true damage"
+          ratio: "- Bonus true damage: {0} of pre-defense hit damage"
           note: "- Applies as direct health loss after the hit"
         army_of_the_dead:
           title: Undead summon command

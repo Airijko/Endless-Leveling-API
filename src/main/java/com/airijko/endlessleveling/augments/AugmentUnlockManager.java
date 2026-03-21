@@ -373,7 +373,7 @@ public class AugmentUnlockManager {
     public List<PassiveTier> getPendingOfferTiers(@Nonnull PlayerData playerData) {
         Map<String, List<String>> offers = playerData.getAugmentOffersSnapshot();
         List<PassiveTier> tiers = new ArrayList<>();
-        PassiveTier[] priority = { PassiveTier.MYTHIC, PassiveTier.ELITE, PassiveTier.COMMON };
+        PassiveTier[] priority = { PassiveTier.MYTHIC, PassiveTier.LEGENDARY, PassiveTier.ELITE, PassiveTier.COMMON };
         for (PassiveTier tier : priority) {
             if (!offers.getOrDefault(tier.name(), List.of()).isEmpty()) {
                 tiers.add(tier);
@@ -1081,6 +1081,7 @@ public class AugmentUnlockManager {
         // Compatibility fallback when prestige.augment_unlock_tiers is absent.
         return List.of(
                 PrestigeUnlockRule.explicit(PassiveTier.ELITE, Set.of(2, 4, 6, 8), 0),
+                PrestigeUnlockRule.explicit(PassiveTier.LEGENDARY, Set.of(5, 10), 0),
                 PrestigeUnlockRule.explicit(PassiveTier.MYTHIC, Set.of(10), 0));
     }
 

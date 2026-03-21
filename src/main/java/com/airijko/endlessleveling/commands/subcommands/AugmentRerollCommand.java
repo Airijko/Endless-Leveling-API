@@ -27,7 +27,7 @@ public class AugmentRerollCommand extends AbstractPlayerCommand {
     private final PlayerDataManager playerDataManager;
     private final AugmentUnlockManager augmentUnlockManager;
     private final OptionalArg<String> tierOrAugmentArg = this.withOptionalArg("tier_or_augment",
-            "Tier (ELITE/MYTHIC) or offered augment id",
+            "Tier (ELITE/LEGENDARY/MYTHIC) or offered augment id",
             ArgTypes.STRING);
     private final OptionalArg<String> augmentArg = this.withOptionalArg("augment",
             "Offered augment id to reroll (when tier is provided)",
@@ -123,7 +123,7 @@ public class AugmentRerollCommand extends AbstractPlayerCommand {
         if (second != null && !second.isBlank()) {
             PassiveTier tier = parseTier(first);
             if (tier == null) {
-                return ParsedTarget.invalid("Invalid tier: " + first + " (use ELITE or MYTHIC).");
+                return ParsedTarget.invalid("Invalid tier: " + first + " (use ELITE, LEGENDARY, or MYTHIC).");
             }
             return ParsedTarget.valid(tier, second.trim());
         }
@@ -150,7 +150,12 @@ public class AugmentRerollCommand extends AbstractPlayerCommand {
 
     private String summarizeRerolls(PlayerData playerData) {
         List<String> entries = new ArrayList<>();
-        for (PassiveTier tier : new PassiveTier[] { PassiveTier.MYTHIC, PassiveTier.ELITE, PassiveTier.COMMON }) {
+        for (PassiveTier tier : new PassiveTier[] {
+            PassiveTier.MYTHIC,
+            PassiveTier.LEGENDARY,
+            PassiveTier.ELITE,
+            PassiveTier.COMMON
+        }) {
             int remaining = augmentUnlockManager.getRemainingRerolls(playerData, tier);
             if (remaining > 0) {
                 entries.add(tier.name() + ": " + remaining);
@@ -171,7 +176,12 @@ public class AugmentRerollCommand extends AbstractPlayerCommand {
 
         Map<String, List<String>> offers = playerData.getAugmentOffersSnapshot();
         List<String> lines = new ArrayList<>();
-        for (PassiveTier tier : new PassiveTier[] { PassiveTier.MYTHIC, PassiveTier.ELITE, PassiveTier.COMMON }) {
+        for (PassiveTier tier : new PassiveTier[] {
+            PassiveTier.MYTHIC,
+            PassiveTier.LEGENDARY,
+            PassiveTier.ELITE,
+            PassiveTier.COMMON
+        }) {
             List<String> tierOffers = offers.getOrDefault(tier.name(), List.of());
             if (tierOffers.isEmpty()) {
                 continue;

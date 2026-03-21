@@ -1,6 +1,6 @@
 id: tank_engine
 name: "Tank Engine"
-tier: MYTHIC
+tier: LEGENDARY
 description: "Sustained combat massively increases your maximum health."
 category: PASSIVE_STAT
 enabled: true

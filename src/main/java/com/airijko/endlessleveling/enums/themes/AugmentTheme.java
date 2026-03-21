@@ -7,9 +7,11 @@ import com.airijko.endlessleveling.enums.PassiveTier;
  */
 public enum AugmentTheme {
     PROFILE_MYTHIC("#7851a9"),
+    PROFILE_LEGENDARY("#f3c76a"),
     PROFILE_ELITE("#89cff0"),
     PROFILE_COMMON("#a4a4a4"),
     GRID_MYTHIC_OWNED("#b084e0"),
+    GRID_LEGENDARY_OWNED("#f0c15a"),
     GRID_ELITE_OWNED("#7ec8f5"),
     GRID_COMMON_OWNED("#bbbbbb"),
     GRID_UNOWNED("#d4d9df"),
@@ -32,6 +34,7 @@ public enum AugmentTheme {
         }
         return switch (tier) {
             case MYTHIC -> GRID_MYTHIC_OWNED.color();
+            case LEGENDARY -> GRID_LEGENDARY_OWNED.color();
             case ELITE -> GRID_ELITE_OWNED.color();
             case COMMON -> GRID_COMMON_OWNED.color();
         };
@@ -43,8 +46,9 @@ public enum AugmentTheme {
         }
         return switch (tier) {
             case MYTHIC -> 0;
-            case ELITE -> 1;
-            case COMMON -> 2;
+            case LEGENDARY -> 1;
+            case ELITE -> 2;
+            case COMMON -> 3;
         };
     }
 

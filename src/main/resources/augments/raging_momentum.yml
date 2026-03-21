@@ -1,6 +1,6 @@
 id: raging_momentum
 name: "Raging Momentum"
-tier: MYTHIC
+tier: LEGENDARY
 description: "Stack Strength and Sorcery that ramps up, doubles at cap, and decays over time."
 category: PASSIVE_STAT
 enabled: true

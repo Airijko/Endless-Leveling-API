@@ -119,6 +119,7 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         ui.set("#SearchInput.PlaceholderText", tr("ui.augments.page.search_placeholder", "Search augments..."));
         ui.set("#UnlockedHeader.Text", tr("ui.augments.page.section.unlocked", "UNLOCKED"));
         ui.set("#MythicHeader.Text", tr("ui.augments.page.section.mythic", "MYTHIC"));
+        ui.set("#LegendaryHeader.Text", tr("ui.augments.page.section.legendary", "LEGENDARY"));
         ui.set("#EliteHeader.Text", tr("ui.augments.page.section.elite", "ELITE"));
         ui.set("#CommonHeader.Text", tr("ui.augments.page.section.common", "COMMON"));
         ui.set("#AugmentInfoPanel.Text", tr("ui.augments.page.info_title", "AUGMENT INFO"));
@@ -186,6 +187,7 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         // Clear all section grids
         ui.clear("#UnlockedCards");
         ui.clear("#MythicCards");
+        ui.clear("#LegendaryCards");
         ui.clear("#EliteCards");
         ui.clear("#CommonCards");
 
@@ -196,6 +198,7 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             ui.set("#AugmentsChooseAvailabilityLabel.Style.TextColor", AugmentTheme.chooseAvailabilityColor(false));
             ui.set("#UnlockedSection.Visible", false);
             ui.set("#MythicSection.Visible", false);
+            ui.set("#LegendarySection.Visible", false);
             ui.set("#EliteSection.Visible", false);
             ui.set("#CommonSection.Visible", false);
             return;
@@ -214,6 +217,7 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
         // Organize augments into sections
         List<AugmentDefinition> mythicAugments = new java.util.ArrayList<>();
+        List<AugmentDefinition> legendaryAugments = new java.util.ArrayList<>();
         List<AugmentDefinition> eliteAugments = new java.util.ArrayList<>();
         List<AugmentDefinition> commonAugments = new java.util.ArrayList<>();
 
@@ -223,6 +227,9 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 switch (def.getTier()) {
                     case MYTHIC:
                         mythicAugments.add(def);
+                        break;
+                    case LEGENDARY:
+                        legendaryAugments.add(def);
                         break;
                     case ELITE:
                         eliteAugments.add(def);
@@ -236,15 +243,18 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
         // Sort each section
         mythicAugments.sort(Comparator.comparing(AugmentDefinition::getName));
+        legendaryAugments.sort(Comparator.comparing(AugmentDefinition::getName));
         eliteAugments.sort(Comparator.comparing(AugmentDefinition::getName));
         commonAugments.sort(Comparator.comparing(AugmentDefinition::getName));
 
         // Apply search filter to all sections
         mythicAugments = applySearch(mythicAugments);
+        legendaryAugments = applySearch(legendaryAugments);
         eliteAugments = applySearch(eliteAugments);
         commonAugments = applySearch(commonAugments);
 
-        int totalResults = unlockedCards.size() + mythicAugments.size() + eliteAugments.size()
+        int totalResults = unlockedCards.size() + mythicAugments.size() + legendaryAugments.size()
+            + eliteAugments.size()
                 + commonAugments.size();
         ui.set("#AugmentsResultLabel.Text", tr("ui.augments.page.results", "Results: {0}", totalResults));
 
@@ -253,6 +263,9 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
         // Build MYTHIC section
         buildSection(ui, events, mythicAugments, "#MythicCards", "#MythicSection", ownedIds);
+
+        // Build LEGENDARY section
+        buildSection(ui, events, legendaryAugments, "#LegendaryCards", "#LegendarySection", ownedIds);
 
         // Build ELITE section
         buildSection(ui, events, eliteAugments, "#EliteCards", "#EliteSection", ownedIds);
@@ -485,19 +498,25 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
         ui.set("#AugmentStatCommon.Style.TextColor", AugmentTheme.gridOwnedColor(PassiveTier.COMMON));
         ui.set("#AugmentRerollCommon.Style.TextColor", AugmentTheme.gridOwnedColor(PassiveTier.COMMON));
+        ui.set("#AugmentStatLegendary.Style.TextColor", AugmentTheme.gridOwnedColor(PassiveTier.LEGENDARY));
+        ui.set("#AugmentRerollLegendary.Style.TextColor", AugmentTheme.gridOwnedColor(PassiveTier.LEGENDARY));
 
         long totalMythic = allDefs.stream().filter(d -> d.getTier() == PassiveTier.MYTHIC).count();
+        long totalLegendary = allDefs.stream().filter(d -> d.getTier() == PassiveTier.LEGENDARY).count();
         long totalElite = allDefs.stream().filter(d -> d.getTier() == PassiveTier.ELITE).count();
 
         int mythicOwned = countSelectedForTier(playerData, PassiveTier.MYTHIC);
+        int legendaryOwned = countSelectedForTier(playerData, PassiveTier.LEGENDARY);
         int eliteOwned = countSelectedForTier(playerData, PassiveTier.ELITE);
         int commonOwned = countSelectedForTier(playerData, PassiveTier.COMMON);
-        int totalOwned = mythicOwned + eliteOwned + commonOwned;
+        int totalOwned = mythicOwned + legendaryOwned + eliteOwned + commonOwned;
 
         ui.set("#AugmentStatTotal.Text",
                 tr("ui.augments.page.stats.total", "Total: {0} / {1}", totalOwned, allDefs.size()));
         ui.set("#AugmentStatMythic.Text",
                 tr("ui.augments.page.stats.mythic", "Mythic: {0} / {1}", mythicOwned, totalMythic));
+        ui.set("#AugmentStatLegendary.Text",
+            tr("ui.augments.page.stats.legendary", "Legendary: {0} / {1}", legendaryOwned, totalLegendary));
         ui.set("#AugmentStatElite.Text",
                 tr("ui.augments.page.stats.elite", "Elite: {0} / {1}", eliteOwned, totalElite));
         ui.set("#AugmentStatCommon.Text", tr("ui.augments.page.stats.common", "Common: {0}", commonOwned));
@@ -505,6 +524,8 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         Map<String, Integer> rerolls = playerData != null ? playerData.getAugmentRerollsUsedSnapshot() : Map.of();
         ui.set("#AugmentRerollMythic.Text",
                 tr("ui.augments.page.rerolls.mythic", "Mythic: {0}", rerolls.getOrDefault("MYTHIC", 0)));
+        ui.set("#AugmentRerollLegendary.Text",
+            tr("ui.augments.page.rerolls.legendary", "Legendary: {0}", rerolls.getOrDefault("LEGENDARY", 0)));
         ui.set("#AugmentRerollElite.Text",
                 tr("ui.augments.page.rerolls.elite", "Elite: {0}", rerolls.getOrDefault("ELITE", 0)));
         ui.set("#AugmentRerollCommon.Text",
@@ -586,6 +607,7 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         }
 
         List<OwnedAugmentCard> mythicCards = new ArrayList<>();
+        List<OwnedAugmentCard> legendaryCards = new ArrayList<>();
         List<OwnedAugmentCard> eliteCards = new ArrayList<>();
         List<OwnedAugmentCard> commonCards = new ArrayList<>();
         List<OwnedAugmentCard> uncategorizedCards = new ArrayList<>();
@@ -595,6 +617,8 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             PassiveTier tier = definition != null ? definition.getTier() : null;
             if (tier == PassiveTier.MYTHIC) {
                 mythicCards.add(card);
+            } else if (tier == PassiveTier.LEGENDARY) {
+                legendaryCards.add(card);
             } else if (tier == PassiveTier.ELITE) {
                 eliteCards.add(card);
             } else if (tier == PassiveTier.COMMON) {
@@ -609,6 +633,9 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
         rowIndex = appendOwnedTierGroup(ui, events, cardsSelector, mythicCards, rowIndex, hasPreviousTierGroup);
         hasPreviousTierGroup = hasPreviousTierGroup || !mythicCards.isEmpty();
+
+        rowIndex = appendOwnedTierGroup(ui, events, cardsSelector, legendaryCards, rowIndex, hasPreviousTierGroup);
+        hasPreviousTierGroup = hasPreviousTierGroup || !legendaryCards.isEmpty();
 
         rowIndex = appendOwnedTierGroup(ui, events, cardsSelector, eliteCards, rowIndex, hasPreviousTierGroup);
         hasPreviousTierGroup = hasPreviousTierGroup || !eliteCards.isEmpty();
