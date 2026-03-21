@@ -5,6 +5,10 @@ description: "Adds luck to your passive total (affecting double-drops and XP gai
 category: PASSIVE_STAT
 enabled: true
 
+
+weights:
+  default: 25
+
 ui:
   sections:
     - title: "Buffs"

@@ -5,6 +5,19 @@ description: "Trade all critical potential for overwhelming raw power."
 category: PASSIVE_STAT
 enabled: true
 
+
+weights:
+  default: 8
+  conditions:
+    - when:
+        min_skill_levels:
+          strength: 200
+      weight: 60
+    - when:
+        min_skill_levels:
+          ferocity: 100
+      weight: 2
+
 ui:
   sections:
     - title: "Buffs"

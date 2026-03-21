@@ -6,6 +6,10 @@ description: "Small raw boosts to your core stats."
 category: COMMON_STAT
 enabled: true
 
+
+weights:
+  default: 35
+
 ui:
   sections:
     - title: "Buffs"

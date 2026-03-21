@@ -5,6 +5,19 @@ description: "Tower over the battlefield with massive vitality and crushing dama
 category: PASSIVE_STAT
 enabled: true
 
+
+weights:
+  default: 8
+  conditions:
+    - when:
+        min_skill_levels:
+          life_force: 400
+      weight: 70
+    - when:
+        min_skill_levels:
+          defense: 200
+      weight: 60
+
 ui:
   sections:
     - title: "Buffs"

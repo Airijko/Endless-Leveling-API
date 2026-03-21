@@ -5,6 +5,19 @@ description: "Provides Life Steal and Haste."
 category: LIFESTEAL
 enabled: true
 
+
+weights:
+  default: 20
+  conditions:
+    - when:
+        min_skill_levels:
+          strength: 100
+      weight: 45
+    - when:
+        min_skill_levels:
+          haste: 100
+      weight: 45
+
 ui:
   sections:
     - title: "Buffs"

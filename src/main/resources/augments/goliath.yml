@@ -5,6 +5,15 @@ description: "Become a towering presence with greater vitality and empowered com
 category: PASSIVE_STAT
 enabled: true
 
+
+weights:
+  default: 20
+  conditions:
+    - when:
+        min_skill_levels:
+          life_force: 200
+      weight: 50
+
 ui:
   sections:
     - title: "Buffs"

@@ -5,6 +5,15 @@ description: "Sacrifice durability for overwhelming speed and damage."
 category: PASSIVE_STAT
 enabled: true
 
+
+weights:
+  default: 10
+  conditions:
+    - when:
+        min_skill_levels:
+          haste: 100
+      weight: 50
+
 ui:
   sections:
     - title: "Buffs"

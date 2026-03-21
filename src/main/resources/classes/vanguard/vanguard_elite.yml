@@ -1,8 +1,10 @@
 class_name: "Elite Vanguard"
 id: "vanguard_elite"
 description: "A stalwart line-holder that drives forward with crushing blows."
-role: "Vanguard"
-category: "tank"
+roles:
+  - Vanguard
+damage_type: Hybrid
+range_type: melee
 enabled: true
 icon: "Weapon_Battleaxe_Mithril"
 

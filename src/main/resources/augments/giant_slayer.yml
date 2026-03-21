@@ -5,6 +5,15 @@ description: "Deal more damage to enemies with higher health than you, scaling w
 category: ON_HIT
 enabled: true
 
+
+weights:
+  default: 15
+  conditions:
+    - when:
+        min_skill_levels:
+          strength: 150
+      weight: 60
+
 ui:
   sections:
     - title: "Buffs"

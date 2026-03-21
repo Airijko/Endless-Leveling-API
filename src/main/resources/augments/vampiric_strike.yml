@@ -5,6 +5,15 @@ description: "Critical hits heal you, limited by an internal cooldown."
 category: LIFESTEAL
 enabled: true
 
+
+weights:
+  default: 15
+  conditions:
+    - when:
+        min_skill_levels:
+          ferocity: 100
+      weight: 55
+
 ui:
   sections:
     - title: "Buffs"

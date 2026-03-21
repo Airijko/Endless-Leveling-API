@@ -5,6 +5,15 @@ description: "Your opening hit after a cooldown delivers a powerful burst."
 category: ON_HIT
 enabled: true
 
+
+weights:
+  default: 12
+  conditions:
+    - when:
+        min_skill_levels:
+          ferocity: 100
+      weight: 55
+
 ui:
   sections:
     - title: "Buffs"

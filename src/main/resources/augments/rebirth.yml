@@ -5,6 +5,19 @@ description: "Cheat death at low health with a large heal on a long cooldown."
 category: ON_LOW_HP
 enabled: true
 
+
+weights:
+  default: 18
+  conditions:
+    - when:
+        min_skill_levels:
+          life_force: 200
+      weight: 55
+    - when:
+        min_skill_levels:
+          defense: 100
+      weight: 45
+
 ui:
   sections:
     - title: "Buffs"

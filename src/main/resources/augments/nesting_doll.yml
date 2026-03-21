@@ -5,6 +5,10 @@ description: "Each death weakens you temporarily, but you can revive multiple ti
 category: ON_DEATH
 enabled: true
 
+
+weights:
+  default: 12
+
 ui:
   sections:
     - title: "Buffs"

@@ -5,6 +5,19 @@ description: "Trade Strength for blazing Haste."
 category: PASSIVE_STAT
 enabled: true
 
+
+weights:
+  default: 10
+  conditions:
+    - when:
+        min_skill_levels:
+          haste: 150
+      weight: 60
+    - when:
+        min_skill_levels:
+          strength: 150
+      weight: 2
+
 ui:
   sections:
     - title: "Buffs"

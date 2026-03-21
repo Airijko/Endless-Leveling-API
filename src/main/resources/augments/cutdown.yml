@@ -5,6 +5,15 @@ description: "Deal significantly increased damage to high-health enemies."
 category: PASSIVE_STAT
 enabled: true
 
+
+weights:
+  default: 12
+  conditions:
+    - when:
+        min_skill_levels:
+          ferocity: 100
+      weight: 50
+
 ui:
   sections:
     - title: "Buffs"

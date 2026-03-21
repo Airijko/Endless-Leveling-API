@@ -5,6 +5,19 @@ description: "Your magical power empowers your weapons, converting Sorcery into 
 category: PASSIVE_STAT
 enabled: true
 
+
+weights:
+  default: 5
+  conditions:
+    - when:
+        min_skill_levels:
+          sorcery: 100
+      weight: 70
+    - when:
+        max_skill_levels:
+          sorcery: 50
+      weight: 1
+
 ui:
   sections:
     - title: "Buffs"

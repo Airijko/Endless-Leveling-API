@@ -5,6 +5,19 @@ description: "Slain enemies heal you based on their max health, gated by a short
 category: ON_KILL
 enabled: true
 
+
+weights:
+  default: 18
+  conditions:
+    - when:
+        min_skill_levels:
+          life_force: 200
+      weight: 50
+    - when:
+        min_skill_levels:
+          strength: 100
+      weight: 40
+
 ui:
   sections:
     - title: "Buffs"

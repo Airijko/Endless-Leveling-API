@@ -5,6 +5,10 @@ description: "Killing enemies reduces the cooldown of all your augments and pass
 category: ON_KILL
 enabled: true
 
+
+weights:
+  default: 20
+
 ui:
   sections:
     - title: "Buffs"

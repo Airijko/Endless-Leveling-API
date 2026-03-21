@@ -5,6 +5,19 @@ description: "At the brink of death you gain a brief shielded immobile phase, th
 category: ON_LOW_HP
 enabled: true
 
+
+weights:
+  default: 15
+  conditions:
+    - when:
+        min_skill_levels:
+          defense: 100
+      weight: 60
+    - when:
+        min_skill_levels:
+          life_force: 300
+      weight: 50
+
 ui:
   sections:
     - title: "Buffs"

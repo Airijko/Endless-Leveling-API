@@ -5,6 +5,15 @@ description: "Kills grant stacking Haste and Strength while a Defense penalty pe
 category: ON_KILL
 enabled: true
 
+
+weights:
+  default: 12
+  conditions:
+    - when:
+        min_skill_levels:
+          haste: 100
+      weight: 60
+
 ui:
   sections:
     - title: "Buffs"

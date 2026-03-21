@@ -5,6 +5,15 @@ description: "On death, prime a delayed explosion that scales from your vitality
 category: ON_DAMAGE_TAKEN
 enabled: true
 
+
+weights:
+  default: 12
+  conditions:
+    - when:
+        min_skill_levels:
+          ferocity: 100
+      weight: 40
+
 ui:
   sections:
     - title: "Buffs"

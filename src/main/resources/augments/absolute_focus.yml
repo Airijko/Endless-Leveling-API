@@ -5,6 +5,19 @@ description: "Periodically guarantee a critical strike. Excess critical chance i
 category: PASSIVE_STAT
 enabled: true
 
+
+weights:
+  default: 12
+  conditions:
+    - when:
+        min_skill_levels:
+          ferocity: 150
+      weight: 65
+    - when:
+        max_skill_levels:
+          ferocity: 30
+      weight: 2
+
 ui:
   sections:
     - title: "Buffs"

@@ -94,15 +94,24 @@ class_max_switches: 1 # -1 = unlimited; positive values apply per slot (primary 
 # Each class .yml can define `category` and that value maps to one of these entries.
 # You can add new categories here and assign them in class yml files.
 defense_caps:
-  default_category: "default" # fallback when class category is missing/unknown
-  categories:
-    default:
+  roles:
+    Mage:
+      max_reduction: 40.0
+    Marksman:
+      max_reduction: 40.0
+    Assassin:
+      max_reduction: 45.0
+    Support:
       max_reduction: 50.0
-    glass_cannon:
-      max_reduction: 50.0
-    fighter:
+    Diver:
+      max_reduction: 55.0
+    Skirmisher:
       max_reduction: 65.0
-    tank:
+    BattleMage:
+      max_reduction: 65.0
+    Juggernaut:
+      max_reduction: 80.0
+    Vanguard:
       max_reduction: 80.0
 
 # Swap anti-exploit

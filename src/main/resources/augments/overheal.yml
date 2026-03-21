@@ -5,6 +5,19 @@ description: "Any healing beyond max health is stored as a temporary decaying sh
 category: ON_HIT
 enabled: true
 
+
+weights:
+  default: 12
+  conditions:
+    - when:
+        min_skill_levels:
+          ferocity: 100
+      weight: 50
+    - when:
+        min_skill_levels:
+          precision: 100
+      weight: 50
+
 ui:
   sections:
     - title: "Buffs"

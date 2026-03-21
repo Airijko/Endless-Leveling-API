@@ -1,8 +1,10 @@
 class_name: "Legendary Arcanist"
 id: "arcanist_legendary"
 description: "A master of pure arcane energy who amplifies spell power through disciplined mana control."
-role: "Mage"
-category: "glass_cannon"
+roles:
+  - Mage
+damage_type: Magic
+range_type: range
 enabled: true
 icon: "Weapon_Staff_Bronze"
 

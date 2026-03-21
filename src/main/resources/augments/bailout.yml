@@ -5,6 +5,10 @@ description: "Cheat death briefly and rapidly decay unless you secure a kill."
 category: ON_DEATH
 enabled: true
 
+
+weights:
+  default: 20
+
 ui:
   sections:
     - title: "Buffs"

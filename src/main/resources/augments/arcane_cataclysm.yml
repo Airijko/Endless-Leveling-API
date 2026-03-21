@@ -5,6 +5,19 @@ description: "Every fifth hit unleashes a sorcery-fueled explosion around your t
 category: MAGIC_ON_HIT
 enabled: true
 
+
+weights:
+  default: 5
+  conditions:
+    - when:
+        min_skill_levels:
+          sorcery: 200
+      weight: 80
+    - when:
+        max_skill_levels:
+          sorcery: 50
+      weight: 1
+
 ui:
   sections:
     - title: "5-Hit Passive"

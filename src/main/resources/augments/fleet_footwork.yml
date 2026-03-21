@@ -5,6 +5,15 @@ description: "Periodically empower your next strike to heal you and grant a burs
 category: ON_HIT
 enabled: true
 
+
+weights:
+  default: 15
+  conditions:
+    - when:
+        min_skill_levels:
+          haste: 100
+      weight: 55
+
 ui:
   sections:
     - title: "Buffs"

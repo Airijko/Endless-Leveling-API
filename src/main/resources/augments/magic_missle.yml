@@ -5,6 +5,19 @@ description: "Every 2 seconds, your hits fire a magic missle that deals bonus da
 category: MAGIC_ON_HIT
 enabled: true
 
+
+weights:
+  default: 8
+  conditions:
+    - when:
+        min_skill_levels:
+          sorcery: 100
+      weight: 60
+    - when:
+        max_skill_levels:
+          sorcery: 50
+      weight: 2
+
 ui:
   sections:
     - title: "Buffs"

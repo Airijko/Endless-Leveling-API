@@ -5,6 +5,19 @@ description: "On hit, deal bonus damage based on the target's current health."
 category: ON_HIT
 enabled: true
 
+
+weights:
+  default: 12
+  conditions:
+    - when:
+        min_skill_levels:
+          strength: 100
+      weight: 50
+    - when:
+        min_skill_levels:
+          sorcery: 100
+      weight: 40
+
 ui:
   sections:
     - title: "Buffs"

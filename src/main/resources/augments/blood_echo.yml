@@ -5,6 +5,15 @@ description: "Convert potential healing into extra damage and sustain through li
 category: LIFESTEAL
 enabled: true
 
+
+weights:
+  default: 18
+  conditions:
+    - when:
+        min_skill_levels:
+          strength: 100
+      weight: 40
+
 ui:
   sections:
     - title: "Buffs"

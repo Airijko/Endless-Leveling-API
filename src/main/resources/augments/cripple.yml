@@ -5,6 +5,15 @@ description: "On hit, stun enemies for 2 seconds on cooldown and gain a large he
 category: ON_HIT
 enabled: true
 
+
+weights:
+  default: 15
+  conditions:
+    - when:
+        min_skill_levels:
+          strength: 100
+      weight: 50
+
 ui:
   sections:
     - title: "Buffs"

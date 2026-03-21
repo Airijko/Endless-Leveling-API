@@ -5,6 +5,19 @@ description: "Stack Strength and Sorcery that ramps up, doubles at cap, and deca
 category: PASSIVE_STAT
 enabled: true
 
+
+weights:
+  default: 15
+  conditions:
+    - when:
+        min_skill_levels:
+          strength: 100
+      weight: 55
+    - when:
+        min_skill_levels:
+          sorcery: 100
+      weight: 55
+
 ui:
   sections:
     - title: "Buffs"

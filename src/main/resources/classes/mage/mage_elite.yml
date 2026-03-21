@@ -1,8 +1,10 @@
 class_name: "Elite Mage"
 id: "mage_elite"
 description: "A spellcasting prodigy who channels pure arcane force through staves."
-role: "Mage"
-category: "glass_cannon"
+roles:
+  - Mage
+damage_type: Magic
+range_type: range
 enabled: true
 icon: "Weapon_Spellbook_Grimoire_Brown"
 

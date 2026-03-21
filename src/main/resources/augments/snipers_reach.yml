@@ -5,6 +5,19 @@ description: "Ranged damage scales with distance, peaking at long range."
 category: ON_RANGED_HIT
 enabled: true
 
+
+weights:
+  default: 8
+  conditions:
+    - when:
+        min_skill_levels:
+          precision: 100
+      weight: 65
+    - when:
+        min_skill_levels:
+          haste: 100
+      weight: 45
+
 ui:
   sections:
     - title: "Buffs"

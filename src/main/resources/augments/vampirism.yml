@@ -5,6 +5,19 @@ description: "Steal life from every hit."
 category: LIFESTEAL
 enabled: true
 
+
+weights:
+  default: 20
+  conditions:
+    - when:
+        min_skill_levels:
+          strength: 100
+      weight: 40
+    - when:
+        min_skill_levels:
+          sorcery: 100
+      weight: 40
+
 ui:
   sections:
     - title: "Buffs"

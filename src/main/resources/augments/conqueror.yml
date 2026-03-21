@@ -5,6 +5,19 @@ description: "Sustained combat builds momentum, increasing your damage. At full 
 category: ON_HIT
 enabled: true
 
+
+weights:
+  default: 18
+  conditions:
+    - when:
+        min_skill_levels:
+          strength: 100
+      weight: 45
+    - when:
+        min_skill_levels:
+          sorcery: 100
+      weight: 45
+
 ui:
   sections:
     - title: "Buffs"

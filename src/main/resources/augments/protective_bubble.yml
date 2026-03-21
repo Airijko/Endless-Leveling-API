@@ -5,6 +5,15 @@ description: "Negate one incoming attack and become briefly immune when the bubb
 category: ON_DAMAGE_TAKEN
 enabled: true
 
+
+weights:
+  default: 15
+  conditions:
+    - when:
+        min_skill_levels:
+          defense: 100
+      weight: 55
+
 ui:
   sections:
     - title: "Shield"

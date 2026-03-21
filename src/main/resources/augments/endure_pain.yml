@@ -5,6 +5,19 @@ description: "A portion of incoming damage is deferred as Bleed and applied over
 category: ON_DAMAGE_TAKEN
 enabled: true
 
+
+weights:
+  default: 15
+  conditions:
+    - when:
+        min_skill_levels:
+          defense: 100
+      weight: 55
+    - when:
+        min_skill_levels:
+          life_force: 200
+      weight: 45
+
 ui:
   sections:
     - title: "Buffs"

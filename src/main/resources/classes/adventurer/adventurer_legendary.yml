@@ -1,8 +1,10 @@
 class_name: "Legendary Adventurer"
 id: "adventurer_legendary"
 description: "A flexible pathfinder who blends martial training with survival instincts."
-role: "Vanguard"
-category: "fighter"
+roles:
+  - Skirmisher
+damage_type: Hybrid
+range_type: melee/range
 enabled: true
 icon: "Ingredient_Life_Essence"
 

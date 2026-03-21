@@ -5,6 +5,19 @@ description: "Your presence scorches nearby enemies, dealing damage over time th
 category: ON_DAMAGE_TAKEN
 enabled: true
 
+
+weights:
+  default: 12
+  conditions:
+    - when:
+        min_skill_levels:
+          defense: 100
+      weight: 50
+    - when:
+        min_skill_levels:
+          life_force: 200
+      weight: 40
+
 ui:
   sections:
     - title: "Buffs"

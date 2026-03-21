@@ -5,6 +5,15 @@ description: "Your attacks fire additional phantom strikes that scale with both 
 category: ON_HIT
 enabled: true
 
+
+weights:
+  default: 12
+  conditions:
+    - when:
+        min_skill_levels:
+          strength: 100
+      weight: 55
+
 ui:
   sections:
     - title: "Buffs"

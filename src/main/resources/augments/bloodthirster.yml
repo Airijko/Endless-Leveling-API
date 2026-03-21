@@ -5,6 +5,15 @@ description: "Your strikes grow stronger while healthy and sustain you when woun
 category: LIFESTEAL
 enabled: true
 
+
+weights:
+  default: 15
+  conditions:
+    - when:
+        min_skill_levels:
+          strength: 150
+      weight: 55
+
 ui:
   sections:
     - title: "On-Hit Passive"
