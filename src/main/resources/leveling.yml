@@ -65,7 +65,7 @@ prestige:
       prestige_levels: [1, 4, 7, 10]
       required_player_level: 15
     - tier: LEGENDARY
-      prestige_levels: [5, 10, 15]
+      prestige_levels: [10]
       required_player_level: 30
     - tier: MYTHIC
       prestige_levels: [15]

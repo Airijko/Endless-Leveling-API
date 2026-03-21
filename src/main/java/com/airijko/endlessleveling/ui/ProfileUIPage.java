@@ -1083,8 +1083,9 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             case MANA_REGEN -> tr("ui.races.passive.desc.mana_regen", "{0} mana/5s", formatPercentValue(value));
             case MANA_REGEN_FLAT -> tr("ui.races.passive.desc.mana_regen_flat", "{0} mana/s", formatSigned(value));
                 case ARCANE_WISDOM -> appendDetails(
-                    tr("ui.races.passive.desc.arcane_wisdom", "{0} max mana", formatPercentValue(value)),
-                    formatThresholdDetail(props.threshold(), tr("ui.races.passive.scope.mana", "mana")));
+                    tr("ui.races.passive.desc.arcane_wisdom", "{0} missing mana", formatPercentValue(value)),
+                    tr("ui.classes.passive.pretty.activation.on_kill", "on kill"),
+                    formatCooldownDetail(props.cooldown()));
             case HEALING_TOUCH -> tr("ui.races.passive.desc.healing_touch", "on-hit heal: {0} of source",
                     formatPercentValue(value));
             case HEALING_AURA -> appendDetails(

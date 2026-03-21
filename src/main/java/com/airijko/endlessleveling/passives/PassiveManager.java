@@ -443,6 +443,7 @@ public class PassiveManager {
         private long buffingAuraLastPulseMillis;
         private double buffingAuraDamageBonus;
         private long buffingAuraBonusExpiresAt;
+        private long arcaneWisdomLastProcessedKillMillis;
 
         PassiveRuntimeState(UUID ignored) {
         }
@@ -689,6 +690,7 @@ public class PassiveManager {
             this.buffingAuraLastPulseMillis = 0L;
             this.buffingAuraDamageBonus = 0.0D;
             this.buffingAuraBonusExpiresAt = 0L;
+            this.arcaneWisdomLastProcessedKillMillis = 0L;
         }
 
         public long getAdrenalineCooldownExpiresAt() {
@@ -919,6 +921,14 @@ public class PassiveManager {
 
         public void setLastMobKillMillis(long lastMobKillMillis) {
             this.lastMobKillMillis = lastMobKillMillis;
+        }
+
+        public long getArcaneWisdomLastProcessedKillMillis() {
+            return arcaneWisdomLastProcessedKillMillis;
+        }
+
+        public void setArcaneWisdomLastProcessedKillMillis(long arcaneWisdomLastProcessedKillMillis) {
+            this.arcaneWisdomLastProcessedKillMillis = Math.max(0L, arcaneWisdomLastProcessedKillMillis);
         }
 
         public long getPartyMendingLastPulseMillis() {

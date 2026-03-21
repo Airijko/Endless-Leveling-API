@@ -2,12 +2,16 @@ package com.airijko.endlessleveling.augments.types;
 
 import com.airijko.endlessleveling.augments.Augment;
 
+import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentHooks;
 import com.airijko.endlessleveling.augments.AugmentRuntimeManager.AugmentRuntimeState;
 import com.airijko.endlessleveling.augments.AugmentRuntimeManager.AugmentState;
 import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
+import com.airijko.endlessleveling.player.PlayerData;
+import com.airijko.endlessleveling.player.PlayerDataManager;
+import com.airijko.endlessleveling.player.SkillManager;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
@@ -28,7 +32,9 @@ public final class OverhealAugment extends Augment
     private static final Map<AugmentState, Boolean> FULL_SHIELD_NOTIFIED = Collections
             .synchronizedMap(new WeakHashMap<>());
 
-    private final double maxShieldPercent;
+        private final double maxShieldPercentFallback;
+        private final double precisionShieldScaling;
+        private final double ferocityShieldScaling;
     private final long durationMillis;
     private final double lifeStealPercent;
 
@@ -38,11 +44,15 @@ public final class OverhealAugment extends Augment
         Map<String, Object> shield = AugmentValueReader.getMap(passives, "overheal_shield");
         Map<String, Object> buffs = AugmentValueReader.getMap(passives, "buffs");
 
-        this.maxShieldPercent = Math.max(0.0D,
+        this.maxShieldPercentFallback = Math.max(0.0D,
                 AugmentValueReader.getDouble(
                         shield,
                         "max_shield_percent",
                         AugmentValueReader.getDouble(shield, "max_bonus_health_percent", 0.0D)));
+        this.precisionShieldScaling = Math.max(0.0D,
+            AugmentValueReader.getDouble(shield, "precision_shield_scaling", 2.0D));
+        this.ferocityShieldScaling = Math.max(0.0D,
+            AugmentValueReader.getDouble(shield, "ferocity_shield_scaling", 1.0D));
         this.durationMillis = AugmentUtils.secondsToMillis(AugmentValueReader.getDouble(
                 shield,
                 "decay_duration",
@@ -144,7 +154,7 @@ public final class OverhealAugment extends Augment
             EntityStatMap statMap,
             CommandBuffer<EntityStore> commandBuffer,
             Ref<EntityStore> ownerRef) {
-        if (runtimeState == null || statMap == null || maxShieldPercent <= 0.0D || durationMillis <= 0L) {
+        if (runtimeState == null || statMap == null || durationMillis <= 0L) {
             return;
         }
 
@@ -153,13 +163,12 @@ public final class OverhealAugment extends Augment
             return;
         }
 
-        float maxHealth = AugmentUtils.getMaxHealth(statMap);
-        if (maxHealth <= 0f) {
+        double maxShield = resolveMaxShieldValue(statMap, commandBuffer, ownerRef);
+        if (maxShield <= 0.0D) {
             return;
         }
 
         AugmentState state = runtimeState.getState(ID);
-        double maxShield = maxHealth * maxShieldPercent;
         double previousShield = Math.max(0.0D, state.getStoredValue());
         double nextShield = Math.min(maxShield, previousShield + overflow);
         state.setStoredValue(nextShield);
@@ -170,6 +179,39 @@ public final class OverhealAugment extends Augment
         if (becameFull && shouldNotifyFull(state)) {
             notifyShieldFull(commandBuffer, ownerRef, nextShield, maxShield);
         }
+    }
+
+    private double resolveMaxShieldValue(EntityStatMap statMap,
+            CommandBuffer<EntityStore> commandBuffer,
+            Ref<EntityStore> ownerRef) {
+        double dynamicShieldCap = 0.0D;
+
+        EndlessLeveling plugin = EndlessLeveling.getInstance();
+        if (plugin != null && commandBuffer != null && ownerRef != null) {
+            PlayerRef playerRef = AugmentUtils.getPlayerRef(commandBuffer, ownerRef);
+            PlayerDataManager playerDataManager = plugin.getPlayerDataManager();
+            SkillManager skillManager = plugin.getSkillManager();
+
+            if (playerRef != null && playerRef.isValid() && playerDataManager != null && skillManager != null) {
+                PlayerData playerData = playerDataManager.get(playerRef.getUuid());
+                if (playerData != null) {
+                    double precisionPercent = Math.max(0.0D, skillManager.calculatePlayerPrecision(playerData)) * 100.0D;
+                    double ferocityValue = Math.max(0.0D, skillManager.calculatePlayerFerocity(playerData));
+                    dynamicShieldCap = (precisionPercent * precisionShieldScaling)
+                            + (ferocityValue * ferocityShieldScaling);
+                }
+            }
+        }
+
+        if (dynamicShieldCap > 0.0D) {
+            return dynamicShieldCap;
+        }
+
+        float maxHealth = AugmentUtils.getMaxHealth(statMap);
+        if (maxHealth <= 0f || maxShieldPercentFallback <= 0.0D) {
+            return 0.0D;
+        }
+        return maxHealth * maxShieldPercentFallback;
     }
 
     private double consumeOverhealOverflow(EntityStatMap statMap) {

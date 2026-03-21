@@ -17,10 +17,8 @@ passives:
     value: 0.04
   - type: ARCANE_WISDOM
     category: MAGIC_STAT
-    value: 0.5
-    threshold: 0.10
-    restore_duration_seconds: 5
-    cooldown: 35
+    value: 0.25
+    cooldown: 5
   - type: HEALTH_REGEN
     value: 0.02
   - type: INNATE_ATTRIBUTE_GAIN

@@ -9,13 +9,15 @@ ui:
   sections:
     - title: "Buffs"
       body: |
-        +15% Overheal Shield (15% of max health)
+        Overheal Shield Cap: (200% Precision) + (100% Ferocity)
         Decay Duration: 8s
         +5% Life Steal
       color: "#8adf9e"
 passives:
   overheal_shield:
-    max_shield_percent: 0.15 # store up to 15% of max health as overheal shield
+    precision_shield_scaling: 2.0 # 100% precision contributes 200 shield cap
+    ferocity_shield_scaling: 1.0 # 500 ferocity contributes 500 shield cap
+    max_shield_percent: 0.15 # fallback cap used only if player stat resolution is unavailable
     decay_duration: 8 # shield value decays over 8 seconds
     overflow_buffer_cap: 0 # 0 = uncapped; set > 0 to cap pending overheal buffer
 

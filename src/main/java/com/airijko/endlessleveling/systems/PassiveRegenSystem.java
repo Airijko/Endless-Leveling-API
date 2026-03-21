@@ -367,78 +367,58 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
         ArcaneWisdomPassive settings = ArcaneWisdomPassive.fromSnapshot(archetypeSnapshot);
         if (!settings.enabled()) {
             clearArcaneWisdomState(runtimeState);
-            runtimeState.setLastManaRatio(Float.NaN);
             return;
         }
 
         EntityStatValue manaStat = statMap.get(DefaultEntityStatTypes.getMana());
         if (manaStat == null || manaStat.getMax() <= 0f) {
             clearArcaneWisdomState(runtimeState);
-            runtimeState.setLastManaRatio(Float.NaN);
             return;
         }
 
         long now = System.currentTimeMillis();
-        if (runtimeState.getArcaneWisdomActiveUntil() > 0L
-                && now >= runtimeState.getArcaneWisdomActiveUntil()) {
-            clearArcaneWisdomState(runtimeState);
+        long lastKillMillis = runtimeState.getLastMobKillMillis();
+        long lastProcessedKillMillis = runtimeState.getArcaneWisdomLastProcessedKillMillis();
+        if (lastKillMillis <= 0L || lastKillMillis <= lastProcessedKillMillis) {
+            return;
+        }
+        runtimeState.setArcaneWisdomLastProcessedKillMillis(lastKillMillis);
+
+        if (now < runtimeState.getArcaneWisdomCooldownExpiresAt()) {
+            return;
         }
 
         float current = Math.max(0.0f, manaStat.get());
         float max = manaStat.getMax();
-
-        boolean effectActive = runtimeState.getArcaneWisdomRestorePerSecond() > 0.0D
-                && runtimeState.getArcaneWisdomRestoreRemaining() > 0.0D
-                && runtimeState.getArcaneWisdomActiveUntil() > now;
-        if (effectActive && deltaSeconds > 0f && current < max) {
-            double potential = runtimeState.getArcaneWisdomRestorePerSecond() * deltaSeconds;
-            double allowed = Math.min(runtimeState.getArcaneWisdomRestoreRemaining(), potential);
-            if (allowed > 0.0D) {
-                float applied = (float) Math.min(max - current, allowed);
-                if (applied > 0f) {
-                    current += applied;
-                    statMap.setStatValue(DefaultEntityStatTypes.getMana(), current);
-                    runtimeState.setArcaneWisdomRestoreRemaining(runtimeState.getArcaneWisdomRestoreRemaining()
-                            - applied);
-                }
-            }
-            if (runtimeState.getArcaneWisdomRestoreRemaining() <= 0.0001D || current >= max) {
-                clearArcaneWisdomState(runtimeState);
-            }
+        double missingMana = Math.max(0.0D, max - current);
+        if (missingMana <= 0.0D) {
+            return;
         }
 
-        double currentRatio = Math.max(0.0D, Math.min(1.0D, current / max));
-        float lastRatioSample = runtimeState.getLastManaRatio();
-
-        if (!Float.isNaN(lastRatioSample)
-                && lastRatioSample > settings.thresholdPercent()
-                && currentRatio <= settings.thresholdPercent()
-                && now >= runtimeState.getArcaneWisdomCooldownExpiresAt()) {
-            double restoreAmount = Math.max(0.0D, max * settings.restorePercent());
-            if (restoreAmount > 0.0D) {
-                double durationSeconds = Math.max(0.1D, settings.durationSeconds());
-                runtimeState.setArcaneWisdomRestorePerSecond(restoreAmount / durationSeconds);
-                runtimeState.setArcaneWisdomRestoreRemaining(restoreAmount);
-                runtimeState.setArcaneWisdomActiveUntil(now + settings.durationMillis());
-                runtimeState.setArcaneWisdomCooldownExpiresAt(now + settings.cooldownMillis());
-                runtimeState.setArcaneWisdomReadyNotified(false);
-
-                logPassiveTrigger(playerData,
-                        ArchetypePassiveType.ARCANE_WISDOM,
-                        "restore=%.2f over %.2fs cooldown=%.2fs",
-                        restoreAmount,
-                        durationSeconds,
-                        settings.cooldownSeconds());
-            }
+        double restoreAmount = missingMana * Math.max(0.0D, settings.restorePercent());
+        if (restoreAmount <= 0.0D) {
+            return;
         }
 
-        runtimeState.setLastManaRatio((float) currentRatio);
+        float applied = (float) Math.min(missingMana, restoreAmount);
+        if (applied <= 0f) {
+            return;
+        }
+
+        statMap.setStatValue(DefaultEntityStatTypes.getMana(), current + applied);
+        runtimeState.setArcaneWisdomCooldownExpiresAt(now + settings.cooldownMillis());
+        runtimeState.setArcaneWisdomReadyNotified(false);
+
+        logPassiveTrigger(playerData,
+                ArchetypePassiveType.ARCANE_WISDOM,
+            "trigger=on_kill restore_missing=%.2f (%.1f%% of missing) cooldown=%.2fs",
+                applied,
+                settings.restorePercent() * 100.0D,
+                settings.cooldownSeconds());
     }
 
     private void clearArcaneWisdomState(@Nonnull PassiveRuntimeState runtimeState) {
-        runtimeState.setArcaneWisdomActiveUntil(0L);
-        runtimeState.setArcaneWisdomRestorePerSecond(0.0D);
-        runtimeState.setArcaneWisdomRestoreRemaining(0.0D);
+        runtimeState.setArcaneWisdomCooldownExpiresAt(0L);
     }
 
     private void applyStaminaGainBonus(@Nonnull PlayerData playerData,

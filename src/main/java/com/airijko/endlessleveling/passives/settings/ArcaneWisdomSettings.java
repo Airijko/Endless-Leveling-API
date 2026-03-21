@@ -9,19 +9,15 @@ import java.util.Map;
 /**
  * Resolved settings for Arcane Wisdom passive.
  *
- * Value semantics: ARCANE_WISDOM value is interpreted as restore percent.
- * Example: value=0.50 restores 50% mana over the configured duration.
+ * Value semantics: ARCANE_WISDOM value is interpreted as percent of missing mana
+ * restored whenever the cooldown is ready.
  */
 public record ArcaneWisdomSettings(boolean enabled,
         double restorePercent,
-        double thresholdPercent,
-        double durationSeconds,
         double cooldownSeconds) {
 
     private static final double DEFAULT_RESTORE_PERCENT = 0.25D;
-    private static final double DEFAULT_THRESHOLD_PERCENT = 0.10D;
-    private static final double DEFAULT_DURATION_SECONDS = 5.0D;
-    private static final double DEFAULT_COOLDOWN_SECONDS = 30.0D;
+    private static final double DEFAULT_COOLDOWN_SECONDS = 5.0D;
 
     public static ArcaneWisdomSettings fromSnapshot(ArchetypePassiveSnapshot snapshot) {
         if (snapshot == null) {
@@ -33,8 +29,6 @@ public record ArcaneWisdomSettings(boolean enabled,
             return disabled();
         }
 
-        double thresholdPercent = DEFAULT_THRESHOLD_PERCENT;
-        double durationSeconds = DEFAULT_DURATION_SECONDS;
         double cooldownSeconds = DEFAULT_COOLDOWN_SECONDS;
 
         List<RacePassiveDefinition> definitions = snapshot.getDefinitions(ArchetypePassiveType.ARCANE_WISDOM);
@@ -43,16 +37,11 @@ public record ArcaneWisdomSettings(boolean enabled,
                 continue;
             }
             Map<String, Object> props = definition.properties();
-            thresholdPercent = parsePercent(props, "threshold", thresholdPercent);
-            durationSeconds = parsePositiveDouble(props, "restore_duration_seconds", durationSeconds);
-            durationSeconds = parsePositiveDouble(props, "duration", durationSeconds);
             cooldownSeconds = parsePositiveDouble(props, "cooldown", cooldownSeconds);
         }
 
         return new ArcaneWisdomSettings(true,
                 clamp01(restorePercent),
-                clamp01(thresholdPercent),
-                Math.max(0.1D, durationSeconds),
                 Math.max(0.0D, cooldownSeconds));
     }
 
@@ -121,13 +110,7 @@ public record ArcaneWisdomSettings(boolean enabled,
     public static ArcaneWisdomSettings disabled() {
         return new ArcaneWisdomSettings(false,
                 DEFAULT_RESTORE_PERCENT,
-                DEFAULT_THRESHOLD_PERCENT,
-                DEFAULT_DURATION_SECONDS,
                 DEFAULT_COOLDOWN_SECONDS);
-    }
-
-    public long durationMillis() {
-        return (long) Math.max(0L, Math.round(durationSeconds * 1000.0D));
     }
 
     public long cooldownMillis() {
