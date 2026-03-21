@@ -446,6 +446,32 @@ public class AugmentUnlockManager {
         return total;
     }
 
+    /**
+     * Returns the milestone count that should be considered valid for sync checks.
+     *
+     * Base level-track augments are earned only on prestige 0, but once a player
+     * prestiges they intentionally keep those earned augments while their local
+     * level resets to 1. For sync validation, prestige players should therefore
+     * be compared against the fully-earned base track plus any currently eligible
+     * prestige milestone grants.
+     */
+    public int getExpectedSyncMilestoneCount(@Nonnull PlayerData playerData, int playerLevel) {
+        int expected = getEligibleMilestoneCount(playerData, playerLevel);
+        if (playerData == null) {
+            return expected;
+        }
+
+        int prestigeLevel = Math.max(0, playerData.getPrestigeLevel());
+        if (prestigeLevel <= 0) {
+            return expected;
+        }
+
+        int localLevel = Math.max(1, playerLevel);
+        int currentBaseTrack = getEligibleMilestoneCount(null, localLevel);
+        int fullBaseTrack = getEligibleMilestoneCount(null, playerLevelCap);
+        return expected + Math.max(0, fullBaseTrack - currentBaseTrack);
+    }
+
     public int getGrantedMilestoneCount(@Nonnull PlayerData playerData, int playerLevel) {
         Map<PassiveTier, Integer> eligibleByTier = buildEligibleByTier(playerData, playerLevel);
         int total = 0;

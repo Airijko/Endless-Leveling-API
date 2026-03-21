@@ -106,7 +106,7 @@ public class AugmentSyncValidator {
      */
     @Nonnull
     public SyncStatus checkPlayer(@Nonnull PlayerData playerData) {
-        int eligible = augmentUnlockManager.getEligibleMilestoneCount(playerData, playerData.getLevel());
+        int eligible = augmentUnlockManager.getExpectedSyncMilestoneCount(playerData, playerData.getLevel());
         int actual = countActualMilestones(playerData);
         if (actual < eligible)
             return SyncStatus.TOO_FEW;
@@ -129,7 +129,7 @@ public class AugmentSyncValidator {
             SyncStatus status = checkPlayer(data);
             if (status == SyncStatus.IN_SYNC)
                 continue;
-            int eligible = augmentUnlockManager.getEligibleMilestoneCount(data, data.getLevel());
+            int eligible = augmentUnlockManager.getExpectedSyncMilestoneCount(data, data.getLevel());
             int actual = countActualMilestones(data);
             unsynced.add(new UnsyncedEntry(data.getPlayerName(), data.getUuid(), status, eligible, actual));
         }
@@ -189,7 +189,7 @@ public class AugmentSyncValidator {
         if (status == SyncStatus.IN_SYNC)
             return;
 
-        int eligible = augmentUnlockManager.getEligibleMilestoneCount(playerData, playerData.getLevel());
+        int eligible = augmentUnlockManager.getExpectedSyncMilestoneCount(playerData, playerData.getLevel());
         int actual = countActualMilestones(playerData);
 
         LOGGER.atWarning().log(
