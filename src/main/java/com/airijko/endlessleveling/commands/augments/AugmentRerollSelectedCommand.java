@@ -18,6 +18,9 @@ import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import javax.annotation.Nonnull;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -66,10 +69,21 @@ public class AugmentRerollSelectedCommand extends AbstractPlayerCommand {
             return;
         }
 
+        Map<String, String> selected = playerData.getSelectedAugmentsSnapshot();
+        if (selected.isEmpty()) {
+            playerRef.sendMessage(Message.raw("You have no selected augments to reroll.").color("#ff9900"));
+            return;
+        }
+
         String targetAugmentId = augmentArg.get(commandContext).trim();
+        if (targetAugmentId.isBlank()) {
+            playerRef.sendMessage(Message.raw(
+                "Usage: /el augments reroll <augment_id>\nSelected augments:").color("#ff9900"));
+            sendSelectedAugmentList(playerRef, selected);
+            return;
+        }
 
         // Find the slot key whose value matches the supplied augment id
-        Map<String, String> selected = playerData.getSelectedAugmentsSnapshot();
         String foundKey = null;
         for (Map.Entry<String, String> entry : selected.entrySet()) {
             if (entry.getValue() != null && entry.getValue().equalsIgnoreCase(targetAugmentId)) {
@@ -81,7 +95,8 @@ public class AugmentRerollSelectedCommand extends AbstractPlayerCommand {
         if (foundKey == null) {
             playerRef.sendMessage(Message.raw(
                     "No selected augment found with id: " + targetAugmentId
-                    + ". Use /el augments to view your chosen augments.").color("#ff9900"));
+                    + ". Selected augments:").color("#ff9900"));
+            sendSelectedAugmentList(playerRef, selected);
             return;
         }
 
@@ -107,6 +122,9 @@ public class AugmentRerollSelectedCommand extends AbstractPlayerCommand {
             }
         }
 
+        String tierKey = tier.name();
+        int offersBefore = playerData.getAugmentOffersForTier(tierKey).size();
+
         // Remove the selected augment so ensureUnlocks can repopulate the slot
         playerData.setSelectedAugmentForTier(foundKey, null);
 
@@ -115,8 +133,24 @@ public class AugmentRerollSelectedCommand extends AbstractPlayerCommand {
             playerData.incrementAugmentRerollsUsedForTier(tierName);
         }
 
-        // Roll a fresh offer set for the freed slot
+        // Roll a fresh offer set for the freed slot.
         augmentUnlockManager.ensureUnlocks(playerData);
+
+        // Fallback: if no offers were added for that tier, force-generate a fresh
+        // bundle for that tier.
+        int offersAfter = playerData.getAugmentOffersForTier(tierKey).size();
+        if (offersAfter <= offersBefore) {
+            boolean forced = augmentUnlockManager.forceOfferBundleForTier(playerData, tier);
+            if (!forced) {
+                playerDataManager.save(playerData);
+                playerRef.sendMessage(Message.raw(
+                        "Rerolled " + targetAugmentId + " (" + tier.name() + "), but no new offers could be generated "
+                                + "for this tier right now. This usually means your current class/tier pool has no valid options.")
+                        .color("#ff9900"));
+                return;
+            }
+        }
+
         playerDataManager.save(playerData);
 
         int remainingAfter = isOperator ? -1 : augmentUnlockManager.getRemainingRerolls(playerData, tier);
@@ -127,5 +161,26 @@ public class AugmentRerollSelectedCommand extends AbstractPlayerCommand {
         playerRef.sendMessage(Message.raw(
                 "Rerolled " + targetAugmentId + " (" + tier.name() + "). "
                 + "New offers are available. " + suffix).color("#4fd7f7"));
+    }
+
+    private void sendSelectedAugmentList(@Nonnull PlayerRef playerRef, @Nonnull Map<String, String> selected) {
+        List<Map.Entry<String, String>> entries = new ArrayList<>(selected.entrySet());
+        entries.removeIf(entry -> entry == null || entry.getValue() == null || entry.getValue().isBlank());
+
+        if (entries.isEmpty()) {
+            playerRef.sendMessage(Message.raw("- (none)").color("#ff9900"));
+            return;
+        }
+
+        entries.sort(Comparator.comparing(entry -> entry.getKey() == null ? "" : entry.getKey()));
+        for (Map.Entry<String, String> entry : entries) {
+            String selectionKey = entry.getKey() == null ? "UNKNOWN" : entry.getKey();
+            String tierName = selectionKey.contains("#")
+                    ? selectionKey.substring(0, selectionKey.indexOf('#'))
+                    : selectionKey;
+            playerRef.sendMessage(Message.raw(
+                    "- " + entry.getValue() + " [" + tierName.toUpperCase(Locale.ROOT) + "]")
+                    .color("#4fd7f7"));
+        }
     }
 }

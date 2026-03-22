@@ -13,7 +13,9 @@ import com.hypixel.hytale.server.core.universe.Universe;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -70,13 +72,63 @@ public class AugmentSyncValidator {
         public final int expected;
         /** Milestone count actually present in the player's active profile. */
         public final int actual;
+        /** Tier-level mismatch details (expected vs selected/pending/actual). */
+        public final List<TierMismatchDetail> tierMismatches;
 
-        public UnsyncedEntry(String name, UUID uuid, SyncStatus status, int expected, int actual) {
+        public UnsyncedEntry(String name,
+                UUID uuid,
+                SyncStatus status,
+                int expected,
+                int actual,
+                List<TierMismatchDetail> tierMismatches) {
             this.name = name;
             this.uuid = uuid;
             this.status = status;
             this.expected = expected;
             this.actual = actual;
+            this.tierMismatches = tierMismatches == null ? List.of() : List.copyOf(tierMismatches);
+        }
+    }
+
+    public static final class TierMismatchDetail {
+        public final PassiveTier tier;
+        public final int expected;
+        public final int selected;
+        public final int pending;
+        public final int actual;
+
+        public TierMismatchDetail(PassiveTier tier, int expected, int selected, int pending) {
+            this.tier = tier;
+            this.expected = Math.max(0, expected);
+            this.selected = Math.max(0, selected);
+            this.pending = Math.max(0, pending);
+            this.actual = this.selected + this.pending;
+        }
+
+        public int delta() {
+            return actual - expected;
+        }
+    }
+
+    private static final class TierActualBreakdown {
+        private final int selected;
+        private final int pending;
+
+        private TierActualBreakdown(int selected, int pending) {
+            this.selected = Math.max(0, selected);
+            this.pending = Math.max(0, pending);
+        }
+
+        private int selected() {
+            return selected;
+        }
+
+        private int pending() {
+            return pending;
+        }
+
+        private int actual() {
+            return selected + pending;
         }
     }
 
@@ -107,7 +159,7 @@ public class AugmentSyncValidator {
     @Nonnull
     public SyncStatus checkPlayer(@Nonnull PlayerData playerData) {
         int eligible = augmentUnlockManager.getExpectedSyncMilestoneCount(playerData, playerData.getLevel());
-        int actual = countActualMilestones(playerData);
+        int actual = sumActual(countActualMilestonesByTier(playerData));
         if (actual < eligible)
             return SyncStatus.TOO_FEW;
         if (actual > eligible)
@@ -129,9 +181,13 @@ public class AugmentSyncValidator {
             SyncStatus status = checkPlayer(data);
             if (status == SyncStatus.IN_SYNC)
                 continue;
-            int eligible = augmentUnlockManager.getExpectedSyncMilestoneCount(data, data.getLevel());
-            int actual = countActualMilestones(data);
-            unsynced.add(new UnsyncedEntry(data.getPlayerName(), data.getUuid(), status, eligible, actual));
+            Map<PassiveTier, Integer> expectedByTier =
+                    augmentUnlockManager.getExpectedSyncMilestonesByTier(data, data.getLevel());
+            Map<PassiveTier, TierActualBreakdown> actualByTier = countActualMilestonesByTier(data);
+            int eligible = sumExpected(expectedByTier);
+            int actual = sumActual(actualByTier);
+            List<TierMismatchDetail> tierMismatches = buildTierMismatchDetails(expectedByTier, actualByTier);
+            unsynced.add(new UnsyncedEntry(data.getPlayerName(), data.getUuid(), status, eligible, actual, tierMismatches));
         }
         return unsynced;
     }
@@ -159,6 +215,19 @@ public class AugmentSyncValidator {
         for (UnsyncedEntry e : unsynced) {
             LOGGER.atWarning().log("  [%s] %s — expected %d slot(s), actual %d slot(s)",
                     e.status, e.name, e.expected, e.actual);
+            for (TierMismatchDetail detail : e.tierMismatches) {
+            String direction = detail.delta() < 0 ? "missing" : "excess";
+            int amount = Math.abs(detail.delta());
+            LOGGER.atWarning().log(
+                "      - %s: expected=%d selected=%d pending=%d actual=%d (%s %d)",
+                detail.tier.name(),
+                detail.expected,
+                detail.selected,
+                detail.pending,
+                detail.actual,
+                direction,
+                amount);
+            }
         }
         LOGGER.atWarning().log(
                 "AugmentSyncValidator: to fix all players run:  %s augments resetallplayers",
@@ -189,15 +258,32 @@ public class AugmentSyncValidator {
         if (status == SyncStatus.IN_SYNC)
             return;
 
-        int eligible = augmentUnlockManager.getExpectedSyncMilestoneCount(playerData, playerData.getLevel());
-        int actual = countActualMilestones(playerData);
+        Map<PassiveTier, Integer> expectedByTier =
+            augmentUnlockManager.getExpectedSyncMilestonesByTier(playerData, playerData.getLevel());
+        Map<PassiveTier, TierActualBreakdown> actualByTier = countActualMilestonesByTier(playerData);
+        int eligible = sumExpected(expectedByTier);
+        int actual = sumActual(actualByTier);
+        List<TierMismatchDetail> tierMismatches = buildTierMismatchDetails(expectedByTier, actualByTier);
 
         LOGGER.atWarning().log(
                 "AugmentSyncValidator: %s joined with mismatched augment slots [%s: expected=%d actual=%d]",
                 playerData.getPlayerName(), status, eligible, actual);
+        for (TierMismatchDetail detail : tierMismatches) {
+            String direction = detail.delta() < 0 ? "missing" : "excess";
+            int amount = Math.abs(detail.delta());
+            LOGGER.atWarning().log(
+                "      - %s: expected=%d selected=%d pending=%d actual=%d (%s %d)",
+                detail.tier.name(),
+                detail.expected,
+                detail.selected,
+                detail.pending,
+                detail.actual,
+                direction,
+                amount);
+        }
 
         UnsyncedEntry entry = new UnsyncedEntry(
-                playerData.getPlayerName(), playerData.getUuid(), status, eligible, actual);
+            playerData.getPlayerName(), playerData.getUuid(), status, eligible, actual, tierMismatches);
 
         for (PlayerRef op : Universe.get().getPlayers()) {
             if (!OperatorHelper.isOperator(op))
@@ -214,15 +300,71 @@ public class AugmentSyncValidator {
      * Returns the total number of milestone slots actually present in the
      * player's active profile: selected augments + pending offer bundles.
      */
-    private int countActualMilestones(@Nonnull PlayerData playerData) {
-        int selected = playerData.getSelectedAugmentsSnapshot().size();
-        int pending = 0;
-        for (PassiveTier tier : PassiveTier.values()) {
-            List<String> tierOffers = playerData.getAugmentOffersForTier(tier.name());
-            // Each bundle stores OFFER_BUNDLE_SIZE candidate IDs as a flat list.
-            pending += tierOffers.size() / OFFER_BUNDLE_SIZE;
+    private Map<PassiveTier, TierActualBreakdown> countActualMilestonesByTier(@Nonnull PlayerData playerData) {
+        Map<PassiveTier, Integer> selectedByTier = new EnumMap<>(PassiveTier.class);
+        for (String key : playerData.getSelectedAugmentsSnapshot().keySet()) {
+            PassiveTier tier = resolveTierFromSelectionKey(key);
+            if (tier == null) {
+                continue;
+            }
+            selectedByTier.merge(tier, 1, Integer::sum);
         }
-        return selected + pending;
+
+        Map<PassiveTier, TierActualBreakdown> breakdownByTier = new EnumMap<>(PassiveTier.class);
+        for (PassiveTier tier : PassiveTier.values()) {
+            int selected = Math.max(0, selectedByTier.getOrDefault(tier, 0));
+            List<String> tierOffers = playerData.getAugmentOffersForTier(tier.name());
+            int pending = tierOffers == null ? 0 : tierOffers.size() / OFFER_BUNDLE_SIZE;
+            breakdownByTier.put(tier, new TierActualBreakdown(selected, pending));
+        }
+        return breakdownByTier;
+    }
+
+    private int sumExpected(@Nonnull Map<PassiveTier, Integer> expectedByTier) {
+        int total = 0;
+        for (int expected : expectedByTier.values()) {
+            total += Math.max(0, expected);
+        }
+        return total;
+    }
+
+    private int sumActual(@Nonnull Map<PassiveTier, TierActualBreakdown> actualByTier) {
+        int total = 0;
+        for (TierActualBreakdown value : actualByTier.values()) {
+            total += Math.max(0, value.actual());
+        }
+        return total;
+    }
+
+    @Nonnull
+    private List<TierMismatchDetail> buildTierMismatchDetails(
+            @Nonnull Map<PassiveTier, Integer> expectedByTier,
+            @Nonnull Map<PassiveTier, TierActualBreakdown> actualByTier) {
+        List<TierMismatchDetail> details = new ArrayList<>();
+        PassiveTier[] priority = { PassiveTier.MYTHIC, PassiveTier.LEGENDARY, PassiveTier.ELITE, PassiveTier.COMMON };
+        for (PassiveTier tier : priority) {
+            int expected = Math.max(0, expectedByTier.getOrDefault(tier, 0));
+            TierActualBreakdown actual = actualByTier.getOrDefault(tier, new TierActualBreakdown(0, 0));
+            if (actual.actual() == expected) {
+                continue;
+            }
+            details.add(new TierMismatchDetail(tier, expected, actual.selected(), actual.pending()));
+        }
+        return details;
+    }
+
+    private PassiveTier resolveTierFromSelectionKey(String selectionKey) {
+        if (selectionKey == null || selectionKey.isBlank()) {
+            return null;
+        }
+        String tierKey = selectionKey.contains("#")
+                ? selectionKey.substring(0, selectionKey.indexOf('#'))
+                : selectionKey;
+        try {
+            return PassiveTier.valueOf(tierKey.trim().toUpperCase());
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
     }
 
     /** Sends a formatted sync-issue report to a single operator. */
@@ -232,6 +374,17 @@ public class AugmentSyncValidator {
             String direction = e.status == SyncStatus.TOO_FEW ? "too few" : "too many";
             PlayerChatNotifier.send(op, ChatMessageTemplate.AUGMENT_SYNC_ENTRY,
                     e.name, direction, e.actual, e.expected);
+            for (TierMismatchDetail detail : e.tierMismatches) {
+                String deltaDirection = detail.delta() < 0 ? "missing" : "excess";
+                int delta = Math.abs(detail.delta());
+                PlayerChatNotifier.send(op, ChatMessageTemplate.AUGMENT_GENERIC,
+                        "  - " + detail.tier.name()
+                                + ": expected " + detail.expected
+                                + ", selected " + detail.selected
+                                + ", pending " + detail.pending
+                                + ", actual " + detail.actual
+                                + " (" + deltaDirection + " " + delta + ")");
+            }
         }
         PlayerChatNotifier.send(op, ChatMessageTemplate.AUGMENT_SYNC_FIX_ALL);
     }

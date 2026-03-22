@@ -299,6 +299,35 @@ public class AugmentUnlockManager {
     }
 
     /**
+     * Forces a fresh offer bundle for a tier regardless of unlock-milestone deficit.
+     *
+     * <p>This is used by selected-augment reroll flows when a selection was removed
+     * but normal ensureUnlocks() did not repopulate pending offers for that tier.
+     *
+     * @return true when a new bundle was generated and stored.
+     */
+    public boolean forceOfferBundleForTier(@Nonnull PlayerData playerData, @Nonnull PassiveTier tier) {
+        if (playerData == null || tier == null) {
+            return false;
+        }
+
+        Set<String> excludedAugmentIds = collectOwnedAugmentIds(playerData);
+        excludedAugmentIds.addAll(collectArchetypeBlockedAugmentIds(playerData));
+
+        List<String> rolled = rollOffers(playerData, tier, excludedAugmentIds);
+        if (rolled == null || rolled.isEmpty()) {
+            return false;
+        }
+
+        String tierKey = tier.name();
+        List<String> offers = new ArrayList<>(playerData.getAugmentOffersForTier(tierKey));
+        offers.addAll(rolled);
+        playerData.setAugmentOffersForTier(tierKey, offers);
+        playerDataManager.save(playerData);
+        return true;
+    }
+
+    /**
      * Clears selected augments and pending offers, then rerolls unlocks the player
      * is
      * currently eligible for.
@@ -456,20 +485,67 @@ public class AugmentUnlockManager {
      * prestige milestone grants.
      */
     public int getExpectedSyncMilestoneCount(@Nonnull PlayerData playerData, int playerLevel) {
-        int expected = getEligibleMilestoneCount(playerData, playerLevel);
-        if (playerData == null) {
-            return expected;
+        Map<PassiveTier, Integer> expectedByTier = getExpectedSyncMilestonesByTier(playerData, playerLevel);
+        int total = 0;
+        for (int count : expectedByTier.values()) {
+            total += Math.max(0, count);
         }
+        return total;
+    }
 
-        int prestigeLevel = Math.max(0, playerData.getPrestigeLevel());
-        if (prestigeLevel <= 0) {
-            return expected;
-        }
-
+    /**
+     * Returns expected sync milestone counts per tier for the player's current
+     * level/prestige context.
+     */
+    @Nonnull
+    public Map<PassiveTier, Integer> getExpectedSyncMilestonesByTier(@Nonnull PlayerData playerData, int playerLevel) {
         int localLevel = Math.max(1, playerLevel);
-        int currentBaseTrack = getEligibleMilestoneCount(null, localLevel);
-        int fullBaseTrack = getEligibleMilestoneCount(null, playerLevelCap);
-        return expected + Math.max(0, fullBaseTrack - currentBaseTrack);
+        int progressionLevel = getProgressionLevel(playerData, localLevel);
+        int effectiveBaseTrackLevel = resolveBaseTrackEffectiveLevel(playerData, localLevel, progressionLevel);
+        Map<PassiveTier, Integer> expectedByTier = new EnumMap<>(PassiveTier.class);
+
+        for (UnlockRule rule : unlockRules) {
+            int eligible = countEligibleSyncMilestonesForRule(rule, effectiveBaseTrackLevel);
+            if (eligible <= 0) {
+                continue;
+            }
+            expectedByTier.merge(rule.tier(), eligible, Integer::sum);
+        }
+
+        appendPrestigeMilestones(expectedByTier, playerData, localLevel, progressionLevel);
+
+        for (PassiveTier tier : PassiveTier.values()) {
+            expectedByTier.putIfAbsent(tier, 0);
+        }
+        return Collections.unmodifiableMap(expectedByTier);
+    }
+
+    private int countEligibleSyncMilestonesForRule(UnlockRule rule, int progressionLevel) {
+        if (rule == null) {
+            return 0;
+        }
+
+        int effectiveLevel = Math.max(1, progressionLevel);
+        if (rule.isProgressive()) {
+            if (effectiveLevel < rule.requiredPlayerLevel()) {
+                return 0;
+            }
+
+            int interval = Math.max(1, rule.levelInterval());
+            int unlocked = ((effectiveLevel - rule.requiredPlayerLevel()) / interval) + 1;
+            if (rule.maxUnlocks() > 0) {
+                return Math.min(unlocked, rule.maxUnlocks());
+            }
+            return unlocked;
+        }
+
+        int count = 0;
+        for (int level : rule.levels()) {
+            if (effectiveLevel >= level) {
+                count++;
+            }
+        }
+        return count;
     }
 
     public int getGrantedMilestoneCount(@Nonnull PlayerData playerData, int playerLevel) {
@@ -1119,8 +1195,8 @@ public class AugmentUnlockManager {
         }
 
         int countEligibleMilestones(int playerLevel, int progressionLevel) {
+            int effectiveLevel = Math.max(1, progressionLevel);
             if (isProgressive()) {
-                int effectiveLevel = playerLevel;
                 if (effectiveLevel < requiredPlayerLevel) {
                     return 0;
                 }
@@ -1135,7 +1211,7 @@ public class AugmentUnlockManager {
 
             int count = 0;
             for (int level : levels) {
-                if (playerLevel >= level) {
+                if (effectiveLevel >= level) {
                     count++;
                 }
             }
@@ -1599,9 +1675,10 @@ public class AugmentUnlockManager {
     private Map<PassiveTier, Integer> buildEligibleByTier(PlayerData playerData, int playerLevel) {
         int localLevel = Math.max(1, playerLevel);
         int progressionLevel = getProgressionLevel(playerData, localLevel);
+        int effectiveBaseTrackLevel = resolveBaseTrackEffectiveLevel(playerData, localLevel, progressionLevel);
         Map<PassiveTier, Integer> eligibleByTier = new EnumMap<>(PassiveTier.class);
         for (UnlockRule rule : unlockRules) {
-            int eligible = rule.countEligibleMilestones(localLevel, progressionLevel);
+            int eligible = rule.countEligibleMilestones(localLevel, effectiveBaseTrackLevel);
             if (eligible <= 0) {
                 continue;
             }
@@ -1632,6 +1709,28 @@ public class AugmentUnlockManager {
 
         long progression = offset + localLevel;
         return progression >= Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) progression;
+    }
+
+    /**
+     * Base level-track unlock rules should not re-grant per prestige cycle.
+     *
+     * <p>Once prestige is above zero, base-track progression is capped at the
+     * configured base level cap so players can still catch up missed base unlocks
+     * without duplicating the full common-unlock track every prestige.
+     */
+    private int resolveBaseTrackEffectiveLevel(PlayerData playerData, int localLevel, int progressionLevel) {
+        int local = Math.max(1, localLevel);
+        int progression = Math.max(local, progressionLevel);
+        if (playerData == null) {
+            return progression;
+        }
+
+        int prestigeLevel = Math.max(0, playerData.getPrestigeLevel());
+        if (prestigeLevel <= 0) {
+            return progression;
+        }
+
+        return Math.min(progression, Math.max(1, playerLevelCap));
     }
 
     private int getConfiguredLevelCapForPrestige(int prestigeLevel) {
