@@ -22,14 +22,14 @@ ascension:
       name: "Wraith Spectral"
 
 attributes:
-  life_force: 51.5
+  life_force: 56.3
   strength: 1.07
-  defense: 0.76
+  defense: 0.77
   haste: 1.21
-  precision: 7.35
-  ferocity: 55.12
+  precision: 8.40
+  ferocity: 63.00
   stamina: 8.4
-  flow: 16.8
+  flow: 15.4
   sorcery: 1.07
   discipline: 0.0
 

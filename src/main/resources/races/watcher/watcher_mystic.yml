@@ -22,14 +22,14 @@ ascension:
       name: "Watcher Eldritch"
 
 attributes:
-  life_force: 81.9
+  life_force: 89.7
   strength: 0.75
-  defense: 0.81
+  defense: 0.83
   haste: 0.92
-  precision: 11.03
-  ferocity: 22.05
-  stamina: 4.6
-  flow: 38.5
+  precision: 12.60
+  ferocity: 25.20
+  stamina: 4.4
+  flow: 36.8
   sorcery: 1.12
   discipline: 0.0
 

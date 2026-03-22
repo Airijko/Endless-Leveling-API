@@ -24,14 +24,14 @@ ascension:
       name: "Void Reaver"
 
 attributes:
-  life_force: 102.9
+  life_force: 112.7
   strength: 1.08
-  defense: 0.89
+  defense: 0.91
   haste: 0.95
-  precision: 7.35
-  ferocity: 36.75
-  stamina: 9.2
-  flow: 30.8
+  precision: 8.40
+  ferocity: 42.00
+  stamina: 8.8
+  flow: 29.4
   sorcery: 1.08
   discipline: 0.0
 

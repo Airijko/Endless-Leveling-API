@@ -22,14 +22,14 @@ ascension:
       name: "Vastaya Beastlord"
 
 attributes: # Base Values
-  life_force: 85.0
+  life_force: 93.1
   strength: 1.08
-  defense: 0.87
+  defense: 0.89
   haste: 1.16
-  precision: 11.03
-  ferocity: 29.40
-  stamina: 7.7
-  flow: 23.1
+  precision: 12.60
+  ferocity: 33.60
+  stamina: 7.4
+  flow: 22.1
   sorcery: 1.08
   discipline: 0.0
 

@@ -22,14 +22,14 @@ ascension:
       name: "Iceborn Titan"
 
 attributes:
-  life_force: 103.4
+  life_force: 126.9
   strength: 1.11
-  defense: 1.03
+  defense: 1.08
   haste: 0.95
-  precision: 11.03
-  ferocity: 22.05
-  stamina: 15.4
-  flow: 7.7
+  precision: 12.60
+  ferocity: 25.20
+  stamina: 14.7
+  flow: 7.4
   sorcery: 0.89
   discipline: 0.0
 

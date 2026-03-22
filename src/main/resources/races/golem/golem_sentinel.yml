@@ -22,14 +22,14 @@ ascension:
       name: "Golem Colossus"
 
 attributes:
-  life_force: 214.5
+  life_force: 263.2
   strength: 0.63
-  defense: 1.22
+  defense: 1.28
   haste: 0.63
   precision: 0.00
   ferocity: 0.00
-  stamina: 15.4
-  flow: 3.9
+  stamina: 14.7
+  flow: 3.7
   sorcery: 0.71
   discipline: 0.0
 

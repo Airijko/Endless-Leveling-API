@@ -22,14 +22,14 @@ ascension:
       name: "Wraith Phantom King"
 
 attributes:
-  life_force: 54.0
+  life_force: 64.8
   strength: 1.12
-  defense: 0.79
+  defense: 0.83
   haste: 1.33
-  precision: 7.72
-  ferocity: 57.88
+  precision: 10.08
+  ferocity: 75.60
   stamina: 10.1
-  flow: 20.2
+  flow: 16.9
   sorcery: 1.12
   discipline: 0.0
 

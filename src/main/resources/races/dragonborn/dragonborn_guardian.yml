@@ -22,14 +22,14 @@ ascension:
       name: "Dragon Sentinel"
 
 attributes:
-  life_force: 125.4
+  life_force: 153.9
   strength: 1.07
-  defense: 1.12
+  defense: 1.17
   haste: 0.98
-  precision: 3.68
-  ferocity: 44.10
-  stamina: 11.6
-  flow: 11.6
+  precision: 4.20
+  ferocity: 50.40
+  stamina: 11.0
+  flow: 11.0
   sorcery: 0.98
   discipline: 0.0
 

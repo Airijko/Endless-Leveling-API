@@ -22,14 +22,14 @@ ascension:
       name: "Iceborn Frostlord"
 
 attributes:
-  life_force: 103.6
+  life_force: 124.3
   strength: 1.28
-  defense: 1.04
+  defense: 1.09
   haste: 0.99
-  precision: 11.58
-  ferocity: 23.15
-  stamina: 16.9
-  flow: 8.5
+  precision: 15.12
+  ferocity: 30.24
+  stamina: 15.4
+  flow: 7.7
   sorcery: 1.03
   discipline: 0.0
 

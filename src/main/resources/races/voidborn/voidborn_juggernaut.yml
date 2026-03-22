@@ -22,14 +22,14 @@ ascension:
       name: "Void Oblivion"
 
 attributes:
-  life_force: 118.6
+  life_force: 178.6
   strength: 1.08
-  defense: 1.03
+  defense: 1.12
   haste: 0.99
-  precision: 7.72
-  ferocity: 38.59
-  stamina: 10.2
-  flow: 33.9
+  precision: 10.08
+  ferocity: 50.40
+  stamina: 9.3
+  flow: 30.9
   sorcery: 1.08
   discipline: 0.0
 

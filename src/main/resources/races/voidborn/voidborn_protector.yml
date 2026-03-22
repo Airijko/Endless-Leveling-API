@@ -22,14 +22,14 @@ ascension:
       name: "Void Juggernaut"
 
 attributes:
-  life_force: 107.8
+  life_force: 132.3
   strength: 1.03
-  defense: 0.94
+  defense: 0.98
   haste: 0.95
-  precision: 7.35
-  ferocity: 36.75
-  stamina: 9.2
-  flow: 30.8
+  precision: 8.40
+  ferocity: 42.00
+  stamina: 8.8
+  flow: 29.4
   sorcery: 1.03
   discipline: 0.0
 

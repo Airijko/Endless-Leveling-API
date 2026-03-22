@@ -22,14 +22,14 @@ ascension:
       name: "Celestial Overlord"
 
 attributes:
-  life_force: 62.0
+  life_force: 67.8
   strength: 0.85
-  defense: 0.99
+  defense: 1.01
   haste: 0.92
-  precision: 3.68
-  ferocity: 29.40
-  stamina: 6.2
-  flow: 27.0
+  precision: 4.20
+  ferocity: 33.60
+  stamina: 5.9
+  flow: 25.7
   sorcery: 1.17
   discipline: 0.0
 

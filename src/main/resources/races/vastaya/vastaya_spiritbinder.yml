@@ -22,14 +22,14 @@ ascension:
       name: "Vastaya Apex"
 
 attributes: # Base Values
-  life_force: 89.3
+  life_force: 107.1
   strength: 1.19
-  defense: 0.92
+  defense: 0.96
   haste: 1.21
-  precision: 11.58
-  ferocity: 30.87
-  stamina: 8.5
-  flow: 25.4
+  precision: 15.12
+  ferocity: 40.32
+  stamina: 7.7
+  flow: 23.2
   sorcery: 1.19
   discipline: 0.0
 

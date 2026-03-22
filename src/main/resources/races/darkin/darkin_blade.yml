@@ -22,14 +22,14 @@ ascension:
       name: "Darkin Warlord"
 
 attributes:
-  life_force: 68.2
+  life_force: 74.8
   strength: 1.22
-  defense: 0.71
+  defense: 0.73
   haste: 1.10
-  precision: 3.68
-  ferocity: 55.12
-  stamina: 9.7
-  flow: 7.7
+  precision: 4.20
+  ferocity: 63.00
+  stamina: 9.2
+  flow: 7.4
   sorcery: 0.94
   discipline: 0.0
 

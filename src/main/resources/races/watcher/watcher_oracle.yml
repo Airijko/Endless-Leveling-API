@@ -23,12 +23,12 @@ ascension:
       name: "Watcher Arbiter"
 
 attributes:
-  life_force: 86.0
+  life_force: 103.2
   strength: 0.75
-  defense: 0.85
+  defense: 0.89
   haste: 0.97
-  precision: 11.58
-  ferocity: 23.15
+  precision: 15.12
+  ferocity: 30.24
   stamina: 6.0
   flow: 50.4
   sorcery: 1.12

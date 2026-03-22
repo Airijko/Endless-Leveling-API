@@ -23,14 +23,14 @@ ascension:
       name: "Human Knight"
 
 attributes:
-  life_force: 102.9
+  life_force: 112.7
   strength: 0.94
-  defense: 0.89
+  defense: 0.91
   haste: 1.05
-  precision: 7.35
-  ferocity: 36.75
-  stamina: 7.7
-  flow: 15.4
+  precision: 8.40
+  ferocity: 42.00
+  stamina: 7.4
+  flow: 14.7
   discipline: 0.0
 
 passives:

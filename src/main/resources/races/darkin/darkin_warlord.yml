@@ -23,14 +23,14 @@ ascension:
       name: "Darkin Unbound"
 
 attributes:
-  life_force: 71.7
+  life_force: 86.0
   strength: 1.34
-  defense: 0.75
+  defense: 0.79
   haste: 1.16
-  precision: 3.86
-  ferocity: 57.88
-  stamina: 10.6
-  flow: 8.5
+  precision: 5.04
+  ferocity: 75.60
+  stamina: 9.7
+  flow: 7.7
   sorcery: 1.03
   discipline: 0.0
 

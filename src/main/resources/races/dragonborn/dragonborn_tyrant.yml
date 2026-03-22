@@ -24,14 +24,14 @@ ascension:
       name: "Alpha Dragon"
 
 attributes:
-  life_force: 125.7
+  life_force: 150.8
   strength: 1.23
-  defense: 1.12
+  defense: 1.18
   haste: 1.03
-  precision: 3.86
-  ferocity: 46.31
-  stamina: 12.7
-  flow: 12.7
+  precision: 5.04
+  ferocity: 60.48
+  stamina: 11.6
+  flow: 11.6
   sorcery: 1.13
   discipline: 0.0
 

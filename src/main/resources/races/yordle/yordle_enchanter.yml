@@ -23,12 +23,12 @@ ascension:
       name: "Yordle Master"
 
 attributes:
-  life_force: 57.3
+  life_force: 68.8
   strength: 0.89
-  defense: 0.85
+  defense: 0.89
   haste: 1.18
-  precision: 19.29
-  ferocity: 7.72
+  precision: 25.20
+  ferocity: 10.08
   stamina: 17.7
   flow: 45.4
   sorcery: 1.04

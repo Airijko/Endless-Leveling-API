@@ -22,12 +22,12 @@ ascension:
       name: "Celestial Catalyst"
 
 attributes:
-  life_force: 62.0
+  life_force: 67.8
   strength: 0.81
-  defense: 0.99
+  defense: 1.01
   haste: 0.92
-  precision: 3.68
-  ferocity: 29.40
+  precision: 4.20
+  ferocity: 33.60
   stamina: 6.7
   flow: 29.4
   sorcery: 1.11
