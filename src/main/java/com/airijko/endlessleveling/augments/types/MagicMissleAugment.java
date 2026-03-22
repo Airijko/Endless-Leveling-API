@@ -1,6 +1,7 @@
 package com.airijko.endlessleveling.augments.types;
 
 import com.airijko.endlessleveling.augments.Augment;
+import com.airijko.endlessleveling.augments.AugmentDamageSafety;
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentHooks;
 import com.airijko.endlessleveling.augments.AugmentUtils;
@@ -9,7 +10,6 @@ import com.airijko.endlessleveling.player.SkillManager;
 import com.airijko.endlessleveling.systems.PlayerCombatSystem;
 import com.airijko.endlessleveling.util.EntityRefUtil;
 import com.hypixel.hytale.server.core.modules.entity.damage.Damage;
-import com.hypixel.hytale.server.core.modules.entity.damage.DamageSystems;
 
 import java.util.Map;
 
@@ -53,7 +53,7 @@ public final class MagicMissleAugment extends Augment implements AugmentHooks.On
         if (context.getCommandBuffer() != null && context.getTargetRef() != null
                 && EntityRefUtil.isUsable(context.getTargetRef())) {
             Damage proc = PlayerCombatSystem.createAugmentProcDamage(context.getAttackerRef(), (float) missileDamage);
-            DamageSystems.executeDamage(context.getTargetRef(), context.getCommandBuffer(), proc);
+            AugmentDamageSafety.tryExecuteDamage(context.getTargetRef(), context.getCommandBuffer(), proc, ID);
             return context.getDamage();
         }
 

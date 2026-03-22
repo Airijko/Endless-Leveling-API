@@ -1,6 +1,7 @@
 package com.airijko.endlessleveling.augments.types;
 
 import com.airijko.endlessleveling.augments.Augment;
+import com.airijko.endlessleveling.augments.AugmentDamageSafety;
 
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentHooks;
@@ -13,7 +14,6 @@ import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.server.core.asset.type.soundevent.config.SoundEvent;
 import com.hypixel.hytale.server.core.modules.entity.damage.Damage;
-import com.hypixel.hytale.server.core.modules.entity.damage.DamageSystems;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.universe.world.ParticleUtil;
 import com.hypixel.hytale.server.core.universe.world.SoundUtil;
@@ -108,7 +108,7 @@ public final class PhantomHitsAugment extends Augment implements AugmentHooks.On
             Damage phantomProc = PlayerCombatSystem.createAugmentProcDamage(
                     context.getAttackerRef(),
                     (float) phantomDamage);
-            DamageSystems.executeDamage(context.getTargetRef(), context.getCommandBuffer(), phantomProc);
+                AugmentDamageSafety.tryExecuteDamage(context.getTargetRef(), context.getCommandBuffer(), phantomProc, ID);
             return context.getDamage();
         }
 

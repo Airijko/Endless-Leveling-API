@@ -1,6 +1,7 @@
 package com.airijko.endlessleveling.augments.types;
 
 import com.airijko.endlessleveling.augments.Augment;
+import com.airijko.endlessleveling.augments.AugmentDamageSafety;
 
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentHooks;
@@ -14,7 +15,6 @@ import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.server.core.modules.entity.damage.Damage;
 import com.hypixel.hytale.server.core.modules.entity.damage.DamageCause;
-import com.hypixel.hytale.server.core.modules.entity.damage.DamageSystems;
 import com.hypixel.hytale.server.core.modules.entity.damage.DeathComponent;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
@@ -299,9 +299,10 @@ public final class DeathBombAugment extends Augment
         EntityStatValue hpBeforeValue = targetStats == null ? null : targetStats.get(DefaultEntityStatTypes.getHealth());
         float hpBefore = hpBeforeValue == null ? 0.0f : hpBeforeValue.get();
 
-        DamageSystems.executeDamage(targetRef,
-                commandBuffer,
-                PlayerCombatSystem.createAugmentProcDamage(sourceRef, configuredDamage));
+        AugmentDamageSafety.tryExecuteDamage(targetRef,
+            commandBuffer,
+            PlayerCombatSystem.createAugmentProcDamage(sourceRef, configuredDamage),
+            ID);
 
         if (targetStats == null || hpBeforeValue == null || hpBefore <= 0.0f) {
             return;

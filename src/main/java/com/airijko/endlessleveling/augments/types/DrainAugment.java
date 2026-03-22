@@ -1,6 +1,7 @@
 package com.airijko.endlessleveling.augments.types;
 
 import com.airijko.endlessleveling.augments.Augment;
+import com.airijko.endlessleveling.augments.AugmentDamageSafety;
 
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentHooks;
@@ -9,7 +10,6 @@ import com.airijko.endlessleveling.augments.AugmentValueReader;
 import com.airijko.endlessleveling.systems.PlayerCombatSystem;
 import com.airijko.endlessleveling.util.EntityRefUtil;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
-import com.hypixel.hytale.server.core.modules.entity.damage.DamageSystems;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
 import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
 
@@ -74,10 +74,11 @@ public final class DrainAugment extends Augment implements AugmentHooks.OnHitAug
         // Drain is a one-time proc hit, so it should use the augment proc damage path.
         if (context.getCommandBuffer() != null && context.getTargetRef() != null
                 && EntityRefUtil.isUsable(context.getTargetRef())) {
-            DamageSystems.executeDamage(
+                AugmentDamageSafety.tryExecuteDamage(
                     context.getTargetRef(),
                     context.getCommandBuffer(),
-                    PlayerCombatSystem.createAugmentProcDamage(context.getAttackerRef(), (float) extra));
+                    PlayerCombatSystem.createAugmentProcDamage(context.getAttackerRef(), (float) extra),
+                    ID);
             state.setLastProc(now);
             return context.getDamage();
         }

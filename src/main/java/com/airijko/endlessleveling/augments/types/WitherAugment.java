@@ -3,6 +3,7 @@ package com.airijko.endlessleveling.augments.types;
 import com.airijko.endlessleveling.augments.Augment;
 
 import com.airijko.endlessleveling.augments.AugmentDefinition;
+import com.airijko.endlessleveling.augments.AugmentDamageSafety;
 import com.airijko.endlessleveling.augments.AugmentHooks;
 import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
@@ -17,7 +18,6 @@ import com.hypixel.hytale.server.core.asset.type.entityeffect.config.OverlapBeha
 import com.hypixel.hytale.server.core.entity.entities.player.movement.MovementManager;
 import com.hypixel.hytale.server.core.entity.effect.EffectControllerComponent;
 import com.hypixel.hytale.server.core.modules.entity.damage.Damage;
-import com.hypixel.hytale.server.core.modules.entity.damage.DamageSystems;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue;
 import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
@@ -249,26 +249,24 @@ public final class WitherAugment extends Augment implements AugmentHooks.OnHitAu
         Ref<EntityStore> sourceRef = sanitizeSourceRefForTarget(state, ref);
         Damage witherTickDamage = PlayerCombatSystem.createAugmentDotDamage(sourceRef, (float) damage);
 
-        // Validate entity is still usable before applying damage (entity may have
-        // become invisible)
-            if (!EntityRefUtil.isUsable(ref)) {
-                LOGGER.atFine().log("Wither damage skipped: entity no longer usable key=%s target=%s", key, ref);
-                return;
-            }
-            // Additional check for entity visibility if available
-            try {
-                if (ref.getStore() == null || !ref.isValid()) {
-                    LOGGER.atFine().log("Wither damage skipped: entity not valid or store missing key=%s target=%s", key, ref);
-                    return;
-                }
-                // If EntityStore or entity has isVisible/isAlive, check here
-                // Example: if (ref.getStore().isVisible(ref) == false) return;
-            } catch (Exception e) {
-                LOGGER.atFine().log("Wither damage skipped: exception during visibility check key=%s target=%s error=%s", key, ref, e);
-                return;
-            }
-            DamageSystems.executeDamage(ref, commandBuffer, witherTickDamage);
+        if (!EntityRefUtil.isUsable(ref)) {
+            clearSlowIfPossible(state, commandBuffer, ref);
+            ACTIVE_WITHER.remove(key);
+            LOGGER.atFine().log("Wither removed: target became unusable key=%s target=%s", key, ref);
+            return;
+        }
+
+        if (!AugmentDamageSafety.tryExecuteDamage(ref, commandBuffer, witherTickDamage, ID)) {
             state.nextTickAt = now + TICK_INTERVAL_MILLIS;
+            if (!EntityRefUtil.isUsable(ref)) {
+                clearSlowIfPossible(state, commandBuffer, ref);
+                ACTIVE_WITHER.remove(key);
+                LOGGER.atFine().log("Wither removed after failed damage: target unusable key=%s target=%s", key, ref);
+            }
+            return;
+        }
+
+        state.nextTickAt = now + TICK_INTERVAL_MILLIS;
     }
 
     public static void purgeExpiredStates(long now) {

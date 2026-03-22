@@ -4,6 +4,7 @@ import com.airijko.endlessleveling.augments.Augment;
 
 import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.augments.AugmentDefinition;
+import com.airijko.endlessleveling.augments.AugmentDamageSafety;
 import com.airijko.endlessleveling.augments.AugmentHooks;
 import com.airijko.endlessleveling.augments.AugmentRuntimeManager.AugmentRuntimeState;
 import com.airijko.endlessleveling.augments.AugmentUtils;
@@ -21,7 +22,6 @@ import com.hypixel.hytale.server.core.asset.type.entityeffect.config.OverlapBeha
 import com.hypixel.hytale.server.core.asset.type.soundevent.config.SoundEvent;
 import com.hypixel.hytale.server.core.entity.effect.EffectControllerComponent;
 import com.hypixel.hytale.server.core.modules.entity.damage.Damage;
-import com.hypixel.hytale.server.core.modules.entity.damage.DamageSystems;
 import com.hypixel.hytale.server.core.modules.entity.component.Invulnerable;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
@@ -258,25 +258,10 @@ public final class BurnAugment extends Augment
                 continue;
             }
 
-            if (!tryExecuteBurnDamage(targetRef, commandBuffer, burnTickDamage)) {
+            if (!AugmentDamageSafety.tryExecuteDamage(targetRef, commandBuffer, burnTickDamage, ID)) {
                 continue;
             }
             applyBurnEffect(targetRef, commandBuffer, burnEffect);
-        }
-    }
-
-    private static boolean tryExecuteBurnDamage(Ref<EntityStore> targetRef,
-            CommandBuffer<EntityStore> commandBuffer,
-            Damage burnTickDamage) {
-        try {
-            DamageSystems.executeDamage(targetRef, commandBuffer, burnTickDamage);
-            return true;
-        } catch (IllegalArgumentException exception) {
-            String message = exception.getMessage();
-            if (message != null && message.contains("Entity is not visible")) {
-                return false;
-            }
-            throw exception;
         }
     }
 

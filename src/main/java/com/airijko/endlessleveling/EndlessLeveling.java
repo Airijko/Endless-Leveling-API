@@ -57,7 +57,6 @@ import com.airijko.endlessleveling.systems.WitherEffectSystem;
 import com.airijko.endlessleveling.leveling.XpEventSystem;
 import com.airijko.endlessleveling.util.FixedValue;
 import com.hypixel.hytale.logger.HytaleLogger;
-import com.hypixel.hytale.server.core.event.events.entity.LivingEntityInventoryChangeEvent;
 import com.hypixel.hytale.server.core.event.events.player.PlayerDisconnectEvent;
 import com.hypixel.hytale.server.core.event.events.player.PlayerReadyEvent;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
@@ -66,6 +65,7 @@ import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 import javax.annotation.Nonnull;
 import java.security.CodeSource;
 import java.util.Locale;
+import java.util.Optional;
 
 public class EndlessLeveling extends JavaPlugin {
 
@@ -465,8 +465,11 @@ public class EndlessLeveling extends JavaPlugin {
 
         this.getEventRegistry().registerGlobal(PlayerReadyEvent.class, OpenPlayerHudListener::openGui);
         LuckDoubleDropSystem luckDoubleDropSystem = new LuckDoubleDropSystem(playerDataManager, passiveManager);
-        this.getEventRegistry().registerGlobal(LivingEntityInventoryChangeEvent.class,
-                luckDoubleDropSystem::onInventoryChange);
+        resolveInventoryChangeEventClass().ifPresentOrElse(eventClass -> {
+            this.getEventRegistry().registerGlobal((Class) eventClass, luckDoubleDropSystem::onInventoryChangeCompat);
+            LOGGER.atInfo().log("Registered inventory change listener using event class %s", eventClass.getName());
+        }, () -> LOGGER.atWarning().log(
+            "No supported inventory change event class was found; luck double-drop inventory listener disabled."));
         this.getEntityStoreRegistry().registerSystem(new BreakBlockEntitySystem(luckDoubleDropSystem));
         this.getEntityStoreRegistry().registerSystem(new MobDropTaggingSystem(luckDoubleDropSystem));
         this.getEntityStoreRegistry()
@@ -534,6 +537,23 @@ public class EndlessLeveling extends JavaPlugin {
             partyManager.saveAllParties();
             LOGGER.atInfo().log("Server shutting down: all party data saved.");
         }
+    }
+
+    private Optional<Class<?>> resolveInventoryChangeEventClass() {
+        String[] candidates = {
+                "com.hypixel.hytale.server.core.event.events.entity.InventoryChangeEvent",
+                "com.hypixel.hytale.server.core.event.events.entity.LivingEntityInventoryChangeEvent"
+        };
+
+        for (String className : candidates) {
+            try {
+                return Optional.of(Class.forName(className));
+            } catch (ClassNotFoundException ignored) {
+                // Try the next known event class name.
+            }
+        }
+
+        return Optional.empty();
     }
 
 }

@@ -1,6 +1,7 @@
 package com.airijko.endlessleveling.augments.types;
 
 import com.airijko.endlessleveling.augments.Augment;
+import com.airijko.endlessleveling.augments.AugmentDamageSafety;
 
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentHooks;
@@ -14,7 +15,6 @@ import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.modules.entity.damage.Damage;
-import com.hypixel.hytale.server.core.modules.entity.damage.DamageSystems;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue;
@@ -163,7 +163,7 @@ public final class BloodthirsterAugment extends Augment implements AugmentHooks.
                     && EntityRefUtil.isUsable(context.getTargetRef())) {
                 Damage proc = PlayerCombatSystem.createAugmentProcDamage(context.getAttackerRef(),
                         (float) healthyBonusDamage);
-                DamageSystems.executeDamage(context.getTargetRef(), context.getCommandBuffer(), proc);
+                AugmentDamageSafety.tryExecuteDamage(context.getTargetRef(), context.getCommandBuffer(), proc, ID);
             }
 
             if (playerRef != null && playerRef.isValid()) {

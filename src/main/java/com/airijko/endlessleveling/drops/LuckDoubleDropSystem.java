@@ -14,7 +14,6 @@ import com.hypixel.hytale.server.core.entity.UUIDComponent;
 import com.hypixel.hytale.server.core.entity.LivingEntity;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.event.events.ecs.DropItemEvent;
-import com.hypixel.hytale.server.core.event.events.entity.LivingEntityInventoryChangeEvent;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.inventory.container.CombinedItemContainer;
 import com.hypixel.hytale.server.core.inventory.transaction.ActionType;
@@ -448,8 +447,11 @@ public class LuckDoubleDropSystem {
      * Invoked when a living entity's inventory changes. Only players are eligible
      * for luck procs.
      */
-    public void onInventoryChange(@Nonnull LivingEntityInventoryChangeEvent event) {
-        LivingEntity livingEntity = event.getEntity();
+    public void onInventoryChangeCompat(@Nonnull Object event) {
+        LivingEntity livingEntity = resolveLivingEntity(event);
+        if (livingEntity == null) {
+            return;
+        }
         if (!(livingEntity instanceof Player player)) {
             return;
         }
@@ -465,7 +467,10 @@ public class LuckDoubleDropSystem {
             return;
         }
 
-        Transaction transaction = event.getTransaction();
+        Transaction transaction = resolveTransaction(event);
+        if (transaction == null) {
+            return;
+        }
         if (!(transaction instanceof ItemStackTransaction stackTransaction)) {
             return;
         }
@@ -519,6 +524,36 @@ public class LuckDoubleDropSystem {
         if (grantBonus(player, playerRef, sourceStack, bonusAmount)) {
             passiveManager.notifyLuckDoubleDrop(playerData, formatDropName(sourceStack), addedAmount, bonusAmount);
         }
+    }
+
+    private LivingEntity resolveLivingEntity(@Nonnull Object event) {
+        try {
+            Object entity = event.getClass().getMethod("getEntity").invoke(event);
+            if (entity instanceof LivingEntity livingEntity) {
+                return livingEntity;
+            }
+            LOGGER.atFiner().log("[MOB_LUCK] inventory event %s did not provide a LivingEntity", event.getClass().getName());
+        } catch (ReflectiveOperationException ex) {
+            LOGGER.atWarning().withCause(ex).log(
+                    "[MOB_LUCK] Failed to resolve entity from inventory event type %s",
+                    event.getClass().getName());
+        }
+        return null;
+    }
+
+    private Transaction resolveTransaction(@Nonnull Object event) {
+        try {
+            Object transaction = event.getClass().getMethod("getTransaction").invoke(event);
+            if (transaction instanceof Transaction tx) {
+                return tx;
+            }
+            LOGGER.atFiner().log("[MOB_LUCK] inventory event %s did not provide a Transaction", event.getClass().getName());
+        } catch (ReflectiveOperationException ex) {
+            LOGGER.atWarning().withCause(ex).log(
+                    "[MOB_LUCK] Failed to resolve transaction from inventory event type %s",
+                    event.getClass().getName());
+        }
+        return null;
     }
 
     private boolean grantBonus(@Nonnull Player player,
