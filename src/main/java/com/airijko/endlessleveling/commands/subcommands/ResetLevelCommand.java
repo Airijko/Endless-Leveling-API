@@ -40,11 +40,16 @@ public class ResetLevelCommand extends AbstractCommand {
         this.playerDataManager = EndlessLeveling.getInstance().getPlayerDataManager();
         this.levelingManager = EndlessLeveling.getInstance().getLevelingManager();
         this.skillManager = EndlessLeveling.getInstance().getSkillManager();
+        this.addUsageVariant(new ResetLevelSelfVariant());
     }
 
     @Nullable
     @Override
     protected CompletableFuture<Void> execute(@Nonnull CommandContext commandContext) {
+        return executeInternal(commandContext, targetArg.get(commandContext));
+    }
+
+    private CompletableFuture<Void> executeInternal(@Nonnull CommandContext commandContext, @Nullable String explicitTargetName) {
         if (commandContext.sender() instanceof Player) {
             CommandUtil.requirePermission(commandContext.sender(), PERMISSION_NODE);
         } else if (!PartnerConsoleGuard.isConsoleAllowed("el resetlevel")) {
@@ -54,12 +59,33 @@ public class ResetLevelCommand extends AbstractCommand {
             return CompletableFuture.completedFuture(null);
         }
 
-        String targetName = targetArg.get(commandContext);
+        Player senderPlayer = commandContext.senderAs(Player.class);
+        boolean senderIsPlayer = senderPlayer != null;
 
-        PlayerData targetData = playerDataManager.getByName(targetName);
-        if (targetData == null) {
-            commandContext.sendMessage(Message.raw("Player not found: " + targetName));
-            return CompletableFuture.completedFuture(null);
+        PlayerData targetData;
+        String targetName;
+
+        if (explicitTargetName != null && !explicitTargetName.isBlank()) {
+            targetName = explicitTargetName;
+            targetData = playerDataManager.getByName(targetName);
+            if (targetData == null) {
+                commandContext.sendMessage(Message.raw("Player not found: " + targetName));
+                return CompletableFuture.completedFuture(null);
+            }
+        } else {
+            if (!senderIsPlayer) {
+                commandContext.sendMessage(Message.raw("Console usage requires a target player argument.").color("#ff6666"));
+                return CompletableFuture.completedFuture(null);
+            }
+
+            targetData = playerDataManager.get(senderPlayer.getUuid());
+            if (targetData == null) {
+                commandContext.sendMessage(Message.raw("No saved data found. Try rejoining.").color("#ff6666"));
+                return CompletableFuture.completedFuture(null);
+            }
+
+            PlayerRef selfRef = Universe.get().getPlayer(targetData.getUuid());
+            targetName = selfRef != null ? selfRef.getUsername() : targetData.getPlayerName();
         }
 
         PlayerRef targetRef = Universe.get().getPlayer(targetData.getUuid());
@@ -74,6 +100,18 @@ public class ResetLevelCommand extends AbstractCommand {
         }
 
         return CompletableFuture.completedFuture(null);
+    }
+
+    private final class ResetLevelSelfVariant extends AbstractCommand {
+        private ResetLevelSelfVariant() {
+            super("Reset your level back to 1");
+        }
+
+        @Nullable
+        @Override
+        protected CompletableFuture<Void> execute(@Nonnull CommandContext commandContext) {
+            return executeInternal(commandContext, null);
+        }
     }
 
     private void applySkillModifiers(PlayerData targetData, PlayerRef targetRef) {

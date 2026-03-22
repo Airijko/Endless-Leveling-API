@@ -12,7 +12,7 @@ import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.AbstractCommand;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
 import com.hypixel.hytale.server.core.command.system.CommandUtil;
-import com.hypixel.hytale.server.core.command.system.arguments.system.OptionalArg;
+import com.hypixel.hytale.server.core.command.system.arguments.system.RequiredArg;
 import com.hypixel.hytale.server.core.command.system.arguments.types.ArgTypes;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.permissions.HytalePermissions;
@@ -38,23 +38,30 @@ public class ResetSkillPointsCommand extends AbstractCommand {
     private final SkillManager skillManager;
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
 
-    private final OptionalArg<String> targetArg = this.withOptionalArg("player", "Target player name", ArgTypes.STRING);
+    private final RequiredArg<String> targetArg = this.withRequiredArg("player", "Target player name", ArgTypes.STRING);
 
     public ResetSkillPointsCommand() {
         super("resetskillpoints", "Reset your EndlessLeveling skill points to their default distribution");
         this.playerDataManager = EndlessLeveling.getInstance().getPlayerDataManager();
         this.skillManager = EndlessLeveling.getInstance().getSkillManager();
         this.addAliases("resetskills");
+        this.addUsageVariant(new ResetSkillPointsSelfVariant());
     }
 
     @Nullable
     @Override
     protected CompletableFuture<Void> execute(@Nonnull CommandContext commandContext) {
+        return executeInternal(commandContext, targetArg.get(commandContext), true);
+    }
+
+    private CompletableFuture<Void> executeInternal(@Nonnull CommandContext commandContext,
+            @Nullable String explicitTargetName,
+            boolean hasExplicitTarget) {
         Player senderPlayer = commandContext.senderAs(Player.class);
         boolean senderIsPlayer = senderPlayer != null;
 
         if (senderIsPlayer) {
-            if (targetArg.provided(commandContext)) {
+            if (hasExplicitTarget) {
                 CommandUtil.requirePermission(commandContext.sender(), PERMISSION_NODE);
             }
         } else if (!PartnerConsoleGuard.isConsoleAllowed("el resetskillpoints")) {
@@ -83,15 +90,13 @@ public class ResetSkillPointsCommand extends AbstractCommand {
             return CompletableFuture.completedFuture(null);
         }
 
-        boolean hasTarget = targetArg.provided(commandContext);
-
         PlayerData targetData;
         PlayerRef targetRef;
         String targetName;
         PlayerRef senderRef = senderIsPlayer ? Universe.get().getPlayer(senderPlayer.getUuid()) : null;
 
-        if (hasTarget) {
-            targetName = targetArg.get(commandContext);
+        if (hasExplicitTarget) {
+            targetName = explicitTargetName;
             targetData = playerDataManager.getByName(targetName);
             if (targetData == null) {
                 if (senderRef != null) {
@@ -142,7 +147,7 @@ public class ResetSkillPointsCommand extends AbstractCommand {
                     "command.reset_skillpoints.notify_target",
                     "An admin reset your skill points to the default layout."))
                     .color("#4fd7f7"));
-        } else if (!hasTarget && senderRef != null) {
+        } else if (!hasExplicitTarget && senderRef != null) {
             senderRef.sendMessage(Message.raw(Lang.tr(senderRef.getUuid(),
                     "command.reset_skillpoints.success_self",
                     "Your skill points have been reset to the default layout."))
@@ -176,6 +181,18 @@ public class ResetSkillPointsCommand extends AbstractCommand {
             if (retrySystem != null) {
                 retrySystem.scheduleRetry(targetData.getUuid());
             }
+        }
+    }
+
+    private final class ResetSkillPointsSelfVariant extends AbstractCommand {
+        private ResetSkillPointsSelfVariant() {
+            super("Reset your EndlessLeveling skill points to their default distribution");
+        }
+
+        @Nullable
+        @Override
+        protected CompletableFuture<Void> execute(@Nonnull CommandContext commandContext) {
+            return executeInternal(commandContext, null, false);
         }
     }
 }

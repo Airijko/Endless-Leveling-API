@@ -40,11 +40,18 @@ public class SetLevelCommand extends AbstractCommand {
         // Initialize the managers from your main plugin instance
         this.playerDataManager = EndlessLeveling.getInstance().getPlayerDataManager();
         this.levelingManager = EndlessLeveling.getInstance().getLevelingManager();
+        this.addUsageVariant(new SetLevelSelfVariant());
     }
 
     @Nullable
     @Override
     protected CompletableFuture<Void> execute(@Nonnull CommandContext commandContext) {
+        return executeInternal(commandContext, targetArg.get(commandContext), levelArg.get(commandContext));
+    }
+
+    private CompletableFuture<Void> executeInternal(@Nonnull CommandContext commandContext,
+            @Nullable String explicitTargetName,
+            int requestedLevel) {
         if (commandContext.sender() instanceof Player) {
             CommandUtil.requirePermission(commandContext.sender(), PERMISSION_NODE);
         } else if (!PartnerConsoleGuard.isConsoleAllowed("el setlevel")) {
@@ -54,19 +61,38 @@ public class SetLevelCommand extends AbstractCommand {
             return CompletableFuture.completedFuture(null);
         }
 
-        String targetName = targetArg.get(commandContext);
-        int requestedLevel = levelArg.get(commandContext);
+        Player senderPlayer = commandContext.senderAs(Player.class);
+        boolean senderIsPlayer = senderPlayer != null;
 
         if (requestedLevel < 1) {
             commandContext.sendMessage(Message.raw("Level must be 1 or higher."));
             return CompletableFuture.completedFuture(null);
         }
 
-        // Look up player by name in the data manager
-        PlayerData targetData = playerDataManager.getByName(targetName);
-        if (targetData == null) {
-            commandContext.sendMessage(Message.raw("Player not found: " + targetName));
-            return CompletableFuture.completedFuture(null);
+        PlayerData targetData;
+        String targetName;
+
+        if (explicitTargetName != null && !explicitTargetName.isBlank()) {
+            targetName = explicitTargetName;
+            targetData = playerDataManager.getByName(targetName);
+            if (targetData == null) {
+                commandContext.sendMessage(Message.raw("Player not found: " + targetName));
+                return CompletableFuture.completedFuture(null);
+            }
+        } else {
+            if (!senderIsPlayer) {
+                commandContext.sendMessage(Message.raw("Console usage requires a target player argument.").color("#ff6666"));
+                return CompletableFuture.completedFuture(null);
+            }
+
+            targetData = playerDataManager.get(senderPlayer.getUuid());
+            if (targetData == null) {
+                commandContext.sendMessage(Message.raw("No saved data found. Try rejoining.").color("#ff6666"));
+                return CompletableFuture.completedFuture(null);
+            }
+
+            PlayerRef selfRef = Universe.get().getPlayer(targetData.getUuid());
+            targetName = selfRef != null ? selfRef.getUsername() : targetData.getPlayerName();
         }
 
         int levelCap = levelingManager.getLevelCap(targetData);
@@ -91,5 +117,19 @@ public class SetLevelCommand extends AbstractCommand {
         }
 
         return CompletableFuture.completedFuture(null);
+    }
+
+    private final class SetLevelSelfVariant extends AbstractCommand {
+        private final RequiredArg<Integer> selfLevelArg = this.withRequiredArg("level", "New level to set", ArgTypes.INTEGER);
+
+        private SetLevelSelfVariant() {
+            super("Set your own level");
+        }
+
+        @Nullable
+        @Override
+        protected CompletableFuture<Void> execute(@Nonnull CommandContext commandContext) {
+            return executeInternal(commandContext, null, selfLevelArg.get(commandContext));
+        }
     }
 }

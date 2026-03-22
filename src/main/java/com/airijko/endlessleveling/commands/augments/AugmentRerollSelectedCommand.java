@@ -1,7 +1,10 @@
 package com.airijko.endlessleveling.commands.augments;
 
 import com.airijko.endlessleveling.EndlessLeveling;
+import com.airijko.endlessleveling.augments.AugmentDefinition;
+import com.airijko.endlessleveling.augments.AugmentManager;
 import com.airijko.endlessleveling.augments.AugmentUnlockManager;
+import com.airijko.endlessleveling.augments.types.CommonAugment;
 import com.airijko.endlessleveling.enums.PassiveTier;
 import com.airijko.endlessleveling.player.PlayerData;
 import com.airijko.endlessleveling.player.PlayerDataManager;
@@ -36,15 +39,19 @@ public class AugmentRerollSelectedCommand extends AbstractPlayerCommand {
 
     private final PlayerDataManager playerDataManager;
     private final AugmentUnlockManager augmentUnlockManager;
+    private final AugmentManager augmentManager;
 
     private final RequiredArg<String> augmentArg = this.withRequiredArg(
             "augment_id", "ID of a selected augment to reroll", ArgTypes.STRING);
 
     public AugmentRerollSelectedCommand() {
         super("reroll", "Un-select a chosen augment and receive new offers for that tier");
+        this.addUsageVariant(new RerollListVariant());
+
         EndlessLeveling plugin = EndlessLeveling.getInstance();
         this.playerDataManager = plugin != null ? plugin.getPlayerDataManager() : null;
         this.augmentUnlockManager = plugin != null ? plugin.getAugmentUnlockManager() : null;
+        this.augmentManager = plugin != null ? plugin.getAugmentManager() : null;
     }
 
     @Override
@@ -58,6 +65,12 @@ public class AugmentRerollSelectedCommand extends AbstractPlayerCommand {
             @Nonnull Ref<EntityStore> ref,
             @Nonnull PlayerRef playerRef,
             @Nonnull World world) {
+        executeInternal(commandContext, playerRef, augmentArg.get(commandContext));
+    }
+
+    private void executeInternal(@Nonnull CommandContext commandContext,
+            @Nonnull PlayerRef playerRef,
+            String explicitTargetAugmentId) {
         if (playerDataManager == null || augmentUnlockManager == null) {
             playerRef.sendMessage(Message.raw("Augment system is not initialised.").color("#ff6666"));
             return;
@@ -75,10 +88,10 @@ public class AugmentRerollSelectedCommand extends AbstractPlayerCommand {
             return;
         }
 
-        String targetAugmentId = augmentArg.get(commandContext).trim();
+        String targetAugmentId = explicitTargetAugmentId == null ? "" : explicitTargetAugmentId.trim();
         if (targetAugmentId.isBlank()) {
             playerRef.sendMessage(Message.raw(
-                "Usage: /el augments reroll <augment_id>\nSelected augments:").color("#ff9900"));
+                "Usage: /el augments reroll <augment_id>\nSelected augments:").color("#4fd7f7"));
             sendSelectedAugmentList(playerRef, selected);
             return;
         }
@@ -101,11 +114,8 @@ public class AugmentRerollSelectedCommand extends AbstractPlayerCommand {
         }
 
         // Derive the tier from the slot key (e.g. "MYTHIC" or "MYTHIC#2" → MYTHIC)
-        String tierName = foundKey.contains("#") ? foundKey.substring(0, foundKey.indexOf('#')) : foundKey;
-        PassiveTier tier;
-        try {
-            tier = PassiveTier.valueOf(tierName.toUpperCase(Locale.ROOT));
-        } catch (IllegalArgumentException ignored) {
+        PassiveTier tier = resolveTier(foundKey, targetAugmentId);
+        if (tier == null) {
             playerRef.sendMessage(
                     Message.raw("Could not determine augment tier for slot: " + foundKey).color("#ff6666"));
             return;
@@ -130,7 +140,7 @@ public class AugmentRerollSelectedCommand extends AbstractPlayerCommand {
 
         // Consume one reroll token (operators are exempt)
         if (!isOperator) {
-            playerData.incrementAugmentRerollsUsedForTier(tierName);
+            playerData.incrementAugmentRerollsUsedForTier(tierKey);
         }
 
         // Roll a fresh offer set for the freed slot.
@@ -175,12 +185,67 @@ public class AugmentRerollSelectedCommand extends AbstractPlayerCommand {
         entries.sort(Comparator.comparing(entry -> entry.getKey() == null ? "" : entry.getKey()));
         for (Map.Entry<String, String> entry : entries) {
             String selectionKey = entry.getKey() == null ? "UNKNOWN" : entry.getKey();
-            String tierName = selectionKey.contains("#")
-                    ? selectionKey.substring(0, selectionKey.indexOf('#'))
-                    : selectionKey;
+            PassiveTier tier = resolveTier(selectionKey, entry.getValue());
+            String tierName = tier != null ? tier.name() : "UNKNOWN";
             playerRef.sendMessage(Message.raw(
                     "- " + entry.getValue() + " [" + tierName.toUpperCase(Locale.ROOT) + "]")
                     .color("#4fd7f7"));
+        }
+    }
+
+    private PassiveTier resolveTier(String selectionKey, String selectedAugmentId) {
+        if (selectionKey != null && !selectionKey.isBlank()) {
+            String key = selectionKey.trim();
+            int hashIndex = key.indexOf('#');
+            if (hashIndex >= 0) {
+                key = key.substring(0, hashIndex);
+            }
+            int colonIndex = key.indexOf(':');
+            if (colonIndex >= 0) {
+                key = key.substring(0, colonIndex);
+            }
+
+            try {
+                return PassiveTier.valueOf(key.toUpperCase(Locale.ROOT));
+            } catch (IllegalArgumentException ignored) {
+                // Fall through to id-based resolution for legacy/nonstandard keys.
+            }
+        }
+
+        if (selectedAugmentId == null || selectedAugmentId.isBlank()) {
+            return null;
+        }
+
+        if (CommonAugment.parseStatOfferId(selectedAugmentId) != null) {
+            return PassiveTier.COMMON;
+        }
+
+        if (augmentManager == null) {
+            return null;
+        }
+
+        AugmentDefinition definition = augmentManager.getAugment(selectedAugmentId);
+        return definition != null ? definition.getTier() : null;
+    }
+
+    private final class RerollListVariant extends AbstractPlayerCommand {
+
+        private RerollListVariant() {
+            super("List selected augments that can be rerolled");
+        }
+
+        @Override
+        protected boolean canGeneratePermission() {
+            return false;
+        }
+
+        @Override
+        protected void execute(@Nonnull CommandContext commandContext,
+                @Nonnull Store<EntityStore> store,
+                @Nonnull Ref<EntityStore> ref,
+                @Nonnull PlayerRef playerRef,
+                @Nonnull World world) {
+            executeInternal(commandContext, playerRef, null);
         }
     }
 }

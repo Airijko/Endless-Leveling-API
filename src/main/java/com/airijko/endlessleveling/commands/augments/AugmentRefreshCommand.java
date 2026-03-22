@@ -11,6 +11,7 @@ import com.hypixel.hytale.server.core.command.system.CommandContext;
 import com.hypixel.hytale.server.core.command.system.CommandUtil;
 import com.hypixel.hytale.server.core.command.system.arguments.system.RequiredArg;
 import com.hypixel.hytale.server.core.command.system.arguments.types.ArgTypes;
+import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.permissions.HytalePermissions;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
@@ -25,7 +26,7 @@ public class AugmentRefreshCommand extends AbstractCommand {
 
     private final PlayerDataManager playerDataManager;
     private final AugmentUnlockManager augmentUnlockManager;
-    private final RequiredArg<String> targetArg =
+        private final RequiredArg<String> targetArg =
             this.withRequiredArg("player", "Target player name", ArgTypes.STRING);
 
     public AugmentRefreshCommand() {
@@ -40,6 +41,9 @@ public class AugmentRefreshCommand extends AbstractCommand {
         if (aliases != null && aliases.length > 0) {
             this.addAliases(aliases);
         }
+
+        this.addUsageVariant(new RefreshSelfVariant());
+
         EndlessLeveling plugin = EndlessLeveling.getInstance();
         this.playerDataManager = plugin != null ? plugin.getPlayerDataManager() : null;
         this.augmentUnlockManager = plugin != null ? plugin.getAugmentUnlockManager() : null;
@@ -48,7 +52,14 @@ public class AugmentRefreshCommand extends AbstractCommand {
     @Nullable
     @Override
     protected CompletableFuture<Void> execute(@Nonnull CommandContext context) {
-        if (context.sender() instanceof com.hypixel.hytale.server.core.entity.entities.Player) {
+        return executeInternal(context, targetArg.get(context));
+    }
+
+    private CompletableFuture<Void> executeInternal(@Nonnull CommandContext context, @Nullable String explicitTargetName) {
+        Player senderPlayer = context.senderAs(Player.class);
+        boolean senderIsPlayer = senderPlayer != null;
+
+        if (senderIsPlayer) {
             CommandUtil.requirePermission(context.sender(), PERMISSION_NODE);
         } else {
             if (!PartnerConsoleGuard.isConsoleAllowed("el augments refresh")) {
@@ -64,11 +75,32 @@ public class AugmentRefreshCommand extends AbstractCommand {
             return CompletableFuture.completedFuture(null);
         }
 
-        String targetName = targetArg.get(context);
-        PlayerData targetData = playerDataManager.getByName(targetName);
-        if (targetData == null) {
-            context.sendMessage(Message.raw("Player not found: " + targetName).color("#ff6666"));
-            return CompletableFuture.completedFuture(null);
+        PlayerData targetData;
+        String targetName;
+        PlayerRef targetRef;
+
+        if (explicitTargetName != null && !explicitTargetName.isBlank()) {
+            targetName = explicitTargetName;
+            targetData = playerDataManager.getByName(targetName);
+            if (targetData == null) {
+                context.sendMessage(Message.raw("Player not found: " + targetName).color("#ff6666"));
+                return CompletableFuture.completedFuture(null);
+            }
+            targetRef = Universe.get().getPlayer(targetData.getUuid());
+        } else {
+            if (!senderIsPlayer) {
+                context.sendMessage(Message.raw("Console usage requires a target player argument.")
+                        .color("#ff6666"));
+                return CompletableFuture.completedFuture(null);
+            }
+
+            targetData = playerDataManager.get(senderPlayer.getUuid());
+            if (targetData == null) {
+                context.sendMessage(Message.raw("No saved data found. Try rejoining.").color("#ff6666"));
+                return CompletableFuture.completedFuture(null);
+            }
+            targetRef = Universe.get().getPlayer(targetData.getUuid());
+            targetName = targetRef != null ? targetRef.getUsername() : targetData.getPlayerName();
         }
 
         int activeProfileIndex = targetData.getActiveProfileIndex();
@@ -79,7 +111,6 @@ public class AugmentRefreshCommand extends AbstractCommand {
                 + " on active profile " + activeProfileIndex
                 + " (selected augments unchanged).").color("#4fd7f7"));
 
-        PlayerRef targetRef = Universe.get().getPlayer(targetData.getUuid());
         if (targetRef != null) {
             targetRef.sendMessage(Message.raw(
                     "An admin refreshed your augment offers on active profile "
@@ -87,5 +118,18 @@ public class AugmentRefreshCommand extends AbstractCommand {
         }
 
         return CompletableFuture.completedFuture(null);
+    }
+
+    private final class RefreshSelfVariant extends AbstractCommand {
+
+        private RefreshSelfVariant() {
+            super("Reroll stored augment offers for your active profile");
+        }
+
+        @Nullable
+        @Override
+        protected CompletableFuture<Void> execute(@Nonnull CommandContext context) {
+            return executeInternal(context, null);
+        }
     }
 }

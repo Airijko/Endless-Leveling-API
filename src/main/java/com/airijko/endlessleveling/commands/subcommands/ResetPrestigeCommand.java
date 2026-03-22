@@ -45,11 +45,16 @@ public class ResetPrestigeCommand extends AbstractCommand {
         this.skillManager = EndlessLeveling.getInstance().getSkillManager();
         this.augmentUnlockManager = EndlessLeveling.getInstance().getAugmentUnlockManager();
         this.addAliases("prestigereset");
+        this.addUsageVariant(new ResetPrestigeSelfVariant());
     }
 
     @Nullable
     @Override
     protected CompletableFuture<Void> execute(@Nonnull CommandContext commandContext) {
+        return executeInternal(commandContext, targetArg.get(commandContext));
+    }
+
+    private CompletableFuture<Void> executeInternal(@Nonnull CommandContext commandContext, @Nullable String explicitTargetName) {
         if (commandContext.sender() instanceof Player) {
             CommandUtil.requirePermission(commandContext.sender(), PERMISSION_NODE);
         } else if (!PartnerConsoleGuard.isConsoleAllowed("el resetprestige")) {
@@ -59,11 +64,33 @@ public class ResetPrestigeCommand extends AbstractCommand {
             return CompletableFuture.completedFuture(null);
         }
 
-        String targetName = targetArg.get(commandContext);
-        PlayerData targetData = playerDataManager.getByName(targetName);
-        if (targetData == null) {
-            commandContext.sendMessage(Message.raw("Player not found: " + targetName));
-            return CompletableFuture.completedFuture(null);
+        Player senderPlayer = commandContext.senderAs(Player.class);
+        boolean senderIsPlayer = senderPlayer != null;
+
+        PlayerData targetData;
+        String targetName;
+
+        if (explicitTargetName != null && !explicitTargetName.isBlank()) {
+            targetName = explicitTargetName;
+            targetData = playerDataManager.getByName(targetName);
+            if (targetData == null) {
+                commandContext.sendMessage(Message.raw("Player not found: " + targetName));
+                return CompletableFuture.completedFuture(null);
+            }
+        } else {
+            if (!senderIsPlayer) {
+                commandContext.sendMessage(Message.raw("Console usage requires a target player argument.").color("#ff6666"));
+                return CompletableFuture.completedFuture(null);
+            }
+
+            targetData = playerDataManager.get(senderPlayer.getUuid());
+            if (targetData == null) {
+                commandContext.sendMessage(Message.raw("No saved data found. Try rejoining.").color("#ff6666"));
+                return CompletableFuture.completedFuture(null);
+            }
+
+            PlayerRef selfRef = Universe.get().getPlayer(targetData.getUuid());
+            targetName = selfRef != null ? selfRef.getUsername() : targetData.getPlayerName();
         }
 
         PlayerRef targetRef = Universe.get().getPlayer(targetData.getUuid());
@@ -116,6 +143,18 @@ public class ResetPrestigeCommand extends AbstractCommand {
         }
 
             return CompletableFuture.completedFuture(null);
+    }
+
+    private final class ResetPrestigeSelfVariant extends AbstractCommand {
+        private ResetPrestigeSelfVariant() {
+            super("Reset your prestige to 0");
+        }
+
+        @Nullable
+        @Override
+        protected CompletableFuture<Void> execute(@Nonnull CommandContext commandContext) {
+            return executeInternal(commandContext, null);
+        }
     }
 
     private void applySkillModifiers(PlayerData targetData, PlayerRef targetRef) {

@@ -44,11 +44,18 @@ public class SetPrestigeCommand extends AbstractCommand {
         this.levelingManager = EndlessLeveling.getInstance().getLevelingManager();
         this.augmentUnlockManager = EndlessLeveling.getInstance().getAugmentUnlockManager();
         this.addAliases("prestigeset");
+        this.addUsageVariant(new SetPrestigeSelfVariant());
     }
 
     @Nullable
     @Override
     protected CompletableFuture<Void> execute(@Nonnull CommandContext commandContext) {
+        return executeInternal(commandContext, targetArg.get(commandContext), prestigeArg.get(commandContext));
+    }
+
+    private CompletableFuture<Void> executeInternal(@Nonnull CommandContext commandContext,
+            @Nullable String explicitTargetName,
+            int requestedPrestige) {
         if (commandContext.sender() instanceof Player) {
             CommandUtil.requirePermission(commandContext.sender(), PERMISSION_NODE);
         } else if (!PartnerConsoleGuard.isConsoleAllowed("el setprestige")) {
@@ -58,8 +65,8 @@ public class SetPrestigeCommand extends AbstractCommand {
             return CompletableFuture.completedFuture(null);
         }
 
-        String targetName = targetArg.get(commandContext);
-        int requestedPrestige = prestigeArg.get(commandContext);
+        Player senderPlayer = commandContext.senderAs(Player.class);
+        boolean senderIsPlayer = senderPlayer != null;
 
         if (requestedPrestige < 0) {
             commandContext.sendMessage(Message.raw("Prestige must be 0 or higher."));
@@ -73,10 +80,30 @@ public class SetPrestigeCommand extends AbstractCommand {
             return CompletableFuture.completedFuture(null);
         }
 
-        PlayerData targetData = playerDataManager.getByName(targetName);
-        if (targetData == null) {
-            commandContext.sendMessage(Message.raw("Player not found: " + targetName));
-            return CompletableFuture.completedFuture(null);
+        PlayerData targetData;
+        String targetName;
+
+        if (explicitTargetName != null && !explicitTargetName.isBlank()) {
+            targetName = explicitTargetName;
+            targetData = playerDataManager.getByName(targetName);
+            if (targetData == null) {
+                commandContext.sendMessage(Message.raw("Player not found: " + targetName));
+                return CompletableFuture.completedFuture(null);
+            }
+        } else {
+            if (!senderIsPlayer) {
+                commandContext.sendMessage(Message.raw("Console usage requires a target player argument.").color("#ff6666"));
+                return CompletableFuture.completedFuture(null);
+            }
+
+            targetData = playerDataManager.get(senderPlayer.getUuid());
+            if (targetData == null) {
+                commandContext.sendMessage(Message.raw("No saved data found. Try rejoining.").color("#ff6666"));
+                return CompletableFuture.completedFuture(null);
+            }
+
+            PlayerRef selfRef = Universe.get().getPlayer(targetData.getUuid());
+            targetName = selfRef != null ? selfRef.getUsername() : targetData.getPlayerName();
         }
 
         int previousPrestige = Math.max(0, targetData.getPrestigeLevel());
@@ -128,5 +155,20 @@ public class SetPrestigeCommand extends AbstractCommand {
         }
 
         return CompletableFuture.completedFuture(null);
+    }
+
+    private final class SetPrestigeSelfVariant extends AbstractCommand {
+        private final RequiredArg<Integer> selfPrestigeArg = this.withRequiredArg("prestige", "New prestige to set",
+                ArgTypes.INTEGER);
+
+        private SetPrestigeSelfVariant() {
+            super("Set your own prestige level");
+        }
+
+        @Nullable
+        @Override
+        protected CompletableFuture<Void> execute(@Nonnull CommandContext commandContext) {
+            return executeInternal(commandContext, null, selfPrestigeArg.get(commandContext));
+        }
     }
 }
