@@ -14,16 +14,16 @@ public final class VersionRegistry {
     public static final String PLAYERDATA_VERSION_KEY = "version";
 
     public static final int CONFIG_YML_VERSION = 38;
-    public static final int LEVELING_YML_VERSION = 34;
+    public static final int LEVELING_YML_VERSION = 35;
     public static final int EVENTS_YML_VERSION = 6;
     public static final int WORLDS_YML_VERSION = 29;
     public static final int WEAPONS_YML_VERSION = 5;
 
     public static final int PLAYERDATA_SCHEMA_VERSION = 18;
 
-    public static final int BUILTIN_AUGMENTS_VERSION = 55;
-    public static final int BUILTIN_CLASSES_VERSION = 22;
-    public static final int BUILTIN_RACES_VERSION = 22;
+    public static final int BUILTIN_AUGMENTS_VERSION = 56;
+    public static final int BUILTIN_CLASSES_VERSION = 23;
+    public static final int BUILTIN_RACES_VERSION = 23;
     public static final int BUILTIN_LANG_VERSION = 5;
 
     public static final String AUGMENTS_VERSION_FILE = "augments.version";
