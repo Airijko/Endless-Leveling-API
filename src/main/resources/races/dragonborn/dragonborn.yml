@@ -35,9 +35,9 @@ attributes:
 
 passives:
   - type: SWIFTNESS
-    value: 0.053 # Passive +5.3% movement speed applied after haste
+    value: 0.06 # Passive +6% movement speed applied after haste
     duration: 5 # Seconds after killing a target to maintain swiftness bonus
-    max_stacks: 8 # Can stack up to 8 times after killing a target for a total of +42.4% movement speed
+    max_stacks: 5 # Can stack up to 5 times after killing a target for a total of +30% movement speed
   - type: SECOND_WIND
     value: 0.325 # Heal 32.5% of max HP
     threshold: 0.2 # Trigger when below 20% HP

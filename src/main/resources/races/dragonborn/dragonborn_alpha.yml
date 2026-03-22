@@ -46,7 +46,7 @@ passives:
   - type: SWIFTNESS
     value: 0.09 # Passive +9% movement speed per stack
     duration: 5
-    max_stacks: 10
+    max_stacks: 5
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: life_force
     value: 2.5

@@ -37,9 +37,9 @@ attributes:
 
 passives:
   - type: SWIFTNESS
-    value: 0.065 # Passive +6.5% movement speed per stack
+    value: 0.07 # Passive +7% movement speed per stack
     duration: 5
-    max_stacks: 8
+    max_stacks: 5
   - type: SECOND_WIND
     value: 0.28 # Heal 28% of max HP
     threshold: 0.2

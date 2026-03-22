@@ -40,19 +40,14 @@ attributes:
 
 passives:
   - type: SWIFTNESS
-    value: 0.15 # Passive +15% movement speed applied after haste
+    value: 0.11 # Passive +11% movement speed applied after haste
     duration: 5 # Seconds after killing a target to maintain swiftness bonus
-    max_stacks: 10 # Can stack up to 10 times after killing a target
+    max_stacks: 5 # Can stack up to 5 times after killing a target
   - type: ADRENALINE
-    value: 1.0 # Restore 100% of max stamina when drained
+    value: 0.5 # Restore 50% of max stamina when drained
     threshold: 0.25 # Trigger below 25% stamina
-    duration: 3 # Seconds to spread stamina recovery over
-    cooldown: 30 # Seconds between adrenaline bursts
-  - type: FINAL_INCANTATION
-    value: 2.9 # +290% executioner scaling descriptor
-    flat_bonus_damage: 42 # Flat bonus damage when threshold condition is met
-    threshold: 25 # Only applies to targets below 25% HP
-    cooldown: 28 # Seconds between executioner procs
+    duration: 5 # Seconds to spread stamina recovery over
+    cooldown: 20 # Seconds between adrenaline bursts
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: life_force
     value: 1.7

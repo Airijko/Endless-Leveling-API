@@ -37,14 +37,9 @@ attributes:
 
 passives:
   - type: SWIFTNESS
-    value: 0.11 # Passive +11% movement speed applied after haste
+    value: 0.9 # Passive +13% movement speed applied after haste
     duration: 5 # Seconds after killing a target to maintain swiftness bonus
-    max_stacks: 8 # Can stack up to 8 times after killing a target
-  - type: FINAL_INCANTATION
-    value: 1.8 # +180% executioner scaling descriptor
-    flat_bonus_damage: 20 # Flat bonus damage when threshold condition is met
-    threshold: 20 # Only applies to targets below 20% HP
-    cooldown: 42 # Seconds between executioner procs
+    max_stacks: 5 # Can stack up to 5 times after killing a target
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: life_force
     value: 0.82

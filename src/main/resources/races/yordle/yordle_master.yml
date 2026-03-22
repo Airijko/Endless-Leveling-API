@@ -38,18 +38,13 @@ attributes:
 
 passives:
   - type: SWIFTNESS
-    value: 0.34 # Passive +34% movement speed applied after haste
+    value: 0.15 # Passive +15% movement speed applied after haste
     duration: 5 # Swiftness bonus lasts for 5 seconds after triggering
-    max_stacks: 6 # Can stack up to 6 times for a total of +204% movement speed
+    max_stacks: 5 # Can stack up to 5 times for a total of +75% movement speed
   - type: SPECIAL_CHARGE_BONUS
     value: 2.8 # +280% faster special charge
   - type: MANA_REGEN
-    value: 0.028 # Restore 2.8% of max mana every 5 seconds
-  - type: FINAL_INCANTATION
-    value: 2.8 # +280% executioner scaling descriptor
-    flat_bonus_damage: 38 # Flat bonus damage when threshold condition is met
-    threshold: 25 # Only applies to targets below 25% HP
-    cooldown: 30 # Seconds between executioner procs
+    value: 0.10 # Restore 10% of max mana every 5 seconds
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: life_force
     value: 1.9

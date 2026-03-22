@@ -35,7 +35,7 @@ attributes:
 
 passives:
   - type: MANA_REGEN
-    value: 0.021 # Restore 2.1% of max mana every 5 seconds
+    value: 0.02 # Restore 2.0% of max mana every 5 seconds
   - type: XP_BONUS
     value: 0.28 # +28% XP gain
   - type: INNATE_ATTRIBUTE_GAIN

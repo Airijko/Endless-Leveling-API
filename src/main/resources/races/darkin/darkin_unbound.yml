@@ -41,11 +41,11 @@ passives:
   - type: HEALING_BONUS
     value: 1.0 # +100% healing dealt/received
   - type: MANA_REGEN
-    value: 0.02 # Restore 2.0% of max mana every 5 seconds
+    value: 0.05 # Restore 5.0% of max mana every 5 seconds
   - type: RAVENOUS_STRIKE
-    value: 7.5 # Flat healing per hit
-    strength_scaling: 0.09 # +9.0% of Strength added to healing
-    sorcery_scaling: 0.10 # +10.0% of Sorcery added to healing
+    value: 10.0 # Flat healing per hit
+    strength_scaling: 0.2 # +20.0% of Strength added to healing
+    sorcery_scaling: 0.2 # +20.0% of Sorcery added to healing
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: life_force
     value: 2.1

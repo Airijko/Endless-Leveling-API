@@ -38,9 +38,9 @@ passives:
   - type: HEALING_BONUS
     value: 0.5 # +50% healing dealt/received
   - type: RAVENOUS_STRIKE
-    value: 3.5 # Flat healing per hit
-    strength_scaling: 0.053 # +5.3% of Strength added to healing
-    sorcery_scaling: 0.053 # +5.3% of Sorcery added to healing
+    value: 5.0 # Flat healing per hit
+    strength_scaling: 0.05 # +5% of Strength added to healing
+    sorcery_scaling: 0.05 # +5% of Sorcery added to healing
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: life_force
     value: 1.05

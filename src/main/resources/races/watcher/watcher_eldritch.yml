@@ -35,12 +35,7 @@ attributes:
 
 passives:
   - type: MANA_REGEN
-    value: 0.037 # Restore 3.7% of max mana every 5 seconds
-  - type: FINAL_INCANTATION
-    value: 2.5 # +250% executioner scaling descriptor
-    flat_bonus_damage: 34 # Flat bonus damage when threshold condition is met
-    threshold: 22 # Only applies to targets below 22% HP
-    cooldown: 34 # Seconds between executioner procs
+    value: 0.06 # Restore 6% of max mana every 5 seconds
   - type: XP_BONUS
     value: 0.46 # +46% XP gain
   - type: INNATE_ATTRIBUTE_GAIN

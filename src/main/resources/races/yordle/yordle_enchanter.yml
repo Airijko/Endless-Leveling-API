@@ -35,14 +35,10 @@ attributes:
   discipline: 0.0
 
 passives:
-  - type: SWIFTNESS
-    value: 0.24 # Passive +24% movement speed applied after haste
-    duration: 5 # Swiftness bonus lasts for 5 seconds after triggering
-    max_stacks: 5 # Can stack up to 5 times for a total of +120% movement speed
   - type: SPECIAL_CHARGE_BONUS
     value: 2.2 # +220% faster special charge
   - type: MANA_REGEN
-    value: 0.024 # Restore 2.4% of max mana every 5 seconds
+    value: 0.075 # Restore 7.5% of max mana every 5 seconds
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: life_force
     value: 1.45

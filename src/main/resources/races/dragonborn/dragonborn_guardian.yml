@@ -40,9 +40,9 @@ passives:
     duration: 12 # Lasts for 12 seconds
     cooldown: 50 # Seconds between triggers
   - type: SWIFTNESS
-    value: 0.04 # Passive +4% movement speed per stack
+    value: 0.07 # Passive +7% movement speed per stack
     duration: 5
-    max_stacks: 6
+    max_stacks: 5
   - type: INNATE_ATTRIBUTE_GAIN
     attribute: life_force
     value: 1.5

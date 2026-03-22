@@ -36,7 +36,7 @@ attributes:
 
 passives:
   - type: MANA_REGEN
-    value: 0.038 # Restore 3.8% of max mana every 5 seconds
+    value: 0.06 # Restore 6% of max mana every 5 seconds
   - type: HEALTH_REGEN
     value: 0.04 # Heal 4.0% of max HP every 5 seconds
   - type: XP_BONUS
