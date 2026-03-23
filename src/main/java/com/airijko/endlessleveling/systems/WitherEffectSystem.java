@@ -11,7 +11,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 public final class WitherEffectSystem extends TickingSystem<EntityStore> {
     private static final Query<EntityStore> QUERY = Query.any();
-    private static final float TICK_INTERVAL_SECONDS = 0.2f;
+    private static final float TICK_INTERVAL_SECONDS = 1.0f;
 
     private float elapsed;
 

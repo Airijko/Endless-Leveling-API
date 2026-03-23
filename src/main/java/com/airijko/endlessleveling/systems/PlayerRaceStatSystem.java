@@ -33,11 +33,13 @@ public class PlayerRaceStatSystem extends TickingSystem<EntityStore> {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
     private static final Query<EntityStore> PLAYER_QUERY = Query.any();
+    private static final float RETRY_INTERVAL_SECONDS = 2.0f;
     private static final int MAX_ATTEMPTS = 200;
 
     private final PlayerDataManager playerDataManager;
     private final SkillManager skillManager;
     private final Map<UUID, RetryState> pendingAttempts = new ConcurrentHashMap<>();
+    private float elapsedSinceRetryPass;
 
     public PlayerRaceStatSystem(PlayerDataManager playerDataManager, SkillManager skillManager) {
         this.playerDataManager = playerDataManager;
@@ -61,12 +63,20 @@ public class PlayerRaceStatSystem extends TickingSystem<EntityStore> {
     public void tick(float deltaSeconds, int tickCount, Store<EntityStore> store) {
         if (store == null || store.isShutdown() || playerDataManager == null || skillManager == null) {
             pendingAttempts.clear();
+            elapsedSinceRetryPass = 0.0f;
             return;
         }
 
         if (pendingAttempts.isEmpty()) {
+            elapsedSinceRetryPass = 0.0f;
             return;
         }
+
+        elapsedSinceRetryPass += deltaSeconds;
+        if (elapsedSinceRetryPass < RETRY_INTERVAL_SECONDS) {
+            return;
+        }
+        elapsedSinceRetryPass = 0.0f;
 
         Set<UUID> processed = new HashSet<>();
         store.forEachChunk(PLAYER_QUERY, (ArchetypeChunk<EntityStore> chunk,

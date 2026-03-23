@@ -28,7 +28,7 @@ public class MovementHasteSystem extends TickingSystem<EntityStore> {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
     private static final String MOVEMENT_HASTE_SOURCE_ID = "movement_haste_tracker";
-    private static final float PROCESS_INTERVAL_SECONDS = 0.2f;
+    private static final float PROCESS_INTERVAL_SECONDS = 0.25f;
     private static final float PLAYER_DISCOVERY_INTERVAL_SECONDS = 5.0f;
     private static final float BASE_HASTE_REFRESH_SECONDS = 0.75f;
     private static final double POSITION_EPSILON_SQUARED = 0.0064D;

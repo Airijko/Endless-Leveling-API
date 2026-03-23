@@ -23,7 +23,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
  */
 public class PeriodicSkillModifierSystem extends TickingSystem<EntityStore> {
     private static final Query<EntityStore> PLAYER_QUERY = Query.any();
-    private static final float REAPPLY_INTERVAL_SECONDS = 2.0f; // every 2 seconds
+    private static final float REAPPLY_INTERVAL_SECONDS = 4.0f; // every 4 seconds
     private float timeSinceLastReapply = 0f;
 
     private final PlayerDataManager playerDataManager;

@@ -7,7 +7,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 public final class ArmyOfTheDeadCleanupSystem extends TickingSystem<EntityStore> {
 
-    private static final float CLEANUP_INTERVAL_SECONDS = 1.0f;
+    private static final float CLEANUP_INTERVAL_SECONDS = 3.0f;
 
     private float elapsed;
 
