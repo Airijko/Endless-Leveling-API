@@ -53,6 +53,7 @@ public final class MobAugmentExecutor {
         }
 
         List<Augment> augments = new ArrayList<>();
+        List<String> appliedAugmentIds = new ArrayList<>();
         for (String augmentId : augmentIds) {
             if (augmentId == null || augmentId.isBlank()) {
                 continue;
@@ -65,6 +66,7 @@ public final class MobAugmentExecutor {
                     continue;
                 }
                 augments.add(augment);
+                appliedAugmentIds.add(augmentId.trim());
             } catch (Exception e) {
                 LOGGER.atSevere().withCause(e)
                         .log("Error creating augment '%s' for mob %s: %s", augmentId, entityId, e.getMessage());
@@ -74,7 +76,7 @@ public final class MobAugmentExecutor {
         if (!augments.isEmpty()) {
             // Create a runtime state for the mob using its UUID
             var runtimeState = runtimeManager.getRuntimeState(entityId);
-            mobAugments.put(entityId, new MobAugmentInstance(augments, runtimeState));
+            mobAugments.put(entityId, new MobAugmentInstance(augments, appliedAugmentIds, runtimeState));
             LOGGER.atInfo().log("[MOB_OVERRIDE_AUGMENTS] Bound %d augments to mob %s: %s",
                     augments.size(), entityId, augmentIds);
             LOGGER.atInfo().log("[MOB_AUGMENT_CATEGORIES] mob=%s categories=%s",
@@ -410,6 +412,23 @@ public final class MobAugmentExecutor {
         return Math.max(0.0D, instance.runtimeState.getAttributeBonus(type, System.currentTimeMillis()));
     }
 
+    /**
+     * Applies passive-stat augment hooks for a mob outside of combat events.
+     */
+    public void tickPassiveStats(UUID entityId,
+            Ref<EntityStore> mobRef,
+            CommandBuffer<EntityStore> commandBuffer,
+            EntityStatMap statMap) {
+        if (entityId == null || statMap == null) {
+            return;
+        }
+        MobAugmentInstance instance = mobAugments.get(entityId);
+        if (instance == null || instance.augments.isEmpty()) {
+            return;
+        }
+        applyPassiveHooks(entityId, instance, mobRef, commandBuffer, statMap);
+    }
+
     private void applyPassiveHooks(UUID entityId,
             MobAugmentInstance instance,
             Ref<EntityStore> mobRef,
@@ -424,11 +443,16 @@ public final class MobAugmentExecutor {
             Augment augment = instance.augments.get(augmentIndex);
             if (augment instanceof AugmentHooks.PassiveStatAugment passive) {
                 try {
+                String originalAugmentId = (instance.appliedAugmentIds != null
+                    && augmentIndex >= 0
+                    && augmentIndex < instance.appliedAugmentIds.size())
+                        ? instance.appliedAugmentIds.get(augmentIndex)
+                        : augment.getId();
                     AugmentHooks.PassiveStatContext context = new AugmentHooks.PassiveStatContext(
                             null,
                             instance.runtimeState,
                             null,
-                            "mob::" + augment.getId() + "::" + augmentIndex,
+                    "mob::" + originalAugmentId + "::" + augmentIndex,
                             mobRef,
                             commandBuffer,
                             statMap,
@@ -542,10 +566,14 @@ public final class MobAugmentExecutor {
      */
     private static class MobAugmentInstance {
         final List<Augment> augments;
+        final List<String> appliedAugmentIds;
         final AugmentRuntimeManager.AugmentRuntimeState runtimeState;
 
-        MobAugmentInstance(List<Augment> augments, AugmentRuntimeManager.AugmentRuntimeState runtimeState) {
+        MobAugmentInstance(List<Augment> augments,
+                List<String> appliedAugmentIds,
+                AugmentRuntimeManager.AugmentRuntimeState runtimeState) {
             this.augments = augments;
+            this.appliedAugmentIds = appliedAugmentIds;
             this.runtimeState = runtimeState;
         }
     }

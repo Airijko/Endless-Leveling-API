@@ -29,20 +29,23 @@ World_Overrides:
       Enabled: true
       Base_High_Tier:
         Count: 1
-        Chance: 1.0
+        Chance: 0.25
         Weights:
           Elite: 1.0
           Legendary: 0.0
           Mythic: 0.0
       Extra_High_Tier:
         Count: 1
-        Chance: 0.5
+        Chance: 0.10
         Weights:
           Elite: 0.8
           Legendary: 0.15
           Mythic: 0.05
       Common:
-        Per_Level: 5
+        Per_Level: 3
+      # Any augment ids listed here will never be applied to mobs (override or generated).
+      # Example: [rebirth, frozen_domain] or [common] to disable generated common rolls.
+      Blacklisted_Augments: []
 
   default:
     Enabled: true
@@ -212,6 +215,7 @@ World_Overrides:
       Azaroth:
         Level: 40
         Augments: [rebirth, frozen_domain]
+        Allow_Random_Mob_Augments: true
         Scaling:
           Health:
             Base_Multiplier: 1.0
@@ -255,6 +259,7 @@ World_Overrides:
       Katherina:
         Level: 60
         Augments: [bloodthirster, vampirism]
+        Allow_Random_Mob_Augments: true
         Scaling:
           Health:
             Base_Multiplier: 1.0
@@ -312,6 +317,7 @@ World_Overrides:
       Baron:
         Level: 80
         Augments: [blood_surge, bloodthirster]
+        Allow_Random_Mob_Augments: true
         Scaling:
           Health:
             Base_Multiplier: 1.0
@@ -342,6 +348,7 @@ World_Overrides:
         Names: [Cult_Knight_MiniBoss, Cult_Werewolf_MiniBoss]
         Level: 75
         Augments: [blood_surge, blood_frenzy, vampirism]
+        Allow_Random_Mob_Augments: true
         Scaling:
           Health:
             Base_Multiplier: 1.0
@@ -388,6 +395,7 @@ World_Overrides:
       Endgame_Dragon_Frost:
         Level: 30
         Augments: [blood_surge]
+        Allow_Random_Mob_Augments: true
         Scaling:
           Health:
             Base_Multiplier: 2.0
@@ -431,6 +439,7 @@ World_Overrides:
       Endgame_Hedera:
         Level: 50
         Augments: [rebirth]
+        Allow_Random_Mob_Augments: true
         Scaling:
           Health:
             Base_Multiplier: 2.0
@@ -474,6 +483,7 @@ World_Overrides:
       Endgame_Golem_Void:
         Level: 70
         Augments: [rebirth]
+        Allow_Random_Mob_Augments: true
         Scaling:
           Health:
             Base_Multiplier: 2.0
@@ -520,6 +530,7 @@ World_Overrides:
       Shiva:
         Level: 55
         Augments: [rebirth, frozen_domain]
+        Allow_Random_Mob_Augments: true
         Scaling:
           Health:
             Base_Multiplier: 2.0
@@ -564,6 +575,7 @@ World_Overrides:
         Names: [Hedera_Boss_Shiva, Hedera_Boss_Shiva_Scaled]
         Level: 25
         Augments: [rebirth, frozen_domain]
+        Allow_Random_Mob_Augments: true
         Scaling:
           Health:
             Base_Multiplier: 2.0
@@ -580,6 +592,7 @@ World_Overrides:
         Names: [Shivas_Ice_Cave, Shiva_Scaled]
         Level: 25
         Augments: [rebirth, frozen_domain]
+        Allow_Random_Mob_Augments: true
         Scaling:
           Health:
             Base_Multiplier: 1.0

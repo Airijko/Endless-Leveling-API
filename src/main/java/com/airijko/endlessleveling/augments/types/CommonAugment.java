@@ -45,13 +45,22 @@ public final class CommonAugment extends Augment implements AugmentHooks.Passive
 
     @Override
     public void applyPassive(AugmentHooks.PassiveStatContext context) {
-        if (context == null || context.getRuntimeState() == null || context.getPlayerData() == null) {
+        if (context == null || context.getRuntimeState() == null) {
             return;
         }
 
         String selectionKey = context.getSelectionKey();
-        String selectedAugmentId = context.getPlayerData().getSelectedAugmentsSnapshot().get(selectionKey);
+        String selectedAugmentId = null;
+        if (context.getPlayerData() != null) {
+            selectedAugmentId = context.getPlayerData().getSelectedAugmentsSnapshot().get(selectionKey);
+        }
+        if (selectedAugmentId == null || selectedAugmentId.isBlank()) {
+            selectedAugmentId = extractMobAugmentIdFromSelectionKey(selectionKey);
+        }
         CommonStatOffer selectedOffer = parseStatOfferId(selectedAugmentId);
+        if (context.getPlayerData() == null && selectedOffer == null) {
+            return;
+        }
         String sourcePrefix = buildSourcePrefix(selectionKey);
         double lifeForceBonus = selectedOffer == null
                 ? resolveRoll(context, selectionKey, "life_force", lifeForceRange)
@@ -163,6 +172,9 @@ public final class CommonAugment extends Augment implements AugmentHooks.Passive
             String selectionKey,
             String rollKey,
             BonusRange range) {
+        if (context.getPlayerData() == null) {
+            return 0.0D;
+        }
         if (range.isFixed()) {
               return roundToTwoDecimals(range.min());
         }
@@ -186,6 +198,25 @@ public final class CommonAugment extends Augment implements AugmentHooks.Passive
             return ID;
         }
         return ID + "_" + selectionKey.trim().toLowerCase(Locale.ROOT).replace('#', '_');
+    }
+
+    private String extractMobAugmentIdFromSelectionKey(String selectionKey) {
+        if (selectionKey == null) {
+            return null;
+        }
+        String normalized = selectionKey.trim();
+        String prefix = "mob::";
+        if (!normalized.startsWith(prefix)) {
+            return null;
+        }
+
+        int lastDelimiter = normalized.lastIndexOf(OFFER_DELIMITER);
+        if (lastDelimiter <= prefix.length()) {
+            return null;
+        }
+
+        String augmentId = normalized.substring(prefix.length(), lastDelimiter).trim();
+        return augmentId.isEmpty() ? null : augmentId;
     }
 
     public static String buildStatOfferId(String attributeKey, double rolledValue) {

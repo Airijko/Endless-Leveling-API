@@ -52,17 +52,18 @@ public class MobLevelingManager {
     private static final int MAX_PLAYER_LEVEL_RESOLVE_ATTEMPTS = 3;
     private static final Query<EntityStore> ENTITY_QUERY = Query.any();
     private static final boolean DEFAULT_MOB_AUGMENTS_ENABLED = true;
+    private static final boolean DEFAULT_MOB_OVERRIDE_ALLOW_RANDOM_AUGMENTS = true;
     private static final int DEFAULT_BASE_HIGH_TIER_COUNT = 1;
-    private static final double DEFAULT_BASE_HIGH_TIER_CHANCE = 1.0D;
+    private static final double DEFAULT_BASE_HIGH_TIER_CHANCE = 0.25D;
     private static final double DEFAULT_BASE_HIGH_TIER_ELITE_WEIGHT = 1.0D;
     private static final double DEFAULT_BASE_HIGH_TIER_LEGENDARY_WEIGHT = 0.0D;
     private static final double DEFAULT_BASE_HIGH_TIER_MYTHIC_WEIGHT = 0.0D;
     private static final int DEFAULT_EXTRA_HIGH_TIER_COUNT = 1;
-    private static final double DEFAULT_EXTRA_HIGH_TIER_CHANCE = 0.50D;
+    private static final double DEFAULT_EXTRA_HIGH_TIER_CHANCE = 0.10D;
     private static final double DEFAULT_EXTRA_HIGH_TIER_ELITE_WEIGHT = 0.80D;
     private static final double DEFAULT_EXTRA_HIGH_TIER_LEGENDARY_WEIGHT = 0.15D;
     private static final double DEFAULT_EXTRA_HIGH_TIER_MYTHIC_WEIGHT = 0.05D;
-    private static final int DEFAULT_COMMON_AUGMENTS_PER_LEVEL = 5;
+    private static final int DEFAULT_COMMON_AUGMENTS_PER_LEVEL = 1;
     private static final String COMMON_ATTR_LIFE_FORCE = "life_force";
     private static final String COMMON_ATTR_STRENGTH = "strength";
     private static final String COMMON_ATTR_SORCERY = "sorcery";
@@ -102,7 +103,8 @@ public class MobLevelingManager {
             double extraHighTierEliteWeight,
             double extraHighTierLegendaryWeight,
             double extraHighTierMythicWeight,
-            int commonAugmentsPerLevel) {
+            int commonAugmentsPerLevel,
+            Set<String> blacklistedAugmentIds) {
         }
 
         private record GeneratedMobAugmentCacheEntry(String mobType,
@@ -835,16 +837,36 @@ public class MobLevelingManager {
 
         List<String> allAugments = new ArrayList<>();
         int overrideCount = 0;
+        MobAugmentGenerationSettings settings = resolveMobAugmentGenerationSettings(effectiveStore);
         WorldMobOverride override = resolveWorldMobOverride(ref, store, commandBuffer);
         if (override != null && override.augmentIds() != null && !override.augmentIds().isEmpty()) {
-            allAugments.addAll(override.augmentIds());
-            overrideCount = override.augmentIds().size();
+            for (String augmentId : override.augmentIds()) {
+                if (!isMobAugmentBlacklisted(augmentId, settings.blacklistedAugmentIds())) {
+                    allAugments.add(augmentId);
+                }
+            }
+            overrideCount = allAugments.size();
         }
 
-        List<String> generated = generateLeveledMobAugments(ref, effectiveStore, commandBuffer);
+        Set<String> guaranteedHighTierAugments = new LinkedHashSet<>();
+        for (String augmentId : allAugments) {
+            if (CommonAugment.parseStatOfferId(augmentId) == null) {
+                guaranteedHighTierAugments.add(augmentId);
+            }
+        }
+
+        boolean allowRandomAugmentsForOverride = override == null || override.allowRandomAugments();
+        List<String> generated = List.of();
+        if (settings.enabled() && (overrideCount <= 0 || allowRandomAugmentsForOverride)) {
+            generated = generateLeveledMobAugments(ref, effectiveStore, commandBuffer, settings, guaranteedHighTierAugments);
+        }
         int generatedCount = generated.size();
         if (!generated.isEmpty()) {
-            allAugments.addAll(generated);
+            for (String augmentId : generated) {
+                if (!isMobAugmentBlacklisted(augmentId, settings.blacklistedAugmentIds())) {
+                    allAugments.add(augmentId);
+                }
+            }
         }
 
         if (allAugments.isEmpty()) {
@@ -918,7 +940,9 @@ public class MobLevelingManager {
 
     private List<String> generateLeveledMobAugments(Ref<EntityStore> ref,
             Store<EntityStore> store,
-            CommandBuffer<EntityStore> commandBuffer) {
+            CommandBuffer<EntityStore> commandBuffer,
+            MobAugmentGenerationSettings settings,
+            Set<String> guaranteedHighTierAugments) {
         if (ref == null) {
             return List.of();
         }
@@ -930,11 +954,6 @@ public class MobLevelingManager {
 
         int level = resolveMobLevel(ref, commandBuffer);
         if (level <= 0) {
-            return List.of();
-        }
-
-        MobAugmentGenerationSettings settings = resolveMobAugmentGenerationSettings(store);
-        if (!settings.enabled()) {
             return List.of();
         }
 
@@ -957,6 +976,9 @@ public class MobLevelingManager {
 
             PassiveTier tier = definition.getTier();
             String id = definition.getId().trim();
+            if (isMobAugmentBlacklisted(id, settings.blacklistedAugmentIds())) {
+                continue;
+            }
             if (tier == PassiveTier.ELITE) {
                 elitePool.add(id);
             } else if (tier == PassiveTier.LEGENDARY) {
@@ -979,6 +1001,9 @@ public class MobLevelingManager {
         SplittableRandom random = new SplittableRandom(seed);
 
         int commonAugmentCount = Math.max(0, level * settings.commonAugmentsPerLevel());
+        if (settings.blacklistedAugmentIds().contains(CommonAugment.ID.toLowerCase(Locale.ROOT))) {
+            commonAugmentCount = 0;
+        }
         List<String> generated = new ArrayList<>(settings.baseHighTierCount() + settings.extraHighTierCount()
                 + commonAugmentCount);
 
@@ -990,7 +1015,12 @@ public class MobLevelingManager {
                     settings.baseHighTierEliteWeight(),
                     settings.baseHighTierLegendaryWeight(),
                     settings.baseHighTierMythicWeight());
-            String base = pickByTier(baseTier, elitePool, legendaryPool, mythicPool, random);
+                String base = pickByTierExcluding(baseTier,
+                    elitePool,
+                    legendaryPool,
+                    mythicPool,
+                    guaranteedHighTierAugments,
+                    random);
             if (base != null) {
                 generated.add(base);
             }
@@ -1004,7 +1034,12 @@ public class MobLevelingManager {
                     settings.extraHighTierEliteWeight(),
                     settings.extraHighTierLegendaryWeight(),
                     settings.extraHighTierMythicWeight());
-            String extra = pickByTier(extraTier, elitePool, legendaryPool, mythicPool, random);
+                String extra = pickByTierExcluding(extraTier,
+                    elitePool,
+                    legendaryPool,
+                    mythicPool,
+                    guaranteedHighTierAugments,
+                    random);
             if (extra != null) {
                 generated.add(extra);
             }
@@ -1123,64 +1158,67 @@ public class MobLevelingManager {
     }
 
     private MobAugmentGenerationSettings resolveMobAugmentGenerationSettings(Store<EntityStore> store) {
-        boolean enabled = getConfigBoolean("Mob_Leveling.Mob_Augments.Enabled", DEFAULT_MOB_AUGMENTS_ENABLED, store);
+        boolean enabled = getWorldOverrideBoolean("Mob_Leveling.Mob_Augments.Enabled", DEFAULT_MOB_AUGMENTS_ENABLED,
+            store);
 
         int baseHighTierCount = Math.max(0,
-            getConfigIntWithFallbackPath(
+                getWorldOverrideIntWithFallbackPath(
                 "Mob_Leveling.Mob_Augments.Base_High_Tier.Count",
                 "Mob_Leveling.Mob_Augments.Guaranteed_High_Tier.Count",
                 "Mob_Leveling.Mob_Augments.Guaranteed_Elite_Count",
                 DEFAULT_BASE_HIGH_TIER_COUNT,
                 store));
 
-        double baseHighTierChance = clamp01(getConfigDoubleWithFallbackPath(
+            double baseHighTierChance = clamp01(getWorldOverrideDoubleWithFallbackPath(
                 "Mob_Leveling.Mob_Augments.Base_High_Tier.Chance",
                 "Mob_Leveling.Mob_Augments.Guaranteed_High_Tier.Chance",
                 DEFAULT_BASE_HIGH_TIER_CHANCE,
                 store));
 
         double baseEliteWeight = Math.max(0.0D,
-            getConfigDoubleWithFallbackPath("Mob_Leveling.Mob_Augments.Base_High_Tier.Weights.Elite",
+                getWorldOverrideDoubleWithFallbackPath("Mob_Leveling.Mob_Augments.Base_High_Tier.Weights.Elite",
                 "Mob_Leveling.Mob_Augments.Guaranteed_High_Tier.Weights.Elite",
                 DEFAULT_BASE_HIGH_TIER_ELITE_WEIGHT,
                 store));
         double baseLegendaryWeight = Math.max(0.0D,
-            getConfigDoubleWithFallbackPath("Mob_Leveling.Mob_Augments.Base_High_Tier.Weights.Legendary",
+                getWorldOverrideDoubleWithFallbackPath("Mob_Leveling.Mob_Augments.Base_High_Tier.Weights.Legendary",
                 "Mob_Leveling.Mob_Augments.Guaranteed_High_Tier.Weights.Legendary",
                 DEFAULT_BASE_HIGH_TIER_LEGENDARY_WEIGHT,
                 store));
         double baseMythicWeight = Math.max(0.0D,
-            getConfigDoubleWithFallbackPath("Mob_Leveling.Mob_Augments.Base_High_Tier.Weights.Mythic",
+                getWorldOverrideDoubleWithFallbackPath("Mob_Leveling.Mob_Augments.Base_High_Tier.Weights.Mythic",
                 "Mob_Leveling.Mob_Augments.Guaranteed_High_Tier.Weights.Mythic",
                 DEFAULT_BASE_HIGH_TIER_MYTHIC_WEIGHT,
                 store));
 
         int extraHighTierCount = Math.max(0,
-            getConfigInt("Mob_Leveling.Mob_Augments.Extra_High_Tier.Count", DEFAULT_EXTRA_HIGH_TIER_COUNT,
+                getWorldOverrideInt("Mob_Leveling.Mob_Augments.Extra_High_Tier.Count", DEFAULT_EXTRA_HIGH_TIER_COUNT,
                 store));
 
-        double extraHighTierChance = clamp01(getConfigDouble(
+            double extraHighTierChance = clamp01(getWorldOverrideDouble(
                 "Mob_Leveling.Mob_Augments.Extra_High_Tier.Chance",
                 DEFAULT_EXTRA_HIGH_TIER_CHANCE,
                 store));
 
         double eliteWeight = Math.max(0.0D,
-                getConfigDouble("Mob_Leveling.Mob_Augments.Extra_High_Tier.Weights.Elite",
+                getWorldOverrideDouble("Mob_Leveling.Mob_Augments.Extra_High_Tier.Weights.Elite",
                         DEFAULT_EXTRA_HIGH_TIER_ELITE_WEIGHT,
                         store));
         double legendaryWeight = Math.max(0.0D,
-                getConfigDouble("Mob_Leveling.Mob_Augments.Extra_High_Tier.Weights.Legendary",
+                getWorldOverrideDouble("Mob_Leveling.Mob_Augments.Extra_High_Tier.Weights.Legendary",
                         DEFAULT_EXTRA_HIGH_TIER_LEGENDARY_WEIGHT,
                         store));
         double mythicWeight = Math.max(0.0D,
-                getConfigDouble("Mob_Leveling.Mob_Augments.Extra_High_Tier.Weights.Mythic",
+                getWorldOverrideDouble("Mob_Leveling.Mob_Augments.Extra_High_Tier.Weights.Mythic",
                         DEFAULT_EXTRA_HIGH_TIER_MYTHIC_WEIGHT,
                         store));
 
         int commonAugmentsPerLevel = Math.max(0,
-                getConfigInt("Mob_Leveling.Mob_Augments.Common.Per_Level",
+                getWorldOverrideInt("Mob_Leveling.Mob_Augments.Common.Per_Level",
                         DEFAULT_COMMON_AUGMENTS_PER_LEVEL,
                         store));
+
+        Set<String> blacklistedAugmentIds = parseBlacklistedMobAugmentIds(store);
 
         return new MobAugmentGenerationSettings(
             enabled,
@@ -1194,35 +1232,123 @@ public class MobLevelingManager {
                 eliteWeight,
                 legendaryWeight,
                 mythicWeight,
-                commonAugmentsPerLevel);
+                commonAugmentsPerLevel,
+                blacklistedAugmentIds);
     }
 
-    private int getConfigIntWithFallbackPath(String primaryPath,
+    private Set<String> parseBlacklistedMobAugmentIds(Store<EntityStore> store) {
+        Object raw = getWorldOverrideValue("Mob_Leveling.Mob_Augments.Blacklisted_Augments", store, null);
+        if (raw == null) {
+            return Set.of();
+        }
+
+        Set<String> values = new LinkedHashSet<>();
+        appendMobOverrideRulesFromRaw(raw, values);
+        if (values.isEmpty()) {
+            return Set.of();
+        }
+
+        Set<String> normalized = new LinkedHashSet<>();
+        for (String value : values) {
+            if (value == null) {
+                continue;
+            }
+            String cleaned = value.trim().toLowerCase(Locale.ROOT);
+            if (!cleaned.isEmpty()) {
+                normalized.add(cleaned);
+            }
+        }
+        return normalized.isEmpty() ? Set.of() : Set.copyOf(normalized);
+    }
+
+    private boolean isMobAugmentBlacklisted(String augmentId, Set<String> blacklistedAugmentIds) {
+        if (augmentId == null || augmentId.isBlank() || blacklistedAugmentIds == null || blacklistedAugmentIds.isEmpty()) {
+            return false;
+        }
+
+        String normalized = augmentId.trim().toLowerCase(Locale.ROOT);
+        if (blacklistedAugmentIds.contains(normalized)) {
+            return true;
+        }
+
+        CommonAugment.CommonStatOffer offer = CommonAugment.parseStatOfferId(augmentId);
+        return offer != null && blacklistedAugmentIds.contains(CommonAugment.ID.toLowerCase(Locale.ROOT));
+    }
+
+    private int getWorldOverrideIntWithFallbackPath(String primaryPath,
             String secondaryPath,
             String fallbackPath,
             int defaultValue,
             Store<EntityStore> store) {
-        if (hasMobLevelingPath(primaryPath, store, null)) {
-            return getConfigInt(primaryPath, defaultValue, store);
+        if (hasWorldOverridePath(primaryPath, store)) {
+            return getWorldOverrideInt(primaryPath, defaultValue, store);
         }
-        if (secondaryPath != null && hasMobLevelingPath(secondaryPath, store, null)) {
-            return getConfigInt(secondaryPath, defaultValue, store);
+        if (secondaryPath != null && hasWorldOverridePath(secondaryPath, store)) {
+            return getWorldOverrideInt(secondaryPath, defaultValue, store);
         }
-        if (fallbackPath != null && hasMobLevelingPath(fallbackPath, store, null)) {
-            return getConfigInt(fallbackPath, defaultValue, store);
+        if (fallbackPath != null && hasWorldOverridePath(fallbackPath, store)) {
+            return getWorldOverrideInt(fallbackPath, defaultValue, store);
         }
         return defaultValue;
     }
 
-    private double getConfigDoubleWithFallbackPath(String primaryPath,
+    private double getWorldOverrideDoubleWithFallbackPath(String primaryPath,
             String fallbackPath,
             double defaultValue,
             Store<EntityStore> store) {
-        if (hasMobLevelingPath(primaryPath, store, null)) {
-            return getConfigDouble(primaryPath, defaultValue, store);
+        if (hasWorldOverridePath(primaryPath, store)) {
+            return getWorldOverrideDouble(primaryPath, defaultValue, store);
         }
-        if (fallbackPath != null && hasMobLevelingPath(fallbackPath, store, null)) {
-            return getConfigDouble(fallbackPath, defaultValue, store);
+        if (fallbackPath != null && hasWorldOverridePath(fallbackPath, store)) {
+            return getWorldOverrideDouble(fallbackPath, defaultValue, store);
+        }
+        return defaultValue;
+    }
+
+    private boolean hasWorldOverridePath(String path, Store<EntityStore> store) {
+        return getWorldOverrideValue(path, store, null) != null;
+    }
+
+    private int getWorldOverrideInt(String path, int defaultValue, Store<EntityStore> store) {
+        Object raw = getWorldOverrideValue(path, store, null);
+        if (raw == null) {
+            return defaultValue;
+        }
+        try {
+            if (raw instanceof Number number) {
+                return number.intValue();
+            }
+            return Integer.parseInt(raw.toString().trim());
+        } catch (Exception ignored) {
+            return defaultValue;
+        }
+    }
+
+    private double getWorldOverrideDouble(String path, double defaultValue, Store<EntityStore> store) {
+        Object raw = getWorldOverrideValue(path, store, null);
+        if (raw == null) {
+            return defaultValue;
+        }
+        try {
+            if (raw instanceof Number number) {
+                return number.doubleValue();
+            }
+            return Double.parseDouble(raw.toString().trim());
+        } catch (Exception ignored) {
+            return defaultValue;
+        }
+    }
+
+    private boolean getWorldOverrideBoolean(String path, boolean defaultValue, Store<EntityStore> store) {
+        Object raw = getWorldOverrideValue(path, store, null);
+        if (raw instanceof Boolean b) {
+            return b;
+        }
+        if (raw instanceof Number n) {
+            return n.intValue() != 0;
+        }
+        if (raw instanceof String s) {
+            return Boolean.parseBoolean(s.trim());
         }
         return defaultValue;
     }
@@ -1255,6 +1381,38 @@ public class MobLevelingManager {
             return PassiveTier.LEGENDARY;
         }
         return PassiveTier.MYTHIC;
+    }
+
+    private String pickByTierExcluding(PassiveTier tier,
+            List<String> elitePool,
+            List<String> legendaryPool,
+            List<String> mythicPool,
+            Set<String> excludedAugments,
+            SplittableRandom random) {
+        List<String> pool = switch (tier) {
+            case ELITE -> elitePool;
+            case LEGENDARY -> legendaryPool;
+            case MYTHIC -> mythicPool;
+            default -> List.of();
+        };
+
+        if (pool == null || pool.isEmpty()) {
+            return null;
+        }
+
+        if (excludedAugments == null || excludedAugments.isEmpty()) {
+            return pool.get(random.nextInt(pool.size()));
+        }
+
+        List<String> allowed = new ArrayList<>(pool.size());
+        for (String augmentId : pool) {
+            if (!excludedAugments.contains(augmentId)) {
+                allowed.add(augmentId);
+            }
+        }
+
+        List<String> rollPool = allowed.isEmpty() ? pool : allowed;
+        return rollPool.get(random.nextInt(rollPool.size()));
     }
 
     private String pickByTier(PassiveTier tier,
@@ -1536,6 +1694,13 @@ public class MobLevelingManager {
             return null;
         }
 
+        boolean allowRandomAugments = DEFAULT_MOB_OVERRIDE_ALLOW_RANDOM_AUGMENTS;
+        if (rawValue instanceof Map<?, ?> mapValue) {
+            allowRandomAugments = parseBooleanOrDefault(
+                resolveCaseInsensitive(mapValue, "Allow_Random_Mob_Augments"),
+                DEFAULT_MOB_OVERRIDE_ALLOW_RANDOM_AUGMENTS);
+        }
+
         return new WorldMobOverride(
                 level,
                 healthMultiplier,
@@ -1545,7 +1710,8 @@ public class MobLevelingManager {
                 damageScaling,
                 defenseScaling,
                 augmentIds,
-                augmentModifiers);
+            augmentModifiers,
+            allowRandomAugments);
     }
 
     private List<String> parseMobOverrideAugmentIds(Map<?, ?> mapValue) {
@@ -4994,7 +5160,8 @@ public class MobLevelingManager {
             MobOverrideLinearScaling damageScaling,
             MobOverrideDefenseScaling defenseScaling,
             List<String> augmentIds,
-            MobOverrideAugmentModifiers augmentModifiers) {
+            MobOverrideAugmentModifiers augmentModifiers,
+            boolean allowRandomAugments) {
     }
 
     private record MobOverrideAugmentModifiers(double healthMultiplier,

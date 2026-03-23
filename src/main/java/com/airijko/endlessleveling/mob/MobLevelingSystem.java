@@ -90,6 +90,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         private boolean damageLockedLevel;
         private float lastObservedHealth = Float.NaN;
         private float lastObservedMaxHealth = Float.NaN;
+        private float lastAppliedLifeForceBonus = Float.NaN;
 
         private boolean hasTrackedState() {
             return appliedLevel > 0
@@ -103,6 +104,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
                     || damageLockedLevel
                     || Float.isFinite(lastObservedHealth)
                     || Float.isFinite(lastObservedMaxHealth)
+                    || Float.isFinite(lastAppliedLifeForceBonus)
                     || trackedStore != null
                     || trackedEntityId >= 0;
         }
@@ -241,6 +243,13 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
                         state.lastKnownEntitySignature = currentEntitySignature;
 
                         boolean managedSummon = ArmyOfTheDeadPassive.isManagedSummon(ref, store, commandBuffer);
+                        boolean registeredMobAugments = !managedSummon
+                            && ensureMobAugmentsRegistered(ref, store, commandBuffer);
+                        float currentLifeForceBonus = 0.0f;
+                        if (!managedSummon) {
+                            tickMobPassiveAugmentStats(ref, store, commandBuffer);
+                            currentLifeForceBonus = resolveMobLifeForceHealthBonus(ref, commandBuffer);
+                        }
 
                         Integer appliedLevel = state.appliedLevel > 0 ? state.appliedLevel : null;
                         if (appliedLevel == null && !managedSummon) {
@@ -270,13 +279,17 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
                             initializationSettled = true;
                         } else {
                             boolean shouldApplyHealthModifier = state.settledHealthLevel <= 0
-                                    || state.settledHealthLevel != appliedLevel;
+                                    || state.settledHealthLevel != appliedLevel
+                                    || registeredMobAugments
+                                    || !Float.isFinite(state.lastAppliedLifeForceBonus)
+                                    || Math.abs(state.lastAppliedLifeForceBonus - currentLifeForceBonus) > 0.0001f;
 
                             if (shouldApplyHealthModifier) {
                                 boolean healthApplied = applyHealthModifier(ref, commandBuffer, appliedLevel,
                                         entityKey);
                                 if (healthApplied) {
                                     state.settledHealthLevel = appliedLevel;
+                                    state.lastAppliedLifeForceBonus = currentLifeForceBonus;
                                 }
                             }
 
@@ -574,6 +587,16 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         EntityStatValue updatedHealth = statMap.get(healthIndex);
         if (updatedHealth != null && Float.isFinite(updatedHealth.getMax()) && updatedHealth.getMax() > 0.0f) {
             mobLevelingManager.recordEntityMaxHealth(entityId, updatedHealth.getMax());
+            LOGGER.atInfo().log(
+                    "[MOB_HEALTH_LAYER_DEBUG] entity=%d level=%d baseMax=%.3f scaledMax=%.3f lifeForceBonus=%.3f finalMax=%.3f current=%.3f ratio=%.4f",
+                    entityId,
+                    appliedLevel,
+                    baseMax,
+                    targetMax,
+                    lifeForceBonus,
+                    updatedHealth.getMax(),
+                    updatedHealth.get(),
+                    ratio);
         }
         return true;
     }
@@ -714,6 +737,81 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
             return 0.0f;
         }
         return (float) bonus;
+    }
+
+    private void tickMobPassiveAugmentStats(Ref<EntityStore> ref,
+            Store<EntityStore> store,
+            CommandBuffer<EntityStore> commandBuffer) {
+        if (ref == null || store == null || commandBuffer == null) {
+            return;
+        }
+
+        EndlessLeveling plugin = EndlessLeveling.getInstance();
+        if (plugin == null) {
+            return;
+        }
+
+        MobAugmentExecutor executor = plugin.getMobAugmentExecutor();
+        if (executor == null) {
+            return;
+        }
+
+        UUIDComponent uuidComponent = commandBuffer.getComponent(ref, UUIDComponent.getComponentType());
+        if (uuidComponent == null || uuidComponent.getUuid() == null) {
+            return;
+        }
+
+        UUID entityUuid = uuidComponent.getUuid();
+        if (!executor.hasMobAugments(entityUuid)) {
+            return;
+        }
+
+        EntityStatMap statMap = commandBuffer.getComponent(ref, EntityStatMap.getComponentType());
+        if (statMap == null) {
+            return;
+        }
+
+        executor.tickPassiveStats(entityUuid, ref, commandBuffer, statMap);
+    }
+
+    private boolean ensureMobAugmentsRegistered(Ref<EntityStore> ref,
+            Store<EntityStore> store,
+            CommandBuffer<EntityStore> commandBuffer) {
+        if (ref == null || store == null || commandBuffer == null || mobLevelingManager == null) {
+            return false;
+        }
+
+        EndlessLeveling plugin = EndlessLeveling.getInstance();
+        if (plugin == null || plugin.getAugmentManager() == null || plugin.getAugmentRuntimeManager() == null) {
+            return false;
+        }
+
+        MobAugmentExecutor executor = plugin.getMobAugmentExecutor();
+        if (executor == null) {
+            return false;
+        }
+
+        List<String> augmentIds = mobLevelingManager.getMobOverrideAugmentIds(ref, store, commandBuffer);
+        if (augmentIds == null || augmentIds.isEmpty()) {
+            return false;
+        }
+
+        UUIDComponent uuidComponent = commandBuffer.getComponent(ref, UUIDComponent.getComponentType());
+        if (uuidComponent == null || uuidComponent.getUuid() == null) {
+            return false;
+        }
+
+        UUID mobUuid = uuidComponent.getUuid();
+        if (executor.hasMobAugments(mobUuid)) {
+            return false;
+        }
+
+        executor.registerMobAugments(
+                mobUuid,
+                augmentIds,
+                plugin.getAugmentManager(),
+                plugin.getAugmentRuntimeManager());
+        return true;
     }
 
     private boolean applyNameplate(Ref<EntityStore> ref,
