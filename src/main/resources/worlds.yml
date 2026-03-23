@@ -25,6 +25,24 @@ World_Overrides:
       Defense_Max_Difference:
         At_Positive_Max_Difference: 0.3
         Above_Positive_Max_Difference: 0.6
+    Mob_Augments:
+      Enabled: true
+      Base_High_Tier:
+        Count: 1
+        Chance: 1.0
+        Weights:
+          Elite: 1.0
+          Legendary: 0.0
+          Mythic: 0.0
+      Extra_High_Tier:
+        Count: 1
+        Chance: 0.5
+        Weights:
+          Elite: 0.8
+          Legendary: 0.15
+          Mythic: 0.05
+      Common:
+        Per_Level: 5
 
   default:
     Enabled: true

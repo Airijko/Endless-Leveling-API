@@ -4,6 +4,8 @@ import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentManager;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
+import com.airijko.endlessleveling.augments.types.CommonAugment;
+import com.airijko.endlessleveling.enums.PassiveTier;
 import com.airijko.endlessleveling.player.PlayerData;
 import com.airijko.endlessleveling.passives.type.ArmyOfTheDeadPassive;
 import com.hypixel.hytale.component.CommandBuffer;
@@ -27,10 +29,12 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.SplittableRandom;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -47,6 +51,26 @@ public class MobLevelingManager {
     private static final int PLAYER_LEVEL_MISSING = Integer.MIN_VALUE;
     private static final int MAX_PLAYER_LEVEL_RESOLVE_ATTEMPTS = 3;
     private static final Query<EntityStore> ENTITY_QUERY = Query.any();
+    private static final boolean DEFAULT_MOB_AUGMENTS_ENABLED = true;
+    private static final int DEFAULT_BASE_HIGH_TIER_COUNT = 1;
+    private static final double DEFAULT_BASE_HIGH_TIER_CHANCE = 1.0D;
+    private static final double DEFAULT_BASE_HIGH_TIER_ELITE_WEIGHT = 1.0D;
+    private static final double DEFAULT_BASE_HIGH_TIER_LEGENDARY_WEIGHT = 0.0D;
+    private static final double DEFAULT_BASE_HIGH_TIER_MYTHIC_WEIGHT = 0.0D;
+    private static final int DEFAULT_EXTRA_HIGH_TIER_COUNT = 1;
+    private static final double DEFAULT_EXTRA_HIGH_TIER_CHANCE = 0.50D;
+    private static final double DEFAULT_EXTRA_HIGH_TIER_ELITE_WEIGHT = 0.80D;
+    private static final double DEFAULT_EXTRA_HIGH_TIER_LEGENDARY_WEIGHT = 0.15D;
+    private static final double DEFAULT_EXTRA_HIGH_TIER_MYTHIC_WEIGHT = 0.05D;
+    private static final int DEFAULT_COMMON_AUGMENTS_PER_LEVEL = 5;
+    private static final String COMMON_ATTR_LIFE_FORCE = "life_force";
+    private static final String COMMON_ATTR_STRENGTH = "strength";
+    private static final String COMMON_ATTR_SORCERY = "sorcery";
+    private static final String COMMON_ATTR_DEFENSE = "defense";
+    private static final String COMMON_ATTR_PRECISION = "precision";
+    private static final String COMMON_ATTR_FEROCITY = "ferocity";
+    private static final double MOB_COMMON_DEFENSE_CAP_PERCENT = 80.0D;
+    private static final double MOB_COMMON_PRECISION_CAP_PERCENT = 100.0D;
 
     private final Map<Integer, Integer> cachedPlayerDiffs = new ConcurrentHashMap<>();
     private final Map<Long, Integer> cachedPosDiffs = new ConcurrentHashMap<>();
@@ -59,10 +83,33 @@ public class MobLevelingManager {
     private final Map<Integer, Float> entityMaxHealthSnapshots = new ConcurrentHashMap<>();
     private final Map<Long, Integer> tierLockByStoreKey = new ConcurrentHashMap<>();
     private final Map<Long, UUID> tierLockSourcePlayerByStoreKey = new ConcurrentHashMap<>();
+        private final Map<Long, GeneratedMobAugmentCacheEntry> generatedMobAugmentCacheByEntity = new ConcurrentHashMap<>();
+        private final Map<Long, String> generatedMobAugmentLogSignatureByEntity = new ConcurrentHashMap<>();
+        private final Map<Long, String> inheritedMobAugmentLogSignatureByEntity = new ConcurrentHashMap<>();
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
     private final ConfigManager configManager;
     private final ConfigManager worldsConfigManager;
     private final PlayerDataManager playerDataManager;
+
+            private record MobAugmentGenerationSettings(boolean enabled,
+                int baseHighTierCount,
+                double baseHighTierChance,
+                double baseHighTierEliteWeight,
+                double baseHighTierLegendaryWeight,
+                double baseHighTierMythicWeight,
+                int extraHighTierCount,
+            double extraHighTierChance,
+            double extraHighTierEliteWeight,
+            double extraHighTierLegendaryWeight,
+            double extraHighTierMythicWeight,
+            int commonAugmentsPerLevel) {
+        }
+
+        private record GeneratedMobAugmentCacheEntry(String mobType,
+            int level,
+            long seed,
+            List<String> augments) {
+        }
 
     private enum LevelSourceMode {
         PLAYER,
@@ -93,6 +140,9 @@ public class MobLevelingManager {
         loggedDistanceCentersByWorldKey.clear();
         tierLockByStoreKey.clear();
         tierLockSourcePlayerByStoreKey.clear();
+        generatedMobAugmentCacheByEntity.clear();
+        generatedMobAugmentLogSignatureByEntity.clear();
+        inheritedMobAugmentLogSignatureByEntity.clear();
     }
 
     /**
@@ -773,11 +823,549 @@ public class MobLevelingManager {
     public List<String> getMobOverrideAugmentIds(Ref<EntityStore> ref,
             Store<EntityStore> store,
             CommandBuffer<EntityStore> commandBuffer) {
-        WorldMobOverride override = resolveWorldMobOverride(ref, store, commandBuffer);
-        if (override == null || override.augmentIds() == null || override.augmentIds().isEmpty()) {
+        if (ref == null) {
             return List.of();
         }
-        return override.augmentIds();
+
+        Store<EntityStore> effectiveStore = store != null ? store : ref.getStore();
+        long entityKey = toEntityKey(effectiveStore, ref.getIndex());
+        if (ArmyOfTheDeadPassive.isManagedSummon(ref, effectiveStore, commandBuffer)) {
+            return List.of();
+        }
+
+        List<String> allAugments = new ArrayList<>();
+        int overrideCount = 0;
+        WorldMobOverride override = resolveWorldMobOverride(ref, store, commandBuffer);
+        if (override != null && override.augmentIds() != null && !override.augmentIds().isEmpty()) {
+            allAugments.addAll(override.augmentIds());
+            overrideCount = override.augmentIds().size();
+        }
+
+        List<String> generated = generateLeveledMobAugments(ref, effectiveStore, commandBuffer);
+        int generatedCount = generated.size();
+        if (!generated.isEmpty()) {
+            allAugments.addAll(generated);
+        }
+
+        if (allAugments.isEmpty()) {
+            return List.of();
+        }
+
+        String inheritSignature = overrideCount + "|" + generatedCount + "|" + allAugments.hashCode();
+        String previousInheritSignature = inheritedMobAugmentLogSignatureByEntity.put(entityKey, inheritSignature);
+        if (inheritSignature.equals(previousInheritSignature)) {
+            return List.copyOf(allAugments);
+        }
+
+        List<String> highTierAugments = new ArrayList<>();
+        Map<String, Integer> commonCounts = new LinkedHashMap<>();
+        Map<String, Double> commonTotals = new LinkedHashMap<>();
+        for (String stat : List.of(
+                COMMON_ATTR_LIFE_FORCE,
+                COMMON_ATTR_STRENGTH,
+                COMMON_ATTR_SORCERY,
+                COMMON_ATTR_DEFENSE,
+                COMMON_ATTR_FEROCITY,
+                COMMON_ATTR_PRECISION)) {
+            commonCounts.put(stat, 0);
+            commonTotals.put(stat, 0.0D);
+        }
+
+        for (String augmentId : allAugments) {
+            CommonAugment.CommonStatOffer commonOffer = CommonAugment.parseStatOfferId(augmentId);
+            if (commonOffer == null) {
+                highTierAugments.add(augmentId);
+                continue;
+            }
+
+            String attribute = commonOffer.attributeKey();
+            commonCounts.put(attribute, commonCounts.getOrDefault(attribute, 0) + 1);
+            commonTotals.put(attribute, commonTotals.getOrDefault(attribute, 0.0D) + commonOffer.rolledValue());
+        }
+
+        StringBuilder commonSummary = new StringBuilder();
+        boolean first = true;
+        for (Map.Entry<String, Integer> entry : commonCounts.entrySet()) {
+            int count = entry.getValue() != null ? entry.getValue() : 0;
+            if (count <= 0) {
+                continue;
+            }
+            if (!first) {
+                commonSummary.append(", ");
+            }
+            first = false;
+            String stat = entry.getKey();
+            double total = commonTotals.getOrDefault(stat, 0.0D);
+            commonSummary.append(stat)
+                    .append("=")
+                    .append(count)
+                    .append(" (total=")
+                    .append(String.format(Locale.ROOT, "%.2f", total))
+                    .append(")");
+        }
+
+        LOGGER.atInfo().log(
+                "[MOB_AUGMENT_INHERIT_REGULAR] entity=%d overrideCount=%d generatedCount=%d total=%d highTier=%s commonCount=%d commonSummary=[%s]",
+                ref.getIndex(),
+                overrideCount,
+                generatedCount,
+                allAugments.size(),
+                highTierAugments,
+                allAugments.size() - highTierAugments.size(),
+                commonSummary.toString());
+        return List.copyOf(allAugments);
+    }
+
+    private List<String> generateLeveledMobAugments(Ref<EntityStore> ref,
+            Store<EntityStore> store,
+            CommandBuffer<EntityStore> commandBuffer) {
+        if (ref == null) {
+            return List.of();
+        }
+
+        String mobType = resolveMobType(ref, store, commandBuffer);
+        if (mobType == null || mobType.isBlank()) {
+            return List.of();
+        }
+
+        int level = resolveMobLevel(ref, commandBuffer);
+        if (level <= 0) {
+            return List.of();
+        }
+
+        MobAugmentGenerationSettings settings = resolveMobAugmentGenerationSettings(store);
+        if (!settings.enabled()) {
+            return List.of();
+        }
+
+        long entityKey = toEntityKey(store != null ? store : ref.getStore(), ref.getIndex());
+
+        AugmentManager augmentManager = resolveAugmentManager();
+        if (augmentManager == null || augmentManager.getAugments().isEmpty()) {
+            return List.of();
+        }
+
+        List<String> elitePool = new ArrayList<>();
+        List<String> legendaryPool = new ArrayList<>();
+        List<String> mythicPool = new ArrayList<>();
+
+        for (AugmentDefinition definition : augmentManager.getAugments().values()) {
+            if (definition == null || !definition.isMobCompatible() || definition.getId() == null
+                    || definition.getId().isBlank()) {
+                continue;
+            }
+
+            PassiveTier tier = definition.getTier();
+            String id = definition.getId().trim();
+            if (tier == PassiveTier.ELITE) {
+                elitePool.add(id);
+            } else if (tier == PassiveTier.LEGENDARY) {
+                legendaryPool.add(id);
+            } else if (tier == PassiveTier.MYTHIC) {
+                mythicPool.add(id);
+            }
+        }
+
+        long seed = computeGeneratedAugmentSeed(ref, store, level);
+        GeneratedMobAugmentCacheEntry cached = generatedMobAugmentCacheByEntity.get(entityKey);
+        if (cached != null
+                && cached.level() == level
+                && cached.seed() == seed
+                && mobType.equals(cached.mobType())
+                && cached.augments() != null
+                && !cached.augments().isEmpty()) {
+            return cached.augments();
+        }
+        SplittableRandom random = new SplittableRandom(seed);
+
+        int commonAugmentCount = Math.max(0, level * settings.commonAugmentsPerLevel());
+        List<String> generated = new ArrayList<>(settings.baseHighTierCount() + settings.extraHighTierCount()
+                + commonAugmentCount);
+
+        for (int i = 0; i < settings.baseHighTierCount(); i++) {
+            if (random.nextDouble() >= settings.baseHighTierChance()) {
+                continue;
+            }
+            PassiveTier baseTier = rollExtraHighTier(random,
+                    settings.baseHighTierEliteWeight(),
+                    settings.baseHighTierLegendaryWeight(),
+                    settings.baseHighTierMythicWeight());
+            String base = pickByTier(baseTier, elitePool, legendaryPool, mythicPool, random);
+            if (base != null) {
+                generated.add(base);
+            }
+        }
+
+        for (int i = 0; i < settings.extraHighTierCount(); i++) {
+            if (random.nextDouble() >= settings.extraHighTierChance()) {
+                continue;
+            }
+            PassiveTier extraTier = rollExtraHighTier(random,
+                    settings.extraHighTierEliteWeight(),
+                    settings.extraHighTierLegendaryWeight(),
+                    settings.extraHighTierMythicWeight());
+            String extra = pickByTier(extraTier, elitePool, legendaryPool, mythicPool, random);
+            if (extra != null) {
+                generated.add(extra);
+            }
+        }
+
+        AugmentDefinition commonDefinition = augmentManager.getAugment(CommonAugment.ID);
+        String combinedDamageAttribute = random.nextBoolean() ? COMMON_ATTR_STRENGTH : COMMON_ATTR_SORCERY;
+        Map<String, Double> runningCommonTotals = new HashMap<>();
+        for (int i = 0; i < commonAugmentCount; i++) {
+            String attributeKey = rollCommonAttribute(random, combinedDamageAttribute, runningCommonTotals);
+            double rolledValue = rollCommonAttributeValue(commonDefinition, attributeKey, random);
+            generated.add(CommonAugment.buildStatOfferId(attributeKey, rolledValue));
+            runningCommonTotals.put(attributeKey,
+                    runningCommonTotals.getOrDefault(attributeKey, 0.0D) + rolledValue);
+        }
+
+        List<String> immutableGenerated = List.copyOf(generated);
+        generatedMobAugmentCacheByEntity.put(entityKey,
+                new GeneratedMobAugmentCacheEntry(mobType, level, seed, immutableGenerated));
+
+        logGeneratedLeveledMobAugments(entityKey,
+                ref,
+                mobType,
+                level,
+                seed,
+                combinedDamageAttribute,
+                immutableGenerated);
+
+        return immutableGenerated;
+    }
+
+    private void logGeneratedLeveledMobAugments(long entityKey,
+            Ref<EntityStore> ref,
+            String mobType,
+            int level,
+            long seed,
+            String combinedDamageAttribute,
+            List<String> generated) {
+        if (generated == null || generated.isEmpty()) {
+            return;
+        }
+
+        String generationSignature = level + "|" + seed + "|" + generated.hashCode();
+        String previousGenerationSignature = generatedMobAugmentLogSignatureByEntity.put(entityKey, generationSignature);
+        if (generationSignature.equals(previousGenerationSignature)) {
+            return;
+        }
+
+        List<String> highTier = new ArrayList<>();
+        Map<String, Integer> commonCounts = new LinkedHashMap<>();
+        Map<String, Double> commonTotals = new LinkedHashMap<>();
+
+        List<String> orderedStats = new ArrayList<>();
+        orderedStats.add(COMMON_ATTR_LIFE_FORCE);
+        orderedStats.add(combinedDamageAttribute);
+        orderedStats.add(COMMON_ATTR_DEFENSE);
+        orderedStats.add(COMMON_ATTR_FEROCITY);
+        orderedStats.add(COMMON_ATTR_PRECISION);
+
+        for (String stat : orderedStats) {
+            commonCounts.put(stat, 0);
+            commonTotals.put(stat, 0.0D);
+        }
+
+        for (String augmentId : generated) {
+            CommonAugment.CommonStatOffer commonOffer = CommonAugment.parseStatOfferId(augmentId);
+            if (commonOffer == null) {
+                highTier.add(augmentId);
+                continue;
+            }
+
+            String attribute = commonOffer.attributeKey();
+            commonCounts.put(attribute, commonCounts.getOrDefault(attribute, 0) + 1);
+            commonTotals.put(attribute, commonTotals.getOrDefault(attribute, 0.0D) + commonOffer.rolledValue());
+        }
+
+        StringBuilder commonSummary = new StringBuilder();
+        boolean first = true;
+        for (String stat : orderedStats) {
+            if (!first) {
+                commonSummary.append(", ");
+            }
+            first = false;
+            int count = commonCounts.getOrDefault(stat, 0);
+            double total = commonTotals.getOrDefault(stat, 0.0D);
+            commonSummary.append(stat)
+                    .append("=")
+                    .append(count)
+                    .append(" (total=")
+                    .append(String.format(Locale.ROOT, "%.2f", total))
+                    .append(")");
+        }
+
+        LOGGER.atInfo().log(
+                "[MOB_AUGMENT_GEN] entity=%d type=%s level=%d seed=%d highTier=%s commonCount=%d commonSummary=[%s]",
+                ref != null ? ref.getIndex() : -1,
+                mobType,
+                level,
+                seed,
+                highTier,
+                generated.size() - highTier.size(),
+                commonSummary.toString());
+    }
+
+    private long computeGeneratedAugmentSeed(Ref<EntityStore> ref, Store<EntityStore> store, int level) {
+        int entityId = ref != null ? ref.getIndex() : 0;
+        long storeKey = toStoreKey(store != null ? store : (ref != null ? ref.getStore() : null));
+        long entityKey = toEntityKey(store != null ? store : (ref != null ? ref.getStore() : null), entityId);
+        long seed = 1469598103934665603L;
+        seed ^= entityKey;
+        seed *= 1099511628211L;
+        seed ^= storeKey;
+        seed *= 1099511628211L;
+        seed ^= (long) level;
+        return seed;
+    }
+
+    private MobAugmentGenerationSettings resolveMobAugmentGenerationSettings(Store<EntityStore> store) {
+        boolean enabled = getConfigBoolean("Mob_Leveling.Mob_Augments.Enabled", DEFAULT_MOB_AUGMENTS_ENABLED, store);
+
+        int baseHighTierCount = Math.max(0,
+            getConfigIntWithFallbackPath(
+                "Mob_Leveling.Mob_Augments.Base_High_Tier.Count",
+                "Mob_Leveling.Mob_Augments.Guaranteed_High_Tier.Count",
+                "Mob_Leveling.Mob_Augments.Guaranteed_Elite_Count",
+                DEFAULT_BASE_HIGH_TIER_COUNT,
+                store));
+
+        double baseHighTierChance = clamp01(getConfigDoubleWithFallbackPath(
+                "Mob_Leveling.Mob_Augments.Base_High_Tier.Chance",
+                "Mob_Leveling.Mob_Augments.Guaranteed_High_Tier.Chance",
+                DEFAULT_BASE_HIGH_TIER_CHANCE,
+                store));
+
+        double baseEliteWeight = Math.max(0.0D,
+            getConfigDoubleWithFallbackPath("Mob_Leveling.Mob_Augments.Base_High_Tier.Weights.Elite",
+                "Mob_Leveling.Mob_Augments.Guaranteed_High_Tier.Weights.Elite",
+                DEFAULT_BASE_HIGH_TIER_ELITE_WEIGHT,
+                store));
+        double baseLegendaryWeight = Math.max(0.0D,
+            getConfigDoubleWithFallbackPath("Mob_Leveling.Mob_Augments.Base_High_Tier.Weights.Legendary",
+                "Mob_Leveling.Mob_Augments.Guaranteed_High_Tier.Weights.Legendary",
+                DEFAULT_BASE_HIGH_TIER_LEGENDARY_WEIGHT,
+                store));
+        double baseMythicWeight = Math.max(0.0D,
+            getConfigDoubleWithFallbackPath("Mob_Leveling.Mob_Augments.Base_High_Tier.Weights.Mythic",
+                "Mob_Leveling.Mob_Augments.Guaranteed_High_Tier.Weights.Mythic",
+                DEFAULT_BASE_HIGH_TIER_MYTHIC_WEIGHT,
+                store));
+
+        int extraHighTierCount = Math.max(0,
+            getConfigInt("Mob_Leveling.Mob_Augments.Extra_High_Tier.Count", DEFAULT_EXTRA_HIGH_TIER_COUNT,
+                store));
+
+        double extraHighTierChance = clamp01(getConfigDouble(
+                "Mob_Leveling.Mob_Augments.Extra_High_Tier.Chance",
+                DEFAULT_EXTRA_HIGH_TIER_CHANCE,
+                store));
+
+        double eliteWeight = Math.max(0.0D,
+                getConfigDouble("Mob_Leveling.Mob_Augments.Extra_High_Tier.Weights.Elite",
+                        DEFAULT_EXTRA_HIGH_TIER_ELITE_WEIGHT,
+                        store));
+        double legendaryWeight = Math.max(0.0D,
+                getConfigDouble("Mob_Leveling.Mob_Augments.Extra_High_Tier.Weights.Legendary",
+                        DEFAULT_EXTRA_HIGH_TIER_LEGENDARY_WEIGHT,
+                        store));
+        double mythicWeight = Math.max(0.0D,
+                getConfigDouble("Mob_Leveling.Mob_Augments.Extra_High_Tier.Weights.Mythic",
+                        DEFAULT_EXTRA_HIGH_TIER_MYTHIC_WEIGHT,
+                        store));
+
+        int commonAugmentsPerLevel = Math.max(0,
+                getConfigInt("Mob_Leveling.Mob_Augments.Common.Per_Level",
+                        DEFAULT_COMMON_AUGMENTS_PER_LEVEL,
+                        store));
+
+        return new MobAugmentGenerationSettings(
+            enabled,
+                baseHighTierCount,
+                baseHighTierChance,
+                baseEliteWeight,
+                baseLegendaryWeight,
+                baseMythicWeight,
+                extraHighTierCount,
+                extraHighTierChance,
+                eliteWeight,
+                legendaryWeight,
+                mythicWeight,
+                commonAugmentsPerLevel);
+    }
+
+    private int getConfigIntWithFallbackPath(String primaryPath,
+            String secondaryPath,
+            String fallbackPath,
+            int defaultValue,
+            Store<EntityStore> store) {
+        if (hasMobLevelingPath(primaryPath, store, null)) {
+            return getConfigInt(primaryPath, defaultValue, store);
+        }
+        if (secondaryPath != null && hasMobLevelingPath(secondaryPath, store, null)) {
+            return getConfigInt(secondaryPath, defaultValue, store);
+        }
+        if (fallbackPath != null && hasMobLevelingPath(fallbackPath, store, null)) {
+            return getConfigInt(fallbackPath, defaultValue, store);
+        }
+        return defaultValue;
+    }
+
+    private double getConfigDoubleWithFallbackPath(String primaryPath,
+            String fallbackPath,
+            double defaultValue,
+            Store<EntityStore> store) {
+        if (hasMobLevelingPath(primaryPath, store, null)) {
+            return getConfigDouble(primaryPath, defaultValue, store);
+        }
+        if (fallbackPath != null && hasMobLevelingPath(fallbackPath, store, null)) {
+            return getConfigDouble(fallbackPath, defaultValue, store);
+        }
+        return defaultValue;
+    }
+
+    private double clamp01(double value) {
+        if (value < 0.0D) {
+            return 0.0D;
+        }
+        if (value > 1.0D) {
+            return 1.0D;
+        }
+        return value;
+    }
+
+    private PassiveTier rollExtraHighTier(SplittableRandom random,
+            double eliteWeight,
+            double legendaryWeight,
+            double mythicWeight) {
+        double total = Math.max(0.0D, eliteWeight) + Math.max(0.0D, legendaryWeight) + Math.max(0.0D, mythicWeight);
+        if (total <= 0.0D) {
+            return PassiveTier.ELITE;
+        }
+
+        double roll = random.nextDouble() * total;
+        if (roll < eliteWeight) {
+            return PassiveTier.ELITE;
+        }
+        roll -= eliteWeight;
+        if (roll < legendaryWeight) {
+            return PassiveTier.LEGENDARY;
+        }
+        return PassiveTier.MYTHIC;
+    }
+
+    private String pickByTier(PassiveTier tier,
+            List<String> elitePool,
+            List<String> legendaryPool,
+            List<String> mythicPool,
+            SplittableRandom random) {
+        if (tier == PassiveTier.ELITE) {
+            String pick = pickFromPool(elitePool, random);
+            if (pick != null) {
+                return pick;
+            }
+            pick = pickFromPool(legendaryPool, random);
+            if (pick != null) {
+                return pick;
+            }
+            return pickFromPool(mythicPool, random);
+        }
+        if (tier == PassiveTier.LEGENDARY) {
+            String pick = pickFromPool(legendaryPool, random);
+            if (pick != null) {
+                return pick;
+            }
+            pick = pickFromPool(elitePool, random);
+            if (pick != null) {
+                return pick;
+            }
+            return pickFromPool(mythicPool, random);
+        }
+
+        String pick = pickFromPool(mythicPool, random);
+        if (pick != null) {
+            return pick;
+        }
+        pick = pickFromPool(legendaryPool, random);
+        if (pick != null) {
+            return pick;
+        }
+        return pickFromPool(elitePool, random);
+    }
+
+    private String pickFromPool(List<String> pool, SplittableRandom random) {
+        if (pool == null || pool.isEmpty()) {
+            return null;
+        }
+        int index = random.nextInt(pool.size());
+        return pool.get(index);
+    }
+
+    private String rollCommonAttribute(SplittableRandom random,
+            String combinedDamageAttribute,
+            Map<String, Double> runningCommonTotals) {
+        List<String> candidates = new ArrayList<>(5);
+        candidates.add(COMMON_ATTR_LIFE_FORCE);
+        candidates.add(combinedDamageAttribute);
+        candidates.add(COMMON_ATTR_DEFENSE);
+        candidates.add(COMMON_ATTR_FEROCITY);
+        candidates.add(COMMON_ATTR_PRECISION);
+
+        List<String> available = new ArrayList<>(5);
+        for (String candidate : candidates) {
+            if (!isCommonAttributeCapped(candidate, runningCommonTotals)) {
+                available.add(candidate);
+            }
+        }
+
+        List<String> selectionPool = available.isEmpty() ? candidates : available;
+        int roll = random.nextInt(selectionPool.size());
+        return selectionPool.get(roll);
+    }
+
+    private boolean isCommonAttributeCapped(String attributeKey, Map<String, Double> runningCommonTotals) {
+        if (attributeKey == null || runningCommonTotals == null) {
+            return false;
+        }
+
+        double currentTotal = runningCommonTotals.getOrDefault(attributeKey, 0.0D);
+        if (COMMON_ATTR_DEFENSE.equals(attributeKey)) {
+            return currentTotal >= MOB_COMMON_DEFENSE_CAP_PERCENT;
+        }
+        if (COMMON_ATTR_PRECISION.equals(attributeKey)) {
+            return currentTotal >= MOB_COMMON_PRECISION_CAP_PERCENT;
+        }
+        return false;
+    }
+
+    private double rollCommonAttributeValue(AugmentDefinition commonDefinition,
+            String attributeKey,
+            SplittableRandom random) {
+        if (commonDefinition == null || attributeKey == null || attributeKey.isBlank()) {
+            return 1.0D;
+        }
+
+        Map<String, Object> buffs = AugmentValueReader.getMap(commonDefinition.getPassives(), "buffs");
+        Map<String, Object> section = AugmentValueReader.getMap(buffs, attributeKey);
+        double base = Math.max(0.0D, AugmentValueReader.getDouble(section, "value", 1.0D));
+        double min = Math.max(0.0D, AugmentValueReader.getDouble(section, "min_value", base));
+        double max = Math.max(0.0D, AugmentValueReader.getDouble(section, "max_value", base));
+        if (max < min) {
+            double swap = min;
+            min = max;
+            max = swap;
+        }
+
+        double rolled;
+        if (Math.abs(max - min) < 0.0001D) {
+            rolled = min;
+        } else {
+            rolled = min + (random.nextDouble() * (max - min));
+        }
+        return Math.round(rolled * 100.0D) / 100.0D;
     }
 
     private WorldMobOverride resolveWorldMobOverrideFromWorldNode(Object worldNode, String normalizedMobType) {
@@ -4347,6 +4935,11 @@ public class MobLevelingManager {
         entityPartyOverrides.remove(entityIndex);
         cachedPlayerDiffs.remove(entityIndex);
         entityMaxHealthSnapshots.remove(entityIndex);
+        generatedMobAugmentCacheByEntity.entrySet().removeIf(e -> (int) (e.getKey() & 0xFFFFFFFFL) == entityIndex);
+        generatedMobAugmentLogSignatureByEntity.entrySet().removeIf(
+            e -> (int) (e.getKey() & 0xFFFFFFFFL) == entityIndex);
+        inheritedMobAugmentLogSignatureByEntity.entrySet().removeIf(
+            e -> (int) (e.getKey() & 0xFFFFFFFFL) == entityIndex);
         clearMixedChoicesByEntityIndex(entityIndex);
     }
 
@@ -4357,6 +4950,9 @@ public class MobLevelingManager {
         long entityKey = toEntityKey(store, entityIndex);
         entityLevelOverridesScoped.remove(entityKey);
         mixedSourceChoiceByEntityKey.remove(entityKey);
+        generatedMobAugmentCacheByEntity.remove(entityKey);
+        generatedMobAugmentLogSignatureByEntity.remove(entityKey);
+        inheritedMobAugmentLogSignatureByEntity.remove(entityKey);
         clearEntityLevelOverride(entityIndex);
     }
 
@@ -4370,6 +4966,9 @@ public class MobLevelingManager {
         entityMaxHealthSnapshots.clear();
         tierLockByStoreKey.clear();
         tierLockSourcePlayerByStoreKey.clear();
+        generatedMobAugmentCacheByEntity.clear();
+        generatedMobAugmentLogSignatureByEntity.clear();
+        inheritedMobAugmentLogSignatureByEntity.clear();
     }
 
     private long toEntityKey(Store<EntityStore> store, int entityId) {

@@ -1,6 +1,7 @@
 package com.airijko.endlessleveling.mob;
 
 import com.airijko.endlessleveling.augments.AugmentHooks;
+import com.airijko.endlessleveling.augments.AugmentRuntimeManager;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.airijko.endlessleveling.passives.type.ArmyOfTheDeadPassive;
 import com.airijko.endlessleveling.passives.type.ArmyOfTheDeadPassive.SummonInheritedStats;
@@ -29,21 +30,34 @@ public final class MobSkillAttributeResolver {
 
         double fromPlayer = resolveFromPlayerContext(context.getSkillManager(), context.getPlayerData(), type);
         if (fromPlayer > 0.0D) {
-            return fromPlayer;
+            return Math.max(0.0D, fromPlayer + resolveFromRuntimeState(context.getRuntimeState(), type));
         }
 
         EntityStatMap statMap = resolveContextStatMap(context);
         double fromEntityStats = resolveFromEntityStats(statMap, type);
         if (fromEntityStats > 0.0D) {
-            return fromEntityStats;
+            return Math.max(0.0D, fromEntityStats + resolveFromRuntimeState(context.getRuntimeState(), type));
         }
 
-        return resolveFromSummonInheritance(resolveContextSourceRef(context), resolveContextCommandBuffer(context), type);
+        double baseValue = resolveFromSummonInheritance(resolveContextSourceRef(context),
+            resolveContextCommandBuffer(context),
+            type);
+        return Math.max(0.0D, baseValue + resolveFromRuntimeState(context.getRuntimeState(), type));
     }
 
     public static double resolveSkillAttribute(EntityStatMap statMap,
             SkillManager skillManager,
             PlayerData playerData,
+            CommandBuffer<EntityStore> commandBuffer,
+            Ref<EntityStore> sourceRef,
+            SkillAttributeType type) {
+        return resolveSkillAttribute(statMap, skillManager, playerData, null, commandBuffer, sourceRef, type);
+    }
+
+    public static double resolveSkillAttribute(EntityStatMap statMap,
+            SkillManager skillManager,
+            PlayerData playerData,
+            AugmentRuntimeManager.AugmentRuntimeState runtimeState,
             CommandBuffer<EntityStore> commandBuffer,
             Ref<EntityStore> sourceRef,
             SkillAttributeType type) {
@@ -53,15 +67,16 @@ public final class MobSkillAttributeResolver {
 
         double fromPlayer = resolveFromPlayerContext(skillManager, playerData, type);
         if (fromPlayer > 0.0D) {
-            return fromPlayer;
+            return Math.max(0.0D, fromPlayer + resolveFromRuntimeState(runtimeState, type));
         }
 
         double fromEntityStats = resolveFromEntityStats(statMap, type);
         if (fromEntityStats > 0.0D) {
-            return fromEntityStats;
+            return Math.max(0.0D, fromEntityStats + resolveFromRuntimeState(runtimeState, type));
         }
 
-        return resolveFromSummonInheritance(sourceRef, commandBuffer, type);
+        double baseValue = resolveFromSummonInheritance(sourceRef, commandBuffer, type);
+        return Math.max(0.0D, baseValue + resolveFromRuntimeState(runtimeState, type));
     }
 
     private static double resolveFromPlayerContext(SkillManager skillManager,
@@ -84,6 +99,14 @@ public final class MobSkillAttributeResolver {
             case PRECISION -> Math.max(0.0D, skillManager.calculatePlayerPrecision(playerData));
             case FEROCITY -> Math.max(0.0D, skillManager.calculatePlayerFerocity(playerData));
         };
+    }
+
+    private static double resolveFromRuntimeState(AugmentRuntimeManager.AugmentRuntimeState runtimeState,
+            SkillAttributeType type) {
+        if (runtimeState == null || type == null) {
+            return 0.0D;
+        }
+        return Math.max(0.0D, runtimeState.getAttributeBonus(type, System.currentTimeMillis()));
     }
 
     private static EntityStatMap resolveContextStatMap(AugmentHooks.BaseContext context) {

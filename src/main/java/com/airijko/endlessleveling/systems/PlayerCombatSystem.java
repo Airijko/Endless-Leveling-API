@@ -8,6 +8,7 @@ import com.airijko.endlessleveling.augments.types.ProtectiveBubbleAugment;
 import com.airijko.endlessleveling.combat.CombatHookProcessor;
 import com.airijko.endlessleveling.player.PlayerData;
 import com.airijko.endlessleveling.enums.ArchetypePassiveType;
+import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.airijko.endlessleveling.classes.ClassManager;
 import com.airijko.endlessleveling.leveling.MobLevelingManager;
 import com.airijko.endlessleveling.passives.PassiveManager;
@@ -63,6 +64,7 @@ public class PlayerCombatSystem extends DamageEventSystem {
             .registerMetaObject(data -> Boolean.FALSE);
     public static final MetaKey<Boolean> AUGMENT_PROC_DAMAGE = Damage.META_REGISTRY
             .registerMetaObject(data -> Boolean.FALSE);
+    private static final double MOB_DEFENSE_MAX_REDUCTION_PERCENT = 80.0D;
 
     private final PlayerDataManager playerDataManager;
     private final PassiveManager passiveManager;
@@ -349,13 +351,18 @@ public class PlayerCombatSystem extends DamageEventSystem {
             }
         }
 
+            double defensePercent = Math.max(0.0D,
+                Math.min(MOB_DEFENSE_MAX_REDUCTION_PERCENT,
+                    mobAugmentExecutor.getAttributeBonus(mobUuid, SkillAttributeType.DEFENSE)));
+            float afterDefense = (float) (incomingDamage * (1.0D - (defensePercent / 100.0D)));
+
         float afterDamageTaken = mobAugmentExecutor.applyOnDamageTaken(
                 mobUuid,
                 targetRef,
                 attackerRef,
                 commandBuffer,
                 targetStats,
-                incomingDamage);
+                afterDefense);
         float finalDamage = mobAugmentExecutor.applyOnLowHp(
                 mobUuid,
                 targetRef,
@@ -364,9 +371,9 @@ public class PlayerCombatSystem extends DamageEventSystem {
                 targetStats,
                 afterDamageTaken);
 
-        if (finalDamage != incomingDamage) {
-            LOGGER.atInfo().log("MobAugments target=%d damage %.3f -> %.3f augments=%s",
-                    targetRef.getIndex(), incomingDamage, finalDamage, augmentIds);
+            if (finalDamage != incomingDamage || Math.abs(afterDefense - incomingDamage) > 0.0001f) {
+                LOGGER.atInfo().log("MobAugments target=%d damage %.3f -> %.3f (afterDefense=%.3f, defense=%.2f%%) augments=%s",
+                    targetRef.getIndex(), incomingDamage, finalDamage, afterDefense, defensePercent, augmentIds);
         }
         return Math.max(0.0f, finalDamage);
     }

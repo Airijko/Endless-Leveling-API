@@ -1,7 +1,9 @@
 package com.airijko.endlessleveling.mob;
 
 import com.airijko.endlessleveling.EndlessLeveling;
+import com.airijko.endlessleveling.augments.MobAugmentExecutor;
 import com.airijko.endlessleveling.compatibility.NameplateBuilderCompatibility;
+import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.airijko.endlessleveling.leveling.MobLevelingManager;
 import com.airijko.endlessleveling.player.PlayerDataManager;
 import com.airijko.endlessleveling.passives.type.ArmyOfTheDeadPassive;
@@ -52,6 +54,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
     private static final Query<EntityStore> ENTITY_QUERY = Query.any();
     private static final String MOB_HEALTH_SCALE_MODIFIER_KEY = "EL_MOB_HEALTH_SCALE";
+    private static final String MOB_AUGMENT_LIFE_FORCE_MODIFIER_KEY = "EL_MOB_AUGMENT_LIFE_FORCE";
     private static final float SYSTEM_INTERVAL_SECONDS = 0.15f;
     private static final long STALE_ENTITY_TTL_MILLIS = 100_000L;
     private static final int CHUNK_BIT_SHIFT = 5;
@@ -437,6 +440,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
             float beforeMax = before != null ? before.getMax() : -1.0f;
 
             summonStatMap.removeModifier(healthIndex, MOB_HEALTH_SCALE_MODIFIER_KEY);
+            summonStatMap.removeModifier(healthIndex, MOB_AUGMENT_LIFE_FORCE_MODIFIER_KEY);
             EntityStatValue summonHp = summonStatMap.get(healthIndex);
             if (summonHp != null && Float.isFinite(summonHp.getMax()) && summonHp.getMax() > 0.0f) {
                 summonStatMap.setStatValue(healthIndex, summonHp.getMax());
@@ -486,15 +490,31 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         }
 
         statMap.removeModifier(healthIndex, MOB_HEALTH_SCALE_MODIFIER_KEY);
+        statMap.removeModifier(healthIndex, MOB_AUGMENT_LIFE_FORCE_MODIFIER_KEY);
         EntityStatValue baselineHealth = statMap.get(healthIndex);
         float baseMax = baselineHealth != null ? baselineHealth.getMax() : currentMax;
         if (!Float.isFinite(baseMax) || baseMax <= 0.0f) {
             baseMax = Math.max(1.0f, currentMax);
         }
 
+        float lifeForceBonus = resolveMobLifeForceHealthBonus(ref, commandBuffer);
+
         if (!mobLevelingManager.isMobHealthScalingEnabled(ref.getStore())) {
+            float targetMax = Math.max(1.0f, baseMax + lifeForceBonus);
+            if (lifeForceBonus > 0.0001f) {
+                try {
+                    StaticModifier lifeForceModifier = new StaticModifier(
+                            ModifierTarget.MAX,
+                            CalculationType.ADDITIVE,
+                            lifeForceBonus);
+                    statMap.putModifier(healthIndex, MOB_AUGMENT_LIFE_FORCE_MODIFIER_KEY, lifeForceModifier);
+                } catch (Exception e) {
+                    return false;
+                }
+            }
+
             float ratio = currentMax > 0.0f ? currentValue / currentMax : 1.0f;
-            float restoredValue = Math.max(0.0f, Math.min(baseMax, ratio * baseMax));
+            float restoredValue = Math.max(0.0f, Math.min(targetMax, ratio * targetMax));
             if (currentValue <= 0.0f) {
                 restoredValue = 0.0f;
             }
@@ -517,7 +537,12 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
                 currentValue);
 
         float targetMax = scaled.targetMax();
-        float targetValue = scaled.newValue();
+        float targetMaxWithAugments = Math.max(1.0f, targetMax + lifeForceBonus);
+        float ratio = currentMax > 0.0f ? currentValue / currentMax : 1.0f;
+        float targetValue = Math.max(0.0f, Math.min(targetMaxWithAugments, ratio * targetMaxWithAugments));
+        if (currentValue <= 0.0f) {
+            targetValue = 0.0f;
+        }
         if (!Float.isFinite(targetMax) || targetMax <= 0.0f || !Float.isFinite(targetValue)) {
             return false;
         }
@@ -527,6 +552,18 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
             try {
                 StaticModifier modifier = new StaticModifier(ModifierTarget.MAX, CalculationType.ADDITIVE, additive);
                 statMap.putModifier(healthIndex, MOB_HEALTH_SCALE_MODIFIER_KEY, modifier);
+            } catch (Exception e) {
+                return false;
+            }
+        }
+
+        if (lifeForceBonus > 0.0001f) {
+            try {
+                StaticModifier lifeForceModifier = new StaticModifier(
+                        ModifierTarget.MAX,
+                        CalculationType.ADDITIVE,
+                        lifeForceBonus);
+                statMap.putModifier(healthIndex, MOB_AUGMENT_LIFE_FORCE_MODIFIER_KEY, lifeForceModifier);
             } catch (Exception e) {
                 return false;
             }
@@ -562,6 +599,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         float previousMax = before.getMax();
 
         statMap.removeModifier(healthIndex, MOB_HEALTH_SCALE_MODIFIER_KEY);
+        statMap.removeModifier(healthIndex, MOB_AUGMENT_LIFE_FORCE_MODIFIER_KEY);
 
         EntityStatValue baseline = statMap.get(healthIndex);
         float baselineMax = baseline != null ? baseline.getMax() : previousMax;
@@ -600,6 +638,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         if (statMap != null) {
             int healthIndex = DefaultEntityStatTypes.getHealth();
             statMap.removeModifier(healthIndex, MOB_HEALTH_SCALE_MODIFIER_KEY);
+            statMap.removeModifier(healthIndex, MOB_AUGMENT_LIFE_FORCE_MODIFIER_KEY);
             statMap.update();
         }
 
@@ -647,6 +686,34 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
 
         state.lastObservedHealth = currentHealth;
         state.lastObservedMaxHealth = currentMaxHealth;
+    }
+
+    private float resolveMobLifeForceHealthBonus(Ref<EntityStore> ref,
+            CommandBuffer<EntityStore> commandBuffer) {
+        if (ref == null || commandBuffer == null) {
+            return 0.0f;
+        }
+
+        UUIDComponent uuidComponent = commandBuffer.getComponent(ref, UUIDComponent.getComponentType());
+        if (uuidComponent == null || uuidComponent.getUuid() == null) {
+            return 0.0f;
+        }
+
+        EndlessLeveling plugin = EndlessLeveling.getInstance();
+        if (plugin == null) {
+            return 0.0f;
+        }
+
+        MobAugmentExecutor mobAugmentExecutor = plugin.getMobAugmentExecutor();
+        if (mobAugmentExecutor == null) {
+            return 0.0f;
+        }
+
+        double bonus = mobAugmentExecutor.getAttributeBonus(uuidComponent.getUuid(), SkillAttributeType.LIFE_FORCE);
+        if (!Double.isFinite(bonus) || bonus <= 0.0D) {
+            return 0.0f;
+        }
+        return (float) bonus;
     }
 
     private boolean applyNameplate(Ref<EntityStore> ref,

@@ -7,6 +7,7 @@ import com.airijko.endlessleveling.augments.types.NestingDollAugment;
 import com.airijko.endlessleveling.augments.types.ProtectiveBubbleAugment;
 import com.airijko.endlessleveling.combat.CombatHookProcessor;
 import com.airijko.endlessleveling.player.PlayerData;
+import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.airijko.endlessleveling.leveling.MobLevelingManager;
 import com.airijko.endlessleveling.passives.PassiveManager;
 import com.airijko.endlessleveling.passives.PassiveManager.PassiveRuntimeState;
@@ -41,6 +42,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import javax.annotation.Nonnull;
 
 /**
@@ -50,6 +52,7 @@ import javax.annotation.Nonnull;
  */
 public class PlayerDefenseSystem extends DamageEventSystem {
 	private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
+	private static final double MOB_PRECISION_MAX_PERCENT = 100.0D;
 	private final PlayerDataManager playerDataManager;
 	private final SkillManager skillManager;
 	private final PassiveManager passiveManager;
@@ -167,13 +170,30 @@ public class PlayerDefenseSystem extends DamageEventSystem {
 							EntityStatMap defenderStats = commandBuffer.getComponent(targetRef,
 									EntityStatMap.getComponentType());
 							float originalDamage = damage.getAmount();
+							double strengthBonus = mobAugmentExecutor.getAttributeBonus(attackerUuid,
+									SkillAttributeType.STRENGTH);
+							double sorceryBonus = mobAugmentExecutor.getAttributeBonus(attackerUuid,
+									SkillAttributeType.SORCERY);
+							double combinedDamagePercent = Math.max(0.0D, strengthBonus + sorceryBonus);
+							float damageAfterAttributes = (float) (originalDamage * (1.0D + (combinedDamagePercent / 100.0D)));
+
+							double precisionPercent = Math.max(0.0D, Math.min(MOB_PRECISION_MAX_PERCENT,
+									mobAugmentExecutor.getAttributeBonus(attackerUuid, SkillAttributeType.PRECISION)));
+							boolean mobCrit = ThreadLocalRandom.current().nextDouble() < (precisionPercent / 100.0D);
+							if (mobCrit) {
+								double ferocityPercent = Math.max(0.0D,
+										mobAugmentExecutor.getAttributeBonus(attackerUuid, SkillAttributeType.FEROCITY));
+								damageAfterAttributes = (float) (damageAfterAttributes * (1.0D + (ferocityPercent / 100.0D)));
+							}
+
 							var onHit = mobAugmentExecutor.applyOnHit(attackerUuid,
 									attackerRef,
 									targetRef,
 									commandBuffer,
 									attackerStats,
 									defenderStats,
-									originalDamage);
+									damageAfterAttributes,
+									mobCrit);
 							damage.setAmount(onHit.damage());
 
 							float appliedTrueDamage = applyMobTrueDamage(playerData,
@@ -183,9 +203,12 @@ public class PlayerDefenseSystem extends DamageEventSystem {
 									onHit.trueDamageBonus());
 							if (Math.abs(onHit.damage() - originalDamage) > 0.0001f || appliedTrueDamage > 0f) {
 								LOGGER.atInfo().log(
-										"MobOnHitAugments attacker=%d defender=%s damage=%.3f true=%.3f augments=%s",
+										"MobOnHitAugments attacker=%d defender=%s base=%.3f attr=%.3f crit=%s final=%.3f true=%.3f augments=%s",
 										attackerRef.getIndex(),
 										defenderPlayer.getUsername(),
+										originalDamage,
+										damageAfterAttributes,
+										mobCrit,
 										onHit.damage(),
 										appliedTrueDamage,
 										attackerAugments);

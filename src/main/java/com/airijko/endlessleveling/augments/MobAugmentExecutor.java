@@ -1,5 +1,6 @@
 package com.airijko.endlessleveling.augments;
 
+import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.logger.HytaleLogger;
@@ -92,6 +93,25 @@ public final class MobAugmentExecutor {
             EntityStatMap attackerStats,
             EntityStatMap targetStats,
             float startingDamage) {
+        return applyOnHit(entityId,
+            attackerRef,
+            targetRef,
+            commandBuffer,
+            attackerStats,
+            targetStats,
+            startingDamage,
+            false);
+        }
+
+        public AugmentDispatch.OnHitResult applyOnHit(
+            UUID entityId,
+            Ref<EntityStore> attackerRef,
+            Ref<EntityStore> targetRef,
+            CommandBuffer<EntityStore> commandBuffer,
+            EntityStatMap attackerStats,
+            EntityStatMap targetStats,
+            float startingDamage,
+            boolean isCritical) {
 
         MobAugmentInstance instance = mobAugments.get(entityId);
         if (instance == null || instance.augments.isEmpty()) {
@@ -110,7 +130,7 @@ public final class MobAugmentExecutor {
                 attackerStats,
                 targetStats,
                 startingDamage,
-                false,
+                isCritical,
                 false,
                 null);
 
@@ -379,6 +399,17 @@ public final class MobAugmentExecutor {
         return mobAugments.containsKey(entityId);
     }
 
+    public double getAttributeBonus(UUID entityId, SkillAttributeType type) {
+        if (entityId == null || type == null) {
+            return 0.0D;
+        }
+        MobAugmentInstance instance = mobAugments.get(entityId);
+        if (instance == null || instance.runtimeState == null) {
+            return 0.0D;
+        }
+        return Math.max(0.0D, instance.runtimeState.getAttributeBonus(type, System.currentTimeMillis()));
+    }
+
     private void applyPassiveHooks(UUID entityId,
             MobAugmentInstance instance,
             Ref<EntityStore> mobRef,
@@ -389,14 +420,15 @@ public final class MobAugmentExecutor {
         }
 
         double deltaSeconds = resolvePassiveDeltaSeconds(entityId);
-        for (Augment augment : instance.augments) {
+        for (int augmentIndex = 0; augmentIndex < instance.augments.size(); augmentIndex++) {
+            Augment augment = instance.augments.get(augmentIndex);
             if (augment instanceof AugmentHooks.PassiveStatAugment passive) {
                 try {
                     AugmentHooks.PassiveStatContext context = new AugmentHooks.PassiveStatContext(
                             null,
                             instance.runtimeState,
                             null,
-                            "mob::" + augment.getId(),
+                            "mob::" + augment.getId() + "::" + augmentIndex,
                             mobRef,
                             commandBuffer,
                             statMap,
