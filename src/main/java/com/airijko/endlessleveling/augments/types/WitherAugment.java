@@ -11,6 +11,7 @@ import com.airijko.endlessleveling.systems.PlayerCombatSystem;
 import com.airijko.endlessleveling.util.EntityRefUtil;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.protocol.MovementSettings;
 import com.hypixel.hytale.server.core.asset.type.entityeffect.config.EntityEffect;
@@ -25,6 +26,8 @@ import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class WitherAugment extends Augment implements AugmentHooks.OnHitAugment {
@@ -97,6 +100,7 @@ public final class WitherAugment extends Augment implements AugmentHooks.OnHitAu
         long expiresAt;
         long nextTickAt;
         int targetStoreIdentity;
+        Ref<EntityStore> targetRef;
         double percentPerSecond;
         double movementSpeedSlowPercent;
         double durationSeconds;
@@ -168,6 +172,7 @@ public final class WitherAugment extends Augment implements AugmentHooks.OnHitAu
         state.durationSeconds = durationSeconds;
         state.maxDamagePerTick = maxDamagePerTick;
         state.targetStoreIdentity = storeIdentityFor(targetRef);
+        state.targetRef = targetRef;
         state.sourceRef = context.getAttackerRef();
         state.loggedSourceStoreMismatch = false;
 
@@ -184,6 +189,43 @@ public final class WitherAugment extends Augment implements AugmentHooks.OnHitAu
 
     public static boolean hasActiveWithers() {
         return !ACTIVE_WITHER.isEmpty();
+    }
+
+    public static List<Ref<EntityStore>> snapshotActiveTargetsForStore(Store<EntityStore> store, long now) {
+        if (store == null || ACTIVE_WITHER.isEmpty()) {
+            return List.of();
+        }
+
+        int storeIdentity = System.identityHashCode(store);
+        List<Ref<EntityStore>> targets = new ArrayList<>();
+
+        ACTIVE_WITHER.forEach((key, state) -> {
+            if (state == null || now >= state.expiresAt) {
+                return;
+            }
+
+            Ref<EntityStore> targetRef = state.targetRef;
+            if (targetRef == null || !EntityRefUtil.isUsable(targetRef)) {
+                return;
+            }
+
+            int targetStoreIdentity = state.targetStoreIdentity;
+            if (targetStoreIdentity == 0) {
+                targetStoreIdentity = storeIdentityFor(targetRef);
+                state.targetStoreIdentity = targetStoreIdentity;
+            }
+
+            if (targetStoreIdentity != storeIdentity) {
+                return;
+            }
+
+            targets.add(targetRef);
+        });
+
+        if (targets.isEmpty()) {
+            return List.of();
+        }
+        return List.copyOf(targets);
     }
 
     public static void tickTarget(Ref<EntityStore> ref, CommandBuffer<EntityStore> commandBuffer, long now) {

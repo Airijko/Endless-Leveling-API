@@ -26,8 +26,10 @@ import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 
 import javax.annotation.Nonnull;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -63,6 +65,7 @@ public class PlayerHud extends CustomUIHud {
             Map.entry("Potion_Health_Greater", "OnLifesteal"));
     private static final int MAX_STACKING_SLOTS = 6;
     private static final Map<UUID, PlayerHud> ACTIVE_HUDS = new ConcurrentHashMap<>();
+    private static final Set<UUID> DIRTY_HUDS = ConcurrentHashMap.newKeySet();
     private static final Map<String, String> DEFAULT_CLASS_ICONS = Map.ofEntries(
             Map.entry("*", "Weapon_Longsword_Adamantite_Saurian"),
             Map.entry("adventurer", "Ingredient_Life_Essence"),
@@ -518,6 +521,31 @@ public class PlayerHud extends CustomUIHud {
     }
 
     public static void refreshHud(UUID uuid) {
+        markDirty(uuid);
+    }
+
+    public static Set<UUID> drainDirtyHudUuids() {
+        if (DIRTY_HUDS.isEmpty()) {
+            return Set.of();
+        }
+        Set<UUID> dirtySnapshot = new HashSet<>(DIRTY_HUDS);
+        DIRTY_HUDS.removeAll(dirtySnapshot);
+        return dirtySnapshot;
+    }
+
+    public static void markDirty(UUID uuid) {
+        if (uuid == null) {
+            return;
+        }
+
+        if (!ACTIVE_HUDS.containsKey(uuid)) {
+            return;
+        }
+
+        DIRTY_HUDS.add(uuid);
+    }
+
+    public static void refreshHudNow(UUID uuid) {
         if (uuid == null) {
             return;
         }
@@ -542,7 +570,7 @@ public class PlayerHud extends CustomUIHud {
     /** Refresh all active HUDs (used after config reloads). */
     public static void refreshAll() {
         for (UUID uuid : ACTIVE_HUDS.keySet()) {
-            refreshHud(uuid);
+            markDirty(uuid);
         }
     }
 
@@ -557,6 +585,7 @@ public class PlayerHud extends CustomUIHud {
 
     private static void unregisterInternal(UUID uuid) {
         PlayerHud removed = ACTIVE_HUDS.remove(uuid);
+        DIRTY_HUDS.remove(uuid);
         if (removed != null) {
             removed.built.set(false);
         }
@@ -571,6 +600,24 @@ public class PlayerHud extends CustomUIHud {
 
     public static boolean hasActiveHuds() {
         return !ACTIVE_HUDS.isEmpty();
+    }
+
+    public static Set<UUID> getActiveHudUuids() {
+        return Set.copyOf(ACTIVE_HUDS.keySet());
+    }
+
+    public static boolean isHudInStore(UUID uuid, Store<EntityStore> store) {
+        if (uuid == null || store == null) {
+            return false;
+        }
+
+        PlayerHud hud = ACTIVE_HUDS.get(uuid);
+        if (hud == null || !hud.built.get()) {
+            return false;
+        }
+
+        Ref<EntityStore> ref = hud.targetPlayerRef.getReference();
+        return ref != null && ref.getStore() == store;
     }
 
     public static void openPreferred(@Nonnull Player player, @Nonnull PlayerRef playerRef) {
@@ -604,6 +651,7 @@ public class PlayerHud extends CustomUIHud {
 
             PlayerHud newHud = new PlayerHud(playerRef);
             ACTIVE_HUDS.put(uuid, newHud);
+            DIRTY_HUDS.add(uuid);
 
             // Prefer MultipleHUD if available so EndlessLeveling can coexist with
             // other custom HUD mods.

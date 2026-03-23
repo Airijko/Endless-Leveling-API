@@ -23,7 +23,7 @@ import javax.annotation.Nonnull;
 public class PlayerNameplateSystem extends TickingSystem<EntityStore> {
 
     private static final Query<EntityStore> PLAYER_QUERY = Query.any();
-    private static final float UPDATE_INTERVAL_SECONDS = 0.5f;
+    private static final float UPDATE_INTERVAL_SECONDS = 1.0f;
 
     private final PlayerDataManager playerDataManager;
     private final Map<UUID, String> lastLabels = new HashMap<>();

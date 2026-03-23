@@ -33,7 +33,7 @@ public class PlayerRaceStatSystem extends TickingSystem<EntityStore> {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
     private static final Query<EntityStore> PLAYER_QUERY = Query.any();
-    private static final float RETRY_INTERVAL_SECONDS = 2.0f;
+    private static final float RETRY_INTERVAL_SECONDS = 3.0f;
     private static final int MAX_ATTEMPTS = 200;
 
     private final PlayerDataManager playerDataManager;

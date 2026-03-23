@@ -9,6 +9,8 @@ import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.tick.TickingSystem;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
+import java.util.List;
+
 public final class WitherEffectSystem extends TickingSystem<EntityStore> {
     private static final Query<EntityStore> QUERY = Query.any();
     private static final float TICK_INTERVAL_SECONDS = 1.0f;
@@ -25,18 +27,27 @@ public final class WitherEffectSystem extends TickingSystem<EntityStore> {
         if (elapsed < TICK_INTERVAL_SECONDS) {
             return;
         }
-        elapsed = 0f;
+        elapsed -= TICK_INTERVAL_SECONDS;
 
         long now = System.currentTimeMillis();
-        store.forEachChunk(QUERY, (ArchetypeChunk<EntityStore> chunk, CommandBuffer<EntityStore> commandBuffer) -> {
-            for (int i = 0; i < chunk.size(); i++) {
-                Ref<EntityStore> ref = chunk.getReferenceTo(i);
-                if (ref == null || !ref.isValid()) {
-                    continue;
+        List<Ref<EntityStore>> activeTargets = WitherAugment.snapshotActiveTargetsForStore(store, now);
+
+        if (!activeTargets.isEmpty()) {
+            boolean[] processed = new boolean[] { false };
+            store.forEachChunk(QUERY, (ArchetypeChunk<EntityStore> chunk, CommandBuffer<EntityStore> commandBuffer) -> {
+                if (processed[0]) {
+                    return;
                 }
-                WitherAugment.tickTarget(ref, commandBuffer, now);
-            }
-        });
+                processed[0] = true;
+
+                for (Ref<EntityStore> ref : activeTargets) {
+                    if (ref == null || !ref.isValid()) {
+                        continue;
+                    }
+                    WitherAugment.tickTarget(ref, commandBuffer, now);
+                }
+            });
+        }
 
         // Purge any remaining expired entries (e.g., targets no longer present in
         // queried chunks).
