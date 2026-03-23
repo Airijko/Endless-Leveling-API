@@ -22,16 +22,10 @@ ui:
 
       '
     color: '#8adf9e'
-  - title: Control
-    body: 'Empowered hit applies 50x knockback
-
-      '
-    color: '#ffb86b'
 passives:
   haymaker:
     required_combat_time: 5.0
     combat_timeout: 10.0
     max_health_scaling: 0.10
     cooldown: 10.0
-    knockback_multiplier: 50.0
 mob_compatible: true

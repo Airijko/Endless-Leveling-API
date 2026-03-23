@@ -133,12 +133,13 @@ public final class AugmentHudOverlayController {
                     continue;
                 }
 
-                if (leftSlots.size() < STACKING_LEFT_SLOT_COUNT && hasStackingMechanic(definition)) {
+                boolean nextHitTriggerIndicator = usesNextHitTriggerIndicator(definition.getId());
+                if (leftSlots.size() < STACKING_LEFT_SLOT_COUNT
+                        && (nextHitTriggerIndicator || hasStackingMechanic(definition))) {
                     AugmentRuntimeManager.AugmentState state = runtimeState.getState(augmentId);
                     if (state != null) {
                         int stacks = Math.max(0, state.getStacks());
                         int maxStacks = resolveConfiguredMaxStacks(definition.getId(), definition.getPassives());
-                        boolean nextHitTriggerIndicator = usesNextHitTriggerIndicator(definition.getId());
                         boolean decaysOverTime = hasStackDecayMechanic(definition.getId(), definition.getPassives());
                         boolean stacksVisible = nextHitTriggerIndicator
                             ? shouldShowNextHitTrigger(definition,

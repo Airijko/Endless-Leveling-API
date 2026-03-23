@@ -12,7 +12,6 @@ import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.server.core.asset.type.soundevent.config.SoundEvent;
-import com.hypixel.hytale.server.core.entity.knockback.KnockbackComponent;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
 import com.hypixel.hytale.server.core.universe.world.ParticleUtil;
@@ -20,6 +19,7 @@ import com.hypixel.hytale.server.core.universe.world.SoundUtil;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import java.util.Map;
+import javax.annotation.Nonnull;
 
 public final class HaymakerAugment extends Augment implements AugmentHooks.OnHitAugment {
     public static final String ID = "haymaker";
@@ -38,7 +38,6 @@ public final class HaymakerAugment extends Augment implements AugmentHooks.OnHit
     private final long combatTimeoutMillis;
     private final long cooldownMillis;
     private final double maxHealthScaling;
-    private final double knockbackMultiplier;
 
     public HaymakerAugment(AugmentDefinition definition) {
         super(definition);
@@ -54,11 +53,10 @@ public final class HaymakerAugment extends Augment implements AugmentHooks.OnHit
         this.cooldownMillis = AugmentUtils.secondsToMillis(AugmentValueReader.getDouble(haymaker, "cooldown", 10.0D));
         this.maxHealthScaling = AugmentUtils
                 .normalizeConfiguredBonusMultiplier(AugmentValueReader.getDouble(haymaker, "max_health_scaling", 0.10D));
-        this.knockbackMultiplier = Math.max(1.0D, AugmentValueReader.getDouble(haymaker, "knockback_multiplier", 5.0D));
     }
 
     @Override
-    public float onHit(AugmentHooks.HitContext context) {
+    public float onHit(@Nonnull AugmentHooks.HitContext context) {
         if (context == null || context.getRuntimeState() == null) {
             return context != null ? context.getDamage() : 0f;
         }
@@ -88,7 +86,6 @@ public final class HaymakerAugment extends Augment implements AugmentHooks.OnHit
             return context.getDamage();
         }
 
-        applyKnockbackAmplifier(context.getCommandBuffer(), context.getAttackerRef(), context.getTargetRef());
         playTriggerVfx(context.getCommandBuffer(), context.getTargetRef());
         playTriggerSfx(context.getCommandBuffer(), context.getTargetRef());
         return context.getDamage() + (float) bonusDamage;
@@ -107,50 +104,6 @@ public final class HaymakerAugment extends Augment implements AugmentHooks.OnHit
 
         var passiveState = passiveManager.getRuntimeState(context.getPlayerData().getUuid());
         return passiveState == null ? 0L : passiveState.getLastCombatMillis();
-    }
-
-    private void applyKnockbackAmplifier(
-            CommandBuffer<EntityStore> commandBuffer,
-            Ref<EntityStore> attackerRef,
-            Ref<EntityStore> targetRef) {
-        if (commandBuffer == null || !EntityRefUtil.isUsable(attackerRef) || !EntityRefUtil.isUsable(targetRef)) {
-            return;
-        }
-
-        TransformComponent attackerTransform = EntityRefUtil.tryGetComponent(
-                commandBuffer,
-                attackerRef,
-                TransformComponent.getComponentType());
-        TransformComponent targetTransform = EntityRefUtil.tryGetComponent(
-                commandBuffer,
-                targetRef,
-                TransformComponent.getComponentType());
-        KnockbackComponent knockback = EntityRefUtil.tryGetComponent(
-                commandBuffer,
-                targetRef,
-                KnockbackComponent.getComponentType());
-        if (knockback == null || attackerTransform == null || targetTransform == null) {
-            return;
-        }
-
-        Vector3d attackerPos = attackerTransform.getPosition();
-        Vector3d targetPos = targetTransform.getPosition();
-        if (attackerPos == null || targetPos == null) {
-            return;
-        }
-
-        double dx = targetPos.getX() - attackerPos.getX();
-        double dz = targetPos.getZ() - attackerPos.getZ();
-        double horizontalLength = Math.sqrt(dx * dx + dz * dz);
-        if (horizontalLength <= 1.0E-6D) {
-            return;
-        }
-
-        double baseForce = 0.45D;
-        double force = baseForce * knockbackMultiplier;
-        double verticalBoost = 0.22D;
-        knockback.setVelocity(new Vector3d((dx / horizontalLength) * force, verticalBoost, (dz / horizontalLength) * force));
-        knockback.setDuration(0.2F);
     }
 
     private void playTriggerVfx(CommandBuffer<EntityStore> commandBuffer, Ref<EntityStore> targetRef) {
