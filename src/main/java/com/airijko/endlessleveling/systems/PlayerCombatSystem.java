@@ -3,8 +3,11 @@ package com.airijko.endlessleveling.systems;
 import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.augments.AugmentExecutor;
 import com.airijko.endlessleveling.augments.MobAugmentExecutor;
+import com.airijko.endlessleveling.augments.types.BailoutAugment;
+import com.airijko.endlessleveling.augments.types.FortressAugment;
 import com.airijko.endlessleveling.augments.types.NestingDollAugment;
 import com.airijko.endlessleveling.augments.types.ProtectiveBubbleAugment;
+import com.airijko.endlessleveling.augments.types.RebirthAugment;
 import com.airijko.endlessleveling.augments.types.UndyingRageAugment;
 import com.airijko.endlessleveling.combat.CombatHookProcessor;
 import com.airijko.endlessleveling.player.PlayerData;
@@ -474,28 +477,23 @@ public class PlayerCombatSystem extends DamageEventSystem {
                     return 0.0f;
                 }
 
-                float afterNestingLowHp = augmentExecutor.applySpecificOnLowHp(defenderData,
-                        targetRef,
-                        attackerRef,
-                        commandBuffer,
-                        targetStats,
-                        (float) trueDamageAmount,
-                        NestingDollAugment.ID);
-                trueDamageAmount = Math.max(0.0D, afterNestingLowHp);
-                if (trueDamageAmount <= 0.0D) {
-                    return 0.0f;
-                }
-
-                float afterUndyingRageLowHp = augmentExecutor.applySpecificOnLowHp(defenderData,
-                        targetRef,
-                        attackerRef,
-                        commandBuffer,
-                        targetStats,
-                        (float) trueDamageAmount,
-                        UndyingRageAugment.ID);
-                trueDamageAmount = Math.max(0.0D, afterUndyingRageLowHp);
-                if (trueDamageAmount <= 0.0D) {
-                    return 0.0f;
+                for (String lowHpAugmentId : List.of(
+                        RebirthAugment.ID,
+                        FortressAugment.ID,
+                        UndyingRageAugment.ID,
+                        NestingDollAugment.ID,
+                        BailoutAugment.ID)) {
+                    float afterLowHp = augmentExecutor.applySpecificOnLowHp(defenderData,
+                            targetRef,
+                            attackerRef,
+                            commandBuffer,
+                            targetStats,
+                            (float) trueDamageAmount,
+                            lowHpAugmentId);
+                    trueDamageAmount = Math.max(0.0D, afterLowHp);
+                    if (trueDamageAmount <= 0.0D) {
+                        return 0.0f;
+                    }
                 }
             }
         }
