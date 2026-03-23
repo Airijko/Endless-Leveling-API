@@ -478,6 +478,23 @@ public final class ArmyOfTheDeadPassive {
                 && areAlliedOwners(attackerOwner, targetOwner);
     }
 
+    public static boolean isFriendlyToOwner(UUID ownerUuid,
+            Ref<EntityStore> targetRef,
+            Store<EntityStore> store,
+            CommandBuffer<EntityStore> commandBuffer) {
+        if (ownerUuid == null || !EntityRefUtil.isUsable(targetRef)) {
+            return false;
+        }
+
+        UUID targetPlayerUuid = resolvePlayerUuid(targetRef, store, commandBuffer);
+        if (targetPlayerUuid != null && isAlliedWithOwner(ownerUuid, targetPlayerUuid)) {
+            return true;
+        }
+
+        UUID targetOwner = resolveSummonOwnerUuid(targetRef, store, commandBuffer);
+        return targetOwner != null && areAlliedOwners(ownerUuid, targetOwner);
+    }
+
     private static void triggerOnHitNow(PlayerData sourcePlayerData,
             Ref<EntityStore> sourceRef,
             CommandBuffer<EntityStore> commandBuffer,
@@ -617,6 +634,38 @@ public final class ArmyOfTheDeadPassive {
         } catch (Throwable throwable) {
             LOGGER.atWarning().withCause(throwable)
                     .log("[ARMY_OF_THE_DEAD] Failed to handle summon death event.");
+        }
+    }
+
+    public static void cleanupOwnerSummonsOnDisconnect(UUID ownerUuid, Store<EntityStore> ownerStore) {
+        cleanupOwnerSummons(ownerUuid, ownerStore, true, System.currentTimeMillis());
+    }
+
+    public static void cleanupPersistentSummons(Store<EntityStore> store) {
+        if (store == null || store.isShutdown() || OWNER_STATES.isEmpty()) {
+            return;
+        }
+
+        long now = System.currentTimeMillis();
+        for (Map.Entry<UUID, OwnerSummonState> entry : OWNER_STATES.entrySet()) {
+            UUID ownerUuid = entry.getKey();
+            OwnerSummonState ownerState = entry.getValue();
+            if (ownerUuid == null || ownerState == null) {
+                continue;
+            }
+
+            PlayerRef ownerPlayerRef = Universe.get().getPlayer(ownerUuid);
+            Ref<EntityStore> ownerRef = ownerPlayerRef != null && ownerPlayerRef.isValid()
+                    ? ownerPlayerRef.getReference()
+                    : null;
+            Store<EntityStore> ownerStore = ownerRef != null ? ownerRef.getStore() : null;
+            boolean ownerDisconnected = ownerPlayerRef == null || !ownerPlayerRef.isValid() || ownerRef == null;
+            cleanupOwnerSummons(ownerUuid,
+                    store,
+                    ownerDisconnected,
+                    now,
+                    ownerStore,
+                    ownerState);
         }
     }
 
@@ -1155,6 +1204,77 @@ public final class ArmyOfTheDeadPassive {
         }
     }
 
+    private static void cleanupOwnerSummons(UUID ownerUuid,
+            Store<EntityStore> targetStore,
+            boolean forceAllInStore,
+            long now) {
+        OwnerSummonState ownerState = OWNER_STATES.get(ownerUuid);
+        cleanupOwnerSummons(ownerUuid, targetStore, forceAllInStore, now, targetStore, ownerState);
+    }
+
+    private static void cleanupOwnerSummons(UUID ownerUuid,
+            Store<EntityStore> targetStore,
+            boolean ownerDisconnected,
+            long now,
+            Store<EntityStore> ownerStore,
+            OwnerSummonState ownerState) {
+        if (ownerUuid == null || targetStore == null || ownerState == null) {
+            return;
+        }
+
+        boolean anyTracked = false;
+        synchronized (ownerState) {
+            for (SummonSlot slot : ownerState.slots) {
+                if (slot == null || slot.activeSummonUuid == null) {
+                    continue;
+                }
+                anyTracked = true;
+
+                Ref<EntityStore> summonRef = slot.activeRef;
+                Store<EntityStore> summonStore = summonRef != null ? summonRef.getStore() : null;
+                if (summonStore != targetStore) {
+                    continue;
+                }
+
+                boolean invalidBinding = !SUMMON_BINDINGS.containsKey(slot.activeSummonUuid);
+                boolean invalidRef = summonRef == null || !EntityRefUtil.isUsable(summonRef);
+                boolean expired = slot.summonExpiresAt > 0L && now >= slot.summonExpiresAt;
+                boolean ownerLeftWorld = !ownerDisconnected && ownerStore != null && ownerStore != summonStore;
+                boolean shouldDespawn = ownerDisconnected || invalidBinding || invalidRef || expired || ownerLeftWorld;
+
+                if (!shouldDespawn) {
+                    continue;
+                }
+
+                if (!invalidRef) {
+                    forceKillSummon(summonRef, summonStore);
+                }
+
+                SUMMON_BINDINGS.remove(slot.activeSummonUuid);
+                slot.activeRef = null;
+                slot.activeSummonUuid = null;
+                slot.summonExpiresAt = 0L;
+                slot.cooldownExpiresAt = now + Math.max(0L, slot.cooldownDurationMillis);
+                slot.spawnPending = false;
+                slot.postSpawnHealthNormalizePending = false;
+                slot.nextNameplateRefreshAt = 0L;
+
+                LOGGER.atFine().log(
+                        "[ARMY_OF_THE_DEAD] Cleaned summon for owner %s (disconnected=%s, invalidBinding=%s, invalidRef=%s, expired=%s, ownerLeftWorld=%s).",
+                        ownerUuid,
+                        ownerDisconnected,
+                        invalidBinding,
+                        invalidRef,
+                        expired,
+                        ownerLeftWorld);
+            }
+        }
+
+        if (!anyTracked) {
+            OWNER_STATES.remove(ownerUuid, ownerState);
+        }
+    }
+
     private static SummonSourceSnapshot captureSourceSnapshot(Ref<EntityStore> sourceRef,
             CommandBuffer<EntityStore> commandBuffer,
             EntityStatMap sourceStats,
@@ -1614,6 +1734,24 @@ public final class ArmyOfTheDeadPassive {
             Store<EntityStore> store = EntityRefUtil.getStore(sourceRef);
             summonStats = EntityRefUtil.tryGetComponent(store, summonRef, EntityStatMap.getComponentType());
         }
+        if (summonStats == null) {
+            return;
+        }
+
+        EntityStatValue hp = summonStats.get(DefaultEntityStatTypes.getHealth());
+        if (hp != null && hp.get() > 0f) {
+            summonStats.setStatValue(DefaultEntityStatTypes.getHealth(), 0.0f);
+        }
+    }
+
+    private static void forceKillSummon(Ref<EntityStore> summonRef,
+            Store<EntityStore> store) {
+        if (!EntityRefUtil.isUsable(summonRef) || store == null) {
+            return;
+        }
+
+        EntityStatMap summonStats = EntityRefUtil.tryGetComponent(store, summonRef,
+                EntityStatMap.getComponentType());
         if (summonStats == null) {
             return;
         }

@@ -39,6 +39,7 @@ import com.airijko.endlessleveling.security.PartnerBrandingAllowlist;
 import com.airijko.endlessleveling.security.UiTitleIntegrityGuard;
 import com.airijko.endlessleveling.systems.BreakBlockEntitySystem;
 import com.airijko.endlessleveling.systems.ArmyOfTheDeadDeathSystem;
+import com.airijko.endlessleveling.systems.ArmyOfTheDeadCleanupSystem;
 import com.airijko.endlessleveling.drops.MobDropTaggingSystem;
 import com.airijko.endlessleveling.systems.PassiveRegenSystem;
 import com.airijko.endlessleveling.mob.MobDamageScalingSystem;
@@ -486,6 +487,7 @@ public class EndlessLeveling extends JavaPlugin {
                 .registerSystem(new SwiftnessKillSystem(playerDataManager, passiveManager, archetypePassiveManager,
                         skillManager, augmentExecutor));
         this.getEntityStoreRegistry().registerSystem(new ArmyOfTheDeadDeathSystem());
+        this.getEntityStoreRegistry().registerSystem(new ArmyOfTheDeadCleanupSystem());
         this.getEntityStoreRegistry().registerSystem(new MobDamageScalingSystem(mobLevelingManager));
         movementHasteSystem = new MovementHasteSystem(playerDataManager, skillManager, augmentRuntimeManager);
         this.getEntityStoreRegistry().registerSystem(movementHasteSystem);

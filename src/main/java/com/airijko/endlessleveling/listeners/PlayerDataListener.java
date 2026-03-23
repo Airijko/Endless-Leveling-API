@@ -6,6 +6,7 @@ import com.airijko.endlessleveling.player.PlayerData;
 import com.airijko.endlessleveling.enums.PassiveTier;
 import com.airijko.endlessleveling.leveling.MobLevelingManager;
 import com.airijko.endlessleveling.passives.PassiveManager;
+import com.airijko.endlessleveling.passives.type.ArmyOfTheDeadPassive;
 import com.airijko.endlessleveling.player.PlayerDataManager;
 import com.airijko.endlessleveling.races.RaceManager;
 import com.airijko.endlessleveling.player.SkillManager;
@@ -204,6 +205,10 @@ public class PlayerDataListener {
 		if (movementHasteSystem != null) {
 			movementHasteSystem.clearPlayer(uuid);
 		}
+
+        Ref<EntityStore> playerEntityRef = playerRef.getReference();
+        Store<EntityStore> playerStore = playerEntityRef != null ? playerEntityRef.getStore() : null;
+        ArmyOfTheDeadPassive.cleanupOwnerSummonsOnDisconnect(uuid, playerStore);
     }
 
     private void notifyAvailableSkillPoints(PlayerRef playerRef, int skillPoints) {

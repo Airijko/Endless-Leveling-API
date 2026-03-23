@@ -52,9 +52,36 @@ public final class UiTitleIntegrityGuard {
     private volatile String alertPrefix = DEFAULT_ALERT_PREFIX;
     private volatile IntegrityResult lastResult = IntegrityResult.ok();
     private volatile String lastFingerprint = "";
+    private final Object evaluationLock = new Object();
+    private volatile boolean evaluated;
 
     @Nonnull
     public IntegrityResult evaluate() {
+        if (evaluated) {
+            return lastResult;
+        }
+
+        synchronized (evaluationLock) {
+            if (evaluated) {
+                return lastResult;
+            }
+            IntegrityResult result = runEvaluation();
+            evaluated = true;
+            return result;
+        }
+    }
+
+    @Nonnull
+    public IntegrityResult refresh() {
+        synchronized (evaluationLock) {
+            IntegrityResult result = runEvaluation();
+            evaluated = true;
+            return result;
+        }
+    }
+
+    @Nonnull
+    private IntegrityResult runEvaluation() {
         Map<String, List<ResourceSnapshot>> resourceCache = new HashMap<>();
         List<TitleViolation> violations = new ArrayList<>();
         String currentBrand = expectedBrand;
@@ -220,6 +247,7 @@ public final class UiTitleIntegrityGuard {
         } else {
             alertPrefix = DEFAULT_ALERT_PREFIX;
         }
+        refresh();
     }
 
     public void setAuthorizedPartner(boolean authorized) {

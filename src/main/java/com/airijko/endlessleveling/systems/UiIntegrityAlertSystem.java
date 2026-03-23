@@ -35,6 +35,8 @@ public final class UiIntegrityAlertSystem extends TickingSystem<EntityStore> {
     private float elapsedSeconds = 0.0f;
     private long systemStartedAtMillis = -1L;
     private boolean consoleWarningLogged = false;
+    private boolean startupEvaluationCompleted = false;
+    private boolean integrityViolationActive = false;
 
     public UiIntegrityAlertSystem(UiTitleIntegrityGuard integrityGuard) {
         this.integrityGuard = integrityGuard;
@@ -44,6 +46,13 @@ public final class UiIntegrityAlertSystem extends TickingSystem<EntityStore> {
     public void tick(float deltaSeconds, int tickCount, Store<EntityStore> store) {
         if (store == null || store.isShutdown() || integrityGuard == null) {
             return;
+        }
+        if (startupEvaluationCompleted) {
+            integrityViolationActive = integrityGuard.getLastResult().modified();
+            if (!integrityViolationActive) {
+                nextAlertAtByPlayer.clear();
+                return;
+            }
         }
 
         elapsedSeconds += deltaSeconds;
@@ -57,8 +66,21 @@ public final class UiIntegrityAlertSystem extends TickingSystem<EntityStore> {
             systemStartedAtMillis = now;
         }
 
-        UiTitleIntegrityGuard.IntegrityResult integrityResult = integrityGuard.evaluate();
-        boolean unauthorized = integrityResult.modified();
+        UiTitleIntegrityGuard.IntegrityResult integrityResult;
+        if (!startupEvaluationCompleted) {
+            integrityResult = integrityGuard.evaluate();
+            startupEvaluationCompleted = true;
+            integrityViolationActive = integrityResult.modified();
+        } else {
+            integrityResult = integrityGuard.getLastResult();
+            integrityViolationActive = integrityResult.modified();
+        }
+        boolean unauthorized = integrityViolationActive;
+
+        if (!unauthorized) {
+            nextAlertAtByPlayer.clear();
+            return;
+        }
 
         if (!consoleWarningLogged
                 && unauthorized

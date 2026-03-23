@@ -9,10 +9,12 @@ import com.airijko.endlessleveling.augments.MobAugmentAnnouncer;
 import com.airijko.endlessleveling.augments.AugmentRuntimeManager.AugmentRuntimeState;
 import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
+import com.airijko.endlessleveling.passives.type.ArmyOfTheDeadPassive;
 import com.airijko.endlessleveling.systems.PlayerCombatSystem;
 import com.airijko.endlessleveling.util.EntityRefUtil;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.server.core.entity.UUIDComponent;
 import com.hypixel.hytale.server.core.modules.entity.damage.Damage;
@@ -63,6 +65,7 @@ public final class DeathBombAugment extends Augment
 
     private static final class PendingBomb {
         final Ref<EntityStore> sourceRef;
+        final UUID summonOwnerUuid;
         final Object worldStore;
         final Vector3d position;
         final long explodeAt;
@@ -70,12 +73,14 @@ public final class DeathBombAugment extends Augment
         final double radius;
 
         PendingBomb(Ref<EntityStore> sourceRef,
+            UUID summonOwnerUuid,
                 Object worldStore,
                 Vector3d position,
                 long explodeAt,
                 double damage,
                 double radius) {
             this.sourceRef = sourceRef;
+            this.summonOwnerUuid = summonOwnerUuid;
             this.worldStore = worldStore;
             this.position = position;
             this.explodeAt = explodeAt;
@@ -197,6 +202,10 @@ public final class DeathBombAugment extends Augment
 
         PENDING_BOMBS.put(uuid,
                 new PendingBomb(context.getDefenderRef(),
+                ArmyOfTheDeadPassive.getManagedSummonOwnerUuid(
+                    context.getDefenderRef(),
+                    context.getDefenderRef().getStore(),
+                    context.getCommandBuffer()),
                 context.getDefenderRef().getStore(),
                         position,
                         now + Math.max(1L, delayMillis),
@@ -310,15 +319,26 @@ public final class DeathBombAugment extends Augment
                 continue;
             }
 
-            applyBombDamageToTarget(sourceRef, targetRef, commandBuffer, configuredDamage);
+            applyBombDamageToTarget(sourceRef,
+                    pending.summonOwnerUuid,
+                    targetRef,
+                    commandBuffer,
+                    configuredDamage);
         }
     }
 
     private static void applyBombDamageToTarget(Ref<EntityStore> sourceRef,
+            UUID summonOwnerUuid,
             Ref<EntityStore> targetRef,
             CommandBuffer<EntityStore> commandBuffer,
             float configuredDamage) {
         if (targetRef == null || commandBuffer == null || configuredDamage <= 0.0f) {
+            return;
+        }
+
+        Store<EntityStore> store = EntityRefUtil.getStore(targetRef);
+        if (summonOwnerUuid != null
+                && ArmyOfTheDeadPassive.isFriendlyToOwner(summonOwnerUuid, targetRef, store, commandBuffer)) {
             return;
         }
 
