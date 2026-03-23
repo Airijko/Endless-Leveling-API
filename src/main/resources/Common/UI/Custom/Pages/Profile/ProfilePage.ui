@@ -204,16 +204,19 @@ $C.@PageOverlay {
                                                         Background: #050910(0.85);
                                                         Padding: (Full: 16);
 
-                                                        Label {
-                                                            Text: "Total Attributes";
-                                                            Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
-                                                            Anchor: (Height: 20);
-                                                        }
-
-                                                        Group #AttributeList {
+                                                        Group #DetailColumnLeftContent {
                                                             LayoutMode: Top;
-                                                            Background: #0b141f(0.7);
-                                                            Padding: (Left: 14, Right: 14, Top: 10, Bottom: 10);
+
+                                                            Label {
+                                                                Text: "Total Attributes";
+                                                                Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
+                                                                Anchor: (Height: 20);
+                                                            }
+
+                                                            Group #AttributeList {
+                                                                LayoutMode: Top;
+                                                                Background: #0b141f(0.7);
+                                                                Padding: (Left: 14, Right: 14, Top: 10, Bottom: 10);
 
                                                             Group {
                                                                 LayoutMode: Left;
@@ -305,27 +308,28 @@ $C.@PageOverlay {
                                                                 Group { Anchor: (Width: 8); }
                                                                 Label #AttributeDisciplineLevel { Text: "Lv --"; Style: (FontSize: 12, TextColor: #d5dfff, RenderBold: true); }
                                                             }
-                                                        }
-
-                                                        Group { Anchor: (Height: 16); }
-
-                                                        Label {
-                                                            Text: "Innate Bonuses";
-                                                            Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
-                                                            Anchor: (Height: 20);
-                                                        }
-
-                                                        Group #InnateAttributeList {
-                                                            LayoutMode: Top;
-
-                                                            Label #InnateAttributeSummary {
-                                                                Text: "No innate attribute bonuses";
-                                                                Style: (FontSize: 12, TextColor: #9fb6d3, RenderBold: true);
-                                                                Anchor: (Height: 18);
                                                             }
 
-                                                            Group #InnateAttributeEntries {
+                                                            Group { Anchor: (Height: 16); }
+
+                                                            Label {
+                                                                Text: "Innate Bonuses";
+                                                                Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
+                                                                Anchor: (Height: 20);
+                                                            }
+
+                                                            Group #InnateAttributeList {
                                                                 LayoutMode: Top;
+
+                                                                Label #InnateAttributeSummary {
+                                                                    Text: "No innate attribute bonuses";
+                                                                    Style: (FontSize: 12, TextColor: #9fb6d3, RenderBold: true);
+                                                                    Anchor: (Height: 18);
+                                                                }
+
+                                                                Group #InnateAttributeEntries {
+                                                                    LayoutMode: Top;
+                                                                }
                                                             }
                                                         }
                                                     }

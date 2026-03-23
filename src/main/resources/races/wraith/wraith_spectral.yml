@@ -35,7 +35,7 @@ attributes:
 
 passives:
   - type: SWIFTNESS
-    value: 0.10 # Passive +13% movement speed applied after haste
+    value: 0.10 # Passive +10% movement speed applied after haste
     duration: 5 # Seconds after killing a target to maintain swiftness bonus
     max_stacks: 5 # Can stack up to 5 times after killing a target
   - type: ADRENALINE

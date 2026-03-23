@@ -120,6 +120,7 @@ public final class AugmentHudOverlayController {
         List<StackingHudState> rightSlots = new ArrayList<>();
 
         appendArmyOfTheDeadSummonIndicators(playerData, statMap, archetypeSnapshot, leftSlots, rightSlots);
+        appendBladeDanceStackIndicator(passiveRuntimeState, archetypeSnapshot, leftSlots, now);
         appendRetaliationStoredIndicator(passiveRuntimeState, archetypeSnapshot, leftSlots, now);
 
         if (runtimeState != null && augmentManager != null) {
@@ -351,6 +352,74 @@ public final class AugmentHudOverlayController {
                 false,
                 iconItemId,
                 true));
+    }
+
+    private void appendBladeDanceStackIndicator(PassiveManager.PassiveRuntimeState passiveRuntimeState,
+            ArchetypePassiveSnapshot archetypeSnapshot,
+            List<StackingHudState> leftSlots,
+            long now) {
+        if (leftSlots == null || passiveRuntimeState == null || archetypeSnapshot == null) {
+            return;
+        }
+        if (leftSlots.size() >= STACKING_LEFT_SLOT_COUNT) {
+            return;
+        }
+        if (!hasArchetypePassive(archetypeSnapshot, ArchetypePassiveType.BLADE_DANCE)) {
+            return;
+        }
+
+        int stacks = Math.max(0, passiveRuntimeState.getBladeDanceStacks());
+        long activeUntil = passiveRuntimeState.getBladeDanceActiveUntil();
+        if (stacks <= 0 || activeUntil <= now) {
+            return;
+        }
+
+        int maxStacks = resolveBladeDanceMaxStacks(archetypeSnapshot);
+        boolean atMaxStacks = maxStacks > 0 && stacks >= maxStacks;
+        String iconItemId = resolveArchetypePassiveIconItemId(
+                archetypeSnapshot,
+                ArchetypePassiveType.BLADE_DANCE,
+                PassiveCategory.ON_HIT.getIconItemId());
+
+        leftSlots.add(new StackingHudState(
+                true,
+                stacks,
+                atMaxStacks,
+                iconItemId,
+                true));
+    }
+
+    private int resolveBladeDanceMaxStacks(ArchetypePassiveSnapshot archetypeSnapshot) {
+        if (archetypeSnapshot == null) {
+            return 0;
+        }
+
+        int maxStacks = 0;
+        for (RacePassiveDefinition definition : archetypeSnapshot.getDefinitions(ArchetypePassiveType.BLADE_DANCE)) {
+            if (definition == null) {
+                continue;
+            }
+            int configured = parsePositiveInt(definition.properties() == null
+                    ? null
+                    : definition.properties().get("max_stacks"));
+            maxStacks = Math.max(maxStacks, configured);
+        }
+        return maxStacks;
+    }
+
+    private int parsePositiveInt(Object rawValue) {
+        if (rawValue instanceof Number number) {
+            int value = number.intValue();
+            return value > 0 ? value : 0;
+        }
+        if (rawValue instanceof String string) {
+            try {
+                int value = Integer.parseInt(string.trim());
+                return value > 0 ? value : 0;
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return 0;
     }
 
     private boolean hasActiveRetaliationStoredDamage(PassiveManager.PassiveRuntimeState passiveRuntimeState, long now) {
