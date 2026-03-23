@@ -99,13 +99,7 @@ public class PlayerCombatPostApplyProbeSystem extends DamageEventSystem {
                 DeathComponent.getComponentType()) != null;
         int targetId = targetRef.getIndex();
         long targetKey = resolveTrackingKey(targetRef, commandBuffer);
-        int mobLevel = -1;
-        if (mobLevelingManager != null) {
-            Integer assignedLevel = mobLevelingManager.getEntityLevelOverride(targetRef.getStore(), targetId);
-            if (assignedLevel != null && assignedLevel > 0) {
-                mobLevel = assignedLevel;
-            }
-        }
+        int mobLevel = mobLevelingManager != null ? mobLevelingManager.resolveMobLevel(targetRef, commandBuffer) : 1;
 
         if (dead) {
             lethalWithoutDeathStreak.remove(targetKey);

@@ -73,6 +73,11 @@ public class XpEventSystem extends DeathSystems.OnDeathSystem {
             @Nonnull DeathComponent component,
             @Nonnull Store<EntityStore> store,
             @Nonnull CommandBuffer<EntityStore> commandBuffer) {
+        if (ArmyOfTheDeadPassive.isManagedSummon(ref, store, commandBuffer)) {
+            XpKillCreditTracker.clearTarget(ref, store, commandBuffer);
+            return;
+        }
+
         var deathInfo = component.getDeathInfo();
         if (deathInfo == null) {
             XpKillCreditTracker.clearTarget(ref, store, commandBuffer);
