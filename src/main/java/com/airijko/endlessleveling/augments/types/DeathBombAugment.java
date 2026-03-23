@@ -5,6 +5,7 @@ import com.airijko.endlessleveling.augments.AugmentDamageSafety;
 
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentHooks;
+import com.airijko.endlessleveling.augments.MobAugmentAnnouncer;
 import com.airijko.endlessleveling.augments.AugmentRuntimeManager.AugmentRuntimeState;
 import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
@@ -201,6 +202,13 @@ public final class DeathBombAugment extends Augment
                         now + Math.max(1L, delayMillis),
                         scaledDamage,
                         radius));
+
+        if (context.getPlayerData() == null) {
+            MobAugmentAnnouncer.announceTrigger(context.getCommandBuffer(),
+                context.getDefenderRef(),
+                getName(),
+                String.format("detonation in %.1fs", delayMillis / 1000.0D));
+        }
 
         return incoming;
     }

@@ -5,6 +5,7 @@ import com.airijko.endlessleveling.augments.Augment;
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.util.Lang;
 import com.airijko.endlessleveling.augments.AugmentHooks;
+import com.airijko.endlessleveling.augments.MobAugmentAnnouncer;
 import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
 import com.hypixel.hytale.logger.HytaleLogger;
@@ -86,6 +87,12 @@ public final class RebirthAugment extends Augment implements AugmentHooks.OnLowH
                             "augments.rebirth.activated",
                             "{0} activated! Restored {1}% of max health.",
                             getName(), healPercent * 100.0D));
+        }
+        if (context.getPlayerData() == null) {
+            MobAugmentAnnouncer.announceTrigger(context.getCommandBuffer(),
+                    context.getDefenderRef(),
+                    getName(),
+                    String.format("restored %.0f%% max health", healPercent * 100.0D));
         }
         return 0f;
     }

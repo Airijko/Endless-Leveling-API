@@ -11,6 +11,8 @@ import com.airijko.endlessleveling.augments.types.EndurePainAugment;
 import com.airijko.endlessleveling.augments.types.FleetFootworkAugment;
 import com.airijko.endlessleveling.augments.types.FortressAugment;
 import com.airijko.endlessleveling.augments.types.FrozenDomainAugment;
+import com.airijko.endlessleveling.augments.types.GraspOfTheUndyingAugment;
+import com.airijko.endlessleveling.augments.types.HaymakerAugment;
 import com.airijko.endlessleveling.augments.types.OverhealAugment;
 import com.airijko.endlessleveling.augments.types.PhaseRushAugment;
 import com.airijko.endlessleveling.augments.types.ProtectiveBubbleAugment;
@@ -139,7 +141,13 @@ public final class AugmentHudOverlayController {
                         boolean nextHitTriggerIndicator = usesNextHitTriggerIndicator(definition.getId());
                         boolean decaysOverTime = hasStackDecayMechanic(definition.getId(), definition.getPassives());
                         boolean stacksVisible = nextHitTriggerIndicator
-                                ? shouldShowNextHitTrigger(definition.getId(), state, stacks, maxStacks, now)
+                            ? shouldShowNextHitTrigger(definition,
+                                runtimeState,
+                                passiveRuntimeState,
+                                state,
+                                stacks,
+                                maxStacks,
+                                now)
                                 : stacks > 0
                                         && (decaysOverTime
                                                 || state.getExpiresAt() <= 0L
@@ -159,6 +167,10 @@ public final class AugmentHudOverlayController {
                 }
 
                 if (rightSlots.size() >= STACKING_RIGHT_SLOT_COUNT) {
+                    continue;
+                }
+
+                if (showsOnlyAsLeftReadyIndicator(definition.getId())) {
                     continue;
                 }
 
@@ -492,6 +504,12 @@ public final class AugmentHudOverlayController {
                 continue;
             }
             selectedAugmentIds.add(token.trim().toLowerCase(Locale.ROOT));
+        }
+
+        int graspIndex = selectedAugmentIds.indexOf(GraspOfTheUndyingAugment.ID);
+        if (graspIndex > 0) {
+            selectedAugmentIds.remove(graspIndex);
+            selectedAugmentIds.add(0, GraspOfTheUndyingAugment.ID);
         }
         return selectedAugmentIds;
     }
@@ -977,7 +995,13 @@ public final class AugmentHudOverlayController {
     }
 
     private boolean usesNextHitTriggerIndicator(String augmentId) {
-        return PhaseRushAugment.ID.equals(augmentId) || BloodthirsterAugment.ID.equals(augmentId);
+        return PhaseRushAugment.ID.equals(augmentId)
+                || BloodthirsterAugment.ID.equals(augmentId)
+                || HaymakerAugment.ID.equals(augmentId);
+    }
+
+    private boolean showsOnlyAsLeftReadyIndicator(String augmentId) {
+        return HaymakerAugment.ID.equals(augmentId);
     }
 
     private boolean hasStackDecayMechanic(String augmentId, Map<String, Object> passives) {
@@ -1000,13 +1024,20 @@ public final class AugmentHudOverlayController {
         return false;
     }
 
-    private boolean shouldShowNextHitTrigger(String augmentId,
+    private boolean shouldShowNextHitTrigger(AugmentDefinition definition,
+            AugmentRuntimeManager.AugmentRuntimeState runtimeState,
+            PassiveManager.PassiveRuntimeState passiveRuntimeState,
             AugmentRuntimeManager.AugmentState state,
             int stacks,
             int maxStacks,
             long now) {
+        String augmentId = definition == null ? null : definition.getId();
         if (!usesNextHitTriggerIndicator(augmentId) || state == null) {
             return false;
+        }
+
+        if (HaymakerAugment.ID.equals(augmentId)) {
+            return isHaymakerReady(definition, runtimeState, passiveRuntimeState, now);
         }
 
         if (maxStacks <= 1 || stacks < (maxStacks - 1)) {
@@ -1018,6 +1049,39 @@ public final class AugmentHudOverlayController {
         }
 
         return true;
+    }
+
+    private boolean isHaymakerReady(AugmentDefinition definition,
+            AugmentRuntimeManager.AugmentRuntimeState runtimeState,
+            PassiveManager.PassiveRuntimeState passiveRuntimeState,
+            long now) {
+        if (definition == null || runtimeState == null) {
+            return false;
+        }
+
+        AugmentRuntimeManager.CooldownState cooldownState = runtimeState.getCooldown(HaymakerAugment.ID);
+        if (cooldownState != null && cooldownState.getExpiresAt() > now) {
+            return false;
+        }
+
+        Map<String, Object> haymaker = AugmentValueReader.getMap(definition.getPassives(), "haymaker");
+        long requiredCombatMillis = secondsToMillis(
+                AugmentValueReader.getDouble(haymaker, "required_combat_time", 5.0D));
+        long combatTimeoutMillis = secondsToMillis(
+                AugmentValueReader.getDouble(haymaker, "combat_timeout", 3.0D));
+
+        AugmentRuntimeManager.AugmentState combatState = runtimeState.getState(HaymakerAugment.COMBAT_START_STATE_ID);
+        if (combatState == null || combatState.getStoredValue() <= 0.0D) {
+            return false;
+        }
+
+        long lastCombatMillis = passiveRuntimeState == null ? 0L : passiveRuntimeState.getLastCombatMillis();
+        if (combatTimeoutMillis > 0L && lastCombatMillis > 0L && now - lastCombatMillis > combatTimeoutMillis) {
+            return false;
+        }
+
+        long combatStartMillis = (long) combatState.getStoredValue();
+        return requiredCombatMillis <= 0L || now - combatStartMillis >= requiredCombatMillis;
     }
 
     private String resolveDisplayName(String augmentId) {

@@ -5,6 +5,7 @@ import com.airijko.endlessleveling.augments.Augment;
 import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentHooks;
+import com.airijko.endlessleveling.augments.MobAugmentAnnouncer;
 import com.airijko.endlessleveling.augments.AugmentRuntimeManager.AugmentState;
 import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
@@ -118,6 +119,13 @@ public final class NestingDollAugment extends Augment
                     msg = msg + " Next lethal hit will kill you.";
                 }
                 AugmentUtils.sendAugmentMessage(playerRef, msg);
+            }
+            if (context.getPlayerData() == null) {
+                int revivesLeft = Math.max(0, maxRevives - newStacks);
+                MobAugmentAnnouncer.announceTrigger(context.getCommandBuffer(),
+                        context.getDefenderRef(),
+                        getName(),
+                        String.format("revives left: %d", revivesLeft));
             }
         }
         return 0f;

@@ -5,6 +5,7 @@ import com.airijko.endlessleveling.augments.Augment;
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.util.Lang;
 import com.airijko.endlessleveling.augments.AugmentHooks;
+import com.airijko.endlessleveling.augments.MobAugmentAnnouncer;
 import com.airijko.endlessleveling.augments.AugmentRuntimeManager.AugmentState;
 import com.airijko.endlessleveling.augments.AugmentRuntimeManager.AugmentRuntimeState;
 import com.airijko.endlessleveling.augments.AugmentUtils;
@@ -125,6 +126,12 @@ public final class FortressAugment extends Augment
                             getName(),
                             shieldDuration / 1000.0D,
                             buffDuration / 1000.0D));
+        }
+        if (context.getPlayerData() == null) {
+            MobAugmentAnnouncer.announceTrigger(context.getCommandBuffer(),
+                context.getDefenderRef(),
+                getName(),
+                String.format("shield %.1fs, buffs %.1fs", shieldDuration / 1000.0D, buffDuration / 1000.0D));
         }
 
         return damageToApply;

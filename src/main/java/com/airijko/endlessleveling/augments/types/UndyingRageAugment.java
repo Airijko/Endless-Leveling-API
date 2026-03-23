@@ -5,6 +5,7 @@ import com.airijko.endlessleveling.augments.Augment;
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.util.Lang;
 import com.airijko.endlessleveling.augments.AugmentHooks;
+import com.airijko.endlessleveling.augments.MobAugmentAnnouncer;
 import com.airijko.endlessleveling.augments.AugmentRuntimeManager.AugmentRuntimeState;
 import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
@@ -121,6 +122,12 @@ public final class UndyingRageAugment extends Augment
                             "{0} is active for {1}s.",
                             getName(),
                             durationMillis / 1000.0D));
+        }
+        if (context.getPlayerData() == null) {
+            MobAugmentAnnouncer.announceTrigger(context.getCommandBuffer(),
+                context.getDefenderRef(),
+                getName(),
+                String.format("active for %.1fs", durationMillis / 1000.0D));
         }
         return 0f;
     }

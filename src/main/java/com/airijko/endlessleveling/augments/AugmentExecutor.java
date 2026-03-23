@@ -48,6 +48,7 @@ public final class AugmentExecutor {
     private static final List<HealthModifierSpec> PASSIVE_HEALTH_MODIFIERS = List.of(
             new HealthModifierSpec("raid_boss", "max_hp_bonus"),
             new HealthModifierSpec("goliath", "max_hp_bonus"),
+            new HealthModifierSpec("grasp_of_the_undying", "max_hp_bonus"),
             new HealthModifierSpec("tank_engine", "max_hp_bonus"),
             new HealthModifierSpec("glass_cannon", "max_hp_penalty"),
             new HealthModifierSpec(NESTING_DOLL_ID, "max_hp_penalty"));
