@@ -142,7 +142,7 @@ public class XpEventSystem extends DeathSystems.OnDeathSystem {
 
         if (worldXpBlacklisted) {
             String worldId = mobLevelingManager != null ? mobLevelingManager.resolveWorldIdentifier(store) : "unknown";
-            LOGGER.atFine().log("XP gain blocked for player %s in world %s (matched XP_Blacklisted_Words)",
+            LOGGER.atFine().log("XP gain blocked for player %s in world %s (matched XP_Blacklisted_Worlds)",
                 playerUuid,
                 worldId == null ? "unknown" : worldId);
             XpKillCreditTracker.clearTarget(ref, store, commandBuffer);

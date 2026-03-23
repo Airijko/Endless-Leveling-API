@@ -2,9 +2,9 @@
 # World ids are matched case-insensitively.
 
 # Disable ALL XP gain in worlds whose id/name contains any of these words.
-# Matching is case-insensitive substring matching.
-# Examples: "creative", "lobby", "pvp", "test"
-XP_Blacklisted_Words: [creative, lobby, pvp, test]
+# Matching is case-insensitive. Supports substrings and '*' wildcards.
+# Examples: "creative", "lobby", "instance-mj_instance_d01-*"
+XP_Blacklisted_Worlds: [creative, lobby, pvp, test]
 
 World_Overrides:
   # Global defaults for all matching worlds unless overridden below.

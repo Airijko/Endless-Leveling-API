@@ -3444,6 +3444,13 @@ public class MobLevelingManager {
                 continue;
             }
 
+            if (normalizedKeyword.indexOf('*') >= 0) {
+                if (matchesWildcard(normalizedWorldId, normalizedKeyword)) {
+                    return true;
+                }
+                continue;
+            }
+
             if (normalizedWorldId.contains(normalizedKeyword)) {
                 return true;
             }
@@ -3453,19 +3460,39 @@ public class MobLevelingManager {
     }
 
     private List<String> getWorldXpBlacklistKeywords() {
-        // Preferred root-level section in worlds.yml
-        Object raw = worldsConfigManager.get("XP_Blacklisted_Words", null, false);
-        if (raw != null) {
-            return readStringList(raw);
-        }
+        Set<String> merged = new LinkedHashSet<>();
 
-        // Backward/alternative placement under world overrides global node.
-        raw = worldsConfigManager.get("World_Overrides.Global.XP_Blacklisted_Words", null, false);
-        if (raw != null) {
-            return readStringList(raw);
-        }
+        // Preferred root-level key (fixed typo).
+        addWorldXpBlacklistKeywords(merged, worldsConfigManager.get("XP_Blacklisted_Worlds", null, false));
+        // Backward-compatible legacy typo.
+        addWorldXpBlacklistKeywords(merged, worldsConfigManager.get("XP_Blacklisted_Words", null, false));
 
-        return Collections.emptyList();
+        // Alternative placement under world overrides global node.
+        addWorldXpBlacklistKeywords(merged,
+                worldsConfigManager.get("World_Overrides.Global.XP_Blacklisted_Worlds", null, false));
+        addWorldXpBlacklistKeywords(merged,
+                worldsConfigManager.get("World_Overrides.Global.XP_Blacklisted_Words", null, false));
+
+        if (merged.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return new ArrayList<>(merged);
+    }
+
+    private void addWorldXpBlacklistKeywords(Set<String> target, Object raw) {
+        if (target == null || raw == null) {
+            return;
+        }
+        List<String> values = readStringList(raw);
+        for (String value : values) {
+            if (value == null) {
+                continue;
+            }
+            String trimmed = value.trim();
+            if (!trimmed.isEmpty()) {
+                target.add(trimmed);
+            }
+        }
     }
 
     /** Returns true if mob type is blacklisted (case-insensitive) */

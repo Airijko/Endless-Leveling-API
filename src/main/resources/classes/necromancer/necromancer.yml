@@ -11,7 +11,7 @@ icon: "Weapon_Spellbook_Demon"
 weapons:
   - type: STAFF
     damage: 1.05
-  - type: DAGGER
+  - type: SWORD
     damage: 1.05
 
 passives: 
