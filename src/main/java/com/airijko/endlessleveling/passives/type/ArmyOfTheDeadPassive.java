@@ -683,35 +683,57 @@ public final class ArmyOfTheDeadPassive {
                     continue;
                 }
 
-                TransformComponent transform = EntityRefUtil.tryGetComponent(store,
-                        slot.activeRef,
-                        TransformComponent.getComponentType());
-                if (transform == null || transform.getPosition() == null) {
-                    continue;
-                }
-
-                for (Ref<EntityStore> candidate : TargetUtil.getAllEntitiesInSphere(
-                        transform.getPosition(), AUTO_AGGRO_SCAN_RANGE, store)) {
-                    if (!EntityRefUtil.isUsable(candidate)) {
-                        continue;
-                    }
-                    if (candidate.equals(slot.activeRef)) {
-                        continue;
-                    }
-                    if (!isValidAggroTargetForOwner(ownerUuid, candidate, store, null)) {
-                        continue;
-                    }
-
-                    try {
-                        summonNpc.getRole().setMarkedTarget("LockedTarget", candidate);
-                    } catch (Throwable throwable) {
-                        LOGGER.atFiner().withCause(throwable)
-                                .log("[ARMY_OF_THE_DEAD] Auto-retarget failed for summon of owner %s.", ownerUuid);
-                    }
-                    break;
-                }
+                assignImmediateSummonTarget(ownerUuid, slot.activeRef, summonNpc, store);
             }
         }
+    }
+
+    private static boolean assignImmediateSummonTarget(UUID ownerUuid,
+            Ref<EntityStore> summonRef,
+            NPCEntity summonNpc,
+            Store<EntityStore> store) {
+        if (ownerUuid == null || !EntityRefUtil.isUsable(summonRef) || summonNpc == null
+                || summonNpc.getRole() == null || store == null) {
+            return false;
+        }
+
+        Ref<EntityStore> currentTarget = summonNpc.getRole()
+                .getMarkedEntitySupport()
+                .getMarkedEntityRef("LockedTarget");
+        if (EntityRefUtil.isUsable(currentTarget)) {
+            return false;
+        }
+
+        TransformComponent transform = EntityRefUtil.tryGetComponent(store,
+                summonRef,
+                TransformComponent.getComponentType());
+        if (transform == null || transform.getPosition() == null) {
+            return false;
+        }
+
+        for (Ref<EntityStore> candidate : TargetUtil.getAllEntitiesInSphere(
+                transform.getPosition(), AUTO_AGGRO_SCAN_RANGE, store)) {
+            if (!EntityRefUtil.isUsable(candidate)) {
+                continue;
+            }
+            if (candidate.equals(summonRef)) {
+                continue;
+            }
+            if (!isValidAggroTargetForOwner(ownerUuid, candidate, store, null)) {
+                continue;
+            }
+
+            try {
+                summonNpc.getRole().setMarkedTarget("LockedTarget", candidate);
+                return true;
+            } catch (Throwable throwable) {
+                LOGGER.atFiner().withCause(throwable)
+                        .log("[ARMY_OF_THE_DEAD] Failed immediate aggro target assignment for owner %s.", ownerUuid);
+                return false;
+            }
+        }
+
+        return false;
     }
 
     private static void queueWorldSpawnRequests(List<QueuedSpawnRequest> requests) {
@@ -835,6 +857,13 @@ public final class ArmyOfTheDeadPassive {
                         request.source(),
                         request.config().statInheritance(),
                         request.slotIndex());
+
+                NPCEntity summonNpc = EntityRefUtil.tryGetComponent(store,
+                    summonRef,
+                    NPCEntity.getComponentType());
+                if (summonNpc != null) {
+                    assignImmediateSummonTarget(request.ownerUuid(), summonRef, summonNpc, store);
+                }
 
                 forceCurrentHealthToMax(summonRef, store);
                 applySummonNameplate(summonRef, store, request.ownerUuid(), true);
