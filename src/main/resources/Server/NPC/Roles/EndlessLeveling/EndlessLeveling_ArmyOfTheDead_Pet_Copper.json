@@ -35,7 +35,7 @@
       "Sensor": {
         "Type": "Target",
         "TargetSlot": "LockedTarget",
-        "Range": 2.0
+        "StopDistance": 2.0
       },
       "ActionsBlocking": true,
       "Actions": [
@@ -55,7 +55,7 @@
       "BodyMotion": {
         "Type": "Seek",
         "SlowDownDistance": 4,
-        "StopDistance": 2
+        "StopDistance": 1.5
       }
     },
     {
@@ -66,7 +66,7 @@
       "BodyMotion": {
         "Type": "Seek",
         "SlowDownDistance": 4,
-        "StopDistance": 2
+        "StopDistance": 1.5
       }
     },
     {

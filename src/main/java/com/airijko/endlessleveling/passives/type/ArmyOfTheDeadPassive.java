@@ -41,6 +41,7 @@ import com.hypixel.hytale.server.npc.entities.NPCEntity;
 import com.hypixel.hytale.server.npc.role.support.EntitySupport;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -63,19 +64,27 @@ public final class ArmyOfTheDeadPassive {
     private static final int MAX_SUMMON_CAP = 64;
     private static final double TELEPORT_RANGE = 32.0D;
     private static final double TELEPORT_RANGE_SQ = TELEPORT_RANGE * TELEPORT_RANGE;
+    private static final double TARGET_STALE_RANGE = 40.0D;
+    private static final double TARGET_STALE_RANGE_SQ = TARGET_STALE_RANGE * TARGET_STALE_RANGE;
     private static final float MIN_RESOURCE_VALUE = 1.0f;
-    private static final boolean DEBUG_SUMMON_INHERITANCE = false;
-    private static final boolean DEBUG_SUMMON_HEALTH = false;
-    private static final boolean DEBUG_SUMMON_NAMEPLATE = true;
-    private static final long INHERITANCE_DEBUG_LOG_COOLDOWN_MS = 5000L;
-    private static final long NAMEPLATE_REFRESH_INTERVAL_MS = 2000L;
     private static final long NAMEPLATE_FAILURE_LOG_COOLDOWN_MS = 5000L;
+    private static final long TARGET_VALIDATION_INTERVAL_MS = 500L;
+    private static final long TARGET_REACQUIRE_INTERVAL_MS = 750L;
+    private static final long OWNER_RETARGET_SWEEP_INTERVAL_MS = 400L;
+    private static final long TELEPORT_CHECK_INTERVAL_MS = 250L;
+    private static final long MOVEMENT_REFRESH_INTERVAL_MS = 1000L;
     private static final double AUTO_AGGRO_SCAN_RANGE = 24.0D;
+    private static final double SPAWN_AGGRO_SCAN_RANGE = 36.0D;
+    private static final long SPAWN_AGGRO_RETRY_INTERVAL_MS = 100L;
+    private static final int MAX_SPAWN_AGGRO_RETRIES = 8;
+    private static final double SUMMON_SPAWN_HALF_WIDTH = 0.35D;
+    private static final double SUMMON_SPAWN_RING_STEP = 0.85D;
+    private static final int[] SUMMON_SPAWN_VERTICAL_OFFSETS = new int[] { 0, 1, -1, 2, -2, 3, -3 };
 
     private static final Map<UUID, OwnerSummonState> OWNER_STATES = new ConcurrentHashMap<>();
     private static final Map<UUID, SummonBinding> SUMMON_BINDINGS = new ConcurrentHashMap<>();
+    private static final Map<UUID, Ref<EntityStore>> OWNER_LAST_THREAT_TARGETS = new ConcurrentHashMap<>();
     private static final Map<UUID, Long> PENDING_ON_HIT_TRIGGERS = new ConcurrentHashMap<>();
-    private static final Map<UUID, Long> INHERITANCE_DEBUG_LAST_LOG = new ConcurrentHashMap<>();
     private static final Map<UUID, Long> NAMEPLATE_FAILURE_LAST_LOG = new ConcurrentHashMap<>();
 
     private ArmyOfTheDeadPassive() {
@@ -171,6 +180,8 @@ public final class ArmyOfTheDeadPassive {
         if (!isValidAggroTargetForOwner(ownerUuid, targetRef, store, commandBuffer)) {
             return;
         }
+
+        OWNER_LAST_THREAT_TARGETS.put(ownerUuid, targetRef);
 
         OwnerSummonState ownerState = OWNER_STATES.get(ownerUuid);
         if (ownerState == null) {
@@ -423,24 +434,6 @@ public final class ArmyOfTheDeadPassive {
                 1.0D + ((Math.max(0.0D, hasteMultiplier - 1.0D) * inheritance)));
         float lifeForceFlatHealthBonus = (float) Math.max(0.0D, lifeForceFlat * inheritance);
 
-        if (DEBUG_SUMMON_INHERITANCE) {
-            logInheritanceComputation(ownerUuid,
-                    inheritance,
-                    strength,
-                    sorcery,
-                    precisionPercent,
-                    ferocityPercent,
-                    defenseResistance,
-                    hasteMultiplier,
-                    lifeForceFlat,
-                    damageMultiplier,
-                    critChance,
-                    critDamageMultiplier,
-                    defenseReduction,
-                    movementMultiplier,
-                    lifeForceFlatHealthBonus);
-        }
-
         return new SummonInheritedStats(damageMultiplier,
                 critChance,
                 critDamageMultiplier,
@@ -599,7 +592,10 @@ public final class ArmyOfTheDeadPassive {
                     slot.activeSummonUuid = null;
                     slot.summonExpiresAt = 0L;
                     slot.postSpawnHealthNormalizePending = false;
-                    slot.nextNameplateRefreshAt = 0L;
+                    slot.spawnAggroRetriesRemaining = 0;
+                    slot.nextSpawnAggroRetryAt = 0L;
+                    slot.nextTeleportCheckAt = 0L;
+                    slot.nextMovementRefreshAt = 0L;
                     slot.cooldownExpiresAt = cooldownUntil;
                     LOGGER.atFine().log(
                             "[ARMY_OF_THE_DEAD] Summon %s died. Cooldown set for owner %s slot %d until %d.",
@@ -646,7 +642,12 @@ public final class ArmyOfTheDeadPassive {
                     ownerState);
 
             if (!ownerDisconnected) {
-                autoRetargetIdleSummons(ownerUuid, ownerState, store);
+                synchronized (ownerState) {
+                    if (now >= ownerState.nextIdleRetargetSweepAt) {
+                        ownerState.nextIdleRetargetSweepAt = now + OWNER_RETARGET_SWEEP_INTERVAL_MS;
+                        autoRetargetIdleSummons(ownerUuid, ownerState, store);
+                    }
+                }
             }
         }
     }
@@ -658,9 +659,13 @@ public final class ArmyOfTheDeadPassive {
             return;
         }
 
+        long now = System.currentTimeMillis();
         synchronized (ownerState) {
             for (SummonSlot slot : ownerState.slots) {
                 if (slot == null || !EntityRefUtil.isUsable(slot.activeRef)) {
+                    continue;
+                }
+                if (slot.nextTargetAcquireAt > now) {
                     continue;
                 }
 
@@ -679,11 +684,12 @@ public final class ArmyOfTheDeadPassive {
                 Ref<EntityStore> currentTarget = summonNpc.getRole()
                         .getMarkedEntitySupport()
                         .getMarkedEntityRef("LockedTarget");
-                if (EntityRefUtil.isUsable(currentTarget)) {
+                if (isSummonTargetStillValid(ownerUuid, slot.activeRef, currentTarget, store)) {
                     continue;
                 }
 
                 assignImmediateSummonTarget(ownerUuid, slot.activeRef, summonNpc, store);
+                slot.nextTargetAcquireAt = now + TARGET_REACQUIRE_INTERVAL_MS;
             }
         }
     }
@@ -692,16 +698,37 @@ public final class ArmyOfTheDeadPassive {
             Ref<EntityStore> summonRef,
             NPCEntity summonNpc,
             Store<EntityStore> store) {
+        return assignImmediateSummonTarget(ownerUuid,
+                summonRef,
+                summonNpc,
+                store,
+                resolvePreferredThreatTarget(ownerUuid, store),
+                AUTO_AGGRO_SCAN_RANGE);
+    }
+
+    private static boolean assignImmediateSummonTarget(UUID ownerUuid,
+            Ref<EntityStore> summonRef,
+            NPCEntity summonNpc,
+            Store<EntityStore> store,
+            Ref<EntityStore> preferredTarget,
+            double scanRange) {
         if (ownerUuid == null || !EntityRefUtil.isUsable(summonRef) || summonNpc == null
                 || summonNpc.getRole() == null || store == null) {
             return false;
         }
 
-        Ref<EntityStore> currentTarget = summonNpc.getRole()
-                .getMarkedEntitySupport()
-                .getMarkedEntityRef("LockedTarget");
-        if (EntityRefUtil.isUsable(currentTarget)) {
-            return false;
+        if (EntityRefUtil.isUsable(preferredTarget)
+                && EntityRefUtil.getStore(preferredTarget) == store
+                && !preferredTarget.equals(summonRef)
+                && isValidAggroTargetForOwner(ownerUuid, preferredTarget, store, null)
+                && isEntityAlive(preferredTarget, store)) {
+            try {
+                summonNpc.getRole().setMarkedTarget("LockedTarget", preferredTarget);
+                return true;
+            } catch (Throwable throwable) {
+                LOGGER.atFiner().withCause(throwable)
+                        .log("[ARMY_OF_THE_DEAD] Failed preferred aggro target assignment for owner %s.", ownerUuid);
+            }
         }
 
         TransformComponent transform = EntityRefUtil.tryGetComponent(store,
@@ -712,7 +739,7 @@ public final class ArmyOfTheDeadPassive {
         }
 
         for (Ref<EntityStore> candidate : TargetUtil.getAllEntitiesInSphere(
-                transform.getPosition(), AUTO_AGGRO_SCAN_RANGE, store)) {
+                transform.getPosition(), scanRange, store)) {
             if (!EntityRefUtil.isUsable(candidate)) {
                 continue;
             }
@@ -734,6 +761,81 @@ public final class ArmyOfTheDeadPassive {
         }
 
         return false;
+    }
+
+    private static Ref<EntityStore> resolvePreferredThreatTarget(UUID ownerUuid,
+            Store<EntityStore> store) {
+        if (ownerUuid == null || store == null) {
+            return null;
+        }
+
+        Ref<EntityStore> targetRef = OWNER_LAST_THREAT_TARGETS.get(ownerUuid);
+        if (!EntityRefUtil.isUsable(targetRef)) {
+            OWNER_LAST_THREAT_TARGETS.remove(ownerUuid);
+            return null;
+        }
+        if (EntityRefUtil.getStore(targetRef) != store) {
+            OWNER_LAST_THREAT_TARGETS.remove(ownerUuid);
+            return null;
+        }
+        if (!isValidAggroTargetForOwner(ownerUuid, targetRef, store, null) || !isEntityAlive(targetRef, store)) {
+            OWNER_LAST_THREAT_TARGETS.remove(ownerUuid);
+            return null;
+        }
+        return targetRef;
+    }
+
+    private static boolean isSummonTargetStillValid(UUID ownerUuid,
+            Ref<EntityStore> summonRef,
+            Ref<EntityStore> targetRef,
+            Store<EntityStore> store) {
+        if (ownerUuid == null || !EntityRefUtil.isUsable(summonRef) || !EntityRefUtil.isUsable(targetRef)
+                || store == null) {
+            return false;
+        }
+        if (targetRef.equals(summonRef)) {
+            return false;
+        }
+        if (!isValidAggroTargetForOwner(ownerUuid, targetRef, store, null)) {
+            return false;
+        }
+        if (!isEntityAlive(targetRef, store)) {
+            return false;
+        }
+
+        TransformComponent summonTransform = EntityRefUtil.tryGetComponent(store,
+                summonRef,
+                TransformComponent.getComponentType());
+        TransformComponent targetTransform = EntityRefUtil.tryGetComponent(store,
+                targetRef,
+                TransformComponent.getComponentType());
+        if (summonTransform == null || summonTransform.getPosition() == null
+                || targetTransform == null || targetTransform.getPosition() == null) {
+            return true;
+        }
+
+        return summonTransform.getPosition().distanceSquaredTo(targetTransform.getPosition()) <= TARGET_STALE_RANGE_SQ;
+    }
+
+    private static boolean isEntityAlive(Ref<EntityStore> ref,
+            Store<EntityStore> store) {
+        if (!EntityRefUtil.isUsable(ref) || store == null) {
+            return false;
+        }
+
+        EntityStatMap stats = EntityRefUtil.tryGetComponent(store,
+                ref,
+                EntityStatMap.getComponentType());
+        if (stats == null) {
+            return true;
+        }
+
+        EntityStatValue hp = stats.get(DefaultEntityStatTypes.getHealth());
+        if (hp == null) {
+            return true;
+        }
+
+        return hp.get() > 0.0f;
     }
 
     private static void queueWorldSpawnRequests(List<QueuedSpawnRequest> requests) {
@@ -804,7 +906,8 @@ public final class ArmyOfTheDeadPassive {
                 Vector3d spawnPosition = resolveSummonSpawnPosition(
                         request.source().position(),
                         request.ownerUuid(),
-                        request.slotIndex());
+                    request.slotIndex(),
+                    store);
 
                 var spawned = NPCPlugin.get().spawnNPC(store,
                         spawnRoleType,
@@ -848,7 +951,10 @@ public final class ArmyOfTheDeadPassive {
                 slot.baseDamage = Math.max(0.0D, request.config().baseDamage());
                 slot.spawnPending = false;
                 slot.postSpawnHealthNormalizePending = true;
-                slot.nextNameplateRefreshAt = now + NAMEPLATE_REFRESH_INTERVAL_MS;
+                slot.nextTargetValidationAt = now;
+                slot.nextTargetAcquireAt = now;
+                slot.nextTeleportCheckAt = now;
+                slot.nextMovementRefreshAt = now;
                 SUMMON_BINDINGS.put(summonUuidComponent.getUuid(),
                         new SummonBinding(request.ownerUuid(), request.slotIndex()));
 
@@ -862,39 +968,25 @@ public final class ArmyOfTheDeadPassive {
                     summonRef,
                     NPCEntity.getComponentType());
                 if (summonNpc != null) {
-                    assignImmediateSummonTarget(request.ownerUuid(), summonRef, summonNpc, store);
+                    Ref<EntityStore> preferredTarget = resolvePreferredThreatTarget(request.ownerUuid(), store);
+                    boolean aggroAssigned = assignImmediateSummonTarget(request.ownerUuid(),
+                            summonRef,
+                            summonNpc,
+                            store,
+                            preferredTarget,
+                            SPAWN_AGGRO_SCAN_RANGE);
+                    slot.spawnAggroRetriesRemaining = aggroAssigned ? 0 : MAX_SPAWN_AGGRO_RETRIES;
+                    slot.nextSpawnAggroRetryAt = aggroAssigned ? 0L : (now + SPAWN_AGGRO_RETRY_INTERVAL_MS);
                 }
 
                 forceCurrentHealthToMax(summonRef, store);
                 applySummonNameplate(summonRef, store, request.ownerUuid(), true);
-                logSummonHealthState(summonRef,
-                        store,
-                        request.ownerUuid(),
-                        request.slotIndex(),
-                        slot.statInheritance,
-                        "POST_SPAWN_NORMALIZE");
                 LOGGER.atFine().log(
                         "[ARMY_OF_THE_DEAD] Activated summon %s for owner %s slot %d type=%s.",
                         summonUuidComponent.getUuid(),
                         request.ownerUuid(),
                         request.slotIndex(),
                         spawnRoleType);
-                if (DEBUG_SUMMON_INHERITANCE) {
-                    SummonInheritedStats inherited = resolveOwnerSummonInheritedStats(request.ownerUuid(),
-                            slot.statInheritance);
-                    LOGGER.atInfo().log(
-                            "[ARMY_OF_THE_DEAD][DEBUG] Summon activated summon=%s owner=%s slot=%d inheritance=%.3f dmgMult=%.3f critChance=%.3f critDmgMult=%.3f defenseReduction=%.3f moveMult=%.3f lifeForceHp=%.3f",
-                            summonUuidComponent.getUuid(),
-                            request.ownerUuid(),
-                            request.slotIndex(),
-                            slot.statInheritance,
-                            inherited.damageMultiplier(),
-                            inherited.critChance(),
-                            inherited.critDamageMultiplier(),
-                            inherited.defenseReduction(),
-                            inherited.movementMultiplier(),
-                            inherited.lifeForceFlatHealthBonus());
-                }
             } catch (Throwable throwable) {
                 slot.spawnPending = false;
                 LOGGER.atWarning().withCause(throwable)
@@ -954,18 +1046,6 @@ public final class ArmyOfTheDeadPassive {
             summonStats.setStatValue(DefaultEntityStatTypes.getHealth(),
                     Math.max(MIN_RESOURCE_VALUE, updatedHp.getMax()));
             summonStats.update();
-            if (DEBUG_SUMMON_HEALTH) {
-                UUID summonUuid = resolveEntityUuid(summonRef, store, null);
-                LOGGER.atInfo().log(
-                        "[ARMY_OF_THE_DEAD][DEBUG-HP][SCALE] summon=%s owner=%s slot=%d inheritance=%.3f healthBonus=%.3f afterScale=%.3f/%.3f",
-                        summonUuid,
-                        source.ownerUuid(),
-                        slotIndex,
-                        inheritance,
-                        healthBonus,
-                        updatedHp.get(),
-                        updatedHp.getMax());
-            }
         }
 
 
@@ -997,53 +1077,10 @@ public final class ArmyOfTheDeadPassive {
         float beforeMax = hp.getMax();
         summonStats.setStatValue(DefaultEntityStatTypes.getHealth(), Math.max(MIN_RESOURCE_VALUE, hp.getMax()));
         summonStats.update();
-
-        EntityStatValue after = summonStats.get(DefaultEntityStatTypes.getHealth());
-        UUID summonUuid = resolveEntityUuid(summonRef, store, null);
-        if (after != null && DEBUG_SUMMON_HEALTH) {
-            LOGGER.atInfo().log(
-                    "[ARMY_OF_THE_DEAD][DEBUG-HP][FORCE_MAX] summon=%s before=%.3f/%.3f after=%.3f/%.3f",
-                    summonUuid,
-                    beforeCurrent,
-                    beforeMax,
-                    after.get(),
-                    after.getMax());
-        }
-    }
-
-    private static void logSummonHealthState(Ref<EntityStore> summonRef,
-            Store<EntityStore> store,
-            UUID ownerUuid,
-            int slotIndex,
-            double inheritance,
-            String phase) {
-        if (!DEBUG_SUMMON_HEALTH) {
+        // Keep locals to avoid re-reading mutable stat values during update.
+        if (!Float.isFinite(beforeCurrent) || !Float.isFinite(beforeMax)) {
             return;
         }
-        if (!EntityRefUtil.isUsable(summonRef) || store == null) {
-            return;
-        }
-
-        EntityStatMap summonStats = EntityRefUtil.tryGetComponent(store, summonRef, EntityStatMap.getComponentType());
-        if (summonStats == null) {
-            return;
-        }
-
-        EntityStatValue hp = summonStats.get(DefaultEntityStatTypes.getHealth());
-        if (hp == null) {
-            return;
-        }
-
-        UUID summonUuid = resolveEntityUuid(summonRef, store, null);
-        LOGGER.atInfo().log(
-                "[ARMY_OF_THE_DEAD][DEBUG-HP][%s] summon=%s owner=%s slot=%d inheritance=%.3f current=%.3f max=%.3f",
-                phase,
-                summonUuid,
-                ownerUuid,
-                slotIndex,
-                inheritance,
-                hp.get(),
-                hp.getMax());
     }
 
     private static void applyPlayerAugmentsToSummon(Ref<EntityStore> summonRef,
@@ -1116,14 +1153,6 @@ public final class ArmyOfTheDeadPassive {
         }
 
         try {
-            LOGGER.atFine().log(
-                    "[ARMY_OF_THE_DEAD][AUGMENTS][DEBUG] Registering %d augments to summon at slot %d: owner=%s summon=%s augments=%s",
-                    augmentIds.size(),
-                    slotIndex,
-                    ownerUuid,
-                    summonUuid,
-                    augmentIds);
-
             mobAugmentExecutor.registerMobAugments(summonUuid, augmentIds, augmentManager, augmentRuntimeManager);
 
             LOGGER.atInfo().log(
@@ -1262,12 +1291,18 @@ public final class ArmyOfTheDeadPassive {
         }
 
         if (!SUMMON_BINDINGS.containsKey(slot.activeSummonUuid)) {
+            if (!slot.spawnPending) {
+                slot.cooldownExpiresAt = now + Math.max(0L, slot.cooldownDurationMillis);
+            }
             slot.activeRef = null;
             slot.activeSummonUuid = null;
             slot.summonExpiresAt = 0L;
             slot.spawnPending = false;
             slot.postSpawnHealthNormalizePending = false;
-            slot.nextNameplateRefreshAt = 0L;
+            slot.spawnAggroRetriesRemaining = 0;
+            slot.nextSpawnAggroRetryAt = 0L;
+            slot.nextTeleportCheckAt = 0L;
+            slot.nextMovementRefreshAt = 0L;
             return;
         }
 
@@ -1283,7 +1318,10 @@ public final class ArmyOfTheDeadPassive {
             slot.cooldownExpiresAt = now + Math.max(0L, slot.cooldownDurationMillis);
             slot.spawnPending = false;
             slot.postSpawnHealthNormalizePending = false;
-            slot.nextNameplateRefreshAt = 0L;
+            slot.spawnAggroRetriesRemaining = 0;
+            slot.nextSpawnAggroRetryAt = 0L;
+            slot.nextTeleportCheckAt = 0L;
+            slot.nextMovementRefreshAt = 0L;
             return;
         }
 
@@ -1316,7 +1354,10 @@ public final class ArmyOfTheDeadPassive {
             slot.cooldownExpiresAt = now + Math.max(0L, slot.cooldownDurationMillis);
             slot.spawnPending = false;
             slot.postSpawnHealthNormalizePending = false;
-            slot.nextNameplateRefreshAt = 0L;
+            slot.spawnAggroRetriesRemaining = 0;
+            slot.nextSpawnAggroRetryAt = 0L;
+            slot.nextTeleportCheckAt = 0L;
+            slot.nextMovementRefreshAt = 0L;
             LOGGER.atFiner().log("[ARMY_OF_THE_DEAD] Expired summon for owner %s; cooldown until %d.",
                     ownerUuid,
                     slot.cooldownExpiresAt);
@@ -1376,7 +1417,10 @@ public final class ArmyOfTheDeadPassive {
                 slot.cooldownExpiresAt = now + Math.max(0L, slot.cooldownDurationMillis);
                 slot.spawnPending = false;
                 slot.postSpawnHealthNormalizePending = false;
-                slot.nextNameplateRefreshAt = 0L;
+                slot.spawnAggroRetriesRemaining = 0;
+                slot.nextSpawnAggroRetryAt = 0L;
+                slot.nextTeleportCheckAt = 0L;
+                slot.nextMovementRefreshAt = 0L;
 
                 LOGGER.atFine().log(
                         "[ARMY_OF_THE_DEAD] Cleaned summon for owner %s (disconnected=%s, invalidBinding=%s, invalidRef=%s, expired=%s, ownerLeftWorld=%s).",
@@ -1440,7 +1484,8 @@ public final class ArmyOfTheDeadPassive {
 
     private static Vector3d resolveSummonSpawnPosition(Vector3d ownerPosition,
             UUID ownerUuid,
-            int slotIndex) {
+            int slotIndex,
+            Store<EntityStore> store) {
         if (ownerPosition == null || ownerUuid == null) {
             return ownerPosition;
         }
@@ -1452,9 +1497,141 @@ public final class ArmyOfTheDeadPassive {
         // Keep additional summons from stacking on top of each other.
         radius += Math.min(1.15D, Math.max(0, slotIndex) * 0.12D);
 
-        double x = ownerPosition.getX() + (Math.cos(angle) * radius);
-        double z = ownerPosition.getZ() + (Math.sin(angle) * radius);
-        return new Vector3d(x, ownerPosition.getY(), z);
+        Vector3d preferred = new Vector3d(
+                ownerPosition.getX() + (Math.cos(angle) * radius),
+                ownerPosition.getY(),
+                ownerPosition.getZ() + (Math.sin(angle) * radius));
+
+        if (isSummonSpawnSpaceOpen(store, preferred)) {
+            return preferred;
+        }
+
+        // Deterministically scan nearby rings with vertical offsets to avoid embedding summons in cave walls.
+        for (int ring = 0; ring <= 5; ring++) {
+            double ringRadius = radius + (ring * SUMMON_SPAWN_RING_STEP);
+            int samples = 8 + (ring * 2);
+            for (int sample = 0; sample < samples; sample++) {
+                double sampleAngle = angle + ((Math.PI * 2.0D * sample) / samples);
+                double sampleX = ownerPosition.getX() + (Math.cos(sampleAngle) * ringRadius);
+                double sampleZ = ownerPosition.getZ() + (Math.sin(sampleAngle) * ringRadius);
+                for (int yOffset : SUMMON_SPAWN_VERTICAL_OFFSETS) {
+                    Vector3d candidate = new Vector3d(sampleX, ownerPosition.getY() + yOffset, sampleZ);
+                    if (isSummonSpawnSpaceOpen(store, candidate)) {
+                        return candidate;
+                    }
+                }
+            }
+        }
+
+        if (isSummonSpawnSpaceOpen(store, ownerPosition)) {
+            return ownerPosition;
+        }
+        return preferred;
+    }
+
+    private static boolean isSummonSpawnSpaceOpen(Store<EntityStore> store,
+            Vector3d position) {
+        if (store == null || position == null || store.getExternalData() == null
+                || store.getExternalData().getWorld() == null) {
+            return true;
+        }
+
+        Object world = store.getExternalData().getWorld();
+        int yBase = (int) Math.floor(position.getY());
+        int yBelow = yBase - 1;
+
+        if (!isLikelySolidBlockAt(world, position.getX(), yBelow, position.getZ())) {
+            return false;
+        }
+
+        double[] offsetX = new double[] {
+                0.0D,
+                SUMMON_SPAWN_HALF_WIDTH,
+                -SUMMON_SPAWN_HALF_WIDTH,
+                SUMMON_SPAWN_HALF_WIDTH,
+                -SUMMON_SPAWN_HALF_WIDTH
+        };
+        double[] offsetZ = new double[] {
+                0.0D,
+                SUMMON_SPAWN_HALF_WIDTH,
+                SUMMON_SPAWN_HALF_WIDTH,
+                -SUMMON_SPAWN_HALF_WIDTH,
+                -SUMMON_SPAWN_HALF_WIDTH
+        };
+
+        for (int i = 0; i < offsetX.length; i++) {
+            double checkX = position.getX() + offsetX[i];
+            double checkZ = position.getZ() + offsetZ[i];
+            if (isLikelySolidBlockAt(world, checkX, yBase, checkZ)
+                    || isLikelySolidBlockAt(world, checkX, yBase + 1, checkZ)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static boolean isLikelySolidBlockAt(Object world,
+            double x,
+            int y,
+            double z) {
+        if (world == null) {
+            return false;
+        }
+
+        int blockX = (int) Math.floor(x);
+        int blockZ = (int) Math.floor(z);
+        Object blockType = null;
+        try {
+            var getBlockType = world.getClass().getMethod("getBlockType", int.class, int.class, int.class);
+            blockType = getBlockType.invoke(world, blockX, y, blockZ);
+        } catch (Throwable ignored) {
+            return false;
+        }
+
+        if (blockType == null) {
+            return false;
+        }
+
+        Boolean isAir = tryBooleanMethod(blockType, "isAir");
+        if (Boolean.TRUE.equals(isAir)) {
+            return false;
+        }
+
+        Boolean isPassable = tryBooleanMethod(blockType, "isPassable");
+        if (Boolean.TRUE.equals(isPassable)) {
+            return false;
+        }
+
+        Boolean isReplaceable = tryBooleanMethod(blockType, "isReplaceable");
+        if (Boolean.TRUE.equals(isReplaceable)) {
+            return false;
+        }
+
+        Boolean isSolid = tryBooleanMethod(blockType, "isSolid");
+        if (isSolid != null) {
+            return isSolid;
+        }
+
+        Boolean isCollidable = tryBooleanMethod(blockType, "isCollidable");
+        if (isCollidable != null) {
+            return isCollidable;
+        }
+
+        String fallback = String.valueOf(blockType).toLowerCase();
+        return !(fallback.contains("air") || fallback.contains("water") || fallback.contains("lava"));
+    }
+
+    private static Boolean tryBooleanMethod(Object target,
+            String methodName) {
+        try {
+            Object value = target.getClass().getMethod(methodName).invoke(target);
+            if (value instanceof Boolean bool) {
+                return bool;
+            }
+        } catch (Throwable ignored) {
+        }
+        return null;
     }
 
     private static long mixSpawnSeed(UUID ownerUuid, int slotIndex) {
@@ -1473,52 +1650,6 @@ public final class ArmyOfTheDeadPassive {
     private static double unitFromSeed(long seed) {
         long bits = (seed >>> 11) & ((1L << 53) - 1L);
         return bits / (double) (1L << 53);
-    }
-
-    private static void logInheritanceComputation(UUID ownerUuid,
-            double inheritance,
-            double strength,
-            double sorcery,
-            double precisionPercent,
-            double ferocityPercent,
-            double defenseResistance,
-            double hasteMultiplier,
-            double lifeForceFlat,
-            float damageMultiplier,
-            float critChance,
-            float critDamageMultiplier,
-            float defenseReduction,
-            float movementMultiplier,
-            float lifeForceFlatHealthBonus) {
-        if (!DEBUG_SUMMON_INHERITANCE) {
-            return;
-        }
-        if (ownerUuid == null) {
-            return;
-        }
-        long now = System.currentTimeMillis();
-        Long last = INHERITANCE_DEBUG_LAST_LOG.get(ownerUuid);
-        if (last != null && now - last < INHERITANCE_DEBUG_LOG_COOLDOWN_MS) {
-            return;
-        }
-        INHERITANCE_DEBUG_LAST_LOG.put(ownerUuid, now);
-        LOGGER.atInfo().log(
-                "[ARMY_OF_THE_DEAD][DEBUG] owner=%s inheritance=%.3f strength=%.3f sorcery=%.3f precision=%.3f ferocity=%.3f defenseRes=%.3f hasteMult=%.3f lifeForce=%.3f -> dmgMult=%.3f critChance=%.3f critDmgMult=%.3f defenseReduction=%.3f moveMult=%.3f lifeForceHp=%.3f",
-                ownerUuid,
-                inheritance,
-                strength,
-                sorcery,
-                precisionPercent,
-                ferocityPercent,
-                defenseResistance,
-                hasteMultiplier,
-                lifeForceFlat,
-                damageMultiplier,
-                critChance,
-                critDamageMultiplier,
-                defenseReduction,
-                movementMultiplier,
-                lifeForceFlatHealthBonus);
     }
 
     private static void attachSummonToOwnerFlock(Ref<EntityStore> ownerRef,
@@ -1617,9 +1748,9 @@ public final class ArmyOfTheDeadPassive {
             EntitySupport.setDisplayName(summonRef, label, store);
             entitySupportApplied = true;
         } catch (Throwable throwable) {
-            if (DEBUG_SUMMON_NAMEPLATE && logSuccess) {
+            if (logSuccess) {
                 LOGGER.atWarning().withCause(throwable)
-                        .log("[ARMY_OF_THE_DEAD][DEBUG-NAMEPLATE-SPAWN] EntitySupport setDisplayName failed for summon=%s owner=%s",
+                        .log("[ARMY_OF_THE_DEAD] EntitySupport setDisplayName failed for summon=%s owner=%s",
                                 resolveEntityUuid(summonRef, store, null),
                                 ownerUuid);
             }
@@ -1633,20 +1764,6 @@ public final class ArmyOfTheDeadPassive {
         }
 
         UUID summonUuid = resolveEntityUuid(summonRef, store, null);
-        if (logSuccess && DEBUG_SUMMON_NAMEPLATE) {
-            LOGGER.atInfo().log(
-                    "[ARMY_OF_THE_DEAD][DEBUG-NAMEPLATE-SPAWN] summon=%s owner=%s builderAvailable=%s summonSegment=%s mobFallback=%s entitySupportApplied=%s vanillaApplied=%s hasVanillaComponent=%s text=%s",
-                    summonUuid,
-                    ownerUuid,
-                    builderAvailable,
-                    summonSegmentApplied,
-                    mobFallbackApplied,
-                    entitySupportApplied,
-                    vanillaApplied,
-                    nameplate != null,
-                    label);
-        }
-
         if (summonSegmentApplied || mobFallbackApplied || vanillaApplied || entitySupportApplied) {
             if (summonUuid != null) {
                 NAMEPLATE_FAILURE_LAST_LOG.remove(summonUuid);
@@ -1657,7 +1774,7 @@ public final class ArmyOfTheDeadPassive {
         UUID nameplateFailureKey = ownerUuid != null ? ownerUuid : summonUuid;
         if (shouldLogNameplateFailure(nameplateFailureKey)) {
             LOGGER.atWarning().log(
-                    "[ARMY_OF_THE_DEAD][DEBUG-NAMEPLATE-SPAWN] Failed to apply summon nameplate for summon=%s owner=%s",
+                    "[ARMY_OF_THE_DEAD] Failed to apply summon nameplate for summon=%s owner=%s",
                     summonUuid,
                     ownerUuid);
         }
@@ -1755,6 +1872,7 @@ public final class ArmyOfTheDeadPassive {
 
         Vector3d ownerPosition = ownerTransform.getPosition();
         long now = System.currentTimeMillis();
+        Map<Double, SummonInheritedStats> inheritedStatsCache = new HashMap<>();
         synchronized (ownerState) {
             for (SummonSlot slot : ownerState.slots) {
                 if (slot == null || slot.activeRef == null || !EntityRefUtil.isUsable(slot.activeRef)) {
@@ -1770,7 +1888,10 @@ public final class ArmyOfTheDeadPassive {
                     slot.activeSummonUuid = null;
                     slot.summonExpiresAt = 0L;
                     slot.postSpawnHealthNormalizePending = false;
-                    slot.nextNameplateRefreshAt = 0L;
+                    slot.spawnAggroRetriesRemaining = 0;
+                    slot.nextSpawnAggroRetryAt = 0L;
+                    slot.nextTeleportCheckAt = 0L;
+                    slot.nextMovementRefreshAt = 0L;
                     slot.cooldownExpiresAt = now + Math.max(0L, slot.cooldownDurationMillis);
                     slot.spawnPending = false;
                     LOGGER.atFiner().log(
@@ -1786,18 +1907,7 @@ public final class ArmyOfTheDeadPassive {
 
                 if (slot.postSpawnHealthNormalizePending) {
                     forceCurrentHealthToMax(slot.activeRef, store);
-                    logSummonHealthState(slot.activeRef,
-                            store,
-                            ownerUuid,
-                            -1,
-                            slot.statInheritance,
-                            "POST_SPAWN_TICK_NORMALIZE");
                     slot.postSpawnHealthNormalizePending = false;
-                }
-
-                if (now >= slot.nextNameplateRefreshAt) {
-                    applySummonNameplate(slot.activeRef, store, ownerUuid, false);
-                    slot.nextNameplateRefreshAt = now + NAMEPLATE_REFRESH_INTERVAL_MS;
                 }
 
                 NPCEntity summonNpc = EntityRefUtil.tryGetComponent(store, slot.activeRef,
@@ -1806,18 +1916,55 @@ public final class ArmyOfTheDeadPassive {
                     continue;
                 }
 
-                summonNpc.setLeashPoint(ownerPosition);
-
-                TransformComponent summonTransform = EntityRefUtil.tryGetComponent(store, slot.activeRef,
-                        TransformComponent.getComponentType());
-                if (summonTransform != null && summonTransform.getPosition() != null
-                        && summonTransform.getPosition().distanceSquaredTo(ownerPosition) > TELEPORT_RANGE_SQ) {
-                    summonTransform.teleportPosition(ownerPosition);
+                if (slot.spawnAggroRetriesRemaining > 0
+                        && now >= slot.nextSpawnAggroRetryAt
+                        && summonNpc.getRole() != null) {
+                    Ref<EntityStore> preferredTarget = resolvePreferredThreatTarget(ownerUuid, store);
+                    boolean aggroAssigned = assignImmediateSummonTarget(ownerUuid,
+                            slot.activeRef,
+                            summonNpc,
+                            store,
+                            preferredTarget,
+                            SPAWN_AGGRO_SCAN_RANGE);
+                    if (aggroAssigned) {
+                        slot.spawnAggroRetriesRemaining = 0;
+                        slot.nextSpawnAggroRetryAt = 0L;
+                    } else {
+                        slot.spawnAggroRetriesRemaining--;
+                        slot.nextSpawnAggroRetryAt = now + SPAWN_AGGRO_RETRY_INTERVAL_MS;
+                    }
                 }
 
-                if (slot.statInheritance > 0.0D) {
-                    SummonInheritedStats inheritedStats = resolveOwnerSummonInheritedStats(ownerUuid,
-                            slot.statInheritance);
+                if (now >= slot.nextTargetValidationAt) {
+                    slot.nextTargetValidationAt = now + TARGET_VALIDATION_INTERVAL_MS;
+                    if (summonNpc.getRole() != null) {
+                        Ref<EntityStore> currentTarget = summonNpc.getRole()
+                                .getMarkedEntitySupport()
+                                .getMarkedEntityRef("LockedTarget");
+                        if (!isSummonTargetStillValid(ownerUuid, slot.activeRef, currentTarget, store)
+                                && now >= slot.nextTargetAcquireAt) {
+                            assignImmediateSummonTarget(ownerUuid, slot.activeRef, summonNpc, store);
+                            slot.nextTargetAcquireAt = now + TARGET_REACQUIRE_INTERVAL_MS;
+                        }
+                    }
+                }
+
+                summonNpc.setLeashPoint(ownerPosition);
+
+                if (now >= slot.nextTeleportCheckAt) {
+                    slot.nextTeleportCheckAt = now + TELEPORT_CHECK_INTERVAL_MS;
+                    TransformComponent summonTransform = EntityRefUtil.tryGetComponent(store, slot.activeRef,
+                            TransformComponent.getComponentType());
+                    if (summonTransform != null && summonTransform.getPosition() != null
+                            && summonTransform.getPosition().distanceSquaredTo(ownerPosition) > TELEPORT_RANGE_SQ) {
+                        summonTransform.teleportPosition(ownerPosition);
+                    }
+                }
+
+                if (slot.statInheritance > 0.0D && now >= slot.nextMovementRefreshAt) {
+                    slot.nextMovementRefreshAt = now + MOVEMENT_REFRESH_INTERVAL_MS;
+                    SummonInheritedStats inheritedStats = inheritedStatsCache.computeIfAbsent(slot.statInheritance,
+                            inheritance -> resolveOwnerSummonInheritedStats(ownerUuid, inheritance));
                     applySummonMovementSpeedBonus(slot.activeRef, store, inheritedStats.movementMultiplier());
                 }
             }
@@ -2086,6 +2233,7 @@ public final class ArmyOfTheDeadPassive {
 
     private static final class OwnerSummonState {
         private final List<SummonSlot> slots = new ArrayList<>();
+        private long nextIdleRetargetSweepAt;
 
         private void ensureSlots(int required) {
             while (slots.size() < required) {
@@ -2111,6 +2259,11 @@ public final class ArmyOfTheDeadPassive {
         private double statInheritance = DEFAULT_STAT_INHERITANCE;
         private boolean spawnPending;
         private boolean postSpawnHealthNormalizePending;
-        private long nextNameplateRefreshAt;
+        private int spawnAggroRetriesRemaining;
+        private long nextSpawnAggroRetryAt;
+        private long nextTargetValidationAt;
+        private long nextTargetAcquireAt;
+        private long nextTeleportCheckAt;
+        private long nextMovementRefreshAt;
     }
 }
