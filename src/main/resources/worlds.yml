@@ -53,7 +53,7 @@ World_Overrides:
           3: 0.25
       # Any augment ids listed here will never be applied to mobs (override or generated).
       # Example: [rebirth, frozen_domain] or [common] to disable generated common rolls.
-      Blacklisted_Augments: []
+      Blacklisted_Augments: [burn, phase_rush, grasp_of_the_undying, haymaker, tank_engine]
 
   default:
     Enabled: true
