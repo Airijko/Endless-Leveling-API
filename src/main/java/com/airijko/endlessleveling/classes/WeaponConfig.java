@@ -1,5 +1,9 @@
 package com.airijko.endlessleveling.classes;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.hypixel.hytale.logger.HytaleLogger;
 import org.yaml.snakeyaml.Yaml;
 
@@ -18,7 +22,7 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Parsed view of weapons.yml that allows explicit weapon ID or keyword routing
+ * Parsed view of weapons.json that allows explicit weapon ID or keyword routing
  * to a normalized weapon category key.
  */
 public final class WeaponConfig {
@@ -46,10 +50,84 @@ public final class WeaponConfig {
         if (file == null) {
             return empty();
         }
-        if (!file.exists()) {
-            LOGGER.atWarning().log("weapons.yml not found at %s; falling back to built-in resolver", file);
+
+        File loadTarget = file;
+        if (!loadTarget.exists()) {
+            // Backwards compatibility: allow old installs that still only have weapons.yml.
+            File legacyYaml = new File(file.getParentFile(), "weapons.yml");
+            if (legacyYaml.exists()) {
+                LOGGER.atWarning().log(
+                        "weapons.json not found at %s; using legacy weapons.yml. Consider migrating to weapons.json.",
+                        file);
+                return loadLegacyYaml(legacyYaml);
+            }
+            LOGGER.atWarning().log("weapons.json not found at %s; falling back to built-in resolver", file);
             return empty();
         }
+
+        String fileName = loadTarget.getName().toLowerCase(Locale.ROOT);
+        if (fileName.endsWith(".yml") || fileName.endsWith(".yaml")) {
+            return loadLegacyYaml(loadTarget);
+        }
+
+        return loadJson(loadTarget);
+    }
+
+    private static WeaponConfig loadJson(File file) {
+        try (Reader reader = new FileReader(file)) {
+            JsonElement rootElement = JsonParser.parseReader(reader);
+            if (!(rootElement instanceof JsonObject rootObject)) {
+                return empty();
+            }
+
+            JsonObject typesSection = extractTypesSection(rootObject);
+            if (typesSection == null || typesSection.isEmpty()) {
+                return empty();
+            }
+
+            Map<String, String> exactIds = new HashMap<>();
+            Map<String, String> keywordTokens = new HashMap<>();
+            Map<String, String> keywordSubstrings = new HashMap<>();
+
+            for (Map.Entry<String, JsonElement> entry : typesSection.entrySet()) {
+                String weaponCategory = normalizeCategoryKey(entry.getKey());
+                if (weaponCategory == null) {
+                    continue;
+                }
+                if (!(entry.getValue() instanceof JsonObject ruleNode) || ruleNode.isEmpty()) {
+                    continue;
+                }
+
+                Set<String> ids = readStrings(ruleNode.get("ids"));
+                for (String id : ids) {
+                    String normalized = normalizeIdentifier(id);
+                    if (normalized != null) {
+                        exactIds.put(normalized, weaponCategory);
+                    }
+                }
+
+                Set<String> keywords = readStrings(ruleNode.get("keywords"));
+                for (String keyword : keywords) {
+                    String normalized = normalizeToken(keyword);
+                    if (normalized != null) {
+                        keywordTokens.put(normalized, weaponCategory);
+                        keywordSubstrings.put(normalized, weaponCategory);
+                    }
+                }
+            }
+            if (exactIds.isEmpty() && keywordTokens.isEmpty()) {
+                return empty();
+            }
+            LOGGER.atInfo().log("Loaded %d weapon ids and %d keywords from weapons.json", exactIds.size(),
+                    keywordTokens.size());
+            return new WeaponConfig(exactIds, keywordTokens, keywordSubstrings);
+        } catch (IOException | RuntimeException ex) {
+            LOGGER.atWarning().log("Failed to load weapons.json: %s", ex.getMessage());
+            return empty();
+        }
+    }
+
+    private static WeaponConfig loadLegacyYaml(File file) {
         try (Reader reader = new FileReader(file)) {
             Object rootNode = YAML.load(reader);
             Map<String, Object> root = asMap(rootNode);
@@ -90,11 +168,11 @@ public final class WeaponConfig {
             if (exactIds.isEmpty() && keywordTokens.isEmpty()) {
                 return empty();
             }
-            LOGGER.atInfo().log("Loaded %d weapon ids and %d keywords from weapons.yml", exactIds.size(),
+            LOGGER.atInfo().log("Loaded %d weapon ids and %d keywords from legacy weapons.yml", exactIds.size(),
                     keywordTokens.size());
             return new WeaponConfig(exactIds, keywordTokens, keywordSubstrings);
         } catch (IOException | RuntimeException ex) {
-            LOGGER.atWarning().log("Failed to load weapons.yml: %s", ex.getMessage());
+            LOGGER.atWarning().log("Failed to load legacy weapons.yml: %s", ex.getMessage());
             return empty();
         }
     }
@@ -124,12 +202,44 @@ public final class WeaponConfig {
         return null;
     }
 
+    private static JsonObject extractTypesSection(JsonObject root) {
+        JsonElement direct = root.get("types");
+        if (direct instanceof JsonObject jsonObject) {
+            return jsonObject;
+        }
+        return root;
+    }
+
     private static Map<String, Object> extractTypesSection(Map<String, Object> root) {
         Object direct = root.get("types");
         if (direct instanceof Map<?, ?> map) {
             return asMap(map);
         }
         return root;
+    }
+
+    private static Set<String> readStrings(JsonElement node) {
+        Set<String> values = new HashSet<>();
+        if (node == null || node.isJsonNull()) {
+            return values;
+        }
+        if (node instanceof JsonArray array) {
+            for (JsonElement value : array) {
+                if (value == null || value.isJsonNull()) {
+                    continue;
+                }
+                String normalized = normalizeToken(value.getAsString());
+                if (normalized != null) {
+                    values.add(normalized);
+                }
+            }
+            return values;
+        }
+        String normalized = normalizeToken(node.getAsString());
+        if (normalized != null) {
+            values.add(normalized);
+        }
+        return values;
     }
 
     public static String normalizeCategoryKey(String raw) {

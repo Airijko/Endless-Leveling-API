@@ -387,7 +387,6 @@ public class EndlessLeveling extends JavaPlugin {
         // Initialize all folders and managers
         filesManager = new PluginFilesManager(this);
         configManager = new ConfigManager(filesManager, filesManager.getConfigFile());
-        new ConfigManager(filesManager, filesManager.getWeaponsFile());
         languageManager = new LanguageManager(filesManager, configManager);
 
         // Load weapon ID and keyword overrides before systems start.

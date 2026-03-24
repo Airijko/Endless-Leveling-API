@@ -1,0 +1,84 @@
+{
+  "types": {
+    "sword": {
+      "ids": [],
+      "keywords": [
+        "sword",
+        "blade",
+        "saber",
+        "katana",
+        "noctivagus",
+        "yamato",
+        "rapier",
+        "cutlass",
+        "soulblight"
+      ]
+    },
+    "axe": {
+      "keywords": [
+        "axe",
+        "hatchet",
+        "battleaxe"
+      ]
+    },
+    "gauntlet": {
+      "keywords": [
+        "gauntlet",
+        "glove",
+        "knuckle",
+        "bracer",
+        "fist"
+      ]
+    },
+    "bow": {
+      "keywords": [
+        "bow",
+        "weaver"
+      ]
+    },
+    "staff": {
+      "keywords": [
+        "staff",
+        "rod",
+        "spellbook",
+        "wand",
+        "necronomicon"
+      ]
+    },
+    "dagger": {
+      "keywords": [
+        "dagger",
+        "knife",
+        "dirk",
+        "whirlwinds"
+      ]
+    },
+    "mace": {
+      "keywords": [
+        "mace",
+        "hammer",
+        "club",
+        "warhammer"
+      ]
+    },
+    "spear": {
+      "keywords": [
+        "spear",
+        "halberd",
+        "polearm",
+        "trident",
+        "glaive"
+      ]
+    },
+    "crossbow": {
+      "keywords": [
+        "crossbow"
+      ]
+    },
+    "unarmed": {
+      "keywords": [
+        "fist"
+      ]
+    }
+  }
+}

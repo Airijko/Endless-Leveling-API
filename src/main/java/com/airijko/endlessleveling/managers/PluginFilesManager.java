@@ -29,7 +29,7 @@ public class PluginFilesManager {
     private static final String CLASSES_FOLDER_NAME = "classes";
     private static final String AUGMENTS_FOLDER_NAME = "augments";
     private static final String LANG_FOLDER_NAME = "lang";
-    private static final String WEAPONS_FILE_NAME = "weapons.yml";
+    private static final String WEAPONS_FILE_NAME = "weapons.json";
     private static final String PARTYDATA_FILE_NAME = "parties.json";
     private static final String OLD_FOLDER_NAME = "old";
     private static final DateTimeFormatter ARCHIVE_TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss");
@@ -75,7 +75,7 @@ public class PluginFilesManager {
         this.levelingFile = initYamlFile("leveling.yml");
         this.eventsFile = initYamlFile("events.yml");
         this.worldsFile = initYamlFile("worlds.yml");
-        this.weaponsFile = initYamlFile(WEAPONS_FILE_NAME);
+        this.weaponsFile = initResourceFile(WEAPONS_FILE_NAME);
         this.partyDataFile = initPartyDataFile();
 
         seedResourceDirectoryIfEmpty("races", racesFolder);
@@ -152,6 +152,11 @@ public class PluginFilesManager {
 
     /** Convenience method for player data file */
     public File getPlayerDataFile(UUID uuid) {
+        return new File(playerDataFolder, uuid + ".json");
+    }
+
+    /** Legacy YAML location used for one-way migration into JSON player data files. */
+    public File getLegacyPlayerDataFile(UUID uuid) {
         return new File(playerDataFolder, uuid + ".yml");
     }
 
@@ -423,6 +428,35 @@ public class PluginFilesManager {
         }
 
         return yamlFile;
+    }
+
+    /**
+     * Initialize a default resource file from plugin resources if it doesn't exist.
+     */
+    public File initResourceFile(String resourceName) {
+        File file = new File(pluginFolder, resourceName);
+        if (!file.exists()) {
+            try (InputStream in = plugin.getClassLoader().getResourceAsStream(resourceName)) {
+                if (in == null) {
+                    throw new FileNotFoundException("Resource " + resourceName + " not found in plugin JAR!");
+                }
+                try (OutputStream out = new FileOutputStream(file)) {
+                    byte[] buffer = new byte[1024];
+                    int length;
+                    while ((length = in.read(buffer)) > 0) {
+                        out.write(buffer, 0, length);
+                    }
+                }
+
+                LOGGER.atInfo().log("Resource file %s created at %s", resourceName, file.getAbsolutePath());
+            } catch (IOException e) {
+                throw new IllegalStateException("Unable to create resource file: " + resourceName, e);
+            }
+        } else {
+            LOGGER.atFine().log("Resource file %s already exists.", resourceName);
+        }
+
+        return file;
     }
 
     private void ensureConfigVersionMarkerOnCreate(String resourceName, File yamlFile) throws IOException {

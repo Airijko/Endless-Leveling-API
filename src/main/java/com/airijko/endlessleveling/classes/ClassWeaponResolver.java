@@ -13,7 +13,7 @@ public final class ClassWeaponResolver {
     private ClassWeaponResolver() {
     }
 
-    /** Configure resolver with optional weapons.yml mapping. */
+    /** Configure resolver with optional weapons.json mapping. */
     public static void configure(WeaponConfig config) {
         weaponConfig = config == null ? WeaponConfig.empty() : config;
     }

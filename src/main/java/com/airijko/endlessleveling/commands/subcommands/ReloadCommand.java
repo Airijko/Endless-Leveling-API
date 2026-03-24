@@ -85,7 +85,6 @@ public class ReloadCommand extends AbstractCommand {
         }
 
         if (filesManager != null) {
-            new ConfigManager(filesManager, filesManager.getWeaponsFile());
             ClassWeaponResolver.configure(WeaponConfig.load(filesManager.getWeaponsFile()));
         }
 
