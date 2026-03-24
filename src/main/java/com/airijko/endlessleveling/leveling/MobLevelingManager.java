@@ -121,6 +121,13 @@ public class MobLevelingManager {
                                                long updatedAtMillis) {
     }
 
+    public record TieredWorldSummary(int tierOffset,
+                                     int levelsPerTier,
+                                     int tierMinLevel,
+                                     int tierMaxLevel,
+                                     int bossLevel) {
+    }
+
     public MobLevelingManager(PluginFilesManager filesManager, PlayerDataManager playerDataManager) {
         this.configManager = new ConfigManager(filesManager, filesManager.getLevelingFile());
         this.worldsConfigManager = new ConfigManager(filesManager, filesManager.getWorldsFile());
@@ -464,6 +471,34 @@ public class MobLevelingManager {
 
     public boolean isLevelSourceMixedMode() {
         return getLevelSourceMode(null) == LevelSourceMode.MIXED;
+    }
+
+    public boolean isLevelSourceTieredMode(Store<EntityStore> store) {
+        return getLevelSourceMode(store) == LevelSourceMode.TIERS;
+    }
+
+    public TieredWorldSummary resolveTieredWorldSummary(Store<EntityStore> store, PlayerRef sourcePlayer) {
+        if (store == null || getLevelSourceMode(store) != LevelSourceMode.TIERS) {
+            return null;
+        }
+
+        LevelRange baseRange = parseTieredBaseLevelRange(store);
+        int levelsPerTier = Math.max(1, getConfigInt("Mob_Leveling.Level_Source.Tiers.Levels_Per_Tier", 20, store));
+        int tierOffset = resolveTierOffsetForPlayer(store, sourcePlayer, baseRange, levelsPerTier);
+
+        int shiftedMin = baseRange.min() + (tierOffset * levelsPerTier);
+        int shiftedMax = baseRange.max() + (tierOffset * levelsPerTier);
+        LevelRange shiftedRange = normalizeLevelRange(shiftedMin, shiftedMax, store);
+
+        int baseBossLevel = resolveConfiguredBossBaseLevel(store, baseRange.max());
+        int bossLevel = clampToConfiguredRange(baseBossLevel + (tierOffset * levelsPerTier), store);
+
+        return new TieredWorldSummary(
+                tierOffset,
+                levelsPerTier,
+                shiftedRange.min(),
+                shiftedRange.max(),
+                bossLevel);
     }
 
     public int getPlayerBasedOffset(Store<EntityStore> store) {

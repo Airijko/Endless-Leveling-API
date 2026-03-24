@@ -19,7 +19,7 @@ import com.airijko.endlessleveling.commands.CommandRegistrar;
 import com.airijko.endlessleveling.listeners.OpenPlayerHudListener;
 import com.airijko.endlessleveling.listeners.PartyListener;
 import com.airijko.endlessleveling.listeners.PlayerDataListener;
-import com.airijko.endlessleveling.listeners.WorldOverrideDebugListener;
+import com.airijko.endlessleveling.listeners.DungeonTierJoinNotificationListener;
 import com.airijko.endlessleveling.managers.ConfigManager;
 import com.airijko.endlessleveling.managers.EventHookManager;
 import com.airijko.endlessleveling.managers.LanguageManager;
@@ -460,9 +460,9 @@ public class EndlessLeveling extends JavaPlugin {
         // Register event listeners
         PlayerDataListener playerDataListener = new PlayerDataListener(playerDataManager, passiveManager, skillManager,
                 raceManager, augmentUnlockManager);
-        WorldOverrideDebugListener worldOverrideDebugListener = new WorldOverrideDebugListener();
+        DungeonTierJoinNotificationListener dungeonTierJoinNotificationListener = new DungeonTierJoinNotificationListener();
         this.getEventRegistry().registerGlobal(PlayerReadyEvent.class, playerDataListener::onPlayerReady);
-        this.getEventRegistry().registerGlobal(PlayerReadyEvent.class, worldOverrideDebugListener::onPlayerReady);
+        this.getEventRegistry().registerGlobal(PlayerReadyEvent.class, dungeonTierJoinNotificationListener::onPlayerReady);
         this.getEventRegistry().registerGlobal(PlayerDisconnectEvent.class, playerDataListener::onPlayerDisconnect);
 
         if (partyManager.isAvailable()) {
