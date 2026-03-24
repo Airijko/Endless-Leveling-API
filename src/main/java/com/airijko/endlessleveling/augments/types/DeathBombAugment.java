@@ -64,21 +64,24 @@ public final class DeathBombAugment extends Augment
     private final double radius;
 
     private static final class PendingBomb {
+        final UUID sourceUuid;
         final Ref<EntityStore> sourceRef;
         final UUID summonOwnerUuid;
         final Object worldStore;
         final Vector3d position;
-        final long explodeAt;
+        long explodeAt;
         final double damage;
         final double radius;
 
-        PendingBomb(Ref<EntityStore> sourceRef,
-            UUID summonOwnerUuid,
+        PendingBomb(UUID sourceUuid,
+                Ref<EntityStore> sourceRef,
+                UUID summonOwnerUuid,
                 Object worldStore,
                 Vector3d position,
                 long explodeAt,
                 double damage,
                 double radius) {
+            this.sourceUuid = sourceUuid;
             this.sourceRef = sourceRef;
             this.summonOwnerUuid = summonOwnerUuid;
             this.worldStore = worldStore;
@@ -87,6 +90,12 @@ public final class DeathBombAugment extends Augment
             this.damage = Math.max(0.0D, damage);
             this.radius = Math.max(0.0D, radius);
         }
+    }
+
+    private enum DeadState {
+        ALIVE,
+        DEAD,
+        UNKNOWN
     }
 
     public DeathBombAugment(AugmentDefinition definition) {
@@ -152,19 +161,7 @@ public final class DeathBombAugment extends Augment
             return incoming;
         }
 
-        // Get UUID: try playerData first (for players), fall back to defender UUID (for mobs)
-        UUID uuid = null;
-        if (context.getPlayerData() != null && context.getPlayerData().getUuid() != null) {
-            uuid = context.getPlayerData().getUuid();
-        } else {
-            // For mobs without PlayerData, use defender's UUID
-            UUIDComponent uuidComp = context.getCommandBuffer().getComponent(
-                    context.getDefenderRef(),
-                    UUIDComponent.getComponentType());
-            if (uuidComp != null) {
-                uuid = uuidComp.getUuid();
-            }
-        }
+        UUID uuid = resolveEntityUuid(context);
         if (uuid == null) {
             return incoming;
         }
@@ -208,7 +205,8 @@ public final class DeathBombAugment extends Augment
         }
 
         PENDING_BOMBS.put(uuid,
-                new PendingBomb(context.getDefenderRef(),
+            new PendingBomb(uuid,
+            context.getDefenderRef(),
                 ArmyOfTheDeadPassive.getManagedSummonOwnerUuid(
                     context.getDefenderRef(),
                     context.getDefenderRef().getStore(),
@@ -227,6 +225,34 @@ public final class DeathBombAugment extends Augment
         }
 
         return incoming;
+    }
+
+    private static UUID resolveEntityUuid(AugmentHooks.DamageTakenContext context) {
+        if (context == null) {
+            return null;
+        }
+        if (context.getPlayerData() != null && context.getPlayerData().getUuid() != null) {
+            return context.getPlayerData().getUuid();
+        }
+
+        Ref<EntityStore> defenderRef = context.getDefenderRef();
+        if (!EntityRefUtil.isUsable(defenderRef)) {
+            return null;
+        }
+
+        UUIDComponent uuidComp = EntityRefUtil.tryGetComponent(
+                context.getCommandBuffer(),
+                defenderRef,
+                UUIDComponent.getComponentType());
+        if (uuidComp == null) {
+            Store<EntityStore> defenderStore = EntityRefUtil.getStore(defenderRef);
+            if (defenderStore != null) {
+                uuidComp = EntityRefUtil.tryGetComponent(defenderStore,
+                        defenderRef,
+                        UUIDComponent.getComponentType());
+            }
+        }
+        return uuidComp != null ? uuidComp.getUuid() : null;
     }
 
     @Override
@@ -251,20 +277,26 @@ public final class DeathBombAugment extends Augment
 
         long now = System.currentTimeMillis();
         for (Map.Entry<UUID, PendingBomb> entry : PENDING_BOMBS.entrySet()) {
-            UUID ownerUuid = entry.getKey();
+            UUID entityUuid = entry.getKey();
             PendingBomb pending = entry.getValue();
             if (pending == null) {
-                PENDING_BOMBS.remove(ownerUuid);
+                PENDING_BOMBS.remove(entityUuid);
                 continue;
             }
 
             long staleAt = pending.explodeAt + PENDING_BOMB_STALE_AFTER_MILLIS;
             if (now >= staleAt) {
-                PENDING_BOMBS.remove(ownerUuid, pending);
+                PENDING_BOMBS.remove(entityUuid, pending);
                 continue;
             }
 
             if (now < pending.explodeAt) {
+                continue;
+            }
+
+            DeadState deadState = resolveDeadState(pending, commandBuffer);
+            if (deadState == DeadState.ALIVE) {
+                pending.explodeAt = now + 100L;
                 continue;
             }
 
@@ -276,12 +308,51 @@ public final class DeathBombAugment extends Augment
                 continue;
             }
 
-            if (!PENDING_BOMBS.remove(ownerUuid, pending)) {
+            if (!PENDING_BOMBS.remove(entityUuid, pending)) {
                 continue;
             }
 
             explode(commandBuffer, pending, fallbackVisualRef);
         }
+    }
+
+    private static DeadState resolveDeadState(PendingBomb pending,
+            CommandBuffer<EntityStore> commandBuffer) {
+        if (pending == null || pending.sourceRef == null) {
+            return DeadState.UNKNOWN;
+        }
+
+        if (!EntityRefUtil.isUsable(pending.sourceRef)) {
+            return DeadState.UNKNOWN;
+        }
+
+        UUIDComponent uuidComponent = EntityRefUtil.tryGetComponent(commandBuffer,
+                pending.sourceRef,
+                UUIDComponent.getComponentType());
+        if (uuidComponent != null && pending.sourceUuid != null
+                && !pending.sourceUuid.equals(uuidComponent.getUuid())) {
+            return DeadState.UNKNOWN;
+        }
+
+        if (EntityRefUtil.tryGetComponent(commandBuffer,
+                pending.sourceRef,
+                DeathComponent.getComponentType()) != null) {
+            return DeadState.DEAD;
+        }
+
+        EntityStatMap statMap = EntityRefUtil.tryGetComponent(commandBuffer,
+                pending.sourceRef,
+                EntityStatMap.getComponentType());
+        if (statMap == null) {
+            return DeadState.UNKNOWN;
+        }
+
+        EntityStatValue hp = statMap.get(DefaultEntityStatTypes.getHealth());
+        if (hp == null) {
+            return DeadState.UNKNOWN;
+        }
+
+        return hp.get() <= 0.0f ? DeadState.DEAD : DeadState.ALIVE;
     }
 
     private static void explode(CommandBuffer<EntityStore> commandBuffer,

@@ -20,6 +20,7 @@ import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.server.core.asset.type.entityeffect.config.EntityEffect;
 import com.hypixel.hytale.server.core.asset.type.entityeffect.config.OverlapBehavior;
 import com.hypixel.hytale.server.core.asset.type.soundevent.config.SoundEvent;
+import com.hypixel.hytale.server.core.entity.UUIDComponent;
 import com.hypixel.hytale.server.core.entity.effect.EffectControllerComponent;
 import com.hypixel.hytale.server.core.modules.entity.damage.Damage;
 import com.hypixel.hytale.server.core.modules.entity.component.Invulnerable;
@@ -71,6 +72,7 @@ public final class BurnAugment extends Augment
 
     private static final class ActivePulse {
         Ref<EntityStore> sourceRef;
+        UUID sourceUuid;
         long startedAt;
         long expiresAt;
         long lastVisualAt;
@@ -303,6 +305,7 @@ public final class BurnAugment extends Augment
         String pulseKey = resolvePulseKey(sourceRef, commandBuffer);
         ActivePulse pulse = ACTIVE_PULSES.computeIfAbsent(pulseKey, unused -> new ActivePulse());
         pulse.sourceRef = sourceRef;
+        pulse.sourceUuid = resolveEntityUuid(sourceRef, commandBuffer);
         pulse.endRadius = Math.max(PULSE_RING_START_RADIUS, auraRadius);
         if (pulse.expiresAt <= now || pulse.startedAt <= 0L) {
             pulse.startedAt = now;
@@ -321,6 +324,10 @@ public final class BurnAugment extends Augment
         String pulseKey = resolvePulseKey(sourceRef, commandBuffer);
         ActivePulse pulse = ACTIVE_PULSES.get(pulseKey);
         if (pulse == null) {
+            return;
+        }
+        if (!matchesExpectedUuid(pulse.sourceUuid, resolveEntityUuid(pulse.sourceRef, commandBuffer))) {
+            ACTIVE_PULSES.remove(pulseKey);
             return;
         }
         if (pulse.expiresAt <= now || pulse.sourceRef == null || !pulse.sourceRef.isValid()) {
@@ -402,7 +409,35 @@ public final class BurnAugment extends Augment
         if (playerRef != null && playerRef.isValid() && playerRef.getUuid() != null) {
             return playerRef.getUuid().toString();
         }
-        return sourceRef.toString();
+
+        UUID sourceUuid = resolveEntityUuid(sourceRef, commandBuffer);
+        if (sourceUuid != null) {
+            return sourceUuid.toString();
+        }
+
+        Object store = sourceRef.getStore();
+        if (store != null) {
+            return System.identityHashCode(store) + ":" + sourceRef.getIndex();
+        }
+        return String.valueOf(sourceRef.getIndex());
+    }
+
+    private static UUID resolveEntityUuid(Ref<EntityStore> ref, CommandBuffer<EntityStore> commandBuffer) {
+        if (!EntityRefUtil.isUsable(ref) || commandBuffer == null) {
+            return null;
+        }
+
+        UUIDComponent uuidComp = EntityRefUtil.tryGetComponent(commandBuffer,
+                ref,
+                UUIDComponent.getComponentType());
+        return uuidComp != null ? uuidComp.getUuid() : null;
+    }
+
+    private static boolean matchesExpectedUuid(UUID expected, UUID actual) {
+        if (expected == null || actual == null) {
+            return true;
+        }
+        return expected.equals(actual);
     }
 
     private void spawnPulseParticle(Ref<EntityStore> sourceRef, Vector3d position) {

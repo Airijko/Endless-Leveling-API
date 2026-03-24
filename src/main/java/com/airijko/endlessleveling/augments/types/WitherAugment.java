@@ -16,6 +16,7 @@ import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.protocol.MovementSettings;
 import com.hypixel.hytale.server.core.asset.type.entityeffect.config.EntityEffect;
 import com.hypixel.hytale.server.core.asset.type.entityeffect.config.OverlapBehavior;
+import com.hypixel.hytale.server.core.entity.UUIDComponent;
 import com.hypixel.hytale.server.core.entity.entities.player.movement.MovementManager;
 import com.hypixel.hytale.server.core.entity.effect.EffectControllerComponent;
 import com.hypixel.hytale.server.core.modules.entity.damage.Damage;
@@ -28,6 +29,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import java.util.Map;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class WitherAugment extends Augment implements AugmentHooks.OnHitAugment {
@@ -101,11 +103,13 @@ public final class WitherAugment extends Augment implements AugmentHooks.OnHitAu
         long nextTickAt;
         int targetStoreIdentity;
         Ref<EntityStore> targetRef;
+        UUID targetUuid;
         double percentPerSecond;
         double movementSpeedSlowPercent;
         double durationSeconds;
         double maxDamagePerTick;
         Ref<EntityStore> sourceRef;
+        UUID sourceUuid;
         MovementSnapshot movementSnapshot;
         MovementSnapshot defaultMovementSnapshot;
         boolean fallbackSlowEffectApplied;
@@ -174,6 +178,8 @@ public final class WitherAugment extends Augment implements AugmentHooks.OnHitAu
         state.targetStoreIdentity = storeIdentityFor(targetRef);
         state.targetRef = targetRef;
         state.sourceRef = context.getAttackerRef();
+        state.targetUuid = resolveEntityUuid(targetRef, context.getCommandBuffer());
+        state.sourceUuid = resolveEntityUuid(context.getAttackerRef(), context.getCommandBuffer());
         state.loggedSourceStoreMismatch = false;
 
         LOGGER.atFine().log("Wither applied: key=%s target=%s durationMs=%d slowPct=%.4f dpsPct=%.4f",
@@ -209,6 +215,11 @@ public final class WitherAugment extends Augment implements AugmentHooks.OnHitAu
                 return;
             }
 
+            UUID currentTargetUuid = resolveEntityUuid(targetRef, store);
+            if (!matchesExpectedUuid(state.targetUuid, currentTargetUuid)) {
+                return;
+            }
+
             int targetStoreIdentity = state.targetStoreIdentity;
             if (targetStoreIdentity == 0) {
                 targetStoreIdentity = storeIdentityFor(targetRef);
@@ -235,6 +246,17 @@ public final class WitherAugment extends Augment implements AugmentHooks.OnHitAu
         String key = keyFor(ref, commandBuffer);
         ActiveWither state = ACTIVE_WITHER.get(key);
         if (state == null) {
+            return;
+        }
+
+        UUID currentTargetUuid = resolveEntityUuid(ref, commandBuffer);
+        if (!matchesExpectedUuid(state.targetUuid, currentTargetUuid)) {
+            ACTIVE_WITHER.remove(key);
+            LOGGER.atFine().log("Wither removed due to UUID mismatch: key=%s target=%s expected=%s actual=%s",
+                    key,
+                    ref,
+                    state.targetUuid,
+                    currentTargetUuid);
             return;
         }
 
@@ -324,8 +346,20 @@ public final class WitherAugment extends Augment implements AugmentHooks.OnHitAu
             if (playerRef != null && playerRef.isValid() && playerRef.getUuid() != null) {
                 return playerRef.getUuid().toString();
             }
+
+            UUIDComponent uuidComponent = EntityRefUtil.tryGetComponent(commandBuffer,
+                    ref,
+                    UUIDComponent.getComponentType());
+            if (uuidComponent != null && uuidComponent.getUuid() != null) {
+                return uuidComponent.getUuid().toString();
+            }
         }
-        return ref.toString();
+
+        var store = EntityRefUtil.getStore(ref);
+        if (store != null) {
+            return System.identityHashCode(store) + ":" + ref.getIndex();
+        }
+        return String.valueOf(ref.getIndex());
     }
 
     private static int storeIdentityFor(Ref<EntityStore> ref) {
@@ -344,6 +378,12 @@ public final class WitherAugment extends Augment implements AugmentHooks.OnHitAu
         if (!EntityRefUtil.isUsable(sourceRef) || !EntityRefUtil.isUsable(targetRef)) {
             return null;
         }
+
+        UUID currentSourceUuid = resolveEntityUuid(sourceRef, EntityRefUtil.getStore(sourceRef));
+        if (!matchesExpectedUuid(state == null ? null : state.sourceUuid, currentSourceUuid)) {
+            return null;
+        }
+
         if (EntityRefUtil.getStore(sourceRef) != EntityRefUtil.getStore(targetRef)) {
             if (state != null && !state.loggedSourceStoreMismatch) {
                 LOGGER.atWarning().log(
@@ -355,6 +395,33 @@ public final class WitherAugment extends Augment implements AugmentHooks.OnHitAu
             return null;
         }
         return sourceRef;
+    }
+
+    private static UUID resolveEntityUuid(Ref<EntityStore> ref, CommandBuffer<EntityStore> commandBuffer) {
+        if (!EntityRefUtil.isUsable(ref) || commandBuffer == null) {
+            return null;
+        }
+        UUIDComponent uuidComponent = EntityRefUtil.tryGetComponent(commandBuffer,
+                ref,
+                UUIDComponent.getComponentType());
+        return uuidComponent != null ? uuidComponent.getUuid() : null;
+    }
+
+    private static UUID resolveEntityUuid(Ref<EntityStore> ref, Store<EntityStore> store) {
+        if (!EntityRefUtil.isUsable(ref) || store == null) {
+            return null;
+        }
+        UUIDComponent uuidComponent = EntityRefUtil.tryGetComponent(store,
+                ref,
+                UUIDComponent.getComponentType());
+        return uuidComponent != null ? uuidComponent.getUuid() : null;
+    }
+
+    private static boolean matchesExpectedUuid(UUID expected, UUID actual) {
+        if (expected == null || actual == null) {
+            return true;
+        }
+        return expected.equals(actual);
     }
 
     private static void applySlowIfPossible(ActiveWither state,

@@ -20,6 +20,7 @@ import com.hypixel.hytale.protocol.MovementSettings;
 import com.hypixel.hytale.server.core.asset.type.entityeffect.config.EntityEffect;
 import com.hypixel.hytale.server.core.asset.type.entityeffect.config.OverlapBehavior;
 import com.hypixel.hytale.server.core.asset.type.soundevent.config.SoundEvent;
+import com.hypixel.hytale.server.core.entity.UUIDComponent;
 import com.hypixel.hytale.server.core.entity.effect.EffectControllerComponent;
 import com.hypixel.hytale.server.core.entity.entities.player.movement.MovementManager;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
@@ -129,6 +130,7 @@ public final class FrozenDomainAugment extends Augment
 
     private static final class ActiveFrozen {
         Ref<EntityStore> targetRef;
+        UUID targetUuid;
         long expiresAt;
         double slowPercent;
         MovementSnapshot movementSnapshot;
@@ -144,6 +146,7 @@ public final class FrozenDomainAugment extends Augment
 
     private static final class ActivePulse {
         Ref<EntityStore> sourceRef;
+        UUID sourceUuid;
         long startedAt;
         long expiresAt;
         long lastVisualAt;
@@ -321,6 +324,7 @@ public final class FrozenDomainAugment extends Augment
             String key = keyFor(targetRef, commandBuffer);
             ActiveFrozen state = ACTIVE_FROST.computeIfAbsent(key, unused -> new ActiveFrozen());
             state.targetRef = targetRef;
+            state.targetUuid = resolveEntityUuid(targetRef, commandBuffer);
             state.expiresAt = now + SLOW_DURATION_MILLIS;
             state.slowPercent = slowPercent;
             applySlowIfPossible(state, commandBuffer, targetRef);
@@ -345,7 +349,8 @@ public final class FrozenDomainAugment extends Augment
             }
 
             Ref<EntityStore> targetRef = state.targetRef;
-            if (targetRef != null && targetRef.isValid()) {
+            if (targetRef != null && targetRef.isValid()
+                    && matchesExpectedUuid(state.targetUuid, resolveEntityUuid(targetRef, commandBuffer))) {
                 clearSlowIfPossible(state, commandBuffer, targetRef);
             }
             ACTIVE_FROST.remove(entry.getKey());
@@ -357,6 +362,13 @@ public final class FrozenDomainAugment extends Augment
             PlayerRef playerRef = AugmentUtils.getPlayerRef(commandBuffer, ref);
             if (playerRef != null && playerRef.isValid() && playerRef.getUuid() != null) {
                 return playerRef.getUuid().toString();
+            }
+
+            UUIDComponent uuidComponent = EntityRefUtil.tryGetComponent(commandBuffer,
+                    ref,
+                    UUIDComponent.getComponentType());
+            if (uuidComponent != null && uuidComponent.getUuid() != null) {
+                return uuidComponent.getUuid().toString();
             }
         }
         Object store = ref.getStore();
@@ -370,6 +382,9 @@ public final class FrozenDomainAugment extends Augment
             CommandBuffer<EntityStore> commandBuffer,
             Ref<EntityStore> ref) {
         if (state == null || commandBuffer == null || ref == null || state.slowPercent <= 0.0D) {
+            return;
+        }
+        if (!matchesExpectedUuid(state.targetUuid, resolveEntityUuid(ref, commandBuffer))) {
             return;
         }
 
@@ -432,6 +447,9 @@ public final class FrozenDomainAugment extends Augment
             CommandBuffer<EntityStore> commandBuffer,
             Ref<EntityStore> ref) {
         if (state == null || commandBuffer == null || ref == null) {
+            return;
+        }
+        if (!matchesExpectedUuid(state.targetUuid, resolveEntityUuid(ref, commandBuffer))) {
             return;
         }
 
@@ -598,6 +616,7 @@ public final class FrozenDomainAugment extends Augment
 
         ActivePulse pulse = ACTIVE_PULSES.computeIfAbsent(keyFor(sourceRef, commandBuffer), unused -> new ActivePulse());
         pulse.sourceRef = sourceRef;
+        pulse.sourceUuid = resolveEntityUuid(sourceRef, commandBuffer);
         pulse.startedAt = now;
         pulse.expiresAt = now + TRIGGER_PULSE_DURATION_MILLIS;
         pulse.lastVisualAt = 0L;
@@ -616,6 +635,10 @@ public final class FrozenDomainAugment extends Augment
         String pulseKey = keyFor(sourceRef, commandBuffer);
         ActivePulse pulse = ACTIVE_PULSES.get(pulseKey);
         if (pulse == null) {
+            return;
+        }
+        if (!matchesExpectedUuid(pulse.sourceUuid, resolveEntityUuid(pulse.sourceRef, commandBuffer))) {
+            ACTIVE_PULSES.remove(pulseKey);
             return;
         }
         if (pulse.expiresAt <= now || pulse.sourceRef == null || !pulse.sourceRef.isValid()) {
@@ -794,5 +817,23 @@ public final class FrozenDomainAugment extends Augment
             return 0.0D;
         }
         return Math.max(0.0D, Math.min(1.0D, value));
+    }
+
+    private static UUID resolveEntityUuid(Ref<EntityStore> ref, CommandBuffer<EntityStore> commandBuffer) {
+        if (!EntityRefUtil.isUsable(ref) || commandBuffer == null) {
+            return null;
+        }
+
+        UUIDComponent uuidComponent = EntityRefUtil.tryGetComponent(commandBuffer,
+                ref,
+                UUIDComponent.getComponentType());
+        return uuidComponent != null ? uuidComponent.getUuid() : null;
+    }
+
+    private static boolean matchesExpectedUuid(UUID expected, UUID actual) {
+        if (expected == null || actual == null) {
+            return true;
+        }
+        return expected.equals(actual);
     }
 }
