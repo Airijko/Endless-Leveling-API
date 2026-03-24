@@ -204,6 +204,24 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
             state.appliedLevel = mobLevel;
         }
 
+        // Apply/retry mob augment registration and passive-stat ticks before health scaling.
+        // This guarantees LIFE_FORCE and other health-related passive bonuses are available
+        // when applyHealthModifier snapshots and applies max-health layers.
+        applyMobAugments(ref, store, commandBuffer, currentTimeMillis);
+
+        float observedLifeForceBonus = resolveMobLifeForceHealthBonus(ref, commandBuffer);
+        if (!Float.isFinite(observedLifeForceBonus) || observedLifeForceBonus < 0.0f) {
+            observedLifeForceBonus = 0.0f;
+        }
+        boolean lifeForceChangedSinceLastApply = !Float.isFinite(state.lastAppliedLifeForceBonus)
+                || Math.abs(state.lastAppliedLifeForceBonus - observedLifeForceBonus) > 0.0001f;
+        if (lifeForceChangedSinceLastApply && state.settledHealthLevel == mobLevel) {
+            // If augment registration/passives became available after the initial health settle,
+            // force a one-pass recompute so scaled HP includes the latest LIFE_FORCE bonus.
+            state.settledHealthLevel = 0;
+            state.nextHealthApplyAttemptMillis = currentTimeMillis;
+        }
+
         if (state.settledHealthLevel != mobLevel) {
             boolean attemptedHealthApply = false;
             boolean healthApplied = false;
@@ -213,6 +231,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
                 if (healthApplied) {
                     state.settledHealthLevel = mobLevel;
                     state.nextHealthApplyAttemptMillis = currentTimeMillis;
+                    state.lastAppliedLifeForceBonus = observedLifeForceBonus;
                 } else {
                     state.nextHealthApplyAttemptMillis = currentTimeMillis + FLOW_HEALTH_RETRY_INTERVAL_MILLIS;
                 }
@@ -230,19 +249,6 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
                         state.settledHealthLevel,
                         Math.max(0L, state.nextHealthApplyAttemptMillis - currentTimeMillis));
                 state.lastHealthFlowLogMillis = currentTimeMillis;
-            }
-        }
-
-        if (!state.mobAugmentsInitialized) {
-            boolean registered = ensureMobAugmentsRegistered(ref, store, commandBuffer);
-            state.mobAugmentsInitialized = true;
-            if (isDebugSectionEnabled(DEBUG_SECTION_MOB_LEVEL_FLOW)) {
-                LOGGER.atInfo().log(
-                        "[MOB_LEVEL_FLOW] entity=%d uuidBacked=%s phase=augments level=%d registered=%s",
-                        ref.getIndex(),
-                        trackingIdentity.uuidBacked(),
-                        mobLevel,
-                        registered);
             }
         }
 
@@ -522,10 +528,20 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         statMap.removeModifier(healthIndex, MOB_HEALTH_SCALE_MODIFIER_KEY);
         statMap.removeModifier(healthIndex, MOB_AUGMENT_LIFE_FORCE_MODIFIER_KEY);
         EntityStatValue baselineHealth = statMap.get(healthIndex);
-        float baseMax = baselineHealth != null ? baselineHealth.getMax() : currentMax;
-        if (!Float.isFinite(baseMax) || baseMax <= 0.0f) {
-            baseMax = Math.max(1.0f, currentMax);
+        float baselineRead = baselineHealth != null ? baselineHealth.getMax() : currentMax;
+        if (!Float.isFinite(baselineRead) || baselineRead <= 0.0f) {
+            baselineRead = Math.max(1.0f, currentMax);
         }
+        // Anchor baseMax to the value captured on first application (before any augment percent-health
+        // passives have run). Augment passives such as goliath (+20%) and raid_boss (+50%) add their own
+        // modifier keys that we intentionally leave in the map so they remain effective. Without this
+        // anchor, those augment modifiers would be included in baseMax on every subsequent tick, causing
+        // the level-scaling multiplier to compound on an ever-growing base and produce billions of HP.
+        mobLevelingManager.cacheTrueBaseHealth(entityId, baselineRead);
+        Float cachedBase = mobLevelingManager.getTrueBaseHealth(entityId);
+        float baseMax = (cachedBase != null && Float.isFinite(cachedBase) && cachedBase > 0.0f)
+                ? cachedBase
+                : baselineRead;
 
         float lifeForceBonus = resolveMobLifeForceHealthBonus(ref, commandBuffer);
 
@@ -850,7 +866,15 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
                 || currentTimeMillis >= state.nextMobAugmentRegistrationCheckMillis) {
             boolean registeredNow = ensureMobAugmentsRegistered(ref, store, commandBuffer);
             if (registeredNow) {
+                state.mobAugmentsInitialized = true;
                 state.nextMobAugmentRegistrationCheckMillis = 0L;
+                if (isDebugSectionEnabled(DEBUG_SECTION_MOB_LEVEL_FLOW)) {
+                    LOGGER.atInfo().log(
+                            "[MOB_LEVEL_FLOW] entity=%d uuidBacked=%s phase=augments registered=%s",
+                            ref.getIndex(),
+                            trackingIdentity.uuidBacked(),
+                            true);
+                }
             } else {
                 state.nextMobAugmentRegistrationCheckMillis = currentTimeMillis + 3000L;
             }

@@ -54,6 +54,11 @@ public class MobLevelingManager {
     private final PlayerDataManager playerDataManager;
     private final Map<Long, Long> mobLevelDebugLogTimes = new ConcurrentHashMap<>();
     private final Map<Integer, MobHealthCompositionSnapshot> entityHealthCompositionSnapshots = new ConcurrentHashMap<>();
+    /** Anchors each mob's base health to the value captured on the very first applyHealthModifier
+     *  call, before any augment percent-health passives have run. Without this cache, augment passives
+     *  (e.g. goliath +20%, raid_boss +50%) compound with level scaling on every tick, producing
+     *  exponentially-growing HP values. putIfAbsent guarantees the true base is written only once. */
+    private final Map<Integer, Float> trueBaseHealthCache = new ConcurrentHashMap<>();
     private volatile boolean missingLevelSourceModeWarned;
 
     private final Map<String, AreaOverride> areaOverrides = new ConcurrentHashMap<>();
@@ -228,10 +233,12 @@ public class MobLevelingManager {
 
     public void forgetEntity(int entityIndex) {
         entityHealthCompositionSnapshots.remove(entityIndex);
+        trueBaseHealthCache.remove(entityIndex);
     }
 
     public void forgetEntity(Store<EntityStore> store, int entityIndex) {
         entityHealthCompositionSnapshots.remove(entityIndex);
+        trueBaseHealthCache.remove(entityIndex);
     }
 
     public void forgetEntityByKey(long entityKey) {
@@ -293,6 +300,25 @@ public class MobLevelingManager {
 
     public MobHealthCompositionSnapshot getEntityHealthCompositionSnapshot(int entityIndex) {
         return entityHealthCompositionSnapshots.get(entityIndex);
+    }
+
+    /**
+     * Anchors the true base (pre-augment) health for the given entity.
+     * Uses putIfAbsent so the value is captured exactly once — on the first health application,
+     * before any augment percent-health passives have modified the stat. This prevents the
+     * compounding of augment modifiers (goliath, raid_boss, etc.) with level scaling across ticks.
+     */
+    public void cacheTrueBaseHealth(int entityId, float trueBase) {
+        if (Float.isFinite(trueBase) && trueBase > 0.0f) {
+            trueBaseHealthCache.putIfAbsent(entityId, trueBase);
+        }
+    }
+
+    /**
+     * Returns the cached true base health for the given entity, or {@code null} if not yet cached.
+     */
+    public Float getTrueBaseHealth(int entityId) {
+        return trueBaseHealthCache.get(entityId);
     }
 
     public int resolveMobLevel(Ref<EntityStore> ref, CommandBuffer<EntityStore> commandBuffer) {
@@ -826,6 +852,7 @@ public class MobLevelingManager {
 
     public void clearAllEntityLevelOverrides() {
         entityHealthCompositionSnapshots.clear();
+        trueBaseHealthCache.clear();
     }
 
     private int resolveLevelByConfiguredSource(Ref<EntityStore> ref,
