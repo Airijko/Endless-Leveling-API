@@ -16,6 +16,7 @@ import com.airijko.endlessleveling.enums.ArchetypePassiveType;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.airijko.endlessleveling.classes.ClassManager;
 import com.airijko.endlessleveling.leveling.MobLevelingManager;
+import com.airijko.endlessleveling.managers.LoggingManager;
 import com.airijko.endlessleveling.passives.PassiveManager;
 import com.airijko.endlessleveling.passives.PassiveManager.PassiveRuntimeState;
 import com.airijko.endlessleveling.player.PlayerDataManager;
@@ -54,9 +55,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import javax.annotation.Nonnull;
 import java.util.HashMap;
-import java.util.Collection;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -69,7 +68,7 @@ public class PlayerCombatSystem extends DamageEventSystem {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
     private static final boolean PASSIVE_DEBUG = Boolean
-            .parseBoolean(System.getProperty("el.passive.debug", "true"));
+            .parseBoolean(System.getProperty("el.passive.debug", "false"));
         private static final String DEBUG_SECTION_MOB_AUGMENT_CHECK = "mob_augment_check";
     private static final String DEBUG_SECTION_MOB_COMMON_DEFENSE = "mob_common_defense";
     public static final MetaKey<Boolean> AUGMENT_DOT_DAMAGE = Damage.META_REGISTRY
@@ -835,60 +834,7 @@ public class PlayerCombatSystem extends DamageEventSystem {
     }
 
     private boolean isDebugSectionEnabled(String sectionKey) {
-        if (sectionKey == null || sectionKey.isBlank()) {
-            return false;
-        }
-        EndlessLeveling plugin = EndlessLeveling.getInstance();
-        if (plugin == null || plugin.getConfigManager() == null) {
-            return false;
-        }
-
-        Object raw = plugin.getConfigManager().get("logging.debug_sections", List.of(), false);
-        if (raw == null) {
-            raw = List.of();
-        }
-
-        Collection<?> sections = null;
-        if (raw instanceof Collection<?> collection) {
-            sections = collection;
-        } else if (raw instanceof String str) {
-            String trimmed = str.trim();
-            if (!trimmed.isEmpty()) {
-                sections = List.of(trimmed.split(","));
-            }
-        }
-
-        if (sections == null || sections.isEmpty()) {
-            raw = plugin.getConfigManager().get("debug_sections", List.of(), false);
-            if (raw instanceof Collection<?> collection) {
-                sections = collection;
-            } else if (raw instanceof String str) {
-                String trimmed = str.trim();
-                if (!trimmed.isEmpty()) {
-                    sections = List.of(trimmed.split(","));
-                }
-            }
-        }
-
-        if (sections == null || sections.isEmpty()) {
-            return false;
-        }
-
-        String normalizedKey = sectionKey.trim().toLowerCase(Locale.ROOT);
-        String systemsKey = "systems." + normalizedKey;
-        String fqSystemsKey = "com.airijko.endlessleveling.systems." + normalizedKey;
-        for (Object section : sections) {
-            if (section == null) {
-                continue;
-            }
-            String normalizedSection = String.valueOf(section).trim().toLowerCase(Locale.ROOT);
-            if (normalizedSection.equals(normalizedKey)
-                    || normalizedSection.equals(systemsKey)
-                    || normalizedSection.equals(fqSystemsKey)) {
-                return true;
-            }
-        }
-        return false;
+        return LoggingManager.isDebugSectionEnabled(sectionKey);
     }
 
     private boolean shouldEmitCooldownLog(Map<Integer, Long> logTimes,

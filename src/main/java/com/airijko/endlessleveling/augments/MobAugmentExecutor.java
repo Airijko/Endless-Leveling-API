@@ -1,7 +1,7 @@
 package com.airijko.endlessleveling.augments;
 
-import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
+import com.airijko.endlessleveling.managers.LoggingManager;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.logger.HytaleLogger;
@@ -10,7 +10,6 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.airijko.endlessleveling.augments.types.DeathBombAugment;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -57,42 +56,11 @@ public final class MobAugmentExecutor {
         if (now < debugCacheExpiresAt) {
             return debugEnabled;
         }
-        debugEnabled = checkDebugSectionEnabled(DEBUG_SECTION);
+        debugEnabled = LoggingManager.isDebugSectionEnabled(DEBUG_SECTION);
         debugCacheExpiresAt = now + DEBUG_CACHE_TTL_MS;
         return debugEnabled;
     }
 
-    private static boolean checkDebugSectionEnabled(String sectionKey) {
-        EndlessLeveling plugin = EndlessLeveling.getInstance();
-        if (plugin == null || plugin.getConfigManager() == null) {
-            return false;
-        }
-        Object raw = plugin.getConfigManager().get("logging.debug_sections", List.of(), false);
-        if (raw == null) {
-            raw = plugin.getConfigManager().get("debug_sections", List.of(), false);
-        }
-        Collection<?> sections = null;
-        if (raw instanceof Collection<?> col) {
-            sections = col;
-        } else if (raw instanceof String str) {
-            String trimmed = str.trim();
-            if (!trimmed.isEmpty()) {
-                sections = List.of(trimmed.split(","));
-            }
-        }
-        if (sections == null || sections.isEmpty()) {
-            return false;
-        }
-        String key = sectionKey.trim().toLowerCase(Locale.ROOT);
-        for (Object section : sections) {
-            if (section == null) continue;
-            String s = String.valueOf(section).trim().toLowerCase(Locale.ROOT);
-            if (s.equals(key) || s.equals("all")) {
-                return true;
-            }
-        }
-        return false;
-    }
 
     /**
      * Register augments for a mob entity.
@@ -250,13 +218,6 @@ public final class MobAugmentExecutor {
                         float beforeDamage = context.getDamage();
                         double beforeTrueDamage = context.getTrueDamageBonus();
                         onMiss.onMiss(context);
-                        logCategoryExecution(CATEGORY_ON_MISS,
-                                entityId,
-                                augment,
-                                beforeDamage,
-                                context.getDamage(),
-                                beforeTrueDamage,
-                                context.getTrueDamageBonus());
                     } catch (Exception e) {
                         LOGGER.atSevere().withCause(e)
                                 .log("[AUGMENT] Error executing OnMiss %s for mob %s: %s", augment.getId(),
@@ -274,13 +235,6 @@ public final class MobAugmentExecutor {
                     double beforeTrueDamage = context.getTrueDamageBonus();
                     float updated = onHit.onHit(context);
                     context.setDamage(updated);
-                    logCategoryExecution(CATEGORY_ON_HIT,
-                            entityId,
-                            augment,
-                            beforeDamage,
-                            context.getDamage(),
-                            beforeTrueDamage,
-                            context.getTrueDamageBonus());
                 } catch (Exception e) {
                     LOGGER.atSevere().withCause(e)
                             .log("[AUGMENT] Error executing OnHit %s for mob %s: %s", augment.getId(),
@@ -292,13 +246,6 @@ public final class MobAugmentExecutor {
                     float beforeDamage = context.getDamage();
                     double beforeTrueDamage = context.getTrueDamageBonus();
                     onCrit.onCrit(context);
-                    logCategoryExecution(CATEGORY_ON_CRIT,
-                            entityId,
-                            augment,
-                            beforeDamage,
-                            context.getDamage(),
-                            beforeTrueDamage,
-                            context.getTrueDamageBonus());
                 } catch (Exception e) {
                     LOGGER.atSevere().withCause(e)
                             .log("[AUGMENT] Error executing OnCrit %s for mob %s: %s", augment.getId(),
@@ -311,13 +258,6 @@ public final class MobAugmentExecutor {
                     double beforeTrueDamage = context.getTrueDamageBonus();
                     float updated = onTargetCondition.onTargetCondition(context);
                     context.setDamage(updated);
-                    logCategoryExecution(CATEGORY_ON_TARGET_CONDITION,
-                            entityId,
-                            augment,
-                            beforeDamage,
-                            context.getDamage(),
-                            beforeTrueDamage,
-                            context.getTrueDamageBonus());
                 } catch (Exception e) {
                     LOGGER.atSevere().withCause(e)
                             .log("[AUGMENT] Error executing OnTargetCondition %s for mob %s: %s",
@@ -368,13 +308,6 @@ public final class MobAugmentExecutor {
                 float result = lowHpHandler.onLowHp(context);
                 context.setIncomingDamage(result);
                 damage = result;
-                logCategoryExecution(CATEGORY_ON_LOW_HP,
-                        entityId,
-                        augment,
-                        beforeDamage,
-                        result,
-                        0.0D,
-                        0.0D);
 
                 if (result <= 0f) {
                     if (isDebugEnabled()) {
@@ -422,7 +355,6 @@ public final class MobAugmentExecutor {
             if (augment instanceof AugmentHooks.OnKillAugment onKill) {
                 try {
                     onKill.onKill(context);
-                    logCategoryExecution(CATEGORY_ON_KILL, entityId, augment);
                 } catch (Exception e) {
                     LOGGER.atSevere().withCause(e)
                             .log("[AUGMENT] Error executing OnKill %s for mob %s: %s", augment.getId(),
@@ -470,13 +402,6 @@ public final class MobAugmentExecutor {
                     float result = handler.onDamageTaken(context);
                     context.setIncomingDamage(result);
                     damage = result;
-                    logCategoryExecution(CATEGORY_ON_DAMAGE_TAKEN,
-                            entityId,
-                            augment,
-                            beforeDamage,
-                            result,
-                            0.0D,
-                            0.0D);
 
                     if (result != incomingDamage && isDebugEnabled()) {
                         LOGGER.atInfo().log("[AUGMENT] Mob %s %s modified damage from %.3f to %.3f",
@@ -572,7 +497,6 @@ public final class MobAugmentExecutor {
                             statMap,
                             deltaSeconds);
                     passive.applyPassive(context);
-                    logCategoryExecution(CATEGORY_PASSIVE_STAT, entityId, augment);
                 } catch (Exception e) {
                     LOGGER.atSevere().withCause(e)
                             .log("[AUGMENT] Error executing Passive %s for mob %s: %s", augment.getId(),
@@ -580,32 +504,6 @@ public final class MobAugmentExecutor {
                 }
             }
         }
-    }
-
-    private void logCategoryExecution(String category, UUID entityId, Augment augment) {
-        LOGGER.atFine().log("[MOB_AUGMENT_CATEGORY] mob=%s category=%s augment=%s",
-                entityId,
-                category,
-                augment != null ? augment.getId() : "unknown");
-    }
-
-    private void logCategoryExecution(
-            String category,
-            UUID entityId,
-            Augment augment,
-            float beforeDamage,
-            float afterDamage,
-            double beforeTrueDamage,
-            double afterTrueDamage) {
-        LOGGER.atFine().log(
-                "[MOB_AUGMENT_CATEGORY] mob=%s category=%s augment=%s damage=%.3f->%.3f true=%.3f->%.3f",
-                entityId,
-                category,
-                augment != null ? augment.getId() : "unknown",
-                beforeDamage,
-                afterDamage,
-                beforeTrueDamage,
-                afterTrueDamage);
     }
 
     private String summarizeCategories(List<Augment> augments) {

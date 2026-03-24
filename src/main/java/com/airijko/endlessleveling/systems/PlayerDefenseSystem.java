@@ -10,6 +10,7 @@ import com.airijko.endlessleveling.combat.CombatHookProcessor;
 import com.airijko.endlessleveling.player.PlayerData;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.airijko.endlessleveling.leveling.MobLevelingManager;
+import com.airijko.endlessleveling.managers.LoggingManager;
 import com.airijko.endlessleveling.passives.PassiveManager;
 import com.airijko.endlessleveling.passives.PassiveManager.PassiveRuntimeState;
 import com.airijko.endlessleveling.player.PlayerDataManager;
@@ -46,8 +47,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.Collection;
-import java.util.Locale;
 import javax.annotation.Nonnull;
 
 /**
@@ -438,60 +437,7 @@ public class PlayerDefenseSystem extends DamageEventSystem {
 	}
 
 	private boolean isDebugSectionEnabled(String sectionKey) {
-		if (sectionKey == null || sectionKey.isBlank()) {
-			return false;
-		}
-		EndlessLeveling plugin = EndlessLeveling.getInstance();
-		if (plugin == null || plugin.getConfigManager() == null) {
-			return false;
-		}
-
-		Object raw = plugin.getConfigManager().get("logging.debug_sections", List.of(), false);
-		if (raw == null) {
-			raw = List.of();
-		}
-
-		Collection<?> sections = null;
-		if (raw instanceof Collection<?> collection) {
-			sections = collection;
-		} else if (raw instanceof String str) {
-			String trimmed = str.trim();
-			if (!trimmed.isEmpty()) {
-				sections = List.of(trimmed.split(","));
-			}
-		}
-
-		if (sections == null || sections.isEmpty()) {
-			raw = plugin.getConfigManager().get("debug_sections", List.of(), false);
-			if (raw instanceof Collection<?> collection) {
-				sections = collection;
-			} else if (raw instanceof String str) {
-				String trimmed = str.trim();
-				if (!trimmed.isEmpty()) {
-					sections = List.of(trimmed.split(","));
-				}
-			}
-		}
-
-		if (sections == null || sections.isEmpty()) {
-			return false;
-		}
-
-		String normalizedKey = sectionKey.trim().toLowerCase(Locale.ROOT);
-		String systemsKey = ("systems." + normalizedKey);
-		String fqSystemsKey = ("com.airijko.endlessleveling.systems." + normalizedKey);
-		for (Object section : sections) {
-			if (section == null) {
-				continue;
-			}
-			String normalizedSection = String.valueOf(section).trim().toLowerCase(Locale.ROOT);
-			if (normalizedSection.equals(normalizedKey)
-					|| normalizedSection.equals(systemsKey)
-					|| normalizedSection.equals(fqSystemsKey)) {
-				return true;
-			}
-		}
-		return false;
+		return LoggingManager.isDebugSectionEnabled(sectionKey);
 	}
 
 	private boolean shouldEmitCooldownLog(Map<Integer, Long> logTimes,

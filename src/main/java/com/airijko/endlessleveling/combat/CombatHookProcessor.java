@@ -61,7 +61,7 @@ public final class CombatHookProcessor {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
     private static final boolean PASSIVE_DEBUG = Boolean
-            .parseBoolean(System.getProperty("el.passive.debug", "true"));
+            .parseBoolean(System.getProperty("el.passive.debug", "false"));
 
     private final SkillManager skillManager;
     private final PassiveManager passiveManager;

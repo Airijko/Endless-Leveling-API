@@ -153,5 +153,7 @@ enable_logging: false # Master toggle: true enables ALL mod logs (debug + info +
 logging:
   base_level: WARNING # When enable_logging is false, base level is clamped to WARNING/SEVERE (INFO suppressed unless enable_logging is true or a debug section is enabled).
   debug_sections: []
-  # [mob_level_debug, mob_level_flow, mob_common_offense, mob_common_defense, mob_augment_check] # mob_augment_check logs only when the player hits a mob.
+  # Available sections: mob_level_debug, mob_level_flow, mob_common_offense, mob_common_defense, mob_augment_check, mob_augments
+  # -- mob_augment_check logs only when the player hits a mob
+  # -- mob_augments logs mob augment registration and damage modification
   # [leveling.XpEventSystem, leveling.PartyManager, mob_level_debug, mob_level_flow]

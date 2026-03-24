@@ -5,6 +5,7 @@ import com.airijko.endlessleveling.augments.MobAugmentExecutor;
 import com.airijko.endlessleveling.compatibility.NameplateBuilderCompatibility;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.airijko.endlessleveling.leveling.MobLevelingManager;
+import com.airijko.endlessleveling.managers.LoggingManager;
 import com.airijko.endlessleveling.passives.type.ArmyOfTheDeadPassive;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
@@ -34,10 +35,8 @@ import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -1087,50 +1086,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
     }
 
     private boolean isDebugSectionEnabled(String sectionKey) {
-        if (sectionKey == null || sectionKey.isBlank()) {
-            return false;
-        }
-        EndlessLeveling plugin = EndlessLeveling.getInstance();
-        if (plugin == null || plugin.getConfigManager() == null) {
-            return false;
-        }
-
-        Object raw = plugin.getConfigManager().get("logging.debug_sections", List.of(), false);
-        if (raw == null) {
-            raw = plugin.getConfigManager().get("debug_sections", List.of(), false);
-        }
-
-        Collection<?> sections = null;
-        if (raw instanceof Collection<?> collection) {
-            sections = collection;
-        } else if (raw instanceof String str) {
-            String trimmed = str.trim();
-            if (!trimmed.isEmpty()) {
-                sections = List.of(trimmed.split(","));
-            }
-        }
-
-        if (sections == null || sections.isEmpty()) {
-            return false;
-        }
-
-        String normalizedKey = sectionKey.trim().toLowerCase(Locale.ROOT);
-        String mobKey = "mob." + normalizedKey;
-        String fqMobKey = "com.airijko.endlessleveling.mob." + normalizedKey;
-        for (Object section : sections) {
-            if (section == null) {
-                continue;
-            }
-            String normalizedSection = String.valueOf(section).trim().toLowerCase(Locale.ROOT);
-            if (normalizedSection.equals(normalizedKey)
-                    || normalizedSection.equals(mobKey)
-                    || normalizedSection.equals(fqMobKey)
-                    || normalizedSection.equals("mob.moblevelingsystem")
-                    || normalizedSection.equals("com.airijko.endlessleveling.mob.moblevelingsystem")) {
-                return true;
-            }
-        }
-        return false;
+        return LoggingManager.isDebugSectionEnabled(sectionKey);
     }
 
     private record PlayerChunkViewport(int chunkX, int chunkZ, int radiusChunks) {

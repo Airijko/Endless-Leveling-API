@@ -25,6 +25,15 @@ events:
         repeat_access_prestiges: true
         commands:
           - "say {player_name} reached level {level}!"
+          - "give {player_name} mj_portalkey_d01"
+      "*/20":
+        repeat_access_prestiges: true
+        commands:
+          - "give {player_name} mj_portalkey_d02"
+      "*/30":
+        repeat_access_prestiges: true
+        commands:
+          - "give {player_name} mj_portalkey_d03"
       "[10]":
         repeat_access_prestiges: false
         commands:

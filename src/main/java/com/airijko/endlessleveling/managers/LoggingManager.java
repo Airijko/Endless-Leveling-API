@@ -113,6 +113,39 @@ public final class LoggingManager {
         return enableAll;
     }
 
+    /**
+     * Returns true if INFO-level logs should execute — i.e. {@code enable_logging=true}.
+     * Use this as a fast gate before any LOGGER.atInfo() call that is not already
+     * behind a debug-section check, to prevent argument evaluation overhead.
+     */
+    public static boolean isInfoEnabled() {
+        return enableAll;
+    }
+
+    /**
+     * Returns true if the given short debug-section name (e.g. "mob_level_flow",
+     * "mob_augments") is active — either because {@code enable_logging=true} or
+     * because it appears in {@code logging.debug_sections}.
+     * <p>
+     * Delegates to the same normalization used when applying log levels, ensuring
+     * config.yml section names resolve consistently across all callers.
+     */
+    public static boolean isDebugSectionEnabled(String shortKey) {
+        if (enableAll) {
+            return true;
+        }
+        if (debugSections.isEmpty() || shortKey == null || shortKey.isBlank()) {
+            return false;
+        }
+        String normalized = normalizeSection(shortKey);
+        if (normalized == null) {
+            return false;
+        }
+        // Re-use resolveLevel: if the normalized class name resolves to Level.ALL the
+        // section is active.
+        return resolveLevel(normalized) == Level.ALL;
+    }
+
     private static Collection<String> normalizeSections(Collection<String> rawSections) {
         if (rawSections == null || rawSections.isEmpty()) {
             return Collections.emptySet();
@@ -150,6 +183,9 @@ public final class LoggingManager {
         }
         if ("mob_level_flow".equals(lowered)) {
             return LOGGER_PREFIX + ".mob.MobLevelingSystem";
+        }
+        if ("mob_augments".equals(lowered)) {
+            return LOGGER_PREFIX + ".augments.MobAugmentExecutor";
         }
         // Allow shorthand like "augments" or ".systems"; fall back to full package if
         // provided.

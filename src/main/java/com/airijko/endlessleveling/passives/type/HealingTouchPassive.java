@@ -28,7 +28,7 @@ public final class HealingTouchPassive {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
     private static final boolean PASSIVE_DEBUG = Boolean
-            .parseBoolean(System.getProperty("el.passive.debug", "true"));
+            .parseBoolean(System.getProperty("el.passive.debug", "false"));
 
     private static final double DEFAULT_TRIGGER_CHANCE = 1.0D;
     private static final SkillAttributeType DEFAULT_SOURCE_ATTRIBUTE = SkillAttributeType.STAMINA;
