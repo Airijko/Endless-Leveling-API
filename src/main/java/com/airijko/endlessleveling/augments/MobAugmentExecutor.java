@@ -1,5 +1,6 @@
 package com.airijko.endlessleveling.augments;
 
+import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
@@ -9,6 +10,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.airijko.endlessleveling.augments.types.DeathBombAugment;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -37,7 +39,59 @@ public final class MobAugmentExecutor {
     private static final String CATEGORY_ON_KILL = "ON_KILL";
     private static final String CATEGORY_PASSIVE_STAT = "PASSIVE_STAT";
 
+    // Debug-section name recognized by config.yml logging.debug_sections
+    private static final String DEBUG_SECTION = "mob_augments";
+    private static final long DEBUG_CACHE_TTL_MS = 5000L;
+    private volatile boolean debugEnabled = false;
+    private volatile long debugCacheExpiresAt = 0L;
+
     public MobAugmentExecutor() {
+    }
+
+    /**
+     * Returns true when the 'mob_augments' debug section is enabled in config.yml.
+     * Result is cached for {@value DEBUG_CACHE_TTL_MS}ms to keep per-hit overhead negligible.
+     */
+    private boolean isDebugEnabled() {
+        long now = System.currentTimeMillis();
+        if (now < debugCacheExpiresAt) {
+            return debugEnabled;
+        }
+        debugEnabled = checkDebugSectionEnabled(DEBUG_SECTION);
+        debugCacheExpiresAt = now + DEBUG_CACHE_TTL_MS;
+        return debugEnabled;
+    }
+
+    private static boolean checkDebugSectionEnabled(String sectionKey) {
+        EndlessLeveling plugin = EndlessLeveling.getInstance();
+        if (plugin == null || plugin.getConfigManager() == null) {
+            return false;
+        }
+        Object raw = plugin.getConfigManager().get("logging.debug_sections", List.of(), false);
+        if (raw == null) {
+            raw = plugin.getConfigManager().get("debug_sections", List.of(), false);
+        }
+        Collection<?> sections = null;
+        if (raw instanceof Collection<?> col) {
+            sections = col;
+        } else if (raw instanceof String str) {
+            String trimmed = str.trim();
+            if (!trimmed.isEmpty()) {
+                sections = List.of(trimmed.split(","));
+            }
+        }
+        if (sections == null || sections.isEmpty()) {
+            return false;
+        }
+        String key = sectionKey.trim().toLowerCase(Locale.ROOT);
+        for (Object section : sections) {
+            if (section == null) continue;
+            String s = String.valueOf(section).trim().toLowerCase(Locale.ROOT);
+            if (s.equals(key) || s.equals("all")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -78,12 +132,14 @@ public final class MobAugmentExecutor {
             // Create a runtime state for the mob using its UUID
             var runtimeState = runtimeManager.getRuntimeState(entityId);
             mobAugments.put(entityId, new MobAugmentInstance(augments, appliedAugmentIds, runtimeState));
-            LOGGER.atInfo().log("[MOB_OVERRIDE_AUGMENTS] Bound %d augments to mob %s: %s",
-                    augments.size(), entityId, formatAugmentBindSummary(appliedAugmentIds));
-            LOGGER.atInfo().log("[MOB_OVERRIDE_AUGMENTS][RAW] mob=%s ids=%s",
-                    entityId, appliedAugmentIds);
-            LOGGER.atInfo().log("[MOB_AUGMENT_CATEGORIES] mob=%s categories=%s",
-                    entityId, summarizeCategories(augments));
+            if (isDebugEnabled()) {
+                LOGGER.atInfo().log("[MOB_OVERRIDE_AUGMENTS] Bound %d augments to mob %s: %s",
+                        augments.size(), entityId, formatAugmentBindSummary(appliedAugmentIds));
+                LOGGER.atInfo().log("[MOB_OVERRIDE_AUGMENTS][RAW] mob=%s ids=%s",
+                        entityId, appliedAugmentIds);
+                LOGGER.atInfo().log("[MOB_AUGMENT_CATEGORIES] mob=%s categories=%s",
+                        entityId, summarizeCategories(augments));
+            }
         }
     }
 
@@ -321,10 +377,12 @@ public final class MobAugmentExecutor {
                         0.0D);
 
                 if (result <= 0f) {
-                    LOGGER.atInfo().log("[AUGMENT] Mob %s %s activated! Blocked damage.", entityId,
-                            augment.getId());
+                    if (isDebugEnabled()) {
+                        LOGGER.atInfo().log("[AUGMENT] Mob %s %s activated! Blocked damage.", entityId,
+                                augment.getId());
+                    }
                     return 0f;
-                } else if (result != incomingDamage) {
+                } else if (result != incomingDamage && isDebugEnabled()) {
                     LOGGER.atInfo().log("[AUGMENT] Mob %s %s reduced damage from %.3f to %.3f",
                             entityId, augment.getId(), incomingDamage, result);
                 }
@@ -420,7 +478,7 @@ public final class MobAugmentExecutor {
                             0.0D,
                             0.0D);
 
-                    if (result != incomingDamage) {
+                    if (result != incomingDamage && isDebugEnabled()) {
                         LOGGER.atInfo().log("[AUGMENT] Mob %s %s modified damage from %.3f to %.3f",
                                 entityId, augment.getId(), incomingDamage, result);
                     }
@@ -493,6 +551,11 @@ public final class MobAugmentExecutor {
         for (int augmentIndex = 0; augmentIndex < instance.augments.size(); augmentIndex++) {
             Augment augment = instance.augments.get(augmentIndex);
             if (augment instanceof AugmentHooks.PassiveStatAugment passive) {
+                // Skip augments whose entire passive effect is player-facing (HUD, movement
+                // packets, chat) — no-op for mobs and wastes context allocation overhead.
+                if (passive.requiresPlayer()) {
+                    continue;
+                }
                 try {
                 String originalAugmentId = (instance.appliedAugmentIds != null
                     && augmentIndex >= 0

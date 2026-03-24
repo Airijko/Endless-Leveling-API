@@ -52,7 +52,7 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
     private static final boolean PASSIVE_DEBUG = Boolean
-            .parseBoolean(System.getProperty("el.passive.debug", "true"));
+            .parseBoolean(System.getProperty("el.passive.debug", "false"));
     private static final long HEALTH_REGEN_COOLDOWN_MS = TimeUnit.SECONDS.toMillis(10);
     public static final double RESOURCE_REGEN_DIVISOR = 5.0D;
     private static final Query<EntityStore> PLAYER_QUERY = Query.any();

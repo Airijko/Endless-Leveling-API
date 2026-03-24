@@ -125,6 +125,11 @@ public final class FleetFootworkAugment extends Augment
     }
 
     @Override
+    public boolean requiresPlayer() {
+        return true;
+    }
+
+    @Override
     public void applyPassive(AugmentHooks.PassiveStatContext context) {
         if (context == null || context.getRuntimeState() == null || context.getCommandBuffer() == null
                 || context.getPlayerRef() == null) {

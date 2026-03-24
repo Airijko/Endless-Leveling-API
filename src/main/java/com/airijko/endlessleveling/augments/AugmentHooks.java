@@ -18,6 +18,16 @@ public interface AugmentHooks {
 
     interface PassiveStatAugment {
         void applyPassive(@Nonnull PassiveStatContext context);
+
+        /**
+         * Returns true if this passive has no meaningful effect on mobs — i.e. it only
+         * performs player-facing work (HUD updates, movement packets, chat notifications).
+         * MobAugmentExecutor skips the passive tick entirely for these augments, avoiding
+         * the overhead of a context allocation and method call that would immediately return.
+         */
+        default boolean requiresPlayer() {
+            return false;
+        }
     }
 
     interface OnHitAugment {

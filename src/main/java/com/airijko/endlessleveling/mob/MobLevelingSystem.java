@@ -73,6 +73,9 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
     private long systemTimeMillis = 0L;
     private final Map<Long, EntityRuntimeState> entityStates = new ConcurrentHashMap<>();
     private final Map<Integer, Long> summonHealthAnomalyLogTimes = new ConcurrentHashMap<>();
+    // Cached once per tick to avoid per-entity config lookups, string splitting, and collection iteration.
+    private boolean cachedDebugMobLevelFlow = false;
+    private boolean cachedDebugMobCommonDefense = false;
 
     public MobLevelingSystem() {
         super(SYSTEM_INTERVAL_SECONDS);
@@ -100,6 +103,9 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
 
         if (mobLevelingManager == null || !mobLevelingManager.isMobLevelingEnabled())
             return;
+
+        cachedDebugMobLevelFlow = isDebugSectionEnabled(DEBUG_SECTION_MOB_LEVEL_FLOW);
+        cachedDebugMobCommonDefense = isDebugSectionEnabled(DEBUG_SECTION_MOB_COMMON_DEFENSE);
 
         boolean showMobLevelUi = mobLevelingManager.shouldRenderMobNameplate();
         boolean showLevelInNameplate = mobLevelingManager.shouldShowMobNameplateLevel();
@@ -280,7 +286,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
                 }
             }
 
-            if (isDebugSectionEnabled(DEBUG_SECTION_MOB_LEVEL_FLOW)
+            if (cachedDebugMobLevelFlow
                     && (healthApplied || (attemptedHealthApply
                             && currentTimeMillis - state.lastHealthFlowLogMillis >= FLOW_HEALTH_LOG_COOLDOWN_MILLIS))) {
                 LOGGER.atInfo().log(
@@ -331,7 +337,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
                 state.lastAppliedShowHealthInNameplate = showHealthInNameplate;
                 state.lastNameplateHealthValue = hasFiniteHealthForNameplate ? currentHpForNameplate : Float.NaN;
                 state.lastNameplateMaxHealthValue = hasFiniteHealthForNameplate ? currentMaxHpForNameplate : Float.NaN;
-                if (isDebugSectionEnabled(DEBUG_SECTION_MOB_LEVEL_FLOW)) {
+                if (cachedDebugMobLevelFlow) {
                     LOGGER.atInfo().log(
                             "[MOB_LEVEL_FLOW] entity=%d uuidBacked=%s phase=nameplate level=%d applied=%s hp=%.3f max=%.3f refreshedByHealthChange=%s finiteHealth=%s",
                             ref.getIndex(),
@@ -348,7 +354,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
             clearTrackedNameplateIfNeeded(ref, commandBuffer, state);
         }
 
-        if (isDebugSectionEnabled(DEBUG_SECTION_MOB_LEVEL_FLOW) && !state.flowInitializedLogged) {
+        if (cachedDebugMobLevelFlow && !state.flowInitializedLogged) {
             state.flowInitializedLogged = true;
             LOGGER.atInfo().log(
                     "[MOB_LEVEL_FLOW] entity=%d uuidBacked=%s initialized=true level=%d",
@@ -554,7 +560,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
                         lifeForceBonus,
                         restoredHealth.getMax());
                 }
-                if (isDebugSectionEnabled(DEBUG_SECTION_MOB_COMMON_DEFENSE)) {
+                if (cachedDebugMobCommonDefense) {
                     LOGGER.atInfo().log(
                             "[MOB_COMMON_DEFENSE][HEALTH_AUDIT] entity=%d level=%d scalingEnabled=false baseMax=%.3f scaledMax=%.3f lifeForceBonus=%.3f expectedCombinedMax=%.3f current=%.3f actualMax=%.3f",
                             entityId,
@@ -634,17 +640,19 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
                     lifeForceBonus,
                     updatedHealth.getMax());
             }
-            LOGGER.atInfo().log(
-                    "[MOB_HEALTH_LAYER_DEBUG] entity=%d level=%d baseMax=%.3f scaledMax=%.3f lifeForceBonus=%.3f finalMax=%.3f current=%.3f ratio=%.4f",
-                    entityId,
-                    appliedLevel,
-                    baseMax,
-                    targetMax,
-                    lifeForceBonus,
-                    updatedHealth.getMax(),
-                    updatedHealth.get(),
-                    ratio);
-            if (isDebugSectionEnabled(DEBUG_SECTION_MOB_COMMON_DEFENSE)) {
+            if (cachedDebugMobCommonDefense) {
+                LOGGER.atInfo().log(
+                        "[MOB_HEALTH_LAYER_DEBUG] entity=%d level=%d baseMax=%.3f scaledMax=%.3f lifeForceBonus=%.3f finalMax=%.3f current=%.3f ratio=%.4f",
+                        entityId,
+                        appliedLevel,
+                        baseMax,
+                        targetMax,
+                        lifeForceBonus,
+                        updatedHealth.getMax(),
+                        updatedHealth.get(),
+                        ratio);
+            }
+            if (cachedDebugMobCommonDefense) {
                 LOGGER.atInfo().log(
                         "[MOB_COMMON_DEFENSE][HEALTH_AUDIT] entity=%d level=%d scalingEnabled=true baseMax=%.3f scaledMax=%.3f lifeForceBonus=%.3f expectedCombinedMax=%.3f current=%.3f actualMax=%.3f",
                         entityId,
@@ -834,7 +842,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
                     state.augmentHealthReconcilePending = true;
                 }
                 state.nextMobAugmentRegistrationCheckMillis = 0L;
-                if (isDebugSectionEnabled(DEBUG_SECTION_MOB_LEVEL_FLOW)) {
+                if (cachedDebugMobLevelFlow) {
                     LOGGER.atInfo().log(
                             "[MOB_LEVEL_FLOW] entity=%d uuidBacked=%s phase=augments registered=%s",
                             ref.getIndex(),
