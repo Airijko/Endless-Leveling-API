@@ -3,6 +3,7 @@ package com.airijko.endlessleveling.systems;
 import com.airijko.endlessleveling.player.PlayerData;
 import com.airijko.endlessleveling.player.PlayerDataManager;
 import com.airijko.endlessleveling.player.SkillManager;
+import com.airijko.endlessleveling.util.PlayerStoreSelector;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
@@ -78,6 +79,12 @@ public class PlayerRaceStatSystem extends TickingSystem<EntityStore> {
         }
         elapsedSinceRetryPass = 0.0f;
 
+        Map<Integer, PlayerRef> playersByEntityIndex = PlayerStoreSelector.snapshotPlayersByEntityIndex(store);
+        if (playersByEntityIndex.isEmpty()) {
+            pendingAttempts.clear();
+            return;
+        }
+
         Set<UUID> processed = new HashSet<>();
         store.forEachChunk(PLAYER_QUERY, (ArchetypeChunk<EntityStore> chunk,
                 CommandBuffer<EntityStore> commandBuffer) -> {
@@ -87,7 +94,7 @@ public class PlayerRaceStatSystem extends TickingSystem<EntityStore> {
                     continue;
                 }
 
-                PlayerRef playerRef = commandBuffer.getComponent(ref, PlayerRef.getComponentType());
+                PlayerRef playerRef = playersByEntityIndex.get(ref.getIndex());
                 if (playerRef == null || !playerRef.isValid()) {
                     continue;
                 }

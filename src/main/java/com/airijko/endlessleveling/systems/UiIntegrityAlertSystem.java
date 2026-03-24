@@ -1,6 +1,7 @@
 package com.airijko.endlessleveling.systems;
 
 import com.airijko.endlessleveling.security.UiTitleIntegrityGuard;
+import com.airijko.endlessleveling.util.PlayerStoreSelector;
 import com.airijko.endlessleveling.util.OperatorHelper;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
@@ -92,6 +93,11 @@ public final class UiIntegrityAlertSystem extends TickingSystem<EntityStore> {
         }
 
         Set<UUID> onlinePlayers = new HashSet<>();
+        Map<Integer, PlayerRef> playersByEntityIndex = PlayerStoreSelector.snapshotPlayersByEntityIndex(store);
+        if (playersByEntityIndex.isEmpty()) {
+            nextAlertAtByPlayer.clear();
+            return;
+        }
 
         store.forEachChunk(PLAYER_QUERY, (ArchetypeChunk<EntityStore> chunk,
                 CommandBuffer<EntityStore> commandBuffer) -> {
@@ -101,7 +107,7 @@ public final class UiIntegrityAlertSystem extends TickingSystem<EntityStore> {
                     continue;
                 }
 
-                PlayerRef playerRef = commandBuffer.getComponent(ref, PlayerRef.getComponentType());
+                PlayerRef playerRef = playersByEntityIndex.get(ref.getIndex());
                 if (playerRef == null || !playerRef.isValid()) {
                     continue;
                 }

@@ -25,7 +25,7 @@ public final class MobAugmentDiagnostics {
             PRECISION_STAT_KEY,
             FEROCITY_STAT_KEY,
             STRENGTH_STAT_KEY,
-            STAMINA_STAT_KEY);
+            SORCERY_STAT_KEY);
     private static final List<String> OFFENSE_COMMON_STAT_KEYS = List.of(
             FEROCITY_STAT_KEY,
             PRECISION_STAT_KEY,

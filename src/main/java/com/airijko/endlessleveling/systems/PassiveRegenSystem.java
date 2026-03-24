@@ -24,6 +24,7 @@ import com.airijko.endlessleveling.passives.type.HealingAuraPassive;
 import com.airijko.endlessleveling.passives.type.ShieldingAuraPassive;
 import com.airijko.endlessleveling.passives.type.SecondWindPassive;
 import com.airijko.endlessleveling.util.ChatMessageTemplate;
+import com.airijko.endlessleveling.util.PlayerStoreSelector;
 import com.airijko.endlessleveling.util.PlayerChatNotifier;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
@@ -39,6 +40,7 @@ import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue;
 import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import java.util.Map;
 import com.hypixel.hytale.server.core.util.NotificationUtil;
 import com.hypixel.hytale.protocol.ItemWithAllMetadata;
 import java.util.concurrent.TimeUnit;
@@ -84,11 +86,21 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
             return;
         }
 
+        long nowMillis = System.currentTimeMillis();
+        Map<Integer, PlayerRef> playersByEntityIndex = PlayerStoreSelector.snapshotPlayersByEntityIndex(store);
+        if (playersByEntityIndex.isEmpty()) {
+            return;
+        }
+
         store.forEachChunk(PLAYER_QUERY,
                 (ArchetypeChunk<EntityStore> chunk, CommandBuffer<EntityStore> commandBuffer) -> {
                     for (int i = 0; i < chunk.size(); i++) {
                         Ref<EntityStore> ref = chunk.getReferenceTo(i);
-                        PlayerRef playerRef = commandBuffer.getComponent(ref, PlayerRef.getComponentType());
+                        if (ref == null) {
+                            continue;
+                        }
+
+                        PlayerRef playerRef = playersByEntityIndex.get(ref.getIndex());
                         if (playerRef == null || !playerRef.isValid()) {
                             continue;
                         }
@@ -127,12 +139,31 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
                                 runtimeState,
                                 archetypeSnapshot);
                         applyArchetypeHealthRegeneration(playerData, statMap, deltaSeconds, archetypeSnapshot);
-                        applyArcaneWisdom(playerData, statMap, deltaSeconds, archetypeSnapshot, runtimeState);
+                        applyArcaneWisdom(playerData,
+                            statMap,
+                            deltaSeconds,
+                            archetypeSnapshot,
+                            runtimeState,
+                            nowMillis);
                         applyManaRegeneration(playerData, statMap, deltaSeconds, archetypeSnapshot);
-                        applyAdrenalineStamina(playerRef, statMap, deltaSeconds, archetypeSnapshot, runtimeState);
+                        applyAdrenalineStamina(playerRef,
+                            statMap,
+                            deltaSeconds,
+                            archetypeSnapshot,
+                            runtimeState,
+                            nowMillis);
                         applyStaminaGainBonus(playerData, statMap, archetypeSnapshot, runtimeState);
-                        expireSwiftnessIfNeeded(playerRef, ref, commandBuffer, playerData, runtimeState);
-                        expireBladeDanceIfNeeded(ref, commandBuffer, playerData, runtimeState);
+                        expireSwiftnessIfNeeded(playerRef,
+                            ref,
+                            commandBuffer,
+                            playerData,
+                            runtimeState,
+                            nowMillis);
+                        expireBladeDanceIfNeeded(ref,
+                            commandBuffer,
+                            playerData,
+                            runtimeState,
+                            nowMillis);
                         applySignatureGainBonus(playerData, statMap, archetypeSnapshot, runtimeState);
                         applyHealingBonus(statMap, archetypeSnapshot, runtimeState);
                         applyPartyMendingAura(playerData,
@@ -140,27 +171,30 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
                                 commandBuffer,
                                 statMap,
                                 archetypeSnapshot,
-                                runtimeState);
+                            runtimeState,
+                            nowMillis);
                         applyPartyShieldingAura(playerData,
                                 ref,
                                 commandBuffer,
                                 statMap,
                                 archetypeSnapshot,
-                                runtimeState);
+                            runtimeState,
+                            nowMillis);
                         applyPartyBuffingAura(playerData,
                                 ref,
                                 commandBuffer,
                                 statMap,
                                 archetypeSnapshot,
-                                runtimeState);
+                            runtimeState,
+                            nowMillis);
                         applyArmyOfTheDead(playerData,
                                 ref,
                                 commandBuffer,
                                 statMap,
                                 archetypeSnapshot);
                         applySecondWindHealing(statMap, runtimeState, deltaSeconds);
-                        notifyPassiveCooldowns(playerRef, runtimeState);
-                        notifyAugmentCooldowns(playerRef, playerData);
+                        notifyPassiveCooldowns(playerRef, runtimeState, nowMillis);
+                        notifyAugmentCooldowns(playerRef, playerData, nowMillis);
                     }
                 });
     }
@@ -169,7 +203,8 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
             Ref<EntityStore> ref,
             CommandBuffer<EntityStore> commandBuffer,
             PlayerData playerData,
-            PassiveRuntimeState runtimeState) {
+            PassiveRuntimeState runtimeState,
+            long nowMillis) {
         if (runtimeState == null || runtimeState.getSwiftnessStacks() <= 0) {
             return;
         }
@@ -179,7 +214,7 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
             refreshMovementSpeed(ref, commandBuffer, playerData);
             return;
         }
-        if (System.currentTimeMillis() > activeUntil) {
+        if (nowMillis > activeUntil) {
             runtimeState.clearSwiftness();
             sendSwiftnessExpiredMessage(playerRef);
             refreshMovementSpeed(ref, commandBuffer, playerData);
@@ -189,7 +224,8 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
     private void expireBladeDanceIfNeeded(Ref<EntityStore> ref,
             CommandBuffer<EntityStore> commandBuffer,
             PlayerData playerData,
-            PassiveRuntimeState runtimeState) {
+            PassiveRuntimeState runtimeState,
+            long nowMillis) {
         if (runtimeState == null || runtimeState.getBladeDanceStacks() <= 0) {
             return;
         }
@@ -199,7 +235,7 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
             refreshMovementSpeed(ref, commandBuffer, playerData);
             return;
         }
-        if (System.currentTimeMillis() > activeUntil) {
+        if (nowMillis > activeUntil) {
             runtimeState.clearBladeDance();
             refreshMovementSpeed(ref, commandBuffer, playerData);
         }
@@ -224,7 +260,7 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
         PlayerChatNotifier.send(playerRef, ChatMessageTemplate.SWIFTNESS_FADED);
     }
 
-    private void notifyAugmentCooldowns(PlayerRef playerRef, PlayerData playerData) {
+    private void notifyAugmentCooldowns(PlayerRef playerRef, PlayerData playerData, long nowMillis) {
         if (augmentRuntimeManager == null || playerRef == null || playerData == null) {
             return;
         }
@@ -232,12 +268,11 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
         if (state == null) {
             return;
         }
-        long now = System.currentTimeMillis();
         for (CooldownState cooldown : state.getCooldowns()) {
             if (cooldown == null || cooldown.getExpiresAt() <= 0L || cooldown.isReadyNotified()) {
                 continue;
             }
-            if (now >= cooldown.getExpiresAt()) {
+            if (nowMillis >= cooldown.getExpiresAt()) {
                 String readyText = PlayerChatNotifier.text(playerRef,
                         ChatMessageTemplate.AUGMENT_READY_AGAIN,
                         formatAugmentReady(cooldown));
@@ -363,7 +398,8 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
             @Nonnull EntityStatMap statMap,
             float deltaSeconds,
             @Nonnull ArchetypePassiveSnapshot archetypeSnapshot,
-            @Nonnull PassiveRuntimeState runtimeState) {
+            @Nonnull PassiveRuntimeState runtimeState,
+            long nowMillis) {
         ArcaneWisdomPassive settings = ArcaneWisdomPassive.fromSnapshot(archetypeSnapshot);
         if (!settings.enabled()) {
             clearArcaneWisdomState(runtimeState);
@@ -376,7 +412,6 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
             return;
         }
 
-        long now = System.currentTimeMillis();
         long lastKillMillis = runtimeState.getLastMobKillMillis();
         long lastProcessedKillMillis = runtimeState.getArcaneWisdomLastProcessedKillMillis();
         if (lastKillMillis <= 0L || lastKillMillis <= lastProcessedKillMillis) {
@@ -384,7 +419,7 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
         }
         runtimeState.setArcaneWisdomLastProcessedKillMillis(lastKillMillis);
 
-        if (now < runtimeState.getArcaneWisdomCooldownExpiresAt()) {
+        if (nowMillis < runtimeState.getArcaneWisdomCooldownExpiresAt()) {
             return;
         }
 
@@ -406,7 +441,7 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
         }
 
         statMap.setStatValue(DefaultEntityStatTypes.getMana(), current + applied);
-        runtimeState.setArcaneWisdomCooldownExpiresAt(now + settings.cooldownMillis());
+        runtimeState.setArcaneWisdomCooldownExpiresAt(nowMillis + settings.cooldownMillis());
         runtimeState.setArcaneWisdomReadyNotified(false);
 
         logPassiveTrigger(playerData,
@@ -494,7 +529,8 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
             @Nonnull EntityStatMap statMap,
             float deltaSeconds,
             @Nonnull ArchetypePassiveSnapshot archetypeSnapshot,
-            @Nonnull PassiveRuntimeState runtimeState) {
+            @Nonnull PassiveRuntimeState runtimeState,
+            long nowMillis) {
         if (deltaSeconds <= 0) {
             return;
         }
@@ -515,8 +551,7 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
             return;
         }
 
-        long now = System.currentTimeMillis();
-        if (runtimeState.getAdrenalineActiveUntil() > 0 && now >= runtimeState.getAdrenalineActiveUntil()) {
+        if (runtimeState.getAdrenalineActiveUntil() > 0 && nowMillis >= runtimeState.getAdrenalineActiveUntil()) {
             clearAdrenalineState(runtimeState);
         }
 
@@ -524,7 +559,7 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
         double remaining = runtimeState.getAdrenalineRestoreRemaining();
         boolean effectActive = perSecond > 0.0D
                 && remaining > 0.0D
-                && runtimeState.getAdrenalineActiveUntil() > now;
+            && runtimeState.getAdrenalineActiveUntil() > nowMillis;
 
         if (effectActive) {
             float current = staminaStat.get();
@@ -552,7 +587,7 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
             return;
         }
 
-        if (now < runtimeState.getAdrenalineCooldownExpiresAt()) {
+        if (nowMillis < runtimeState.getAdrenalineCooldownExpiresAt()) {
             return;
         }
 
@@ -571,8 +606,8 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
 
         runtimeState.setAdrenalineRestorePerSecond(perSecondRestore);
         runtimeState.setAdrenalineRestoreRemaining(totalRestore);
-        runtimeState.setAdrenalineActiveUntil(now + settings.durationMillis());
-        runtimeState.setAdrenalineCooldownExpiresAt(now + settings.cooldownMillis());
+        runtimeState.setAdrenalineActiveUntil(nowMillis + settings.durationMillis());
+        runtimeState.setAdrenalineCooldownExpiresAt(nowMillis + settings.cooldownMillis());
         runtimeState.setAdrenalineReadyNotified(false);
         logPassiveTrigger(null,
             ArchetypePassiveType.ADRENALINE,
@@ -774,14 +809,14 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
             @Nonnull CommandBuffer<EntityStore> commandBuffer,
             @Nonnull EntityStatMap statMap,
             @Nonnull ArchetypePassiveSnapshot archetypeSnapshot,
-            @Nonnull PassiveRuntimeState runtimeState) {
+            @Nonnull PassiveRuntimeState runtimeState,
+            long nowMillis) {
         if (archetypeSnapshot.getValue(ArchetypePassiveType.HEALING_AURA) <= 0.0D) {
             return;
         }
 
-        long now = System.currentTimeMillis();
         long beforePulse = runtimeState.getPartyMendingLastPulseMillis();
-        if (beforePulse > 0L && now - beforePulse < HealingAuraPassive.pulseIntervalMillis()) {
+        if (beforePulse > 0L && nowMillis - beforePulse < HealingAuraPassive.pulseIntervalMillis()) {
             return;
         }
 
@@ -802,7 +837,7 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
         }
 
         // Throttle paused/no-heal/no-targets paths to pulse cadence.
-        runtimeState.setPartyMendingLastPulseMillis(now);
+        runtimeState.setPartyMendingLastPulseMillis(nowMillis);
     }
 
     private void applyPartyShieldingAura(@Nonnull PlayerData playerData,
@@ -810,8 +845,8 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
             @Nonnull CommandBuffer<EntityStore> commandBuffer,
             @Nonnull EntityStatMap statMap,
             @Nonnull ArchetypePassiveSnapshot archetypeSnapshot,
-            @Nonnull PassiveRuntimeState runtimeState) {
-        long now = System.currentTimeMillis();
+            @Nonnull PassiveRuntimeState runtimeState,
+            long nowMillis) {
         boolean hasShieldingAuraPassive = archetypeSnapshot.getValue(ArchetypePassiveType.SHIELDING_AURA) > 0.0D;
         boolean hasShieldingAuraState = runtimeState.getShieldingAuraShieldAmount() > 0.0D
                 || runtimeState.getShieldingAuraShieldExpiresAt() > 0L
@@ -823,7 +858,7 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
         }
 
         if (hasShieldingAuraState) {
-            ShieldingAuraPassive.cleanupExpiredShield(runtimeState, now);
+            ShieldingAuraPassive.cleanupExpiredShield(runtimeState, nowMillis);
         }
 
         if (!hasShieldingAuraPassive) {
@@ -835,7 +870,7 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
         boolean hasNewDamageTrigger = runtimeState.getLastDamageDealtMillis() > beforePulse;
         if (!hasNewDamageTrigger
                 && beforePulse > 0L
-                && now - beforePulse < ShieldingAuraPassive.pulseIntervalMillis()) {
+                && nowMillis - beforePulse < ShieldingAuraPassive.pulseIntervalMillis()) {
             return;
         }
 
@@ -855,7 +890,7 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
         }
 
         // Throttle non-activation checks (cooldown/no-targets/etc.) to pulse cadence.
-        runtimeState.setShieldingAuraLastPulseMillis(now);
+        runtimeState.setShieldingAuraLastPulseMillis(nowMillis);
     }
 
     private void applyPartyBuffingAura(@Nonnull PlayerData playerData,
@@ -863,8 +898,8 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
             @Nonnull CommandBuffer<EntityStore> commandBuffer,
             @Nonnull EntityStatMap statMap,
             @Nonnull ArchetypePassiveSnapshot archetypeSnapshot,
-            @Nonnull PassiveRuntimeState runtimeState) {
-        long now = System.currentTimeMillis();
+            @Nonnull PassiveRuntimeState runtimeState,
+            long nowMillis) {
         boolean hasBuffingAuraPassive = archetypeSnapshot.getValue(ArchetypePassiveType.BUFFING_AURA) > 0.0D;
         boolean hasBuffingAuraState = runtimeState.getBuffingAuraDamageBonus() > 0.0D
                 || runtimeState.getBuffingAuraBonusExpiresAt() > 0L;
@@ -874,7 +909,7 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
         }
 
         if (hasBuffingAuraState) {
-            BuffingAuraPassive.cleanupExpiredBonus(runtimeState, now);
+            BuffingAuraPassive.cleanupExpiredBonus(runtimeState, nowMillis);
         }
 
         if (!hasBuffingAuraPassive) {
@@ -882,7 +917,7 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
         }
 
         long beforePulse = runtimeState.getBuffingAuraLastPulseMillis();
-        if (beforePulse > 0L && now - beforePulse < BuffingAuraPassive.pulseIntervalMillis()) {
+        if (beforePulse > 0L && nowMillis - beforePulse < BuffingAuraPassive.pulseIntervalMillis()) {
             return;
         }
 
@@ -903,7 +938,7 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
         }
 
         // Throttle non-activation paths (paused/no targets/zero pool) to pulse cadence.
-        runtimeState.setBuffingAuraLastPulseMillis(now);
+        runtimeState.setBuffingAuraLastPulseMillis(nowMillis);
     }
 
     private void applyArmyOfTheDead(@Nonnull PlayerData playerData,
@@ -919,15 +954,14 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
         ArmyOfTheDeadPassive.updateSummonLeashPositions(playerData, ref, commandBuffer);
     }
 
-    private void notifyPassiveCooldowns(PlayerRef playerRef, PassiveRuntimeState runtimeState) {
+    private void notifyPassiveCooldowns(PlayerRef playerRef, PassiveRuntimeState runtimeState, long nowMillis) {
         if (playerRef == null || !playerRef.isValid() || runtimeState == null) {
             return;
         }
 
-        long now = System.currentTimeMillis();
         for (PassiveCooldownRegistry.Entry entry : PassiveCooldownRegistry.notifiableEntries()) {
             long expiresAt = entry.expiresAt(runtimeState);
-            if (entry.isReadyNotified(runtimeState) || expiresAt <= 0L || now < expiresAt) {
+            if (entry.isReadyNotified(runtimeState) || expiresAt <= 0L || nowMillis < expiresAt) {
             continue;
             }
 

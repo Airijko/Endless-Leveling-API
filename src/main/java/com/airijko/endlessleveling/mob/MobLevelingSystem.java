@@ -198,11 +198,6 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
             return;
         }
 
-        TrackingIdentity trackingIdentity = resolveTrackingIdentity(ref, commandBuffer);
-        long entityKey = trackingIdentity.key();
-        EntityRuntimeState state = getOrCreateEntityState(entityKey, ref.getIndex(), store);
-        state.lastSeenTimeMillis = currentTimeMillis;
-
         PlayerRef playerRef = commandBuffer.getComponent(ref, PlayerRef.getComponentType());
         if (playerRef != null && playerRef.isValid()) {
             return;
@@ -212,6 +207,11 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         if (npcEntity == null) {
             return;
         }
+
+        TrackingIdentity trackingIdentity = resolveTrackingIdentity(ref, commandBuffer);
+        long entityKey = trackingIdentity.key();
+        EntityRuntimeState state = getOrCreateEntityState(entityKey, ref.getIndex(), store);
+        state.lastSeenTimeMillis = currentTimeMillis;
 
         if (mobLevelingManager.isEntityBlacklisted(ref, store, commandBuffer)) {
             clearTrackedNameplateIfNeeded(ref, commandBuffer, state);
@@ -246,10 +246,13 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         // Keep the manager-side level snapshot fresh so other systems (death XP, combat probes,
         // announcers) read the same assigned level that mob flow is using, even if they execute
         // outside this system's runtime-state map.
-        mobLevelingManager.recordEntityResolvedLevel(entityKey, mobLevel);
-        long fallbackEntityKey = toEntityKey(store, ref.getIndex());
-        if (fallbackEntityKey != entityKey) {
-            mobLevelingManager.recordEntityResolvedLevel(fallbackEntityKey, mobLevel);
+        if (state.lastRecordedResolvedLevel != mobLevel) {
+            mobLevelingManager.recordEntityResolvedLevel(entityKey, mobLevel);
+            long fallbackEntityKey = toEntityKey(store, ref.getIndex());
+            if (fallbackEntityKey != entityKey) {
+                mobLevelingManager.recordEntityResolvedLevel(fallbackEntityKey, mobLevel);
+            }
+            state.lastRecordedResolvedLevel = mobLevel;
         }
 
         if (state.appliedLevel <= 0) {
@@ -259,7 +262,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         // Apply/retry mob augment registration and passive-stat ticks before health scaling.
         // This guarantees LIFE_FORCE and other health-related passive bonuses are available
         // when applyHealthModifier snapshots and applies max-health layers.
-        applyMobAugments(ref, store, commandBuffer, currentTimeMillis);
+        applyMobAugments(ref, store, commandBuffer, currentTimeMillis, trackingIdentity, state);
 
         // Health scaling must happen regardless of nameplate display setting, as it affects
         // both mob durability and XP calculation. The Show_Health setting only controls UI display.
@@ -329,7 +332,8 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
                         showLevelInNameplate,
                         showNameInNameplate,
                         showHealthInNameplate,
-                        mobLevel);
+                    mobLevel,
+                    state);
                 state.lastAppliedNameplateLevel = mobLevel;
                 state.lastAppliedShowLevelInNameplate = showLevelInNameplate;
                 state.lastAppliedShowNameInNameplate = showNameInNameplate;
@@ -821,15 +825,15 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
     private void applyMobAugments(Ref<EntityStore> ref,
             Store<EntityStore> store,
             CommandBuffer<EntityStore> commandBuffer,
-            long currentTimeMillis) {
+            long currentTimeMillis,
+            TrackingIdentity trackingIdentity,
+            EntityRuntimeState state) {
         if (ref == null || store == null || commandBuffer == null) {
             return;
         }
-
-        TrackingIdentity trackingIdentity = resolveTrackingIdentity(ref, commandBuffer);
-        long entityKey = trackingIdentity.key();
-        EntityRuntimeState state = getOrCreateEntityState(entityKey, ref.getIndex(), store);
-        state.lastSeenTimeMillis = currentTimeMillis;
+        if (trackingIdentity == null || state == null) {
+            return;
+        }
 
         if (state.nextMobAugmentRegistrationCheckMillis <= 0L
                 || currentTimeMillis >= state.nextMobAugmentRegistrationCheckMillis) {
@@ -837,6 +841,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
             boolean registeredNow = ensureMobAugmentsRegistered(ref, store, commandBuffer);
             if (registeredNow) {
                 state.mobAugmentsInitialized = true;
+                state.mobHasAugments = true;
                 if (!alreadyInitialized) {
                     state.augmentHealthReconcilePending = true;
                 }
@@ -849,8 +854,13 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
                             true);
                 }
             } else {
+                state.mobHasAugments = false;
                 state.nextMobAugmentRegistrationCheckMillis = currentTimeMillis + 3000L;
             }
+        }
+
+        if (!state.mobHasAugments) {
+            return;
         }
 
         EndlessLeveling plugin = EndlessLeveling.getInstance();
@@ -861,10 +871,6 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         UUID mobUuid = trackingIdentity.uuidBacked() ? resolveUuid(ref, commandBuffer) : null;
         if (mobUuid == null) {
             return; // Skip passive ticking if we can't resolve UUID
-        }
-
-        if (!plugin.getMobAugmentExecutor().hasMobAugments(mobUuid)) {
-            return; // Skip if no augments registered (avoids expensive component fetches)
         }
 
         if (state.lastPassiveStatTickMillis > 0L
@@ -881,7 +887,8 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
             boolean showLevelInNameplate,
             boolean showNameInNameplate,
             boolean showHealthInNameplate,
-            int mobLevel) {
+            int mobLevel,
+            EntityRuntimeState state) {
         if (ref == null || commandBuffer == null) {
             return false;
         }
@@ -932,9 +939,9 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
             return false;
         }
 
-        TrackingIdentity identity = resolveTrackingIdentity(ref, commandBuffer);
-        EntityRuntimeState state = getOrCreateEntityState(identity.key(), ref.getIndex(), ref.getStore());
-        state.lastAppliedNameplateText = label;
+        if (state != null) {
+            state.lastAppliedNameplateText = label;
+        }
 
         if (NameplateBuilderCompatibility.isAvailable()) {
             boolean registeredText = NameplateBuilderCompatibility.registerMobText(ref.getStore(), ref, label);
@@ -1239,6 +1246,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
 
     private static final class EntityRuntimeState {
         private int appliedLevel;
+        private int lastRecordedResolvedLevel;
         private int settledHealthLevel;
         private long lastSeenTimeMillis;
         private int resolveAttempts;
@@ -1258,6 +1266,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         private String lastAppliedNameplateText;
         private boolean augmentHealthReconcilePending;
         private boolean mobAugmentsInitialized;
+        private boolean mobHasAugments;
         private boolean flowInitializedLogged;
 
         private boolean hasNameplateState() {

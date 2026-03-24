@@ -1,5 +1,6 @@
 package com.airijko.endlessleveling.augments;
 
+import com.airijko.endlessleveling.augments.types.CommonAugment;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.airijko.endlessleveling.managers.LoggingManager;
 import com.hypixel.hytale.component.CommandBuffer;
@@ -77,8 +78,16 @@ public final class MobAugmentExecutor {
 
         List<Augment> augments = new ArrayList<>();
         List<String> appliedAugmentIds = new ArrayList<>();
+        int skippedDisallowedCommonOffers = 0;
         for (String augmentId : augmentIds) {
             if (augmentId == null || augmentId.isBlank()) {
+                continue;
+            }
+
+            CommonAugment.CommonStatOffer commonOffer = CommonAugment.parseStatOfferId(augmentId);
+            if (commonOffer != null
+                    && !MobAugmentDiagnostics.isAllowedMobCommonStatKey(commonOffer.attributeKey())) {
+                skippedDisallowedCommonOffers++;
                 continue;
             }
 
@@ -103,6 +112,13 @@ public final class MobAugmentExecutor {
             if (isDebugEnabled()) {
                 LOGGER.atInfo().log("[MOB_OVERRIDE_AUGMENTS] Bound %d augments to mob %s: %s",
                         augments.size(), entityId, formatAugmentBindSummary(appliedAugmentIds));
+                if (skippedDisallowedCommonOffers > 0) {
+                    LOGGER.atInfo().log(
+                        "[MOB_OVERRIDE_AUGMENTS] Skipped %d disallowed COMMON stat offers for mob %s (allowed=%s)",
+                        skippedDisallowedCommonOffers,
+                        entityId,
+                        MobAugmentDiagnostics.getAllowedMobCommonStatKeys());
+                }
                 LOGGER.atInfo().log("[MOB_OVERRIDE_AUGMENTS][RAW] mob=%s ids=%s",
                         entityId, appliedAugmentIds);
                 LOGGER.atInfo().log("[MOB_AUGMENT_CATEGORIES] mob=%s categories=%s",

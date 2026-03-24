@@ -3,6 +3,7 @@ package com.airijko.endlessleveling.systems;
 import com.airijko.endlessleveling.player.PlayerData;
 import com.airijko.endlessleveling.player.PlayerDataManager;
 import com.airijko.endlessleveling.player.SkillManager;
+import com.airijko.endlessleveling.util.PlayerStoreSelector;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
@@ -14,6 +15,7 @@ import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue;
 import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import java.util.Map;
 
 /**
  * Periodically reapplies EndlessLeveling skill modifiers for all players to
@@ -44,11 +46,20 @@ public class PeriodicSkillModifierSystem extends TickingSystem<EntityStore> {
             return;
         }
         timeSinceLastReapply = 0f;
+        Map<Integer, PlayerRef> playersByEntityIndex = PlayerStoreSelector.snapshotPlayersByEntityIndex(store);
+        if (playersByEntityIndex.isEmpty()) {
+            return;
+        }
+
         store.forEachChunk(PLAYER_QUERY,
                 (ArchetypeChunk<EntityStore> chunk, CommandBuffer<EntityStore> commandBuffer) -> {
                     for (int i = 0; i < chunk.size(); i++) {
                         Ref<EntityStore> ref = chunk.getReferenceTo(i);
-                        PlayerRef playerRef = commandBuffer.getComponent(ref, PlayerRef.getComponentType());
+                        if (ref == null) {
+                            continue;
+                        }
+
+                        PlayerRef playerRef = playersByEntityIndex.get(ref.getIndex());
                         if (playerRef == null || !playerRef.isValid()) {
                             continue;
                         }
