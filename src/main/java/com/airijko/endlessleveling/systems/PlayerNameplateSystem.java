@@ -20,7 +20,7 @@ import java.util.Set;
 import java.util.UUID;
 import javax.annotation.Nonnull;
 
-/** Keeps player nameplates in sync with their level ("Lv. X <name>"). */
+/** Keeps player nameplates in sync with EndlessLeveling NameplateBuilder segments. */
 public class PlayerNameplateSystem extends TickingSystem<EntityStore> {
 
     private static final Query<EntityStore> PLAYER_QUERY = Query.any();
@@ -82,31 +82,63 @@ public class PlayerNameplateSystem extends TickingSystem<EntityStore> {
                     continue;
                 }
 
-                String label = String.format("Lv. %d %s", playerData.getLevel(), baseName);
+                String race = normalizePlayerSegmentValue(playerData.getRaceId(), "None");
+                String classPrimary = normalizePlayerSegmentValue(playerData.getPrimaryClassId(), "None");
+                String classSecondary = normalizePlayerSegmentValue(playerData.getSecondaryClassId(), "None");
+
+                String signature = String.join("|",
+                    Integer.toString(playerData.getLevel()),
+                    Integer.toString(Math.max(0, playerData.getPrestigeLevel())),
+                    race,
+                    classPrimary,
+                    classSecondary,
+                    baseName);
                 String previous = lastLabels.get(uuid);
-                if (label.equals(previous)) {
+                if (signature.equals(previous)) {
                     continue;
                 }
 
-                if (NameplateBuilderCompatibility.isAvailable()
-                        && NameplateBuilderCompatibility.registerPlayerLevel(ref.getStore(), ref,
-                                playerData.getLevel())) {
-                    lastLabels.put(uuid, label);
+                if (NameplateBuilderCompatibility.isAvailable()) {
+                    boolean registeredLevel = NameplateBuilderCompatibility.registerPlayerLevel(
+                        ref.getStore(), ref, playerData.getLevel());
+                    boolean registeredPrestige = NameplateBuilderCompatibility.registerELPlayerPrestigeLevel(
+                        ref.getStore(), ref, Math.max(0, playerData.getPrestigeLevel()));
+                    boolean registeredRace = NameplateBuilderCompatibility.registerELPlayerRace(
+                        ref.getStore(), ref, race);
+                    boolean registeredPrimary = NameplateBuilderCompatibility.registerELPlayerClassPrimary(
+                        ref.getStore(), ref, classPrimary);
+                    boolean registeredSecondary = NameplateBuilderCompatibility.registerELPlayerClassSecondary(
+                        ref.getStore(), ref, classSecondary);
+                    boolean registeredName = NameplateBuilderCompatibility.registerELPlayerName(
+                        ref.getStore(), ref, baseName);
+
+                    if (registeredLevel && registeredPrestige && registeredRace
+                        && registeredPrimary && registeredSecondary && registeredName) {
+                    lastLabels.put(uuid, signature);
                     continue;
+                    }
                 }
 
+                String label = String.format("Lv. %d %s", playerData.getLevel(), baseName);
                 Nameplate nameplate = commandBuffer.ensureAndGetComponent(ref, Nameplate.getComponentType());
                 if (nameplate == null) {
                     continue;
                 }
 
                 nameplate.setText(label);
-                lastLabels.put(uuid, label);
+                lastLabels.put(uuid, signature);
             }
         });
 
         if (!lastLabels.isEmpty()) {
             lastLabels.keySet().removeIf(uuid -> !onlinePlayers.contains(uuid));
         }
+    }
+
+    private static String normalizePlayerSegmentValue(String value, String fallback) {
+        if (value == null || value.isBlank()) {
+            return fallback;
+        }
+        return value;
     }
 }

@@ -676,11 +676,13 @@ public class ClassManager {
         }
         int consumeFloor = Math.max(0, maxClassSwitches - SWAP_CONSUME_COUNT);
         if (hasAssignedClassInSlot(data, ClassAssignmentSlot.PRIMARY)
+            && data.getRemainingPrimaryClassSwitches() <= maxClassSwitches
                 && data.getRemainingPrimaryClassSwitches() > consumeFloor) {
             data.setRemainingPrimaryClassSwitches(consumeFloor);
         }
         if (isSecondaryClassEnabled()
                 && hasAssignedClassInSlot(data, ClassAssignmentSlot.SECONDARY)
+            && data.getRemainingSecondaryClassSwitches() <= maxClassSwitches
                 && data.getRemainingSecondaryClassSwitches() > consumeFloor) {
             data.setRemainingSecondaryClassSwitches(consumeFloor);
         }

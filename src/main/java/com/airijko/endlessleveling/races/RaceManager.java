@@ -257,7 +257,11 @@ public class RaceManager {
         }
 
         int consumeFloor = Math.max(0, maxRaceSwitches - SWAP_CONSUME_COUNT);
-        if (hasAssignedRace(data) && data.getRemainingRaceSwitches() > consumeFloor) {
+        // Respect admin-granted bonus swaps above the configured cap.
+        // Anti-exploit auto-consumption should only affect baseline configured swaps.
+        if (hasAssignedRace(data)
+            && data.getRemainingRaceSwitches() <= maxRaceSwitches
+            && data.getRemainingRaceSwitches() > consumeFloor) {
             data.setRemainingRaceSwitches(consumeFloor);
         }
 

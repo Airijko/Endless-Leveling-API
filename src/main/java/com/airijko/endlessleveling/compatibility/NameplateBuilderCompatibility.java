@@ -11,13 +11,16 @@ public final class NameplateBuilderCompatibility {
 
     private static final String API_CLASS = "com.frotty27.nameplatebuilder.api.NameplateAPI";
     private static final String SEGMENT_TARGET_CLASS = "com.frotty27.nameplatebuilder.api.SegmentTarget";
-    private static final String MOB_SEGMENT_ID = "mob_level";
-    private static final String SUMMON_SEGMENT_ID = "summon_label";
-    private static final String PLAYER_SEGMENT_ID = "player_level";
-    // New Endless Leveling segments
-    private static final String EL_SHOW_LEVEL = "EL_Show_Level";
-    private static final String EL_SHOW_NAME = "EL_Show_Name";
-    private static final String EL_SHOW_HEALTH = "EL_Show_Health";
+    private static final String EL_MOB_LEVEL = "EL_Mob_Level";
+    private static final String EL_MOB_NAME = "EL_Mob_Name";
+    private static final String EL_MOB_HEALTH = "EL_Mob_Health";
+    private static final String EL_PLAYER_LEVEL = "EL_Player_Level";
+    private static final String EL_PLAYER_PRESTIGE_LEVEL = "EL_Player_Prestige_Level";
+    private static final String EL_PLAYER_RACE = "EL_Player_Race";
+    private static final String EL_PLAYER_CLASS_PRIMARY = "EL_Player_Class_Primary";
+    private static final String EL_PLAYER_CLASS_SECONDARY = "EL_Player_Class_Secondary";
+    private static final String EL_PLAYER_NAME = "EL_Player_Name";
+    private static final String EL_SUMMON_LABEL = "EL_Summon_Label";
 
     private static volatile boolean initialized = false;
     private static volatile Method describeMethod = null;
@@ -42,8 +45,8 @@ public final class NameplateBuilderCompatibility {
             describeMethod.invoke(
                     null,
                     plugin,
-                    MOB_SEGMENT_ID,
-                    "Mob Level",
+                    EL_MOB_LEVEL,
+                    "EL Mob Level",
                     segmentTargetNpcs,
                     "Lv.10");
             return true;
@@ -61,8 +64,8 @@ public final class NameplateBuilderCompatibility {
             describeMethod.invoke(
                     null,
                     plugin,
-                    PLAYER_SEGMENT_ID,
-                    "Player Level",
+                    EL_PLAYER_LEVEL,
+                    "EL Player Level",
                     segmentTargetPlayers,
                     "Lv.10");
             return true;
@@ -80,8 +83,8 @@ public final class NameplateBuilderCompatibility {
             describeMethod.invoke(
                     null,
                     plugin,
-                    SUMMON_SEGMENT_ID,
-                    "Summon Label",
+                    EL_SUMMON_LABEL,
+                    "EL Summon Label",
                     segmentTargetNpcs,
                     "Player's Undead Summon");
             return true;
@@ -99,8 +102,8 @@ public final class NameplateBuilderCompatibility {
             describeMethod.invoke(
                     null,
                     plugin,
-                    EL_SHOW_LEVEL,
-                    "EL - Level (Prefix)",
+                    EL_MOB_LEVEL,
+                    "EL Mob Level",
                     segmentTargetNpcs,
                     "Lv.10");
             return true;
@@ -118,8 +121,8 @@ public final class NameplateBuilderCompatibility {
             describeMethod.invoke(
                     null,
                     plugin,
-                    EL_SHOW_NAME,
-                    "EL - Name",
+                    EL_MOB_NAME,
+                    "EL Mob Name",
                     segmentTargetNpcs,
                     "Zombie");
             return true;
@@ -137,10 +140,105 @@ public final class NameplateBuilderCompatibility {
             describeMethod.invoke(
                     null,
                     plugin,
-                    EL_SHOW_HEALTH,
-                    "EL - Health (Suffix)",
+                    EL_MOB_HEALTH,
+                    "EL Mob Health",
                     segmentTargetNpcs,
                     "100/100❤");
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    public static boolean describeELPlayerPrestigeLevelSegment(JavaPlugin plugin) {
+        if (plugin == null || !ensureInitialized() || segmentTargetPlayers == null) {
+            return false;
+        }
+
+        try {
+            describeMethod.invoke(
+                    null,
+                    plugin,
+                    EL_PLAYER_PRESTIGE_LEVEL,
+                    "EL Player Prestige Level",
+                    segmentTargetPlayers,
+                    "P.3");
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    public static boolean describeELPlayerRaceSegment(JavaPlugin plugin) {
+        if (plugin == null || !ensureInitialized() || segmentTargetPlayers == null) {
+            return false;
+        }
+
+        try {
+            describeMethod.invoke(
+                    null,
+                    plugin,
+                    EL_PLAYER_RACE,
+                    "EL Player Race",
+                    segmentTargetPlayers,
+                    "Human");
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    public static boolean describeELPlayerClassPrimarySegment(JavaPlugin plugin) {
+        if (plugin == null || !ensureInitialized() || segmentTargetPlayers == null) {
+            return false;
+        }
+
+        try {
+            describeMethod.invoke(
+                    null,
+                    plugin,
+                    EL_PLAYER_CLASS_PRIMARY,
+                    "EL Player Class Primary",
+                    segmentTargetPlayers,
+                    "Adventurer");
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    public static boolean describeELPlayerClassSecondarySegment(JavaPlugin plugin) {
+        if (plugin == null || !ensureInitialized() || segmentTargetPlayers == null) {
+            return false;
+        }
+
+        try {
+            describeMethod.invoke(
+                    null,
+                    plugin,
+                    EL_PLAYER_CLASS_SECONDARY,
+                    "EL Player Class Secondary",
+                    segmentTargetPlayers,
+                    "Scout");
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    public static boolean describeELPlayerNameSegment(JavaPlugin plugin) {
+        if (plugin == null || !ensureInitialized() || segmentTargetPlayers == null) {
+            return false;
+        }
+
+        try {
+            describeMethod.invoke(
+                    null,
+                    plugin,
+                    EL_PLAYER_NAME,
+                    "EL Player Name",
+                    segmentTargetPlayers,
+                    "PlayerName");
             return true;
         } catch (Throwable ignored) {
             return false;
@@ -153,7 +251,7 @@ public final class NameplateBuilderCompatibility {
         }
 
         try {
-            registerMethod.invoke(null, store, entityRef, MOB_SEGMENT_ID, "Lv." + level);
+            registerMethod.invoke(null, store, entityRef, EL_MOB_LEVEL, "Lv." + level);
             return true;
         } catch (Throwable ignored) {
             return false;
@@ -166,7 +264,7 @@ public final class NameplateBuilderCompatibility {
         }
 
         try {
-            registerMethod.invoke(null, store, entityRef, MOB_SEGMENT_ID, text);
+            registerMethod.invoke(null, store, entityRef, EL_MOB_NAME, text);
             return true;
         } catch (Throwable ignored) {
             return false;
@@ -179,7 +277,7 @@ public final class NameplateBuilderCompatibility {
         }
 
         try {
-            registerMethod.invoke(null, store, entityRef, SUMMON_SEGMENT_ID, text);
+            registerMethod.invoke(null, store, entityRef, EL_SUMMON_LABEL, text);
             return true;
         } catch (Throwable ignored) {
             return false;
@@ -192,7 +290,7 @@ public final class NameplateBuilderCompatibility {
         }
 
         try {
-            registerMethod.invoke(null, store, entityRef, PLAYER_SEGMENT_ID, "Lv." + level);
+            registerMethod.invoke(null, store, entityRef, EL_PLAYER_LEVEL, "Lv." + level);
             return true;
         } catch (Throwable ignored) {
             return false;
@@ -205,7 +303,7 @@ public final class NameplateBuilderCompatibility {
         }
 
         try {
-            registerMethod.invoke(null, store, entityRef, EL_SHOW_LEVEL, "Lv." + level);
+            registerMethod.invoke(null, store, entityRef, EL_MOB_LEVEL, "Lv." + level);
             return true;
         } catch (Throwable ignored) {
             return false;
@@ -218,7 +316,7 @@ public final class NameplateBuilderCompatibility {
         }
 
         try {
-            registerMethod.invoke(null, store, entityRef, EL_SHOW_NAME, name);
+            registerMethod.invoke(null, store, entityRef, EL_MOB_NAME, name);
             return true;
         } catch (Throwable ignored) {
             return false;
@@ -232,7 +330,72 @@ public final class NameplateBuilderCompatibility {
 
         try {
             String healthText = String.format("%.0f/%.0f❤", currentHealth, maxHealth);
-            registerMethod.invoke(null, store, entityRef, EL_SHOW_HEALTH, healthText);
+            registerMethod.invoke(null, store, entityRef, EL_MOB_HEALTH, healthText);
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    public static boolean registerELPlayerPrestigeLevel(Store<EntityStore> store, Ref<EntityStore> entityRef, int prestigeLevel) {
+        if (store == null || entityRef == null || prestigeLevel < 0 || !ensureInitialized() || segmentTargetPlayers == null) {
+            return false;
+        }
+
+        try {
+            registerMethod.invoke(null, store, entityRef, EL_PLAYER_PRESTIGE_LEVEL, "P." + prestigeLevel);
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    public static boolean registerELPlayerRace(Store<EntityStore> store, Ref<EntityStore> entityRef, String race) {
+        if (store == null || entityRef == null || race == null || race.isBlank() || !ensureInitialized() || segmentTargetPlayers == null) {
+            return false;
+        }
+
+        try {
+            registerMethod.invoke(null, store, entityRef, EL_PLAYER_RACE, race);
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    public static boolean registerELPlayerClassPrimary(Store<EntityStore> store, Ref<EntityStore> entityRef, String classPrimary) {
+        if (store == null || entityRef == null || classPrimary == null || classPrimary.isBlank() || !ensureInitialized() || segmentTargetPlayers == null) {
+            return false;
+        }
+
+        try {
+            registerMethod.invoke(null, store, entityRef, EL_PLAYER_CLASS_PRIMARY, classPrimary);
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    public static boolean registerELPlayerClassSecondary(Store<EntityStore> store, Ref<EntityStore> entityRef, String classSecondary) {
+        if (store == null || entityRef == null || classSecondary == null || classSecondary.isBlank() || !ensureInitialized() || segmentTargetPlayers == null) {
+            return false;
+        }
+
+        try {
+            registerMethod.invoke(null, store, entityRef, EL_PLAYER_CLASS_SECONDARY, classSecondary);
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    public static boolean registerELPlayerName(Store<EntityStore> store, Ref<EntityStore> entityRef, String playerName) {
+        if (store == null || entityRef == null || playerName == null || playerName.isBlank() || !ensureInitialized() || segmentTargetPlayers == null) {
+            return false;
+        }
+
+        try {
+            registerMethod.invoke(null, store, entityRef, EL_PLAYER_NAME, playerName);
             return true;
         } catch (Throwable ignored) {
             return false;
@@ -245,7 +408,7 @@ public final class NameplateBuilderCompatibility {
         }
 
         try {
-            removeMethod.invoke(null, store, entityRef, MOB_SEGMENT_ID);
+            removeMethod.invoke(null, store, entityRef, EL_MOB_LEVEL);
             return true;
         } catch (Throwable ignored) {
             return false;
@@ -258,7 +421,7 @@ public final class NameplateBuilderCompatibility {
         }
 
         try {
-            removeMethod.invoke(null, store, entityRef, SUMMON_SEGMENT_ID);
+            removeMethod.invoke(null, store, entityRef, EL_SUMMON_LABEL);
             return true;
         } catch (Throwable ignored) {
             return false;
@@ -271,7 +434,7 @@ public final class NameplateBuilderCompatibility {
         }
 
         try {
-            removeMethod.invoke(null, store, entityRef, PLAYER_SEGMENT_ID);
+            removeMethod.invoke(null, store, entityRef, EL_PLAYER_LEVEL);
             return true;
         } catch (Throwable ignored) {
             return false;
@@ -284,7 +447,7 @@ public final class NameplateBuilderCompatibility {
         }
 
         try {
-            removeMethod.invoke(null, store, entityRef, EL_SHOW_LEVEL);
+            removeMethod.invoke(null, store, entityRef, EL_MOB_LEVEL);
             return true;
         } catch (Throwable ignored) {
             return false;
@@ -297,7 +460,7 @@ public final class NameplateBuilderCompatibility {
         }
 
         try {
-            removeMethod.invoke(null, store, entityRef, EL_SHOW_NAME);
+            removeMethod.invoke(null, store, entityRef, EL_MOB_NAME);
             return true;
         } catch (Throwable ignored) {
             return false;
@@ -310,7 +473,7 @@ public final class NameplateBuilderCompatibility {
         }
 
         try {
-            removeMethod.invoke(null, store, entityRef, EL_SHOW_HEALTH);
+            removeMethod.invoke(null, store, entityRef, EL_MOB_HEALTH);
             return true;
         } catch (Throwable ignored) {
             return false;

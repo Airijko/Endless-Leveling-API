@@ -944,9 +944,29 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         }
 
         if (NameplateBuilderCompatibility.isAvailable()) {
-            boolean registeredText = NameplateBuilderCompatibility.registerMobText(ref.getStore(), ref, label);
-            if (!registeredText && showLevelInNameplate) {
-                NameplateBuilderCompatibility.registerMobLevel(ref.getStore(), ref, mobLevel);
+            if (showLevelInNameplate) {
+                NameplateBuilderCompatibility.registerELShowLevel(ref.getStore(), ref, mobLevel);
+            } else {
+                NameplateBuilderCompatibility.removeELShowLevel(ref.getStore(), ref);
+            }
+
+            if (showNameInNameplate) {
+                NameplateBuilderCompatibility.registerELShowName(ref.getStore(), ref, baseName);
+            } else {
+                NameplateBuilderCompatibility.removeELShowName(ref.getStore(), ref);
+            }
+
+            if (showHealthInNameplate && statMap != null) {
+                EntityStatValue hp = statMap.get(DefaultEntityStatTypes.getHealth());
+                float hpValue = hp != null ? hp.get() : Float.NaN;
+                float hpMax = hp != null ? hp.getMax() : Float.NaN;
+                if (Float.isFinite(hpValue) && Float.isFinite(hpMax) && hpMax > 0.0f) {
+                    NameplateBuilderCompatibility.registerELShowHealth(ref.getStore(), ref, hpValue, hpMax);
+                } else {
+                    NameplateBuilderCompatibility.removeELShowHealth(ref.getStore(), ref);
+                }
+            } else {
+                NameplateBuilderCompatibility.removeELShowHealth(ref.getStore(), ref);
             }
         }
 
@@ -976,7 +996,9 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         }
 
         if (NameplateBuilderCompatibility.isAvailable()) {
-            NameplateBuilderCompatibility.removeMobLevel(ref.getStore(), ref);
+            NameplateBuilderCompatibility.removeELShowLevel(ref.getStore(), ref);
+            NameplateBuilderCompatibility.removeELShowName(ref.getStore(), ref);
+            NameplateBuilderCompatibility.removeELShowHealth(ref.getStore(), ref);
             NameplateBuilderCompatibility.removeSummonText(ref.getStore(), ref);
             return;
         }
