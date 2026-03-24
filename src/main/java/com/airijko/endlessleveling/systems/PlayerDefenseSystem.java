@@ -1,6 +1,7 @@
 package com.airijko.endlessleveling.systems;
 
 import com.airijko.endlessleveling.EndlessLeveling;
+import com.airijko.endlessleveling.augments.MobAugmentDiagnostics;
 import com.airijko.endlessleveling.augments.AugmentExecutor;
 import com.airijko.endlessleveling.augments.MobAugmentExecutor;
 import com.airijko.endlessleveling.augments.types.NestingDollAugment;
@@ -40,8 +41,10 @@ import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.Collection;
 import java.util.Locale;
@@ -56,6 +59,7 @@ public class PlayerDefenseSystem extends DamageEventSystem {
 	private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
 	private static final double MOB_PRECISION_MAX_PERCENT = 100.0D;
 	private static final String DEBUG_SECTION_MOB_COMMON_OFFENSE = "mob_common_offense";
+	private static final long MOB_OFFENSE_LOG_COOLDOWN_MS = 2000L;
 	private final PlayerDataManager playerDataManager;
 	private final SkillManager skillManager;
 	private final PassiveManager passiveManager;
@@ -65,6 +69,7 @@ public class PlayerDefenseSystem extends DamageEventSystem {
 	private final MobLevelingManager mobLevelingManager;
 	private final CombatHookProcessor combatHookProcessor;
 	private final MovementHasteSystem movementHasteSystem;
+	private final Map<Integer, Long> mobOffenseLogTimes = new ConcurrentHashMap<>();
 
 	public PlayerDefenseSystem(PlayerDataManager playerDataManager, SkillManager skillManager,
 			PassiveManager passiveManager,
@@ -144,6 +149,7 @@ public class PlayerDefenseSystem extends DamageEventSystem {
 
 		if (attackerRef != null && mobAugmentExecutor != null && mobLevelingManager != null) {
 			boolean offenseDebugEnabled = isDebugSectionEnabled(DEBUG_SECTION_MOB_COMMON_OFFENSE);
+			long nowMillis = System.currentTimeMillis();
 			PlayerRef attackerPlayer = EntityRefUtil.tryGetComponent(commandBuffer, attackerRef,
 					PlayerRef.getComponentType());
 			boolean attackerIsPlayer = attackerPlayer != null && attackerPlayer.isValid();
@@ -154,12 +160,21 @@ public class PlayerDefenseSystem extends DamageEventSystem {
 				} else {
 					List<String> attackerAugments = mobLevelingManager.getMobOverrideAugmentIds(attackerRef,
 							attackerStore, commandBuffer);
+					boolean offenseLogThisHit = offenseDebugEnabled
+							&& shouldEmitCooldownLog(mobOffenseLogTimes,
+									attackerRef.getIndex(),
+									nowMillis,
+									MOB_OFFENSE_LOG_COOLDOWN_MS);
 					if (!attackerAugments.isEmpty()) {
 						UUID attackerUuid = resolveEntityUuid(attackerRef, attackerStore, commandBuffer);
 						if (attackerUuid != null) {
 							mobAttackerUuid = attackerUuid;
+							EndlessLeveling plugin = EndlessLeveling.getInstance();
+							MobAugmentDiagnostics.Summary augmentSummary = offenseLogThisHit
+									? MobAugmentDiagnostics.summarize(attackerAugments,
+											plugin != null ? plugin.getAugmentManager() : null)
+									: null;
 							if (!mobAugmentExecutor.hasMobAugments(attackerUuid)) {
-								EndlessLeveling plugin = EndlessLeveling.getInstance();
 								if (plugin != null && plugin.getAugmentManager() != null
 										&& plugin.getAugmentRuntimeManager() != null) {
 									mobAugmentExecutor.registerMobAugments(attackerUuid,
@@ -180,27 +195,34 @@ public class PlayerDefenseSystem extends DamageEventSystem {
 									SkillAttributeType.SORCERY);
 							double combinedDamagePercent = Math.max(0.0D, strengthBonus + sorceryBonus);
 							float damageAfterAttributes = (float) (originalDamage * (1.0D + (combinedDamagePercent / 100.0D)));
-							if (offenseDebugEnabled) {
-								float commonBonusDamage = Math.max(0.0f, damageAfterAttributes - originalDamage);
-								LOGGER.atInfo().log(
-										"[MOB_COMMON_OFFENSE] attacker=%d defender=%s base=%.3f bonus=%.3f final=%.3f strength=%.2f%% sorcery=%.2f%% combined=%.2f%%",
-										attackerRef.getIndex(),
-										defenderPlayer.getUsername(),
-										originalDamage,
-										commonBonusDamage,
-										damageAfterAttributes,
-										strengthBonus,
-										sorceryBonus,
-										combinedDamagePercent);
-							}
 
 							double precisionPercent = Math.max(0.0D, Math.min(MOB_PRECISION_MAX_PERCENT,
 									mobAugmentExecutor.getAttributeBonus(attackerUuid, SkillAttributeType.PRECISION)));
 							boolean mobCrit = ThreadLocalRandom.current().nextDouble() < (precisionPercent / 100.0D);
+							double ferocityPercent = Math.max(0.0D,
+									mobAugmentExecutor.getAttributeBonus(attackerUuid, SkillAttributeType.FEROCITY));
+							float damageAfterCrit = damageAfterAttributes;
 							if (mobCrit) {
-								double ferocityPercent = Math.max(0.0D,
-										mobAugmentExecutor.getAttributeBonus(attackerUuid, SkillAttributeType.FEROCITY));
-								damageAfterAttributes = (float) (damageAfterAttributes * (1.0D + (ferocityPercent / 100.0D)));
+								damageAfterCrit = (float) (damageAfterAttributes * (1.0D + (ferocityPercent / 100.0D)));
+							}
+
+							if (offenseLogThisHit) {
+								LOGGER.atInfo().log(
+										"[MOB_COMMON_OFFENSE] attacker=%d defender=%s augmentCount=%d offenseCommon={%s} base=%.3f afterAttributes=%.3f afterCrit=%.3f strength=%.2f%% sorcery=%.2f%% precision=%.2f%% ferocity=%.2f%% crit=%s",
+										attackerRef.getIndex(),
+										defenderPlayer.getUsername(),
+										attackerAugments.size(),
+										augmentSummary != null
+												? augmentSummary.formatCommonStatTotals(MobAugmentDiagnostics.getOffenseCommonStatKeys())
+												: "none",
+										originalDamage,
+										damageAfterAttributes,
+										damageAfterCrit,
+										strengthBonus,
+										sorceryBonus,
+										precisionPercent,
+										ferocityPercent,
+										mobCrit);
 							}
 
 							var onHit = mobAugmentExecutor.applyOnHit(attackerUuid,
@@ -209,7 +231,7 @@ public class PlayerDefenseSystem extends DamageEventSystem {
 									commandBuffer,
 									attackerStats,
 									defenderStats,
-									damageAfterAttributes,
+									damageAfterCrit,
 									mobCrit);
 							damage.setAmount(onHit.damage());
 
@@ -230,7 +252,7 @@ public class PlayerDefenseSystem extends DamageEventSystem {
 										appliedTrueDamage);
 							}
 						}
-						else if (offenseDebugEnabled) {
+						else if (offenseLogThisHit) {
 							LOGGER.atInfo().log(
 									"[MOB_COMMON_OFFENSE] attacker=%d defender=%s skipped=missing_attacker_uuid augmentCount=%d",
 									attackerRef.getIndex(),
@@ -238,7 +260,7 @@ public class PlayerDefenseSystem extends DamageEventSystem {
 									attackerAugments.size());
 						}
 					}
-					else if (offenseDebugEnabled) {
+					else if (offenseLogThisHit) {
 						LOGGER.atInfo().log(
 								"[MOB_COMMON_OFFENSE] attacker=%d defender=%s skipped=no_mob_augments",
 								attackerRef.getIndex(),
@@ -470,5 +492,20 @@ public class PlayerDefenseSystem extends DamageEventSystem {
 			}
 		}
 		return false;
+	}
+
+	private boolean shouldEmitCooldownLog(Map<Integer, Long> logTimes,
+			int entityId,
+			long nowMillis,
+			long cooldownMillis) {
+		if (logTimes == null || cooldownMillis <= 0L) {
+			return true;
+		}
+		Long previous = logTimes.get(entityId);
+		if (previous != null && nowMillis - previous < cooldownMillis) {
+			return false;
+		}
+		logTimes.put(entityId, nowMillis);
+		return true;
 	}
 }

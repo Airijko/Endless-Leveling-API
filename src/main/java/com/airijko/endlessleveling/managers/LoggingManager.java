@@ -142,6 +142,9 @@ public final class LoggingManager {
         if ("mob_common_defense".equals(lowered)) {
             return LOGGER_PREFIX + ".systems.PlayerCombatSystem";
         }
+        if ("mob_augment_check".equals(lowered)) {
+            return LOGGER_PREFIX + ".systems.PlayerCombatSystem";
+        }
         if ("mob_level_debug".equals(lowered)) {
             return LOGGER_PREFIX + ".leveling.MobLevelingManager";
         }

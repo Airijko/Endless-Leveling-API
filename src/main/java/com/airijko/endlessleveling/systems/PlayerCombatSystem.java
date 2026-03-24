@@ -2,8 +2,8 @@ package com.airijko.endlessleveling.systems;
 
 import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.augments.AugmentExecutor;
+import com.airijko.endlessleveling.augments.MobAugmentDiagnostics;
 import com.airijko.endlessleveling.augments.MobAugmentExecutor;
-import com.airijko.endlessleveling.augments.types.CommonAugment;
 import com.airijko.endlessleveling.augments.types.BailoutAugment;
 import com.airijko.endlessleveling.augments.types.FortressAugment;
 import com.airijko.endlessleveling.augments.types.NestingDollAugment;
@@ -53,14 +53,12 @@ import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import javax.annotation.Nonnull;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -72,16 +70,16 @@ public class PlayerCombatSystem extends DamageEventSystem {
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
     private static final boolean PASSIVE_DEBUG = Boolean
             .parseBoolean(System.getProperty("el.passive.debug", "true"));
-        private static final String DEBUG_SECTION_MOB_COMMON_OFFENSE = "mob_common_offense";
+        private static final String DEBUG_SECTION_MOB_AUGMENT_CHECK = "mob_augment_check";
     private static final String DEBUG_SECTION_MOB_COMMON_DEFENSE = "mob_common_defense";
     public static final MetaKey<Boolean> AUGMENT_DOT_DAMAGE = Damage.META_REGISTRY
             .registerMetaObject(data -> Boolean.FALSE);
     public static final MetaKey<Boolean> AUGMENT_PROC_DAMAGE = Damage.META_REGISTRY
             .registerMetaObject(data -> Boolean.FALSE);
     private static final double MOB_DEFENSE_MAX_REDUCTION_PERCENT = 80.0D;
-        private static final long PLAYER_HIT_LOG_COOLDOWN_MS = 1500L;
-        private static final long MOB_OFFENSE_LOG_COOLDOWN_MS = 2000L;
-        private static final long MOB_DEFENSE_LOG_COOLDOWN_MS = 2000L;
+    private static final long PLAYER_HIT_LOG_COOLDOWN_MS = 1500L;
+    private static final long MOB_AUGMENT_CHECK_LOG_COOLDOWN_MS = 2000L;
+    private static final long MOB_DEFENSE_LOG_COOLDOWN_MS = 2000L;
 
     private final PlayerDataManager playerDataManager;
     private final PassiveManager passiveManager;
@@ -91,7 +89,7 @@ public class PlayerCombatSystem extends DamageEventSystem {
     private final MobLevelingManager mobLevelingManager;
     private final CombatHookProcessor combatHookProcessor;
     private final Map<Integer, Long> playerHitLogTimes = new ConcurrentHashMap<>();
-    private final Map<Integer, Long> mobOffenseLogTimes = new ConcurrentHashMap<>();
+    private final Map<Integer, Long> mobAugmentCheckLogTimes = new ConcurrentHashMap<>();
     private final Map<Integer, Long> mobDefenseLogTimes = new ConcurrentHashMap<>();
 
     public PlayerCombatSystem(@Nonnull PlayerDataManager playerDataManager,
@@ -344,7 +342,6 @@ public class PlayerCombatSystem extends DamageEventSystem {
             CommandBuffer<EntityStore> commandBuffer,
             EntityStatMap targetStats,
             float incomingDamage) {
-        boolean offenseDebugEnabled = isDebugSectionEnabled(DEBUG_SECTION_MOB_COMMON_OFFENSE);
         boolean defenseDebugEnabled = isDebugSectionEnabled(DEBUG_SECTION_MOB_COMMON_DEFENSE);
         if (targetRef == null
                 || targetStats == null
@@ -367,97 +364,15 @@ public class PlayerCombatSystem extends DamageEventSystem {
 
             int targetIndex = targetRef.getIndex();
             long nowMillis = System.currentTimeMillis();
-            boolean offenseLogThisHit = offenseDebugEnabled
-                && shouldEmitCooldownLog(mobOffenseLogTimes, targetIndex, nowMillis, MOB_OFFENSE_LOG_COOLDOWN_MS);
+            boolean augmentCheckDebugEnabled = isDebugSectionEnabled(DEBUG_SECTION_MOB_AUGMENT_CHECK);
+            boolean augmentCheckLogThisHit = augmentCheckDebugEnabled
+                && shouldEmitCooldownLog(
+                    mobAugmentCheckLogTimes,
+                    targetIndex,
+                    nowMillis,
+                    MOB_AUGMENT_CHECK_LOG_COOLDOWN_MS);
             boolean defenseLogThisHit = defenseDebugEnabled
                 && shouldEmitCooldownLog(mobDefenseLogTimes, targetIndex, nowMillis, MOB_DEFENSE_LOG_COOLDOWN_MS);
-
-            if (offenseLogThisHit) {
-            Map<String, Integer> allAugmentCounts = new TreeMap<>();
-            Map<String, Double> commonAttributeTotals = new TreeMap<>();
-            int commonCount = 0;
-            for (String augmentId : augmentIds) {
-                String baseAugmentId = CommonAugment.resolveBaseAugmentId(augmentId);
-                if (baseAugmentId == null || baseAugmentId.isBlank()) {
-                    baseAugmentId = "unknown";
-                }
-                allAugmentCounts.merge(baseAugmentId.toLowerCase(Locale.ROOT), 1, Integer::sum);
-
-                boolean isCommonBase = CommonAugment.ID.equalsIgnoreCase(baseAugmentId);
-                if (isCommonBase) {
-                    commonCount++;
-                }
-
-                CommonAugment.CommonStatOffer offer = CommonAugment.parseStatOfferId(augmentId);
-                if (offer == null) {
-                    continue;
-                }
-                String attributeKey = offer.attributeKey() == null ? "unknown" : offer.attributeKey();
-                double rolledValue = Double.isFinite(offer.rolledValue()) ? offer.rolledValue() : 0.0D;
-                commonAttributeTotals.merge(attributeKey, rolledValue, Double::sum);
-            }
-
-            StringBuilder groupedAll = new StringBuilder();
-            boolean firstAll = true;
-            for (Map.Entry<String, Integer> entry : allAugmentCounts.entrySet()) {
-                if (!firstAll) {
-                    groupedAll.append(", ");
-                }
-                groupedAll.append(entry.getKey())
-                        .append("=")
-                        .append(entry.getValue());
-                firstAll = false;
-            }
-
-            StringBuilder groupedCommon = new StringBuilder();
-            boolean first = true;
-            for (Map.Entry<String, Double> entry : commonAttributeTotals.entrySet()) {
-                String key = entry.getKey();
-                double total = entry.getValue();
-                if (!first) {
-                    groupedCommon.append(", ");
-                }
-                groupedCommon.append(key)
-                        .append("=")
-                        .append(String.format(Locale.ROOT, "%.3f", total));
-                first = false;
-            }
-
-            LOGGER.atInfo().log(
-                    "[MOB_COMMON_OFFENSE][AUGMENT_SUMMARY] target=%d totalAugments=%d commonAugments=%d groupedAll={%s} groupedCommon={%s}",
-                    targetIndex,
-                    augmentIds.size(),
-                    commonCount,
-                    groupedAll,
-                    groupedCommon);
-
-                List<String> parsedCommon = new ArrayList<>();
-                List<String> nonCommon = new ArrayList<>();
-                for (String augmentId : augmentIds) {
-                    CommonAugment.CommonStatOffer offer = CommonAugment.parseStatOfferId(augmentId);
-                    if (offer == null) {
-                        nonCommon.add(augmentId);
-                        continue;
-                    }
-
-                    String key = offer.attributeKey() == null || offer.attributeKey().isBlank()
-                            ? "unknown"
-                            : offer.attributeKey();
-                    double value = Double.isFinite(offer.rolledValue()) ? offer.rolledValue() : 0.0D;
-                    parsedCommon.add(String.format(Locale.ROOT, "%s=%.3f", key, value));
-                }
-
-                String parsedText = parsedCommon.isEmpty() ? "none" : String.join(", ", parsedCommon);
-                String groupedText = groupedCommon.length() == 0 ? "none" : groupedCommon.toString();
-                String nonCommonText = nonCommon.isEmpty() ? "none" : String.join(", ", nonCommon);
-
-                LOGGER.atInfo().log(
-                    "[MOB_COMMON_OFFENSE][AUGMENT_LIST] target=%d parsedCommon=[%s] groupedTotals=[%s] nonCommon=[%s]",
-                    targetIndex,
-                    parsedText,
-                    groupedText,
-                    nonCommonText);
-        }
 
         UUID mobUuid = resolveEntityUuid(targetRef, store, commandBuffer);
         if (mobUuid == null) {
@@ -478,11 +393,21 @@ public class PlayerCombatSystem extends DamageEventSystem {
                         augmentIds,
                         plugin.getAugmentManager(),
                         plugin.getAugmentRuntimeManager());
-                if (offenseLogThisHit) {
-                    LOGGER.atInfo().log("[MOB_OVERRIDE_AUGMENTS] target=%d uuid=%s augmentCount=%d",
-                        targetIndex, mobUuid, augmentIds.size());
-                }
             }
+        }
+
+        if (augmentCheckLogThisHit) {
+            EndlessLeveling plugin = EndlessLeveling.getInstance();
+            MobAugmentDiagnostics.Summary augmentSummary = MobAugmentDiagnostics.summarize(
+                    augmentIds,
+                    plugin != null ? plugin.getAugmentManager() : null);
+            LOGGER.atInfo().log(
+                    "[MOB_AUGMENT_CHECK] target=%d uuid=%s totalAugments=%d tierTotals={%s} augmentList=[%s]",
+                    targetIndex,
+                    mobUuid,
+                    augmentSummary.totalAugments(),
+                    augmentSummary.formatTierCounts(),
+                    augmentSummary.formatAugmentList());
         }
 
             double defensePercent = Math.max(0.0D,
@@ -490,42 +415,35 @@ public class PlayerCombatSystem extends DamageEventSystem {
                     mobAugmentExecutor.getAttributeBonus(mobUuid, SkillAttributeType.DEFENSE)));
             float afterDefense = (float) (incomingDamage * (1.0D - (defensePercent / 100.0D)));
             if (defenseLogThisHit) {
+                EndlessLeveling plugin = EndlessLeveling.getInstance();
+                MobAugmentDiagnostics.Summary augmentSummary = MobAugmentDiagnostics.summarize(
+                        augmentIds,
+                        plugin != null ? plugin.getAugmentManager() : null);
                 float defenseReductionAmount = Math.max(0.0f, incomingDamage - afterDefense);
                 LOGGER.atInfo().log(
-                        "[MOB_COMMON_DEFENSE] target=%d base=%.3f reduced=%.3f afterDefense=%.3f defense=%.2f%%",
+                        "[MOB_COMMON_DEFENSE] target=%d augmentCount=%d commonDefense={%s} base=%.3f reduced=%.3f afterDefense=%.3f defense=%.2f%%",
                         targetIndex,
+                        augmentSummary.totalAugments(),
+                        augmentSummary.formatCommonStatTotals(MobAugmentDiagnostics.getDefenseCommonStatKeys()),
                         incomingDamage,
                         defenseReductionAmount,
                         afterDefense,
                         defensePercent);
 
-                int commonCount = 0;
-                double commonLifeForceTotal = 0.0D;
-                for (String augmentId : augmentIds) {
-                    String baseAugmentId = CommonAugment.resolveBaseAugmentId(augmentId);
-                    if (CommonAugment.ID.equalsIgnoreCase(baseAugmentId)) {
-                        commonCount++;
-                    }
-                    CommonAugment.CommonStatOffer offer = CommonAugment.parseStatOfferId(augmentId);
-                    if (offer == null) {
-                        continue;
-                    }
-                    if ("life_force".equalsIgnoreCase(offer.attributeKey()) && Double.isFinite(offer.rolledValue())) {
-                        commonLifeForceTotal += offer.rolledValue();
-                    }
-                }
+                MobAugmentDiagnostics.CommonStatSummary lifeForceSummary = augmentSummary.commonStats()
+                        .get(MobAugmentDiagnostics.LIFE_FORCE_STAT_KEY);
+                double commonLifeForceTotal = lifeForceSummary != null ? lifeForceSummary.totalValue() : 0.0D;
 
                 EntityStatValue hp = targetStats.get(DefaultEntityStatTypes.getHealth());
                 float currentHp = hp != null ? hp.get() : Float.NaN;
                 float currentMax = hp != null ? hp.getMax() : Float.NaN;
                 MobLevelingManager.MobHealthCompositionSnapshot snapshot =
-                    mobLevelingManager.getEntityHealthCompositionSnapshot(targetIndex);
+                    mobLevelingManager.getEntityHealthCompositionSnapshot(targetRef, store, commandBuffer);
                 if (snapshot != null) {
                     LOGGER.atInfo().log(
-                        "[MOB_COMMON_DEFENSE][LIFE_FORCE_EXPECTED] target=%d source=authoritative commonCount=%d lifeForceTotal=%.3f hp=%.3f max=%.3f expectedBasePlusScaledMax=%.3f expectedCombinedMax=%.3f snapshotLifeForce=%.3f snapshotAgeMs=%d maxDelta=%.3f",
+                        "[MOB_COMMON_DEFENSE][HEALTH_AUDIT] target=%d source=authoritative commonHealth={%s} hp=%.3f max=%.3f expectedBasePlusScaledMax=%.3f expectedCombinedMax=%.3f snapshotLifeForce=%.3f snapshotAgeMs=%d maxDelta=%.3f",
                         targetIndex,
-                        commonCount,
-                        commonLifeForceTotal,
+                        augmentSummary.formatCommonStatTotals(List.of(MobAugmentDiagnostics.LIFE_FORCE_STAT_KEY)),
                         currentHp,
                         currentMax,
                         snapshot.scaledMax(),
@@ -538,10 +456,9 @@ public class PlayerCombatSystem extends DamageEventSystem {
                         ? (float) Math.max(1.0D, currentMax - Math.max(0.0D, commonLifeForceTotal))
                         : Float.NaN;
                     LOGGER.atInfo().log(
-                        "[MOB_COMMON_DEFENSE][LIFE_FORCE_EXPECTED] target=%d source=inferred commonCount=%d lifeForceTotal=%.3f hp=%.3f max=%.3f expectedBasePlusScaledMax=%.3f expectedCombinedMax=%.3f",
+                        "[MOB_COMMON_DEFENSE][HEALTH_AUDIT] target=%d source=inferred commonHealth={%s} hp=%.3f max=%.3f expectedBasePlusScaledMax=%.3f expectedCombinedMax=%.3f",
                         targetIndex,
-                        commonCount,
-                        commonLifeForceTotal,
+                        augmentSummary.formatCommonStatTotals(List.of(MobAugmentDiagnostics.LIFE_FORCE_STAT_KEY)),
                         currentHp,
                         currentMax,
                         expectedBasePlusScaledMax,

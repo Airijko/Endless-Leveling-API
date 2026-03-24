@@ -1,6 +1,7 @@
 package com.airijko.endlessleveling.mob;
 
 import com.airijko.endlessleveling.EndlessLeveling;
+import com.airijko.endlessleveling.augments.MobAugmentDiagnostics;
 import com.airijko.endlessleveling.augments.MobAugmentExecutor;
 import com.airijko.endlessleveling.augments.types.CommonAugment;
 import com.airijko.endlessleveling.compatibility.NameplateBuilderCompatibility;
@@ -188,8 +189,10 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
             return;
         }
 
-        Integer mobLevel = mobLevelingManager.resolveMobLevelForEntity(ref, store, commandBuffer);
+        Integer mobLevel;
         if (state.appliedLevel > 0) {
+            // Hot path optimization: once assigned, reuse the cached level and skip expensive
+            // world/viewport resolution every tick.
             mobLevel = state.appliedLevel;
         } else {
             mobLevel = resolveAndAssignLevelOnce(ref, store, commandBuffer, ref.getIndex(), state);
@@ -200,6 +203,11 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
             return;
         }
 
+        // Keep the manager-side level snapshot fresh so other systems (death XP, combat probes,
+        // announcers) read the same assigned level that mob flow is using, even if they execute
+        // outside this system's runtime-state map.
+        mobLevelingManager.recordEntityResolvedLevel(entityKey, mobLevel);
+
         if (state.appliedLevel <= 0) {
             state.appliedLevel = mobLevel;
         }
@@ -209,15 +217,9 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         // when applyHealthModifier snapshots and applies max-health layers.
         applyMobAugments(ref, store, commandBuffer, currentTimeMillis);
 
-        float observedLifeForceBonus = resolveMobLifeForceHealthBonus(ref, commandBuffer);
-        if (!Float.isFinite(observedLifeForceBonus) || observedLifeForceBonus < 0.0f) {
-            observedLifeForceBonus = 0.0f;
-        }
-        boolean lifeForceChangedSinceLastApply = !Float.isFinite(state.lastAppliedLifeForceBonus)
-                || Math.abs(state.lastAppliedLifeForceBonus - observedLifeForceBonus) > 0.0001f;
-        if (lifeForceChangedSinceLastApply && state.settledHealthLevel == mobLevel) {
-            // If augment registration/passives became available after the initial health settle,
-            // force a one-pass recompute so scaled HP includes the latest LIFE_FORCE bonus.
+        if (state.augmentHealthReconcilePending && state.settledHealthLevel == mobLevel) {
+            // Augments became available after initial settle; do exactly one reconcile apply
+            // so augmented health layers are included without recurring per-tick reapplication.
             state.settledHealthLevel = 0;
             state.nextHealthApplyAttemptMillis = currentTimeMillis;
         }
@@ -231,7 +233,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
                 if (healthApplied) {
                     state.settledHealthLevel = mobLevel;
                     state.nextHealthApplyAttemptMillis = currentTimeMillis;
-                    state.lastAppliedLifeForceBonus = observedLifeForceBonus;
+                    state.augmentHealthReconcilePending = false;
                 } else {
                     state.nextHealthApplyAttemptMillis = currentTimeMillis + FLOW_HEALTH_RETRY_INTERVAL_MILLIS;
                 }
@@ -486,7 +488,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
             EntityStatValue updatedSummonHp = summonStatMap.get(healthIndex);
             if (updatedSummonHp != null && Float.isFinite(updatedSummonHp.getMax())
                     && updatedSummonHp.getMax() > 0.0f) {
-                mobLevelingManager.recordEntityMaxHealth(entityId, updatedSummonHp.getMax());
+                mobLevelingManager.recordEntityMaxHealth(entityKey, updatedSummonHp.getMax());
 
                 float afterCurrent = updatedSummonHp.get();
                 float afterMax = updatedSummonHp.getMax();
@@ -537,8 +539,8 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         // modifier keys that we intentionally leave in the map so they remain effective. Without this
         // anchor, those augment modifiers would be included in baseMax on every subsequent tick, causing
         // the level-scaling multiplier to compound on an ever-growing base and produce billions of HP.
-        mobLevelingManager.cacheTrueBaseHealth(entityId, baselineRead);
-        Float cachedBase = mobLevelingManager.getTrueBaseHealth(entityId);
+        mobLevelingManager.cacheTrueBaseHealth(entityKey, baselineRead);
+        Float cachedBase = mobLevelingManager.getTrueBaseHealth(entityKey);
         float baseMax = (cachedBase != null && Float.isFinite(cachedBase) && cachedBase > 0.0f)
                 ? cachedBase
                 : baselineRead;
@@ -568,9 +570,9 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
             statMap.update();
             EntityStatValue restoredHealth = statMap.get(healthIndex);
             if (restoredHealth != null && Float.isFinite(restoredHealth.getMax()) && restoredHealth.getMax() > 0.0f) {
-                mobLevelingManager.recordEntityMaxHealth(entityId, restoredHealth.getMax());
+                mobLevelingManager.recordEntityMaxHealth(entityKey, restoredHealth.getMax());
                 mobLevelingManager.recordEntityHealthComposition(
-                        entityId,
+                    entityKey,
                         baseMax,
                         baseMax,
                         lifeForceBonus,
@@ -637,9 +639,9 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         statMap.update();
         EntityStatValue updatedHealth = statMap.get(healthIndex);
         if (updatedHealth != null && Float.isFinite(updatedHealth.getMax()) && updatedHealth.getMax() > 0.0f) {
-            mobLevelingManager.recordEntityMaxHealth(entityId, updatedHealth.getMax());
+            mobLevelingManager.recordEntityMaxHealth(entityKey, updatedHealth.getMax());
             mobLevelingManager.recordEntityHealthComposition(
-                entityId,
+                entityKey,
                 baseMax,
                 targetMax,
                 lifeForceBonus,
@@ -836,11 +838,6 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
             return false;
         }
 
-        if (isDebugSectionEnabled(DEBUG_SECTION_MOB_COMMON_OFFENSE)
-                || isDebugSectionEnabled(DEBUG_SECTION_MOB_COMMON_DEFENSE)) {
-            logCommonAugmentSummary(ref, commandBuffer, augmentIds);
-        }
-
         executor.registerMobAugments(
                 mobUuid,
                 augmentIds,
@@ -864,9 +861,13 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
 
         if (state.nextMobAugmentRegistrationCheckMillis <= 0L
                 || currentTimeMillis >= state.nextMobAugmentRegistrationCheckMillis) {
+            boolean alreadyInitialized = state.mobAugmentsInitialized;
             boolean registeredNow = ensureMobAugmentsRegistered(ref, store, commandBuffer);
             if (registeredNow) {
                 state.mobAugmentsInitialized = true;
+                if (!alreadyInitialized) {
+                    state.augmentHealthReconcilePending = true;
+                }
                 state.nextMobAugmentRegistrationCheckMillis = 0L;
                 if (isDebugSectionEnabled(DEBUG_SECTION_MOB_LEVEL_FLOW)) {
                     LOGGER.atInfo().log(
@@ -1257,86 +1258,6 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         return false;
     }
 
-    private void logCommonAugmentSummary(Ref<EntityStore> ref,
-            CommandBuffer<EntityStore> commandBuffer,
-            List<String> augmentIds) {
-        if (augmentIds == null || augmentIds.isEmpty()) {
-            return;
-        }
-
-        Map<String, Double> totalsByAttribute = new TreeMap<>();
-        Map<String, Integer> countsByAttribute = new TreeMap<>();
-        int commonCount = 0;
-
-        for (String augmentId : augmentIds) {
-            CommonAugment.CommonStatOffer offer = CommonAugment.parseStatOfferId(augmentId);
-            if (offer == null) {
-                continue;
-            }
-
-            String attributeKey = offer.attributeKey();
-            if (attributeKey == null || attributeKey.isBlank()) {
-                continue;
-            }
-
-            double value = offer.rolledValue();
-            if (!Double.isFinite(value)) {
-                continue;
-            }
-
-            commonCount++;
-            totalsByAttribute.merge(attributeKey, value, Double::sum);
-            countsByAttribute.merge(attributeKey, 1, Integer::sum);
-        }
-
-        int entityId = ref != null ? ref.getIndex() : -1;
-        UUID entityUuid = null;
-        if (ref != null && commandBuffer != null) {
-            UUIDComponent uuidComponent = commandBuffer.getComponent(ref, UUIDComponent.getComponentType());
-            if (uuidComponent != null) {
-                entityUuid = uuidComponent.getUuid();
-            }
-        }
-
-        StringBuilder grouped = new StringBuilder();
-        boolean first = true;
-        for (Map.Entry<String, Double> entry : totalsByAttribute.entrySet()) {
-            String key = entry.getKey();
-            double total = entry.getValue();
-            int count = countsByAttribute.getOrDefault(key, 0);
-            if (!first) {
-                grouped.append(", ");
-            }
-            grouped.append(key)
-                    .append("=")
-                    .append(String.format(Locale.ROOT, "%.3f", total))
-                    .append(" (count=")
-                    .append(count)
-                    .append(")");
-            first = false;
-        }
-
-        double lifeForceTotal = totalsByAttribute.getOrDefault("life_force", 0.0D);
-        int lifeForceCount = countsByAttribute.getOrDefault("life_force", 0);
-
-        String commonStatus = commonCount > 0 ? "present" : "none";
-
-        LOGGER.atInfo().log(
-            "[MOB_COMMON_OFFENSE][AUGMENT_SUMMARY] entity=%d uuid=%s totalAugments=%d commonAugments=%d commonStatus=%s groupedCommon={%s}",
-                entityId,
-                entityUuid,
-                augmentIds.size(),
-                commonCount,
-            commonStatus,
-                grouped);
-        LOGGER.atInfo().log(
-                "[MOB_COMMON_DEFENSE][LIFE_FORCE_SUMMARY] entity=%d uuid=%s lifeForceTotal=%.3f lifeForceCount=%d",
-                entityId,
-                entityUuid,
-                lifeForceTotal,
-                lifeForceCount);
-    }
-
     private record PlayerChunkViewport(int chunkX, int chunkZ, int radiusChunks) {
     }
 
@@ -1569,6 +1490,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         private boolean lastAppliedShowNameInNameplate;
         private boolean lastAppliedShowHealthInNameplate;
         private String lastAppliedNameplateText;
+        private boolean augmentHealthReconcilePending;
         private boolean mobAugmentsInitialized;
         private boolean flowInitializedLogged;
 
@@ -1591,6 +1513,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
                     || Float.isFinite(lastNameplateMaxHealthValue)
                     || lastAppliedNameplateLevel != Integer.MIN_VALUE
                     || lastAppliedNameplateText != null
+                    || augmentHealthReconcilePending
                     || mobAugmentsInitialized
                     || flowInitializedLogged
                     || trackedStore != null

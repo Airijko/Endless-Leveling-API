@@ -20,6 +20,8 @@ import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.util.EventTitleUtil;
 import com.hypixel.hytale.server.core.util.NotificationUtil;
+import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import java.util.List;
 import java.util.Locale;
@@ -166,11 +168,12 @@ public class LevelingManager {
                 ? skillManager.getDisciplineXpBonusPercent(player)
                 : 0.0D;
         double totalBonus = 0.0D;
+        double passiveXpBonus = 0.0D;
 
         if (archetypePassiveManager != null) {
             ArchetypePassiveSnapshot snapshot = archetypePassiveManager.getSnapshot(player);
-            double passiveBonus = snapshot.getValue(ArchetypePassiveType.XP_BONUS); // e.g., 1.5 == +150%
-            totalBonus += passiveBonus;
+            passiveXpBonus = snapshot.getValue(ArchetypePassiveType.XP_BONUS); // e.g., 1.5 == +150%
+            totalBonus += passiveXpBonus;
         }
 
         totalBonus += (disciplineBonusPercent / 100.0D);
@@ -190,6 +193,15 @@ public class LevelingManager {
         int effectiveCap = getLevelCap(player);
 
         if (player.getLevel() >= effectiveCap) {
+            LOGGER.atInfo().log(
+                    "[XP_APPLY] player=%s level=%d cap=%d incoming=%.3f passiveBonus=%.4f disciplinePct=%.3f luckPct=%.3f final=0.000 blocked=level_cap",
+                    uuid,
+                    player.getLevel(),
+                    effectiveCap,
+                    xpAmount,
+                    passiveXpBonus,
+                    disciplineBonusPercent,
+                    luckXpBonusPercent);
             if (player.getXp() != 0) {
                 player.setXp(0);
                 playerDataManager.save(player);
@@ -200,6 +212,17 @@ public class LevelingManager {
 
         // Add XP
         player.setXp(player.getXp() + adjustedXp);
+
+        LOGGER.atInfo().log(
+            "[XP_APPLY] player=%s level=%d cap=%d incoming=%.3f passiveBonus=%.4f disciplinePct=%.3f luckPct=%.3f final=%.3f blocked=none",
+            uuid,
+            player.getLevel(),
+            effectiveCap,
+            xpAmount,
+            passiveXpBonus,
+            disciplineBonusPercent,
+            luckXpBonusPercent,
+            adjustedXp);
 
         // Notify XP gain
         notifyXpGain(player, adjustedXp);
@@ -512,15 +535,26 @@ public class LevelingManager {
 
     public double applyMobKillXpRules(PlayerData player, int mobLevel, double baseXpAmount,
             boolean skipLevelRangeChecks) {
+        return applyMobKillXpRules(player, mobLevel, baseXpAmount, skipLevelRangeChecks, null, null);
+    }
+
+    public double applyMobKillXpRules(PlayerData player,
+            int mobLevel,
+            double baseXpAmount,
+            boolean skipLevelRangeChecks,
+            Store<EntityStore> store,
+            MobLevelingManager mobLevelingManager) {
         if (player == null || baseXpAmount <= 0)
             return 0.0;
 
+        MobXpRuleSet rules = resolveMobXpRuleSet(store, mobLevelingManager);
+
         double adjustedXp = baseXpAmount;
-        if (!experienceRulesEnabled)
+        if (!rules.experienceRulesEnabled())
             return adjustedXp;
 
-        if (globalXpMultiplier != 1.0d)
-            adjustedXp *= globalXpMultiplier;
+        if (rules.globalXpMultiplier() != 1.0d)
+            adjustedXp *= rules.globalXpMultiplier();
 
         // Discipline bonus is now combined additively with passive XP_BONUS inside
         // addXp.
@@ -528,36 +562,32 @@ public class LevelingManager {
         boolean blockedForBeingTooHigh = false;
         boolean blockedForBeingTooLow = false;
         boolean levelKnown = !skipLevelRangeChecks;
-        boolean withinAllowedRange = true;
+        boolean eligibleForScaling = true;
         Integer relativeDiff = null;
         if (!skipLevelRangeChecks) {
             int mobLvl = Math.max(1, mobLevel);
             int diff = player.getLevel() - mobLvl;
-            if (playerBasedMode)
-                diff += playerBasedOffset;
-            int diffForScaling = diff;
+            if (rules.playerBasedMode())
+                diff += rules.playerBasedOffset();
+            relativeDiff = diff;
 
-            if (xpLevelRangeEnabled && xpMaxDifference >= 0) {
-                if (diff > xpMaxDifference) {
-                    adjustedXp *= xpAboveRangeMultiplier;
-                    blockedForBeingTooHigh = xpAboveRangeMultiplier <= 0.0;
-                    withinAllowedRange = !blockedForBeingTooHigh;
-                    diffForScaling = Math.min(diff, xpMaxDifference);
-                } else if (diff < -xpMaxDifference) {
-                    adjustedXp *= xpBelowRangeMultiplier;
-                    blockedForBeingTooLow = xpBelowRangeMultiplier <= 0.0;
-                    withinAllowedRange = !blockedForBeingTooLow;
-                    // Clamp diff used for scaling at the configured max gap.
-                    diffForScaling = -xpMaxDifference;
+            if (rules.xpLevelRangeEnabled() && rules.xpMaxDifference() >= 0) {
+                if (diff > rules.xpMaxDifference()) {
+                    adjustedXp *= rules.xpAboveRangeMultiplier();
+                    blockedForBeingTooHigh = rules.xpAboveRangeMultiplier() <= 0.0;
+                    eligibleForScaling = false;
+                } else if (diff < -rules.xpMaxDifference()) {
+                    adjustedXp *= rules.xpBelowRangeMultiplier();
+                    blockedForBeingTooLow = rules.xpBelowRangeMultiplier() <= 0.0;
+                    eligibleForScaling = false;
                 }
             }
-            relativeDiff = diffForScaling;
         }
 
         // Always add the configured flat amount before scaling so max-difference
         // multipliers can affect it as well.
-        if (xpAdditiveMinimum > 0.0D) {
-            adjustedXp += xpAdditiveMinimum;
+        if (rules.xpAdditiveMinimum() > 0.0D) {
+            adjustedXp += rules.xpAdditiveMinimum();
         }
 
         if (adjustedXp <= 0.0) {
@@ -568,12 +598,52 @@ public class LevelingManager {
             return 0.0;
         }
 
-        if (relativeDiff != null && withinAllowedRange) {
-            double scalingMultiplier = resolveScalingMultiplier(relativeDiff);
+        if (relativeDiff != null && eligibleForScaling) {
+            double scalingMultiplier = resolveScalingMultiplier(relativeDiff, rules);
             if (scalingMultiplier != 1.0d)
                 adjustedXp *= scalingMultiplier;
         }
         return adjustedXp;
+    }
+
+    private MobXpRuleSet resolveMobXpRuleSet(Store<EntityStore> store, MobLevelingManager source) {
+        MobLevelingManager effectiveSource = source;
+        if (effectiveSource == null && store != null) {
+            EndlessLeveling plugin = EndlessLeveling.getInstance();
+            if (plugin != null) {
+                effectiveSource = plugin.getMobLevelingManager();
+            }
+        }
+
+        if (effectiveSource == null || store == null) {
+            return new MobXpRuleSet(
+                    experienceRulesEnabled,
+                    globalXpMultiplier,
+                    xpLevelRangeEnabled,
+                    xpMaxDifference,
+                    xpBelowRangeMultiplier,
+                    xpAboveRangeMultiplier,
+                    xpAdditiveMinimum,
+                    xpScalingMode,
+                    xpScalingBonusAtMax,
+                    xpScalingMinMultiplier,
+                    playerBasedMode,
+                    playerBasedOffset);
+        }
+
+        return new MobXpRuleSet(
+                effectiveSource.isMobExperienceRulesEnabled(store),
+                effectiveSource.getMobGlobalXpMultiplier(store),
+                effectiveSource.isMobXpLevelRangeEnabled(store),
+                Math.max(0, effectiveSource.getMobXpMaxDifference(store)),
+                effectiveSource.getMobXpBelowRangeMultiplier(store),
+                effectiveSource.getMobXpAboveRangeMultiplier(store),
+                Math.max(0.0D, effectiveSource.getMobXpAdditiveMinimum(store)),
+                XpScalingMode.fromString(effectiveSource.getMobXpScalingMode(store)),
+                Math.max(0.0D, effectiveSource.getMobXpScalingBonusAtMax(store)),
+                clampMultiplier(effectiveSource.getMobXpScalingMinMultiplier(store)),
+                effectiveSource.isLevelSourcePlayerMode(store),
+                effectiveSource.getPlayerBasedOffset(store));
     }
 
     private void notifyXpSuppressed(PlayerData player, int mobLevel, boolean levelKnown, XpSuppressionReason reason) {
@@ -610,27 +680,45 @@ public class LevelingManager {
         return defaultValue;
     }
 
-    private double resolveScalingMultiplier(int relativeDiff) {
-        if (xpScalingMode == XpScalingMode.NONE || xpMaxDifference <= 0)
+    private double resolveScalingMultiplier(int relativeDiff, MobXpRuleSet rules) {
+        if (rules.xpScalingMode() == XpScalingMode.NONE || rules.xpMaxDifference() <= 0)
             return 1.0;
 
-        return switch (xpScalingMode) {
-            case LINEAR -> computeLinearScaling(relativeDiff);
+        return switch (rules.xpScalingMode()) {
+            case LINEAR -> computeLinearScaling(relativeDiff, rules.xpMaxDifference(), rules.xpScalingMinMultiplier(),
+                    rules.xpScalingBonusAtMax());
             case NONE -> 1.0; // kept for completeness
         };
     }
 
-    private double computeLinearScaling(int relativeDiff) {
-        int maxDiff = Math.max(1, xpMaxDifference);
+    private double computeLinearScaling(int relativeDiff,
+            int maxDifference,
+            double minMultiplier,
+            double bonusAtMax) {
+        int maxDiff = Math.max(1, maxDifference);
         double normalizedGap = Math.min(1.0, Math.abs(relativeDiff) / (double) maxDiff);
         if (normalizedGap <= 0.0)
             return 1.0;
 
         if (relativeDiff >= 0) {
-            return lerp(1.0, xpScalingMinMultiplier, normalizedGap);
+            return lerp(1.0, minMultiplier, normalizedGap);
         }
-        double maxBonusMultiplier = Math.max(1.0, xpScalingBonusAtMax);
+        double maxBonusMultiplier = Math.max(1.0, bonusAtMax);
         return lerp(1.0, maxBonusMultiplier, normalizedGap);
+    }
+
+    private record MobXpRuleSet(boolean experienceRulesEnabled,
+            double globalXpMultiplier,
+            boolean xpLevelRangeEnabled,
+            int xpMaxDifference,
+            double xpBelowRangeMultiplier,
+            double xpAboveRangeMultiplier,
+            double xpAdditiveMinimum,
+            XpScalingMode xpScalingMode,
+            double xpScalingBonusAtMax,
+            double xpScalingMinMultiplier,
+            boolean playerBasedMode,
+            int playerBasedOffset) {
     }
 
     private double lerp(double start, double end, double ratio) {

@@ -4,6 +4,7 @@ import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentManager;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
+import com.airijko.endlessleveling.augments.MobAugmentDiagnostics;
 import com.airijko.endlessleveling.augments.types.CommonAugment;
 import com.airijko.endlessleveling.enums.PassiveTier;
 import com.airijko.endlessleveling.managers.ConfigManager;
@@ -53,12 +54,14 @@ public class MobLevelingManager {
     private final ConfigManager worldsConfigManager;
     private final PlayerDataManager playerDataManager;
     private final Map<Long, Long> mobLevelDebugLogTimes = new ConcurrentHashMap<>();
-    private final Map<Integer, MobHealthCompositionSnapshot> entityHealthCompositionSnapshots = new ConcurrentHashMap<>();
+    private final Map<Long, MobHealthCompositionSnapshot> entityHealthCompositionSnapshots = new ConcurrentHashMap<>();
+    private final Map<Long, Integer> entityResolvedLevelSnapshots = new ConcurrentHashMap<>();
+    private final Map<Long, List<String>> entityAssignedAugmentSnapshots = new ConcurrentHashMap<>();
     /** Anchors each mob's base health to the value captured on the very first applyHealthModifier
      *  call, before any augment percent-health passives have run. Without this cache, augment passives
      *  (e.g. goliath +20%, raid_boss +50%) compound with level scaling on every tick, producing
      *  exponentially-growing HP values. putIfAbsent guarantees the true base is written only once. */
-    private final Map<Integer, Float> trueBaseHealthCache = new ConcurrentHashMap<>();
+    private final Map<Long, Float> trueBaseHealthCache = new ConcurrentHashMap<>();
     private volatile boolean missingLevelSourceModeWarned;
 
     private final Map<String, AreaOverride> areaOverrides = new ConcurrentHashMap<>();
@@ -87,6 +90,11 @@ public class MobLevelingManager {
                                        List<String> legendary,
                                        List<String> mythic,
                                        List<String> fallback) {
+    }
+
+    private record HighTierRollProfile(double eliteWeight,
+                                       double legendaryWeight,
+                                       double mythicWeight) {
     }
 
     public record MobHealthCompositionSnapshot(float baseMax,
@@ -232,34 +240,45 @@ public class MobLevelingManager {
     }
 
     public void forgetEntity(int entityIndex) {
-        entityHealthCompositionSnapshots.remove(entityIndex);
-        trueBaseHealthCache.remove(entityIndex);
+        // Caller lacks store/UUID context. Prefer forgetEntityByKey or forgetEntity(store, index).
     }
 
     public void forgetEntity(Store<EntityStore> store, int entityIndex) {
-        entityHealthCompositionSnapshots.remove(entityIndex);
-        trueBaseHealthCache.remove(entityIndex);
+        long fallbackKey = toEntityKey(store, entityIndex);
+        entityHealthCompositionSnapshots.remove(fallbackKey);
+        entityResolvedLevelSnapshots.remove(fallbackKey);
+        entityAssignedAugmentSnapshots.remove(fallbackKey);
+        trueBaseHealthCache.remove(fallbackKey);
     }
 
     public void forgetEntityByKey(long entityKey) {
-        // no-op: stateless mode
+        if (entityKey < 0L) {
+            return;
+        }
+        entityHealthCompositionSnapshots.remove(entityKey);
+        entityResolvedLevelSnapshots.remove(entityKey);
+        entityAssignedAugmentSnapshots.remove(entityKey);
+        trueBaseHealthCache.remove(entityKey);
     }
 
-    public void recordEntityMaxHealth(int entityIndex, float maxHealth) {
+    public void recordEntityMaxHealth(long trackingKey, float maxHealth) {
+        if (trackingKey < 0L) {
+            return;
+        }
         if (!Float.isFinite(maxHealth) || maxHealth <= 0.0f) {
-            entityHealthCompositionSnapshots.remove(entityIndex);
+            entityHealthCompositionSnapshots.remove(trackingKey);
             return;
         }
 
-        MobHealthCompositionSnapshot existing = entityHealthCompositionSnapshots.get(entityIndex);
+        MobHealthCompositionSnapshot existing = entityHealthCompositionSnapshots.get(trackingKey);
         if (existing == null) {
-            entityHealthCompositionSnapshots.put(entityIndex,
+            entityHealthCompositionSnapshots.put(trackingKey,
                     new MobHealthCompositionSnapshot(maxHealth, maxHealth, 0.0f, maxHealth,
                             System.currentTimeMillis()));
             return;
         }
 
-        entityHealthCompositionSnapshots.put(entityIndex,
+        entityHealthCompositionSnapshots.put(trackingKey,
                 new MobHealthCompositionSnapshot(
                         existing.baseMax(),
                         existing.scaledMax(),
@@ -268,20 +287,26 @@ public class MobLevelingManager {
                         System.currentTimeMillis()));
     }
 
-    public float getEntityMaxHealthSnapshot(int entityIndex) {
-        MobHealthCompositionSnapshot snapshot = entityHealthCompositionSnapshots.get(entityIndex);
+    public float getEntityMaxHealthSnapshot(long trackingKey) {
+        MobHealthCompositionSnapshot snapshot = entityHealthCompositionSnapshots.get(trackingKey);
         if (snapshot == null || !Float.isFinite(snapshot.combinedMax())) {
             return -1.0f;
         }
         return snapshot.combinedMax();
     }
 
-    public void recordEntityHealthComposition(int entityIndex,
+    public float getEntityMaxHealthSnapshot(Ref<EntityStore> ref,
+                                            Store<EntityStore> store,
+                                            CommandBuffer<EntityStore> commandBuffer) {
+        return getEntityMaxHealthSnapshot(resolveTrackingKey(ref, store, commandBuffer));
+    }
+
+    public void recordEntityHealthComposition(long trackingKey,
                                               float baseMax,
                                               float scaledMax,
                                               float lifeForceBonus,
                                               float combinedMax) {
-        if (entityIndex < 0
+        if (trackingKey < 0L
                 || !Float.isFinite(baseMax)
                 || !Float.isFinite(scaledMax)
                 || !Float.isFinite(lifeForceBonus)
@@ -290,7 +315,7 @@ public class MobLevelingManager {
             return;
         }
 
-        entityHealthCompositionSnapshots.put(entityIndex,
+        entityHealthCompositionSnapshots.put(trackingKey,
                 new MobHealthCompositionSnapshot(baseMax,
                         scaledMax,
                         Math.max(0.0f, lifeForceBonus),
@@ -298,8 +323,32 @@ public class MobLevelingManager {
                         System.currentTimeMillis()));
     }
 
-    public MobHealthCompositionSnapshot getEntityHealthCompositionSnapshot(int entityIndex) {
-        return entityHealthCompositionSnapshots.get(entityIndex);
+    public MobHealthCompositionSnapshot getEntityHealthCompositionSnapshot(long trackingKey) {
+        return entityHealthCompositionSnapshots.get(trackingKey);
+    }
+
+    public MobHealthCompositionSnapshot getEntityHealthCompositionSnapshot(Ref<EntityStore> ref,
+                                                                           Store<EntityStore> store,
+                                                                           CommandBuffer<EntityStore> commandBuffer) {
+        return getEntityHealthCompositionSnapshot(resolveTrackingKey(ref, store, commandBuffer));
+    }
+
+    public void recordEntityResolvedLevel(long trackingKey, int level) {
+        if (trackingKey < 0L || level <= 0) {
+            return;
+        }
+        entityResolvedLevelSnapshots.put(trackingKey, level);
+    }
+
+    public Integer getEntityResolvedLevelSnapshot(long trackingKey) {
+        Integer level = entityResolvedLevelSnapshots.get(trackingKey);
+        return (level != null && level > 0) ? level : null;
+    }
+
+    public Integer getEntityResolvedLevelSnapshot(Ref<EntityStore> ref,
+                                                  Store<EntityStore> store,
+                                                  CommandBuffer<EntityStore> commandBuffer) {
+        return getEntityResolvedLevelSnapshot(resolveTrackingKey(ref, store, commandBuffer));
     }
 
     /**
@@ -308,23 +357,29 @@ public class MobLevelingManager {
      * before any augment percent-health passives have modified the stat. This prevents the
      * compounding of augment modifiers (goliath, raid_boss, etc.) with level scaling across ticks.
      */
-    public void cacheTrueBaseHealth(int entityId, float trueBase) {
-        if (Float.isFinite(trueBase) && trueBase > 0.0f) {
-            trueBaseHealthCache.putIfAbsent(entityId, trueBase);
+    public void cacheTrueBaseHealth(long trackingKey, float trueBase) {
+        if (trackingKey >= 0L && Float.isFinite(trueBase) && trueBase > 0.0f) {
+            trueBaseHealthCache.putIfAbsent(trackingKey, trueBase);
         }
     }
 
     /**
      * Returns the cached true base health for the given entity, or {@code null} if not yet cached.
      */
-    public Float getTrueBaseHealth(int entityId) {
-        return trueBaseHealthCache.get(entityId);
+    public Float getTrueBaseHealth(long trackingKey) {
+        return trueBaseHealthCache.get(trackingKey);
     }
 
     public int resolveMobLevel(Ref<EntityStore> ref, CommandBuffer<EntityStore> commandBuffer) {
         if (ref == null) {
             return 1;
         }
+
+        Integer resolvedSnapshot = getEntityResolvedLevelSnapshot(ref, ref.getStore(), commandBuffer);
+        if (resolvedSnapshot != null) {
+            return resolvedSnapshot;
+        }
+
         int resolved = resolveMobLevel(ref.getStore(), resolveWorldPosition(ref, commandBuffer), ref.getIndex());
         return Math.max(1, resolved);
     }
@@ -356,8 +411,56 @@ public class MobLevelingManager {
         return getLevelSourceMode(null) == LevelSourceMode.PLAYER;
     }
 
+    public boolean isLevelSourcePlayerMode(Store<EntityStore> store) {
+        return getLevelSourceMode(store) == LevelSourceMode.PLAYER;
+    }
+
     public boolean isLevelSourceMixedMode() {
         return getLevelSourceMode(null) == LevelSourceMode.MIXED;
+    }
+
+    public int getPlayerBasedOffset(Store<EntityStore> store) {
+        return getConfigInt("Mob_Leveling.Level_Source.Player_Based.Offset", 0, store);
+    }
+
+    public boolean isMobExperienceRulesEnabled(Store<EntityStore> store) {
+        return getConfigBoolean("Mob_Leveling.Experience.Enabled", true, store);
+    }
+
+    public double getMobGlobalXpMultiplier(Store<EntityStore> store) {
+        return getConfigDouble("Mob_Leveling.Experience.Global_XP_Multiplier", 1.0D, store);
+    }
+
+    public boolean isMobXpLevelRangeEnabled(Store<EntityStore> store) {
+        return getConfigBoolean("Mob_Leveling.Experience.XP_Level_Range.Enabled", true, store);
+    }
+
+    public int getMobXpMaxDifference(Store<EntityStore> store) {
+        return getConfigInt("Mob_Leveling.Experience.XP_Level_Range.Max_Difference", 10, store);
+    }
+
+    public double getMobXpBelowRangeMultiplier(Store<EntityStore> store) {
+        return getConfigDouble("Mob_Leveling.Experience.XP_Level_Range.Below_Range.Multiplier", 0.0D, store);
+    }
+
+    public double getMobXpAboveRangeMultiplier(Store<EntityStore> store) {
+        return getConfigDouble("Mob_Leveling.Experience.XP_Level_Range.Above_Range.Multiplier", 0.0D, store);
+    }
+
+    public double getMobXpAdditiveMinimum(Store<EntityStore> store) {
+        return getConfigDouble("Mob_Leveling.Experience.Additive_Minimum_XP", 50.0D, store);
+    }
+
+    public String getMobXpScalingMode(Store<EntityStore> store) {
+        return getConfigString("Mob_Leveling.Experience.Scaling.Mode", "NONE", store);
+    }
+
+    public double getMobXpScalingBonusAtMax(Store<EntityStore> store) {
+        return getConfigDouble("Mob_Leveling.Experience.Scaling.BonusAtMax", 0.0D, store);
+    }
+
+    public double getMobXpScalingMinMultiplier(Store<EntityStore> store) {
+        return getConfigDouble("Mob_Leveling.Experience.Scaling.MinMultiplier", 0.1D, store);
     }
 
     public String describeMixedPromotionTrigger(Ref<EntityStore> ref,
@@ -398,11 +501,18 @@ public class MobLevelingManager {
     public List<String> getMobOverrideAugmentIds(Ref<EntityStore> ref,
                                                   Store<EntityStore> store,
                                                   CommandBuffer<EntityStore> commandBuffer) {
-        if (ref == null || isEntityBlacklisted(ref, store, commandBuffer)) {
+        Store<EntityStore> effectiveStore = store != null ? store : (ref != null ? ref.getStore() : null);
+        if (ref == null || isEntityBlacklisted(ref, effectiveStore, commandBuffer)) {
             return List.of();
         }
 
-        if (!getConfigBoolean("Mob_Augments.Enabled", true, store)) {
+        long entityKey = resolveTrackingKey(ref, effectiveStore, commandBuffer);
+        List<String> cachedAugments = entityAssignedAugmentSnapshots.get(entityKey);
+        if (cachedAugments != null) {
+            return cachedAugments;
+        }
+
+        if (!getConfigBoolean("Mob_Augments.Enabled", true, effectiveStore)) {
             return List.of();
         }
 
@@ -413,20 +523,17 @@ public class MobLevelingManager {
         }
 
         int level = Math.max(1, resolveMobLevel(ref, commandBuffer));
-        int baseCount = getConfigInt("Mob_Leveling.Mob_Augments.Base_Count", 0, store);
-        int perLevels = Math.max(1, getConfigInt("Mob_Leveling.Mob_Augments.Per_Levels", 15, store));
-        int highTierCount = Math.max(0, baseCount + (level / perLevels));
-        int commonCount = Math.max(0, resolveCommonAugmentCountFromPerLevel(level, store));
+        long seed = computeAugmentSeed(ref, effectiveStore, level);
+        SplittableRandom random = new SplittableRandom(seed);
+
+        List<HighTierRollProfile> highTierRollProfiles = resolveHighTierRollProfiles(level, effectiveStore, random);
+        int highTierCount = highTierRollProfiles.size();
+        int commonCount = Math.max(0, resolveCommonAugmentCountFromPerLevel(level, effectiveStore));
         if (highTierCount <= 0 && commonCount <= 0) {
             return List.of();
         }
 
-        double eliteWeight = Math.max(0.0D, getConfigDouble("Mob_Leveling.Mob_Augments.Weights.ELITE", 1.0D, store));
-        double legendaryWeight = Math.max(0.0D,
-                getConfigDouble("Mob_Leveling.Mob_Augments.Weights.LEGENDARY", 0.35D, store));
-        double mythicWeight = Math.max(0.0D, getConfigDouble("Mob_Leveling.Mob_Augments.Weights.MYTHIC", 0.1D, store));
-
-        Set<String> blacklistedIds = parseAugmentBlacklist(store);
+        Set<String> blacklistedIds = parseAugmentBlacklist(effectiveStore);
         MobAugmentTierPools tierPools = resolveMobAugmentTierPools(augmentManager, blacklistedIds);
         List<String> elite = tierPools.elite();
         List<String> legendary = tierPools.legendary();
@@ -437,17 +544,25 @@ public class MobLevelingManager {
             return List.of();
         }
 
-        long seed = computeAugmentSeed(ref, store, level);
-        SplittableRandom random = new SplittableRandom(seed);
         Set<String> chosen = new LinkedHashSet<>();
 
         if (highTierCount > 0) {
-            int safety = Math.max(8, highTierCount * 12);
-            for (int i = 0; i < safety && chosen.size() < highTierCount; i++) {
-                PassiveTier tier = rollTier(random, eliteWeight, legendaryWeight, mythicWeight);
-                String picked = pickTier(tier, elite, legendary, mythic, fallbackPool, random);
-                if (picked != null) {
-                    chosen.add(picked);
+            for (HighTierRollProfile rollProfile : highTierRollProfiles) {
+                int attempts = 0;
+                while (attempts < 12) {
+                    int before = chosen.size();
+                    PassiveTier tier = rollTier(random,
+                            rollProfile.eliteWeight(),
+                            rollProfile.legendaryWeight(),
+                            rollProfile.mythicWeight());
+                    String picked = pickTier(tier, elite, legendary, mythic, fallbackPool, random);
+                    if (picked != null) {
+                        chosen.add(picked);
+                    }
+                    if (chosen.size() > before) {
+                        break;
+                    }
+                    attempts++;
                 }
             }
         }
@@ -457,7 +572,76 @@ public class MobLevelingManager {
             selected.addAll(rollMobCommonStatOffers(augmentManager, commonCount, random));
         }
 
-        return selected.isEmpty() ? List.of() : List.copyOf(selected);
+        if (selected.isEmpty()) {
+            return List.of();
+        }
+
+        List<String> assignedAugments = List.copyOf(selected);
+        entityAssignedAugmentSnapshots.put(entityKey, assignedAugments);
+        return assignedAugments;
+    }
+
+    private List<HighTierRollProfile> resolveHighTierRollProfiles(int level,
+            Store<EntityStore> store,
+            SplittableRandom random) {
+        int baseHighTierCount = getConfigInt("Mob_Augments.Base_High_Tier.Count", -1, store);
+        int extraHighTierCount = getConfigInt("Mob_Augments.Extra_High_Tier.Count", -1, store);
+        boolean hasStructuredConfig = baseHighTierCount >= 0 || extraHighTierCount >= 0;
+
+        List<HighTierRollProfile> rolls = new ArrayList<>();
+
+        if (hasStructuredConfig) {
+            if (baseHighTierCount > 0) {
+                double baseChance = clampProbability(getConfigDouble("Mob_Augments.Base_High_Tier.Chance", 1.0D, store));
+                if (random.nextDouble() < baseChance) {
+                    HighTierRollProfile baseProfile = new HighTierRollProfile(
+                            Math.max(0.0D, getConfigDouble("Mob_Augments.Base_High_Tier.Weights.Elite", 1.0D, store)),
+                            Math.max(0.0D, getConfigDouble("Mob_Augments.Base_High_Tier.Weights.Legendary", 0.0D, store)),
+                            Math.max(0.0D, getConfigDouble("Mob_Augments.Base_High_Tier.Weights.Mythic", 0.0D, store)));
+                    for (int i = 0; i < baseHighTierCount; i++) {
+                        rolls.add(baseProfile);
+                    }
+                }
+            }
+
+            if (extraHighTierCount > 0) {
+                double extraChance = clampProbability(getConfigDouble("Mob_Augments.Extra_High_Tier.Chance", 0.0D, store));
+                if (random.nextDouble() < extraChance) {
+                    HighTierRollProfile extraProfile = new HighTierRollProfile(
+                            Math.max(0.0D, getConfigDouble("Mob_Augments.Extra_High_Tier.Weights.Elite", 0.8D, store)),
+                            Math.max(0.0D, getConfigDouble("Mob_Augments.Extra_High_Tier.Weights.Legendary", 0.15D, store)),
+                            Math.max(0.0D, getConfigDouble("Mob_Augments.Extra_High_Tier.Weights.Mythic", 0.05D, store)));
+                    for (int i = 0; i < extraHighTierCount; i++) {
+                        rolls.add(extraProfile);
+                    }
+                }
+            }
+
+            return rolls;
+        }
+
+        int baseCount = getConfigInt("Mob_Leveling.Mob_Augments.Base_Count", 0, store);
+        int perLevels = Math.max(1, getConfigInt("Mob_Leveling.Mob_Augments.Per_Levels", 15, store));
+        int highTierCount = Math.max(0, baseCount + (level / perLevels));
+        if (highTierCount <= 0) {
+            return rolls;
+        }
+
+        HighTierRollProfile legacyProfile = new HighTierRollProfile(
+                Math.max(0.0D, getConfigDouble("Mob_Leveling.Mob_Augments.Weights.ELITE", 1.0D, store)),
+                Math.max(0.0D, getConfigDouble("Mob_Leveling.Mob_Augments.Weights.LEGENDARY", 0.35D, store)),
+                Math.max(0.0D, getConfigDouble("Mob_Leveling.Mob_Augments.Weights.MYTHIC", 0.1D, store)));
+        for (int i = 0; i < highTierCount; i++) {
+            rolls.add(legacyProfile);
+        }
+        return rolls;
+    }
+
+    private double clampProbability(double value) {
+        if (!Double.isFinite(value)) {
+            return 0.0D;
+        }
+        return Math.max(0.0D, Math.min(1.0D, value));
     }
 
     public String describeDistanceCenter(Store<EntityStore> store) {
@@ -539,13 +723,16 @@ public class MobLevelingManager {
         return false;
     }
 
-    public boolean isMobTypeBlacklisted(String mobType) {
+    public boolean isMobTypeBlacklisted(String mobType, Store<EntityStore> store) {
         if (mobType == null || mobType.isBlank()) {
             return false;
         }
 
         String normalizedType = normalizeMobType(mobType);
-        Object raw = configManager.get("Mob_Leveling.Blacklist_Mob_Types", null, false);
+        Object raw = resolveConfigValue("Blacklist_Mob_Types", null, store);
+        if (raw == UNSET_CONFIG_VALUE || raw == null) {
+            raw = configManager.get("Mob_Leveling.Blacklist_Mob_Types", null, false);
+        }
         if (raw == null) {
             return false;
         }
@@ -590,7 +777,7 @@ public class MobLevelingManager {
 
         try {
             String mobType = npc.getNPCTypeId();
-            return mobType != null && isMobTypeBlacklisted(mobType);
+            return mobType != null && isMobTypeBlacklisted(mobType, store);
         } catch (Throwable ignored) {
             return false;
         }
@@ -852,6 +1039,8 @@ public class MobLevelingManager {
 
     public void clearAllEntityLevelOverrides() {
         entityHealthCompositionSnapshots.clear();
+        entityResolvedLevelSnapshots.clear();
+        entityAssignedAugmentSnapshots.clear();
         trueBaseHealthCache.clear();
     }
 
@@ -1102,9 +1291,9 @@ public class MobLevelingManager {
     }
 
     private LevelRange parseFixedLevelRange(Store<EntityStore> store) {
-        Object levelRaw = configManager.get("Mob_Leveling.Level_Source.Fixed_Level.Level", null, false);
-        Object minRaw = configManager.get("Mob_Leveling.Level_Source.Fixed_Level.Min", null, false);
-        Object maxRaw = configManager.get("Mob_Leveling.Level_Source.Fixed_Level.Max", null, false);
+        Object levelRaw = resolveConfigValue("Mob_Leveling.Level_Source.Fixed_Level.Level", null, store);
+        Object minRaw = resolveConfigValue("Mob_Leveling.Level_Source.Fixed_Level.Min", null, store);
+        Object maxRaw = resolveConfigValue("Mob_Leveling.Level_Source.Fixed_Level.Max", null, store);
 
         Integer level = parsePositiveInt(levelRaw);
         Integer min = parsePositiveInt(minRaw);
@@ -1442,7 +1631,10 @@ public class MobLevelingManager {
         List<String> statKeys = new ArrayList<>();
         for (String key : buffs.keySet()) {
             if (key != null && !key.isBlank()) {
-                statKeys.add(key.trim().toLowerCase(Locale.ROOT));
+                String normalized = key.trim().toLowerCase(Locale.ROOT);
+                if (MobAugmentDiagnostics.isAllowedMobCommonStatKey(normalized)) {
+                    statKeys.add(normalized);
+                }
             }
         }
         if (statKeys.isEmpty()) {
@@ -1805,6 +1997,37 @@ public class MobLevelingManager {
     private long toEntityKey(Store<EntityStore> store, int entityId) {
         long storePart = store == null ? 0L : Integer.toUnsignedLong(System.identityHashCode(store));
         return (storePart << 32) | Integer.toUnsignedLong(entityId);
+    }
+
+    public long resolveTrackingKey(Ref<EntityStore> ref,
+                                   Store<EntityStore> store,
+                                   CommandBuffer<EntityStore> commandBuffer) {
+        if (ref == null) {
+            return -1L;
+        }
+
+        Store<EntityStore> effectiveStore = store != null ? store : ref.getStore();
+        UUIDComponent uuidComponent = null;
+        if (commandBuffer != null) {
+            uuidComponent = commandBuffer.getComponent(ref, UUIDComponent.getComponentType());
+        }
+        if (uuidComponent == null && effectiveStore != null) {
+            uuidComponent = effectiveStore.getComponent(ref, UUIDComponent.getComponentType());
+        }
+
+        if (uuidComponent != null) {
+            try {
+                UUID uuid = uuidComponent.getUuid();
+                if (uuid != null) {
+                    long storePart = effectiveStore == null ? 0L : Integer.toUnsignedLong(System.identityHashCode(effectiveStore));
+                    long uuidPart = uuid.getMostSignificantBits() ^ Long.rotateLeft(uuid.getLeastSignificantBits(), 1);
+                    return uuidPart ^ (storePart << 32);
+                }
+            } catch (Throwable ignored) {
+            }
+        }
+
+        return toEntityKey(effectiveStore, ref.getIndex());
     }
 
     private double horizontalDistanceSquared(Vector3d a, Vector3d b) {

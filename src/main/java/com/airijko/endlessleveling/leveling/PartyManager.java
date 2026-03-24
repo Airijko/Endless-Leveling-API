@@ -296,7 +296,9 @@ public class PartyManager {
                     memberData,
                     mobLevel,
                     memberBaseShareXp,
-                    skipLevelRangeChecks);
+                    skipLevelRangeChecks,
+                    sourceStore,
+                    null);
             if (memberXpAfterKillRules <= 0.0D) {
                 continue;
             }

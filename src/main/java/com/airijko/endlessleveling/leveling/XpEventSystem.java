@@ -154,14 +154,33 @@ public class XpEventSystem extends DeathSystems.OnDeathSystem {
             return;
         }
 
-        int mobLevel = mobLevelingManager != null ? mobLevelingManager.resolveMobLevel(ref, commandBuffer) : 1;
+        Integer snapshotMobLevel = mobLevelingManager != null
+            ? mobLevelingManager.getEntityResolvedLevelSnapshot(ref, store, commandBuffer)
+            : null;
+        int mobLevel = snapshotMobLevel != null
+            ? snapshotMobLevel
+            : (mobLevelingManager != null ? mobLevelingManager.resolveMobLevel(ref, commandBuffer) : 1);
+        String mobLevelSource = snapshotMobLevel != null ? "snapshot" : "fallback";
 
         float cachedMaxHealth = mobLevelingManager != null
-                ? mobLevelingManager.getEntityMaxHealthSnapshot(ref.getIndex())
-                : -1.0f;
-        double maxHealthForXp = cachedMaxHealth > 0.0f ? cachedMaxHealth : healthStat.getMax();
+            ? mobLevelingManager.getEntityMaxHealthSnapshot(ref, store, commandBuffer)
+            : -1.0f;
+        float liveMaxHealth = healthStat.getMax();
+        boolean hasFiniteCached = Float.isFinite(cachedMaxHealth) && cachedMaxHealth > 0.0f;
+        boolean hasFiniteLive = Float.isFinite(liveMaxHealth) && liveMaxHealth > 0.0f;
+        // Use the larger finite value so late/passive health layers are not undercounted
+        // when the cached snapshot lags behind the live stat value at death time.
+        double maxHealthForXp = hasFiniteCached && hasFiniteLive
+            ? Math.max(cachedMaxHealth, liveMaxHealth)
+            : (hasFiniteCached ? cachedMaxHealth : (hasFiniteLive ? liveMaxHealth : 1.0f));
         double baseXp = Math.max(1.0, maxHealthForXp);
-        double xpAfterKillRules = levelingManager.applyMobKillXpRules(playerData, mobLevel, baseXp, mobIsBlacklisted);
+        double xpAfterKillRules = levelingManager.applyMobKillXpRules(
+            playerData,
+            mobLevel,
+            baseXp,
+            mobIsBlacklisted,
+            store,
+            mobLevelingManager);
         if (xpAfterKillRules <= 0.0) {
             String mobLevelText = mobIsBlacklisted ? "N/A" : Integer.toString(Math.max(1, mobLevel));
             LOGGER.atFine().log("XP gain blocked for player %s due to level gap (player=%d, mob=%s)",
@@ -194,11 +213,12 @@ public class XpEventSystem extends DeathSystems.OnDeathSystem {
         double killRulesMultiplier = baseXp > 0.0D ? xpAfterKillRules / baseXp : 0.0D;
 
         LOGGER.atInfo().log(
-                "XP-Report target=%d player=%s playerLvl=%d mobLvl=%d blacklisted=%s sourceMaxHP=%.3f (cached=%.3f live=%.3f) baseXP=%.3f killRulesXP=%.3f killRulesMult=%.4f archetypeXpBonus=%.4f disciplineBonusPct=%.3f luckXpBonusPct=%.3f additiveMult=%.4f projectedPersonalXP=%.3f luck=%.4f luckAffectsXp=%s",
+            "XP-Report target=%d player=%s playerLvl=%d mobLvl=%d mobLvlSource=%s blacklisted=%s sourceMaxHP=%.3f (cached=%.3f live=%.3f) baseXP=%.3f killRulesXP=%.3f killRulesMult=%.4f archetypeXpBonus=%.4f disciplineBonusPct=%.3f luckXpBonusPct=%.3f additiveMult=%.4f projectedPersonalXP=%.3f luck=%.4f luckAffectsXp=%s",
                 ref.getIndex(),
                 playerUuid,
                 playerData.getLevel(),
                 mobLevel,
+            mobLevelSource,
                 mobIsBlacklisted,
                 maxHealthForXp,
                 cachedMaxHealth,

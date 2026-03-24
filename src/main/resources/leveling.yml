@@ -82,6 +82,7 @@ prestige:
 
 Mob_Leveling:
   Level_Source:
+    # Fallback/default mode. worlds.yml World_Overrides.<world>.Level_Source.Mode wins when present.
     Mode: FIXED # PLAYER, MIXED, DISTANCE, FIXED, or TIERS
     Party_System:
       Enabled: true
