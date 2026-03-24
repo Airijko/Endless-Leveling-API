@@ -4,7 +4,7 @@ plugins {
 }
 
 group = 'com.airijko'
-version = '6.9-BETA-3'
+version = '6.9-BETA-4'
 description = 'EndlessLevelingHytale'
 
 java {
@@ -14,7 +14,6 @@ java {
 }
 
 def hytaleInstallPath = providers.gradleProperty('hytaleInstallPath')
-        .orElse('C:/Users/jojoj/AppData/Roaming/Hytale/install/release/package/game/latest')
 
 repositories {
     mavenCentral()
