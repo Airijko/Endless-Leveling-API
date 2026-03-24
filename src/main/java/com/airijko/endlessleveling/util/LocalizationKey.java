@@ -38,6 +38,8 @@ public enum LocalizationKey {
     HUD_MOB_LEVEL_SINGLE("hud.mob.level.single", "Lv. {0}"),
     HUD_MOB_LEVEL_SINGLE_COMPACT("hud.mob.level.single_compact", "Lv {0}"),
     HUD_MOB_LEVEL_RANGE("hud.mob.level.range", "Lv. {0}-{1}"),
+    HUD_MOB_LEVEL_MIXED("hud.mob.level.mixed", "Lv {0} | Lv {1}-{2}"),
+    HUD_MOB_LEVEL_TIERED_WITH_BOSS("hud.mob.level.tiered_with_boss", "Lv {0}-{1}, Boss Lv {2}"),
     HUD_LEVEL_NO_DATA("hud.level.no_data", "LVL --   XP: 0 / --"),
     HUD_LEVEL_WITHOUT_LEVELING("hud.level.without_leveling", "LVL {0}   XP: {1}"),
     HUD_LEVEL_MAX("hud.level.max", "LVL {0}   MAX LEVEL"),

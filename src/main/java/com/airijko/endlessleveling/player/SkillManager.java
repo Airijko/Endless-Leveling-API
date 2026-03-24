@@ -399,9 +399,12 @@ public class SkillManager {
         if (runtime == null) {
             return 0.0D;
         }
-        double bonus = runtime.getAttributeBonus(attributeType, System.currentTimeMillis());
-        LOGGER.atFine().log("Augment bonus query: type=%s bonus=%.2f player=%s", attributeType, bonus,
-                playerData.getPlayerName());
+        long nowMillis = System.currentTimeMillis();
+        double bonus = runtime.getAttributeBonus(attributeType, nowMillis);
+        if (Math.abs(bonus) > 0.0001D) {
+            LOGGER.atFiner().log("Augment bonus query: type=%s bonus=%.2f player=%s", attributeType, bonus,
+                    playerData.getPlayerName());
+        }
         return bonus;
     }
 

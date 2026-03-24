@@ -530,7 +530,7 @@ ui:
       cooldown_title: Class Swap Cooldown
       available: Available Classes
       assignments: Class Assignments
-      secondary_share_hint: Secondary classes share 50% of passive bonuses.
+      secondary_share_hint: Secondary class innate bonuses and passives are 50% effective.
       sorcery_label: Sorcery Bonus
       lore_title: Lore Preview
       weapons_title: Weapon Affinities
@@ -598,7 +598,7 @@ ui:
       secondary_slot: Secondary
       swap_triggers: Changing classes triggers a {0} cooldown.
       primary_bonus: Primary classes grant 100% of bonuses.
-      secondary_bonus: Secondary classes grant 50% of passive effects.
+      secondary_bonus: Secondary class innate bonuses and passives are 50% effective.
       secondary_disabled: Secondary classes are disabled in config.
     passives:
       none_defined: This class does not define passive bonuses.

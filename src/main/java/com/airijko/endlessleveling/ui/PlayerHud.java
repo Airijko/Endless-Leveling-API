@@ -353,23 +353,6 @@ public class PlayerHud extends CustomUIHud {
             return Lang.tr(targetPlayerRef.getUuid(), LocalizationKey.HUD_COMMON_UNAVAILABLE);
         }
 
-        // When player-based mob leveling is enabled, show the expected range for this
-        // player instead of a single level sample.
-        if (mobLevelingManager.isPlayerBasedMode()) {
-            PlayerData data = getPlayerData();
-            if (data == null) {
-                return Lang.tr(targetPlayerRef.getUuid(), LocalizationKey.HUD_COMMON_UNAVAILABLE);
-            }
-            var range = mobLevelingManager.getPlayerBasedLevelRange(data.getLevel());
-            if (range != null) {
-                if (range.min() == range.max()) {
-                    return Lang.tr(targetPlayerRef.getUuid(), LocalizationKey.HUD_MOB_LEVEL_SINGLE, range.min());
-                }
-                return Lang.tr(targetPlayerRef.getUuid(), LocalizationKey.HUD_MOB_LEVEL_RANGE, range.min(),
-                        range.max());
-            }
-        }
-
         Store<EntityStore> store = ref.getStore();
         try {
             TransformComponent transform = store != null
@@ -379,6 +362,43 @@ public class PlayerHud extends CustomUIHud {
                 return Lang.tr(targetPlayerRef.getUuid(), LocalizationKey.HUD_COMMON_UNAVAILABLE);
             }
 
+            // Handle MIXED mode: show distance level | player range
+            if (mobLevelingManager.isLevelSourceMixedMode()) {
+                int distanceLevel = mobLevelingManager.resolveMobLevel(store, transform.getPosition());
+                if (distanceLevel <= 0) {
+                    return Lang.tr(targetPlayerRef.getUuid(), LocalizationKey.HUD_COMMON_UNAVAILABLE);
+                }
+                
+                PlayerData data = getPlayerData();
+                if (data != null) {
+                    var playerRange = mobLevelingManager.getPlayerBasedLevelRange(data.getLevel());
+                    if (playerRange != null) {
+                        return Lang.tr(targetPlayerRef.getUuid(), LocalizationKey.HUD_MOB_LEVEL_MIXED,
+                                distanceLevel, playerRange.min(), playerRange.max());
+                    }
+                }
+                
+                // Fallback if player data unavailable
+                return Lang.tr(targetPlayerRef.getUuid(), LocalizationKey.HUD_MOB_LEVEL_SINGLE_COMPACT, distanceLevel);
+            }
+
+            // Handle PLAYER mode: show player range only
+            if (mobLevelingManager.isPlayerBasedMode()) {
+                PlayerData data = getPlayerData();
+                if (data == null) {
+                    return Lang.tr(targetPlayerRef.getUuid(), LocalizationKey.HUD_COMMON_UNAVAILABLE);
+                }
+                var range = mobLevelingManager.getPlayerBasedLevelRange(data.getLevel());
+                if (range != null) {
+                    if (range.min() == range.max()) {
+                        return Lang.tr(targetPlayerRef.getUuid(), LocalizationKey.HUD_MOB_LEVEL_SINGLE, range.min());
+                    }
+                    return Lang.tr(targetPlayerRef.getUuid(), LocalizationKey.HUD_MOB_LEVEL_RANGE, range.min(),
+                            range.max());
+                }
+            }
+
+            // Handle all other modes (DISTANCE, FIXED, TIERS): show single distance-based level
             int level = mobLevelingManager.resolveMobLevel(store, transform.getPosition());
             return level > 0
                     ? Lang.tr(targetPlayerRef.getUuid(), LocalizationKey.HUD_MOB_LEVEL_SINGLE_COMPACT, level)

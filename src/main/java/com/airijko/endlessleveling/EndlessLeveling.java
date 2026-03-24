@@ -455,6 +455,28 @@ public class EndlessLeveling extends JavaPlugin {
                 LOGGER.atWarning().log(
                         "NameplateBuilder detected but summon_label segment registration failed (falling back to native summon nameplate text).");
             }
+
+            // Register the three new EL segments
+            boolean elLevelDescribed = NameplateBuilderCompatibility.describeELShowLevelSegment(this);
+            if (elLevelDescribed) {
+                LOGGER.atInfo().log("NameplateBuilder detected; registered EL_Show_Level segment.");
+            } else {
+                LOGGER.atWarning().log("NameplateBuilder detected but EL_Show_Level segment registration failed.");
+            }
+
+            boolean elNameDescribed = NameplateBuilderCompatibility.describeELShowNameSegment(this);
+            if (elNameDescribed) {
+                LOGGER.atInfo().log("NameplateBuilder detected; registered EL_Show_Name segment.");
+            } else {
+                LOGGER.atWarning().log("NameplateBuilder detected but EL_Show_Name segment registration failed.");
+            }
+
+            boolean elHealthDescribed = NameplateBuilderCompatibility.describeELShowHealthSegment(this);
+            if (elHealthDescribed) {
+                LOGGER.atInfo().log("NameplateBuilder detected; registered EL_Show_Health segment.");
+            } else {
+                LOGGER.atWarning().log("NameplateBuilder detected but EL_Show_Health segment registration failed.");
+            }
         }
 
         // Register event listeners

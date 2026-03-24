@@ -1867,7 +1867,16 @@ public class MobLevelingManager {
                 getConfigDouble("Mob_Leveling.Level_Source.Distance_Level.Blocks_Per_Level", 100.0D, store));
         int startLevel = getConfigInt("Mob_Leveling.Level_Source.Distance_Level.Start_Level", 1, store);
         int minLevel = getConfigInt("Mob_Leveling.Level_Source.Distance_Level.Min_Level", 1, store);
-        int maxLevel = getConfigInt("Mob_Leveling.Level_Source.Distance_Level.Max_Level", 200, store);
+        
+        // Respect "ENDLESS" in distance level max cap
+        Object maxLevelRaw = configManager.get("Mob_Leveling.Level_Source.Distance_Level.Max_Level", 200, false);
+        int maxLevel;
+        if (maxLevelRaw != null && "ENDLESS".equalsIgnoreCase(maxLevelRaw.toString().trim())) {
+            maxLevel = Integer.MAX_VALUE; // Effectively uncapped for this stage
+        } else {
+            maxLevel = getConfigInt("Mob_Leveling.Level_Source.Distance_Level.Max_Level", 200, store);
+        }
+        
         int level = startLevel + (int) Math.floor(distance / blocksPerLevel);
         level = Math.max(Math.min(minLevel, maxLevel), Math.min(Math.max(minLevel, maxLevel), level));
         return clampToConfiguredRange(level, store);
@@ -2002,7 +2011,8 @@ public class MobLevelingManager {
 
     private int clampToConfiguredRange(int level, Store<EntityStore> store) {
         int min = getConfigInt("Mob_Leveling.Level_Range.Min", 1, store);
-        Object maxRaw = configManager.get("Mob_Leveling.Level_Range.Max", 200, false);
+        // Check for "ENDLESS" in BOTH global config AND world overrides
+        Object maxRaw = resolveConfigValue("Mob_Leveling.Level_Range.Max", 200, store);
         if (maxRaw != null && "ENDLESS".equalsIgnoreCase(maxRaw.toString().trim())) {
             return Math.max(min, level);
         }

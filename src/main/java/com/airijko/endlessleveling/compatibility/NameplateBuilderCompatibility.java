@@ -14,6 +14,10 @@ public final class NameplateBuilderCompatibility {
     private static final String MOB_SEGMENT_ID = "mob_level";
     private static final String SUMMON_SEGMENT_ID = "summon_label";
     private static final String PLAYER_SEGMENT_ID = "player_level";
+    // New Endless Leveling segments
+    private static final String EL_SHOW_LEVEL = "EL_Show_Level";
+    private static final String EL_SHOW_NAME = "EL_Show_Name";
+    private static final String EL_SHOW_HEALTH = "EL_Show_Health";
 
     private static volatile boolean initialized = false;
     private static volatile Method describeMethod = null;
@@ -86,6 +90,63 @@ public final class NameplateBuilderCompatibility {
         }
     }
 
+    public static boolean describeELShowLevelSegment(JavaPlugin plugin) {
+        if (plugin == null || !ensureInitialized()) {
+            return false;
+        }
+
+        try {
+            describeMethod.invoke(
+                    null,
+                    plugin,
+                    EL_SHOW_LEVEL,
+                    "EL - Level (Prefix)",
+                    segmentTargetNpcs,
+                    "Lv.10");
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    public static boolean describeELShowNameSegment(JavaPlugin plugin) {
+        if (plugin == null || !ensureInitialized()) {
+            return false;
+        }
+
+        try {
+            describeMethod.invoke(
+                    null,
+                    plugin,
+                    EL_SHOW_NAME,
+                    "EL - Name",
+                    segmentTargetNpcs,
+                    "Zombie");
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    public static boolean describeELShowHealthSegment(JavaPlugin plugin) {
+        if (plugin == null || !ensureInitialized()) {
+            return false;
+        }
+
+        try {
+            describeMethod.invoke(
+                    null,
+                    plugin,
+                    EL_SHOW_HEALTH,
+                    "EL - Health (Suffix)",
+                    segmentTargetNpcs,
+                    "100/100❤");
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
     public static boolean registerMobLevel(Store<EntityStore> store, Ref<EntityStore> entityRef, int level) {
         if (store == null || entityRef == null || level <= 0 || !ensureInitialized()) {
             return false;
@@ -138,6 +199,46 @@ public final class NameplateBuilderCompatibility {
         }
     }
 
+    public static boolean registerELShowLevel(Store<EntityStore> store, Ref<EntityStore> entityRef, int level) {
+        if (store == null || entityRef == null || level <= 0 || !ensureInitialized()) {
+            return false;
+        }
+
+        try {
+            registerMethod.invoke(null, store, entityRef, EL_SHOW_LEVEL, "Lv." + level);
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    public static boolean registerELShowName(Store<EntityStore> store, Ref<EntityStore> entityRef, String name) {
+        if (store == null || entityRef == null || name == null || name.isBlank() || !ensureInitialized()) {
+            return false;
+        }
+
+        try {
+            registerMethod.invoke(null, store, entityRef, EL_SHOW_NAME, name);
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    public static boolean registerELShowHealth(Store<EntityStore> store, Ref<EntityStore> entityRef, double currentHealth, double maxHealth) {
+        if (store == null || entityRef == null || !ensureInitialized()) {
+            return false;
+        }
+
+        try {
+            String healthText = String.format("%.0f/%.0f❤", currentHealth, maxHealth);
+            registerMethod.invoke(null, store, entityRef, EL_SHOW_HEALTH, healthText);
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
     public static boolean removeMobLevel(Store<EntityStore> store, Ref<EntityStore> entityRef) {
         if (store == null || entityRef == null || !ensureInitialized()) {
             return false;
@@ -171,6 +272,45 @@ public final class NameplateBuilderCompatibility {
 
         try {
             removeMethod.invoke(null, store, entityRef, PLAYER_SEGMENT_ID);
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    public static boolean removeELShowLevel(Store<EntityStore> store, Ref<EntityStore> entityRef) {
+        if (store == null || entityRef == null || !ensureInitialized()) {
+            return false;
+        }
+
+        try {
+            removeMethod.invoke(null, store, entityRef, EL_SHOW_LEVEL);
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    public static boolean removeELShowName(Store<EntityStore> store, Ref<EntityStore> entityRef) {
+        if (store == null || entityRef == null || !ensureInitialized()) {
+            return false;
+        }
+
+        try {
+            removeMethod.invoke(null, store, entityRef, EL_SHOW_NAME);
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    public static boolean removeELShowHealth(Store<EntityStore> store, Ref<EntityStore> entityRef) {
+        if (store == null || entityRef == null || !ensureInitialized()) {
+            return false;
+        }
+
+        try {
+            removeMethod.invoke(null, store, entityRef, EL_SHOW_HEALTH);
             return true;
         } catch (Throwable ignored) {
             return false;

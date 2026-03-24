@@ -1,7 +1,6 @@
 package com.airijko.endlessleveling.commands.subcommands;
 
 import com.airijko.endlessleveling.EndlessLeveling;
-import com.airijko.endlessleveling.augments.AugmentUnlockManager;
 import com.airijko.endlessleveling.player.PlayerData;
 import com.airijko.endlessleveling.leveling.LevelingManager;
 import com.airijko.endlessleveling.player.PlayerDataManager;
@@ -34,17 +33,15 @@ public class ResetAllCommand extends AbstractCommand {
     private final PlayerDataManager playerDataManager;
     private final LevelingManager levelingManager;
     private final SkillManager skillManager;
-    private final AugmentUnlockManager augmentUnlockManager;
 
     private final RequiredArg<String> targetArg = this.withRequiredArg("player", "Target player name", ArgTypes.STRING);
 
     public ResetAllCommand() {
-        super("resetall", "Reset a player's level to 1 and prestige to 0");
+        super("resetall", "Reset a player's active profile back to defaults");
 
         this.playerDataManager = EndlessLeveling.getInstance().getPlayerDataManager();
         this.levelingManager = EndlessLeveling.getInstance().getLevelingManager();
         this.skillManager = EndlessLeveling.getInstance().getSkillManager();
-        this.augmentUnlockManager = EndlessLeveling.getInstance().getAugmentUnlockManager();
         this.addAliases("fullreset");
         this.addUsageVariant(new ResetAllSelfVariant());
     }
@@ -96,17 +93,16 @@ public class ResetAllCommand extends AbstractCommand {
 
         PlayerRef targetRef = Universe.get().getPlayer(targetData.getUuid());
 
-        targetData.setPrestigeLevel(0);
+        targetData.resetActiveProfileToDefaults();
         levelingManager.setPlayerLevel(targetData, 1);
         applySkillModifiers(targetData, targetRef);
-        if (augmentUnlockManager != null) {
-            augmentUnlockManager.trimExcessUnlocks(targetData);
-        }
 
-        commandContext.sendMessage(Message.raw("Reset level and prestige of " + targetName + " (level 1, prestige 0)."));
+        commandContext.sendMessage(Message.raw(
+                "Reset active profile of " + targetName + " to defaults (level 1, prestige 0, skills and augments cleared)."));
 
         if (targetRef != null) {
-            targetRef.sendMessage(Message.raw("An admin reset your level to 1 and your prestige to 0."));
+            targetRef.sendMessage(
+                    Message.raw("An admin reset your active profile to default values."));
         }
 
         return CompletableFuture.completedFuture(null);
@@ -114,7 +110,7 @@ public class ResetAllCommand extends AbstractCommand {
 
     private final class ResetAllSelfVariant extends AbstractCommand {
         private ResetAllSelfVariant() {
-            super("Reset your level to 1 and prestige to 0");
+            super("Reset your active profile to defaults");
         }
 
         @Nullable

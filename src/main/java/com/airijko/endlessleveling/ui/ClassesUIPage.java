@@ -404,7 +404,8 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         ui.set("#ClassPrimaryStatusLabel.Text", tr("ui.classes.detail.primary_slot", "Primary"));
         ui.set("#ClassSecondaryStatusLabel.Text", tr("ui.classes.detail.secondary_slot", "Secondary"));
         ui.set("#ClassSecondaryShareHint.Text",
-            tr("ui.classes.page.secondary_share_hint", "Secondary classes share 50% of passive bonuses."));
+            tr("ui.classes.page.secondary_share_hint",
+                    "Secondary class innate bonuses and passives are 50% effective."));
         ui.set("#ClassSorceryLabel.Text", tr("ui.classes.page.sorcery_label", "Sorcery Bonus"));
         ui.set("#ClassLoreTitle.Text", tr("ui.classes.page.lore_title", "Lore Preview"));
         ui.set("#ClassWeaponsTitle.Text", tr("ui.classes.page.weapons_title", "Weapon Affinities"));
@@ -533,7 +534,7 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         if (secondaryEnabled) {
             statusBuilder.append(' ').append(
                     tr("ui.classes.detail.secondary_bonus",
-                    "Secondary classes grant 50% of passive effects."));
+                    "Secondary class innate bonuses and passives are 50% effective."));
         } else {
             statusBuilder.append(' ')
                     .append(tr("ui.classes.detail.secondary_disabled", "Secondary classes are disabled in config."));

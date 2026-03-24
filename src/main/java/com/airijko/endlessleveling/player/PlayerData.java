@@ -215,6 +215,22 @@ public class PlayerData {
         }
     }
 
+    public void resetActiveProfileToDefaults() {
+        int slot = activeProfileIndex;
+        if (!isValidProfileIndex(slot)) {
+            slot = 1;
+            activeProfileIndex = slot;
+        }
+
+        PlayerProfile existing = profiles.get(slot);
+        String profileName = defaultProfileName(slot);
+        if (existing != null) {
+            profileName = normalizeProfileName(existing.getName(), slot);
+        }
+
+        profiles.put(slot, PlayerProfile.fresh(baseSkillPoints, profileName));
+    }
+
     public int getBaseSkillPoints() {
         return baseSkillPoints;
     }

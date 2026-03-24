@@ -77,7 +77,7 @@ public class AddClassSwapCommand extends AbstractCommand {
         String targetName;
 
         if (explicitTargetName != null && !explicitTargetName.isBlank()) {
-            targetName = explicitTargetName;
+            targetName = explicitTargetName.trim();
             targetData = playerDataManager.getByName(targetName);
             if (targetData == null) {
                 context.sendMessage(Message.raw("Player not found: " + targetName).color("#ff6666"));

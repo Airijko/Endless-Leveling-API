@@ -462,6 +462,14 @@ public class AugmentUnlockManager {
 
     public int getNextUnlockLevel(@Nonnull PlayerData playerData, int currentLevel) {
         int localLevel = Math.max(1, currentLevel);
+        int prestigeLevel = Math.max(0, playerData.getPrestigeLevel());
+
+        // After first prestige, base level-track milestones are legacy-earned and
+        // should not drive the card's "next unlock" hint.
+        if (prestigeLevel > 0) {
+            return getNextPrestigeUnlockLevel(playerData, localLevel, prestigeLevel);
+        }
+
         int progressionLevel = getProgressionLevel(playerData, localLevel);
         int progressionOffset = Math.max(0, progressionLevel - localLevel);
         int next = Integer.MAX_VALUE;
@@ -474,7 +482,6 @@ public class AugmentUnlockManager {
         }
 
         next = next == Integer.MAX_VALUE ? -1 : next;
-        int prestigeLevel = Math.max(0, playerData.getPrestigeLevel());
 
         for (PrestigeUnlockRule rule : prestigeUnlockRules) {
             if (rule.countEligibleIgnoringPlayerLevel(prestigeLevel) <= 0) {
@@ -489,6 +496,26 @@ public class AugmentUnlockManager {
         }
 
         return next;
+    }
+
+    private int getNextPrestigeUnlockLevel(@Nonnull PlayerData playerData, int localLevel, int prestigeLevel) {
+        if (prestigeUnlockRules.isEmpty()) {
+            return -1;
+        }
+
+        int next = Integer.MAX_VALUE;
+        for (PrestigeUnlockRule rule : prestigeUnlockRules) {
+            if (rule.countEligibleIgnoringPlayerLevel(prestigeLevel) <= 0) {
+                continue;
+            }
+
+            int requiredPlayerLevel = Math.max(1, rule.requiredPlayerLevel());
+            if (requiredPlayerLevel > localLevel) {
+                next = Math.min(next, requiredPlayerLevel);
+            }
+        }
+
+        return next == Integer.MAX_VALUE ? -1 : next;
     }
 
     public int getEligibleMilestoneCount(int playerLevel) {

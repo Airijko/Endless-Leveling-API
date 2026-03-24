@@ -270,14 +270,48 @@ public class PlayerDataManager {
         if (playerName == null)
             return null;
 
+        String normalizedTarget = playerName.trim();
+        if (normalizedTarget.isEmpty()) {
+            return null;
+        }
+
         for (PlayerData data : playerCache.values()) {
-            if (data.getPlayerName().equalsIgnoreCase(playerName)) {
-                LOGGER.atFine().log("PlayerData for %s retrieved from cache by name.", playerName);
+            if (data.getPlayerName().equalsIgnoreCase(normalizedTarget)) {
+                LOGGER.atFine().log("PlayerData for %s retrieved from cache by name.", normalizedTarget);
                 return data;
             }
         }
 
-        LOGGER.atWarning().log("PlayerData for player name %s not found in cache.", playerName);
+        File folder = filesManager.getPlayerDataFolder();
+        if (folder != null && folder.exists() && folder.isDirectory()) {
+            File[] files = folder.listFiles((dir, name) -> name.toLowerCase().endsWith(".yml"));
+            if (files != null) {
+                for (File file : files) {
+                    String name = file.getName();
+                    String uuidPart = name.substring(0, name.length() - 4);
+                    try {
+                        UUID uuid = UUID.fromString(uuidPart);
+                        PlayerData loaded = playerCache.get(uuid);
+                        if (loaded == null) {
+                            loaded = loadFromFileMinimal(uuid, file);
+                            if (loaded != null) {
+                                playerCache.putIfAbsent(uuid, loaded);
+                            }
+                        }
+
+                        PlayerData candidate = playerCache.get(uuid);
+                        if (candidate != null && candidate.getPlayerName().equalsIgnoreCase(normalizedTarget)) {
+                            LOGGER.atInfo().log("PlayerData for %s loaded from disk lookup by name.", normalizedTarget);
+                            return candidate;
+                        }
+                    } catch (IllegalArgumentException ignored) {
+                        // Not a player data UUID file.
+                    }
+                }
+            }
+        }
+
+        LOGGER.atWarning().log("PlayerData for player name %s not found in cache or on disk.", normalizedTarget);
         return null;
     }
 
@@ -1166,7 +1200,6 @@ public class PlayerDataManager {
                     classesSection.put("secondaryLastChangedEpochSeconds", secondaryChanged);
                     classesSection.put("primaryRemainingSwitchCount", primarySwitchCount);
                     classesSection.put("secondaryRemainingSwitchCount", secondarySwitchCount);
-                    classesSection.put("remainingSwitchCount", Math.max(0, primarySwitchCount + secondarySwitchCount));
                     classesSection.put("lastChangedEpochSeconds", Math.max(primaryChanged, secondaryChanged));
                     profileMap.put("classes", classesSection);
 
