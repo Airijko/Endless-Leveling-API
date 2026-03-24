@@ -1714,19 +1714,8 @@ public class MobLevelingManager {
     }
 
     private long computeAugmentSeed(Ref<EntityStore> ref, Store<EntityStore> store, int level) {
-        long key = toEntityKey(store != null ? store : (ref != null ? ref.getStore() : null),
-                ref != null ? ref.getIndex() : 0);
-        UUIDComponent uuidComponent = null;
-        if (ref != null && ref.getStore() != null) {
-            Store<EntityStore> effectiveStore = ref.getStore();
-            uuidComponent = effectiveStore.getComponent(ref, UUIDComponent.getComponentType());
-        }
-        long uuidBits = 0L;
-        if (uuidComponent != null && uuidComponent.getUuid() != null) {
-            UUID uuid = uuidComponent.getUuid();
-            uuidBits = uuid.getMostSignificantBits() ^ uuid.getLeastSignificantBits();
-        }
-        return key ^ (uuidBits << 1) ^ ((long) level * 0x9E3779B97F4A7C15L);
+        long trackingKey = resolveTrackingKey(ref, store, null);
+        return trackingKey ^ ((long) level * 0x9E3779B97F4A7C15L);
     }
 
     private PassiveTier rollTier(SplittableRandom random, double elite, double legendary, double mythic) {
