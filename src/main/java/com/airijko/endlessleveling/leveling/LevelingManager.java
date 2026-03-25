@@ -610,6 +610,12 @@ public class LevelingManager {
         // Discipline bonus is now combined additively with passive XP_BONUS inside
         // addXp.
 
+        // Apply the flat additive amount before any level-gap multipliers so
+        // below/above-range suppression also affects that flat component.
+        if (rules.xpAdditiveMinimum() > 0.0D) {
+            adjustedXp += rules.xpAdditiveMinimum();
+        }
+
         boolean blockedForBeingTooHigh = false;
         boolean blockedForBeingTooLow = false;
         boolean levelKnown = !skipLevelRangeChecks;
@@ -633,12 +639,6 @@ public class LevelingManager {
                     eligibleForScaling = false;
                 }
             }
-        }
-
-        // Always add the configured flat amount before scaling so max-difference
-        // multipliers can affect it as well.
-        if (rules.xpAdditiveMinimum() > 0.0D) {
-            adjustedXp += rules.xpAdditiveMinimum();
         }
 
         if (adjustedXp <= 0.0) {

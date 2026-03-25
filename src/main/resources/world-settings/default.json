@@ -3,7 +3,23 @@
     "default": {
       "Enable_XP": true,
       "Experience": {
-        "Global_XP_Multiplier": 1.0
+        "Global_XP_Multiplier": 1.0,
+        "XP_Level_Range": {
+          "Enabled": true,
+          "Max_Difference": 20,
+          "Below_Range": {
+            "Multiplier": 1.0
+          },
+          "Above_Range": {
+            "Multiplier": 0.05
+          }
+        },
+        "Additive_Minimum_XP": 50,
+        "Scaling": {
+          "Mode": "LINEAR",
+          "BonusAtMax": 3.0,
+          "MinMultiplier": 0.2
+        }
       },
       "Blacklist_Mob_Types": {
         "ids": [],
