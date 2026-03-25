@@ -1,0 +1,40 @@
+{
+  "id": "glass_cannon",
+  "name": "Glass Cannon",
+  "tier": "ELITE",
+  "description": "Sacrifice durability for overwhelming speed and damage.",
+  "category": "PASSIVE_STAT",
+  "enabled": true,
+  "weights": {
+    "default": 10,
+    "conditions": []
+  },
+  "ui": {
+    "sections": [
+      {
+        "title": "Buffs",
+        "body": "+50% Haste\n+50% Damage\n",
+        "color": "#8adf9e"
+      },
+      {
+        "title": "Debuffs",
+        "body": "Max Health Percent: -20%",
+        "color": "#ff9a9a"
+      }
+    ]
+  },
+  "passives": {
+    "health_penalty": {
+      "max_health_percent": -0.2
+    },
+    "buffs": {
+      "haste": {
+        "value": 0.5
+      },
+      "bonus_damage": {
+        "value": 0.5
+      }
+    }
+  },
+  "mob_compatible": true
+}

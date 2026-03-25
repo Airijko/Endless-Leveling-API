@@ -1,0 +1,62 @@
+{
+  "race_name": "Void Juggernaut",
+  "icon": "Ingredient_Water_Essence",
+  "description": "A monstrous void fortress that crushes opposition through impossible resilience and retaliatory force.",
+  "model": "Spawn_Void",
+  "model_scale": 1.0,
+  "enabled": true,
+  "ascension": {
+    "id": "voidborn_juggernaut",
+    "stage": "tier_2",
+    "path": "defense",
+    "final_form": false,
+    "requirements": {
+      "required_prestige": 9,
+      "min_skill_levels": {
+        "life_force": 250,
+        "stamina": 250
+      },
+      "max_skill_levels": {},
+      "required_augments": []
+    },
+    "next_paths": [
+      {
+        "id": "voidborn_oblivion",
+        "name": "Void Oblivion"
+      }
+    ]
+  },
+  "attributes": {
+    "life_force": 178.6,
+    "strength": 1.08,
+    "defense": 1.12,
+    "haste": 0.99,
+    "precision": 10.08,
+    "ferocity": 50.4,
+    "stamina": 9.3,
+    "flow": 30.9,
+    "sorcery": 1.08,
+    "discipline": 0.0
+  },
+  "passives": [
+    {
+      "type": "MANA_REGEN",
+      "value": 0.022
+    },
+    {
+      "type": "SPECIAL_CHARGE_BONUS",
+      "value": 0.58
+    },
+    {
+      "type": "RETALIATION",
+      "value": 0.34,
+      "window": 4,
+      "cooldown": 20
+    },
+    {
+      "type": "INNATE_ATTRIBUTE_GAIN",
+      "attribute": "life_force",
+      "value": 2.1
+    }
+  ]
+}

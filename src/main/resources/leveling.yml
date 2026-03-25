@@ -110,4 +110,4 @@ Mob_Leveling:
     Enabled: true
     Show_Level: true
     Show_Name: true
-    Show_Health: false
+    Show_Health: true

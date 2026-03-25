@@ -18,11 +18,13 @@ import com.airijko.endlessleveling.races.RacePassiveDefinition;
 import com.airijko.endlessleveling.passives.util.PassiveDefinitionParser;
 import com.airijko.endlessleveling.managers.ConfigManager;
 import com.hypixel.hytale.logger.HytaleLogger;
-import org.yaml.snakeyaml.Yaml;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
+import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -65,7 +67,9 @@ public class ClassManager {
     private final Map<String, CharacterClassDefinition> classesByKey = new HashMap<>();
     private final Map<String, CharacterClassDefinition> classesByAscensionId = new HashMap<>();
     private final Map<String, List<String>> ascensionParentsByChild = new HashMap<>();
-    private final Yaml yaml = new Yaml();
+    private static final Type STRING_OBJECT_MAP_TYPE = new TypeToken<Map<String, Object>>() {
+    }.getType();
+    private final Gson gson = new Gson();
 
     private String defaultPrimaryClassId = PlayerData.DEFAULT_PRIMARY_CLASS_ID;
     private boolean hasConfiguredDefaultPrimaryClass = true;
@@ -882,7 +886,7 @@ public class ClassManager {
         }
         try (Stream<Path> files = Files.walk(classesFolder.toPath())) {
             files.filter(Files::isRegularFile)
-                    .filter(path -> path.toString().toLowerCase(Locale.ROOT).endsWith(".yml"))
+                    .filter(path -> path.toString().toLowerCase(Locale.ROOT).endsWith(".json"))
                     .forEach(this::loadClassFromFile);
         } catch (IOException e) {
             LOGGER.atSevere().log("Failed to walk classes directory: %s", e.getMessage());
@@ -964,13 +968,13 @@ public class ClassManager {
 
     private void loadClassFromFile(Path path) {
         try (Reader reader = Files.newBufferedReader(path)) {
-            Map<String, Object> yamlData = yaml.load(reader);
-            if (yamlData == null) {
+            Map<String, Object> jsonData = gson.fromJson(reader, STRING_OBJECT_MAP_TYPE);
+            if (jsonData == null) {
                 LOGGER.atWarning().log("Class file %s was empty.", path.getFileName());
                 return;
             }
 
-            CharacterClassDefinition definition = buildDefinition(path, yamlData);
+            CharacterClassDefinition definition = buildDefinition(path, jsonData);
             if (!definition.isEnabled()) {
                 LOGGER.atInfo().log("Skipping disabled class %s from %s", definition.getId(), path.getFileName());
                 return;

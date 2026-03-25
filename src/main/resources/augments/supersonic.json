@@ -1,0 +1,39 @@
+{
+  "id": "supersonic",
+  "name": "Supersonic",
+  "tier": "ELITE",
+  "description": "Trade Strength for blazing Haste.",
+  "category": "PASSIVE_STAT",
+  "enabled": true,
+  "weights": {
+    "default": 10,
+    "conditions": []
+  },
+  "ui": {
+    "sections": [
+      {
+        "title": "Buffs",
+        "body": "+50% Haste",
+        "color": "#8adf9e"
+      },
+      {
+        "title": "Debuffs",
+        "body": "-10% Strength",
+        "color": "#ff9a9a"
+      }
+    ]
+  },
+  "passives": {
+    "buffs": {
+      "haste": {
+        "value": 0.5
+      }
+    },
+    "debuffs": {
+      "strength": {
+        "value": -0.1
+      }
+    }
+  },
+  "mob_compatible": true
+}

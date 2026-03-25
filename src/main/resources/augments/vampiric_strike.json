@@ -1,0 +1,51 @@
+{
+  "id": "vampiric_strike",
+  "name": "Vampiric Strike",
+  "tier": "ELITE",
+  "description": "Critical hits heal you, limited by an internal cooldown.",
+  "category": "LIFESTEAL",
+  "enabled": true,
+  "weights": {
+    "default": 8,
+    "conditions": [
+      {
+        "when": {
+          "strength_higher_than_sorcery": true
+        },
+        "weight": 60
+      },
+      {
+        "when": {
+          "sorcery_higher_than_strength": true
+        },
+        "weight": 10
+      }
+    ]
+  },
+  "ui": {
+    "sections": [
+      {
+        "title": "Buffs",
+        "body": "+25% Life Steal on Crit\n+15% Precision\n",
+        "color": "#8adf9e"
+      },
+      {
+        "title": "Cooldown",
+        "body": "Trigger Cooldown: 3s",
+        "color": "#ffd56b"
+      }
+    ]
+  },
+  "passives": {
+    "heal_on_crit": {
+      "value": 0.25,
+      "trigger_cooldown": 3
+    },
+    "buffs": {
+      "precision": {
+        "value": 0.15
+      }
+    }
+  },
+  "mob_compatible": true
+}

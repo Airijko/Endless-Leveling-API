@@ -7,11 +7,13 @@ import com.airijko.endlessleveling.managers.ConfigManager;
 import com.airijko.endlessleveling.managers.PluginFilesManager;
 import com.airijko.endlessleveling.managers.VersionRegistry;
 import com.hypixel.hytale.logger.HytaleLogger;
-import org.yaml.snakeyaml.Yaml;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.Reader;
+import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -96,7 +98,9 @@ public class AugmentManager {
 
     // ── Instance state ──────────────────────────────────────────────────────
 
-    private final Yaml yaml;
+    private static final Type STRING_OBJECT_MAP_TYPE = new TypeToken<Map<String, Object>>() {
+    }.getType();
+    private final Gson gson;
     private final Path root;
     private final PluginFilesManager filesManager;
     private final boolean forceBuiltinAugments;
@@ -106,7 +110,7 @@ public class AugmentManager {
     private volatile Map<String, AugmentDefinition> cache;
 
     public AugmentManager(Path root, PluginFilesManager filesManager, ConfigManager configManager) {
-        this.yaml = new Yaml();
+        this.gson = new Gson();
         this.root = Objects.requireNonNull(root, "root");
         this.filesManager = Objects.requireNonNull(filesManager, "filesManager");
         Object forceFlag = configManager != null
@@ -134,14 +138,14 @@ public class AugmentManager {
         }
         Map<String, AugmentDefinition> loaded = new LinkedHashMap<>();
         try (Stream<Path> paths = Files.list(root)) {
-            List<Path> yamlFiles = paths
+            List<Path> jsonFiles = paths
                     .filter(path -> !Files.isDirectory(path))
                     .filter(path -> {
                         String name = path.getFileName().toString().toLowerCase();
-                        return name.endsWith(".yml") || name.endsWith(".yaml") || !name.contains(".");
+                        return name.endsWith(".json");
                     })
                     .collect(Collectors.toList());
-            for (Path file : yamlFiles) {
+            for (Path file : jsonFiles) {
                 try {
                     AugmentDefinition def = parseDefinition(file);
                     String augmentId = normalizeId(def.getId());
@@ -267,12 +271,12 @@ public class AugmentManager {
         return Objects.requireNonNull(factory.apply(definition));
     }
 
-    // ── Private: YAML parsing (absorbed from AugmentParser) ─────────────────
+    // ── Private: JSON parsing (absorbed from AugmentParser) ─────────────────
 
     @SuppressWarnings("unchecked")
     private AugmentDefinition parseDefinition(Path file) throws IOException {
-        try (InputStream in = Files.newInputStream(file)) {
-            Map<String, Object> root = yaml.load(in);
+        try (Reader reader = Files.newBufferedReader(file)) {
+            Map<String, Object> root = gson.fromJson(reader, STRING_OBJECT_MAP_TYPE);
             if (root == null) {
                 root = Collections.emptyMap();
             }
@@ -324,35 +328,21 @@ public class AugmentManager {
         if (raw == null) {
             return fallback;
         }
-        String dumped = dumpYamlBlock(raw);
+        String dumped = dumpJsonBlock(raw);
         return dumped.isBlank() ? fallback : dumped;
     }
 
-    private String dumpYamlBlock(Object value) {
+    private String dumpJsonBlock(Object value) {
         if (value == null) {
             return "";
         }
-        String dumped;
         try {
-            dumped = yaml.dump(value);
+            String dumped = gson.toJson(value);
+            return dumped == null ? "" : dumped.trim();
         } catch (Exception ex) {
-            dumped = String.valueOf(value);
+            String fallback = String.valueOf(value);
+            return fallback == null ? "" : fallback.trim();
         }
-        if (dumped == null || dumped.isBlank()) {
-            return "";
-        }
-
-        String normalized = dumped.replace("\r\n", "\n").replace('\r', '\n').trim();
-        if (normalized.startsWith("---\n")) {
-            normalized = normalized.substring(4).trim();
-        }
-        if (normalized.equals("...")) {
-            return "";
-        }
-        if (normalized.endsWith("\n...")) {
-            normalized = normalized.substring(0, normalized.length() - 4).trim();
-        }
-        return normalized;
     }
 
     // ── Private: helpers ────────────────────────────────────────────────────

@@ -1,0 +1,45 @@
+{
+  "id": "blood_frenzy",
+  "name": "Blood Frenzy",
+  "tier": "ELITE",
+  "description": "Provides Life Steal and Haste.",
+  "category": "LIFESTEAL",
+  "enabled": true,
+  "weights": {
+    "default": 8,
+    "conditions": [
+      {
+        "when": {
+          "strength_higher_than_sorcery": true
+        },
+        "weight": 60
+      },
+      {
+        "when": {
+          "sorcery_higher_than_strength": true
+        },
+        "weight": 10
+      }
+    ]
+  },
+  "ui": {
+    "sections": [
+      {
+        "title": "Buffs",
+        "body": "+5% Lifesteal\n+25% Haste\n",
+        "color": "#8adf9e"
+      }
+    ]
+  },
+  "passives": {
+    "buffs": {
+      "life_steal": {
+        "value": 0.05
+      },
+      "haste": {
+        "value": 0.25
+      }
+    }
+  },
+  "mob_compatible": true
+}

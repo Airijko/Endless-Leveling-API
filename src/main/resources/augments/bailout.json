@@ -1,0 +1,47 @@
+{
+  "id": "bailout",
+  "name": "Bailout",
+  "tier": "ELITE",
+  "description": "Cheat death briefly and rapidly decay unless you secure a kill.",
+  "category": "ON_DEATH",
+  "enabled": true,
+  "weights": {
+    "default": 10,
+    "conditions": []
+  },
+  "ui": {
+    "sections": [
+      {
+        "title": "Buffs",
+        "body": "Revive Health Percent: +75%\nDrain Max Hp Percent Per Second: +25%\nMissing Health Heal: +25%\n",
+        "color": "#8adf9e"
+      },
+      {
+        "title": "Rules",
+        "body": "Drains To Zero: Yes\nCancel On Kill: Yes\n",
+        "color": "#ffb86b"
+      },
+      {
+        "title": "Cooldown",
+        "body": "Cooldown: +45",
+        "color": "#ffd56b"
+      }
+    ]
+  },
+  "passives": {
+    "death_prevention": {
+      "cooldown": 45,
+      "revive_health_percent": 0.75
+    },
+    "health_decay": {
+      "drains_to_zero": true,
+      "drain_max_hp_percent_per_second": 0.25,
+      "max_drain_rate_per_second": 0,
+      "cancel_on_kill": true
+    },
+    "emergency_heal": {
+      "missing_health_percent": 0.25
+    }
+  },
+  "mob_compatible": true
+}

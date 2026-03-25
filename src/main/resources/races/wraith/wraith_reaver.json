@@ -1,0 +1,61 @@
+{
+  "race_name": "Wraith Reaver",
+  "icon": "Ingredient_Water_Essence",
+  "description": "An apex killer spirit that amplifies critical devastation through ruthless martial or arcane mastery.",
+  "model": "Wraith",
+  "model_scale": 1.0,
+  "enabled": true,
+  "ascension": {
+    "id": "wraith_reaver",
+    "stage": "tier_2",
+    "path": "damage",
+    "final_form": false,
+    "requirements": {
+      "required_prestige": 9,
+      "min_skill_levels": {
+        "ferocity": 250
+      },
+      "min_any_skill_levels": [
+        {
+          "strength": 250
+        },
+        {
+          "sorcery": 250
+        }
+      ],
+      "max_skill_levels": {},
+      "required_augments": []
+    },
+    "next_paths": [
+      {
+        "id": "wraith_phantom_king",
+        "name": "Wraith Phantom King"
+      }
+    ]
+  },
+  "attributes": {
+    "life_force": 64.8,
+    "strength": 1.15,
+    "defense": 0.83,
+    "haste": 1.21,
+    "precision": 10.08,
+    "ferocity": 86.4,
+    "stamina": 7.7,
+    "flow": 15.4,
+    "sorcery": 1.15,
+    "discipline": 0.0
+  },
+  "passives": [
+    {
+      "type": "SWIFTNESS",
+      "value": 0.1,
+      "duration": 5,
+      "max_stacks": 5
+    },
+    {
+      "type": "INNATE_ATTRIBUTE_GAIN",
+      "attribute": "life_force",
+      "value": 1.1
+    }
+  ]
+}

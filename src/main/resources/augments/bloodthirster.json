@@ -1,0 +1,72 @@
+{
+  "id": "bloodthirster",
+  "name": "Bloodthirster",
+  "tier": "MYTHIC",
+  "description": "Your strikes grow stronger while healthy and sustain you when wounded.",
+  "category": "LIFESTEAL",
+  "enabled": true,
+  "weights": {
+    "default": 8,
+    "conditions": [
+      {
+        "when": {
+          "strength_higher_than_sorcery": true
+        },
+        "weight": 60
+      },
+      {
+        "when": {
+          "sorcery_higher_than_strength": true
+        },
+        "weight": 10
+      }
+    ]
+  },
+  "ui": {
+    "sections": [
+      {
+        "title": "On-Hit Passive",
+        "body": "3-Hit Passive\nHit Counter Duration: 5s\n",
+        "color": "#ffb86b"
+      },
+      {
+        "title": "Above 50%",
+        "body": "+50 Flat + (80% Strength)\n",
+        "color": "#8adf9e"
+      },
+      {
+        "title": "",
+        "body": "-10% Self Damage\n",
+        "color": "#ff9a9a"
+      },
+      {
+        "title": "Below 50%",
+        "body": "+10% + (10% of Strength & Sorcery) \n",
+        "color": "#8adf9e"
+      }
+    ]
+  },
+  "passives": {
+    "hit_counter": 3,
+    "hit_counter_duration": 5,
+    "healthy_state": {
+      "health_threshold_above": 0.5,
+      "bonus_damage": {
+        "flat_damage": 50.0,
+        "strength_scaling": 0.8
+      },
+      "self_damage": {
+        "percent_of_current_hp": 0.1
+      }
+    },
+    "wounded_state": {
+      "health_threshold_below": 0.5,
+      "healing": {
+        "missing_health_percent": 0.1,
+        "strength_scaling": 0.1,
+        "sorcery_scaling": 0.1
+      }
+    }
+  },
+  "mob_compatible": true
+}

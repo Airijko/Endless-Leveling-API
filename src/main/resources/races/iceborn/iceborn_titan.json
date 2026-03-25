@@ -1,0 +1,58 @@
+{
+  "race_name": "Iceborn Titan",
+  "icon": "Ingredient_Water_Essence",
+  "description": "An unstoppable mountain of ice and wrath, advancing through battle with inexhaustible endurance.",
+  "model": "Outlander_Brute",
+  "model_scale": 1.0,
+  "enabled": true,
+  "ascension": {
+    "id": "iceborn_titan",
+    "stage": "tier_2",
+    "path": "tank",
+    "final_form": false,
+    "requirements": {
+      "required_prestige": 9,
+      "min_skill_levels": {
+        "life_force": 250,
+        "stamina": 250
+      },
+      "max_skill_levels": {},
+      "required_augments": []
+    },
+    "next_paths": [
+      {
+        "id": "iceborn_frostlord",
+        "name": "Iceborn Frostlord"
+      }
+    ]
+  },
+  "attributes": {
+    "life_force": 171.3,
+    "strength": 1.17,
+    "defense": 1.24,
+    "haste": 0.99,
+    "precision": 15.12,
+    "ferocity": 30.24,
+    "stamina": 15.4,
+    "flow": 7.7,
+    "sorcery": 0.94,
+    "discipline": 0.0
+  },
+  "passives": [
+    {
+      "type": "HEALTH_REGEN",
+      "value": 0.042
+    },
+    {
+      "type": "RETALIATION",
+      "value": 0.3,
+      "window": 4,
+      "cooldown": 22
+    },
+    {
+      "type": "INNATE_ATTRIBUTE_GAIN",
+      "attribute": "life_force",
+      "value": 2.35
+    }
+  ]
+}

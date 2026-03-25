@@ -1,0 +1,53 @@
+{
+  "id": "drain",
+  "name": "Drain",
+  "tier": "ELITE",
+  "description": "On hit, deal bonus damage based on the target's current health.",
+  "category": "ON_HIT",
+  "enabled": true,
+  "weights": {
+    "default": 8,
+    "conditions": [
+      {
+        "when": {
+          "strength_higher_than_sorcery": true
+        },
+        "weight": 60
+      },
+      {
+        "when": {
+          "sorcery_higher_than_strength": true
+        },
+        "weight": 10
+      }
+    ]
+  },
+  "ui": {
+    "sections": [
+      {
+        "title": "Buffs",
+        "body": "+10% of target's current HP as bonus damage",
+        "color": "#8adf9e"
+      },
+      {
+        "title": "Rules",
+        "body": "Target Stat: CURRENT_HP\nCan Crit: No\nMax Damage Per Tick Against Monsters: 1000\n",
+        "color": "#ffb86b"
+      },
+      {
+        "title": "Cooldown",
+        "body": "Cooldown: 1s",
+        "color": "#ffd56b"
+      }
+    ]
+  },
+  "passives": {
+    "bonus_damage_on_hit": {
+      "value": 0.1,
+      "target_stat": "CURRENT_HP",
+      "max_damage_per_tick": 1000,
+      "cooldown": 1.0
+    }
+  },
+  "mob_compatible": true
+}

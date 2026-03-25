@@ -5,7 +5,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.hypixel.hytale.logger.HytaleLogger;
-import org.yaml.snakeyaml.Yaml;
 
 import java.io.File;
 import java.io.FileReader;
@@ -18,7 +17,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -28,7 +26,6 @@ import java.util.Set;
 public final class WeaponConfig {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
-    private static final Yaml YAML = new Yaml();
 
     private final Map<String, String> exactIdMap;
     private final Map<String, String> keywordTokenMap;
@@ -51,26 +48,18 @@ public final class WeaponConfig {
             return empty();
         }
 
-        File loadTarget = file;
-        if (!loadTarget.exists()) {
-            // Backwards compatibility: allow old installs that still only have weapons.yml.
-            File legacyYaml = new File(file.getParentFile(), "weapons.yml");
-            if (legacyYaml.exists()) {
-                LOGGER.atWarning().log(
-                        "weapons.json not found at %s; using legacy weapons.yml. Consider migrating to weapons.json.",
-                        file);
-                return loadLegacyYaml(legacyYaml);
-            }
+        if (!file.exists()) {
             LOGGER.atWarning().log("weapons.json not found at %s; falling back to built-in resolver", file);
             return empty();
         }
 
-        String fileName = loadTarget.getName().toLowerCase(Locale.ROOT);
-        if (fileName.endsWith(".yml") || fileName.endsWith(".yaml")) {
-            return loadLegacyYaml(loadTarget);
+        String fileName = file.getName().toLowerCase(Locale.ROOT);
+        if (!fileName.endsWith(".json")) {
+            LOGGER.atWarning().log("Unsupported weapons config extension for %s; expected .json", file);
+            return empty();
         }
 
-        return loadJson(loadTarget);
+        return loadJson(file);
     }
 
     private static WeaponConfig loadJson(File file) {
@@ -127,56 +116,6 @@ public final class WeaponConfig {
         }
     }
 
-    private static WeaponConfig loadLegacyYaml(File file) {
-        try (Reader reader = new FileReader(file)) {
-            Object rootNode = YAML.load(reader);
-            Map<String, Object> root = asMap(rootNode);
-            if (root.isEmpty()) {
-                return empty();
-            }
-
-            Map<String, Object> typesSection = extractTypesSection(root);
-            Map<String, String> exactIds = new HashMap<>();
-            Map<String, String> keywordTokens = new HashMap<>();
-            Map<String, String> keywordSubstrings = new HashMap<>();
-
-            for (Map.Entry<String, Object> entry : typesSection.entrySet()) {
-                String weaponCategory = normalizeCategoryKey(entry.getKey());
-                if (weaponCategory == null) {
-                    continue;
-                }
-                Map<String, Object> ruleNode = asMap(entry.getValue());
-                if (ruleNode.isEmpty()) {
-                    continue;
-                }
-                Set<String> ids = readStrings(ruleNode.get("ids"));
-                for (String id : ids) {
-                    String normalized = normalizeIdentifier(id);
-                    if (normalized != null) {
-                        exactIds.put(normalized, weaponCategory);
-                    }
-                }
-                Set<String> keywords = readStrings(ruleNode.get("keywords"));
-                for (String keyword : keywords) {
-                    String normalized = normalizeToken(keyword);
-                    if (normalized != null) {
-                        keywordTokens.put(normalized, weaponCategory);
-                        keywordSubstrings.put(normalized, weaponCategory);
-                    }
-                }
-            }
-            if (exactIds.isEmpty() && keywordTokens.isEmpty()) {
-                return empty();
-            }
-            LOGGER.atInfo().log("Loaded %d weapon ids and %d keywords from legacy weapons.yml", exactIds.size(),
-                    keywordTokens.size());
-            return new WeaponConfig(exactIds, keywordTokens, keywordSubstrings);
-        } catch (IOException | RuntimeException ex) {
-            LOGGER.atWarning().log("Failed to load legacy weapons.yml: %s", ex.getMessage());
-            return empty();
-        }
-    }
-
     public String resolveCategory(String itemId) {
         String normalized = normalizeIdentifier(itemId);
         if (normalized == null) {
@@ -206,14 +145,6 @@ public final class WeaponConfig {
         JsonElement direct = root.get("types");
         if (direct instanceof JsonObject jsonObject) {
             return jsonObject;
-        }
-        return root;
-    }
-
-    private static Map<String, Object> extractTypesSection(Map<String, Object> root) {
-        Object direct = root.get("types");
-        if (direct instanceof Map<?, ?> map) {
-            return asMap(map);
         }
         return root;
     }
@@ -253,42 +184,6 @@ public final class WeaponConfig {
         return trimmed.replace('-', '_')
                 .replace(' ', '_')
                 .toLowerCase(Locale.ROOT);
-    }
-
-    private static Map<String, Object> asMap(Object node) {
-        if (!(node instanceof Map<?, ?> raw)) {
-            return Collections.emptyMap();
-        }
-        Map<String, Object> result = new HashMap<>();
-        for (Map.Entry<?, ?> entry : raw.entrySet()) {
-            if (entry.getKey() == null) {
-                continue;
-            }
-            String key = Objects.toString(entry.getKey(), "");
-            result.put(key, entry.getValue());
-        }
-        return result;
-    }
-
-    private static Set<String> readStrings(Object node) {
-        Set<String> values = new HashSet<>();
-        if (node == null) {
-            return values;
-        }
-        if (node instanceof Iterable<?> iterable) {
-            for (Object value : iterable) {
-                String normalized = normalizeToken(Objects.toString(value, null));
-                if (normalized != null) {
-                    values.add(normalized);
-                }
-            }
-            return values;
-        }
-        String normalized = normalizeToken(Objects.toString(node, null));
-        if (normalized != null) {
-            values.add(normalized);
-        }
-        return values;
     }
 
     private static String normalizeIdentifier(String raw) {

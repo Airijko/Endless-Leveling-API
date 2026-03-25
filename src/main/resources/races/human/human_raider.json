@@ -1,0 +1,68 @@
+{
+  "race_name": "Human Raider",
+  "icon": "Ingredient_Ice_Essence",
+  "description": "A ruthless combat specialist who turns raw force or arcane talent into devastating critical damage.",
+  "model_scale": 1.0,
+  "enabled": true,
+  "ascension": {
+    "id": "human_raider",
+    "stage": "tier_1",
+    "path": "damage",
+    "final_form": false,
+    "requirements": {
+      "required_prestige": 3,
+      "min_skill_levels": {
+        "ferocity": 125
+      },
+      "min_any_skill_levels": [
+        {
+          "strength": 125
+        },
+        {
+          "sorcery": 125
+        }
+      ],
+      "max_skill_levels": {},
+      "required_augments": []
+    },
+    "next_paths": [
+      {
+        "id": "human_knight",
+        "name": "Human Knight"
+      }
+    ]
+  },
+  "attributes": {
+    "life_force": 112.7,
+    "strength": 0.94,
+    "defense": 0.91,
+    "haste": 1.05,
+    "precision": 8.4,
+    "ferocity": 42.0,
+    "stamina": 7.4,
+    "flow": 14.7,
+    "discipline": 0.0
+  },
+  "passives": [
+    {
+      "type": "XP_BONUS",
+      "value": 0.8
+    },
+    {
+      "type": "HEALTH_REGEN",
+      "value": 0.035
+    },
+    {
+      "type": "ADRENALINE",
+      "value": 0.7,
+      "threshold": 0.2,
+      "duration": 3,
+      "cooldown": 42
+    },
+    {
+      "type": "INNATE_ATTRIBUTE_GAIN",
+      "attribute": "life_force",
+      "value": 1.7
+    }
+  ]
+}

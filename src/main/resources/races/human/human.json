@@ -1,0 +1,62 @@
+{
+  "race_name": "Human",
+  "icon": "Ingredient_Life_Essence",
+  "description": "Versatile and ambitious, humans are known for their adaptability and determination.",
+  "model_scale": 1.0,
+  "enabled": true,
+  "ascension": {
+    "id": "human",
+    "stage": "base",
+    "path": "none",
+    "final_form": false,
+    "requirements": {
+      "required_prestige": 0,
+      "min_skill_levels": {},
+      "max_skill_levels": {},
+      "required_augments": []
+    },
+    "next_paths": [
+      {
+        "id": "human_explorer",
+        "name": "Human Explorer"
+      },
+      {
+        "id": "human_raider",
+        "name": "Human Raider"
+      }
+    ]
+  },
+  "attributes": {
+    "life_force": 98.0,
+    "strength": 0.85,
+    "defense": 0.85,
+    "haste": 1.0,
+    "precision": 7.0,
+    "ferocity": 35.0,
+    "stamina": 7.0,
+    "flow": 14.0,
+    "discipline": 0.0
+  },
+  "passives": [
+    {
+      "type": "XP_BONUS",
+      "value": 0.5
+    },
+    {
+      "type": "HEALTH_REGEN",
+      "value": 0.03
+    },
+    {
+      "type": "ADRENALINE",
+      "value": 0.56,
+      "threshold": 0.2,
+      "duration": 3,
+      "cooldown": 45
+    },
+    {
+      "type": "INNATE_ATTRIBUTE_GAIN",
+      "attribute": "life_force",
+      "value": 1.3
+    }
+  ]
+}

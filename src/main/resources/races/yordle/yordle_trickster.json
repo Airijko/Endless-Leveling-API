@@ -1,0 +1,58 @@
+{
+  "race_name": "Yordle Trickster",
+  "icon": "Ingredient_Ice_Essence",
+  "description": "A chaotic damage dealer who weaponizes speed and critical force to dismantle enemies before they react.",
+  "model": "Kweebec_Sapling",
+  "model_scale": 1.0,
+  "enabled": true,
+  "ascension": {
+    "id": "yordle_trickster",
+    "stage": "tier_1",
+    "path": "damage",
+    "final_form": false,
+    "requirements": {
+      "required_prestige": 3,
+      "min_skill_levels": {
+        "haste": 125,
+        "ferocity": 125
+      },
+      "max_skill_levels": {},
+      "required_augments": []
+    },
+    "next_paths": [
+      {
+        "id": "yordle_menace",
+        "name": "Yordle Menace"
+      }
+    ]
+  },
+  "attributes": {
+    "life_force": 59.8,
+    "strength": 0.89,
+    "defense": 0.83,
+    "haste": 1.12,
+    "precision": 21.0,
+    "ferocity": 8.4,
+    "stamina": 12.9,
+    "flow": 33.1,
+    "sorcery": 1.03,
+    "discipline": 0.0
+  },
+  "passives": [
+    {
+      "type": "SWIFTNESS",
+      "value": 0.1,
+      "duration": 5,
+      "max_stacks": 5
+    },
+    {
+      "type": "SPECIAL_CHARGE_BONUS",
+      "value": 2.0
+    },
+    {
+      "type": "INNATE_ATTRIBUTE_GAIN",
+      "attribute": "life_force",
+      "value": 1.0
+    }
+  ]
+}

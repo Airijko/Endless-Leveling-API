@@ -1,0 +1,58 @@
+{
+  "race_name": "Iceborn Guardian",
+  "icon": "Ingredient_Ice_Essence",
+  "description": "A glacial bulwark who endures impossible punishment through frozen vitality and steadfast stamina.",
+  "model": "Outlander_Brute",
+  "model_scale": 1.0,
+  "enabled": true,
+  "ascension": {
+    "id": "iceborn_guardian",
+    "stage": "tier_1",
+    "path": "tank",
+    "final_form": false,
+    "requirements": {
+      "required_prestige": 3,
+      "min_skill_levels": {
+        "life_force": 125,
+        "stamina": 125
+      },
+      "max_skill_levels": {},
+      "required_augments": []
+    },
+    "next_paths": [
+      {
+        "id": "iceborn_titan",
+        "name": "Iceborn Titan"
+      }
+    ]
+  },
+  "attributes": {
+    "life_force": 126.9,
+    "strength": 1.11,
+    "defense": 1.08,
+    "haste": 0.95,
+    "precision": 12.6,
+    "ferocity": 25.2,
+    "stamina": 14.7,
+    "flow": 7.4,
+    "sorcery": 0.89,
+    "discipline": 0.0
+  },
+  "passives": [
+    {
+      "type": "HEALTH_REGEN",
+      "value": 0.032
+    },
+    {
+      "type": "RETALIATION",
+      "value": 0.2,
+      "window": 4,
+      "cooldown": 25
+    },
+    {
+      "type": "INNATE_ATTRIBUTE_GAIN",
+      "attribute": "life_force",
+      "value": 1.9
+    }
+  ]
+}

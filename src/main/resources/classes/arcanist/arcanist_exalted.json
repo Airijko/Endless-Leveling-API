@@ -1,0 +1,57 @@
+{
+  "class_name": "Exalted Arcanist",
+  "id": "arcanist_exalted",
+  "description": "A master of pure arcane energy who amplifies spell power through disciplined mana control.",
+  "roles": [
+    "Mage"
+  ],
+  "damage_type": "Magic",
+  "range_type": "range",
+  "enabled": true,
+  "icon": "Weapon_Staff_Bronze",
+  "weapons": [
+    {
+      "type": "STAFF",
+      "damage": 1.755
+    },
+    {
+      "type": "DAGGER",
+      "damage": 1.365
+    }
+  ],
+  "passives": [
+    {
+      "type": "MANA_REGEN",
+      "value": 0.039
+    },
+    {
+      "type": "FINAL_INCANTATION",
+      "category": "MAGIC_ON_HIT",
+      "value": 2.0,
+      "flat_bonus_damage": 50,
+      "threshold": 15,
+      "cooldown": 25,
+      "cooldown_reduction_on_kill": 5
+    },
+    {
+      "type": "INNATE_ATTRIBUTE_GAIN",
+      "attribute": "flow",
+      "value": 0.52
+    },
+    {
+      "type": "INNATE_ATTRIBUTE_GAIN",
+      "attribute": "sorcery",
+      "value": 1.82
+    }
+  ],
+  "ascension": {
+    "id": "class_arcanist_exalted",
+    "stage": "exalted",
+    "path": "arcanist",
+    "final_form": true,
+    "single_route_only": true,
+    "requirements": {
+      "required_prestige": 8
+    }
+  }
+}

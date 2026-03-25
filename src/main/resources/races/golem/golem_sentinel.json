@@ -1,0 +1,61 @@
+{
+  "race_name": "Golem Sentinel",
+  "icon": "Ingredient_Ice_Essence",
+  "description": "A fortified golem form focused on absolute mitigation and unshakable front-line control.",
+  "model": "Golem_Crystal_Earth",
+  "model_scale": 1.0,
+  "enabled": true,
+  "ascension": {
+    "id": "golem_sentinel",
+    "stage": "tier_1",
+    "path": "defense",
+    "final_form": false,
+    "requirements": {
+      "required_prestige": 3,
+      "min_skill_levels": {
+        "life_force": 125,
+        "stamina": 125
+      },
+      "max_skill_levels": {},
+      "required_augments": []
+    },
+    "next_paths": [
+      {
+        "id": "golem_colossus",
+        "name": "Golem Colossus"
+      }
+    ]
+  },
+  "attributes": {
+    "life_force": 263.2,
+    "strength": 0.63,
+    "defense": 1.28,
+    "haste": 0.63,
+    "precision": 0.0,
+    "ferocity": 0.0,
+    "stamina": 14.7,
+    "flow": 3.7,
+    "sorcery": 0.71,
+    "discipline": 0.0
+  },
+  "passives": [
+    {
+      "type": "RETALIATION",
+      "value": 0.3,
+      "window": 5,
+      "cooldown": 22
+    },
+    {
+      "type": "SECOND_WIND",
+      "value": 0.55,
+      "threshold": 0.25,
+      "duration": 15,
+      "cooldown": 55
+    },
+    {
+      "type": "INNATE_ATTRIBUTE_GAIN",
+      "attribute": "life_force",
+      "value": 2.2
+    }
+  ]
+}

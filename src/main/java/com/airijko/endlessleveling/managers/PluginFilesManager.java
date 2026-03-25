@@ -360,22 +360,22 @@ public class PluginFilesManager {
         if (destination == null) {
             return;
         }
-        if (hasYamlFiles(destination.toPath())) {
+        if (hasJsonFiles(destination.toPath())) {
             return;
         }
         exportResourceDirectory(resourceRoot, destination, false);
     }
 
-    private boolean hasYamlFiles(Path folder) {
+    private boolean hasJsonFiles(Path folder) {
         if (folder == null || !Files.exists(folder)) {
             return false;
         }
         try (Stream<Path> files = Files.walk(folder)) {
             return files.filter(Files::isRegularFile)
                     .map(path -> path.toString().toLowerCase())
-                    .anyMatch(path -> path.endsWith(".yml"));
+                    .anyMatch(path -> path.endsWith(".json"));
         } catch (IOException e) {
-            LOGGER.atWarning().log("Failed to inspect %s for YAML files: %s", folder, e.getMessage());
+            LOGGER.atWarning().log("Failed to inspect %s for JSON files: %s", folder, e.getMessage());
             return false;
         }
     }

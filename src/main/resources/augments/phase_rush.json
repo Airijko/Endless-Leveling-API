@@ -1,0 +1,67 @@
+{
+  "id": "phase_rush",
+  "name": "Phase Rush",
+  "tier": "MYTHIC",
+  "description": "Rapid attacks accelerate your combat tempo and convert speed into power.",
+  "category": "ON_HIT",
+  "enabled": true,
+  "weights": {
+    "default": 8,
+    "conditions": [
+      {
+        "when": {
+          "strength_higher_than_sorcery": true
+        },
+        "weight": 60
+      },
+      {
+        "when": {
+          "sorcery_higher_than_strength": true
+        },
+        "weight": 10
+      }
+    ]
+  },
+  "ui": {
+    "sections": [
+      {
+        "title": "On-Hit Passive",
+        "body": "5-Hit Passive\nHit Counter Duration: 5s\n"
+      },
+      {
+        "title": "Buffs",
+        "body": "+50% Haste\nDuring Phase Rush burst: gain % bonus damage equal to 50% of your Haste bonus\n",
+        "color": "#8adf9e"
+      },
+      {
+        "title": "Phase Rush Bonus",
+        "body": "Double your Haste Bonus for 3s after hitting 5 times\nHaste-based bonus damage is active only during this burst\n",
+        "color": "#8adf9e"
+      },
+      {
+        "title": "Buff Duration",
+        "body": "Duration: 3s\n",
+        "color": "#9ecbff"
+      }
+    ]
+  },
+  "passives": {
+    "buffs": {
+      "haste": {
+        "value": 0.5
+      }
+    },
+    "hit_counter": {
+      "hits_required": 5,
+      "duration": 5
+    },
+    "haste_burst": {
+      "multiplier": 2.0,
+      "duration": 3
+    },
+    "haste_to_damage_conversion": {
+      "conversion_percent": 0.5
+    }
+  },
+  "mob_compatible": true
+}

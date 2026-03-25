@@ -1,0 +1,62 @@
+{
+  "race_name": "Ascended Divinity",
+  "icon": "Ingredient_Void_Essence",
+  "description": "The ultimate Ascended state, uniting immortal vitality with both divine might and transcendent sorcery.",
+  "model": "Feran_Windwalker",
+  "model_scale": 1.0,
+  "enabled": true,
+  "ascension": {
+    "id": "ascended_divinity",
+    "stage": "final",
+    "path": "hybrid",
+    "final_form": true,
+    "requirements": {
+      "required_prestige": 18,
+      "min_skill_levels": {
+        "life_force": 600
+      },
+      "min_any_skill_levels": [
+        {
+          "strength": 400
+        },
+        {
+          "sorcery": 400
+        }
+      ],
+      "max_skill_levels": {},
+      "required_augments": [],
+      "required_any_forms": [
+        "ascended_titan",
+        "ascended_archon"
+      ]
+    },
+    "next_paths": []
+  },
+  "attributes": {
+    "life_force": 187.9,
+    "strength": 1.48,
+    "defense": 1.33,
+    "haste": 1.09,
+    "precision": 32.26,
+    "ferocity": 16.13,
+    "stamina": 13.3,
+    "flow": 17.8,
+    "sorcery": 1.33,
+    "discipline": 0.0
+  },
+  "passives": [
+    {
+      "type": "SPECIAL_CHARGE_BONUS",
+      "value": 1.55
+    },
+    {
+      "type": "MANA_REGEN",
+      "value": 0.07
+    },
+    {
+      "type": "INNATE_ATTRIBUTE_GAIN",
+      "attribute": "life_force",
+      "value": 2.4
+    }
+  ]
+}

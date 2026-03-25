@@ -1,0 +1,60 @@
+{
+  "id": "grasp_of_the_undying",
+  "name": "Grasp of the Undying",
+  "tier": "ELITE",
+  "description": "Every 2s on hit, gain a Grasp stack, heal, and slam the target for tank-scaling damage. Stacks persist while in combat.",
+  "category": "ON_HIT",
+  "enabled": true,
+  "weights": {
+    "default": 8,
+    "conditions": [
+      {
+        "when": {
+          "strength_higher_than_sorcery": true
+        },
+        "weight": 60
+      },
+      {
+        "when": {
+          "sorcery_higher_than_strength": true
+        },
+        "weight": 10
+      }
+    ]
+  },
+  "ui": {
+    "sections": [
+      {
+        "title": "Trigger",
+        "body": "On-hit passive proc\nCooldown: 2s\n",
+        "color": "#f7e48b"
+      },
+      {
+        "title": "Damage Proc",
+        "body": "Damage: 25 + (2.5% Max HP)\n",
+        "color": "#8adf9e"
+      },
+      {
+        "title": "Stacking Health",
+        "body": "+25 Max HP per proc\nHeal on proc: 4% Max HP\nCap: ENDLESS\nExpires after 10s out of combat\n",
+        "color": "#ffb86b"
+      }
+    ]
+  },
+  "passives": {
+    "trigger": {
+      "cooldown": 2.0
+    },
+    "damage": {
+      "flat_damage": 25.0,
+      "max_health_scaling": 0.025
+    },
+    "stacking_health": {
+      "flat_health_per_stack": 25.0,
+      "heal_max_health_percent_on_hit": 0.04,
+      "max_stacks": "ENDLESS",
+      "out_of_combat_expire": 10.0
+    }
+  },
+  "mob_compatible": true
+}

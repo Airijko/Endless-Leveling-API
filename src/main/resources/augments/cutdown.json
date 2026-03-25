@@ -1,0 +1,36 @@
+{
+  "id": "cutdown",
+  "name": "Cutdown",
+  "tier": "ELITE",
+  "description": "Deal significantly increased damage to high-health enemies.",
+  "category": "PASSIVE_STAT",
+  "enabled": true,
+  "weights": {
+    "default": 10,
+    "conditions": []
+  },
+  "ui": {
+    "sections": [
+      {
+        "title": "Buffs",
+        "body": "+50% Bonus Damage when target HP > 80%\n+25% Bonus Damage when target HP > 60%\n",
+        "color": "#8adf9e"
+      }
+    ]
+  },
+  "passives": {
+    "bonus_damage_vs_high_hp": {
+      "thresholds": [
+        {
+          "target_health_percent_above": 0.8,
+          "value": 0.5
+        },
+        {
+          "target_health_percent_above": 0.6,
+          "value": 0.25
+        }
+      ]
+    }
+  },
+  "mob_compatible": true
+}

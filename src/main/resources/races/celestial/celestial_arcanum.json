@@ -1,0 +1,52 @@
+{
+  "race_name": "Celestial Arcanum",
+  "icon": "Ingredient_Ice_Essence",
+  "description": "A Celestial who weaponizes cosmic precision into devastating critical bursts, turning every spell into a potential killing blow.",
+  "model": "Shadow_Knight",
+  "model_scale": 1.0,
+  "enabled": true,
+  "ascension": {
+    "id": "celestial_arcanum",
+    "stage": "tier_1",
+    "path": "crit",
+    "final_form": false,
+    "requirements": {
+      "required_prestige": 3,
+      "min_skill_levels": {
+        "sorcery": 125,
+        "ferocity": 125
+      },
+      "max_skill_levels": {},
+      "required_augments": []
+    },
+    "next_paths": [
+      {
+        "id": "celestial_overlord",
+        "name": "Celestial Overlord"
+      }
+    ]
+  },
+  "attributes": {
+    "life_force": 67.8,
+    "strength": 0.85,
+    "defense": 1.01,
+    "haste": 0.92,
+    "precision": 4.2,
+    "ferocity": 33.6,
+    "stamina": 5.9,
+    "flow": 25.7,
+    "sorcery": 1.22,
+    "discipline": 0.0
+  },
+  "passives": [
+    {
+      "type": "SPECIAL_CHARGE_BONUS",
+      "value": 1.0
+    },
+    {
+      "type": "INNATE_ATTRIBUTE_GAIN",
+      "attribute": "life_force",
+      "value": 0.9
+    }
+  ]
+}

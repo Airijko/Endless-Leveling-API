@@ -1,0 +1,56 @@
+{
+  "race_name": "Yordle Sprout",
+  "icon": "Ingredient_Ice_Essence",
+  "description": "A budding support Yordle who channels whimsical mana and stamina into relentless team utility.",
+  "model": "Kweebec_Sapling",
+  "model_scale": 1.0,
+  "enabled": true,
+  "ascension": {
+    "id": "yordle_sprout",
+    "stage": "tier_1",
+    "path": "support",
+    "final_form": false,
+    "requirements": {
+      "required_prestige": 3,
+      "min_skill_levels": {
+        "flow": 125,
+        "stamina": 125
+      },
+      "max_skill_levels": {},
+      "required_augments": []
+    },
+    "next_paths": [
+      {
+        "id": "yordle_enchanter",
+        "name": "Yordle Enchanter"
+      }
+    ]
+  },
+  "attributes": {
+    "life_force": 59.8,
+    "strength": 0.85,
+    "defense": 0.83,
+    "haste": 1.12,
+    "precision": 21.0,
+    "ferocity": 8.4,
+    "stamina": 14.8,
+    "flow": 37.8,
+    "sorcery": 0.99,
+    "discipline": 0.0
+  },
+  "passives": [
+    {
+      "type": "SPECIAL_CHARGE_BONUS",
+      "value": 1.8
+    },
+    {
+      "type": "MANA_REGEN",
+      "value": 0.05
+    },
+    {
+      "type": "INNATE_ATTRIBUTE_GAIN",
+      "attribute": "life_force",
+      "value": 1.05
+    }
+  ]
+}

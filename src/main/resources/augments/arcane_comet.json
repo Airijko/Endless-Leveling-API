@@ -1,0 +1,53 @@
+{
+  "id": "arcane_comet",
+  "name": "Arcane Comet",
+  "tier": "LEGENDARY",
+  "description": "Every 8 seconds, your next hit gains bonus damage scaling with Sorcery.",
+  "category": "MAGIC_ON_HIT",
+  "enabled": true,
+  "weights": {
+    "default": 8,
+    "conditions": [
+      {
+        "when": {
+          "sorcery_higher_than_strength": true
+        },
+        "weight": 60
+      },
+      {
+        "when": {
+          "strength_higher_than_sorcery": true
+        },
+        "weight": 10
+      }
+    ]
+  },
+  "ui": {
+    "sections": [
+      {
+        "title": "Buffs",
+        "body": "+50 flat + (50% Sorcery) bonus damage on hit",
+        "color": "#8adf9e"
+      },
+      {
+        "title": "Rules",
+        "body": "Can Crit: No",
+        "color": "#ffb86b"
+      },
+      {
+        "title": "Cooldown",
+        "body": "8s",
+        "color": "#ffb86b"
+      }
+    ]
+  },
+  "passives": {
+    "bonus_damage_on_hit": {
+      "value": 50.0,
+      "sorcery_ratio": 0.5,
+      "can_crit": false,
+      "cooldown": 8.0
+    }
+  },
+  "mob_compatible": true
+}

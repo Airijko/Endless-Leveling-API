@@ -1,0 +1,64 @@
+{
+  "class_name": "Master Brawler",
+  "id": "brawler_master",
+  "description": "A fierce fist-fighter who thrives in close-quarters combat, using raw power and relentless aggression to overwhelm opponents.",
+  "roles": [
+    "Skirmisher",
+    "Juggernaut"
+  ],
+  "damage_type": "Physical",
+  "range_type": "melee",
+  "enabled": true,
+  "icon": "Armor_Prisma_Hands",
+  "weapons": [
+    {
+      "type": "GAUNTLET",
+      "damage": 1.25
+    },
+    {
+      "type": "DAGGER",
+      "damage": 1.05
+    }
+  ],
+  "passives": [
+    {
+      "type": "RETALIATION",
+      "category": "ON_DAMAGE_TAKEN",
+      "value": 0.5,
+      "window": 5,
+      "cooldown": 15
+    },
+    {
+      "type": "BERZERKER",
+      "category": "PASSIVE_STAT",
+      "value": 0.5,
+      "threshold": 0.4
+    },
+    {
+      "type": "INNATE_ATTRIBUTE_GAIN",
+      "attribute": "life_force",
+      "value": 2.5
+    },
+    {
+      "type": "INNATE_ATTRIBUTE_GAIN",
+      "attribute": "strength",
+      "value": 1.2
+    }
+  ],
+  "ascension": {
+    "id": "class_brawler_master",
+    "stage": "master",
+    "path": "brawler",
+    "final_form": false,
+    "single_route_only": true,
+    "requirements": {
+      "required_prestige": 4
+    },
+    "next_paths": [
+      {
+        "id": "class_brawler_legendary",
+        "name": "Legendary"
+      }
+    ]
+  }
+}

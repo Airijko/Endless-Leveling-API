@@ -1,0 +1,45 @@
+{
+  "id": "titans_wisdom",
+  "name": "Titan's Wisdom",
+  "tier": "ELITE",
+  "description": "Gain Sorcery based on your total max Health, but lose some Haste.",
+  "category": "PASSIVE_STAT",
+  "enabled": true,
+  "weights": {
+    "default": 10,
+    "conditions": []
+  },
+  "ui": {
+    "sections": [
+      {
+        "title": "Buffs",
+        "body": "+15% Sorcery based on total max Health",
+        "color": "#8adf9e"
+      },
+      {
+        "title": "Debuffs",
+        "body": "-15% Haste",
+        "color": "#ff9a9a"
+      },
+      {
+        "title": "Rules",
+        "body": "Scaling Stat: max_health",
+        "color": "#ffb86b"
+      }
+    ]
+  },
+  "passives": {
+    "buffs": {
+      "sorcery_from_max_health": {
+        "scaling_stat": "max_health",
+        "conversion_percent": 0.15
+      }
+    },
+    "debuffs": {
+      "haste": {
+        "value": -0.15
+      }
+    }
+  },
+  "mob_compatible": true
+}

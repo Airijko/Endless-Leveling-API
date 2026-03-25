@@ -1,0 +1,68 @@
+{
+  "race_name": "Drake Marauder",
+  "icon": "Ingredient_Ice_Essence",
+  "description": "A Dragonborn who sharpens their draconic ferocity into relentless critical devastation, striking with the force of a predator.",
+  "model": "Saurian_Hunter",
+  "model_scale": 1.0,
+  "enabled": true,
+  "ascension": {
+    "id": "dragonborn_marauder",
+    "stage": "tier_1",
+    "path": "offense",
+    "final_form": false,
+    "requirements": {
+      "required_prestige": 3,
+      "min_skill_levels": {
+        "ferocity": 125
+      },
+      "min_any_skill_levels": [
+        {
+          "strength": 125
+        },
+        {
+          "sorcery": 125
+        }
+      ],
+      "max_skill_levels": {},
+      "required_augments": []
+    },
+    "next_paths": [
+      {
+        "id": "dragonborn_tyrant",
+        "name": "Dragon Tyrant"
+      }
+    ]
+  },
+  "attributes": {
+    "life_force": 131.1,
+    "strength": 1.12,
+    "defense": 1.1,
+    "haste": 0.98,
+    "precision": 4.2,
+    "ferocity": 50.4,
+    "stamina": 11.0,
+    "flow": 11.0,
+    "sorcery": 1.02,
+    "discipline": 0.0
+  },
+  "passives": [
+    {
+      "type": "SWIFTNESS",
+      "value": 0.07,
+      "duration": 5,
+      "max_stacks": 5
+    },
+    {
+      "type": "SECOND_WIND",
+      "value": 0.28,
+      "threshold": 0.2,
+      "duration": 10,
+      "cooldown": 65
+    },
+    {
+      "type": "INNATE_ATTRIBUTE_GAIN",
+      "attribute": "life_force",
+      "value": 1.2
+    }
+  ]
+}

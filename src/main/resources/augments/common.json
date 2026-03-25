@@ -1,0 +1,75 @@
+{
+  "id": "common",
+  "name": "Common",
+  "tier": "COMMON",
+  "stackable": true,
+  "description": "Small raw boosts to your core stats.",
+  "category": "COMMON_STAT",
+  "enabled": true,
+  "weights": {
+    "default": 35,
+    "conditions": [
+      {
+        "when": {
+          "max_precision_value": 0.99
+        },
+        "weight": 1,
+        "stat_key": "precision"
+      }
+    ]
+  },
+  "ui": {
+    "sections": [
+      {
+        "title": "Buffs",
+        "body": "5-20 Life Force\n1-4 Strength\n1-4 Sorcery\n0.5-1.5 Defense\n1-4 Haste\n0.5-1.5 Precision\n0.75-2.5 Ferocity\n2-6 Discipline\n2-6 Flow\n2-6 Stamina\n",
+        "color": "#8adf9e"
+      }
+    ]
+  },
+  "passives": {
+    "buffs": {
+      "life_force": {
+        "min_value": 5,
+        "max_value": 20
+      },
+      "strength": {
+        "min_value": 1.0,
+        "max_value": 4.0
+      },
+      "sorcery": {
+        "min_value": 1.0,
+        "max_value": 4.0
+      },
+      "defense": {
+        "min_value": 0.5,
+        "max_value": 1.5
+      },
+      "haste": {
+        "min_value": 1.0,
+        "max_value": 4.0
+      },
+      "precision": {
+        "min_value": 0.5,
+        "max_value": 1.5
+      },
+      "ferocity": {
+        "min_value": 0.75,
+        "max_value": 2.5
+      },
+      "discipline": {
+        "min_value": 2,
+        "max_value": 6
+      },
+      "flow": {
+        "min_value": 2,
+        "max_value": 6
+      },
+      "stamina": {
+        "min_value": 2,
+        "max_value": 6
+      }
+    }
+  },
+  "mob_compatible": true
+}

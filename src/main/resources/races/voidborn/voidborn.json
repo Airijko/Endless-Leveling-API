@@ -1,0 +1,63 @@
+{
+  "race_name": "Voidborn",
+  "icon": "Ingredient_Life_Essence",
+  "description": "Twisted by the Void, Voidborn adapt rapidly, gaining strength through chaos and corruption.",
+  "model": "Spawn_Void",
+  "model_scale": 1.0,
+  "enabled": true,
+  "ascension": {
+    "id": "voidborn",
+    "stage": "base",
+    "path": "none",
+    "final_form": false,
+    "requirements": {
+      "required_prestige": 0,
+      "min_skill_levels": {},
+      "max_skill_levels": {},
+      "required_augments": []
+    },
+    "next_paths": [
+      {
+        "id": "voidborn_protector",
+        "name": "Void Protector"
+      },
+      {
+        "id": "voidborn_prowler",
+        "name": "Void Prowler"
+      }
+    ]
+  },
+  "attributes": {
+    "life_force": 98.0,
+    "strength": 0.98,
+    "defense": 0.85,
+    "haste": 0.9,
+    "precision": 7.0,
+    "ferocity": 35.0,
+    "stamina": 8.4,
+    "flow": 28.0,
+    "sorcery": 1.02,
+    "discipline": 0.0
+  },
+  "passives": [
+    {
+      "type": "MANA_REGEN",
+      "value": 0.014
+    },
+    {
+      "type": "SPECIAL_CHARGE_BONUS",
+      "value": 0.35
+    },
+    {
+      "type": "RETALIATION",
+      "value": 0.18,
+      "window": 4,
+      "cooldown": 25
+    },
+    {
+      "type": "INNATE_ATTRIBUTE_GAIN",
+      "attribute": "life_force",
+      "value": 1.14
+    }
+  ]
+}

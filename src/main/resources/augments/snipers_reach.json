@@ -1,0 +1,49 @@
+{
+  "id": "snipers_reach",
+  "name": "Sniper's Reach",
+  "tier": "LEGENDARY",
+  "description": "Ranged damage scales with distance, peaking at long range.",
+  "category": "ON_RANGED_HIT",
+  "enabled": true,
+  "weights": {
+    "default": 8,
+    "conditions": [
+      {
+        "when": {
+          "strength_higher_than_sorcery": true
+        },
+        "weight": 60
+      },
+      {
+        "when": {
+          "sorcery_higher_than_strength": true
+        },
+        "weight": 10
+      }
+    ]
+  },
+  "ui": {
+    "sections": [
+      {
+        "title": "Buffs",
+        "body": "Max Value: 0-150% Bonus Damage at 30 blocks",
+        "color": "#8adf9e"
+      },
+      {
+        "title": "Rules",
+        "body": "Min Distance: 5 blocks\nMax Distance: 30 blocks\nScaling Type: linear\nAttack Type: RANGED\n",
+        "color": "#ffb86b"
+      }
+    ]
+  },
+  "passives": {
+    "bonus_damage_by_distance": {
+      "max_value": 1.5,
+      "min_distance": 5,
+      "max_distance": 30,
+      "scaling_type": "linear",
+      "attack_type": "RANGED"
+    }
+  },
+  "mob_compatible": true
+}

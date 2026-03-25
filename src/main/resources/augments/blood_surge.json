@@ -1,0 +1,48 @@
+{
+  "id": "blood_surge",
+  "name": "Blood Surge",
+  "tier": "MYTHIC",
+  "description": "Missing health increases your Life Steal, and part of potential healing is fed into your attacks.",
+  "category": "LIFESTEAL",
+  "enabled": true,
+  "weights": {
+    "default": 8,
+    "conditions": [
+      {
+        "when": {
+          "strength_higher_than_sorcery": true
+        },
+        "weight": 60
+      },
+      {
+        "when": {
+          "sorcery_higher_than_strength": true
+        },
+        "weight": 10
+      }
+    ]
+  },
+  "ui": {
+    "sections": [
+      {
+        "title": "Buffs",
+        "body": "+5-40% Life Steal\n+30% of potential healing converted to damage\n",
+        "color": "#8adf9e"
+      },
+      {
+        "title": "Rules",
+        "body": "Full Value Threshold: +20%",
+        "color": "#ffb86b"
+      }
+    ]
+  },
+  "passives": {
+    "life_steal_scaling": {
+      "min_value": 0.05,
+      "max_value": 0.4,
+      "full_value_at_health_percent": 0.2,
+      "healing_to_damage": 0.3
+    }
+  },
+  "mob_compatible": true
+}

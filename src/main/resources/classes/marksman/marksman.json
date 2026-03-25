@@ -1,0 +1,72 @@
+{
+  "class_name": "Marksman",
+  "id": "marksman",
+  "description": "An eagle-eyed sharpshooter who controls the fight from afar.",
+  "roles": [
+    "Marksman"
+  ],
+  "damage_type": "Physical",
+  "range_type": "range",
+  "enabled": true,
+  "icon": "Weapon_Shortbow_Combat",
+  "weapons": [
+    {
+      "type": "BOW",
+      "damage": 1.05
+    },
+    {
+      "type": "CROSSBOW",
+      "damage": 1.05
+    },
+    {
+      "type": "DAGGER",
+      "damage": 1.05
+    }
+  ],
+  "passives": [
+    {
+      "type": "TRUE_BOLTS",
+      "category": "ON_HIT",
+      "value": 0,
+      "max_health_true_damage_percent": 0.06,
+      "internal_cooldown_seconds": 4,
+      "monster_true_damage_cap": 1000
+    },
+    {
+      "type": "SWIFTNESS",
+      "value": 0.052,
+      "duration": 5,
+      "max_stacks": 8
+    },
+    {
+      "type": "SPECIAL_CHARGE_BONUS",
+      "value": 0.175
+    },
+    {
+      "type": "INNATE_ATTRIBUTE_GAIN",
+      "attribute": "precision",
+      "value": 0.245
+    },
+    {
+      "type": "INNATE_ATTRIBUTE_GAIN",
+      "attribute": "ferocity",
+      "value": 0.84
+    }
+  ],
+  "ascension": {
+    "id": "class_marksman_base",
+    "stage": "base",
+    "path": "marksman",
+    "final_form": false,
+    "single_route_only": false,
+    "requirements": {
+      "required_prestige": 0
+    },
+    "next_paths": [
+      {
+        "id": "class_marksman_elite",
+        "name": "Elite"
+      }
+    ]
+  }
+}

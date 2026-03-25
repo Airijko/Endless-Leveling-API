@@ -1,0 +1,37 @@
+{
+  "id": "tank_engine",
+  "name": "Tank Engine",
+  "tier": "LEGENDARY",
+  "description": "Sustained combat massively increases your maximum health.",
+  "category": "PASSIVE_STAT",
+  "enabled": true,
+  "weights": {
+    "default": 10,
+    "conditions": []
+  },
+  "ui": {
+    "sections": [
+      {
+        "title": "Buffs",
+        "body": "+5 + (4% Max Health per stack)\nMax stacks: +25\nDecay Per Second: 5\n",
+        "color": "#8adf9e"
+      },
+      {
+        "title": "Duration",
+        "body": "Duration: 8s",
+        "color": "#9ecbff"
+      }
+    ]
+  },
+  "passives": {
+    "stacking_health": {
+      "flat_health_per_stack": 5,
+      "percent_max_health_per_stack": 0.04,
+      "max_stacks": 25,
+      "duration": 8,
+      "decay_per_second": 5,
+      "exclude_flat_from_percent_scaling": true
+    }
+  },
+  "mob_compatible": true
+}

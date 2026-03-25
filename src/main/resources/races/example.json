@@ -1,0 +1,90 @@
+{
+  "race_name": "Example",
+  "icon": "Ingredient_Life_Essence",
+  "description": "PEEPEE POOPOO",
+  "model_scale": 1.0,
+  "enabled": false,
+  "attributes": {
+    "life_force": 100.0,
+    "strength": 1.0,
+    "defense": 1.0,
+    "haste": 1.0,
+    "precision": 10.0,
+    "ferocity": 50.0,
+    "stamina": 10.0,
+    "flow": 20.0,
+    "sorcery": 1.0,
+    "discipline": 0
+  },
+  "passives": [
+    {
+      "type": "XP_BONUS",
+      "value": 1.0
+    },
+    {
+      "type": "HEALTH_REGEN",
+      "value": 0.025
+    },
+    {
+      "type": "MANA_REGEN",
+      "value": 0.02
+    },
+    {
+      "type": "HEALING_BONUS",
+      "value": 0.2
+    },
+    {
+      "type": "SPECIAL_CHARGE_BONUS",
+      "value": 1.0
+    },
+    {
+      "type": "SECOND_WIND",
+      "value": 0.5,
+      "threshold": 0.2,
+      "duration": 10,
+      "cooldown": 60
+    },
+    {
+      "type": "FOCUSED_STRIKE",
+      "value": 2.0,
+      "flat_bonus_damage": 25,
+      "cooldown": 20
+    },
+    {
+      "type": "ADRENALINE",
+      "value": 0.8,
+      "threshold": 0.2,
+      "duration": 3,
+      "cooldown": 45
+    },
+    {
+      "type": "BERZERKER",
+      "value": 0.2,
+      "threshold": 0.35
+    },
+    {
+      "type": "RETALIATION",
+      "value": 0.25,
+      "window": 4,
+      "cooldown": 25
+    },
+    {
+      "type": "FINAL_INCANTATION",
+      "value": 100,
+      "threshold": 0.2,
+      "cooldown": 45
+    },
+    {
+      "type": "SWIFTNESS",
+      "value": 0.1,
+      "duration": 5,
+      "max_stacks": 8
+    },
+    {
+      "type": "RAVENOUS_STRIKE",
+      "value": 5.0,
+      "strength_scaling": 0.075,
+      "sorcery_scaling": 0.075
+    }
+  ]
+}

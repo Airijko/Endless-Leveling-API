@@ -13,7 +13,8 @@ import com.airijko.endlessleveling.EndlessLeveling;
 import com.hypixel.hytale.server.core.command.system.CommandManager;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
-import org.yaml.snakeyaml.Yaml;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
 import com.airijko.endlessleveling.enums.ArchetypePassiveType;
 import com.airijko.endlessleveling.enums.DamageLayer;
@@ -25,6 +26,7 @@ import com.airijko.endlessleveling.enums.SkillAttributeType;
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
+import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -69,7 +71,9 @@ public class RaceManager {
     private final Map<String, RaceDefinition> racesByKey = new HashMap<>();
     private final Map<String, RaceDefinition> racesByAscensionId = new HashMap<>();
     private final Map<String, List<String>> ascensionParentsByChild = new HashMap<>();
-    private final Yaml yaml = new Yaml();
+    private static final Type STRING_OBJECT_MAP_TYPE = new TypeToken<Map<String, Object>>() {
+    }.getType();
+    private final Gson gson = new Gson();
     private final RaceModelDefaultMode raceModelDefaultMode;
     private final int maxRaceSwitches;
     private final Map<UUID, Boolean> modelApplyGuard = new ConcurrentHashMap<>();
@@ -748,7 +752,7 @@ public class RaceManager {
 
         try (Stream<Path> files = Files.walk(racesFolder.toPath())) {
             files.filter(Files::isRegularFile)
-                    .filter(path -> path.toString().toLowerCase(Locale.ROOT).endsWith(".yml"))
+                    .filter(path -> path.toString().toLowerCase(Locale.ROOT).endsWith(".json"))
                     .forEach(this::loadRaceFromFile);
         } catch (IOException e) {
             LOGGER.atSevere().log("Failed to walk races directory: %s", e.getMessage());
@@ -893,13 +897,13 @@ public class RaceManager {
 
     private void loadRaceFromFile(Path path) {
         try (Reader reader = Files.newBufferedReader(path)) {
-            Map<String, Object> yamlData = yaml.load(reader);
-            if (yamlData == null) {
+            Map<String, Object> jsonData = gson.fromJson(reader, STRING_OBJECT_MAP_TYPE);
+            if (jsonData == null) {
                 LOGGER.atWarning().log("Race file %s was empty.", path.getFileName());
                 return;
             }
 
-            RaceDefinition definition = buildDefinition(path, yamlData);
+            RaceDefinition definition = buildDefinition(path, jsonData);
             if (!definition.isEnabled()) {
                 LOGGER.atInfo().log("Skipping disabled race %s from %s", definition.getId(), path.getFileName());
                 return;

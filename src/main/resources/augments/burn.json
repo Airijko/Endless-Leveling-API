@@ -1,0 +1,50 @@
+{
+  "id": "burn",
+  "name": "Burn",
+  "tier": "ELITE",
+  "description": "Your presence scorches nearby enemies, dealing damage over time that scales with your maximum health and expanding in size as you grow stronger.",
+  "category": "ON_DAMAGE_TAKEN",
+  "enabled": true,
+  "weights": {
+    "default": 10,
+    "conditions": []
+  },
+  "ui": {
+    "sections": [
+      {
+        "title": "Buffs",
+        "body": "Base Max Hp Percent Per Second: +1%\nBonus Max Hp Scaling: +0.15%\nCan Crit: No\nMax Damage Per Tick Against Monsters: 1000\nRadius: +5\nGain +1 Block Radius per 400 Max HP\n+100 Life Force\n",
+        "color": "#8adf9e"
+      },
+      {
+        "title": "Duration",
+        "body": "Duration: 10s",
+        "color": "#9ecbff"
+      },
+      {
+        "title": "Cooldown",
+        "body": "Cooldown: +10",
+        "color": "#ffd56b"
+      }
+    ]
+  },
+  "passives": {
+    "aura_burn": {
+      "base_max_hp_percent_per_second": 0.01,
+      "bonus_max_hp_scaling": 0.0015,
+      "radius": 5,
+      "duration": 10,
+      "cooldown": 10,
+      "max_damage_per_tick": 1000,
+      "radius_health_scaling": {
+        "health_per_block": 400
+      }
+    },
+    "buffs": {
+      "life_force": {
+        "value": 100
+      }
+    }
+  },
+  "mob_compatible": true
+}

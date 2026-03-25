@@ -1,0 +1,33 @@
+{
+  "id": "brute_force",
+  "name": "Brute Force",
+  "tier": "LEGENDARY",
+  "description": "Trade all critical potential for overwhelming raw power.",
+  "category": "PASSIVE_STAT",
+  "enabled": true,
+  "weights": {
+    "default": 10,
+    "conditions": []
+  },
+  "ui": {
+    "sections": [
+      {
+        "title": "Buffs",
+        "body": "Strength Multiplier: 2.5x\nSorcery Multiplier: 2.5x\n"
+      },
+      {
+        "title": "Debuffs",
+        "body": "Precision Lock Value: 0 (no crits or crit gain)",
+        "color": "#ff9a9a"
+      }
+    ]
+  },
+  "passives": {
+    "brute_force": {
+      "precision_lock_value": 0,
+      "strength_multiplier": 2.5,
+      "sorcery_multiplier": 2.5
+    }
+  },
+  "mob_compatible": true
+}

@@ -1,0 +1,71 @@
+{
+  "class_name": "Master Necromancer",
+  "id": "necromancer_master",
+  "description": "A dark spellcaster who channels forbidden arcane force through staves.",
+  "roles": [
+    "Battlemage"
+  ],
+  "damage_type": "Magic",
+  "range_type": "melee/range",
+  "enabled": true,
+  "icon": "Weapon_Spellbook_Demon",
+  "weapons": [
+    {
+      "type": "STAFF",
+      "damage": 1.13
+    },
+    {
+      "type": "SWORD",
+      "damage": 1.13
+    }
+  ],
+  "passives": [
+    {
+      "type": "ARMY_OF_THE_DEAD",
+      "category": "NECOMANCY",
+      "value": 1.0,
+      "base_summon_amount": 2,
+      "summon_amount_scaling": {
+        "strength_per_summon": 150,
+        "sorcery_per_summon": 150
+      },
+      "minion_lifetime_seconds": 40,
+      "activation": "on_hit",
+      "cooldown_seconds": 16,
+      "base_summon_damage": 15,
+      "summon_stat_inheritance": 0.4,
+      "skeleton_type": "EndlessLeveling_ArmyOfTheDead_Pet_Adamantite"
+    },
+    {
+      "type": "INNATE_ATTRIBUTE_GAIN",
+      "attribute": "life_force",
+      "value": 2.25
+    },
+    {
+      "type": "INNATE_ATTRIBUTE_GAIN",
+      "attribute": "flow",
+      "value": 1.5
+    },
+    {
+      "type": "INNATE_ATTRIBUTE_GAIN",
+      "attribute": "sorcery",
+      "value": 1.2
+    }
+  ],
+  "ascension": {
+    "id": "class_necromancer_master",
+    "stage": "master",
+    "path": "necromancer",
+    "final_form": false,
+    "single_route_only": true,
+    "requirements": {
+      "required_prestige": 4
+    },
+    "next_paths": [
+      {
+        "id": "class_necromancer_legendary",
+        "name": "Legendary"
+      }
+    ]
+  }
+}

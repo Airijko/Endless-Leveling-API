@@ -1,0 +1,63 @@
+{
+  "class_name": "Master Arcanist",
+  "id": "arcanist_master",
+  "description": "A master of pure arcane energy who amplifies spell power through disciplined mana control.",
+  "roles": [
+    "Mage"
+  ],
+  "damage_type": "Magic",
+  "range_type": "range",
+  "enabled": true,
+  "icon": "Weapon_Staff_Bronze",
+  "weapons": [
+    {
+      "type": "STAFF",
+      "damage": 1.35
+    },
+    {
+      "type": "DAGGER",
+      "damage": 1.05
+    }
+  ],
+  "passives": [
+    {
+      "type": "MANA_REGEN",
+      "value": 0.03
+    },
+    {
+      "type": "FINAL_INCANTATION",
+      "category": "MAGIC_ON_HIT",
+      "value": 1.5,
+      "flat_bonus_damage": 50,
+      "threshold": 15,
+      "cooldown": 35,
+      "cooldown_reduction_on_kill": 5
+    },
+    {
+      "type": "INNATE_ATTRIBUTE_GAIN",
+      "attribute": "flow",
+      "value": 0.4
+    },
+    {
+      "type": "INNATE_ATTRIBUTE_GAIN",
+      "attribute": "sorcery",
+      "value": 1.4
+    }
+  ],
+  "ascension": {
+    "id": "class_arcanist_master",
+    "stage": "master",
+    "path": "arcanist",
+    "final_form": false,
+    "single_route_only": true,
+    "requirements": {
+      "required_prestige": 4
+    },
+    "next_paths": [
+      {
+        "id": "class_arcanist_legendary",
+        "name": "Legendary"
+      }
+    ]
+  }
+}

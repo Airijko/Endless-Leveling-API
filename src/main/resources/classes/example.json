@@ -1,0 +1,158 @@
+{
+  "class_name": "Example",
+  "description": "Template class showcasing supported fields.",
+  "role": "Template",
+  "category": "default",
+  "enabled": false,
+  "icon": "Potion_Health",
+  "weapons": [
+    {
+      "type": "SWORD",
+      "damage": 1.25
+    },
+    {
+      "type": "AXE",
+      "damage": 1.15
+    },
+    {
+      "type": "BOW",
+      "damage": 1.1
+    },
+    {
+      "type": "STAFF",
+      "damage": 1.05
+    },
+    {
+      "type": "DAGGER",
+      "damage": 1.2
+    },
+    {
+      "type": "MACE",
+      "damage": 1.3
+    },
+    {
+      "type": "SPEAR",
+      "damage": 1.1
+    },
+    {
+      "type": "CROSSBOW",
+      "damage": 1.15
+    },
+    {
+      "type": "WAND",
+      "damage": 1.05
+    }
+  ],
+  "passives": [
+    {
+      "type": "XP_BONUS",
+      "value": 1.0
+    },
+    {
+      "type": "HEALTH_REGEN",
+      "value": 0.025
+    },
+    {
+      "type": "MANA_REGEN",
+      "value": 0.02
+    },
+    {
+      "type": "HEALING_BONUS",
+      "value": 0.2
+    },
+    {
+      "type": "SPECIAL_CHARGE_BONUS",
+      "value": 1.0
+    },
+    {
+      "type": "SECOND_WIND",
+      "value": 0.5,
+      "threshold": 0.2,
+      "duration": 10,
+      "cooldown": 60
+    },
+    {
+      "type": "FOCUSED_STRIKE",
+      "value": 2.0,
+      "flat_bonus_damage": 25,
+      "cooldown": 20
+    },
+    {
+      "type": "ADRENALINE",
+      "value": 0.8,
+      "threshold": 0.2,
+      "duration": 3,
+      "cooldown": 45
+    },
+    {
+      "type": "BERZERKER",
+      "value": 0.2,
+      "threshold": 0.35
+    },
+    {
+      "type": "RETALIATION",
+      "value": 0.25,
+      "window": 4,
+      "cooldown": 25
+    },
+    {
+      "type": "FINAL_INCANTATION",
+      "category": "MAGIC_ON_HIT",
+      "value": 100,
+      "threshold": 0.2,
+      "cooldown": 45
+    },
+    {
+      "type": "SWIFTNESS",
+      "value": 0.1,
+      "duration": 8,
+      "max_stacks": 8
+    },
+    {
+      "type": "INNATE_ATTRIBUTE_GAIN",
+      "attribute": "life_force",
+      "value": 2.0
+    },
+    {
+      "type": "INNATE_ATTRIBUTE_GAIN",
+      "attribute": "strength",
+      "value": 2.0
+    },
+    {
+      "type": "INNATE_ATTRIBUTE_GAIN",
+      "attribute": "defense",
+      "value": 2.0
+    },
+    {
+      "type": "INNATE_ATTRIBUTE_GAIN",
+      "attribute": "haste",
+      "value": 2.0
+    },
+    {
+      "type": "INNATE_ATTRIBUTE_GAIN",
+      "attribute": "precision",
+      "value": 2.0
+    },
+    {
+      "type": "INNATE_ATTRIBUTE_GAIN",
+      "attribute": "ferocity",
+      "value": 2.0
+    },
+    {
+      "type": "INNATE_ATTRIBUTE_GAIN",
+      "attribute": "stamina",
+      "value": 2.0
+    },
+    {
+      "type": "INNATE_ATTRIBUTE_GAIN",
+      "attribute": "flow",
+      "value": 2.0
+    },
+    {
+      "type": "RAVENOUS_STRIKE",
+      "value": 5.0,
+      "strength_scaling": 0.075,
+      "sorcery_scaling": 0.075
+    }
+  ]
+}

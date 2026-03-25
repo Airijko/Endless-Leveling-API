@@ -1,0 +1,61 @@
+{
+  "race_name": "Human Explorer",
+  "icon": "Ingredient_Ice_Essence",
+  "description": "A disciplined trailblazer who survives harsh frontiers through relentless pacing and tactical precision.",
+  "model_scale": 1.0,
+  "enabled": true,
+  "ascension": {
+    "id": "human_explorer",
+    "stage": "tier_1",
+    "path": "adventurer",
+    "final_form": false,
+    "requirements": {
+      "required_prestige": 3,
+      "min_skill_levels": {
+        "discipline": 125,
+        "haste": 125
+      },
+      "max_skill_levels": {},
+      "required_augments": []
+    },
+    "next_paths": [
+      {
+        "id": "human_voyager",
+        "name": "Human Voyager"
+      }
+    ]
+  },
+  "attributes": {
+    "life_force": 127.4,
+    "strength": 0.89,
+    "defense": 0.91,
+    "haste": 1.05,
+    "precision": 8.4,
+    "ferocity": 42.0,
+    "stamina": 8.4,
+    "flow": 16.8,
+    "discipline": 0.0
+  },
+  "passives": [
+    {
+      "type": "XP_BONUS",
+      "value": 0.85
+    },
+    {
+      "type": "HEALTH_REGEN",
+      "value": 0.04
+    },
+    {
+      "type": "ADRENALINE",
+      "value": 0.72,
+      "threshold": 0.2,
+      "duration": 3,
+      "cooldown": 42
+    },
+    {
+      "type": "INNATE_ATTRIBUTE_GAIN",
+      "attribute": "life_force",
+      "value": 1.8
+    }
+  ]
+}

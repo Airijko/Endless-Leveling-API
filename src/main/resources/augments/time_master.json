@@ -1,0 +1,41 @@
+{
+  "id": "time_master",
+  "name": "Time Master",
+  "tier": "ELITE",
+  "description": "Killing enemies reduces the cooldown of all your augments and passives.",
+  "category": "ON_KILL",
+  "enabled": true,
+  "weights": {
+    "default": 8,
+    "conditions": [
+      {
+        "when": {
+          "strength_higher_than_sorcery": true
+        },
+        "weight": 60
+      },
+      {
+        "when": {
+          "sorcery_higher_than_strength": true
+        },
+        "weight": 10
+      }
+    ]
+  },
+  "ui": {
+    "sections": [
+      {
+        "title": "Buffs",
+        "body": "Reduce Cooldowns by 1 + (7.5% of remaining) second on kill\n",
+        "color": "#8adf9e"
+      }
+    ]
+  },
+  "passives": {
+    "cooldown_reduction": {
+      "flat_seconds": 1,
+      "percent_remaining": 0.075
+    }
+  },
+  "mob_compatible": true
+}

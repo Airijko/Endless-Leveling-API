@@ -1,0 +1,69 @@
+{
+  "race_name": "Void Prowler",
+  "icon": "Ingredient_Ice_Essence",
+  "description": "A predatory void stalker that turns ferocity and dark power into lethal crit-heavy assaults.",
+  "model": "Spawn_Void",
+  "model_scale": 1.0,
+  "enabled": true,
+  "ascension": {
+    "id": "voidborn_prowler",
+    "stage": "tier_1",
+    "path": "damage",
+    "final_form": false,
+    "requirements": {
+      "required_prestige": 3,
+      "min_skill_levels": {
+        "ferocity": 125
+      },
+      "min_any_skill_levels": [
+        {
+          "strength": 125
+        },
+        {
+          "sorcery": 125
+        }
+      ],
+      "max_skill_levels": {},
+      "required_augments": []
+    },
+    "next_paths": [
+      {
+        "id": "voidborn_reaver",
+        "name": "Void Reaver"
+      }
+    ]
+  },
+  "attributes": {
+    "life_force": 112.7,
+    "strength": 1.08,
+    "defense": 0.91,
+    "haste": 0.95,
+    "precision": 8.4,
+    "ferocity": 42.0,
+    "stamina": 8.8,
+    "flow": 29.4,
+    "sorcery": 1.12,
+    "discipline": 0.0
+  },
+  "passives": [
+    {
+      "type": "MANA_REGEN",
+      "value": 0.02
+    },
+    {
+      "type": "SPECIAL_CHARGE_BONUS",
+      "value": 0.6
+    },
+    {
+      "type": "RETALIATION",
+      "value": 0.23,
+      "window": 4,
+      "cooldown": 23
+    },
+    {
+      "type": "INNATE_ATTRIBUTE_GAIN",
+      "attribute": "life_force",
+      "value": 1.55
+    }
+  ]
+}

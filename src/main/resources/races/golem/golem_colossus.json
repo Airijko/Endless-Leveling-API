@@ -1,0 +1,61 @@
+{
+  "race_name": "Golem Colossus",
+  "icon": "Ingredient_Water_Essence",
+  "description": "A towering bastion of living stone that converts every blow into inevitable counterforce.",
+  "model": "Golem_Crystal_Earth",
+  "model_scale": 1.0,
+  "enabled": true,
+  "ascension": {
+    "id": "golem_colossus",
+    "stage": "tier_2",
+    "path": "defense",
+    "final_form": false,
+    "requirements": {
+      "required_prestige": 9,
+      "min_skill_levels": {
+        "life_force": 250,
+        "stamina": 250
+      },
+      "max_skill_levels": {},
+      "required_augments": []
+    },
+    "next_paths": [
+      {
+        "id": "golem_prime",
+        "name": "Golem Prime"
+      }
+    ]
+  },
+  "attributes": {
+    "life_force": 355.4,
+    "strength": 0.66,
+    "defense": 1.47,
+    "haste": 0.66,
+    "precision": 0.0,
+    "ferocity": 0.0,
+    "stamina": 15.4,
+    "flow": 3.9,
+    "sorcery": 0.75,
+    "discipline": 0.0
+  },
+  "passives": [
+    {
+      "type": "RETALIATION",
+      "value": 0.38,
+      "window": 5,
+      "cooldown": 18
+    },
+    {
+      "type": "SECOND_WIND",
+      "value": 0.65,
+      "threshold": 0.3,
+      "duration": 16,
+      "cooldown": 50
+    },
+    {
+      "type": "INNATE_ATTRIBUTE_GAIN",
+      "attribute": "life_force",
+      "value": 3.0
+    }
+  ]
+}

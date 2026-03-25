@@ -1,0 +1,68 @@
+{
+  "race_name": "Golem Crusher",
+  "icon": "Ingredient_Ice_Essence",
+  "description": "A war-forged golem frame tuned for violent impact and relentless stamina-fueled pressure.",
+  "model": "Golem_Crystal_Earth",
+  "model_scale": 1.0,
+  "enabled": true,
+  "ascension": {
+    "id": "golem_crusher",
+    "stage": "tier_1",
+    "path": "damage",
+    "final_form": false,
+    "requirements": {
+      "required_prestige": 3,
+      "min_skill_levels": {
+        "stamina": 125
+      },
+      "min_any_skill_levels": [
+        {
+          "strength": 125
+        },
+        {
+          "sorcery": 125
+        }
+      ],
+      "max_skill_levels": {},
+      "required_augments": []
+    },
+    "next_paths": [
+      {
+        "id": "golem_ravager",
+        "name": "Golem Ravager"
+      }
+    ]
+  },
+  "attributes": {
+    "life_force": 224.2,
+    "strength": 0.66,
+    "defense": 1.19,
+    "haste": 0.63,
+    "precision": 0.0,
+    "ferocity": 0.0,
+    "stamina": 14.7,
+    "flow": 3.7,
+    "sorcery": 0.75,
+    "discipline": 0.0
+  },
+  "passives": [
+    {
+      "type": "RETALIATION",
+      "value": 0.24,
+      "window": 4,
+      "cooldown": 20
+    },
+    {
+      "type": "SECOND_WIND",
+      "value": 0.5,
+      "threshold": 0.2,
+      "duration": 12,
+      "cooldown": 50
+    },
+    {
+      "type": "INNATE_ATTRIBUTE_GAIN",
+      "attribute": "life_force",
+      "value": 2.2
+    }
+  ]
+}

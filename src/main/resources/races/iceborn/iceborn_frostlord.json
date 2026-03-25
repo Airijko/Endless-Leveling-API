@@ -1,0 +1,63 @@
+{
+  "race_name": "Iceborn Frostlord",
+  "icon": "Ingredient_Void_Essence",
+  "description": "The absolute ruler of frozen war, fusing titan endurance with ragnarok-level critical annihilation.",
+  "model": "Outlander_Brute",
+  "model_scale": 1.0,
+  "enabled": true,
+  "ascension": {
+    "id": "iceborn_frostlord",
+    "stage": "final",
+    "path": "hybrid",
+    "final_form": true,
+    "requirements": {
+      "required_prestige": 18,
+      "min_skill_levels": {
+        "life_force": 400,
+        "stamina": 100,
+        "ferocity": 500
+      },
+      "max_skill_levels": {},
+      "required_augments": [],
+      "required_any_forms": [
+        "iceborn_titan",
+        "iceborn_ragnarok"
+      ]
+    },
+    "next_paths": []
+  },
+  "attributes": {
+    "life_force": 351.2,
+    "strength": 1.54,
+    "defense": 1.8,
+    "haste": 1.09,
+    "precision": 24.19,
+    "ferocity": 48.38,
+    "stamina": 17.8,
+    "flow": 8.9,
+    "sorcery": 1.23,
+    "discipline": 0.0
+  },
+  "passives": [
+    {
+      "type": "HEALTH_REGEN",
+      "value": 0.05
+    },
+    {
+      "type": "BERZERKER",
+      "value": 0.45,
+      "threshold": 0.35
+    },
+    {
+      "type": "RETALIATION",
+      "value": 0.34,
+      "window": 4,
+      "cooldown": 20
+    },
+    {
+      "type": "INNATE_ATTRIBUTE_GAIN",
+      "attribute": "life_force",
+      "value": 2.9
+    }
+  ]
+}

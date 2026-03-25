@@ -1,0 +1,56 @@
+{
+  "race_name": "Watcher Mystic",
+  "icon": "Ingredient_Ice_Essence",
+  "description": "A void-channeling assassin-scholar who sharpens sorcery into catastrophic critical bursts.",
+  "model": "Hedera",
+  "model_scale": 1.0,
+  "enabled": true,
+  "ascension": {
+    "id": "watcher_mystic",
+    "stage": "tier_1",
+    "path": "damage",
+    "final_form": false,
+    "requirements": {
+      "required_prestige": 3,
+      "min_skill_levels": {
+        "sorcery": 125,
+        "ferocity": 125
+      },
+      "max_skill_levels": {},
+      "required_augments": []
+    },
+    "next_paths": [
+      {
+        "id": "watcher_eldritch",
+        "name": "Watcher Eldritch"
+      }
+    ]
+  },
+  "attributes": {
+    "life_force": 89.7,
+    "strength": 0.75,
+    "defense": 0.83,
+    "haste": 0.92,
+    "precision": 12.6,
+    "ferocity": 25.2,
+    "stamina": 4.4,
+    "flow": 36.8,
+    "sorcery": 1.19,
+    "discipline": 0.0
+  },
+  "passives": [
+    {
+      "type": "MANA_REGEN",
+      "value": 0.03
+    },
+    {
+      "type": "XP_BONUS",
+      "value": 0.34
+    },
+    {
+      "type": "INNATE_ATTRIBUTE_GAIN",
+      "attribute": "life_force",
+      "value": 0.78
+    }
+  ]
+}

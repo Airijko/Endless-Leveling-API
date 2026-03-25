@@ -1,0 +1,62 @@
+{
+  "id": "conqueror",
+  "name": "Conqueror",
+  "tier": "LEGENDARY",
+  "description": "Sustained combat builds momentum, increasing your damage. At full stacks your attacks pierce defenses with true damage.",
+  "category": "ON_HIT",
+  "enabled": true,
+  "weights": {
+    "default": 8,
+    "conditions": [
+      {
+        "when": {
+          "strength_higher_than_sorcery": true
+        },
+        "weight": 60
+      },
+      {
+        "when": {
+          "sorcery_higher_than_strength": true
+        },
+        "weight": 10
+      }
+    ]
+  },
+  "ui": {
+    "sections": [
+      {
+        "title": "Buffs",
+        "body": "+5% Bonus Damage per stack\nMax stacks: +8\n",
+        "color": "#8adf9e"
+      },
+      {
+        "title": "Max Stacks Bonus",
+        "body": "True Damage: 25 + (15% pre-defense hit)\n",
+        "color": "#8adf9e"
+      },
+      {
+        "title": "Duration",
+        "body": "Duration: 8s",
+        "color": "#9ecbff"
+      }
+    ]
+  },
+  "passives": {
+    "buffs": {
+      "bonus_damage": {
+        "value": 0.05
+      },
+      "max_stacks": 8
+    },
+    "max_stack_bonus": {
+      "bonus_true_damage": {
+        "value": 25.0,
+        "true_damage_percent": 0.15
+      }
+    },
+    "duration": {
+      "seconds": 8
+    }
+  },
+  "mob_compatible": true
+}

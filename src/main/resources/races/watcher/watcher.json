@@ -1,0 +1,57 @@
+{
+  "race_name": "Watcher",
+  "icon": "Ingredient_Life_Essence",
+  "description": "Eldritch entities from beyond reality, Watchers wield incomprehensible power but struggle to endure the physical world.",
+  "model": "Hedera",
+  "model_scale": 1.0,
+  "enabled": true,
+  "ascension": {
+    "id": "watcher",
+    "stage": "base",
+    "path": "none",
+    "final_form": false,
+    "requirements": {
+      "required_prestige": 0,
+      "min_skill_levels": {},
+      "max_skill_levels": {},
+      "required_augments": []
+    },
+    "next_paths": [
+      {
+        "id": "watcher_seer",
+        "name": "Watcher Seer"
+      },
+      {
+        "id": "watcher_mystic",
+        "name": "Watcher Mystic"
+      }
+    ]
+  },
+  "attributes": {
+    "life_force": 78.0,
+    "strength": 0.68,
+    "defense": 0.77,
+    "haste": 0.88,
+    "precision": 10.5,
+    "ferocity": 21.0,
+    "stamina": 4.2,
+    "flow": 35.0,
+    "sorcery": 1.08,
+    "discipline": 0.0
+  },
+  "passives": [
+    {
+      "type": "MANA_REGEN",
+      "value": 0.02
+    },
+    {
+      "type": "XP_BONUS",
+      "value": 0.28
+    },
+    {
+      "type": "INNATE_ATTRIBUTE_GAIN",
+      "attribute": "life_force",
+      "value": 0.49
+    }
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "race_name": "Ascended Archon",
+  "icon": "Ingredient_Water_Essence",
+  "description": "A celestial sovereign whose divine sorcery bends the battlefield to radiant judgment.",
+  "model": "Feran_Windwalker",
+  "model_scale": 1.0,
+  "enabled": true,
+  "ascension": {
+    "id": "ascended_archon",
+    "stage": "tier_2",
+    "path": "sorcery",
+    "final_form": false,
+    "requirements": {
+      "required_prestige": 9,
+      "min_skill_levels": {
+        "life_force": 250,
+        "sorcery": 250
+      },
+      "max_skill_levels": {},
+      "required_augments": []
+    },
+    "next_paths": [
+      {
+        "id": "ascended_divinity",
+        "name": "Ascended Divinity"
+      }
+    ]
+  },
+  "attributes": {
+    "life_force": 129.6,
+    "strength": 1.08,
+    "defense": 1.09,
+    "haste": 0.99,
+    "precision": 20.16,
+    "ferocity": 10.08,
+    "stamina": 11.6,
+    "flow": 15.4,
+    "sorcery": 1.23,
+    "discipline": 0.0
+  },
+  "passives": [
+    {
+      "type": "SPECIAL_CHARGE_BONUS",
+      "value": 1.4
+    },
+    {
+      "type": "MANA_REGEN",
+      "value": 0.05
+    },
+    {
+      "type": "INNATE_ATTRIBUTE_GAIN",
+      "attribute": "life_force",
+      "value": 1.9
+    }
+  ]
+}

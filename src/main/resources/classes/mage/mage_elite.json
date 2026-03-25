@@ -1,0 +1,64 @@
+{
+  "class_name": "Elite Mage",
+  "id": "mage_elite",
+  "description": "A spellcasting prodigy who channels pure arcane force through staves.",
+  "roles": [
+    "Mage"
+  ],
+  "damage_type": "Magic",
+  "range_type": "range",
+  "enabled": true,
+  "icon": "Weapon_Spellbook_Grimoire_Brown",
+  "weapons": [
+    {
+      "type": "STAFF",
+      "damage": 1.105
+    },
+    {
+      "type": "DAGGER",
+      "damage": 1.05
+    }
+  ],
+  "passives": [
+    {
+      "type": "MANA_REGEN",
+      "value": 0.034
+    },
+    {
+      "type": "ARCANE_WISDOM",
+      "category": "MAGIC_STAT",
+      "value": 0.225,
+      "cooldown": 5
+    },
+    {
+      "type": "HEALTH_REGEN",
+      "value": 0.017
+    },
+    {
+      "type": "INNATE_ATTRIBUTE_GAIN",
+      "attribute": "flow",
+      "value": 1.275
+    },
+    {
+      "type": "INNATE_ATTRIBUTE_GAIN",
+      "attribute": "sorcery",
+      "value": 1.02
+    }
+  ],
+  "ascension": {
+    "id": "class_mage_elite",
+    "stage": "elite",
+    "path": "mage",
+    "final_form": false,
+    "single_route_only": true,
+    "requirements": {
+      "required_prestige": 2
+    },
+    "next_paths": [
+      {
+        "id": "class_mage_master",
+        "name": "Master"
+      }
+    ]
+  }
+}

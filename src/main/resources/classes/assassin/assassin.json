@@ -1,0 +1,65 @@
+{
+  "class_name": "Assassin",
+  "id": "assassin",
+  "description": "A silent blade master who thrives on opening strikes and brutal finishers.",
+  "roles": [
+    "Assassin",
+    "Diver"
+  ],
+  "damage_type": "Physical",
+  "range_type": "melee",
+  "enabled": true,
+  "icon": "Weapon_Daggers_Mithril",
+  "weapons": [
+    {
+      "type": "DAGGER",
+      "damage": 1.05
+    },
+    {
+      "type": "SWORD",
+      "damage": 1.05
+    },
+    {
+      "type": "BOW",
+      "damage": 1.05
+    }
+  ],
+  "passives": [
+    {
+      "type": "FOCUSED_STRIKE",
+      "category": "ON_HIT",
+      "value": 1.0,
+      "normal_bonus_damage": false,
+      "true_damage_flat_bonus": 100,
+      "haste_bonus": 30,
+      "cooldown": 40,
+      "reset_on_kill": true
+    },
+    {
+      "type": "INNATE_ATTRIBUTE_GAIN",
+      "attribute": "haste",
+      "value": 0.28
+    },
+    {
+      "type": "INNATE_ATTRIBUTE_GAIN",
+      "attribute": "ferocity",
+      "value": 0.84
+    }
+  ],
+  "ascension": {
+    "id": "class_assassin_base",
+    "stage": "base",
+    "path": "assassin",
+    "final_form": false,
+    "single_route_only": false,
+    "requirements": {
+      "required_prestige": 0
+    },
+    "next_paths": [
+      {
+        "id": "class_assassin_elite",
+        "name": "Elite"
+      }
+    ]
+  }
+}

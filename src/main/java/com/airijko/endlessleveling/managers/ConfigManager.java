@@ -339,9 +339,6 @@ public class ConfigManager {
             if (rootMap.containsKey(key)) {
                 return parseBoolean(rootMap.get(key), defaultValue);
             }
-            if ("force_builtin_world_settings".equalsIgnoreCase(key) && rootMap.containsKey("force_builtin_worlds")) {
-                return parseBoolean(rootMap.get("force_builtin_worlds"), defaultValue);
-            }
             return defaultValue;
         } catch (Exception e) {
             LOGGER.atWarning().log("Failed to read %s toggle '%s': %s",
@@ -409,8 +406,8 @@ public class ConfigManager {
             target.put("force_builtin_leveling", parseBoolean(configMap.get("force_builtin_leveling"), false));
             target.put("force_builtin_events", parseBoolean(configMap.get("force_builtin_events"), false));
             target.put("force_builtin_world_settings", parseBoolean(
-                    configMap.get("force_builtin_world_settings"),
-                    parseBoolean(configMap.get("force_builtin_worlds"), false)));
+                configMap.get("force_builtin_world_settings"),
+                false));
         }
 
         return target;
@@ -425,7 +422,6 @@ public class ConfigManager {
             normalized.remove("force_builtin_leveling");
             normalized.remove("force_builtin_events");
             normalized.remove("force_builtin_world_settings");
-            normalized.remove("force_builtin_worlds");
         }
 
         return normalized;
@@ -698,16 +694,7 @@ public class ConfigManager {
     private void preserveResourceSpecificCustomKeys(Map<String, Object> merged,
             Map<String, Object> existing,
             Map<String, Object> bundled) {
-        if (!"world-settings.yml".equalsIgnoreCase(resourceName) || merged == null || existing == null) {
-            return;
-        }
-
-        Map<String, Object> extras = collectKeysMissingFromTemplate(existing, bundled);
-        if (extras.isEmpty()) {
-            return;
-        }
-
-        mergeMissingKeys(merged, extras);
+        // No resource-specific custom key preservation.
     }
 
     private void mergeMissingKeys(Map<String, Object> target, Map<String, Object> extras) {
@@ -901,13 +888,6 @@ public class ConfigManager {
 
     private void writeMergedWithBundledTemplate(Map<String, Object> merged,
             Map<String, Object> bundled) throws IOException {
-        if ("world-settings.yml".equalsIgnoreCase(resourceName)) {
-            try (FileWriter writer = new FileWriter(configFile)) {
-                yaml.dump(merged, writer);
-            }
-            return;
-        }
-
         String template = loadBundledTemplateText();
         if (template == null || template.isBlank()) {
             try (FileWriter writer = new FileWriter(configFile)) {

@@ -1,0 +1,61 @@
+{
+  "race_name": "Wraith Whisper",
+  "icon": "Ingredient_Ice_Essence",
+  "description": "A fleeting spirit form that slips through battlefields with impossible speed and ghostly endurance.",
+  "model": "Wraith",
+  "model_scale": 1.0,
+  "enabled": true,
+  "ascension": {
+    "id": "wraith_whisper",
+    "stage": "tier_1",
+    "path": "evasion",
+    "final_form": false,
+    "requirements": {
+      "required_prestige": 3,
+      "min_skill_levels": {
+        "haste": 125,
+        "stamina": 125
+      },
+      "max_skill_levels": {},
+      "required_augments": []
+    },
+    "next_paths": [
+      {
+        "id": "wraith_spectral",
+        "name": "Wraith Spectral"
+      }
+    ]
+  },
+  "attributes": {
+    "life_force": 56.3,
+    "strength": 1.0,
+    "defense": 0.77,
+    "haste": 1.21,
+    "precision": 8.4,
+    "ferocity": 66.0,
+    "stamina": 8.4,
+    "flow": 15.4,
+    "sorcery": 1.0,
+    "discipline": 0.0
+  },
+  "passives": [
+    {
+      "type": "SWIFTNESS",
+      "value": 0.09,
+      "duration": 5,
+      "max_stacks": 5
+    },
+    {
+      "type": "ADRENALINE",
+      "value": 0.2,
+      "threshold": 0.2,
+      "duration": 5,
+      "cooldown": 40
+    },
+    {
+      "type": "INNATE_ATTRIBUTE_GAIN",
+      "attribute": "life_force",
+      "value": 0.82
+    }
+  ]
+}

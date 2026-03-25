@@ -1,0 +1,57 @@
+{
+  "race_name": "Iceborn Berzerker",
+  "icon": "Ingredient_Ice_Essence",
+  "description": "A frenzied Iceborn executioner who turns precision and ferocity into brutal critical slaughter.",
+  "model": "Outlander_Brute",
+  "model_scale": 1.0,
+  "enabled": true,
+  "ascension": {
+    "id": "iceborn_berzerker",
+    "stage": "tier_1",
+    "path": "damage",
+    "final_form": false,
+    "requirements": {
+      "required_prestige": 3,
+      "min_skill_levels": {
+        "ferocity": 150,
+        "stamina": 100
+      },
+      "max_skill_levels": {},
+      "required_augments": []
+    },
+    "next_paths": [
+      {
+        "id": "iceborn_ragnarok",
+        "name": "Iceborn Ragnarok"
+      }
+    ]
+  },
+  "attributes": {
+    "life_force": 108.1,
+    "strength": 1.17,
+    "defense": 1.01,
+    "haste": 0.95,
+    "precision": 12.6,
+    "ferocity": 25.2,
+    "stamina": 14.7,
+    "flow": 7.4,
+    "sorcery": 0.94,
+    "discipline": 0.0
+  },
+  "passives": [
+    {
+      "type": "HEALTH_REGEN",
+      "value": 0.03
+    },
+    {
+      "type": "BERZERKER",
+      "value": 0.28,
+      "threshold": 0.35
+    },
+    {
+      "type": "INNATE_ATTRIBUTE_GAIN",
+      "attribute": "life_force",
+      "value": 1.85
+    }
+  ]
+}

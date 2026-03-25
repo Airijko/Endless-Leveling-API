@@ -1,0 +1,59 @@
+{
+  "race_name": "Yordle",
+  "icon": "Ingredient_Life_Essence",
+  "description": "Whimsical yet dangerous, Yordles rely on agility, trickery, and explosive damage.",
+  "model": "Kweebec_Sapling",
+  "model_scale": 1.0,
+  "enabled": true,
+  "ascension": {
+    "id": "yordle",
+    "stage": "base",
+    "path": "none",
+    "final_form": false,
+    "requirements": {
+      "required_prestige": 0,
+      "min_skill_levels": {},
+      "max_skill_levels": {},
+      "required_augments": []
+    },
+    "next_paths": [
+      {
+        "id": "yordle_sprout",
+        "name": "Yordle Sprout"
+      },
+      {
+        "id": "yordle_trickster",
+        "name": "Yordle Trickster"
+      }
+    ]
+  },
+  "attributes": {
+    "life_force": 52.0,
+    "strength": 0.81,
+    "defense": 0.77,
+    "haste": 1.07,
+    "precision": 17.5,
+    "ferocity": 7.0,
+    "stamina": 12.3,
+    "flow": 31.5,
+    "sorcery": 0.94,
+    "discipline": 0.0
+  },
+  "passives": [
+    {
+      "type": "SWIFTNESS",
+      "value": 0.075,
+      "duration": 5,
+      "max_stacks": 5
+    },
+    {
+      "type": "SPECIAL_CHARGE_BONUS",
+      "value": 1.4
+    },
+    {
+      "type": "INNATE_ATTRIBUTE_GAIN",
+      "attribute": "life_force",
+      "value": 0.78
+    }
+  ]
+}

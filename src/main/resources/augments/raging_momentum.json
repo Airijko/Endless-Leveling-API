@@ -1,0 +1,45 @@
+{
+  "id": "raging_momentum",
+  "name": "Raging Momentum",
+  "tier": "LEGENDARY",
+  "description": "Stack Strength and Sorcery that ramps up, doubles at cap, and decays over time.",
+  "category": "PASSIVE_STAT",
+  "enabled": true,
+  "weights": {
+    "default": 10,
+    "conditions": []
+  },
+  "ui": {
+    "sections": [
+      {
+        "title": "Buffs",
+        "body": "+2.5% Strength and Sorcery per stack\nMax stacks: +20\nDecay Per Second: +2\n",
+        "color": "#8adf9e"
+      },
+      {
+        "title": "Max Stacks Bonus",
+        "body": "At max stacks, gain double the bonus \n(100% Strength and Sorcery bonus instead of 50%)\n",
+        "color": "#8adf9e"
+      },
+      {
+        "title": "Duration",
+        "body": "Duration: 8s",
+        "color": "#9ecbff"
+      }
+    ]
+  },
+  "passives": {
+    "buffs": {
+      "strength": {
+        "value": 0.025
+      },
+      "sorcery": {
+        "value": 0.025
+      },
+      "max_stacks": 20,
+      "duration_per_stack": 8,
+      "decay_per_second": 2
+    }
+  },
+  "mob_compatible": true
+}

@@ -1,0 +1,58 @@
+{
+  "race_name": "Vastaya Mystic",
+  "icon": "Ingredient_Ice_Essence",
+  "description": "A spirit-tuned Vastaya who blends uncanny speed with precise nature sorcery.",
+  "model": "Feran",
+  "model_scale": 1.0,
+  "enabled": true,
+  "ascension": {
+    "id": "vastaya_mystic",
+    "stage": "tier_1",
+    "path": "sorcery",
+    "final_form": false,
+    "requirements": {
+      "required_prestige": 3,
+      "min_skill_levels": {
+        "sorcery": 125,
+        "haste": 125
+      },
+      "max_skill_levels": {},
+      "required_augments": []
+    },
+    "next_paths": [
+      {
+        "id": "vastaya_spiritbinder",
+        "name": "Vastaya Spiritbinder"
+      }
+    ]
+  },
+  "attributes": {
+    "life_force": 93.1,
+    "strength": 1.08,
+    "defense": 0.89,
+    "haste": 1.16,
+    "precision": 12.6,
+    "ferocity": 33.6,
+    "stamina": 7.4,
+    "flow": 22.1,
+    "sorcery": 1.08,
+    "discipline": 0.0
+  },
+  "passives": [
+    {
+      "type": "XP_BONUS",
+      "value": 0.6
+    },
+    {
+      "type": "SWIFTNESS",
+      "value": 0.14,
+      "duration": 5,
+      "max_stacks": 8
+    },
+    {
+      "type": "INNATE_ATTRIBUTE_GAIN",
+      "attribute": "life_force",
+      "value": 1.15
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "race_name": "Golem Prime",
+  "icon": "Ingredient_Void_Essence",
+  "description": "The perfected golem state, unifying supreme defense with catastrophic endurance-driven offense.",
+  "model": "Golem_Crystal_Earth",
+  "model_scale": 1.0,
+  "enabled": true,
+  "ascension": {
+    "id": "golem_prime",
+    "stage": "final",
+    "path": "hybrid",
+    "final_form": true,
+    "requirements": {
+      "required_prestige": 18,
+      "min_skill_levels": {
+        "life_force": 650,
+        "stamina": 150
+      },
+      "min_any_skill_levels": [
+        {
+          "strength": 200
+        },
+        {
+          "sorcery": 200
+        }
+      ],
+      "max_skill_levels": {},
+      "required_augments": [],
+      "required_any_forms": [
+        "golem_colossus",
+        "golem_ravager"
+      ]
+    },
+    "next_paths": []
+  },
+  "attributes": {
+    "life_force": 728.5,
+    "strength": 0.87,
+    "defense": 2.13,
+    "haste": 0.73,
+    "precision": 0.0,
+    "ferocity": 0.0,
+    "stamina": 17.8,
+    "flow": 4.4,
+    "sorcery": 0.99,
+    "discipline": 0.0
+  },
+  "passives": [
+    {
+      "type": "RETALIATION",
+      "value": 0.45,
+      "window": 4,
+      "cooldown": 14
+    },
+    {
+      "type": "SECOND_WIND",
+      "value": 0.75,
+      "threshold": 0.3,
+      "duration": 14,
+      "cooldown": 40
+    },
+    {
+      "type": "INNATE_ATTRIBUTE_GAIN",
+      "attribute": "life_force",
+      "value": 3.5
+    }
+  ]
+}

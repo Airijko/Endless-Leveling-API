@@ -1,0 +1,50 @@
+{
+  "id": "missile_shot",
+  "name": "Missile Shot",
+  "tier": "ELITE",
+  "description": "Ranged hits at long distance detonate around the target with Strength and crit stat scaling.",
+  "category": "ON_RANGED_HIT",
+  "enabled": true,
+  "weights": {
+    "default": 8,
+    "conditions": [
+      {
+        "when": {
+          "strength_higher_than_sorcery": true
+        },
+        "weight": 60
+      },
+      {
+        "when": {
+          "sorcery_higher_than_strength": true
+        },
+        "weight": 10
+      }
+    ]
+  },
+  "ui": {
+    "sections": [
+      {
+        "title": "Buffs",
+        "body": "AoE Damage: (10% Strength) + (50% Precision) + (20% Ferocity)\nRadius: 3 blocks\n",
+        "color": "#8adf9e"
+      },
+      {
+        "title": "Rules",
+        "body": "Attack Type: RANGED\nMin Distance: 10 blocks\nCooldown: 5s\n",
+        "color": "#ffb86b"
+      }
+    ]
+  },
+  "passives": {
+    "missile_shot": {
+      "strength_scaling": 0.1,
+      "precision_scaling": 0.5,
+      "ferocity_scaling": 0.2,
+      "radius": 3.0,
+      "min_distance": 10.0,
+      "cooldown": 5.0
+    }
+  },
+  "mob_compatible": true
+}
