@@ -323,8 +323,14 @@ public final class AugmentExecutor {
         if (health == null) {
             return;
         }
-        float previousMax = Math.max(1.0f, health.getMax());
-        float previousCurrent = Math.max(0.0f, health.get());
+        float previousMax = health.getMax();
+        float previousCurrent = health.get();
+        if (!Float.isFinite(previousMax) || previousMax < 1.0f) {
+            previousMax = 1.0f;
+        }
+        if (!Float.isFinite(previousCurrent) || previousCurrent < 0.0f) {
+            previousCurrent = previousMax;
+        }
 
         boolean shouldUpdate = false;
         for (HealthModifierSpec spec : PASSIVE_HEALTH_MODIFIERS) {
@@ -350,6 +356,9 @@ public final class AugmentExecutor {
 
         float newMax = Math.max(1.0f, updated.getMax());
         float ratio = previousMax > 0.01f ? (previousCurrent / previousMax) : 1.0f;
+        if (!Float.isFinite(ratio)) {
+            ratio = 1.0f;
+        }
         float adjustedCurrent = Math.max(1.0f, Math.min(newMax, ratio * newMax));
         statMap.setStatValue(DefaultEntityStatTypes.getHealth(), adjustedCurrent);
     }

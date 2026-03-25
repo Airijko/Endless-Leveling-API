@@ -188,7 +188,13 @@ public final class GraspOfTheUndyingAugment extends Augment
         }
 
         float newMax = hpUpdated.getMax();
-        float ratio = previousMax > 0.01f ? previousCurrent / previousMax : 1.0f;
+        float ratio = 1.0f;
+        if (Float.isFinite(previousMax) && previousMax > 0.01f && Float.isFinite(previousCurrent)) {
+            ratio = previousCurrent / previousMax;
+        }
+        if (!Float.isFinite(ratio)) {
+            ratio = 1.0f;
+        }
         float adjustedCurrent = Math.max(1.0f, Math.min(newMax, ratio * newMax));
         statMap.setStatValue(DefaultEntityStatTypes.getHealth(), adjustedCurrent);
     }

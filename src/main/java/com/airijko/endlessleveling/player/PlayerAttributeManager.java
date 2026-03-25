@@ -172,7 +172,13 @@ public class PlayerAttributeManager {
         } else {
             newMax = Math.max(0.0f, newMax);
         }
-        float ratio = previousMax > 0.01f ? previousValue / previousMax : 1.0f;
+        float ratio = 1.0f;
+        if (Float.isFinite(previousMax) && previousMax > 0.01f && Float.isFinite(previousValue)) {
+            ratio = previousValue / previousMax;
+        }
+        if (!Float.isFinite(ratio)) {
+            ratio = 1.0f;
+        }
         float minCurrent = slot == AttributeSlot.LIFE_FORCE ? 1.0f : 0.01f;
         float newValue = Math.max(minCurrent, Math.min(newMax, ratio * newMax));
         statMap.setStatValue(slot.statIndex(), newValue);
@@ -211,8 +217,16 @@ public class PlayerAttributeManager {
 
             float maxValue = value.getMax();
             float minCurrent = slot == AttributeSlot.LIFE_FORCE ? 1.0f : 0.01f;
-            float clampedCurrent = Math.max(minCurrent, Math.min(maxValue, value.get()));
-            if (Math.abs(clampedCurrent - value.get()) > 0.0001f) {
+            if (!Float.isFinite(maxValue) || maxValue < minCurrent) {
+                maxValue = minCurrent;
+            }
+            float rawCurrent = value.get();
+            float currentValue = rawCurrent;
+            if (!Float.isFinite(currentValue)) {
+                currentValue = minCurrent;
+            }
+            float clampedCurrent = Math.max(minCurrent, Math.min(maxValue, currentValue));
+            if (!Float.isFinite(rawCurrent) || Math.abs(clampedCurrent - rawCurrent) > 0.0001f) {
                 statMap.setStatValue(slot.statIndex(), clampedCurrent);
             }
         }
