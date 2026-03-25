@@ -33,11 +33,28 @@ public final class AugmentDamageSafety {
             return true;
         } catch (IllegalArgumentException exception) {
             String message = exception.getMessage();
-            if (message != null && message.toLowerCase().contains("not visible")) {
+            if (isTransientTargetFailure(message)) {
                 LOGGER.atFine().log("Skipped augment damage for invisible target source=%s target=%s", sourceTag, targetRef);
                 return false;
             }
             throw exception;
+        } catch (IllegalStateException exception) {
+            LOGGER.atFine().log("Skipped augment damage for stale target source=%s target=%s reason=%s",
+                    sourceTag,
+                    targetRef,
+                    exception.getClass().getSimpleName());
+            return false;
         }
+    }
+
+    private static boolean isTransientTargetFailure(String message) {
+        if (message == null) {
+            return false;
+        }
+        String normalized = message.toLowerCase();
+        return normalized.contains("not visible")
+                || normalized.contains("removed")
+                || normalized.contains("invalid")
+                || normalized.contains("dead");
     }
 }

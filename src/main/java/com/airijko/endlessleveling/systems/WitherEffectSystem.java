@@ -7,11 +7,13 @@ import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.tick.TickingSystem;
+import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import java.util.List;
 
 public final class WitherEffectSystem extends TickingSystem<EntityStore> {
+    private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
     private static final Query<EntityStore> QUERY = Query.any();
     private static final float TICK_INTERVAL_SECONDS = 1.0f;
 
@@ -44,7 +46,14 @@ public final class WitherEffectSystem extends TickingSystem<EntityStore> {
                     if (ref == null || !ref.isValid()) {
                         continue;
                     }
-                    WitherAugment.tickTarget(ref, commandBuffer, now);
+                    try {
+                        WitherAugment.tickTarget(ref, commandBuffer, now);
+                    } catch (RuntimeException exception) {
+                        LOGGER.atWarning().log(
+                                "WitherEffectSystem: skipped tick for unstable target=%s reason=%s",
+                                ref,
+                                exception.getClass().getSimpleName());
+                    }
                 }
             });
         }

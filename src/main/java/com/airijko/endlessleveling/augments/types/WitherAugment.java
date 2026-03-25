@@ -120,6 +120,9 @@ public final class WitherAugment extends Augment implements AugmentHooks.OnHitAu
         boolean loggedMissingSlowEffectAsset;
         boolean loggedEffectApplyFailure;
         boolean loggedSourceStoreMismatch;
+        boolean loggedMovementUpdateFailure;
+        boolean loggedFallbackApplyException;
+        boolean loggedFallbackClearException;
     }
 
     public WitherAugment(AugmentDefinition definition) {
@@ -480,11 +483,22 @@ public final class WitherAugment extends Augment implements AugmentHooks.OnHitAu
             state.defaultMovementSnapshot.apply(defaultSettings, multiplier);
         }
         if (playerRef != null && playerRef.isValid()) {
-            movementManager.update(playerRef.getPacketHandler());
-            LOGGER.atFine().log("Wither slow applied key=%s target=%s multiplier=%.4f packetUpdate=true",
-                    key,
-                    ref,
-                    multiplier);
+            try {
+                movementManager.update(playerRef.getPacketHandler());
+                LOGGER.atFine().log("Wither slow applied key=%s target=%s multiplier=%.4f packetUpdate=true",
+                        key,
+                        ref,
+                        multiplier);
+            } catch (RuntimeException exception) {
+                if (!state.loggedMovementUpdateFailure) {
+                    LOGGER.atWarning().log(
+                            "Wither slow packet update failed key=%s target=%s reason=%s",
+                            key,
+                            ref,
+                            exception.getClass().getSimpleName());
+                    state.loggedMovementUpdateFailure = true;
+                }
+            }
         } else {
             LOGGER.atFine().log("Wither slow applied key=%s target=%s multiplier=%.4f packetUpdate=false",
                     key,
@@ -522,8 +536,19 @@ public final class WitherAugment extends Augment implements AugmentHooks.OnHitAu
             state.defaultMovementSnapshot.restore(defaultSettings);
         }
         if (playerRef != null && playerRef.isValid()) {
-            movementManager.update(playerRef.getPacketHandler());
-            LOGGER.atFine().log("Wither slow restored key=%s target=%s packetUpdate=true", key, ref);
+            try {
+                movementManager.update(playerRef.getPacketHandler());
+                LOGGER.atFine().log("Wither slow restored key=%s target=%s packetUpdate=true", key, ref);
+            } catch (RuntimeException exception) {
+                if (!state.loggedMovementUpdateFailure) {
+                    LOGGER.atWarning().log(
+                            "Wither slow restore packet update failed key=%s target=%s reason=%s",
+                            key,
+                            ref,
+                            exception.getClass().getSimpleName());
+                    state.loggedMovementUpdateFailure = true;
+                }
+            }
         } else {
             LOGGER.atFine().log("Wither slow restored key=%s target=%s packetUpdate=false", key, ref);
         }
@@ -546,7 +571,20 @@ public final class WitherAugment extends Augment implements AugmentHooks.OnHitAu
             return;
         }
 
-        EntityEffect slowEffect = resolveSlowEffect();
+        EntityEffect slowEffect;
+        try {
+            slowEffect = resolveSlowEffect();
+        } catch (RuntimeException exception) {
+            if (!state.loggedFallbackApplyException) {
+                LOGGER.atWarning().log(
+                        "Wither slow fallback lookup failed key=%s target=%s reason=%s",
+                        key,
+                        ref,
+                        exception.getClass().getSimpleName());
+                state.loggedFallbackApplyException = true;
+            }
+            return;
+        }
         if (slowEffect == null) {
             if (!state.loggedMissingSlowEffectAsset) {
                 LOGGER.atWarning().log("Wither slow fallback unavailable: no slow effect asset found key=%s target=%s",
@@ -558,8 +596,22 @@ public final class WitherAugment extends Augment implements AugmentHooks.OnHitAu
         }
 
         float remainingSeconds = Math.max(0.1F, (float) ((state.expiresAt - System.currentTimeMillis()) / 1000.0D));
-        boolean applied = controller.addEffect(ref, slowEffect, remainingSeconds, OverlapBehavior.OVERWRITE,
-                commandBuffer);
+        boolean applied;
+        try {
+            applied = controller.addEffect(ref, slowEffect, remainingSeconds, OverlapBehavior.OVERWRITE,
+                    commandBuffer);
+        } catch (RuntimeException exception) {
+            if (!state.loggedFallbackApplyException) {
+                LOGGER.atWarning().log(
+                        "Wither slow fallback apply threw key=%s target=%s effect=%s reason=%s",
+                        key,
+                        ref,
+                        slowEffect.getId(),
+                        exception.getClass().getSimpleName());
+                state.loggedFallbackApplyException = true;
+            }
+            return;
+        }
         if (applied) {
             state.fallbackSlowEffectApplied = true;
             state.fallbackSlowEffectId = slowEffect.getId();
@@ -590,13 +642,26 @@ public final class WitherAugment extends Augment implements AugmentHooks.OnHitAu
         if (controller == null) {
             return;
         }
-        int idx = EntityEffect.getAssetMap().getIndex(state.fallbackSlowEffectId);
-        if (idx != Integer.MIN_VALUE) {
-            controller.removeEffect(ref, idx, commandBuffer);
-            LOGGER.atFine().log("Wither fallback slow cleared key=%s target=%s effect=%s",
-                    key,
-                    ref,
-                    state.fallbackSlowEffectId);
+        int idx;
+        try {
+            idx = EntityEffect.getAssetMap().getIndex(state.fallbackSlowEffectId);
+            if (idx != Integer.MIN_VALUE) {
+                controller.removeEffect(ref, idx, commandBuffer);
+                LOGGER.atFine().log("Wither fallback slow cleared key=%s target=%s effect=%s",
+                        key,
+                        ref,
+                        state.fallbackSlowEffectId);
+            }
+        } catch (RuntimeException exception) {
+            if (!state.loggedFallbackClearException) {
+                LOGGER.atWarning().log(
+                        "Wither fallback slow clear failed key=%s target=%s effect=%s reason=%s",
+                        key,
+                        ref,
+                        state.fallbackSlowEffectId,
+                        exception.getClass().getSimpleName());
+                state.loggedFallbackClearException = true;
+            }
         }
         state.fallbackSlowEffectApplied = false;
         state.fallbackSlowEffectId = null;
