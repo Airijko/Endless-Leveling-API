@@ -700,27 +700,41 @@ public class SkillManager {
         if (playerData == null)
             return 0f;
 
-        int sorceryLevel = playerData.getPlayerSkillAttributeLevel(SkillAttributeType.SORCERY);
+        SorceryBreakdown breakdown = getSorceryBreakdown(playerData);
+
+        LOGGER.atFine().log(
+                "calculatePlayerSorcery: raceMultiplier=%.2f, skill=%.2f, total=%.2f for player %s",
+                breakdown.raceMultiplier(),
+                breakdown.skillValue(),
+                breakdown.totalValue(),
+                playerData.getPlayerName());
+
+        return breakdown.totalValue();
+    }
+
+    public SorceryBreakdown getSorceryBreakdown(PlayerData playerData) {
+        return getSorceryBreakdown(playerData, -1);
+    }
+
+    public SorceryBreakdown getSorceryBreakdown(PlayerData playerData, int overrideLevel) {
+        if (playerData == null) {
+            return new SorceryBreakdown(1.0f, 0.0f, 0.0f);
+        }
+
+        int sorceryLevel = overrideLevel >= 0 ? overrideLevel
+                : playerData.getPlayerSkillAttributeLevel(SkillAttributeType.SORCERY);
         double perPointValue = getSkillAttributeConfigValue(SkillAttributeType.SORCERY);
+        float raceMultiplier = (float) attributeManager.getRaceAttribute(playerData, SkillAttributeType.SORCERY, 1.0D);
+        if (raceMultiplier < 0.0f) {
+            raceMultiplier = 0.0f;
+        }
 
         double innateBonus = getInnateAttributeBonus(playerData, SkillAttributeType.SORCERY);
         double arcaneDominanceBonus = getArcaneDominanceSorceryBonus(playerData);
+        float skillValue = (float) ((sorceryLevel * perPointValue) + innateBonus + arcaneDominanceBonus);
         double augmentBonus = getAugmentAttributeBonus(playerData, SkillAttributeType.SORCERY);
-        float totalBonusSorcery = (float) ((sorceryLevel * perPointValue)
-            + innateBonus
-            + arcaneDominanceBonus
-            + augmentBonus);
-
-        LOGGER.atFine().log(
-                "calculatePlayerSorcery: SORCERY level=%d, perPointValue=%.2f, innate=%.2f, augment=%.2f, totalBonusSorcery=%.2f for player %s",
-                sorceryLevel,
-                perPointValue,
-                innateBonus + arcaneDominanceBonus,
-                augmentBonus,
-                totalBonusSorcery,
-                playerData.getPlayerName());
-
-        return totalBonusSorcery;
+        float totalValue = (float) (skillValue * raceMultiplier + augmentBonus);
+        return new SorceryBreakdown(raceMultiplier, skillValue, totalValue);
     }
 
     /**
@@ -903,6 +917,7 @@ public class SkillManager {
         double perPointValue = getSkillAttributeConfigValue(attributeType);
         double innateBonus = getInnateAttributeBonus(playerData, attributeType);
         double contribution = (effectiveLevel * perPointValue) + innateBonus;
+        contribution = applyRaceScalingToSkillContribution(playerData, attributeType, contribution);
         return contribution > 0.0D ? contribution : 0.0D;
     }
 
@@ -922,7 +937,27 @@ public class SkillManager {
         double innateBonus = getInnateAttributeBonus(playerData, attributeType);
         double augmentBonus = getAugmentAttributeBonus(playerData, attributeType);
         double contribution = (effectiveLevel * perPointValue) + innateBonus + augmentBonus;
+        contribution = applyRaceScalingToSkillContribution(playerData, attributeType, contribution);
         return contribution > 0.0D ? contribution : 0.0D;
+    }
+
+    private double applyRaceScalingToSkillContribution(PlayerData playerData,
+            SkillAttributeType attributeType,
+            double contribution) {
+        if (playerData == null || attributeType == null || contribution <= 0.0D) {
+            return contribution;
+        }
+        if (attributeType != SkillAttributeType.SORCERY && attributeType != SkillAttributeType.DEFENSE) {
+            return contribution;
+        }
+
+        double raceMultiplier = attributeManager != null
+                ? attributeManager.getRaceAttribute(playerData, attributeType, 1.0D)
+                : 1.0D;
+        if (raceMultiplier < 0.0D) {
+            raceMultiplier = 0.0D;
+        }
+        return contribution * raceMultiplier;
     }
 
     public boolean applyFlowModifiers(@Nonnull Ref<EntityStore> ref,
@@ -1253,6 +1288,9 @@ public class SkillManager {
     }
 
     public record StrengthBreakdown(float raceMultiplier, float skillValue, float totalValue) {
+    }
+
+    public record SorceryBreakdown(float raceMultiplier, float skillValue, float totalValue) {
     }
 
     public record FerocityBreakdown(float raceValue, float skillValue, float totalValue) {

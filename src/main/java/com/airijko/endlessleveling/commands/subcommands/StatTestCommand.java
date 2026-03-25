@@ -251,12 +251,11 @@ public class StatTestCommand extends AbstractPlayerCommand {
                 new AttributeBreakdown(disciplineRace, disciplineSkill, disciplineAug,
                         disciplineRace + disciplineSkill + disciplineAug, false, false));
 
-        double sorceryRace = attributeManager.getRaceAttribute(playerData, SkillAttributeType.SORCERY, 0.0D);
-        double sorcerySkill = skillManager.calculateSkillAttributeBonus(playerData, SkillAttributeType.SORCERY, -1);
+        SkillManager.SorceryBreakdown sorcery = skillManager.getSorceryBreakdown(playerData);
         double sorceryAug = getAugmentBonus(playerData, SkillAttributeType.SORCERY);
         breakdowns.put("Sorcery",
-                new AttributeBreakdown(sorceryRace, sorcerySkill, sorceryAug,
-                        sorceryRace + sorcerySkill + sorceryAug, false, false));
+            new AttributeBreakdown(sorcery.raceMultiplier(), sorcery.skillValue(), sorceryAug,
+                sorcery.totalValue(), true, false));
 
         return breakdowns;
     }
