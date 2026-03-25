@@ -17,6 +17,7 @@ import com.airijko.endlessleveling.util.FixedValue;
 import com.airijko.endlessleveling.util.Lang;
 import com.airijko.endlessleveling.util.PlayerChatNotifier;
 import com.airijko.endlessleveling.util.WorldContextUtil;
+import com.airijko.endlessleveling.systems.PlayerNameplateSystem;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.event.events.player.PlayerDisconnectEvent;
@@ -221,6 +222,10 @@ public class PlayerDataListener {
 
         Ref<EntityStore> playerEntityRef = playerRef.getReference();
         Store<EntityStore> playerStore = playerEntityRef != null ? playerEntityRef.getStore() : null;
+        PlayerNameplateSystem playerNameplateSystem = EndlessLeveling.getInstance().getPlayerNameplateSystem();
+        if (playerNameplateSystem != null && playerEntityRef != null && playerStore != null && !playerStore.isShutdown()) {
+            playerNameplateSystem.removeNameplateForPlayerRef(playerEntityRef, playerStore, playerRef);
+        }
         ArmyOfTheDeadPassive.cleanupOwnerSummonsOnDisconnect(uuid, playerStore);
     }
 

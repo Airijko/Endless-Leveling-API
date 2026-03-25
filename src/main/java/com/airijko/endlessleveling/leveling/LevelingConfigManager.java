@@ -6,7 +6,7 @@ import com.airijko.endlessleveling.managers.PluginFilesManager;
  * Backwards-compatible wrapper around {@link ConfigManager} for leveling.yml.
  *
  * This guarantees leveling.yml uses the same migration + template-preserving
- * writer logic as config.yml/world-settings.yml and other YAML resources.
+ * writer logic as config.yml and other YAML resources.
  */
 public class LevelingConfigManager {
 

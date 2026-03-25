@@ -30,6 +30,7 @@ public class PluginFilesManager {
     private static final String CLASSES_FOLDER_NAME = "classes";
     private static final String AUGMENTS_FOLDER_NAME = "augments";
     private static final String LANG_FOLDER_NAME = "lang";
+    private static final String WORLD_SETTINGS_FOLDER_NAME = "world-settings";
     private static final String WEAPONS_FILE_NAME = "weapons.json";
     private static final String PARTYDATA_FILE_NAME = "parties.json";
     private static final String OLD_FOLDER_NAME = "old";
@@ -46,13 +47,13 @@ public class PluginFilesManager {
     private final File classesFolder;
     private final File augmentsFolder;
     private final File langFolder;
+    private final File worldSettingsFolder;
 
     private final File weaponsFile;
 
     private final File configFile;
     private final File levelingFile;
     private final File eventsFile;
-    private final File worldsFile;
     private final File partyDataFile;
     private final Object archiveLock = new Object();
     private Path currentArchiveSession;
@@ -71,13 +72,13 @@ public class PluginFilesManager {
         this.classesFolder = new File(pluginFolder, CLASSES_FOLDER_NAME);
         this.augmentsFolder = new File(pluginFolder, AUGMENTS_FOLDER_NAME);
         this.langFolder = new File(pluginFolder, LANG_FOLDER_NAME);
+        this.worldSettingsFolder = new File(pluginFolder, WORLD_SETTINGS_FOLDER_NAME);
 
         createFolders();
 
         this.configFile = initYamlFile("config.yml");
         this.levelingFile = initYamlFile("leveling.yml");
         this.eventsFile = initYamlFile("events.yml");
-        this.worldsFile = initYamlFile("world-settings.yml");
         this.weaponsFile = initResourceFile(WEAPONS_FILE_NAME);
         this.partyDataFile = initPartyDataFile();
 
@@ -85,6 +86,7 @@ public class PluginFilesManager {
         seedResourceDirectoryIfEmpty("classes", classesFolder);
         // Seed bundled augments only when the directory is empty so per-file deletions can disable augments.
         seedResourceDirectoryIfEmpty("augments", augmentsFolder);
+        seedResourceDirectoryIfEmpty("world-settings", worldSettingsFolder);
         exportResourceDirectory("lang", langFolder, false);
     }
 
@@ -98,6 +100,7 @@ public class PluginFilesManager {
             Files.createDirectories(classesFolder.toPath());
             Files.createDirectories(augmentsFolder.toPath());
             Files.createDirectories(langFolder.toPath());
+            Files.createDirectories(worldSettingsFolder.toPath());
             LOGGER.atInfo().log("Plugin folders initialized at: %s", pluginFolder.getAbsolutePath());
         } catch (IOException e) {
             throw new IllegalStateException("Unable to create EndlessLeveling folders", e);
@@ -142,6 +145,10 @@ public class PluginFilesManager {
         return langFolder;
     }
 
+    public File getWorldSettingsFolder() {
+        return worldSettingsFolder;
+    }
+
     public File getWeaponsFile() {
         return weaponsFile;
     }
@@ -156,10 +163,6 @@ public class PluginFilesManager {
 
     public File getEventsFile() {
         return eventsFile;
-    }
-
-    public File getWorldsFile() {
-        return worldsFile;
     }
 
     /** Convenience method for player data file */

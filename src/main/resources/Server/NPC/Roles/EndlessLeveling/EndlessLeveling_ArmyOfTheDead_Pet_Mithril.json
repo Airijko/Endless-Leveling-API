@@ -49,7 +49,7 @@
       "Sensor": {
         "Type": "Target",
         "TargetSlot": "LockedTarget",
-        "Range": 24
+        "Range": 16
       },
       "HeadMotion": { "Type": "Watch" },
       "BodyMotion": {

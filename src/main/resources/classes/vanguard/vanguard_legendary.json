@@ -17,14 +17,6 @@
     {
       "type": "AXE",
       "damage": 1.38
-    },
-    {
-      "type": "SWORD",
-      "damage": 1.265
-    },
-    {
-      "type": "SPEAR",
-      "damage": 1.208
     }
   ],
   "passives": [

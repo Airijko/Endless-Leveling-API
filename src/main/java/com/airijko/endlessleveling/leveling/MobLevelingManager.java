@@ -1,5 +1,7 @@
 package com.airijko.endlessleveling.leveling;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentManager;
@@ -27,10 +29,17 @@ import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.npc.entities.NPCEntity;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.Reader;
+import java.lang.reflect.Type;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -49,10 +58,15 @@ public class MobLevelingManager {
     private static final int BLOCKS_PER_CHUNK = 16;
     private static final long MOB_LEVEL_DEBUG_COOLDOWN_MS = 5000L;
     private static final Object UNSET_CONFIG_VALUE = new Object();
+    private static final Type STRING_OBJECT_MAP_TYPE = new TypeToken<Map<String, Object>>() {
+    }.getType();
+    private static final String WORLD_SETTINGS_LOAD_ORDER_FILE = "load-order.json";
+    private static final String WORLD_SETTINGS_ORDER_KEY = "order";
 
     private final ConfigManager configManager;
-    private final ConfigManager worldsConfigManager;
+    private final File worldSettingsFolder;
     private final PlayerDataManager playerDataManager;
+    private final Gson gson = new Gson();
     private final Map<Long, Long> mobLevelDebugLogTimes = new ConcurrentHashMap<>();
     private final Map<Long, MobHealthCompositionSnapshot> entityHealthCompositionSnapshots = new ConcurrentHashMap<>();
     private final Map<Long, Integer> entityResolvedLevelSnapshots = new ConcurrentHashMap<>();
@@ -78,6 +92,7 @@ public class MobLevelingManager {
     private final Map<String, AreaOverride> areaOverrides = new ConcurrentHashMap<>();
     // Stateless design: do not maintain per-entity mutable state in maps.
     private volatile MobAugmentTierPools cachedMobAugmentTierPools;
+    private volatile Map<String, Object> worldSettingsMap = Map.of();
 
     private enum LevelSourceMode {
         PLAYER,
@@ -136,15 +151,20 @@ public class MobLevelingManager {
 
     public MobLevelingManager(PluginFilesManager filesManager, PlayerDataManager playerDataManager) {
         this.configManager = new ConfigManager(filesManager, filesManager.getLevelingFile());
-        this.worldsConfigManager = new ConfigManager(filesManager, filesManager.getWorldsFile());
+        this.worldSettingsFolder = filesManager.getWorldSettingsFolder();
         this.playerDataManager = playerDataManager;
+        loadWorldSettings();
     }
 
     public void reloadConfig() {
         configManager.load();
-        worldsConfigManager.load();
+        loadWorldSettings();
         clearAllEntityLevelOverrides();
         cachedMobAugmentTierPools = null;
+        worldIdentifierCandidatesByStore.clear();
+        worldIdentifierMissRetryAtStore.clear();
+        worldOverrideKeyByStore.clear();
+        worldXpBlacklistByStore.clear();
     }
 
     public void syncTierLevelOverridesForDungeon(Store<EntityStore> store, UUID sourcePlayerUuid) {
@@ -916,8 +936,9 @@ public class MobLevelingManager {
         }
 
         List<String> rules = new ArrayList<>();
-        appendStringRules(rules, worldsConfigManager.get("XP_Blacklisted_Worlds", null, false));
-        appendStringRules(rules, worldsConfigManager.get("XP_Blacklisted_Words", null, false));
+        appendStringRules(rules, getWorldSettingsValue("Blacklisted_Worlds"));
+        appendStringRules(rules, getWorldSettingsValue("XP_Blacklisted_Worlds"));
+        appendStringRules(rules, getWorldSettingsValue("XP_Blacklisted_Words"));
         if (rules.isEmpty()) {
             return false;
         }
@@ -2271,12 +2292,12 @@ public class MobLevelingManager {
         }
 
         String defaultPath = "World_Overrides.default." + worldPath;
-        if (worldsConfigManager.hasPath(defaultPath) && toBoolean(worldsConfigManager.get(defaultPath, null, false))) {
+        if (hasWorldSettingsPath(defaultPath) && toBoolean(getWorldSettingsValue(defaultPath))) {
             return true;
         }
 
         String globalPath = "World_Overrides.Global." + worldPath;
-        return worldsConfigManager.hasPath(globalPath) && toBoolean(worldsConfigManager.get(globalPath, null, false));
+        return hasWorldSettingsPath(globalPath) && toBoolean(getWorldSettingsValue(globalPath));
     }
 
     private boolean toBoolean(Object value) {
@@ -2465,8 +2486,8 @@ public class MobLevelingManager {
         String matchedKey = resolveBestWorldOverrideKey(store, worldIds);
         if (matchedKey != null) {
             String matchedPath = "World_Overrides." + matchedKey + "." + worldPath;
-            if (worldsConfigManager.hasPath(matchedPath)) {
-                return worldsConfigManager.get(matchedPath, null, false);
+            if (hasWorldSettingsPath(matchedPath)) {
+                return getWorldSettingsValue(matchedPath);
             }
         }
 
@@ -2475,14 +2496,14 @@ public class MobLevelingManager {
         // when the matched world profile does not define the requested key.
         if (shouldApplyDefaultWorldOverride(store, worldIds)) {
             String defaultPath = "World_Overrides.default." + worldPath;
-            if (worldsConfigManager.hasPath(defaultPath)) {
-                return worldsConfigManager.get(defaultPath, null, false);
+            if (hasWorldSettingsPath(defaultPath)) {
+                return getWorldSettingsValue(defaultPath);
             }
         }
 
         String globalPath = "World_Overrides.Global." + worldPath;
-        if (worldsConfigManager.hasPath(globalPath)) {
-            return worldsConfigManager.get(globalPath, null, false);
+        if (hasWorldSettingsPath(globalPath)) {
+            return getWorldSettingsValue(globalPath);
         }
 
         return UNSET_CONFIG_VALUE;
@@ -2928,7 +2949,7 @@ public class MobLevelingManager {
             return null;
         }
 
-        Object raw = worldsConfigManager.get("World_Overrides", null, false);
+        Object raw = getWorldSettingsValue("World_Overrides");
         if (!(raw instanceof Map<?, ?> map) || map.isEmpty()) {
             return null;
         }
@@ -3003,6 +3024,116 @@ public class MobLevelingManager {
     private long toEntityKey(Store<EntityStore> store, int entityId) {
         long storePart = store == null ? 0L : Integer.toUnsignedLong(System.identityHashCode(store));
         return (storePart << 32) | Integer.toUnsignedLong(entityId);
+    }
+
+    @SuppressWarnings("unchecked")
+    private void loadWorldSettings() {
+        if (worldSettingsFolder == null || !worldSettingsFolder.exists() || !worldSettingsFolder.isDirectory()) {
+            worldSettingsMap = Map.of();
+            return;
+        }
+
+        Map<String, Object> merged = new LinkedHashMap<>();
+        List<String> orderedFiles = readWorldSettingsOrder(worldSettingsFolder.toPath());
+        if (orderedFiles.isEmpty()) {
+            worldSettingsMap = Map.of();
+            return;
+        }
+
+        for (String fileName : orderedFiles) {
+            if (fileName == null || fileName.isBlank()) {
+                continue;
+            }
+            Path filePath = worldSettingsFolder.toPath().resolve(fileName);
+            if (!Files.exists(filePath) || Files.isDirectory(filePath)) {
+                continue;
+            }
+            try (Reader reader = Files.newBufferedReader(filePath)) {
+                Map<String, Object> parsed = gson.fromJson(reader, STRING_OBJECT_MAP_TYPE);
+                if (parsed != null && !parsed.isEmpty()) {
+                    deepMergeMaps(merged, parsed);
+                }
+            } catch (IOException | RuntimeException e) {
+                LOGGER.atWarning().log("Failed to load world settings bundle %s: %s", filePath, e.getMessage());
+            }
+        }
+
+        worldSettingsMap = Map.copyOf(merged);
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<String> readWorldSettingsOrder(Path folder) {
+        Path loadOrderPath = folder.resolve(WORLD_SETTINGS_LOAD_ORDER_FILE);
+        if (!Files.exists(loadOrderPath)) {
+            return List.of();
+        }
+
+        try (Reader reader = Files.newBufferedReader(loadOrderPath)) {
+            Map<String, Object> raw = gson.fromJson(reader, STRING_OBJECT_MAP_TYPE);
+            if (raw == null || raw.isEmpty()) {
+                return List.of();
+            }
+            Object orderRaw = raw.get(WORLD_SETTINGS_ORDER_KEY);
+            if (!(orderRaw instanceof List<?> orderList) || orderList.isEmpty()) {
+                return List.of();
+            }
+            List<String> orderedFiles = new ArrayList<>();
+            for (Object entry : orderList) {
+                if (entry == null) {
+                    continue;
+                }
+                String value = entry.toString().trim();
+                if (!value.isEmpty()) {
+                    orderedFiles.add(value);
+                }
+            }
+            return orderedFiles;
+        } catch (IOException | RuntimeException e) {
+            LOGGER.atWarning().log("Failed to load %s: %s", loadOrderPath, e.getMessage());
+            return List.of();
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void deepMergeMaps(Map<String, Object> target, Map<String, Object> source) {
+        if (target == null || source == null || source.isEmpty()) {
+            return;
+        }
+        for (Map.Entry<String, Object> entry : source.entrySet()) {
+            String key = entry.getKey();
+            Object sourceValue = entry.getValue();
+            Object targetValue = target.get(key);
+            if (targetValue instanceof Map<?, ?> targetMap && sourceValue instanceof Map<?, ?> sourceMap) {
+                Map<String, Object> mutableTarget = (Map<String, Object>) targetMap;
+                deepMergeMaps(mutableTarget, (Map<String, Object>) sourceMap);
+                target.put(key, mutableTarget);
+            } else {
+                target.put(key, sourceValue);
+            }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private Object getWorldSettingsValue(String path) {
+        if (path == null || path.isBlank()) {
+            return null;
+        }
+        Object current = worldSettingsMap;
+        String[] parts = path.split("\\.");
+        for (String part : parts) {
+            if (!(current instanceof Map<?, ?> map)) {
+                return null;
+            }
+            current = ((Map<String, Object>) map).get(part);
+            if (current == null) {
+                return null;
+            }
+        }
+        return current;
+    }
+
+    private boolean hasWorldSettingsPath(String path) {
+        return getWorldSettingsValue(path) != null;
     }
 
     private long toStoreKey(Store<EntityStore> store) {

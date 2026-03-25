@@ -313,9 +313,6 @@ public class ConfigManager {
         if ("events.yml".equalsIgnoreCase(resourceName)) {
             return "force_builtin_events";
         }
-        if ("world-settings.yml".equalsIgnoreCase(resourceName)) {
-            return "force_builtin_world_settings";
-        }
         return null;
     }
 
@@ -405,9 +402,6 @@ public class ConfigManager {
             target.put("force_builtin_config", parseBoolean(configMap.get("force_builtin_config"), false));
             target.put("force_builtin_leveling", parseBoolean(configMap.get("force_builtin_leveling"), false));
             target.put("force_builtin_events", parseBoolean(configMap.get("force_builtin_events"), false));
-            target.put("force_builtin_world_settings", parseBoolean(
-                configMap.get("force_builtin_world_settings"),
-                false));
         }
 
         return target;
@@ -421,7 +415,6 @@ public class ConfigManager {
             normalized.remove("force_builtin_config");
             normalized.remove("force_builtin_leveling");
             normalized.remove("force_builtin_events");
-            normalized.remove("force_builtin_world_settings");
         }
 
         return normalized;

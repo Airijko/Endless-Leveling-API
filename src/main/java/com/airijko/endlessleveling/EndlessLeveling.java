@@ -65,16 +65,24 @@ import com.hypixel.hytale.server.core.event.events.player.PlayerDisconnectEvent;
 import com.hypixel.hytale.server.core.event.events.player.PlayerReadyEvent;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
+import com.hypixel.hytale.component.ArchetypeChunk;
+import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import javax.annotation.Nonnull;
+import java.lang.reflect.Method;
+import java.util.HashSet;
 import java.security.CodeSource;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class EndlessLeveling extends JavaPlugin {
 
@@ -84,6 +92,7 @@ public class EndlessLeveling extends JavaPlugin {
     public static final String DEFAULT_COMMAND_PREFIX = "/lvl";
     public static final String DEFAULT_MESSAGE_PREFIX = "[EndlessLeveling] ";
     private static final String PARTNER_ADDON_MAIN_CLASS = "com.airijko.endlessleveling.EndlessLevelingPartnerAddon";
+    private static final Query<EntityStore> ENTITY_QUERY = Query.any();
 
     // ------------------------
     // Shared managers (singleton)
@@ -114,6 +123,7 @@ public class EndlessLeveling extends JavaPlugin {
     private MobAugmentExecutor mobAugmentExecutor;
     private UiTitleIntegrityGuard uiTitleIntegrityGuard;
     private UiIntegrityAlertSystem uiIntegrityAlertSystem;
+    private final AtomicBoolean preShutdownCleanupExecuted = new AtomicBoolean(false);
     private volatile String brandName = DEFAULT_BRAND_NAME;
     private volatile String commandPrefix = DEFAULT_COMMAND_PREFIX;
     private volatile String messagePrefix = DEFAULT_MESSAGE_PREFIX;
@@ -186,6 +196,10 @@ public class EndlessLeveling extends JavaPlugin {
 
     public MobLevelingSystem getMobLevelingSystem() {
         return mobLevelingSystem;
+    }
+
+    public PlayerNameplateSystem getPlayerNameplateSystem() {
+        return playerNameplateSystem;
     }
 
     public AugmentRuntimeManager getAugmentRuntimeManager() {
@@ -521,6 +535,12 @@ public class EndlessLeveling extends JavaPlugin {
         this.getEventRegistry().registerGlobal(PlayerReadyEvent.class, playerDataListener::onPlayerReady);
         this.getEventRegistry().registerGlobal(PlayerReadyEvent.class, dungeonTierJoinNotificationListener::onPlayerReady);
         this.getEventRegistry().registerGlobal(PlayerDisconnectEvent.class, playerDataListener::onPlayerDisconnect);
+        resolveShutdownEventClass().ifPresentOrElse(eventClass -> {
+            this.getEventRegistry().registerGlobal((Class) eventClass,
+                event -> runPreShutdownEntityCleanup("ShutdownEvent"));
+            LOGGER.atInfo().log("Registered pre-shutdown cleanup listener using event class %s", eventClass.getName());
+        }, () -> LOGGER.atWarning().log(
+            "No supported shutdown event class found; relying on plugin shutdown() cleanup path."));
 
         if (partyManager.isAvailable()) {
             PartyListener partyListener = new PartyListener(partyManager);
@@ -592,7 +612,7 @@ public class EndlessLeveling extends JavaPlugin {
     }
 
     protected void shutdown() {
-        cleanupOnlinePlayerEntityState();
+        runPreShutdownEntityCleanup("Plugin.shutdown()");
 
         if (mobLevelingSystem != null) {
             mobLevelingSystem.shutdownRuntimeState();
@@ -610,6 +630,132 @@ public class EndlessLeveling extends JavaPlugin {
             partyManager.saveAllParties();
             LOGGER.atInfo().log("Server shutting down: all party data saved.");
         }
+    }
+
+    private void runPreShutdownEntityCleanup(String source) {
+        if (!preShutdownCleanupExecuted.compareAndSet(false, true)) {
+            return;
+        }
+
+        cleanupKnownWorldEntityStores();
+        cleanupOnlinePlayerEntityState();
+        LOGGER.atInfo().log("Server pre-shutdown cleanup executed from %s.", source == null ? "unknown" : source);
+    }
+
+    @SuppressWarnings("unchecked")
+    private void cleanupKnownWorldEntityStores() {
+        Universe universe = Universe.get();
+        if (universe == null) {
+            return;
+        }
+
+        Set<Store<EntityStore>> seenStores = new HashSet<>();
+        int visitedStores = 0;
+        int clearedPlayerAttributeEntities = 0;
+        int clearedPlayerNameplates = 0;
+        int clearedMobScaledEntities = 0;
+
+        Map<String, ?> worlds;
+        try {
+            worlds = universe.getWorlds();
+        } catch (Throwable ignored) {
+            worlds = null;
+        }
+
+        if (worlds != null && !worlds.isEmpty()) {
+            for (Object world : worlds.values()) {
+                Store<EntityStore> store = resolveStoreFromWorldObject(world);
+                if (store == null || !seenStores.add(store)) {
+                    continue;
+                }
+
+                visitedStores++;
+                clearedPlayerAttributeEntities += cleanupPlayerModifiersForStore(store);
+                if (playerNameplateSystem != null) {
+                    clearedPlayerNameplates += playerNameplateSystem.removeAllNameplatesForStore(store);
+                }
+                if (mobLevelingSystem != null) {
+                    clearedMobScaledEntities += mobLevelingSystem.removeAllNameplatesForStore(store);
+                }
+            }
+        }
+
+        Store<EntityStore> defaultStore = resolveStoreFromWorldObject(universe.getDefaultWorld());
+        if (defaultStore != null && seenStores.add(defaultStore)) {
+            visitedStores++;
+            clearedPlayerAttributeEntities += cleanupPlayerModifiersForStore(defaultStore);
+            if (playerNameplateSystem != null) {
+                clearedPlayerNameplates += playerNameplateSystem.removeAllNameplatesForStore(defaultStore);
+            }
+            if (mobLevelingSystem != null) {
+                clearedMobScaledEntities += mobLevelingSystem.removeAllNameplatesForStore(defaultStore);
+            }
+        }
+
+        if (visitedStores > 0) {
+            LOGGER.atInfo().log(
+                    "Server shutting down: swept %d store(s), removed player modifiers from %d entity(ies), cleared %d player nameplates, and reset mob scaled health/nameplates for %d mob(s).",
+                    visitedStores,
+                    clearedPlayerAttributeEntities,
+                    clearedPlayerNameplates,
+                    clearedMobScaledEntities);
+        }
+    }
+
+    private int cleanupPlayerModifiersForStore(Store<EntityStore> store) {
+        if (store == null || store.isShutdown() || skillManager == null) {
+            return 0;
+        }
+
+        final int[] cleaned = { 0 };
+        store.forEachChunk(ENTITY_QUERY, (ArchetypeChunk<EntityStore> chunk,
+                CommandBuffer<EntityStore> commandBuffer) -> {
+            for (int i = 0; i < chunk.size(); i++) {
+                Ref<EntityStore> ref = chunk.getReferenceTo(i);
+                if (ref == null) {
+                    continue;
+                }
+
+                PlayerRef playerRef = commandBuffer.getComponent(ref, PlayerRef.getComponentType());
+                if (playerRef == null) {
+                    continue;
+                }
+
+                if (skillManager.removeAllSkillModifiers(ref, commandBuffer)) {
+                    cleaned[0]++;
+                }
+            }
+        });
+        return cleaned[0];
+    }
+
+    @SuppressWarnings("unchecked")
+    private Store<EntityStore> resolveStoreFromWorldObject(Object worldObject) {
+        if (worldObject == null) {
+            return null;
+        }
+
+        try {
+            Method getEntityStore = worldObject.getClass().getMethod("getEntityStore");
+            Object entityStoreObject = getEntityStore.invoke(worldObject);
+            if (entityStoreObject instanceof Store) {
+                return (Store<EntityStore>) entityStoreObject;
+            }
+
+            if (entityStoreObject == null) {
+                return null;
+            }
+
+            Method getStore = entityStoreObject.getClass().getMethod("getStore");
+            Object nestedStoreObject = getStore.invoke(entityStoreObject);
+            if (nestedStoreObject instanceof Store) {
+                return (Store<EntityStore>) nestedStoreObject;
+            }
+        } catch (Throwable ignored) {
+            return null;
+        }
+
+        return null;
     }
 
     private void cleanupOnlinePlayerEntityState() {
@@ -663,6 +809,22 @@ public class EndlessLeveling extends JavaPlugin {
                 return Optional.of(Class.forName(className));
             } catch (ClassNotFoundException ignored) {
                 // Try the next known event class name.
+            }
+        }
+
+        return Optional.empty();
+    }
+
+    private Optional<Class<?>> resolveShutdownEventClass() {
+        String[] candidates = {
+                "com.hypixel.hytale.server.core.event.events.ShutdownEvent"
+        };
+
+        for (String className : candidates) {
+            try {
+                return Optional.of(Class.forName(className));
+            } catch (ClassNotFoundException ignored) {
+                // Try the next known shutdown event class name.
             }
         }
 

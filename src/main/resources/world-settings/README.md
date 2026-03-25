@@ -17,4 +17,4 @@ These files are not world generation data. They represent world-specific levelin
 ## Notes
 
 - Load order is defined in `load-order.json`.
-- Runtime config file is `world-settings.yml`; this folder remains a source layout unless loader integration is added.
+- Runtime config is loaded directly from this `world-settings` folder using `load-order.json`.

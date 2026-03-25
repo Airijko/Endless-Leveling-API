@@ -13,17 +13,16 @@ public final class VersionRegistry {
     public static final String CONFIG_VERSION_KEY = "config_version";
     public static final String PLAYERDATA_VERSION_KEY = "version";
 
-    public static final int CONFIG_YML_VERSION = 41;
-    public static final int LEVELING_YML_VERSION = 41;
-    public static final int EVENTS_YML_VERSION = 6;
-    public static final int WORLD_SETTINGS_YML_VERSION = 36;
-    public static final int WEAPONS_JSON_VERSION = 1;
+    public static final int CONFIG_YML_VERSION = 42;
+    public static final int LEVELING_YML_VERSION = 42;
+    public static final int EVENTS_YML_VERSION = 7;
+    public static final int WEAPONS_JSON_VERSION = 2;
 
-    public static final int PLAYERDATA_SCHEMA_VERSION = 18;
+    public static final int PLAYERDATA_SCHEMA_VERSION = 19;
 
-    public static final int BUILTIN_AUGMENTS_VERSION = 62;
-    public static final int BUILTIN_CLASSES_VERSION = 30;
-    public static final int BUILTIN_RACES_VERSION = 28;
+    public static final int BUILTIN_AUGMENTS_VERSION = 63;
+    public static final int BUILTIN_CLASSES_VERSION = 31;
+    public static final int BUILTIN_RACES_VERSION = 31;
     public static final int BUILTIN_LANG_VERSION = 5;
 
     public static final String AUGMENTS_VERSION_FILE = "augments.version";
@@ -39,7 +38,6 @@ public final class VersionRegistry {
             case "config.yml" -> CONFIG_YML_VERSION;
             case "leveling.yml" -> LEVELING_YML_VERSION;
             case "events.yml" -> EVENTS_YML_VERSION;
-            case "world-settings.yml" -> WORLD_SETTINGS_YML_VERSION;
             case "weapons.json" -> WEAPONS_JSON_VERSION;
             default -> null;
         };

@@ -106,14 +106,16 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         }
 
         for (Store<EntityStore> trackedStore : stores) {
-            clearMobNameplatesForStore(trackedStore);
+            removeAllNameplatesForStore(trackedStore);
         }
     }
 
-    private void clearMobNameplatesForStore(Store<EntityStore> store) {
+    public int removeAllNameplatesForStore(Store<EntityStore> store) {
         if (store == null || store.isShutdown()) {
-            return;
+            return 0;
         }
+
+        final int[] removed = { 0 };
 
         store.forEachChunk(ENTITY_QUERY, (ArchetypeChunk<EntityStore> chunk,
                 CommandBuffer<EntityStore> commandBuffer) -> {
@@ -130,8 +132,11 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
 
                 stripMobHealthModifiers(ref, commandBuffer);
                 clearOrRemoveNameplate(ref, commandBuffer);
+                removed[0]++;
             }
         });
+
+        return removed[0];
     }
 
     private void stripMobHealthModifiers(Ref<EntityStore> ref,
