@@ -5,6 +5,7 @@ import com.airijko.endlessleveling.player.PlayerData;
 import com.airijko.endlessleveling.player.PlayerDataManager;
 import com.airijko.endlessleveling.util.PlayerStoreSelector;
 import com.hypixel.hytale.component.ArchetypeChunk;
+import com.hypixel.hytale.component.ComponentAccessor;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
@@ -32,6 +33,61 @@ public class PlayerNameplateSystem extends TickingSystem<EntityStore> {
 
     public PlayerNameplateSystem(@Nonnull PlayerDataManager playerDataManager) {
         this.playerDataManager = playerDataManager;
+    }
+
+    public int removeAllNameplatesForStore(Store<EntityStore> store) {
+        if (store == null || store.isShutdown()) {
+            return 0;
+        }
+
+        Map<Integer, PlayerRef> playersByEntityIndex = PlayerStoreSelector.snapshotPlayersByEntityIndex(store);
+        if (playersByEntityIndex.isEmpty()) {
+            lastLabels.clear();
+            return 0;
+        }
+
+        final int[] removed = { 0 };
+        store.forEachChunk(PLAYER_QUERY, (ArchetypeChunk<EntityStore> chunk,
+                CommandBuffer<EntityStore> commandBuffer) -> {
+            for (int i = 0; i < chunk.size(); i++) {
+                Ref<EntityStore> ref = chunk.getReferenceTo(i);
+                if (ref == null) {
+                    continue;
+                }
+
+                PlayerRef playerRef = playersByEntityIndex.get(ref.getIndex());
+                if (playerRef == null || !playerRef.isValid()) {
+                    continue;
+                }
+
+                removeNameplateForPlayerRef(ref, commandBuffer, playerRef);
+                removed[0]++;
+            }
+        });
+
+        if (!lastLabels.isEmpty()) {
+            lastLabels.clear();
+        }
+        return removed[0];
+    }
+
+    public void removeNameplateForPlayerRef(@Nonnull Ref<EntityStore> ref,
+            @Nonnull ComponentAccessor<EntityStore> componentAccessor,
+            @Nonnull PlayerRef playerRef) {
+        if (NameplateBuilderCompatibility.isAvailable()) {
+            NameplateBuilderCompatibility.removePlayerLevel(ref.getStore(), ref);
+            NameplateBuilderCompatibility.removeELPlayerPrestigeLevel(ref.getStore(), ref);
+            NameplateBuilderCompatibility.removeELPlayerRace(ref.getStore(), ref);
+            NameplateBuilderCompatibility.removeELPlayerClassPrimary(ref.getStore(), ref);
+            NameplateBuilderCompatibility.removeELPlayerClassSecondary(ref.getStore(), ref);
+            NameplateBuilderCompatibility.removeELPlayerName(ref.getStore(), ref);
+        }
+
+        Nameplate nameplate = componentAccessor.getComponent(ref, Nameplate.getComponentType());
+        if (nameplate != null) {
+            String baseName = playerRef.getUsername() != null ? playerRef.getUsername() : "Player";
+            nameplate.setText(baseName);
+        }
     }
 
     @Override

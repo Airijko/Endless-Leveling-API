@@ -35,9 +35,11 @@ import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -81,12 +83,83 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
     }
 
     public void shutdownRuntimeState() {
+        clearTrackedMobNameplates();
         cleanupStoreRuntimeState(null);
         entityStates.clear();
         summonHealthAnomalyLogTimes.clear();
         if (mobLevelingManager != null) {
             mobLevelingManager.shutdownRuntimeState();
         }
+    }
+
+    private void clearTrackedMobNameplates() {
+        if (entityStates.isEmpty()) {
+            return;
+        }
+
+        Set<Store<EntityStore>> stores = new HashSet<>();
+        for (EntityRuntimeState state : entityStates.values()) {
+            if (state == null || state.trackedStore == null || state.trackedStore.isShutdown()) {
+                continue;
+            }
+            stores.add(state.trackedStore);
+        }
+
+        for (Store<EntityStore> trackedStore : stores) {
+            clearMobNameplatesForStore(trackedStore);
+        }
+    }
+
+    private void clearMobNameplatesForStore(Store<EntityStore> store) {
+        if (store == null || store.isShutdown()) {
+            return;
+        }
+
+        store.forEachChunk(ENTITY_QUERY, (ArchetypeChunk<EntityStore> chunk,
+                CommandBuffer<EntityStore> commandBuffer) -> {
+            for (int i = 0; i < chunk.size(); i++) {
+                Ref<EntityStore> ref = chunk.getReferenceTo(i);
+                if (ref == null) {
+                    continue;
+                }
+
+                NPCEntity npcEntity = commandBuffer.getComponent(ref, NPCEntity.getComponentType());
+                if (npcEntity == null) {
+                    continue;
+                }
+
+                stripMobHealthModifiers(ref, commandBuffer);
+                clearOrRemoveNameplate(ref, commandBuffer);
+            }
+        });
+    }
+
+    private void stripMobHealthModifiers(Ref<EntityStore> ref,
+            CommandBuffer<EntityStore> commandBuffer) {
+        if (ref == null || commandBuffer == null) {
+            return;
+        }
+
+        EntityStatMap statMap = commandBuffer.getComponent(ref, EntityStatMap.getComponentType());
+        if (statMap == null) {
+            return;
+        }
+
+        int healthIndex = DefaultEntityStatTypes.getHealth();
+        statMap.removeModifier(healthIndex, MOB_HEALTH_SCALE_MODIFIER_KEY);
+        statMap.removeModifier(healthIndex, MOB_AUGMENT_LIFE_FORCE_MODIFIER_KEY);
+
+        EntityStatValue health = statMap.get(healthIndex);
+        if (health != null) {
+            float max = health.getMax();
+            float minCurrent = max > 1.0f ? 1.0f : 0.0f;
+            float clampedCurrent = Math.max(minCurrent, Math.min(max, health.get()));
+            if (Float.isFinite(clampedCurrent)) {
+                statMap.setStatValue(healthIndex, clampedCurrent);
+            }
+        }
+
+        statMap.update();
     }
 
     public void requestFullMobRescale() {

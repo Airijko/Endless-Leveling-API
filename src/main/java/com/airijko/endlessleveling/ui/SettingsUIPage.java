@@ -22,7 +22,7 @@ import static com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindin
 import static com.hypixel.hytale.server.core.ui.builder.EventData.of;
 
 /**
- * Settings page that exposes per-player options stored in playerdata.yml.
+ * Settings page that exposes per-player options stored in playerdata JSON.
  */
 public class SettingsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 

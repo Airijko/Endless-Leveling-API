@@ -313,8 +313,8 @@ public class ConfigManager {
         if ("events.yml".equalsIgnoreCase(resourceName)) {
             return "force_builtin_events";
         }
-        if ("worlds.yml".equalsIgnoreCase(resourceName)) {
-            return "force_builtin_worlds";
+        if ("world-settings.yml".equalsIgnoreCase(resourceName)) {
+            return "force_builtin_world_settings";
         }
         return null;
     }
@@ -336,7 +336,13 @@ public class ConfigManager {
 
         try (FileReader reader = new FileReader(rootConfig)) {
             Map<String, Object> rootMap = toMutableMap(yaml.load(reader));
-            return parseBoolean(rootMap.get(key), defaultValue);
+            if (rootMap.containsKey(key)) {
+                return parseBoolean(rootMap.get(key), defaultValue);
+            }
+            if ("force_builtin_world_settings".equalsIgnoreCase(key) && rootMap.containsKey("force_builtin_worlds")) {
+                return parseBoolean(rootMap.get("force_builtin_worlds"), defaultValue);
+            }
+            return defaultValue;
         } catch (Exception e) {
             LOGGER.atWarning().log("Failed to read %s toggle '%s': %s",
                     rootConfig.getName(),
@@ -402,7 +408,9 @@ public class ConfigManager {
             target.put("force_builtin_config", parseBoolean(configMap.get("force_builtin_config"), false));
             target.put("force_builtin_leveling", parseBoolean(configMap.get("force_builtin_leveling"), false));
             target.put("force_builtin_events", parseBoolean(configMap.get("force_builtin_events"), false));
-            target.put("force_builtin_worlds", parseBoolean(configMap.get("force_builtin_worlds"), false));
+            target.put("force_builtin_world_settings", parseBoolean(
+                    configMap.get("force_builtin_world_settings"),
+                    parseBoolean(configMap.get("force_builtin_worlds"), false)));
         }
 
         return target;
@@ -416,6 +424,7 @@ public class ConfigManager {
             normalized.remove("force_builtin_config");
             normalized.remove("force_builtin_leveling");
             normalized.remove("force_builtin_events");
+            normalized.remove("force_builtin_world_settings");
             normalized.remove("force_builtin_worlds");
         }
 
@@ -689,7 +698,7 @@ public class ConfigManager {
     private void preserveResourceSpecificCustomKeys(Map<String, Object> merged,
             Map<String, Object> existing,
             Map<String, Object> bundled) {
-        if (!"worlds.yml".equalsIgnoreCase(resourceName) || merged == null || existing == null) {
+        if (!"world-settings.yml".equalsIgnoreCase(resourceName) || merged == null || existing == null) {
             return;
         }
 
@@ -892,7 +901,7 @@ public class ConfigManager {
 
     private void writeMergedWithBundledTemplate(Map<String, Object> merged,
             Map<String, Object> bundled) throws IOException {
-        if ("worlds.yml".equalsIgnoreCase(resourceName)) {
+        if ("world-settings.yml".equalsIgnoreCase(resourceName)) {
             try (FileWriter writer = new FileWriter(configFile)) {
                 yaml.dump(merged, writer);
             }

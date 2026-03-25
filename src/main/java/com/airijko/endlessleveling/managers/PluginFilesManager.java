@@ -24,6 +24,7 @@ public class PluginFilesManager {
 
     private static final String PLUGIN_FOLDER_NAME = "EndlessLeveling";
     private static final String PLAYERDATA_FOLDER_NAME = "playerdata";
+    private static final String LEGACY_PLAYERDATA_ARCHIVE_FOLDER_NAME = "old-playerdata-yml";
     private static final String PARTYDATA_FOLDER_NAME = "partydata";
     private static final String RACES_FOLDER_NAME = "races";
     private static final String CLASSES_FOLDER_NAME = "classes";
@@ -39,6 +40,7 @@ public class PluginFilesManager {
     private final JavaPlugin plugin;
     private final File pluginFolder;
     private final File playerDataFolder;
+    private final File legacyPlayerDataArchiveFolder;
     private final File partyDataFolder;
     private final File racesFolder;
     private final File classesFolder;
@@ -63,6 +65,7 @@ public class PluginFilesManager {
         }
         this.pluginFolder = modsPath.resolve(PLUGIN_FOLDER_NAME).toFile();
         this.playerDataFolder = new File(pluginFolder, PLAYERDATA_FOLDER_NAME);
+        this.legacyPlayerDataArchiveFolder = new File(playerDataFolder, LEGACY_PLAYERDATA_ARCHIVE_FOLDER_NAME);
         this.partyDataFolder = new File(pluginFolder, PARTYDATA_FOLDER_NAME);
         this.racesFolder = new File(pluginFolder, RACES_FOLDER_NAME);
         this.classesFolder = new File(pluginFolder, CLASSES_FOLDER_NAME);
@@ -74,7 +77,7 @@ public class PluginFilesManager {
         this.configFile = initYamlFile("config.yml");
         this.levelingFile = initYamlFile("leveling.yml");
         this.eventsFile = initYamlFile("events.yml");
-        this.worldsFile = initYamlFile("worlds.yml");
+        this.worldsFile = initYamlFile("world-settings.yml");
         this.weaponsFile = initResourceFile(WEAPONS_FILE_NAME);
         this.partyDataFile = initPartyDataFile();
 
@@ -108,6 +111,15 @@ public class PluginFilesManager {
 
     public File getPlayerDataFolder() {
         return playerDataFolder;
+    }
+
+    /**
+     * Optional local fail-safe folder that stores copies of migrated legacy
+     * playerdata YAML files. Users can delete this folder safely when no
+     * rollback history is needed.
+     */
+    public File getLegacyPlayerDataArchiveFolder() {
+        return legacyPlayerDataArchiveFolder;
     }
 
     public File getPartyDataFolder() {

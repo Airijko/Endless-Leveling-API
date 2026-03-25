@@ -441,6 +441,71 @@ public final class NameplateBuilderCompatibility {
         }
     }
 
+    public static boolean removeELPlayerPrestigeLevel(Store<EntityStore> store, Ref<EntityStore> entityRef) {
+        if (store == null || entityRef == null || !ensureInitialized() || segmentTargetPlayers == null) {
+            return false;
+        }
+
+        try {
+            removeMethod.invoke(null, store, entityRef, EL_PLAYER_PRESTIGE_LEVEL);
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    public static boolean removeELPlayerRace(Store<EntityStore> store, Ref<EntityStore> entityRef) {
+        if (store == null || entityRef == null || !ensureInitialized() || segmentTargetPlayers == null) {
+            return false;
+        }
+
+        try {
+            removeMethod.invoke(null, store, entityRef, EL_PLAYER_RACE);
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    public static boolean removeELPlayerClassPrimary(Store<EntityStore> store, Ref<EntityStore> entityRef) {
+        if (store == null || entityRef == null || !ensureInitialized() || segmentTargetPlayers == null) {
+            return false;
+        }
+
+        try {
+            removeMethod.invoke(null, store, entityRef, EL_PLAYER_CLASS_PRIMARY);
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    public static boolean removeELPlayerClassSecondary(Store<EntityStore> store, Ref<EntityStore> entityRef) {
+        if (store == null || entityRef == null || !ensureInitialized() || segmentTargetPlayers == null) {
+            return false;
+        }
+
+        try {
+            removeMethod.invoke(null, store, entityRef, EL_PLAYER_CLASS_SECONDARY);
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    public static boolean removeELPlayerName(Store<EntityStore> store, Ref<EntityStore> entityRef) {
+        if (store == null || entityRef == null || !ensureInitialized() || segmentTargetPlayers == null) {
+            return false;
+        }
+
+        try {
+            removeMethod.invoke(null, store, entityRef, EL_PLAYER_NAME);
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
     public static boolean removeELShowLevel(Store<EntityStore> store, Ref<EntityStore> entityRef) {
         if (store == null || entityRef == null || !ensureInitialized()) {
             return false;

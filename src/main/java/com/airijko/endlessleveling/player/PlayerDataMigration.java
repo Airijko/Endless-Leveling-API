@@ -23,6 +23,33 @@ public final class PlayerDataMigration {
     }
 
     /**
+     * Migrates an in-memory playerdata map to {@code currentVersion} without
+     * writing to disk.
+     */
+    public static Map<String, Object> migrateMapIfNeeded(Map<String, Object> originalMap,
+            int currentVersion,
+            String contextLabel) {
+        if (originalMap == null) {
+            return new LinkedHashMap<>();
+        }
+
+        Map<String, Object> migrated = new LinkedHashMap<>(originalMap);
+        int fileVersion = parseVersion(migrated);
+        boolean missingVersion = !migrated.containsKey("version");
+        if (fileVersion >= currentVersion && !missingVersion) {
+            return migrated;
+        }
+
+        for (int v = fileVersion; v < currentVersion; v++) {
+            File contextFile = new File(contextLabel == null || contextLabel.isBlank() ? "in-memory" : contextLabel);
+            applyMigrationStep(v, migrated, contextFile);
+            migrated.put("version", v + 1);
+        }
+
+        return migrated;
+    }
+
+    /**
      * Migrate a playerdata YAML map in-place on disk if it's older than
      * {@code currentVersion}. Creates a timestamped backup of the original
      * file before writing. Returns the migrated map (or the original if no

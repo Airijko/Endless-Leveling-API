@@ -839,6 +839,39 @@ public class SkillManager {
         }
     }
 
+    public boolean removeMovementSpeedModifier(@Nonnull Ref<EntityStore> ref,
+            @Nonnull ComponentAccessor<EntityStore> componentAccessor) {
+        MovementManager movementManager = componentAccessor.getComponent(ref, MovementManager.getComponentType());
+        if (movementManager == null) {
+            return false;
+        }
+
+        MovementSettings defaults = movementManager.getDefaultSettings();
+        MovementSettings settings = movementManager.getSettings();
+        if (defaults == null || settings == null) {
+            return false;
+        }
+
+        settings.forwardWalkSpeedMultiplier = defaults.forwardWalkSpeedMultiplier;
+        settings.backwardWalkSpeedMultiplier = defaults.backwardWalkSpeedMultiplier;
+        settings.strafeWalkSpeedMultiplier = defaults.strafeWalkSpeedMultiplier;
+        settings.forwardRunSpeedMultiplier = defaults.forwardRunSpeedMultiplier;
+        settings.backwardRunSpeedMultiplier = defaults.backwardRunSpeedMultiplier;
+        settings.strafeRunSpeedMultiplier = defaults.strafeRunSpeedMultiplier;
+        settings.forwardCrouchSpeedMultiplier = defaults.forwardCrouchSpeedMultiplier;
+        settings.backwardCrouchSpeedMultiplier = defaults.backwardCrouchSpeedMultiplier;
+        settings.strafeCrouchSpeedMultiplier = defaults.strafeCrouchSpeedMultiplier;
+        settings.forwardSprintSpeedMultiplier = defaults.forwardSprintSpeedMultiplier;
+
+        PlayerRef playerRef = componentAccessor.getComponent(ref, PlayerRef.getComponentType());
+        if (playerRef != null) {
+            movementManager.update(playerRef.getPacketHandler());
+            return true;
+        }
+
+        return false;
+    }
+
     // Flow (mana) / skill modifiers
     public float calculatePlayerFlow(PlayerData playerData) {
         if (playerData == null)
@@ -1578,5 +1611,16 @@ public class SkillManager {
                     playerData.getPlayerName(), healthApplied, staminaApplied, movementApplied, flowApplied);
         }
         return success;
+    }
+
+    public boolean removeAllSkillModifiers(@Nonnull Ref<EntityStore> ref,
+            @Nonnull ComponentAccessor<EntityStore> componentAccessor) {
+        if (attributeManager == null) {
+            return false;
+        }
+
+        boolean attributesRemoved = attributeManager.removeManagedAttributeModifiers(ref, componentAccessor);
+        boolean movementRemoved = removeMovementSpeedModifier(ref, componentAccessor);
+        return attributesRemoved || movementRemoved;
     }
 }

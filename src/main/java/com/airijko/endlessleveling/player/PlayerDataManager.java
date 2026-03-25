@@ -1,5 +1,9 @@
 package com.airijko.endlessleveling.player;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonParseException;
+import com.google.gson.reflect.TypeToken;
 import com.airijko.endlessleveling.player.PlayerData;
 import com.airijko.endlessleveling.player.PlayerData.PlayerProfile;
 import com.airijko.endlessleveling.enums.PassiveType;
@@ -17,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.ArrayList;
@@ -31,6 +36,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import com.airijko.endlessleveling.classes.ClassManager;
 import com.airijko.endlessleveling.races.RaceManager;
 import com.airijko.endlessleveling.managers.ConfigManager;
@@ -40,6 +47,9 @@ import com.airijko.endlessleveling.managers.VersionRegistry;
 public class PlayerDataManager {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
+    private static final Gson PLAYERDATA_GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
+    private static final Type STRING_OBJECT_MAP_TYPE = new TypeToken<Map<String, Object>>() {
+    }.getType();
 
     private final PluginFilesManager filesManager;
     private final ConfigManager configManager;
@@ -53,6 +63,10 @@ public class PlayerDataManager {
     private static final int AUTO_BACKUP_RETENTION = 5; // keep latest N per player
     private static final long AUTO_BACKUP_MIN_INTERVAL_MS = 10 * 60 * 1000L; // 10 minutes between backups per player
     private static final DateTimeFormatter AUTO_BACKUP_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
+        private static final DateTimeFormatter LEGACY_YML_BACKUP_FORMATTER = DateTimeFormatter
+            .ofPattern("yyyyMMdd_HHmmss_SSS");
+        private static final Pattern UUID_IN_PLAYERDATA_FILE_PATTERN = Pattern.compile(
+            "([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})");
 
     private record ParsedSwitchValue(int value, boolean legacyDerived) {
     }
@@ -67,6 +81,8 @@ public class PlayerDataManager {
         this.skillManager = skillManager;
         this.raceManager = raceManager;
         this.classManager = classManager;
+
+        migrateLegacyPlayerDataFiles();
 
         LOGGER.atInfo().log("PlayerDataManager initialized.");
     }
@@ -85,23 +101,58 @@ public class PlayerDataManager {
                 return cached;
             }
 
-            File file = filesManager.getPlayerDataFile(uuid);
+            File jsonFile = filesManager.getPlayerDataFile(uuid);
+            File legacyYamlFile = filesManager.getLegacyPlayerDataFile(uuid);
             PlayerData data;
             boolean safeToSave = true; // avoid overwriting if load failed
             boolean createdNewPlayerData = false;
+            boolean loadedFromLegacyYaml = false;
 
-            if (file.exists()) {
-                data = loadFromFile(uuid, playerName, file);
+            if (jsonFile.exists()) {
+                data = loadFromJsonFile(uuid, playerName, jsonFile);
+                if (data == null) {
+                    if (legacyYamlFile.exists()) {
+                        data = loadFromLegacyYamlFile(uuid, playerName, legacyYamlFile);
+                        loadedFromLegacyYaml = data != null;
+                        if (data != null) {
+                            LOGGER.atWarning().log(
+                                    "PlayerData JSON for UUID %s was unreadable; recovered from legacy YAML and will rewrite JSON.",
+                                    uuid);
+                        } else {
+                            safeToSave = false;
+                            data = new PlayerData(uuid, playerName, getStartingSkillPoints());
+                            applyConfigDefaults(data);
+                            createdNewPlayerData = true;
+                            LOGGER.atSevere().log(
+                                    "PlayerData for UUID %s could not be parsed from JSON or legacy YAML; using in-memory fallback and will NOT overwrite %s.",
+                                    uuid,
+                                    jsonFile.getName());
+                        }
+                    } else {
+                        safeToSave = false;
+                        data = new PlayerData(uuid, playerName, getStartingSkillPoints());
+                        applyConfigDefaults(data);
+                        createdNewPlayerData = true;
+                        LOGGER.atSevere().log(
+                                "PlayerData for UUID %s could not be parsed; using in-memory fallback and will NOT overwrite %s. Please fix the JSON or restore a backup.",
+                                uuid, jsonFile.getName());
+                    }
+                } else {
+                    LOGGER.atInfo().log("PlayerData for UUID %s loaded from file.", uuid);
+                }
+            } else if (legacyYamlFile.exists()) {
+                data = loadFromLegacyYamlFile(uuid, playerName, legacyYamlFile);
+                loadedFromLegacyYaml = data != null;
                 if (data == null) {
                     safeToSave = false;
                     data = new PlayerData(uuid, playerName, getStartingSkillPoints());
                     applyConfigDefaults(data);
                     createdNewPlayerData = true;
                     LOGGER.atSevere().log(
-                            "PlayerData for UUID %s could not be parsed; using in-memory fallback and will NOT overwrite %s. Please fix the YAML or restore a backup.",
-                            uuid, file.getName());
+                            "Legacy PlayerData for UUID %s could not be parsed; using in-memory fallback and will NOT overwrite %s.",
+                            uuid, legacyYamlFile.getName());
                 } else {
-                    LOGGER.atInfo().log("PlayerData for UUID %s loaded from file.", uuid);
+                    LOGGER.atInfo().log("PlayerData for UUID %s loaded from legacy YAML and will be migrated to JSON.", uuid);
                 }
             } else {
                 data = new PlayerData(uuid, playerName, getStartingSkillPoints());
@@ -118,6 +169,9 @@ public class PlayerDataManager {
             playerCache.put(uuid, data);
             if (safeToSave) {
                 save(data);
+                if (loadedFromLegacyYaml) {
+                    archiveAndDeleteLegacyYamlIfJsonPresent(uuid, legacyYamlFile, jsonFile);
+                }
                 LOGGER.atInfo().log("PlayerData for UUID %s cached and saved.", uuid);
             } else {
                 LOGGER.atWarning().log("PlayerData for UUID %s cached only; not saved to avoid overwriting original.",
@@ -161,30 +215,25 @@ public class PlayerDataManager {
             initializeSwapDefaultsForAllProfiles(data, false);
             File file = filesManager.getPlayerDataFile(data.getUuid());
 
-            Map<String, Object> map = buildYamlMap(data);
-            Yaml yaml = createYaml();
+            Map<String, Object> map = buildPlayerDataMap(data);
+            String jsonContent = PLAYERDATA_GSON.toJson(map);
 
-            try (StringWriter buffer = new StringWriter()) {
-                yaml.dump(map, buffer);
-                String yamlContent = buffer.toString()
-                        .replace("\nattributes:", "\n\nattributes:")
-                        .replace("\noptions:", "\n\noptions:")
-                        .replace("\nprofiles:", "\n\nprofiles:")
-                        .replace("\nrace:", "\n\nrace:")
-                        .replace("\naugments:", "\n\naugments:")
-                        .replace("\npassives:", "\n\npassives:");
+            if (!isJsonRoundTripSafe(jsonContent)) {
+                LOGGER.atSevere().log(
+                        "Aborting save for %s: generated JSON failed validation; file left unchanged.",
+                        data.getUuid());
+                return;
+            }
 
-                if (!isYamlRoundTripSafe(yamlContent)) {
-                    LOGGER.atSevere().log(
-                            "Aborting save for %s: generated YAML failed validation; file left unchanged.",
-                            data.getUuid());
-                    return;
-                }
+            if (!jsonContent.endsWith("\n")) {
+                jsonContent = jsonContent + "\n";
+            }
 
+            try {
                 // Create a rolling backup of the previous on-disk file before overwriting.
                 createAutoBackupIfNeeded(file, data.getUuid());
 
-                writeAtomically(file.toPath(), yamlContent);
+                writeAtomically(file.toPath(), jsonContent);
                 LOGGER.atFine().log("PlayerData for UUID %s saved to file.", data.getUuid());
             } catch (IOException e) {
                 LOGGER.atSevere().log("Failed to save PlayerData for UUID %s: %s", data.getUuid(), e.getMessage());
@@ -195,28 +244,26 @@ public class PlayerDataManager {
         }
     }
 
-    // --- Load from file helper ---
-    private PlayerData loadFromFile(UUID uuid, String playerName, File file) {
+    private PlayerData loadFromJsonFile(UUID uuid, String fallbackPlayerName, File file) {
         Map<String, Object> map;
-        Yaml yaml = createYaml();
-        try (FileReader reader = new FileReader(file)) {
-            map = yaml.load(reader);
-        } catch (Exception e) {
-            LOGGER.atSevere().log("Failed to load PlayerData for UUID %s from %s: %s", uuid,
+        try (Reader reader = Files.newBufferedReader(file.toPath(), StandardCharsets.UTF_8)) {
+            map = PLAYERDATA_GSON.fromJson(reader, STRING_OBJECT_MAP_TYPE);
+        } catch (IOException | JsonParseException e) {
+            LOGGER.atSevere().log("Failed to load PlayerData JSON for UUID %s from %s: %s", uuid,
                     file.getName(), e.getMessage());
             e.printStackTrace();
-            var backupPath = backupCorruptFile(file, "parse-error");
+            var backupPath = backupCorruptFile(file, "json-parse-error");
             if (backupPath != null) {
                 LOGGER.atWarning().log("Backed up unreadable playerdata to %s; original left untouched.",
                         backupPath.toString());
             }
-            return null; // signal caller to avoid overwriting
+            return null;
         }
 
         if (map == null) {
-            LOGGER.atWarning().log("PlayerData file %s for UUID %s is empty; skipping load.", file.getName(),
+            LOGGER.atWarning().log("PlayerData JSON file %s for UUID %s is empty; skipping load.", file.getName(),
                     uuid);
-            var backupPath = backupCorruptFile(file, "empty-file");
+            var backupPath = backupCorruptFile(file, "empty-json-file");
             if (backupPath != null) {
                 LOGGER.atWarning().log("Backed up empty playerdata to %s; original left untouched.",
                         backupPath.toString());
@@ -224,31 +271,88 @@ public class PlayerDataManager {
             return null;
         }
 
-        try {
-            // Migrate file if it's an older schema version. This will create
-            // a backup of the original file and write a migrated file in-place.
-            map = PlayerDataMigration.migrateIfNeeded(file, map, yaml, VersionRegistry.PLAYERDATA_SCHEMA_VERSION);
-        } catch (LinkageError e) {
-            LOGGER.atSevere().log(
-                "PlayerData migration helper is unavailable for UUID %s while loading %s: %s",
-                uuid,
-                file.getName(),
-                e.getMessage());
-            e.printStackTrace();
-            LOGGER.atWarning().log(
-                "Continuing to load PlayerData for UUID %s without migration to avoid crashing the world thread.",
-                uuid);
+        Map<String, Object> migratedMap = migrateMapInMemoryOrNull(uuid, file, map);
+        if (migratedMap == null) {
+            return null;
+        }
+        return hydratePlayerDataFromMap(uuid, fallbackPlayerName, migratedMap);
+    }
+
+    private PlayerData loadFromLegacyYamlFile(UUID uuid, String fallbackPlayerName, File file) {
+        Map<String, Object> map;
+        Yaml yaml = createYaml();
+        try (Reader reader = Files.newBufferedReader(file.toPath(), StandardCharsets.UTF_8)) {
+            map = yaml.load(reader);
         } catch (Exception e) {
-            LOGGER.atSevere().log("Failed to migrate PlayerData for UUID %s from %s: %s", uuid,
+            LOGGER.atSevere().log("Failed to load legacy PlayerData YAML for UUID %s from %s: %s", uuid,
                     file.getName(), e.getMessage());
             e.printStackTrace();
-            var backupPath = backupCorruptFile(file, "migration-error");
+            var backupPath = backupCorruptFile(file, "yaml-parse-error");
             if (backupPath != null) {
-                LOGGER.atWarning().log(
-                        "Backed up playerdata prior to migration failure at %s; original left untouched.",
+                LOGGER.atWarning().log("Backed up unreadable legacy playerdata to %s; original left untouched.",
                         backupPath.toString());
             }
             return null;
+        }
+
+        if (map == null) {
+            LOGGER.atWarning().log("Legacy PlayerData YAML file %s for UUID %s is empty; skipping load.",
+                    file.getName(), uuid);
+            var backupPath = backupCorruptFile(file, "empty-yaml-file");
+            if (backupPath != null) {
+                LOGGER.atWarning().log("Backed up empty legacy playerdata to %s; original left untouched.",
+                        backupPath.toString());
+            }
+            return null;
+        }
+
+        Map<String, Object> migratedMap = migrateMapInMemoryOrNull(uuid, file, map);
+        if (migratedMap == null) {
+            return null;
+        }
+        return hydratePlayerDataFromMap(uuid, fallbackPlayerName, migratedMap);
+    }
+
+    private Map<String, Object> migrateMapInMemoryOrNull(UUID uuid, File sourceFile, Map<String, Object> sourceMap) {
+        try {
+            return PlayerDataMigration.migrateMapIfNeeded(
+                    sourceMap,
+                    VersionRegistry.PLAYERDATA_SCHEMA_VERSION,
+                    sourceFile != null ? sourceFile.getName() : null);
+        } catch (LinkageError e) {
+            LOGGER.atSevere().log(
+                    "PlayerData migration helper is unavailable for UUID %s while loading %s: %s",
+                    uuid,
+                    sourceFile != null ? sourceFile.getName() : "unknown",
+                    e.getMessage());
+            e.printStackTrace();
+            LOGGER.atWarning().log(
+                    "Continuing to load PlayerData for UUID %s without migration to avoid crashing the world thread.",
+                    uuid);
+            return sourceMap;
+        } catch (Exception e) {
+            LOGGER.atSevere().log("Failed to migrate PlayerData for UUID %s from %s: %s", uuid,
+                    sourceFile != null ? sourceFile.getName() : "unknown", e.getMessage());
+            e.printStackTrace();
+            if (sourceFile != null) {
+                var backupPath = backupCorruptFile(sourceFile, "migration-error");
+                if (backupPath != null) {
+                    LOGGER.atWarning().log(
+                            "Backed up playerdata prior to migration failure at %s; original left untouched.",
+                            backupPath.toString());
+                }
+            }
+            return null;
+        }
+    }
+
+    private PlayerData hydratePlayerDataFromMap(UUID uuid, String fallbackPlayerName, Map<String, Object> map) {
+        String playerName = parseString(map.get("playerName"));
+        if (playerName == null || playerName.isBlank()) {
+            playerName = fallbackPlayerName;
+        }
+        if (playerName == null || playerName.isBlank()) {
+            playerName = uuid.toString();
         }
 
         PlayerData data = new PlayerData(uuid, playerName, getStartingSkillPoints());
@@ -262,6 +366,7 @@ public class PlayerDataManager {
         data.loadProfilesFromStorage(profiles, activeProfileIndex);
         applyOptions(map, data);
         ensureValidRace(data);
+        ensureValidClasses(data);
         LOGGER.atInfo().log("PlayerData for UUID %s loaded from disk.", uuid);
         return data;
     }
@@ -284,28 +389,29 @@ public class PlayerDataManager {
 
         File folder = filesManager.getPlayerDataFolder();
         if (folder != null && folder.exists() && folder.isDirectory()) {
-            File[] files = folder.listFiles((dir, name) -> name.toLowerCase().endsWith(".yml"));
+            File[] files = folder.listFiles((dir, name) -> {
+                String lower = name.toLowerCase();
+                return lower.endsWith(".json") || lower.endsWith(".yml") || lower.endsWith(".yaml");
+            });
             if (files != null) {
                 for (File file : files) {
-                    String name = file.getName();
-                    String uuidPart = name.substring(0, name.length() - 4);
-                    try {
-                        UUID uuid = UUID.fromString(uuidPart);
-                        PlayerData loaded = playerCache.get(uuid);
-                        if (loaded == null) {
-                            loaded = loadFromFileMinimal(uuid, file);
-                            if (loaded != null) {
-                                playerCache.putIfAbsent(uuid, loaded);
-                            }
-                        }
+                    UUID uuid = parseUuidFromPlayerDataFileName(file.getName());
+                    if (uuid == null) {
+                        continue;
+                    }
 
-                        PlayerData candidate = playerCache.get(uuid);
-                        if (candidate != null && candidate.getPlayerName().equalsIgnoreCase(normalizedTarget)) {
-                            LOGGER.atInfo().log("PlayerData for %s loaded from disk lookup by name.", normalizedTarget);
-                            return candidate;
+                    PlayerData loaded = playerCache.get(uuid);
+                    if (loaded == null) {
+                        loaded = loadFromFileMinimal(uuid, file);
+                        if (loaded != null) {
+                            playerCache.putIfAbsent(uuid, loaded);
                         }
-                    } catch (IllegalArgumentException ignored) {
-                        // Not a player data UUID file.
+                    }
+
+                    PlayerData candidate = playerCache.get(uuid);
+                    if (candidate != null && candidate.getPlayerName().equalsIgnoreCase(normalizedTarget)) {
+                        LOGGER.atInfo().log("PlayerData for %s loaded from disk lookup by name.", normalizedTarget);
+                        return candidate;
                     }
                 }
             }
@@ -338,22 +444,23 @@ public class PlayerDataManager {
             return Collections.emptyList();
         }
 
-        File[] files = folder.listFiles((dir, name) -> name.toLowerCase().endsWith(".yml"));
+        File[] files = folder.listFiles((dir, name) -> {
+            String lower = name.toLowerCase();
+            return lower.endsWith(".json") || lower.endsWith(".yml") || lower.endsWith(".yaml");
+        });
         if (files != null) {
             for (File file : files) {
-                String name = file.getName();
-                String uuidPart = name.substring(0, name.length() - 4); // strip .yml
-                try {
-                    UUID uuid = UUID.fromString(uuidPart);
-                    // If already cached, use cached version; otherwise, load minimally from file
-                    if (!playerCache.containsKey(uuid)) {
-                        PlayerData loaded = loadFromFileMinimal(uuid, file);
-                        if (loaded != null) {
-                            playerCache.put(uuid, loaded);
-                        }
+                UUID uuid = parseUuidFromPlayerDataFileName(file.getName());
+                if (uuid == null) {
+                    continue;
+                }
+
+                // If already cached, use cached version; otherwise, load minimally from file
+                if (!playerCache.containsKey(uuid)) {
+                    PlayerData loaded = loadFromFileMinimal(uuid, file);
+                    if (loaded != null) {
+                        playerCache.put(uuid, loaded);
                     }
-                } catch (IllegalArgumentException ignored) {
-                    // Not a valid UUID file, skip
                 }
             }
         }
@@ -1082,20 +1189,30 @@ public class PlayerDataManager {
 
     /**
      * Minimal loader used for leaderboards when a player has never joined
-     * this server run. Reads name/level/xp/skillPoints from the YAML file.
+     * this server run.
      */
     private PlayerData loadFromFileMinimal(UUID uuid, File file) {
-        Yaml yaml = createYaml();
-        try (FileReader reader = new FileReader(file)) {
-            Map<String, Object> map = yaml.load(reader);
+        try {
+            String lower = file.getName().toLowerCase();
+            Map<String, Object> map;
+            if (lower.endsWith(".json")) {
+                map = readPlayerDataJson(file);
+            } else {
+                map = readPlayerDataYaml(file);
+            }
+
             if (map == null) {
-                LOGGER.atWarning().log("Minimal load: empty YAML for UUID %s in file %s", uuid, file.getName());
+                LOGGER.atWarning().log("Minimal load: empty playerdata for UUID %s in file %s", uuid,
+                        file.getName());
                 return null;
             }
-            // Do NOT auto-migrate on minimal loads (leaderboards) to avoid
-            // touching files during read-only operations. Full load will
-            // perform migration when needed.
-            String playerName = (String) map.getOrDefault("playerName", uuid.toString());
+
+            // Do NOT auto-migrate on minimal loads (leaderboards) to avoid touching files
+            // during read-only operations. Full load will perform migration and persistence.
+            String playerName = parseString(map.get("playerName"));
+            if (playerName == null || playerName.isBlank()) {
+                playerName = uuid.toString();
+            }
             PlayerData data = new PlayerData(uuid, playerName, getStartingSkillPoints());
             applyConfigDefaults(data);
 
@@ -1123,7 +1240,7 @@ public class PlayerDataManager {
         return skillManager != null ? skillManager.getBaseSkillPoints() : 0;
     }
 
-    private Map<String, Object> buildYamlMap(PlayerData data) {
+    private Map<String, Object> buildPlayerDataMap(PlayerData data) {
         Map<String, Object> map = new LinkedHashMap<>();
         map.put(VersionRegistry.PLAYERDATA_VERSION_KEY, VersionRegistry.PLAYERDATA_SCHEMA_VERSION);
         map.put("playerName", data.getPlayerName());
@@ -1305,6 +1422,162 @@ public class PlayerDataManager {
         }
     }
 
+    private Map<String, Object> readPlayerDataJson(File file) throws IOException {
+        try (Reader reader = Files.newBufferedReader(file.toPath(), StandardCharsets.UTF_8)) {
+            return PLAYERDATA_GSON.fromJson(reader, STRING_OBJECT_MAP_TYPE);
+        }
+    }
+
+    private Map<String, Object> readPlayerDataYaml(File file) throws IOException {
+        try (Reader reader = Files.newBufferedReader(file.toPath(), StandardCharsets.UTF_8)) {
+            return createYaml().load(reader);
+        }
+    }
+
+    private UUID parseUuidFromPlayerDataFileName(String fileName) {
+        if (fileName == null || fileName.isBlank()) {
+            return null;
+        }
+
+        String lower = fileName.toLowerCase();
+        if (!lower.endsWith(".json") && !lower.endsWith(".yml") && !lower.endsWith(".yaml")) {
+            return null;
+        }
+
+        Matcher matcher = UUID_IN_PLAYERDATA_FILE_PATTERN.matcher(fileName);
+        if (!matcher.find()) {
+            return null;
+        }
+        String uuidPart = matcher.group(1);
+
+        try {
+            return UUID.fromString(uuidPart);
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
+    }
+
+    private void migrateLegacyPlayerDataFiles() {
+        File folder = filesManager != null ? filesManager.getPlayerDataFolder() : null;
+        if (folder == null || !folder.exists() || !folder.isDirectory()) {
+            return;
+        }
+
+        File[] legacyFiles = folder.listFiles((dir, name) -> {
+            if (name == null) {
+                return false;
+            }
+            String lower = name.toLowerCase();
+            return lower.endsWith(".yml") || lower.endsWith(".yaml");
+        });
+        if (legacyFiles == null || legacyFiles.length == 0) {
+            return;
+        }
+
+        int migrated = 0;
+        int archivedOnly = 0;
+        for (File legacyFile : legacyFiles) {
+            UUID uuid = parseUuidFromPlayerDataFileName(legacyFile.getName());
+            if (uuid == null) {
+                continue;
+            }
+
+            ReentrantLock lock = lockFor(uuid);
+            lock.lock();
+            try {
+                File jsonFile = filesManager.getPlayerDataFile(uuid);
+                if (jsonFile.exists()) {
+                    if (archiveAndDeleteLegacyYamlIfJsonPresent(uuid, legacyFile, jsonFile)) {
+                        archivedOnly++;
+                    }
+                    continue;
+                }
+
+                PlayerData data = loadFromLegacyYamlFile(uuid, uuid.toString(), legacyFile);
+                if (data == null) {
+                    continue;
+                }
+
+                save(data);
+                if (archiveAndDeleteLegacyYamlIfJsonPresent(uuid, legacyFile, jsonFile)) {
+                    migrated++;
+                }
+            } finally {
+                lock.unlock();
+            }
+        }
+
+        if (migrated > 0) {
+            LOGGER.atInfo().log("Migrated %d legacy playerdata YAML file(s) to JSON.", migrated);
+        }
+        if (archivedOnly > 0) {
+            LOGGER.atInfo().log("Archived and removed %d legacy playerdata YAML file(s) that already had JSON.",
+                    archivedOnly);
+        }
+    }
+
+    private boolean archiveAndDeleteLegacyYamlIfJsonPresent(UUID uuid, File legacyYamlFile, File jsonFile) {
+        if (legacyYamlFile == null || !legacyYamlFile.exists() || jsonFile == null || !jsonFile.exists()) {
+            return false;
+        }
+
+        try {
+            Path centralizedArchivePath = filesManager.archiveFileIfExists(
+                    legacyYamlFile,
+                    "playerdata/old-playerdata-yml/" + legacyYamlFile.getName(),
+                    "playerdata.format:yml");
+            Path localArchivePath = copyLegacyYamlToLocalFailsafeFolder(legacyYamlFile);
+
+            // Never remove the original YAML unless at least one backup copy exists.
+            if (centralizedArchivePath == null && localArchivePath == null) {
+                LOGGER.atWarning().log(
+                        "Skipping removal of legacy YAML playerdata %s because no backup could be created.",
+                        legacyYamlFile.getName());
+                return false;
+            }
+
+            Files.deleteIfExists(legacyYamlFile.toPath());
+            LOGGER.atInfo().log("Archived and removed legacy YAML playerdata for UUID %s (central=%s, local=%s)",
+                    uuid,
+                    centralizedArchivePath == null ? "none" : centralizedArchivePath,
+                    localArchivePath == null ? "none" : localArchivePath);
+            return true;
+        } catch (Exception ex) {
+            LOGGER.atWarning().log("Failed to remove legacy YAML playerdata %s after JSON migration: %s",
+                    legacyYamlFile.getName(), ex.getMessage());
+            return false;
+        }
+    }
+
+    private Path copyLegacyYamlToLocalFailsafeFolder(File legacyYamlFile) {
+        if (legacyYamlFile == null || !legacyYamlFile.exists() || filesManager == null) {
+            return null;
+        }
+
+        File archiveFolder = filesManager.getLegacyPlayerDataArchiveFolder();
+        if (archiveFolder == null) {
+            return null;
+        }
+
+        try {
+            Files.createDirectories(archiveFolder.toPath());
+
+            String originalName = legacyYamlFile.getName();
+            String baseName = originalName.toLowerCase().endsWith(".yml")
+                    ? originalName.substring(0, originalName.length() - 4)
+                    : originalName;
+            String stamp = LocalDateTime.now().format(LEGACY_YML_BACKUP_FORMATTER);
+            Path archivePath = archiveFolder.toPath().resolve(baseName + "-" + stamp + ".yml");
+
+            Files.copy(legacyYamlFile.toPath(), archivePath, StandardCopyOption.REPLACE_EXISTING);
+            return archivePath;
+        } catch (Exception ex) {
+            LOGGER.atWarning().log("Failed to copy legacy YAML %s into local fail-safe folder: %s",
+                    legacyYamlFile.getName(), ex.getMessage());
+            return null;
+        }
+    }
+
     private Path backupCorruptFile(File file, String reason) {
         if (file == null || !file.exists()) {
             return null;
@@ -1358,18 +1631,18 @@ public class PlayerDataManager {
     }
 
     /**
-     * Quick safety check: ensure the YAML we emit can be loaded back by SnakeYAML.
+     * Quick safety check: ensure emitted JSON can be parsed back.
      * If this fails we skip writing to avoid corrupting the on-disk file.
      */
-    private boolean isYamlRoundTripSafe(String yamlContent) {
-        if (yamlContent == null || yamlContent.isEmpty()) {
+    private boolean isJsonRoundTripSafe(String jsonContent) {
+        if (jsonContent == null || jsonContent.isEmpty()) {
             return false;
         }
-        try (StringReader reader = new StringReader(yamlContent)) {
-            Object loaded = createYaml().load(reader);
+        try (StringReader reader = new StringReader(jsonContent)) {
+            Object loaded = PLAYERDATA_GSON.fromJson(reader, STRING_OBJECT_MAP_TYPE);
             return loaded instanceof Map<?, ?>;
         } catch (Exception ex) {
-            LOGGER.atSevere().log("Round-trip YAML validation failed: %s", ex.getMessage());
+            LOGGER.atSevere().log("Round-trip JSON validation failed: %s", ex.getMessage());
             return false;
         }
     }
@@ -1409,7 +1682,7 @@ public class PlayerDataManager {
         try {
             Files.createDirectories(backupDir);
             String timestamp = LocalDateTime.now().format(AUTO_BACKUP_FORMATTER);
-            Path target = backupDir.resolve(sourceFile.getName() + "." + timestamp + ".yml");
+            Path target = backupDir.resolve(sourceFile.getName() + "." + timestamp + ".bak");
             Files.copy(sourceFile.toPath(), target, StandardCopyOption.REPLACE_EXISTING);
             lastAutoBackupMs.put(uuid, now);
             pruneAutoBackups(backupDir);

@@ -1,0 +1,244 @@
+{
+  "World_Overrides": {
+    "instance-mj_instance_d01-*": {
+      "Enable_XP": true,
+      "Level_Range": {
+        "Max": "ENDLESS"
+      },
+      "Level_Source": {
+        "Mode": "TIERED",
+        "Base_Level": {
+          "Level": "20-35"
+        },
+        "Tiers": {
+          "Total_Tiers": "ENDLESS",
+          "Levels_Per_Tier": 20,
+          "Player_Adaptation": {
+            "Enabled": true,
+            "Allowance_Mode": "ABOVE",
+            "Range_Allowance": 10
+          }
+        }
+      },
+      "Scaling": {
+        "Health": {
+          "Base_Multiplier": 3.0,
+          "Per_Level": 0.075
+        },
+        "Damage": {
+          "Base_Multiplier": 1.25,
+          "Per_Level": 0.065
+        },
+        "Defense": {
+          "At_Negative_Max_Difference": 0.25,
+          "At_Positive_Max_Difference": 0.8,
+          "Below_Negative_Max_Difference": 0.0,
+          "Above_Positive_Max_Difference": 0.9
+        }
+      },
+      "Mob_Overrides": {
+        "Azaroth": {
+          "Level": 40,
+          "Augments": ["rebirth", "frozen_domain"],
+          "Allow_Random_Mob_Augments": true,
+          "Scaling": {
+            "Health": {
+              "Base_Multiplier": 1.0,
+              "Per_Level": 0.1
+            },
+            "Damage": {
+              "Base_Multiplier": 1.0,
+              "Per_Level": 0.07
+            },
+            "Defense": {
+              "At_Negative_Max_Difference": 0.35,
+              "At_Positive_Max_Difference": 0.9,
+              "Below_Negative_Max_Difference": 0.0,
+              "Above_Positive_Max_Difference": 0.975
+            }
+          }
+        }
+      }
+    },
+    "instance-mj_instance_d02-*": {
+      "Enable_XP": true,
+      "Level_Range": {
+        "Max": "ENDLESS"
+      },
+      "Level_Source": {
+        "Mode": "TIERED",
+        "Base_Level": {
+          "Level": "40-55"
+        },
+        "Tiers": {
+          "Total_Tiers": "ENDLESS",
+          "Levels_Per_Tier": 20,
+          "Player_Adaptation": {
+            "Enabled": true,
+            "Allowance_Mode": "ABOVE",
+            "Range_Allowance": 10
+          }
+        }
+      },
+      "Scaling": {
+        "Health": {
+          "Base_Multiplier": 3.0,
+          "Per_Level": 0.075
+        },
+        "Damage": {
+          "Base_Multiplier": 1.25,
+          "Per_Level": 0.065
+        },
+        "Defense": {
+          "At_Negative_Max_Difference": 0.25,
+          "At_Positive_Max_Difference": 0.8,
+          "Below_Negative_Max_Difference": 0.0,
+          "Above_Positive_Max_Difference": 0.9
+        }
+      },
+      "Mob_Overrides": {
+        "Katherina": {
+          "Level": 60,
+          "Augments": ["bloodthirster", "vampirism"],
+          "Allow_Random_Mob_Augments": true,
+          "Scaling": {
+            "Health": {
+              "Base_Multiplier": 1.0,
+              "Per_Level": 0.1
+            },
+            "Damage": {
+              "Base_Multiplier": 1.0,
+              "Per_Level": 0.07
+            },
+            "Defense": {
+              "At_Negative_Max_Difference": 0.35,
+              "At_Positive_Max_Difference": 0.9,
+              "Below_Negative_Max_Difference": 0.0,
+              "Above_Positive_Max_Difference": 0.975
+            }
+          }
+        },
+        "Construct_Ancient_Dark_Titan": {
+          "Level": 60,
+          "Scaling": {
+            "Health": {
+              "Base_Multiplier": 1.0,
+              "Per_Level": 0.075
+            },
+            "Damage": {
+              "Base_Multiplier": 1.0,
+              "Per_Level": 0.05
+            },
+            "Defense": {
+              "At_Negative_Max_Difference": 0.375,
+              "At_Positive_Max_Difference": 0.9,
+              "Below_Negative_Max_Difference": 0.0,
+              "Above_Positive_Max_Difference": 0.95
+            }
+          }
+        }
+      }
+    },
+    "instance-mj_instance_d03-*": {
+      "Enable_XP": true,
+      "Level_Range": {
+        "Max": "ENDLESS"
+      },
+      "Level_Source": {
+        "Mode": "TIERED",
+        "Base_Level": {
+          "Level": "60-75"
+        },
+        "Tiers": {
+          "Total_Tiers": "ENDLESS",
+          "Levels_Per_Tier": 20,
+          "Player_Adaptation": {
+            "Enabled": true,
+            "Allowance_Mode": "ABOVE",
+            "Range_Allowance": 10
+          }
+        }
+      },
+      "Scaling": {
+        "Health": {
+          "Base_Multiplier": 3.0,
+          "Per_Level": 0.075
+        },
+        "Damage": {
+          "Base_Multiplier": 1.25,
+          "Per_Level": 0.065
+        },
+        "Defense": {
+          "At_Negative_Max_Difference": 0.25,
+          "At_Positive_Max_Difference": 0.8,
+          "Below_Negative_Max_Difference": 0.0,
+          "Above_Positive_Max_Difference": 0.9
+        }
+      },
+      "Mob_Overrides": {
+        "Baron": {
+          "Level": 80,
+          "Augments": ["blood_surge", "bloodthirster"],
+          "Allow_Random_Mob_Augments": true,
+          "Scaling": {
+            "Health": {
+              "Base_Multiplier": 1.0,
+              "Per_Level": 0.1
+            },
+            "Damage": {
+              "Base_Multiplier": 1.0,
+              "Per_Level": 0.07
+            },
+            "Defense": {
+              "At_Negative_Max_Difference": 0.35,
+              "At_Positive_Max_Difference": 0.9,
+              "Below_Negative_Max_Difference": 0.0,
+              "Above_Positive_Max_Difference": 0.975
+            }
+          }
+        },
+        "Cult_Knight_Werewolf_Group": {
+          "Names": ["Cult_Knight", "Cult_Werewolf"],
+          "Scaling": {
+            "Health": {
+              "Base_Multiplier": 1.0,
+              "Per_Level": 0.075
+            },
+            "Damage": {
+              "Base_Multiplier": 1.0,
+              "Per_Level": 0.05
+            },
+            "Defense": {
+              "At_Negative_Max_Difference": 0.3,
+              "At_Positive_Max_Difference": 0.8,
+              "Below_Negative_Max_Difference": 0.0,
+              "Above_Positive_Max_Difference": 0.9
+            }
+          }
+        },
+        "Cult_Knight_Werewolf_MiniBoss_Group": {
+          "Names": ["Cult_Knight_MiniBoss", "Cult_Werewolf_MiniBoss"],
+          "Level": 75,
+          "Augments": ["blood_surge", "blood_frenzy", "vampirism"],
+          "Allow_Random_Mob_Augments": true,
+          "Scaling": {
+            "Health": {
+              "Base_Multiplier": 1.0,
+              "Per_Level": 0.075
+            },
+            "Damage": {
+              "Base_Multiplier": 1.0,
+              "Per_Level": 0.065
+            },
+            "Defense": {
+              "At_Negative_Max_Difference": 0.4,
+              "At_Positive_Max_Difference": 0.9,
+              "Below_Negative_Max_Difference": 0.0,
+              "Above_Positive_Max_Difference": 0.9
+            }
+          }
+        }
+      }
+    }
+  }
+}

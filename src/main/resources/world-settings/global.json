@@ -1,0 +1,57 @@
+{
+  "World_Overrides": {
+    "Global": {
+      "Enable_XP": true,
+      "Mob_Scaling": {
+        "Mob_Level_Scaling_Difference": {
+          "Range": 15
+        },
+        "Damage_Max_Difference": {
+          "Enabled": true,
+          "At_Positive_Max_Difference": 3.0,
+          "Above_Positive_Max_Difference": 5.0
+        }
+      },
+      "Player_Combat_Scaling": {
+        "Player_Level_Scaling_Difference": {
+          "Range": 20
+        },
+        "Defense_Max_Difference": {
+          "At_Positive_Max_Difference": 0.4,
+          "Above_Positive_Max_Difference": 0.8
+        }
+      },
+      "Mob_Augments": {
+        "Enabled": true,
+        "Base_High_Tier": {
+          "Count": 1,
+          "Chance": 0.25,
+          "Weights": {
+            "Elite": 1.0,
+            "Legendary": 0.0,
+            "Mythic": 0.0
+          }
+        },
+        "Extra_High_Tier": {
+          "Count": 1,
+          "Chance": 0.10,
+          "Weights": {
+            "Elite": 0.8,
+            "Legendary": 0.15,
+            "Mythic": 0.05
+          }
+        },
+        "Common": {
+          "Per_Level": "0-3",
+          "Weights": {
+            "0": 0.10,
+            "1": 0.20,
+            "2": 0.45,
+            "3": 0.25
+          }
+        },
+        "Blacklisted_Augments": ["burn", "phase_rush", "grasp_of_the_undying", "haymaker", "tank_engine"]
+      }
+    }
+  }
+}

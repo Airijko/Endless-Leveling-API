@@ -181,6 +181,43 @@ public class PlayerAttributeManager {
         return true;
     }
 
+    public boolean removeManagedAttributeModifiers(@Nonnull Ref<EntityStore> ref,
+            @Nonnull ComponentAccessor<EntityStore> accessor) {
+        EntityStatMap statMap = accessor.getComponent(ref, EntityStatMap.getComponentType());
+        if (statMap == null) {
+            return false;
+        }
+
+        for (AttributeSlot slot : AttributeSlot.values()) {
+            cleanupLegacyAttributeModifiers(slot, statMap);
+            statMap.removeModifier(slot.statIndex(), slot.raceModifierKey());
+            statMap.removeModifier(slot.statIndex(), slot.skillModifierKey());
+            if (slot == AttributeSlot.FLOW) {
+                statMap.removeModifier(slot.statIndex(), SUPPRESS_VANILLA_MANA_KEY);
+            }
+        }
+
+        clampCurrentStatValuesAfterDetach(statMap);
+        statMap.update();
+        return true;
+    }
+
+    private void clampCurrentStatValuesAfterDetach(@Nonnull EntityStatMap statMap) {
+        for (AttributeSlot slot : AttributeSlot.values()) {
+            EntityStatValue value = statMap.get(slot.statIndex());
+            if (value == null) {
+                continue;
+            }
+
+            float maxValue = value.getMax();
+            float minCurrent = slot == AttributeSlot.LIFE_FORCE ? 1.0f : 0.01f;
+            float clampedCurrent = Math.max(minCurrent, Math.min(maxValue, value.get()));
+            if (Math.abs(clampedCurrent - value.get()) > 0.0001f) {
+                statMap.setStatValue(slot.statIndex(), clampedCurrent);
+            }
+        }
+    }
+
     private void cleanupLegacyAttributeModifiers(@Nonnull AttributeSlot slot, @Nonnull EntityStatMap statMap) {
         if (slot == AttributeSlot.FLOW) {
             statMap.removeModifier(slot.statIndex(), LEGACY_RACE_BASE_INTELLIGENCE_KEY);

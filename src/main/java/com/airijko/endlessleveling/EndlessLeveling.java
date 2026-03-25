@@ -65,6 +65,11 @@ import com.hypixel.hytale.server.core.event.events.player.PlayerDisconnectEvent;
 import com.hypixel.hytale.server.core.event.events.player.PlayerReadyEvent;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
+import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
+import com.hypixel.hytale.server.core.universe.Universe;
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import javax.annotation.Nonnull;
 import java.security.CodeSource;
@@ -100,6 +105,7 @@ public class EndlessLeveling extends JavaPlugin {
     private PlayerRaceStatSystem playerRaceStatSystem;
     private MovementHasteSystem movementHasteSystem;
     private MobLevelingSystem mobLevelingSystem;
+    private PlayerNameplateSystem playerNameplateSystem;
     private AugmentManager augmentManager;
     private AugmentRuntimeManager augmentRuntimeManager;
     private AugmentUnlockManager augmentUnlockManager;
@@ -558,7 +564,8 @@ public class EndlessLeveling extends JavaPlugin {
         this.getEntityStoreRegistry().registerSystem(new PeriodicSkillModifierSystem(playerDataManager, skillManager));
         playerRaceStatSystem = new PlayerRaceStatSystem(playerDataManager, skillManager);
         this.getEntityStoreRegistry().registerSystem(playerRaceStatSystem);
-        this.getEntityStoreRegistry().registerSystem(new PlayerNameplateSystem(playerDataManager));
+        playerNameplateSystem = new PlayerNameplateSystem(playerDataManager);
+        this.getEntityStoreRegistry().registerSystem(playerNameplateSystem);
         mobLevelingSystem = new MobLevelingSystem();
         this.getEntityStoreRegistry().registerSystem(mobLevelingSystem);
         this.getEntityStoreRegistry().registerSystem(new HudRefreshSystem());
@@ -585,6 +592,8 @@ public class EndlessLeveling extends JavaPlugin {
     }
 
     protected void shutdown() {
+        cleanupOnlinePlayerEntityState();
+
         if (mobLevelingSystem != null) {
             mobLevelingSystem.shutdownRuntimeState();
             LOGGER.atInfo().log("Server shutting down: mob leveling runtime state cleared.");
@@ -600,6 +609,46 @@ public class EndlessLeveling extends JavaPlugin {
         if (partyManager != null) {
             partyManager.saveAllParties();
             LOGGER.atInfo().log("Server shutting down: all party data saved.");
+        }
+    }
+
+    private void cleanupOnlinePlayerEntityState() {
+        Universe universe = Universe.get();
+        if (universe == null) {
+            return;
+        }
+
+        int cleanedPlayers = 0;
+        for (PlayerRef playerRef : universe.getPlayers()) {
+            if (playerRef == null || !playerRef.isValid()) {
+                continue;
+            }
+
+            Ref<EntityStore> entityRef = playerRef.getReference();
+            if (entityRef == null || !entityRef.isValid()) {
+                continue;
+            }
+
+            Store<EntityStore> store = entityRef.getStore();
+            if (store == null || store.isShutdown()) {
+                continue;
+            }
+
+            if (skillManager != null) {
+                skillManager.removeAllSkillModifiers(entityRef, store);
+            }
+
+            if (playerNameplateSystem != null) {
+                playerNameplateSystem.removeNameplateForPlayerRef(entityRef, store, playerRef);
+            }
+
+            cleanedPlayers++;
+        }
+
+        if (cleanedPlayers > 0) {
+            LOGGER.atInfo().log(
+                    "Server shutting down: cleaned EndlessLeveling modifiers and nameplates for %d online player(s).",
+                    cleanedPlayers);
         }
     }
 

@@ -1,0 +1,147 @@
+{
+  "World_Overrides": {
+    "instance-shiva_dungeon-*": {
+      "Enable_XP": true,
+      "Level_Range": {
+        "Max": "ENDLESS"
+      },
+      "Level_Source": {
+        "Mode": "TIERED",
+        "Base_Level": {
+          "Level": "35-50"
+        },
+        "Tiers": {
+          "Total_Tiers": "ENDLESS",
+          "Levels_Per_Tier": 20,
+          "Player_Adaptation": {
+            "Enabled": true,
+            "Allowance_Mode": "ABOVE",
+            "Range_Allowance": 10
+          }
+        }
+      },
+      "Scaling": {
+        "Health": {
+          "Base_Multiplier": 4.0,
+          "Per_Level": 0.075
+        },
+        "Damage": {
+          "Base_Multiplier": 1.35,
+          "Per_Level": 0.065
+        },
+        "Defense": {
+          "At_Negative_Max_Difference": 0.25,
+          "At_Positive_Max_Difference": 0.8,
+          "Below_Negative_Max_Difference": 0.0,
+          "Above_Positive_Max_Difference": 0.9
+        }
+      },
+      "Mob_Overrides": {
+        "Shiva": {
+          "Level": 55,
+          "Augments": ["rebirth", "frozen_domain"],
+          "Allow_Random_Mob_Augments": true,
+          "Scaling": {
+            "Health": {
+              "Base_Multiplier": 2.0,
+              "Per_Level": 0.1
+            },
+            "Damage": {
+              "Base_Multiplier": 1.0,
+              "Per_Level": 0.07
+            },
+            "Defense": {
+              "At_Negative_Max_Difference": 0.35,
+              "At_Positive_Max_Difference": 0.9,
+              "Below_Negative_Max_Difference": 0.0,
+              "Above_Positive_Max_Difference": 0.975
+            }
+          }
+        }
+      }
+    },
+    "instance-shivas_ice_cave-*": {
+      "Enable_XP": true,
+      "Level_Range": {
+        "Max": "ENDLESS"
+      },
+      "Level_Source": {
+        "Mode": "TIERED",
+        "Base_Level": {
+          "Level": "5-20"
+        },
+        "Tiers": {
+          "Total_Tiers": "ENDLESS",
+          "Levels_Per_Tier": 20,
+          "Player_Adaptation": {
+            "Enabled": true,
+            "Allowance_Mode": "ABOVE",
+            "Range_Allowance": 10
+          }
+        }
+      },
+      "Scaling": {
+        "Health": {
+          "Base_Multiplier": 4.0,
+          "Per_Level": 0.075
+        },
+        "Damage": {
+          "Base_Multiplier": 1.35,
+          "Per_Level": 0.065
+        },
+        "Defense": {
+          "At_Negative_Max_Difference": 0.25,
+          "At_Positive_Max_Difference": 0.8,
+          "Below_Negative_Max_Difference": 0.0,
+          "Above_Positive_Max_Difference": 0.9
+        }
+      },
+      "Mob_Overrides": {
+        "Hedera_Boss_Shiva_Group": {
+          "Names": ["Hedera_Boss_Shiva", "Hedera_Boss_Shiva_Scaled"],
+          "Level": 25,
+          "Augments": ["rebirth", "frozen_domain"],
+          "Allow_Random_Mob_Augments": true,
+          "Scaling": {
+            "Health": {
+              "Base_Multiplier": 2.0,
+              "Per_Level": 0.1
+            },
+            "Damage": {
+              "Base_Multiplier": 1.0,
+              "Per_Level": 0.07
+            },
+            "Defense": {
+              "At_Negative_Max_Difference": 0.35,
+              "At_Positive_Max_Difference": 0.9,
+              "Below_Negative_Max_Difference": 0.0,
+              "Above_Positive_Max_Difference": 0.975
+            }
+          }
+        },
+        "Shiva_Boss_Group": {
+          "Names": ["Shivas_Ice_Cave", "Shiva_Scaled"],
+          "Level": 25,
+          "Augments": ["rebirth", "frozen_domain"],
+          "Allow_Random_Mob_Augments": true,
+          "Scaling": {
+            "Health": {
+              "Base_Multiplier": 1.0,
+              "Per_Level": 0.1
+            },
+            "Damage": {
+              "Base_Multiplier": 1.0,
+              "Per_Level": 0.07
+            },
+            "Defense": {
+              "At_Negative_Max_Difference": 0.35,
+              "At_Positive_Max_Difference": 0.9,
+              "Below_Negative_Max_Difference": 0.0,
+              "Above_Positive_Max_Difference": 0.975
+            }
+          }
+        }
+      }
+    }
+  }
+}

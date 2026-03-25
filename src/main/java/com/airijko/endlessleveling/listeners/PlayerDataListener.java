@@ -201,7 +201,7 @@ public class PlayerDataListener {
 
         PlayerData data = playerDataManager.get(uuid);
         if (data != null) {
-            playerDataManager.save(data); // persist to uuid.yml
+            playerDataManager.save(data); // persist to uuid.json
             playerDataManager.remove(uuid); // remove from cache
             LOGGER.atInfo().log("Saved and removed PlayerData for %s on disconnect.", uuid);
         }

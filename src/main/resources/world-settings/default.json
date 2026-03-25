@@ -1,0 +1,144 @@
+{
+  "World_Overrides": {
+    "default": {
+      "Enable_XP": true,
+      "Blacklist_Mob_Types": {
+        "ids": [],
+        "keywords": [
+          "Citizen",
+          "Antelope",
+          "Bat",
+          "Jackalope",
+          "Camel",
+          "Cat",
+          "Catfish",
+          "Cattle",
+          "Chicken",
+          "Clownfish",
+          "Crab",
+          "Crow",
+          "Deer",
+          "Dog",
+          "Duck",
+          "Feran",
+          "Flamingo",
+          "Fox",
+          "Frog",
+          "Horse",
+          "Human",
+          "Klop",
+          "Lobster",
+          "Macaque",
+          "Meerkat",
+          "Moose",
+          "Mouse",
+          "Owl",
+          "Parrot",
+          "Penguin",
+          "Pigeon",
+          "Pike",
+          "Pufferfish",
+          "Rainbow_Trout",
+          "Ram",
+          "Regal_Tang",
+          "Cow",
+          "Snail",
+          "Snake",
+          "Sparrow",
+          "Vulture",
+          "Woodpecker",
+          "Sheep",
+          "Gecko",
+          "Chick",
+          "Pig",
+          "Rabbit",
+          "Turtle",
+          "Goat",
+          "Squirrel",
+          "Raccoon",
+          "Badger",
+          "Lamb",
+          "Camel",
+          "Bird",
+          "Bluebird",
+          "Finch_Green",
+          "Owl_Brown",
+          "Owl_Snow",
+          "Raven",
+          "Archaeopteryx",
+          "Hawk",
+          "Pterodactyl",
+          "Fish",
+          "Bluegill",
+          "Frostgill",
+          "Minnow",
+          "Piranha_Black",
+          "Piranha",
+          "Snapjaw",
+          "Trout_Rainbow",
+          "Eel_Moray",
+          "Shark_Hammerhead",
+          "Shellfish_Lava",
+          "Trilobite*",
+          "Whale_Humpback",
+          "Jellyfish*",
+          "Tang",
+          "Tang*",
+          "Eel",
+          "Salmon",
+          "Foal",
+          "Stag",
+          "Merchant",
+          "Trader",
+          "Calf",
+          "Mosshorn",
+          "Frog"
+        ]
+      },
+      "Level_Range": {
+        "Max": "ENDLESS"
+      },
+      "Level_Source": {
+        "Mode": "MIXED",
+        "Distance_Level": {
+          "Start_Level": 1,
+          "Blocks_Per_Level": 100,
+          "Center_Coordinates": "SPAWN"
+        },
+        "Mixed": {
+          "Player_Weight": 0.5
+        },
+        "Player_Based": {
+          "Offset": 0,
+          "Min_Difference": -5,
+          "Max_Difference": 10,
+          "Influence_Radius": 25
+        }
+      },
+      "Scaling": {
+        "Health": {
+          "Enabled": true,
+          "Base_Multiplier": 1.0,
+          "Per_Level": 0.075
+        },
+        "Damage": {
+          "Enabled": true,
+          "Base_Multiplier": 1.0,
+          "Per_Level": 0.05
+        },
+        "Defense": {
+          "Enabled": true,
+          "At_Negative_Max_Difference": -0.2,
+          "At_Positive_Max_Difference": 0.8,
+          "Below_Negative_Max_Difference": -0.4,
+          "Above_Positive_Max_Difference": 0.9
+        }
+      },
+      "Mob_Scaling": {
+        "Damage_Max_Difference": {
+          "Enabled": false
+        }
+      }
+    }
+  }
+}
