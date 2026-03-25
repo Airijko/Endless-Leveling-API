@@ -6,15 +6,15 @@ These files are not world generation data. They represent world-specific levelin
 
 ## Files
 
-- `load-order.json`: explicit load order for settings bundles.
 - `blacklisted-worlds.json`: world-id/name match rules that block all leveling and XP.
 - `global.json`: `World_Overrides.Global` defaults.
-- `default.json`: `World_Overrides.default` fallback.
+- `default.json`: `World_Overrides.default` world-id fallback entry.
 - `major-dungeons.json`: major dungeon world overrides.
 - `endgame-dungeons.json`: endgame dungeon world overrides.
 - `shiva-dungeons.json`: tower of Shiva related world overrides.
 
 ## Notes
 
-- Load order is defined in `load-order.json`.
-- Runtime config is loaded directly from this `world-settings` folder using `load-order.json`.
+- Runtime config auto-loads all `.json` files in this folder.
+- Merge precedence is fixed for core files: `blacklisted-worlds.json` -> `global.json` -> `default.json`.
+- Any other `.json` files are loaded automatically after those core files; no registration step is required.

@@ -87,7 +87,12 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
     }
 
     public void shutdownRuntimeState() {
-        clearTrackedMobNameplates();
+        int runtimeStatesBefore = entityStates.size();
+        LOGGER.atInfo().log(
+            "[MOB_SHUTDOWN_DEBUG] shutdownRuntimeState begin runtimeStates=%d knownStores=%d",
+                runtimeStatesBefore,
+                knownStoresForCleanup.size());
+
         cleanupStoreRuntimeState(null);
         entityStates.clear();
         knownStoresForCleanup.clear();
@@ -95,28 +100,10 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         if (mobLevelingManager != null) {
             mobLevelingManager.shutdownRuntimeState();
         }
-    }
 
-
-    public Set<Store<EntityStore>> getMobTrackedLiveStores() {
-        Set<Store<EntityStore>> result = new HashSet<>();
-        for (Store<EntityStore> trackedStore : knownStoresForCleanup) {
-            if (trackedStore != null && !trackedStore.isShutdown()) {
-                result.add(trackedStore);
-            }
-        }
-        for (EntityRuntimeState state : entityStates.values()) {
-            if (state != null && state.trackedStore != null && !state.trackedStore.isShutdown()) {
-                result.add(state.trackedStore);
-            }
-        }
-        return result;
-    }
-
-    private void clearTrackedMobNameplates() {
-        for (Store<EntityStore> trackedStore : getMobTrackedLiveStores()) {
-            removeAllNameplatesForStore(trackedStore);
-        }
+        LOGGER.atInfo().log(
+                "[MOB_SHUTDOWN_DEBUG] shutdownRuntimeState complete runtimeStatesAfter=%d",
+                entityStates.size());
     }
 
     public int removeAllNameplatesForStore(Store<EntityStore> store) {
@@ -124,13 +111,32 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
     }
 
     private int removeAllNameplatesForStore(Store<EntityStore> store, long timeoutMillis) {
-        if (store == null || store.isShutdown()) {
-            LOGGER.atWarning().log("[MOB_SHUTDOWN_DEBUG] removeAllNameplatesForStore skipped: store null/shutdown");
+        if (store == null) {
+            LOGGER.atInfo().log("[MOB_SHUTDOWN_DEBUG] removeAllNameplatesForStore skipped: store is null");
             return 0;
+        }
+        if (store.isShutdown()) {
+                LOGGER.atInfo().log(
+                    "[MOB_SHUTDOWN_DEBUG] removeAllNameplatesForStore storeId=%d is shutdown; will attempt direct cleanup without world-thread dispatch",
+                    Integer.toUnsignedLong(System.identityHashCode(store)));
+            // Skip world-thread dispatch and fall through to direct attempt below.
+            try {
+                int removed = removeAllNameplatesForStoreCurrentThread(store);
+                LOGGER.atInfo().log(
+                        "[MOB_SHUTDOWN_DEBUG] shutdown-store storeId=%d direct cleanup removed=%d",
+                        Integer.toUnsignedLong(System.identityHashCode(store)), removed);
+                return removed;
+            } catch (Throwable ex) {
+                LOGGER.atInfo().log(
+                        "[MOB_SHUTDOWN_DEBUG] shutdown-store storeId=%d direct cleanup threw: %s %s",
+                        Integer.toUnsignedLong(System.identityHashCode(store)),
+                        ex.getClass().getSimpleName(), ex.getMessage());
+                return 0;
+            }
         }
 
         long storeId = Integer.toUnsignedLong(System.identityHashCode(store));
-        LOGGER.atWarning().log("[MOB_SHUTDOWN_DEBUG] removeAllNameplatesForStore begin storeId=%d timeoutMs=%d", storeId,
+        LOGGER.atInfo().log("[MOB_SHUTDOWN_DEBUG] removeAllNameplatesForStore begin storeId=%d timeoutMs=%d", storeId,
                 timeoutMillis);
 
         Object world = null;
@@ -140,7 +146,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
                 world = externalData.getWorld();
             }
         } catch (Throwable ex) {
-            LOGGER.atWarning().log("[MOB_SHUTDOWN_DEBUG] storeId=%d world resolve failed: %s %s",
+                LOGGER.atInfo().log("[MOB_SHUTDOWN_DEBUG] storeId=%d world resolve failed: %s %s",
                     storeId,
                     ex.getClass().getSimpleName(),
                     ex.getMessage());
@@ -152,22 +158,22 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
                     () -> removed[0] = removeAllNameplatesForStoreCurrentThread(store),
                     timeoutMillis);
             if (executed) {
-                LOGGER.atWarning().log(
+                LOGGER.atInfo().log(
                         "[MOB_SHUTDOWN_DEBUG] storeId=%d cleanup executed on world thread removed=%d",
                         storeId,
                         removed[0]);
                 return removed[0];
             }
-            LOGGER.atWarning().log("[MOB_SHUTDOWN_DEBUG] storeId=%d world-thread dispatch failed; trying direct path",
+                LOGGER.atInfo().log("[MOB_SHUTDOWN_DEBUG] storeId=%d world-thread dispatch failed; trying direct path",
                     storeId);
         }
 
         try {
             int removed = removeAllNameplatesForStoreCurrentThread(store);
-            LOGGER.atWarning().log("[MOB_SHUTDOWN_DEBUG] storeId=%d direct cleanup removed=%d", storeId, removed);
+            LOGGER.atInfo().log("[MOB_SHUTDOWN_DEBUG] storeId=%d direct cleanup removed=%d", storeId, removed);
             return removed;
         } catch (Throwable ex) {
-            LOGGER.atWarning().log("[MOB_SHUTDOWN_DEBUG] storeId=%d direct cleanup failed: %s %s",
+                LOGGER.atInfo().log("[MOB_SHUTDOWN_DEBUG] storeId=%d direct cleanup failed: %s %s",
                     storeId,
                     ex.getClass().getSimpleName(),
                     ex.getMessage());
@@ -175,10 +181,13 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         }
     }
 
-    private int removeAllNameplatesForStoreCurrentThread(Store<EntityStore> store) {
-        if (store == null || store.isShutdown()) {
+    int removeAllNameplatesForStoreCurrentThread(Store<EntityStore> store) {
+        if (store == null) {
             return 0;
         }
+        // Note: we intentionally do NOT guard on store.isShutdown() here.
+        // During plugin shutdown the store is already marked shutdown; a try/catch
+        // below handles any resulting error if the store rejects iteration.
 
         final int[] removed = { 0 };
         final int[] levelStateCleared = { 0 };
@@ -187,51 +196,68 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         final int[] candidates = { 0 };
         final int[] withNameplate = { 0 };
         final int[] withStatMap = { 0 };
+        final int[] dirtyMarked = { 0 };
+        final long storeIdForLog = Integer.toUnsignedLong(System.identityHashCode(store));
 
-        store.forEachChunk(ENTITY_QUERY, (ArchetypeChunk<EntityStore> chunk,
-                CommandBuffer<EntityStore> commandBuffer) -> {
-            for (int i = 0; i < chunk.size(); i++) {
-                Ref<EntityStore> ref = chunk.getReferenceTo(i);
-                if (ref == null) {
-                    continue;
-                }
-                scanned[0]++;
+        try {
+            store.forEachChunk(ENTITY_QUERY, (ArchetypeChunk<EntityStore> chunk,
+                    CommandBuffer<EntityStore> commandBuffer) -> {
+                for (int i = 0; i < chunk.size(); i++) {
+                    Ref<EntityStore> ref = chunk.getReferenceTo(i);
+                    if (ref == null) {
+                        continue;
+                    }
+                    scanned[0]++;
 
-                PlayerRef playerRef = commandBuffer.getComponent(ref, PlayerRef.getComponentType());
-                if (playerRef != null && playerRef.isValid()) {
-                    skippedPlayers[0]++;
-                    continue;
-                }
+                    PlayerRef playerRef = commandBuffer.getComponent(ref, PlayerRef.getComponentType());
+                    if (playerRef != null && playerRef.isValid()) {
+                        skippedPlayers[0]++;
+                        continue;
+                    }
 
-                NPCEntity npcEntity = commandBuffer.getComponent(ref, NPCEntity.getComponentType());
-                Nameplate nameplate = commandBuffer.getComponent(ref, Nameplate.getComponentType());
-                EntityStatMap statMap = commandBuffer.getComponent(ref, EntityStatMap.getComponentType());
-                if (npcEntity == null && nameplate == null && statMap == null) {
-                    continue;
-                }
-                candidates[0]++;
-                if (nameplate != null) {
-                    withNameplate[0]++;
-                }
-                if (statMap != null) {
-                    withStatMap[0]++;
-                }
+                    NPCEntity npcEntity = commandBuffer.getComponent(ref, NPCEntity.getComponentType());
+                    Nameplate nameplate = commandBuffer.getComponent(ref, Nameplate.getComponentType());
+                    EntityStatMap statMap = commandBuffer.getComponent(ref, EntityStatMap.getComponentType());
+                    if (npcEntity == null && nameplate == null && statMap == null) {
+                        continue;
+                    }
+                    candidates[0]++;
+                    if (nameplate != null) {
+                        withNameplate[0]++;
+                    }
+                    if (statMap != null) {
+                        withStatMap[0]++;
+                    }
 
-                stripMobHealthModifiers(ref, commandBuffer);
-                clearOrRemoveNameplate(ref, commandBuffer);
-                levelStateCleared[0] += clearMobLevelRuntimeStateForEntity(ref, commandBuffer);
-                removed[0]++;
-            }
-        });
+                    stripMobHealthModifiers(ref, commandBuffer);
+                    clearOrRemoveNameplate(ref, commandBuffer);
+                    levelStateCleared[0] += clearMobLevelRuntimeStateForEntity(ref, commandBuffer);
+                    if (markEntityChunkDirty(ref, commandBuffer)) {
+                        dirtyMarked[0]++;
+                    }
+                    removed[0]++;
+                }
+            });
+        } catch (Throwable ex) {
+                LOGGER.atInfo().log(
+                    "[MOB_SHUTDOWN_DEBUG] storeId=%d forEachChunk threw (store may already be shutdown): %s %s; partialScanned=%d partialRemoved=%d",
+                    storeIdForLog,
+                    ex.getClass().getSimpleName(),
+                    ex.getMessage(),
+                    scanned[0],
+                    removed[0]);
+        }
 
-        LOGGER.atWarning().log(
-                "[MOB_SHUTDOWN_DEBUG] storeId=%d scanSummary scanned=%d skippedPlayers=%d candidates=%d withNameplate=%d withStatMap=%d removed=%d levelStateClears=%d",
-                Integer.toUnsignedLong(System.identityHashCode(store)),
+        LOGGER.atInfo().log(
+            "[MOB_SHUTDOWN_DEBUG] storeId=%d scanSummary shutdown=%s scanned=%d skippedPlayers=%d candidates=%d withNameplate=%d withStatMap=%d dirtyMarked=%d removed=%d levelStateClears=%d",
+                storeIdForLog,
+                store.isShutdown(),
                 scanned[0],
                 skippedPlayers[0],
                 candidates[0],
                 withNameplate[0],
                 withStatMap[0],
+                dirtyMarked[0],
                 removed[0],
                 levelStateCleared[0]);
 
@@ -297,11 +323,11 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
 
             boolean completed = latch.await(timeoutMillis, TimeUnit.MILLISECONDS);
             if (!completed) {
-                LOGGER.atWarning().log("[MOB_SHUTDOWN_DEBUG] world-thread wait timed out after %dms", timeoutMillis);
+                LOGGER.atInfo().log("[MOB_SHUTDOWN_DEBUG] world-thread wait timed out after %dms", timeoutMillis);
             }
             return completed;
         } catch (Throwable ex) {
-            LOGGER.atWarning().log("[MOB_SHUTDOWN_DEBUG] world-thread dispatch failed: %s %s",
+                LOGGER.atInfo().log("[MOB_SHUTDOWN_DEBUG] world-thread dispatch failed: %s %s",
                     ex.getClass().getSimpleName(),
                     ex.getMessage());
             return false;
@@ -311,6 +337,14 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
     private boolean isCurrentWorldThread(Object worldObject) {
         if (worldObject == null) {
             return false;
+        }
+        try {
+            var isInThreadMethod = worldObject.getClass().getMethod("isInThread");
+            Object inThread = isInThreadMethod.invoke(worldObject);
+            if (inThread instanceof Boolean) {
+                return (Boolean) inThread;
+            }
+        } catch (Throwable ignored) {
         }
         try {
             var getThreadMethod = worldObject.getClass().getMethod("getThread");
@@ -372,7 +406,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         EntityStatValue healthAfter = statMap.get(healthIndex);
         float updatedCurrent = healthAfter != null ? healthAfter.get() : Float.NaN;
         float updatedMax = healthAfter != null ? healthAfter.getMax() : Float.NaN;
-        LOGGER.atWarning().log(
+        LOGGER.atInfo().log(
             "[MOB_SHUTDOWN_DEBUG] entity=%d uuid=%s clearedBaseHealthKeys=[%s,%s] augmentRuntime=%s clearedAugmentHealthKeys=%s healthBefore=%.2f/%.2f healthAfter=%.2f/%.2f",
             ref.getIndex(),
             entityUuid != null ? entityUuid : "none",
@@ -386,8 +420,97 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
             updatedMax);
     }
 
+    private boolean markEntityChunkDirty(Ref<EntityStore> ref,
+            CommandBuffer<EntityStore> commandBuffer) {
+        if (ref == null) {
+            return false;
+        }
+
+        TransformComponent transform = commandBuffer != null
+                ? commandBuffer.getComponent(ref, TransformComponent.getComponentType())
+                : null;
+        if (transform == null && ref.getStore() != null) {
+            transform = ref.getStore().getComponent(ref, TransformComponent.getComponentType());
+        }
+        if (transform == null) {
+            return false;
+        }
+
+        try {
+            transform.markChunkDirty(commandBuffer != null ? commandBuffer : ref.getStore());
+            return true;
+        } catch (Throwable ex) {
+            LOGGER.atInfo().log(
+                    "[MOB_SHUTDOWN_DEBUG] entity=%d failedToMarkChunkDirty=%s %s",
+                    ref.getIndex(),
+                    ex.getClass().getSimpleName(),
+                    ex.getMessage());
+            return false;
+        }
+    }
+
     public void requestFullMobRescale() {
         fullMobRescaleRequested.set(true);
+    }
+
+    public int disableMobLevelsForStore(Store<EntityStore> store) {
+        return disableMobLevelsForStore(store, true);
+    }
+
+    int disableMobLevelsForStoreCurrentThread(Store<EntityStore> store) {
+        return disableMobLevelsForStore(store, false);
+    }
+
+    private int disableMobLevelsForStore(Store<EntityStore> store, boolean allowThreadDispatch) {
+        if (store == null) {
+            return 0;
+        }
+
+        int removed = allowThreadDispatch
+                ? removeAllNameplatesForStore(store)
+                : removeAllNameplatesForStoreCurrentThread(store);
+        cleanupStoreRuntimeState(store);
+        if (mobLevelingManager != null) {
+            mobLevelingManager.disableDebugStoreMobLevels(store);
+        }
+        LOGGER.atInfo().log(
+                "[MOB_SHUTDOWN_DEBUG] disableMobLevelsForStore storeId=%d removed=%d suppressed=true currentThread=%s",
+                Integer.toUnsignedLong(System.identityHashCode(store)),
+                removed,
+                !allowThreadDispatch);
+        return removed;
+    }
+
+    public int debugCleanupAndSuspendStore(Store<EntityStore> store) {
+        return disableMobLevelsForStore(store);
+    }
+
+    public boolean debugToggleStore(Store<EntityStore> store) {
+        if (isDebugStoreSuppressed(store)) {
+            debugResumeStore(store);
+            return false;
+        }
+
+        debugCleanupAndSuspendStore(store);
+        return true;
+    }
+
+    public void debugResumeStore(Store<EntityStore> store) {
+        if (store == null) {
+            return;
+        }
+
+        if (mobLevelingManager != null) {
+            mobLevelingManager.enableDebugStoreMobLevels(store);
+        }
+        requestFullMobRescale();
+        LOGGER.atInfo().log(
+                "[MOB_SHUTDOWN_DEBUG] debugResumeStore storeId=%d suppressed=false requestedFullRescale=true",
+                Integer.toUnsignedLong(System.identityHashCode(store)));
+    }
+
+    public boolean isDebugStoreSuppressed(Store<EntityStore> store) {
+        return mobLevelingManager != null && mobLevelingManager.isDebugStoreSuppressed(store);
     }
 
     @Override
@@ -399,7 +522,12 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
 
         knownStoresForCleanup.add(store);
 
-        if (mobLevelingManager == null || !mobLevelingManager.isMobLevelingEnabled())
+        if (mobLevelingManager != null && mobLevelingManager.isDebugStoreSuppressed(store)) {
+            cleanupStoreRuntimeState(store);
+            return;
+        }
+
+        if (mobLevelingManager == null || !mobLevelingManager.isMobLevelingEnabled(store))
             return;
 
         cachedDebugMobLevelFlow = isDebugSectionEnabled(DEBUG_SECTION_MOB_LEVEL_FLOW);
@@ -781,7 +909,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
                         && afterMax > 0.0f
                         && afterCurrent < afterMax - 0.5f
                         && shouldLogSummonHealthAnomaly(entityId)) {
-                    LOGGER.atWarning().log(
+                        LOGGER.atInfo().log(
                             "[ARMY_OF_THE_DEAD][DEBUG-HP][LEVELING] Managed summon still below max after normalize entity=%d before=%.3f/%.3f after=%.3f/%.3f",
                             entityId,
                             beforeCurrent,
@@ -1317,7 +1445,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         Nameplate nameplate = commandBuffer.getComponent(ref, Nameplate.getComponentType());
         if (nameplate != null) {
             commandBuffer.removeComponent(ref, Nameplate.getComponentType());
-            LOGGER.atWarning().log("[MOB_SHUTDOWN_DEBUG] entity=%d uuid=%s removedNameplateComponent=true",
+                LOGGER.atInfo().log("[MOB_SHUTDOWN_DEBUG] entity=%d uuid=%s removedNameplateComponent=true",
                     ref.getIndex(),
                     resolveUuid(ref, commandBuffer));
         }

@@ -37,6 +37,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -60,8 +61,10 @@ public class MobLevelingManager {
     private static final Object UNSET_CONFIG_VALUE = new Object();
     private static final Type STRING_OBJECT_MAP_TYPE = new TypeToken<Map<String, Object>>() {
     }.getType();
-    private static final String WORLD_SETTINGS_LOAD_ORDER_FILE = "load-order.json";
-    private static final String WORLD_SETTINGS_ORDER_KEY = "order";
+    private static final String BLACKLISTED_WORLDS_FILE = "blacklisted-worlds.json";
+    private static final String GLOBAL_WORLDS_FILE = "global.json";
+    private static final String DEFAULT_WORLD_FILE = "default.json";
+    private static final String LEGACY_WORLD_SETTINGS_LOAD_ORDER_FILE = "load-order.json";
 
     private final ConfigManager configManager;
     private final File worldSettingsFolder;
@@ -76,6 +79,7 @@ public class MobLevelingManager {
     private final Map<Long, Long> worldIdentifierMissRetryAtStore = new ConcurrentHashMap<>();
     private final Map<Long, String> worldOverrideKeyByStore = new ConcurrentHashMap<>();
     private final Map<Long, Boolean> worldXpBlacklistByStore = new ConcurrentHashMap<>();
+    private final Set<Store<EntityStore>> debugSuppressedStores = Collections.newSetFromMap(new ConcurrentHashMap<>());
     /**
      * Anchors each mob's base health to the value captured on the very first
      * applyHealthModifier
@@ -161,6 +165,7 @@ public class MobLevelingManager {
         loadWorldSettings();
         clearAllEntityLevelOverrides();
         cachedMobAugmentTierPools = null;
+        debugSuppressedStores.clear();
         worldIdentifierCandidatesByStore.clear();
         worldIdentifierMissRetryAtStore.clear();
         worldOverrideKeyByStore.clear();
@@ -210,6 +215,9 @@ public class MobLevelingManager {
         }
 
         Store<EntityStore> effectiveStore = store != null ? store : ref.getStore();
+        if (isDebugStoreSuppressed(effectiveStore)) {
+            return 1;
+        }
         if (isWorldXpBlacklisted(effectiveStore)) {
             if (shouldLogMobLevelDebug(ref, effectiveStore)) {
                 LOGGER.atWarning().log(
@@ -496,6 +504,10 @@ public class MobLevelingManager {
             return 1;
         }
 
+        if (isDebugStoreSuppressed(ref.getStore())) {
+            return 1;
+        }
+
         Integer resolvedSnapshot = getEntityResolvedLevelSnapshot(ref, ref.getStore(), commandBuffer);
         if (resolvedSnapshot != null) {
             return resolvedSnapshot;
@@ -510,6 +522,10 @@ public class MobLevelingManager {
     }
 
     public int resolveMobLevel(Store<EntityStore> store, Vector3d mobPosition, Integer entityId) {
+        if (isDebugStoreSuppressed(store)) {
+            return 1;
+        }
+
         // Stateless resolution by configured source; no override checks.
 
         int level = switch (getLevelSourceMode(store)) {
@@ -911,7 +927,14 @@ public class MobLevelingManager {
     }
 
     public boolean isMobLevelingEnabled() {
-        return getConfigBoolean("Mob_Leveling.Enabled", true, null);
+        return isMobLevelingEnabled(null);
+    }
+
+    public boolean isMobLevelingEnabled(Store<EntityStore> store) {
+        if (isDebugStoreSuppressed(store)) {
+            return false;
+        }
+        return getConfigBoolean("Mob_Leveling.Enabled", true, store);
     }
 
     public boolean allowPassiveMobLeveling() {
@@ -1116,10 +1139,40 @@ public class MobLevelingManager {
     }
 
     public boolean isMobDamageScalingEnabled(Store<EntityStore> store) {
+        if (isDebugStoreSuppressed(store)) {
+            return false;
+        }
         if (getConfigBoolean("Mob_Leveling.Scaling.Damage.Enabled", false, store)) {
             return true;
         }
         return store == null && hasGlobalOrDefaultWorldOverrideBoolean("Scaling.Damage.Enabled");
+    }
+
+    public boolean isDebugStoreSuppressed(Store<EntityStore> store) {
+        return store != null && debugSuppressedStores.contains(store);
+    }
+
+    public void disableDebugStoreMobLevels(Store<EntityStore> store) {
+        if (store != null) {
+            debugSuppressedStores.add(store);
+        }
+    }
+
+    public void enableDebugStoreMobLevels(Store<EntityStore> store) {
+        if (store != null) {
+            debugSuppressedStores.remove(store);
+        }
+    }
+
+    public boolean toggleDebugStoreMobLevels(Store<EntityStore> store) {
+        if (store == null) {
+            return false;
+        }
+        if (debugSuppressedStores.remove(store)) {
+            return false;
+        }
+        debugSuppressedStores.add(store);
+        return true;
     }
 
     public boolean isMobHealthScalingEnabled() {
@@ -1127,6 +1180,9 @@ public class MobLevelingManager {
     }
 
     public boolean isMobHealthScalingEnabled(Store<EntityStore> store) {
+        if (isDebugStoreSuppressed(store)) {
+            return false;
+        }
         if (getConfigBoolean("Mob_Leveling.Scaling.Health.Enabled", false, store)) {
             return true;
         }
@@ -3043,7 +3099,7 @@ public class MobLevelingManager {
         }
 
         Map<String, Object> merged = new LinkedHashMap<>();
-        List<String> orderedFiles = readWorldSettingsOrder(worldSettingsFolder.toPath());
+        List<String> orderedFiles = resolveWorldSettingsFiles(worldSettingsFolder.toPath());
         if (orderedFiles.isEmpty()) {
             worldSettingsMap = Map.of();
             return;
@@ -3070,36 +3126,36 @@ public class MobLevelingManager {
         worldSettingsMap = Map.copyOf(merged);
     }
 
-    @SuppressWarnings("unchecked")
-    private List<String> readWorldSettingsOrder(Path folder) {
-        Path loadOrderPath = folder.resolve(WORLD_SETTINGS_LOAD_ORDER_FILE);
-        if (!Files.exists(loadOrderPath)) {
+    private List<String> resolveWorldSettingsFiles(Path folder) {
+        File[] jsonFiles = folder.toFile().listFiles((dir, name) -> name != null && name.toLowerCase(Locale.ROOT).endsWith(".json"));
+        if (jsonFiles == null || jsonFiles.length == 0) {
             return List.of();
         }
 
-        try (Reader reader = Files.newBufferedReader(loadOrderPath)) {
-            Map<String, Object> raw = gson.fromJson(reader, STRING_OBJECT_MAP_TYPE);
-            if (raw == null || raw.isEmpty()) {
-                return List.of();
-            }
-            Object orderRaw = raw.get(WORLD_SETTINGS_ORDER_KEY);
-            if (!(orderRaw instanceof List<?> orderList) || orderList.isEmpty()) {
-                return List.of();
-            }
-            List<String> orderedFiles = new ArrayList<>();
-            for (Object entry : orderList) {
-                if (entry == null) {
-                    continue;
-                }
-                String value = entry.toString().trim();
-                if (!value.isEmpty()) {
-                    orderedFiles.add(value);
-                }
-            }
-            return orderedFiles;
-        } catch (IOException | RuntimeException e) {
-            LOGGER.atWarning().log("Failed to load %s: %s", loadOrderPath, e.getMessage());
-            return List.of();
+        Set<String> discovered = new LinkedHashSet<>();
+        Arrays.stream(jsonFiles)
+                .filter(File::isFile)
+                .map(File::getName)
+                .sorted(String.CASE_INSENSITIVE_ORDER)
+                .forEach(discovered::add);
+
+        List<String> orderedFiles = new ArrayList<>();
+        appendIfPresent(orderedFiles, discovered, BLACKLISTED_WORLDS_FILE);
+        appendIfPresent(orderedFiles, discovered, GLOBAL_WORLDS_FILE);
+        appendIfPresent(orderedFiles, discovered, DEFAULT_WORLD_FILE);
+
+        discovered.remove(BLACKLISTED_WORLDS_FILE);
+        discovered.remove(GLOBAL_WORLDS_FILE);
+        discovered.remove(DEFAULT_WORLD_FILE);
+        discovered.remove(LEGACY_WORLD_SETTINGS_LOAD_ORDER_FILE);
+
+        orderedFiles.addAll(discovered);
+        return orderedFiles;
+    }
+
+    private void appendIfPresent(List<String> orderedFiles, Set<String> discovered, String fileName) {
+        if (discovered.contains(fileName)) {
+            orderedFiles.add(fileName);
         }
     }
 

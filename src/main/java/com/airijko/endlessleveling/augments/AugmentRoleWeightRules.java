@@ -23,7 +23,7 @@ public final class AugmentRoleWeightRules {
         // Hybrid augments affect both damage paths, either through generic bonus damage
         // or by scaling both strength and sorcery.
         private static final Set<String> HYBRID_AUGMENTS = Set.of(
-            "brute_force", "fortress", "goliath",
+            "brute_force", "goliath",
             "phantom_hits", "raging_momentum",
             "phase_rush", "cutdown", "drain", "executioner", "first_strike",
             "giant_slayer", "glass_cannon", "raid_boss", "time_master", "reckoning",
@@ -31,7 +31,9 @@ public final class AugmentRoleWeightRules {
 
     // Augments that are primarily defensive/health scaling.
     private static final Set<String> LIFE_FORCE_AUGMENTS = Set.of(
-            "cripple", "fortress", "goliath", "raid_boss", "tank_engine", "nesting_doll", "bailout", "death_bomb");
+            "cripple", "fortress", "goliath", "raid_boss", 
+            "tank_engine", "nesting_doll", "bailout", "death_bomb", 
+            "grasp_of_the_undying", "frozen_domain", "haymaker");
 
     private static final Set<String> SORCERY_FAVORED_ROLES = Set.of("mage", "battlemage", "support");
     private static final Set<String> STRENGTH_FAVORED_ROLES = Set.of(
