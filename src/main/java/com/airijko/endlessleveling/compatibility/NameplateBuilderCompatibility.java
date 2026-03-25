@@ -328,6 +328,10 @@ public final class NameplateBuilderCompatibility {
             return false;
         }
 
+        if (!Double.isFinite(currentHealth) || !Double.isFinite(maxHealth) || maxHealth <= 0.0D) {
+            return false;
+        }
+
         try {
             String healthText = String.format("%.0f/%.0f❤", currentHealth, maxHealth);
             registerMethod.invoke(null, store, entityRef, EL_MOB_HEALTH, healthText);

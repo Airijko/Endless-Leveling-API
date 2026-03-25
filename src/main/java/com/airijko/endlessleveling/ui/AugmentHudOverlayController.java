@@ -1125,6 +1125,9 @@ public final class AugmentHudOverlayController {
     }
 
     private double clamp01(double value) {
+        if (!Double.isFinite(value)) {
+            return 0.0D;
+        }
         return Math.max(0.0D, Math.min(1.0D, value));
     }
 

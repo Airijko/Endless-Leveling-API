@@ -781,6 +781,12 @@ public class PlayerHud extends CustomUIHud {
     }
 
     private boolean setDoubleIfChanged(@Nonnull UICommandBuilder uiCommandBuilder, @Nonnull String selector, double value) {
+        if (!Double.isFinite(value)) {
+            value = 0.0D;
+        }
+        if (selector.endsWith(".Value")) {
+            value = Math.max(0.0D, Math.min(1.0D, value));
+        }
         Object previous = lastUiState.get(selector);
         if (previous instanceof Double d && Math.abs(d - value) < 0.0001D) {
             return false;

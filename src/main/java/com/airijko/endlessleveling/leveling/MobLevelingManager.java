@@ -1060,14 +1060,16 @@ public class MobLevelingManager {
     public double getMobHealthMultiplierForLevel(Ref<EntityStore> ref,
             CommandBuffer<EntityStore> commandBuffer,
             int level) {
-        return getMobHealthMultiplierForLevel(level, ref != null ? ref.getStore() : null);
+        Store<EntityStore> store = ref != null ? ref.getStore() : null;
+        return getMobHealthMultiplierForLevel(level, store, ref, commandBuffer);
     }
 
     public double getMobHealthMultiplierForLevel(Ref<EntityStore> ref,
             Store<EntityStore> store,
             CommandBuffer<EntityStore> commandBuffer,
             int level) {
-        return getMobHealthMultiplierForLevel(level, store != null ? store : (ref != null ? ref.getStore() : null));
+        Store<EntityStore> effectiveStore = store != null ? store : (ref != null ? ref.getStore() : null);
+        return getMobHealthMultiplierForLevel(level, effectiveStore, ref, commandBuffer);
     }
 
     public float computeMobHealthAdditive(int level, float baseMax) {
@@ -1092,11 +1094,14 @@ public class MobLevelingManager {
             float baseMax,
             float previousMax,
             float previousValue) {
+        Store<EntityStore> effectiveStore = store != null ? store : (ref != null ? ref.getStore() : null);
         return computeMobHealthScaling(level,
                 baseMax,
                 previousMax,
                 previousValue,
-                store != null ? store : (ref != null ? ref.getStore() : null));
+            effectiveStore,
+            ref,
+            commandBuffer);
     }
 
     public record MobHealthScalingResult(float targetMax, float additive, float newValue) {
@@ -1109,7 +1114,8 @@ public class MobLevelingManager {
     public double getMobDamageMultiplierForLevel(Ref<EntityStore> ref,
             CommandBuffer<EntityStore> commandBuffer,
             int level) {
-        return getMobDamageMultiplierForLevel(level, ref != null ? ref.getStore() : null);
+        Store<EntityStore> store = ref != null ? ref.getStore() : null;
+        return getMobDamageMultiplierForLevel(level, store, ref, commandBuffer);
     }
 
     public double getMobDamageMultiplierForLevels(int mobLevel, int playerLevel) {
@@ -1123,7 +1129,7 @@ public class MobLevelingManager {
             int mobLevel,
             int playerLevel) {
         Store<EntityStore> store = ref != null ? ref.getStore() : null;
-        double base = getMobDamageMultiplierForLevel(mobLevel, store);
+        double base = getMobDamageMultiplierForLevel(mobLevel, store, ref, commandBuffer);
         int levelDiff = Math.max(1, mobLevel) - Math.max(1, playerLevel);
         double diff = getMobDamageMaxDifferenceMultiplierForLevelDifference(store, levelDiff);
         return Math.max(0.0001D, base * diff);
@@ -1208,7 +1214,9 @@ public class MobLevelingManager {
             CommandBuffer<EntityStore> commandBuffer,
             int mobLevel,
             int playerLevel) {
-        return getMobDefenseReductionForLevels(mobLevel, playerLevel);
+        Store<EntityStore> store = ref != null ? ref.getStore() : null;
+        int levelDifference = Math.max(1, mobLevel) - Math.max(1, playerLevel);
+        return getMobDefenseReductionForLevelDifference(store, ref, commandBuffer, levelDifference);
     }
 
     public double getPlayerCombatDefenseReductionForLevels(Ref<EntityStore> ref,
@@ -1254,25 +1262,40 @@ public class MobLevelingManager {
     }
 
     public double getMobDefenseReductionForLevelDifference(Store<EntityStore> store, int levelDifference) {
+        return getMobDefenseReductionForLevelDifference(store, null, null, levelDifference);
+        }
+
+        private double getMobDefenseReductionForLevelDifference(Store<EntityStore> store,
+            Ref<EntityStore> ref,
+            CommandBuffer<EntityStore> commandBuffer,
+            int levelDifference) {
         if (!isMobDefenseScalingEnabled(store)) {
             return 0.0D;
         }
 
         int maxDiff = Math.max(1, getConfigInt("Mob_Leveling.Scaling.Level_Scaling_Difference.Range", 10, store));
-        double atNegative = clampReduction(
-                getConfigDouble("Mob_Leveling.Scaling.Defense.At_Negative_Max_Difference", 0.0D,
-                        store));
-        double atPositive = clampReduction(
-                getConfigDouble("Mob_Leveling.Scaling.Defense.At_Positive_Max_Difference", 0.75D,
-                        store));
+        double atNegative = clampReduction(getMobScalingDouble("Defense.At_Negative_Max_Difference",
+            0.0D,
+            store,
+            ref,
+            commandBuffer));
+        double atPositive = clampReduction(getMobScalingDouble("Defense.At_Positive_Max_Difference",
+            0.75D,
+            store,
+            ref,
+            commandBuffer));
         double belowNegative = clampReduction(
-                getConfigDouble("Mob_Leveling.Scaling.Defense.Below_Negative_Max_Difference",
-                        atNegative,
-                        store));
+            getMobScalingDouble("Defense.Below_Negative_Max_Difference",
+                atNegative,
+                store,
+                ref,
+                commandBuffer));
         double abovePositive = clampReduction(
-                getConfigDouble("Mob_Leveling.Scaling.Defense.Above_Positive_Max_Difference",
-                        atPositive,
-                        store));
+            getMobScalingDouble("Defense.Above_Positive_Max_Difference",
+                atPositive,
+                store,
+                ref,
+                commandBuffer));
         if (levelDifference < -maxDiff) {
             return belowNegative;
         }
@@ -1541,8 +1564,8 @@ public class MobLevelingManager {
             return null;
         }
 
-        Object mobOverridesRaw = resolveConfigValue("Mob_Overrides", null, store);
-        if (!(mobOverridesRaw instanceof Map<?, ?> mobOverrides) || mobOverrides.isEmpty()) {
+        Map<?, ?> matchedOverride = resolveMatchingMobOverride(ref, store, commandBuffer);
+        if (matchedOverride == null) {
             return null;
         }
 
@@ -1553,39 +1576,126 @@ public class MobLevelingManager {
                 ? resolveTierOffsetForPlayer(store, sourcePlayer, baseRange, levelsPerTier)
                 : 0;
 
+        LevelRange configuredRange = parseLevelRangeValue(matchedOverride.get("Level"), store);
+        if (configuredRange == null) {
+            Integer fixed = parsePositiveInt(matchedOverride.get("Level"));
+            if (fixed != null) {
+                configuredRange = normalizeLevelRange(fixed, fixed, store);
+            }
+        }
+        if (configuredRange == null) {
+            return null;
+        }
+
+        LevelRange effectiveRange = configuredRange;
+        if (mode == LevelSourceMode.TIERS && tierOffset != 0) {
+            int shiftedMin = configuredRange.min() + (tierOffset * levelsPerTier);
+            int shiftedMax = configuredRange.max() + (tierOffset * levelsPerTier);
+            effectiveRange = normalizeLevelRange(shiftedMin, shiftedMax, store);
+        }
+
         Vector3d mobPos = resolveWorldPosition(ref, commandBuffer);
+        return rollLevelInRange(effectiveRange, ref.getIndex(), mobPos, 0xC2B2AE3D27D4EB4FL);
+    }
+
+    private Map<?, ?> resolveMatchingMobOverride(Ref<EntityStore> ref,
+            Store<EntityStore> store,
+            CommandBuffer<EntityStore> commandBuffer) {
+        if (ref == null || store == null) {
+            return null;
+        }
+
+        NPCEntity npc = resolveComponent(ref, store, commandBuffer, NPCEntity.getComponentType());
+        if (npc == null) {
+            return null;
+        }
+
+        String mobType;
+        try {
+            mobType = npc.getNPCTypeId();
+        } catch (Throwable ignored) {
+            return null;
+        }
+        if (mobType == null || mobType.isBlank()) {
+            return null;
+        }
+
+        Object mobOverridesRaw = resolveConfigValue("Mob_Overrides", null, store);
+        if (!(mobOverridesRaw instanceof Map<?, ?> mobOverrides) || mobOverrides.isEmpty()) {
+            return null;
+        }
+
         for (Map.Entry<?, ?> overrideEntry : mobOverrides.entrySet()) {
             String overrideId = overrideEntry.getKey() == null ? null : overrideEntry.getKey().toString();
             if (!(overrideEntry.getValue() instanceof Map<?, ?> overrideMap)) {
                 continue;
             }
 
-            if (!mobMatchesOverrideRule(mobType, overrideId, overrideMap.get("Names"))) {
-                continue;
+            if (mobMatchesOverrideRule(mobType, overrideId, overrideMap.get("Names"))) {
+                return overrideMap;
             }
-
-            LevelRange configuredRange = parseLevelRangeValue(overrideMap.get("Level"), store);
-            if (configuredRange == null) {
-                Integer fixed = parsePositiveInt(overrideMap.get("Level"));
-                if (fixed != null) {
-                    configuredRange = normalizeLevelRange(fixed, fixed, store);
-                }
-            }
-            if (configuredRange == null) {
-                return null;
-            }
-
-            LevelRange effectiveRange = configuredRange;
-            if (mode == LevelSourceMode.TIERS && tierOffset != 0) {
-                int shiftedMin = configuredRange.min() + (tierOffset * levelsPerTier);
-                int shiftedMax = configuredRange.max() + (tierOffset * levelsPerTier);
-                effectiveRange = normalizeLevelRange(shiftedMin, shiftedMax, store);
-            }
-
-            return rollLevelInRange(effectiveRange, ref.getIndex(), mobPos, 0xC2B2AE3D27D4EB4FL);
         }
 
         return null;
+    }
+
+    private Object resolveMobOverrideScalingValue(Ref<EntityStore> ref,
+            Store<EntityStore> store,
+            CommandBuffer<EntityStore> commandBuffer,
+            String relativePath) {
+        Map<?, ?> overrideMap = resolveMatchingMobOverride(ref, store, commandBuffer);
+        if (overrideMap == null) {
+            return null;
+        }
+
+        Object current = overrideMap.get("Scaling");
+        if (!(current instanceof Map<?, ?>)) {
+            return null;
+        }
+
+        if (relativePath == null || relativePath.isBlank()) {
+            return null;
+        }
+
+        String[] segments = relativePath.split("\\.");
+        for (String segment : segments) {
+            if (!(current instanceof Map<?, ?> nestedMap)) {
+                return null;
+            }
+            current = nestedMap.get(segment);
+            if (current == null) {
+                return null;
+            }
+        }
+
+        return current;
+    }
+
+    private Double toDoubleOrNull(Object raw) {
+        if (raw == null) {
+            return null;
+        }
+        try {
+            if (raw instanceof Number number) {
+                return number.doubleValue();
+            }
+            return Double.parseDouble(raw.toString().trim());
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private double getMobScalingDouble(String relativePath,
+            double defaultValue,
+            Store<EntityStore> store,
+            Ref<EntityStore> ref,
+            CommandBuffer<EntityStore> commandBuffer) {
+        Double overrideValue = toDoubleOrNull(
+                resolveMobOverrideScalingValue(ref, store, commandBuffer, relativePath));
+        if (overrideValue != null) {
+            return overrideValue;
+        }
+        return getConfigDouble("Mob_Leveling.Scaling." + relativePath, defaultValue, store);
     }
 
     private boolean mobMatchesOverrideRule(String mobType, String overrideId, Object namesRaw) {
@@ -2196,8 +2306,19 @@ public class MobLevelingManager {
             float previousMax,
             float previousValue,
             Store<EntityStore> store) {
+        return computeMobHealthScaling(level, baseMax, previousMax, previousValue, store, null, null);
+    }
+
+    private MobHealthScalingResult computeMobHealthScaling(int level,
+            float baseMax,
+            float previousMax,
+            float previousValue,
+            Store<EntityStore> store,
+            Ref<EntityStore> ref,
+            CommandBuffer<EntityStore> commandBuffer) {
         float safeBase = Math.max(1.0f, baseMax);
-        float target = (float) Math.max(1.0D, safeBase * getMobHealthMultiplierForLevel(level, store));
+        float target = (float) Math.max(1.0D,
+                safeBase * getMobHealthMultiplierForLevel(level, store, ref, commandBuffer));
         float additive = target - safeBase;
         float ratio = previousMax > 0.0f ? (previousValue / previousMax) : 1.0f;
         float newValue = Math.max(0.0f, Math.min(target, ratio * target));
@@ -2208,15 +2329,29 @@ public class MobLevelingManager {
     }
 
     private double getMobHealthMultiplierForLevel(int level, Store<EntityStore> store) {
-        double base = getConfigDouble("Mob_Leveling.Scaling.Health.Base_Multiplier", 1.0D, store);
-        double per = getConfigDouble("Mob_Leveling.Scaling.Health.Per_Level", 0.05D, store);
+        return getMobHealthMultiplierForLevel(level, store, null, null);
+    }
+
+    private double getMobHealthMultiplierForLevel(int level,
+            Store<EntityStore> store,
+            Ref<EntityStore> ref,
+            CommandBuffer<EntityStore> commandBuffer) {
+        double base = getMobScalingDouble("Health.Base_Multiplier", 1.0D, store, ref, commandBuffer);
+        double per = getMobScalingDouble("Health.Per_Level", 0.05D, store, ref, commandBuffer);
         int safeLevel = Math.max(1, level);
         return Math.max(0.0001D, base * (1.0D + per * (safeLevel - 1)));
     }
 
     private double getMobDamageMultiplierForLevel(int level, Store<EntityStore> store) {
-        double base = getConfigDouble("Mob_Leveling.Scaling.Damage.Base_Multiplier", 1.0D, store);
-        double per = getConfigDouble("Mob_Leveling.Scaling.Damage.Per_Level", 0.03D, store);
+        return getMobDamageMultiplierForLevel(level, store, null, null);
+    }
+
+    private double getMobDamageMultiplierForLevel(int level,
+            Store<EntityStore> store,
+            Ref<EntityStore> ref,
+            CommandBuffer<EntityStore> commandBuffer) {
+        double base = getMobScalingDouble("Damage.Base_Multiplier", 1.0D, store, ref, commandBuffer);
+        double per = getMobScalingDouble("Damage.Per_Level", 0.03D, store, ref, commandBuffer);
         int safeLevel = Math.max(1, level);
         return Math.max(0.0001D, base * (1.0D + per * (safeLevel - 1)));
     }
