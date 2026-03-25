@@ -518,12 +518,14 @@ public final class EndlessLevelingShutdownCoordinator {
         if (movementHasteSystem != null) {
             movementStatesCleared = movementHasteSystem.shutdownRuntimeState();
         }
+        logShutdownSystemClear("MovementHasteSystem", movementStatesCleared);
 
         int raceRetryStatesCleared = 0;
         var playerRaceStatSystem = plugin.getPlayerRaceStatSystem();
         if (playerRaceStatSystem != null) {
             raceRetryStatesCleared = playerRaceStatSystem.shutdownRuntimeState();
         }
+        logShutdownSystemClear("PlayerRaceStatSystem", raceRetryStatesCleared);
 
         int augmentRuntimeStatesCleared = 0;
         var augmentRuntimeManager = plugin.getAugmentRuntimeManager();
@@ -531,61 +533,58 @@ public final class EndlessLevelingShutdownCoordinator {
             augmentRuntimeStatesCleared = augmentRuntimeManager.getTrackedStateCount();
             augmentRuntimeManager.clearAll();
         }
+        logShutdownSystemClear("AugmentRuntimeManager", augmentRuntimeStatesCleared);
 
         int mobAugmentRuntimeStatesCleared = 0;
         var mobAugmentExecutor = plugin.getMobAugmentExecutor();
         if (mobAugmentExecutor != null) {
             mobAugmentRuntimeStatesCleared = mobAugmentExecutor.clearRuntimeState();
         }
+        logShutdownSystemClear("MobAugmentExecutor", mobAugmentRuntimeStatesCleared);
 
         int passiveRuntimeStatesCleared = 0;
         var passiveManager = plugin.getPassiveManager();
         if (passiveManager != null) {
             passiveRuntimeStatesCleared = passiveManager.clearAllRuntimeState();
         }
+        logShutdownSystemClear("PassiveManager", passiveRuntimeStatesCleared);
 
         int raceRuntimeStatesCleared = 0;
         var raceManager = plugin.getRaceManager();
         if (raceManager != null) {
             raceRuntimeStatesCleared = raceManager.clearRuntimeState();
         }
+        logShutdownSystemClear("RaceManager", raceRuntimeStatesCleared);
 
         int uiAlertStatesCleared = 0;
         var uiIntegrityAlertSystem = plugin.getUiIntegrityAlertSystem();
         if (uiIntegrityAlertSystem != null) {
             uiAlertStatesCleared = uiIntegrityAlertSystem.clearRuntimeState();
         }
+        logShutdownSystemClear("UiIntegrityAlertSystem", uiAlertStatesCleared);
 
         int summonRuntimeEntriesCleared = ArmyOfTheDeadPassive.clearAllRuntimeState();
+        logShutdownSystemClear("ArmyOfTheDeadPassive", summonRuntimeEntriesCleared);
         int deathBombEntriesCleared = DeathBombAugment.clearAllRuntimeState();
+        logShutdownSystemClear("DeathBombAugment", deathBombEntriesCleared);
         int burnEntriesCleared = BurnAugment.clearAllRuntimeState();
+        logShutdownSystemClear("BurnAugment", burnEntriesCleared);
         int frozenEntriesCleared = FrozenDomainAugment.clearAllRuntimeState();
+        logShutdownSystemClear("FrozenDomainAugment", frozenEntriesCleared);
         int witherEntriesCleared = WitherAugment.clearAllRuntimeState();
+        logShutdownSystemClear("WitherAugment", witherEntriesCleared);
         int reckoningEntriesCleared = ReckoningAugment.clearAllRuntimeState();
+        logShutdownSystemClear("ReckoningAugment", reckoningEntriesCleared);
         int endurePainEntriesCleared = EndurePainAugment.clearAllRuntimeState();
+        logShutdownSystemClear("EndurePainAugment", endurePainEntriesCleared);
         int killCreditEntriesCleared = XpKillCreditTracker.clearAll();
+        logShutdownSystemClear("XpKillCreditTracker", killCreditEntriesCleared);
         int hiddenHudsCleared = PlayerHudHide.clearAllTrackedHuds();
+        logShutdownSystemClear("PlayerHudHide", hiddenHudsCleared);
         int playerHudsCleared = PlayerHud.clearAllTrackedHuds();
+        logShutdownSystemClear("PlayerHud", playerHudsCleared);
 
-        alwaysShutdownLog(String.format(
-                "Runtime state cleared: movement=%d, race-retries=%d, augments=%d, mob-augments=%d, passives=%d, race-runtime=%d, ui-alerts=%d, summon-runtime=%d, death-bomb=%d, burn=%d, frozen=%d, wither=%d, reckoning=%d, endure-pain=%d, kill-credits=%d, huds=%d, hidden-huds=%d.",
-                movementStatesCleared,
-                raceRetryStatesCleared,
-                augmentRuntimeStatesCleared,
-                mobAugmentRuntimeStatesCleared,
-                passiveRuntimeStatesCleared,
-                raceRuntimeStatesCleared,
-                uiAlertStatesCleared,
-                summonRuntimeEntriesCleared,
-                deathBombEntriesCleared,
-                burnEntriesCleared,
-                frozenEntriesCleared,
-                witherEntriesCleared,
-                reckoningEntriesCleared,
-                endurePainEntriesCleared,
-                killCreditEntriesCleared,
-                playerHudsCleared,
-                hiddenHudsCleared));
+        alwaysShutdownLog("Runtime state cleanup pass complete.");
         appendShutlog(String.format(
                 "runtime state cleared: movement=%d raceRetries=%d augmentStates=%d mobAugmentStates=%d passiveStates=%d raceStates=%d uiAlerts=%d summonEntries=%d deathBombEntries=%d burnEntries=%d frozenEntries=%d witherEntries=%d reckoningEntries=%d endurePainEntries=%d killCredits=%d huds=%d hiddenHuds=%d",
                 movementStatesCleared,
@@ -605,6 +604,10 @@ public final class EndlessLevelingShutdownCoordinator {
                 killCreditEntriesCleared,
                 playerHudsCleared,
                 hiddenHudsCleared));
+    }
+
+    private void logShutdownSystemClear(String systemName, int entriesCleared) {
+        alwaysShutdownLog(String.format("Cleared %s state (entries=%d).", systemName, entriesCleared));
     }
 
     private void alwaysShutdownLog(String message) {

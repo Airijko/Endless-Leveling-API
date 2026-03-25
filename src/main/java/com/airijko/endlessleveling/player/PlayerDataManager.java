@@ -47,6 +47,7 @@ import com.airijko.endlessleveling.managers.VersionRegistry;
 public class PlayerDataManager {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
+    private static final HytaleLogger SHUTDOWN_LOGGER = HytaleLogger.get("EndlessLeveling");
     private static final Gson PLAYERDATA_GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     private static final Type STRING_OBJECT_MAP_TYPE = new TypeToken<Map<String, Object>>() {
     }.getType();
@@ -422,11 +423,11 @@ public class PlayerDataManager {
     }
 
     public void saveAll() {
-        LOGGER.atInfo().log("Saving all cached PlayerData (%d entries)...", playerCache.size());
+        SHUTDOWN_LOGGER.atInfo().log("[PlayerDataManager] Saving all cached PlayerData (%d entries)...", playerCache.size());
         for (Map.Entry<UUID, PlayerData> entry : playerCache.entrySet()) {
             save(entry.getValue());
         }
-        LOGGER.atInfo().log("All cached PlayerData saved successfully.");
+        SHUTDOWN_LOGGER.atInfo().log("[PlayerDataManager] All cached PlayerData saved successfully.");
     }
 
     public Collection<PlayerData> getAllCached() {

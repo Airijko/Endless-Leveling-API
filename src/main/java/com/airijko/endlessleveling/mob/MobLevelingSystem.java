@@ -181,6 +181,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         }
 
         final int[] removed = { 0 };
+        final int[] levelStateCleared = { 0 };
         final int[] scanned = { 0 };
         final int[] skippedPlayers = { 0 };
         final int[] candidates = { 0 };
@@ -218,21 +219,54 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
 
                 stripMobHealthModifiers(ref, commandBuffer);
                 clearOrRemoveNameplate(ref, commandBuffer);
+                levelStateCleared[0] += clearMobLevelRuntimeStateForEntity(ref, commandBuffer);
                 removed[0]++;
             }
         });
 
         LOGGER.atWarning().log(
-                "[MOB_SHUTDOWN_DEBUG] storeId=%d scanSummary scanned=%d skippedPlayers=%d candidates=%d withNameplate=%d withStatMap=%d removed=%d",
+                "[MOB_SHUTDOWN_DEBUG] storeId=%d scanSummary scanned=%d skippedPlayers=%d candidates=%d withNameplate=%d withStatMap=%d removed=%d levelStateClears=%d",
                 Integer.toUnsignedLong(System.identityHashCode(store)),
                 scanned[0],
                 skippedPlayers[0],
                 candidates[0],
                 withNameplate[0],
                 withStatMap[0],
-                removed[0]);
+                removed[0],
+                levelStateCleared[0]);
 
         return removed[0];
+    }
+
+    private int clearMobLevelRuntimeStateForEntity(Ref<EntityStore> ref,
+            CommandBuffer<EntityStore> commandBuffer) {
+        if (ref == null || mobLevelingManager == null) {
+            return 0;
+        }
+
+        int clearOps = 0;
+        Store<EntityStore> store = ref.getStore();
+        int entityId = ref.getIndex();
+
+        if (entityId >= 0) {
+            mobLevelingManager.clearEntityLevelOverride(store, entityId);
+            summonHealthAnomalyLogTimes.remove(entityId);
+            clearOps++;
+        }
+
+        long fallbackEntityKey = toEntityKey(store, entityId);
+        mobLevelingManager.forgetEntityByKey(fallbackEntityKey);
+        entityStates.remove(fallbackEntityKey);
+        clearOps++;
+
+        TrackingIdentity identity = resolveTrackingIdentity(ref, commandBuffer);
+        if (identity != null && identity.key() != fallbackEntityKey) {
+            mobLevelingManager.forgetEntityByKey(identity.key());
+            entityStates.remove(identity.key());
+            clearOps++;
+        }
+
+        return clearOps;
     }
 
     private boolean runOnWorldThreadAndWait(Object worldObject, Runnable task, long timeoutMillis) {
