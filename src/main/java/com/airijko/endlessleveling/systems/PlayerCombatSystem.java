@@ -333,6 +333,10 @@ public class PlayerCombatSystem extends DamageEventSystem {
         }
 
         damage.setAmount(finalAdjusted);
+
+        if (!targetIsPlayer && !bypassOutgoingAugmentMath && finalAdjusted > 0.0f) {
+            ArmyOfTheDeadPassive.markOnDamageTrigger(playerData, archetypeSnapshot);
+        }
     }
 
     private float applyMobAugmentsIfPresent(Ref<EntityStore> targetRef,

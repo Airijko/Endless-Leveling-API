@@ -33,6 +33,7 @@ import com.hypixel.hytale.server.npc.entities.NPCEntity;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.hypixel.hytale.server.core.Message;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -1346,10 +1347,11 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
 
         String baseName = "Mob";
         DisplayNameComponent display = commandBuffer.getComponent(ref, DisplayNameComponent.getComponentType());
-        if (display != null && display.getDisplayName() != null
-                && display.getDisplayName().getAnsiMessage() != null
-                && !display.getDisplayName().getAnsiMessage().isBlank()) {
-            baseName = display.getDisplayName().getAnsiMessage();
+        if (display != null) {
+            Message displayNameMsg = display.getDisplayName();
+            if (displayNameMsg != null && displayNameMsg.getAnsiMessage() != null && !displayNameMsg.getAnsiMessage().isBlank()) {
+                baseName = displayNameMsg.getAnsiMessage();
+            }
         }
 
         StringBuilder labelBuilder = new StringBuilder();

@@ -602,7 +602,7 @@ public class LevelingManager {
 
         double adjustedXp = baseXpAmount;
         if (!rules.experienceRulesEnabled())
-            return adjustedXp;
+            return 0.0D;
 
         if (rules.globalXpMultiplier() != 1.0d)
             adjustedXp *= rules.globalXpMultiplier();

@@ -311,7 +311,6 @@ public final class CombatHookProcessor {
                 finalDamage);
 
         ArmyOfTheDeadPassive.focusCurrentTarget(playerData, ctx.targetRef(), ctx.commandBuffer());
-        ArmyOfTheDeadPassive.markOnHitTrigger(playerData, archetypeSnapshot);
 
         applyLifeSteal(playerData, ctx.attackerRef(), ctx.commandBuffer(), archetypeSnapshot, finalDamage);
         if (passiveManager != null) {

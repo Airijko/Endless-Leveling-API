@@ -1216,22 +1216,37 @@ public class MobLevelingManager {
             int attackerLevel,
             int playerLevel) {
         int levelDiff = Math.max(1, playerLevel) - Math.max(1, attackerLevel);
+        Store<EntityStore> store = ref != null ? ref.getStore() : null;
         int maxDiff = Math.max(1, getConfigInt("Player_Combat_Scaling.Player_Level_Scaling_Difference.Range", 10,
-                ref != null ? ref.getStore() : null));
-        double negative = clampReduction(getConfigDouble(
+            store));
+        double atNegative = clampReduction(getConfigDouble(
                 "Player_Combat_Scaling.Defense_Max_Difference.At_Negative_Max_Difference", 0.0D,
-                ref != null ? ref.getStore() : null));
-        double positive = clampReduction(getConfigDouble(
+            store));
+        double atPositive = clampReduction(getConfigDouble(
                 "Player_Combat_Scaling.Defense_Max_Difference.At_Positive_Max_Difference", 0.0D,
-                ref != null ? ref.getStore() : null));
-        if (levelDiff <= -maxDiff) {
-            return negative;
+            store));
+        double belowNegative = clampReduction(getConfigDouble(
+            "Player_Combat_Scaling.Defense_Max_Difference.Below_Negative_Max_Difference",
+            atNegative,
+            store));
+        double abovePositive = clampReduction(getConfigDouble(
+            "Player_Combat_Scaling.Defense_Max_Difference.Above_Positive_Max_Difference",
+            atPositive,
+            store));
+        if (levelDiff < -maxDiff) {
+            return belowNegative;
         }
-        if (levelDiff >= maxDiff) {
-            return positive;
+        if (levelDiff == -maxDiff) {
+            return atNegative;
+        }
+        if (levelDiff > maxDiff) {
+            return abovePositive;
+        }
+        if (levelDiff == maxDiff) {
+            return atPositive;
         }
         double ratio = (levelDiff + maxDiff) / (double) (maxDiff * 2);
-        return lerp(negative, positive, ratio);
+        return lerp(atNegative, atPositive, ratio);
     }
 
     public double getMobDefenseReductionForLevelDifference(int levelDifference) {
@@ -1244,20 +1259,34 @@ public class MobLevelingManager {
         }
 
         int maxDiff = Math.max(1, getConfigInt("Mob_Leveling.Scaling.Level_Scaling_Difference.Range", 10, store));
-        double negative = clampReduction(
+        double atNegative = clampReduction(
                 getConfigDouble("Mob_Leveling.Scaling.Defense.At_Negative_Max_Difference", 0.0D,
                         store));
-        double positive = clampReduction(
+        double atPositive = clampReduction(
                 getConfigDouble("Mob_Leveling.Scaling.Defense.At_Positive_Max_Difference", 0.75D,
                         store));
-        if (levelDifference <= -maxDiff) {
-            return negative;
+        double belowNegative = clampReduction(
+                getConfigDouble("Mob_Leveling.Scaling.Defense.Below_Negative_Max_Difference",
+                        atNegative,
+                        store));
+        double abovePositive = clampReduction(
+                getConfigDouble("Mob_Leveling.Scaling.Defense.Above_Positive_Max_Difference",
+                        atPositive,
+                        store));
+        if (levelDifference < -maxDiff) {
+            return belowNegative;
         }
-        if (levelDifference >= maxDiff) {
-            return positive;
+        if (levelDifference == -maxDiff) {
+            return atNegative;
+        }
+        if (levelDifference > maxDiff) {
+            return abovePositive;
+        }
+        if (levelDifference == maxDiff) {
+            return atPositive;
         }
         double ratio = (levelDifference + maxDiff) / (double) (maxDiff * 2);
-        return lerp(negative, positive, ratio);
+        return lerp(atNegative, atPositive, ratio);
     }
 
     public record LevelRange(int min, int max) {
@@ -2199,11 +2228,25 @@ public class MobLevelingManager {
                 "Mob_Leveling.Scaling.Damage.Max_Difference.At_Negative_Max_Difference", 1.0D, store));
         double atPos = clampNonNegativeMultiplier(getConfigDouble(
                 "Mob_Leveling.Scaling.Damage.Max_Difference.At_Positive_Max_Difference", 1.0D, store));
+        double belowNeg = clampNonNegativeMultiplier(getConfigDouble(
+                "Mob_Leveling.Scaling.Damage.Max_Difference.Below_Negative_Max_Difference",
+                atNeg,
+                store));
+        double abovePos = clampNonNegativeMultiplier(getConfigDouble(
+                "Mob_Leveling.Scaling.Damage.Max_Difference.Above_Positive_Max_Difference",
+                atPos,
+                store));
 
-        if (levelDifference <= -maxDiff) {
+        if (levelDifference < -maxDiff) {
+            return belowNeg;
+        }
+        if (levelDifference == -maxDiff) {
             return atNeg;
         }
-        if (levelDifference >= maxDiff) {
+        if (levelDifference > maxDiff) {
+            return abovePos;
+        }
+        if (levelDifference == maxDiff) {
             return atPos;
         }
 
@@ -2546,13 +2589,18 @@ public class MobLevelingManager {
             return UNSET_CONFIG_VALUE;
         }
 
-        String worldPath = normalizeWorldOverridePath(path);
+        List<String> worldPaths = resolveWorldOverridePaths(path);
+        if (worldPaths.isEmpty()) {
+            return UNSET_CONFIG_VALUE;
+        }
         List<String> worldIds = resolveWorldIdentifierCandidates(store, false);
         String matchedKey = resolveBestWorldOverrideKey(store, worldIds);
         if (matchedKey != null) {
-            String matchedPath = "World_Overrides." + matchedKey + "." + worldPath;
-            if (hasWorldSettingsPath(matchedPath)) {
-                return getWorldSettingsValue(matchedPath);
+            for (String worldPath : worldPaths) {
+                String matchedPath = "World_Overrides." + matchedKey + "." + worldPath;
+                if (hasWorldSettingsPath(matchedPath)) {
+                    return getWorldSettingsValue(matchedPath);
+                }
             }
         }
 
@@ -2560,15 +2608,19 @@ public class MobLevelingManager {
         // XP-blacklisted
         // when the matched world profile does not define the requested key.
         if (shouldApplyDefaultWorldOverride(store, worldIds)) {
-            String defaultPath = "World_Overrides.default." + worldPath;
-            if (hasWorldSettingsPath(defaultPath)) {
-                return getWorldSettingsValue(defaultPath);
+            for (String worldPath : worldPaths) {
+                String defaultPath = "World_Overrides.default." + worldPath;
+                if (hasWorldSettingsPath(defaultPath)) {
+                    return getWorldSettingsValue(defaultPath);
+                }
             }
         }
 
-        String globalPath = "World_Overrides.Global." + worldPath;
-        if (hasWorldSettingsPath(globalPath)) {
-            return getWorldSettingsValue(globalPath);
+        for (String worldPath : worldPaths) {
+            String globalPath = "World_Overrides.Global." + worldPath;
+            if (hasWorldSettingsPath(globalPath)) {
+                return getWorldSettingsValue(globalPath);
+            }
         }
 
         return UNSET_CONFIG_VALUE;
@@ -2584,13 +2636,64 @@ public class MobLevelingManager {
         return !isWorldXpBlacklisted(store);
     }
 
-    private String normalizeWorldOverridePath(String path) {
-        String trimmed = path.trim();
-        String prefix = "Mob_Leveling.";
-        if (trimmed.startsWith(prefix)) {
-            return trimmed.substring(prefix.length());
+    private List<String> resolveWorldOverridePaths(String path) {
+        if (path == null || path.isBlank()) {
+            return List.of();
         }
-        return trimmed;
+
+        LinkedHashSet<String> candidates = new LinkedHashSet<>();
+        String trimmedPath = path.trim();
+
+        if (isWorldOverrideJsonPath(trimmedPath)) {
+            candidates.add(trimmedPath);
+        }
+
+        if ("Mob_Leveling.Experience.Enabled".equals(trimmedPath)) {
+            candidates.add("Enable_XP");
+        } else if (trimmedPath.startsWith("Mob_Leveling.Experience.")) {
+            candidates.add("Experience." + trimmedPath.substring("Mob_Leveling.Experience.".length()));
+        } else if ("Mob_Leveling.Blacklist_Mob_Types".equals(trimmedPath)) {
+            candidates.add("Blacklist_Mob_Types");
+        } else if (trimmedPath.startsWith("Mob_Leveling.Level_Range.")) {
+            candidates.add("Level_Range." + trimmedPath.substring("Mob_Leveling.Level_Range.".length()));
+        } else if (trimmedPath.startsWith("Mob_Leveling.Level_Source.")) {
+            candidates.add("Level_Source." + trimmedPath.substring("Mob_Leveling.Level_Source.".length()));
+        } else if (trimmedPath.startsWith("Mob_Leveling.Scaling.Level_Scaling_Difference.")) {
+            candidates.add("Mob_Scaling.Mob_Level_Scaling_Difference."
+                    + trimmedPath.substring("Mob_Leveling.Scaling.Level_Scaling_Difference.".length()));
+        } else if (trimmedPath.startsWith("Mob_Leveling.Scaling.Damage.Max_Difference.")) {
+            candidates.add("Mob_Scaling.Damage_Max_Difference."
+                    + trimmedPath.substring("Mob_Leveling.Scaling.Damage.Max_Difference.".length()));
+        } else if (trimmedPath.startsWith("Mob_Leveling.Scaling.")) {
+            candidates.add("Scaling." + trimmedPath.substring("Mob_Leveling.Scaling.".length()));
+        }
+
+        return List.copyOf(candidates);
+    }
+
+    private boolean isWorldOverrideJsonPath(String path) {
+        if (path == null || path.isBlank()) {
+            return false;
+        }
+
+        return "Enable_XP".equals(path)
+                || "Blacklist_Mob_Types".equals(path)
+                || "Level_Range".equals(path)
+                || "Level_Source".equals(path)
+                || "Scaling".equals(path)
+                || "Mob_Scaling".equals(path)
+                || "Player_Combat_Scaling".equals(path)
+                || "Mob_Augments".equals(path)
+                || "Mob_Overrides".equals(path)
+                || path.startsWith("Experience.")
+                || path.startsWith("Blacklist_Mob_Types.")
+                || path.startsWith("Level_Range.")
+                || path.startsWith("Level_Source.")
+                || path.startsWith("Scaling.")
+                || path.startsWith("Mob_Scaling.")
+                || path.startsWith("Player_Combat_Scaling.")
+                || path.startsWith("Mob_Augments.")
+                || path.startsWith("Mob_Overrides.");
     }
 
     private String resolveBestWorldOverrideKey(Store<EntityStore> store, List<String> worldIds) {

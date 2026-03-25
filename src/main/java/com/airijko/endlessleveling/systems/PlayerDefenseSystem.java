@@ -290,6 +290,20 @@ public class PlayerDefenseSystem extends DamageEventSystem {
 						statMap));
 
 		damage.setAmount(result.finalDamage());
+		if (!PlayerCombatSystem.shouldBypassOutgoingAugmentMath(damage)
+				&& result.finalDamage() > 0.0f
+				&& attackerRef != null) {
+			PlayerRef attackerPlayer = commandBuffer.getComponent(attackerRef, PlayerRef.getComponentType());
+			if (attackerPlayer != null && attackerPlayer.isValid()) {
+				PlayerData attackerData = playerDataManager.get(attackerPlayer.getUuid());
+				if (attackerData != null) {
+					ArchetypePassiveSnapshot attackerSnapshot = archetypePassiveManager != null
+							? archetypePassiveManager.getSnapshot(attackerData)
+							: ArchetypePassiveSnapshot.empty();
+					ArmyOfTheDeadPassive.markOnDamageTrigger(attackerData, attackerSnapshot);
+				}
+			}
+		}
 		if (movementHasteSystem != null && result.finalDamage() > 0.0f) {
 			movementHasteSystem.onPlayerDamaged(defenderPlayer.getUuid());
 		}

@@ -946,7 +946,7 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
             @Nonnull CommandBuffer<EntityStore> commandBuffer,
             @Nonnull EntityStatMap statMap,
             @Nonnull ArchetypePassiveSnapshot archetypeSnapshot) {
-        ArmyOfTheDeadPassive.processPendingOnHit(playerData,
+        ArmyOfTheDeadPassive.processPendingOnDamage(playerData,
                 ref,
                 commandBuffer,
                 statMap,

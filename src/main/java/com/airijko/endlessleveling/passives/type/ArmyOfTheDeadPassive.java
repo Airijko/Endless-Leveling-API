@@ -92,6 +92,11 @@ public final class ArmyOfTheDeadPassive {
 
     public static void markOnHitTrigger(PlayerData sourcePlayerData,
             ArchetypePassiveSnapshot archetypeSnapshot) {
+        markOnDamageTrigger(sourcePlayerData, archetypeSnapshot);
+    }
+
+    public static void markOnDamageTrigger(PlayerData sourcePlayerData,
+            ArchetypePassiveSnapshot archetypeSnapshot) {
         if (sourcePlayerData == null || archetypeSnapshot == null) {
             return;
         }
@@ -102,7 +107,7 @@ public final class ArmyOfTheDeadPassive {
         }
 
         ArmyOfTheDeadConfig config = resolveConfig(archetypeSnapshot);
-        if (!config.onHitActivation()) {
+        if (!config.onDamageActivation()) {
             return;
         }
 
@@ -118,6 +123,14 @@ public final class ArmyOfTheDeadPassive {
             CommandBuffer<EntityStore> commandBuffer,
             EntityStatMap sourceStats,
             ArchetypePassiveSnapshot archetypeSnapshot) {
+        processPendingOnDamage(sourcePlayerData, sourceRef, commandBuffer, sourceStats, archetypeSnapshot);
+    }
+
+    public static void processPendingOnDamage(PlayerData sourcePlayerData,
+            Ref<EntityStore> sourceRef,
+            CommandBuffer<EntityStore> commandBuffer,
+            EntityStatMap sourceStats,
+            ArchetypePassiveSnapshot archetypeSnapshot) {
         if (sourcePlayerData == null) {
             return;
         }
@@ -129,7 +142,7 @@ public final class ArmyOfTheDeadPassive {
             return;
         }
         try {
-            triggerOnHitNow(sourcePlayerData, sourceRef, commandBuffer, sourceStats, archetypeSnapshot);
+            triggerOnDamageNow(sourcePlayerData, sourceRef, commandBuffer, sourceStats, archetypeSnapshot);
         } catch (Throwable throwable) {
             LOGGER.atWarning().withCause(throwable)
                     .log("[ARMY_OF_THE_DEAD] Failed to process pending summon trigger for %s", ownerUuid);
@@ -480,7 +493,7 @@ public final class ArmyOfTheDeadPassive {
         return targetOwner != null && areAlliedOwners(ownerUuid, targetOwner);
     }
 
-    private static void triggerOnHitNow(PlayerData sourcePlayerData,
+    private static void triggerOnDamageNow(PlayerData sourcePlayerData,
             Ref<EntityStore> sourceRef,
             CommandBuffer<EntityStore> commandBuffer,
             EntityStatMap sourceStats,
@@ -495,7 +508,7 @@ public final class ArmyOfTheDeadPassive {
         }
 
         ArmyOfTheDeadConfig config = resolveConfig(archetypeSnapshot);
-        if (!config.onHitActivation()) {
+        if (!config.onDamageActivation()) {
             return;
         }
 
@@ -2134,10 +2147,12 @@ public final class ArmyOfTheDeadPassive {
 
         statInheritance *= effectivenessScale;
 
-        boolean onHitActivation = true;
+        boolean onDamageActivation = true;
         Object activationRaw = props.get("activation");
         if (activationRaw instanceof String activation) {
-            onHitActivation = "on_hit".equalsIgnoreCase(activation.trim());
+            String normalizedActivation = activation.trim().toLowerCase();
+            onDamageActivation = "on_damage".equals(normalizedActivation)
+                    || "on_hit".equals(normalizedActivation);
         }
 
         String skeletonType = DEFAULT_SKELETON_TYPE;
@@ -2148,7 +2163,7 @@ public final class ArmyOfTheDeadPassive {
 
         int maxSummons = parseIntNonNegative(firstNonNull(props.get("max_summons"), props.get("summon_cap")), 0);
 
-        return new ArmyOfTheDeadConfig(onHitActivation,
+        return new ArmyOfTheDeadConfig(onDamageActivation,
                 baseSummonAmount,
                 manaPerSummon,
                 strengthPerSummon,
@@ -2227,7 +2242,7 @@ public final class ArmyOfTheDeadPassive {
         return Math.max(1L, Math.round(seconds * 1000.0D));
     }
 
-    private record ArmyOfTheDeadConfig(boolean onHitActivation,
+    private record ArmyOfTheDeadConfig(boolean onDamageActivation,
             int baseSummonAmount,
             double manaPerSummon,
             double strengthPerSummon,
