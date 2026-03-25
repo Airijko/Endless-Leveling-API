@@ -457,10 +457,15 @@ public class MobLevelingManager {
         Store<EntityStore> effectiveStore = store != null ? store : ref.getStore();
         long fallbackKey = toEntityKey(effectiveStore, ref.getIndex());
         if (fallbackKey == primaryKey) {
+            // Entity has no UUID — primary key IS the index-based key, nothing else to try.
             return primary;
         }
-        Integer fallback = getEntityResolvedLevelSnapshot(fallbackKey);
-        return (fallback != null && fallback > 0) ? fallback : primary;
+
+        // Entity is UUID-backed (primary key != fallback key). The index-based fallback
+        // key may hold a stale level from a previous entity that occupied the same slot.
+        // If the UUID-keyed snapshot is missing, the mob hasn't been processed by
+        // MobLevelingSystem yet — return null so the caller resolves the level live.
+        return null;
     }
 
     /**
