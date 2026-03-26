@@ -181,6 +181,8 @@ public class PluginFilesManager {
 
         boolean forceSync = parseBoolean(configManager.get("force_builtin_world_settings", Boolean.FALSE, false),
                 false);
+        Path worldSettingsVersionPath = worldSettingsFolder.toPath().resolve(VersionRegistry.WORLD_SETTINGS_VERSION_FILE);
+        boolean hasVersionFile = Files.exists(worldSettingsVersionPath);
         int storedVersion = readWorldSettingsVersion(worldSettingsFolder);
         if (storedVersion == VersionRegistry.BUILTIN_WORLD_SETTINGS_VERSION) {
             return;
@@ -188,6 +190,18 @@ public class PluginFilesManager {
 
         archivePathIfExists(worldSettingsFolder.toPath(), "world-settings",
                 "world-settings.version:" + storedVersion);
+
+        if (!hasVersionFile) {
+            for (String fileName : BUILTIN_WORLD_SETTINGS_FILES) {
+                exportResourceFile("world-settings/" + fileName, worldSettingsFolder.toPath().resolve(fileName), true);
+            }
+            writeWorldSettingsVersion(worldSettingsFolder, VersionRegistry.BUILTIN_WORLD_SETTINGS_VERSION);
+            LOGGER.atInfo().log(
+                    "Rebuilt built-in world-settings to version %d because %s was missing",
+                    VersionRegistry.BUILTIN_WORLD_SETTINGS_VERSION,
+                    VersionRegistry.WORLD_SETTINGS_VERSION_FILE);
+            return;
+        }
 
         if (forceSync) {
             for (String fileName : BUILTIN_WORLD_SETTINGS_FILES) {
