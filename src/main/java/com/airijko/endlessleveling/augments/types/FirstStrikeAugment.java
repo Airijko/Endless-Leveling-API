@@ -61,10 +61,20 @@ public final class FirstStrikeAugment extends Augment
 
     @Override
     public float onHit(AugmentHooks.HitContext context) {
-        double classMultiplier = AugmentUtils.normalizeConfiguredBonusMultiplier(
-                AugmentUtils.resolveClassValue(classValues,
-                        context.getPlayerData().getPrimaryClassId()));
-        double multiplier = classMultiplier > 0 ? classMultiplier : baseMultiplier;
+        var playerData = context.getPlayerData();
+        
+        // Resolve multiplier: use class-specific if player context, otherwise base
+        double multiplier;
+        if (playerData != null) {
+            double classMultiplier = AugmentUtils.normalizeConfiguredBonusMultiplier(
+                    AugmentUtils.resolveClassValue(classValues,
+                            playerData.getPrimaryClassId()));
+            multiplier = classMultiplier > 0 ? classMultiplier : baseMultiplier;
+        } else {
+            // Mob/summon context: use base multiplier
+            multiplier = baseMultiplier;
+        }
+        
         if (multiplier <= 0.0D) {
             return context.getDamage();
         }

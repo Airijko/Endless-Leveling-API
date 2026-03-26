@@ -150,13 +150,15 @@ public class MobDamageScalingSystem extends DamageEventSystem {
                 EntityStatMap.getComponentType());
 
         float before = Math.max(0.0f, damage.getAmount());
-        var onHit = executor.applyOnHit(attackerUuid,
-                attackerRef,
-                targetRef,
-                commandBuffer,
-                attackerStats,
-                targetStats,
-                before);
+
+        // Only execute augments marked mob_compatible — player-only augments must not run in summon context
+        var onHit = executor.applyOnHitSummon(attackerUuid,
+            attackerRef,
+            targetRef,
+            commandBuffer,
+            attackerStats,
+            targetStats,
+            before);
 
         // Preserve legacy behavior where true damage is represented as a flat add-on.
         double trueDamage = Math.max(0.0D, onHit.trueDamageBonus());

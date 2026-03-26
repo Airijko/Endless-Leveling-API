@@ -155,18 +155,16 @@ public final class MobAugmentExecutor {
             nonCommonCount++;
         }
 
-        List<String> formattedTotals = new ArrayList<>();
-        for (Map.Entry<String, Double> entry : commonTotals.entrySet()) {
-            formattedTotals.add(String.format(Locale.ROOT, "%s=%.3f", entry.getKey(), entry.getValue()));
+        StringBuilder sb = new StringBuilder("commonTotals=[");
+        commonTotals.forEach((k, v) -> sb.append(k).append("=").append(v).append(","));
+        if (!commonTotals.isEmpty()) {
+            sb.setLength(sb.length() - 1);
         }
-
-        return String.format(Locale.ROOT,
-                "commonTotals=%s nonCommonCount=%d",
-                formattedTotals,
-                nonCommonCount);
+        sb.append("] nonCommonCount=").append(nonCommonCount);
+        return sb.toString();
     }
 
-    private double parseCommonAmount(String raw) {
+    private static double parseCommonAmount(String raw) {
         if (raw == null || raw.isBlank()) {
             return 0.0D;
         }
@@ -189,16 +187,16 @@ public final class MobAugmentExecutor {
             EntityStatMap targetStats,
             float startingDamage) {
         return applyOnHit(entityId,
-            attackerRef,
-            targetRef,
-            commandBuffer,
-            attackerStats,
-            targetStats,
-            startingDamage,
-            false);
-        }
+                attackerRef,
+                targetRef,
+                commandBuffer,
+                attackerStats,
+                targetStats,
+                startingDamage,
+                false);
+    }
 
-        public AugmentDispatch.OnHitResult applyOnHit(
+    public AugmentDispatch.OnHitResult applyOnHit(
             UUID entityId,
             Ref<EntityStore> attackerRef,
             Ref<EntityStore> targetRef,
@@ -345,6 +343,55 @@ public final class MobAugmentExecutor {
         }
 
         return damage;
+    }
+
+    /**
+     * Apply on-hit effects for a summon attacker.
+     * All augments are executed; they have defensive null-checks for player-context operations.
+     */
+    public AugmentDispatch.OnHitResult applyOnHitSummon(
+            UUID entityId,
+            Ref<EntityStore> attackerRef,
+            Ref<EntityStore> targetRef,
+            CommandBuffer<EntityStore> commandBuffer,
+            EntityStatMap attackerStats,
+            EntityStatMap targetStats,
+            float startingDamage) {
+        MobAugmentInstance instance = mobAugments.get(entityId);
+        if (instance == null || instance.augments.isEmpty()) {
+            return new AugmentDispatch.OnHitResult(startingDamage, 0.0D);
+        }
+
+        AugmentHooks.HitContext context = new AugmentHooks.HitContext(
+                null,
+                instance.runtimeState,
+                null,
+                attackerRef,
+                targetRef,
+                commandBuffer,
+                attackerStats,
+                targetStats,
+                startingDamage,
+                false,
+                false,
+                null,
+                1.0f);
+
+        for (Augment augment : instance.augments) {
+            if (augment instanceof AugmentHooks.OnHitAugment onHit) {
+                try {
+                    float updated = onHit.onHit(context);
+                    context.setDamage(updated);
+                } catch (Exception e) {
+                    LOGGER.atSevere().withCause(e)
+                            .log("[AUGMENT] Error executing OnHit %s for summon %s: %s",
+                                    augment.getId(), entityId, e.getMessage());
+                }
+            }
+        }
+        return new AugmentDispatch.OnHitResult(
+                Math.max(0.0f, context.getDamage()),
+                Math.max(0.0D, context.getTrueDamageBonus()));
     }
 
     /**

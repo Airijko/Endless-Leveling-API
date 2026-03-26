@@ -129,7 +129,7 @@ public final class RagingMomentumAugment extends Augment
                 strengthBonus * 100.0D,
                 sorceryBonus * 100.0D,
                 durationMillis,
-                context.getPlayerData().getPlayerName(),
+                context.getPlayerData() != null ? context.getPlayerData().getPlayerName() : "unknown",
                 dbgStr,
                 dbgSorc,
                 state.getExpiresAt(),
