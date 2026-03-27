@@ -96,6 +96,7 @@ public class MobLevelingManager {
 
     private final Map<String, AreaOverride> areaOverrides = new ConcurrentHashMap<>();
     private final Map<String, RuntimeFixedLevelOverride> runtimeFixedLevelOverrides = new ConcurrentHashMap<>();
+    private final Set<String> fixedLevelFallbackLoggedWorlds = ConcurrentHashMap.newKeySet();
     // Stateless design: do not maintain per-entity mutable state in maps.
     private volatile MobAugmentTierPools cachedMobAugmentTierPools;
     private volatile Map<String, Object> worldSettingsMap = Map.of();
@@ -193,10 +194,22 @@ public class MobLevelingManager {
     }
 
     public void syncFixedLevelOverridesForDungeon(Store<EntityStore> store, UUID sourcePlayerUuid) {
-        if (store == null || sourcePlayerUuid == null || getLevelSourceMode(store) != LevelSourceMode.FIXED) {
+        if (store == null || sourcePlayerUuid == null) {
+            LOGGER.atWarning().log("[EL-GATE-SYNC] syncFixedLevelOverridesForDungeon skipped: null-store=%b null-player=%b",
+                    store == null, sourcePlayerUuid == null);
+            return;
+        }
+        LevelSourceMode resolvedMode = getLevelSourceMode(store);
+        if (resolvedMode != LevelSourceMode.FIXED) {
+            LOGGER.atWarning().log(
+                    "[EL-GATE-SYNC] syncFixedLevelOverridesForDungeon skipped: mode=%s (expected FIXED). %s",
+                    resolvedMode, describeWorldResolutionContext(store));
             return;
         }
         if (!getConfigBoolean("Mob_Leveling.Level_Source.Fixed_Level.Dynamic.Enabled", false, store)) {
+            LOGGER.atWarning().log(
+                    "[EL-GATE-SYNC] syncFixedLevelOverridesForDungeon skipped: Dynamic.Enabled=false. %s",
+                    describeWorldResolutionContext(store));
             return;
         }
 
@@ -208,11 +221,17 @@ public class MobLevelingManager {
         PlayerRef sourcePlayer = Universe.get().getPlayer(sourcePlayerUuid);
         LevelRange resolved = resolveDynamicFixedLevelRangeForPlayer(store, sourcePlayer);
         if (resolved == null) {
+            LOGGER.atWarning().log(
+                    "[EL-GATE-SYNC] syncFixedLevelOverridesForDungeon: resolveDynamicFixedLevelRangeForPlayer returned null. %s",
+                    describeWorldResolutionContext(store));
             return;
         }
 
-        fixedLevelLocks.putIfAbsent(storeKey,
-                new FixedLevelLock(resolved.min(), resolved.max(), System.currentTimeMillis(), sourcePlayerUuid));
+        boolean added = fixedLevelLocks.putIfAbsent(storeKey,
+                new FixedLevelLock(resolved.min(), resolved.max(), System.currentTimeMillis(), sourcePlayerUuid)) == null;
+        LOGGER.atInfo().log("[EL-GATE-SYNC] syncFixedLevelOverridesForDungeon: lock%s player=%s range=%d-%d. %s",
+                added ? "-set" : "-already-present", sourcePlayerUuid, resolved.min(), resolved.max(),
+                describeWorldResolutionContext(store));
     }
 
     public Integer resolveMobLevelForEntity(Ref<EntityStore> ref,
@@ -1551,6 +1570,7 @@ public class MobLevelingManager {
         worldOverrideKeyByStore.clear();
         worldXpBlacklistByStore.clear();
         runtimeFixedLevelOverrides.clear();
+        fixedLevelFallbackLoggedWorlds.clear();
     }
 
     public void clearTierLockForStore(Store<EntityStore> store) {
@@ -1571,6 +1591,7 @@ public class MobLevelingManager {
         areaOverrides.clear();
         runtimeFixedLevelOverrides.clear();
         fixedLevelLocks.clear();
+        fixedLevelFallbackLoggedWorlds.clear();
         cachedMobAugmentTierPools = null;
         mobLevelDebugLogTimes.clear();
         missingLevelSourceModeWarned = false;
@@ -2226,6 +2247,14 @@ public class MobLevelingManager {
         }
 
         int fallback = clampToConfiguredRange(10, store);
+        String worldId = resolveWorldIdentifier(store);
+        String logKey = worldId != null && !worldId.isBlank() ? worldId.toLowerCase(Locale.ROOT) : "__unknown__";
+        if (fixedLevelFallbackLoggedWorlds.add(logKey)) {
+            LOGGER.atWarning().log(
+                    "[EL-GATE-LEVEL] parseFixedLevelRange: no lock and no config values found; falling back to level=%d for world='%s'. "
+                    + "Diagnose: was syncFixedLevelOverridesForDungeon called? Is world-settings key matching? Context: { %s }",
+                    fallback, logKey, describeWorldResolutionContext(store));
+        }
         return new LevelRange(fallback, fallback);
     }
 
