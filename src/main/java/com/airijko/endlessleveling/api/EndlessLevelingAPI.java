@@ -358,6 +358,18 @@ public final class EndlessLevelingAPI {
     }
 
     /**
+     * Reload world-settings JSON files from disk without clearing runtime overrides
+     * or other plugin state. Use this after programmatically writing new JSON files
+     * into the world-settings folder so the changes take effect immediately.
+     */
+    public void reloadWorldSettings() {
+        MobLevelingManager mobLevelingManager = mobLevelingManager();
+        if (mobLevelingManager != null) {
+            mobLevelingManager.reloadWorldSettingsOnly();
+        }
+    }
+
+    /**
      * Set a fixed level for a specific entity index (e.g., a spawned boss). This
      * is checked before any Level_Source logic.
      */

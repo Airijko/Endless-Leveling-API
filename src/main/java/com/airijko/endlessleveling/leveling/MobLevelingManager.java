@@ -175,6 +175,14 @@ public class MobLevelingManager {
         worldXpBlacklistByStore.clear();
     }
 
+    public void reloadWorldSettingsOnly() {
+        loadWorldSettings();
+        worldIdentifierCandidatesByStore.clear();
+        worldIdentifierMissRetryAtStore.clear();
+        worldOverrideKeyByStore.clear();
+        worldXpBlacklistByStore.clear();
+    }
+
     public void syncTierLevelOverridesForDungeon(Store<EntityStore> store, UUID sourcePlayerUuid) {
         if (store == null || sourcePlayerUuid == null || getLevelSourceMode(store) != LevelSourceMode.TIERS) {
             return;
