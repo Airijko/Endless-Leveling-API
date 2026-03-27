@@ -318,10 +318,27 @@ public final class EndlessLevelingAPI {
                 && mobLevelingManager.registerWorldLevelOverride(id, worldId, minLevel, maxLevel);
     }
 
+    /**
+     * Register a world-wide dynamic FIXED Level_Source override.
+     * This keeps scaling on the normal config path while replacing the live
+     * Fixed_Level range for the matched world.
+     */
+    public boolean registerMobWorldFixedLevelOverride(String id, String worldId, int minLevel, int maxLevel) {
+        MobLevelingManager mobLevelingManager = mobLevelingManager();
+        return mobLevelingManager != null
+                && mobLevelingManager.registerRuntimeFixedLevelOverride(id, worldId, minLevel, maxLevel);
+    }
+
     /** Remove a previously registered area/world override. */
     public boolean removeMobAreaLevelOverride(String id) {
         MobLevelingManager mobLevelingManager = mobLevelingManager();
         return mobLevelingManager != null && mobLevelingManager.removeAreaLevelOverride(id);
+    }
+
+    /** Remove a previously registered world-wide dynamic FIXED Level_Source override. */
+    public boolean removeMobWorldFixedLevelOverride(String id) {
+        MobLevelingManager mobLevelingManager = mobLevelingManager();
+        return mobLevelingManager != null && mobLevelingManager.removeRuntimeFixedLevelOverride(id);
     }
 
     /** Clear all area/world overrides. */
@@ -329,6 +346,14 @@ public final class EndlessLevelingAPI {
         MobLevelingManager mobLevelingManager = mobLevelingManager();
         if (mobLevelingManager != null) {
             mobLevelingManager.clearAreaLevelOverrides();
+        }
+    }
+
+    /** Clear all dynamic FIXED Level_Source overrides. */
+    public void clearMobWorldFixedLevelOverrides() {
+        MobLevelingManager mobLevelingManager = mobLevelingManager();
+        if (mobLevelingManager != null) {
+            mobLevelingManager.clearRuntimeFixedLevelOverrides();
         }
     }
 

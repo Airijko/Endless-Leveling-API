@@ -79,6 +79,7 @@ public class MobLevelingManager {
     private final Map<Long, Long> worldIdentifierMissRetryAtStore = new ConcurrentHashMap<>();
     private final Map<Long, String> worldOverrideKeyByStore = new ConcurrentHashMap<>();
     private final Map<Long, Boolean> worldXpBlacklistByStore = new ConcurrentHashMap<>();
+    private final Map<Long, FixedLevelLock> fixedLevelLocks = new ConcurrentHashMap<>();
     private final Set<Store<EntityStore>> debugSuppressedStores = Collections.newSetFromMap(new ConcurrentHashMap<>());
     /**
      * Anchors each mob's base health to the value captured on the very first
@@ -94,6 +95,7 @@ public class MobLevelingManager {
     private volatile boolean missingLevelSourceModeWarned;
 
     private final Map<String, AreaOverride> areaOverrides = new ConcurrentHashMap<>();
+    private final Map<String, RuntimeFixedLevelOverride> runtimeFixedLevelOverrides = new ConcurrentHashMap<>();
     // Stateless design: do not maintain per-entity mutable state in maps.
     private volatile MobAugmentTierPools cachedMobAugmentTierPools;
     private volatile Map<String, Object> worldSettingsMap = Map.of();
@@ -188,6 +190,29 @@ public class MobLevelingManager {
 
         tieredInstanceLocks.put(toStoreKey(store),
                 new TieredInstanceLock(tierOffset, levelsPerTier, System.currentTimeMillis(), sourcePlayerUuid));
+    }
+
+    public void syncFixedLevelOverridesForDungeon(Store<EntityStore> store, UUID sourcePlayerUuid) {
+        if (store == null || sourcePlayerUuid == null || getLevelSourceMode(store) != LevelSourceMode.FIXED) {
+            return;
+        }
+        if (!getConfigBoolean("Mob_Leveling.Level_Source.Fixed_Level.Dynamic.Enabled", false, store)) {
+            return;
+        }
+
+        long storeKey = toStoreKey(store);
+        if (fixedLevelLocks.containsKey(storeKey)) {
+            return;
+        }
+
+        PlayerRef sourcePlayer = Universe.get().getPlayer(sourcePlayerUuid);
+        LevelRange resolved = resolveDynamicFixedLevelRangeForPlayer(store, sourcePlayer);
+        if (resolved == null) {
+            return;
+        }
+
+        fixedLevelLocks.putIfAbsent(storeKey,
+                new FixedLevelLock(resolved.min(), resolved.max(), System.currentTimeMillis(), sourcePlayerUuid));
     }
 
     public Integer resolveMobLevelForEntity(Ref<EntityStore> ref,
@@ -1379,6 +1404,16 @@ public class MobLevelingManager {
         return registerAreaLevelOverride(id, worldId, 0.0D, 0.0D, Double.MAX_VALUE / 4.0D, minLevel, maxLevel);
     }
 
+    public boolean registerRuntimeFixedLevelOverride(String id, String worldId, int minLevel, int maxLevel) {
+        if (id == null || id.isBlank() || worldId == null || worldId.isBlank() || minLevel <= 0 || maxLevel <= 0) {
+            return false;
+        }
+
+        runtimeFixedLevelOverrides.put(id.trim(),
+                new RuntimeFixedLevelOverride(id.trim(), worldId.trim(), minLevel, maxLevel));
+        return true;
+    }
+
     private Integer resolveRegisteredAreaOverrideLevel(Ref<EntityStore> ref,
             Store<EntityStore> store,
             CommandBuffer<EntityStore> commandBuffer) {
@@ -1464,8 +1499,19 @@ public class MobLevelingManager {
         return areaOverrides.remove(id.trim()) != null;
     }
 
+    public boolean removeRuntimeFixedLevelOverride(String id) {
+        if (id == null || id.isBlank()) {
+            return false;
+        }
+        return runtimeFixedLevelOverrides.remove(id.trim()) != null;
+    }
+
     public void clearAreaLevelOverrides() {
         areaOverrides.clear();
+    }
+
+    public void clearRuntimeFixedLevelOverrides() {
+        runtimeFixedLevelOverrides.clear();
     }
 
     // No persistent per-entity overrides in stateless mode.
@@ -1499,10 +1545,12 @@ public class MobLevelingManager {
         entityAssignedAugmentSnapshots.clear();
         trueBaseHealthCache.clear();
         tieredInstanceLocks.clear();
+        fixedLevelLocks.clear();
         worldIdentifierCandidatesByStore.clear();
         worldIdentifierMissRetryAtStore.clear();
         worldOverrideKeyByStore.clear();
         worldXpBlacklistByStore.clear();
+        runtimeFixedLevelOverrides.clear();
     }
 
     public void clearTierLockForStore(Store<EntityStore> store) {
@@ -1511,6 +1559,7 @@ public class MobLevelingManager {
         }
         long storeKey = toStoreKey(store);
         tieredInstanceLocks.remove(storeKey);
+        fixedLevelLocks.remove(storeKey);
         worldIdentifierCandidatesByStore.remove(storeKey);
         worldIdentifierMissRetryAtStore.remove(storeKey);
         worldOverrideKeyByStore.remove(storeKey);
@@ -1520,6 +1569,8 @@ public class MobLevelingManager {
     public void shutdownRuntimeState() {
         clearAllEntityLevelOverrides();
         areaOverrides.clear();
+        runtimeFixedLevelOverrides.clear();
+        fixedLevelLocks.clear();
         cachedMobAugmentTierPools = null;
         mobLevelDebugLogTimes.clear();
         missingLevelSourceModeWarned = false;
@@ -1636,6 +1687,47 @@ public class MobLevelingManager {
         return tierOffset;
     }
 
+    private LevelRange resolveDynamicFixedLevelRangeForPlayer(Store<EntityStore> store, PlayerRef sourcePlayer) {
+        String mode = getConfigString("Mob_Leveling.Level_Source.Fixed_Level.Dynamic.Mode", "PLAYER_BRACKET", store);
+        if (mode != null && "RANDOM_RANGE".equalsIgnoreCase(mode.trim())) {
+            int minLevel = Math.max(1,
+                getConfigInt("Mob_Leveling.Level_Source.Fixed_Level.Dynamic.Min_Level", 1, store));
+            int maxLevel = Math.max(minLevel,
+                getConfigInt("Mob_Leveling.Level_Source.Fixed_Level.Dynamic.Max_Level", 500, store));
+            int rangeSize = Math.max(0,
+                getConfigInt("Mob_Leveling.Level_Source.Fixed_Level.Dynamic.Range_Size", 15, store));
+            int maxStart = Math.max(minLevel, maxLevel - rangeSize);
+            int span = Math.max(1, (maxStart - minLevel) + 1);
+
+            String worldIdentifier = resolveWorldIdentifier(store);
+            long seed = worldIdentifier != null && !worldIdentifier.isBlank()
+                ? worldIdentifier.toLowerCase(Locale.ROOT).hashCode()
+                : toStoreKey(store);
+            int start = minLevel + (int) Math.floorMod(seed, span);
+            int end = Math.min(maxLevel, start + rangeSize);
+            return normalizeLevelRange(start, end, store);
+        }
+
+        if (sourcePlayer == null || !sourcePlayer.isValid()) {
+            return null;
+        }
+
+        int playerLevel = Math.max(1, resolveReferencePlayerLevel(store, sourcePlayer));
+        int step = Math.max(1, getConfigInt("Mob_Leveling.Level_Source.Fixed_Level.Dynamic.Step", 15, store));
+        int minOffset = getConfigInt("Mob_Leveling.Level_Source.Fixed_Level.Dynamic.Min_Offset", 0, store);
+        int maxOffset = getConfigInt("Mob_Leveling.Level_Source.Fixed_Level.Dynamic.Max_Offset", step, store);
+        if (minOffset > maxOffset) {
+            int tmp = minOffset;
+            minOffset = maxOffset;
+            maxOffset = tmp;
+        }
+
+        int bracketBase = Math.floorDiv(Math.max(0, playerLevel), step) * step;
+        int resolvedMin = bracketBase + minOffset;
+        int resolvedMax = bracketBase + maxOffset;
+        return normalizeLevelRange(resolvedMin, resolvedMax, store);
+    }
+
     private Integer resolveMobOverrideFixedLevel(Ref<EntityStore> ref,
             Store<EntityStore> store,
             CommandBuffer<EntityStore> commandBuffer,
@@ -1676,6 +1768,27 @@ public class MobLevelingManager {
             Integer fixed = parsePositiveInt(matchedOverride.get("Level"));
             if (fixed != null) {
                 configuredRange = normalizeLevelRange(fixed, fixed, store);
+            }
+        }
+        if (configuredRange == null) {
+            Integer levelFromRangeMaxOffset = parseInteger(matchedOverride.get("Level_From_Range_Max_Offset"));
+            if (levelFromRangeMaxOffset != null) {
+                LevelRange referenceRange = switch (mode) {
+                    case TIERS -> {
+                        if (baseRange == null) {
+                            yield null;
+                        }
+                        int shiftedMin = baseRange.min() + (tierOffset * levelsPerTier);
+                        int shiftedMax = baseRange.max() + (tierOffset * levelsPerTier);
+                        yield normalizeLevelRange(shiftedMin, shiftedMax, store);
+                    }
+                    case FIXED -> parseFixedLevelRange(store);
+                    default -> null;
+                };
+                if (referenceRange != null) {
+                    int resolvedLevel = referenceRange.max() + levelFromRangeMaxOffset;
+                    configuredRange = normalizeLevelRange(resolvedLevel, resolvedLevel, store);
+                }
             }
         }
         if (configuredRange == null) {
@@ -2092,9 +2205,20 @@ public class MobLevelingManager {
     }
 
     private LevelRange parseFixedLevelRange(Store<EntityStore> store) {
+        FixedLevelLock fixedLevelLock = store != null ? fixedLevelLocks.get(toStoreKey(store)) : null;
+        if (fixedLevelLock != null) {
+            return normalizeLevelRange(fixedLevelLock.minLevel(), fixedLevelLock.maxLevel(), store);
+        }
+
         Object levelRaw = resolveConfigValue("Mob_Leveling.Level_Source.Fixed_Level.Level", null, store);
         Object minRaw = resolveConfigValue("Mob_Leveling.Level_Source.Fixed_Level.Min", null, store);
         Object maxRaw = resolveConfigValue("Mob_Leveling.Level_Source.Fixed_Level.Max", null, store);
+
+        if (levelRaw == null && minRaw == null && maxRaw == null) {
+            levelRaw = resolveConfigValue("Mob_Leveling.Level_Source.Fixed_Level.Dynamic.Fallback_Level", null, store);
+            minRaw = resolveConfigValue("Mob_Leveling.Level_Source.Fixed_Level.Dynamic.Fallback_Min", null, store);
+            maxRaw = resolveConfigValue("Mob_Leveling.Level_Source.Fixed_Level.Dynamic.Fallback_Max", null, store);
+        }
 
         LevelRange parsed = parseLevelRange(levelRaw, minRaw, maxRaw, store);
         if (parsed != null) {
@@ -2804,11 +2928,91 @@ public class MobLevelingManager {
     }
 
     private Object resolveConfigValue(String path, Object defaultValue, Store<EntityStore> store) {
+        Object runtimeFixedOverride = resolveRuntimeFixedLevelConfigValue(path, store);
+        if (runtimeFixedOverride != UNSET_CONFIG_VALUE) {
+            return runtimeFixedOverride;
+        }
+
         Object worldOverride = resolveWorldOverrideValue(path, store);
         if (worldOverride != UNSET_CONFIG_VALUE) {
             return worldOverride;
         }
         return configManager.get(path, defaultValue, false);
+    }
+
+    private Object resolveRuntimeFixedLevelConfigValue(String path, Store<EntityStore> store) {
+        if (path == null || path.isBlank() || store == null || runtimeFixedLevelOverrides.isEmpty()) {
+            return UNSET_CONFIG_VALUE;
+        }
+
+        RuntimeFixedLevelOverride override = resolveRuntimeFixedLevelOverride(store);
+        if (override == null) {
+            return UNSET_CONFIG_VALUE;
+        }
+
+        return switch (path) {
+            case "Mob_Leveling.Level_Source.Mode" -> "FIXED";
+            case "Mob_Leveling.Level_Source.Fixed_Level.Level" -> override.minLevel() + "-" + override.maxLevel();
+            case "Mob_Leveling.Level_Source.Fixed_Level.Min" -> override.minLevel();
+            case "Mob_Leveling.Level_Source.Fixed_Level.Max" -> override.maxLevel();
+            default -> UNSET_CONFIG_VALUE;
+        };
+    }
+
+    private RuntimeFixedLevelOverride resolveRuntimeFixedLevelOverride(Store<EntityStore> store) {
+        if (store == null || runtimeFixedLevelOverrides.isEmpty()) {
+            return null;
+        }
+
+        List<String> worldIds = resolveWorldIdentifierCandidates(store, true);
+        if (worldIds.isEmpty()) {
+            return null;
+        }
+
+        RuntimeFixedLevelOverride best = null;
+        int bestScore = -1;
+        for (RuntimeFixedLevelOverride override : runtimeFixedLevelOverrides.values()) {
+            if (override == null || !matchesRuntimeFixedLevelWorld(override.worldId(), worldIds)) {
+                continue;
+            }
+
+            int score = override.worldId().replace("*", "").length();
+            if (score > bestScore) {
+                best = override;
+                bestScore = score;
+            }
+        }
+
+        return best;
+    }
+
+    private boolean matchesRuntimeFixedLevelWorld(String rule, List<String> worldIds) {
+        if (rule == null || rule.isBlank() || worldIds == null || worldIds.isEmpty()) {
+            return false;
+        }
+
+        String normalizedRule = rule.trim().toLowerCase(Locale.ROOT);
+        String ruleCore = normalizedRule.replace("*", "");
+        for (String worldId : worldIds) {
+            if (worldId == null || worldId.isBlank()) {
+                continue;
+            }
+
+            String normalizedWorld = worldId.trim().toLowerCase(Locale.ROOT);
+            if (normalizedRule.contains("*")) {
+                if (matchesWildcard(normalizedWorld, normalizedRule)
+                        || (!ruleCore.isEmpty() && normalizedWorld.contains(ruleCore))) {
+                    return true;
+                }
+                continue;
+            }
+
+            if (normalizedWorld.equals(normalizedRule) || normalizedWorld.contains(normalizedRule)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private Object resolveWorldOverrideValue(String path, Store<EntityStore> store) {
@@ -3410,6 +3614,20 @@ public class MobLevelingManager {
         }
     }
 
+    private Integer parseInteger(Object raw) {
+        if (raw == null) {
+            return null;
+        }
+        if (raw instanceof Number number) {
+            return number.intValue();
+        }
+        try {
+            return Integer.parseInt(raw.toString().trim());
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
     private long hashPosition(Vector3d pos) {
         if (pos == null) {
             return 0L;
@@ -3721,4 +3939,16 @@ public class MobLevelingManager {
             int minLevel,
             int maxLevel) {
     }
+
+        private record FixedLevelLock(int minLevel,
+            int maxLevel,
+            long lockedAtMillis,
+            UUID sourcePlayerUuid) {
+        }
+
+        private record RuntimeFixedLevelOverride(String id,
+            String worldId,
+            int minLevel,
+            int maxLevel) {
+        }
 }

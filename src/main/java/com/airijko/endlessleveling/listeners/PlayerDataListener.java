@@ -109,6 +109,7 @@ public class PlayerDataListener {
         MobLevelingManager mobLevelingManager = EndlessLeveling.getInstance().getMobLevelingManager();
         if (mobLevelingManager != null && store != null) {
             mobLevelingManager.syncTierLevelOverridesForDungeon(store, uuid);
+            mobLevelingManager.syncFixedLevelOverridesForDungeon(store, uuid);
         }
 
         var movementHasteSystem = EndlessLeveling.getInstance().getMovementHasteSystem();
