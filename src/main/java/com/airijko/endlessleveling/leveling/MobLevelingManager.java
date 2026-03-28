@@ -208,10 +208,17 @@ public class MobLevelingManager {
             return;
         }
         LevelSourceMode resolvedMode = getLevelSourceMode(store);
-        if (resolvedMode != LevelSourceMode.FIXED) {
+        boolean supportedMode = resolvedMode == LevelSourceMode.FIXED || resolvedMode == LevelSourceMode.MIXED;
+        if (!supportedMode) {
             LOGGER.atWarning().log(
-                    "[EL-GATE-SYNC] syncFixedLevelOverridesForDungeon skipped: mode=%s (expected FIXED). %s",
+                    "[EL-GATE-SYNC] syncFixedLevelOverridesForDungeon skipped: mode=%s (expected FIXED or MIXED). %s",
                     resolvedMode, describeWorldResolutionContext(store));
+            return;
+        }
+        if (resolvedMode == LevelSourceMode.MIXED && !isInstanceLikeWorld(store)) {
+            LOGGER.atFine().log(
+                    "[EL-GATE-SYNC] syncFixedLevelOverridesForDungeon skipped: mode=MIXED outside instance context. %s",
+                    describeWorldResolutionContext(store));
             return;
         }
         if (!getConfigBoolean("Mob_Leveling.Level_Source.Fixed_Level.Dynamic.Enabled", false, store)) {
@@ -1630,6 +1637,9 @@ public class MobLevelingManager {
             case PLAYER -> resolvePlayerSourceLevel(store, candidate != null ? candidate.playerRef() : null, entityId);
             case DISTANCE -> resolveDistanceLevel(store, mobPos);
             case MIXED -> {
+                if (hasFixedLevelLock(store)) {
+                    yield getFixedLevel(store, entityId, mobPos);
+                }
                 int player = resolvePlayerSourceLevel(store, candidate != null ? candidate.playerRef() : null,
                         entityId);
                 int distance = resolveDistanceLevel(store, mobPos);
@@ -1828,7 +1838,7 @@ public class MobLevelingManager {
                         int shiftedMax = baseRange.max() + (tierOffset * levelsPerTier);
                         yield normalizeLevelRange(shiftedMin, shiftedMax, store);
                     }
-                    case FIXED -> parseFixedLevelRange(store);
+                    case FIXED, MIXED -> parseFixedLevelRange(store);
                     default -> null;
                 };
                 if (referenceRange != null) {
@@ -2226,6 +2236,19 @@ public class MobLevelingManager {
 
     private int blockToChunk(double blockCoordinate) {
         return ((int) Math.floor(blockCoordinate)) >> CHUNK_BIT_SHIFT;
+    }
+
+    private boolean hasFixedLevelLock(Store<EntityStore> store) {
+        return store != null && fixedLevelLocks.containsKey(toStoreKey(store));
+    }
+
+    private boolean isInstanceLikeWorld(Store<EntityStore> store) {
+        String worldId = resolveWorldIdentifier(store);
+        if (worldId == null || worldId.isBlank()) {
+            return false;
+        }
+        String normalized = worldId.trim().toLowerCase(Locale.ROOT);
+        return normalized.startsWith("instance-") || normalized.contains("_instance_");
     }
 
     private int getFixedLevel(Store<EntityStore> store, Integer entityId, Vector3d mobPosition) {
