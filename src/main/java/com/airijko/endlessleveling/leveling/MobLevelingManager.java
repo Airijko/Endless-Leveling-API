@@ -3040,6 +3040,12 @@ public class MobLevelingManager {
             return UNSET_CONFIG_VALUE;
         }
 
+        // If this world has an explicit per-world override profile, let that profile
+        // own level-source behavior instead of forcing runtime gate fixed-level mode.
+        if (hasExplicitWorldOverrideProfile(store)) {
+            return UNSET_CONFIG_VALUE;
+        }
+
         RuntimeFixedLevelOverride override = resolveRuntimeFixedLevelOverride(store);
         if (override == null) {
             return UNSET_CONFIG_VALUE;
@@ -3052,6 +3058,21 @@ public class MobLevelingManager {
             case "Mob_Leveling.Level_Source.Fixed_Level.Max" -> override.maxLevel();
             default -> UNSET_CONFIG_VALUE;
         };
+    }
+
+    private boolean hasExplicitWorldOverrideProfile(Store<EntityStore> store) {
+        if (store == null) {
+            return false;
+        }
+
+        List<String> worldIds = resolveWorldIdentifierCandidates(store, false);
+        String matchedKey = resolveBestWorldOverrideKey(store, worldIds);
+        if (matchedKey == null || matchedKey.isBlank()) {
+            return false;
+        }
+
+        return !"default".equalsIgnoreCase(matchedKey)
+                && !"global".equalsIgnoreCase(matchedKey);
     }
 
     private Integer resolveRuntimeFixedBossLevelFromRangeMaxOffset(Store<EntityStore> store) {
