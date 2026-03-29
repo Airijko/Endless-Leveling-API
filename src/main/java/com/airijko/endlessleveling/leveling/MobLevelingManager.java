@@ -3071,6 +3071,11 @@ public class MobLevelingManager {
             return false;
         }
 
+        String normalizedMatchedKey = matchedKey.trim().toLowerCase(Locale.ROOT);
+        if (normalizedMatchedKey.startsWith("el_gate_") || normalizedMatchedKey.contains("*el_gate_")) {
+            return false;
+        }
+
         return !"default".equalsIgnoreCase(matchedKey)
                 && !"global".equalsIgnoreCase(matchedKey);
     }
