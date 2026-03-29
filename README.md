@@ -36,7 +36,11 @@ This builds and copies the plugin to the server without starting it.
 - Gradle wrapper (included, Gradle 9.2.1), or a Java-25-compatible global Gradle install
 - Hytale Server installation
 
-The Hytale installation path is configured in gradle.properties.
+The build resolves `HytaleServer.jar` from one of these locations:
+
+- `-PhytaleInstallPath=/path/to/hytale/install/root`
+- Windows default: `%APPDATA%/Hytale/install/release/package/game/latest`
+- Local fallback: `libs/HytaleServer.jar`
 
 If your IDE reports a Gradle JVM mismatch, make sure the project is using the bundled Gradle 9.2.1 wrapper and that your Gradle JVM points to a Java 25 JDK before syncing.
 

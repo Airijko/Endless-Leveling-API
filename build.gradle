@@ -3,13 +3,38 @@ plugins {
     id 'com.gradleup.shadow' version '8.3.0'
 }
 
+def configuredJavaVersion = project.findProperty('javaVersion')?.toString() ?: '25'
+
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(javaVersion.toInteger())
+        languageVersion = JavaLanguageVersion.of(Integer.parseInt(configuredJavaVersion))
     }
 }
 
-def hytaleInstallPath = providers.gradleProperty('hytaleInstallPath')
+def resolveHytaleServerJar() {
+    def configuredInstallPath = project.findProperty('hytaleInstallPath')?.toString()
+    def candidates = []
+
+    if (configuredInstallPath != null && !configuredInstallPath.isBlank()) {
+        candidates.add("${configuredInstallPath}/Server/HytaleServer.jar")
+    }
+
+    def appData = System.getenv('APPDATA')
+    if (appData != null && !appData.isBlank()) {
+        candidates.add("${appData}/Hytale/install/release/package/game/latest/Server/HytaleServer.jar")
+    }
+
+    candidates.add("${project.rootDir}/libs/HytaleServer.jar")
+
+    def existing = candidates.collect { file(it) }.find { it.exists() && it.isFile() }
+    if (existing != null) {
+        return existing
+    }
+
+    throw new GradleException(
+            "Could not locate HytaleServer.jar. Set -PhytaleInstallPath to your Hytale install root, or place HytaleServer.jar in ${project.rootDir}/libs. Tried: ${candidates}"
+    )
+}
 
 repositories {
     mavenCentral()
@@ -25,14 +50,14 @@ repositories {
 }
 
 dependencies {
-    compileOnly files("${hytaleInstallPath.get()}/Server/HytaleServer.jar")
+    compileOnly files(resolveHytaleServerJar())
     implementation 'org.yaml:snakeyaml:2.2'
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
     implementation 'com.google.code.gson:gson:2.10.1'
 }
 
 tasks.withType(JavaCompile).configureEach {
-    options.release = javaVersion.toInteger()
+    options.release = Integer.parseInt(configuredJavaVersion)
     options.encoding = 'UTF-8'
 }
 

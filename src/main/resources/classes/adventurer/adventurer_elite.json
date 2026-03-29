@@ -30,7 +30,7 @@
   "passives": [
     {
       "type": "XP_BONUS",
-      "value": 1.425
+      "value": 0.425
     },
     {
       "type": "SPECIAL_CHARGE_BONUS",
