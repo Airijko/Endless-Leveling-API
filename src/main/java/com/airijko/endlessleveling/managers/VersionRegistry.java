@@ -15,14 +15,14 @@ public final class VersionRegistry {
 
     public static final int CONFIG_YML_VERSION = 44;
     public static final int LEVELING_YML_VERSION = 44;
-    public static final int EVENTS_YML_VERSION = 7;
+    public static final int EVENTS_YML_VERSION = 8;
     public static final int WEAPONS_JSON_VERSION = 3;
 
     public static final int PLAYERDATA_SCHEMA_VERSION = 19;
 
     public static final int BUILTIN_AUGMENTS_VERSION = 65;
-    public static final int BUILTIN_CLASSES_VERSION = 35;
-    public static final int BUILTIN_RACES_VERSION = 35;
+    public static final int BUILTIN_CLASSES_VERSION = 36;
+    public static final int BUILTIN_RACES_VERSION = 36;
     public static final int BUILTIN_LANG_VERSION = 5;
     public static final int BUILTIN_WORLD_SETTINGS_VERSION = 3;
 
