@@ -3568,6 +3568,24 @@ public class MobLevelingManager {
             }
 
             Object defaultWorld = universe.getDefaultWorld();
+            Object directWorld = invokeNoArg(store, "getWorld");
+            if (directWorld != null) {
+                for (Map.Entry<String, ?> entry : worlds.entrySet()) {
+                    if (entry == null) {
+                        continue;
+                    }
+
+                    Object world = entry.getValue();
+                    if (world == null || !isSameWorldObject(directWorld, world)) {
+                        continue;
+                    }
+
+                    addIdentifiersForUniverseWorld(out, entry.getKey(), world, defaultWorld);
+                    return;
+                }
+            }
+
+            List<Map.Entry<String, ?>> matches = new ArrayList<>();
             for (Map.Entry<String, ?> entry : worlds.entrySet()) {
                 if (entry == null) {
                     continue;
@@ -3582,25 +3600,36 @@ public class MobLevelingManager {
                 Object worldStore = invokeNoArg(worldEntityStore, "getStore");
                 boolean matchedDirectStore = worldEntityStore == store;
                 boolean matchedNestedStore = worldStore == store;
-                if (!matchedDirectStore && !matchedNestedStore) {
-                    continue;
-                }
-
-                addIfLikelyWorldIdentifier(out, entry.getKey());
-                Object worldName = invokeNoArg(world, "getName");
-                addIfLikelyWorldIdentifier(out, worldName == null ? null : worldName.toString());
-
-                Object worldConfig = invokeNoArg(world, "getWorldConfig");
-                if (worldConfig != null) {
-                    collectWorldIdentifierCandidate(out, worldConfig, "getName");
-                    collectWorldIdentifierCandidate(out, worldConfig, "getDisplayName");
-                }
-
-                if (isSameWorldObject(world, defaultWorld)) {
-                    addIfLikelyWorldIdentifier(out, "default");
+                if (matchedDirectStore || matchedNestedStore) {
+                    matches.add(entry);
                 }
             }
+
+            if (matches.size() == 1) {
+                Map.Entry<String, ?> match = matches.get(0);
+                addIdentifiersForUniverseWorld(out, match.getKey(), match.getValue(), defaultWorld);
+            }
         } catch (Throwable ignored) {
+        }
+    }
+
+    private void addIdentifiersForUniverseWorld(Set<String> out, String worldKey, Object world, Object defaultWorld) {
+        if (out == null || world == null) {
+            return;
+        }
+
+        addIfLikelyWorldIdentifier(out, worldKey);
+        Object worldName = invokeNoArg(world, "getName");
+        addIfLikelyWorldIdentifier(out, worldName == null ? null : worldName.toString());
+
+        Object worldConfig = invokeNoArg(world, "getWorldConfig");
+        if (worldConfig != null) {
+            collectWorldIdentifierCandidate(out, worldConfig, "getName");
+            collectWorldIdentifierCandidate(out, worldConfig, "getDisplayName");
+        }
+
+        if (isSameWorldObject(world, defaultWorld)) {
+            addIfLikelyWorldIdentifier(out, "default");
         }
     }
 
