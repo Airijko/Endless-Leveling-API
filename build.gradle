@@ -3,13 +3,9 @@ plugins {
     id 'com.gradleup.shadow' version '8.3.0'
 }
 
-group = 'com.airijko'
-version = '7.0.3'
-description = 'EndlessLevelingHytale'
-
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(25)
+        languageVersion = JavaLanguageVersion.of(javaVersion.toInteger())
     }
 }
 
@@ -36,7 +32,7 @@ dependencies {
 }
 
 tasks.withType(JavaCompile).configureEach {
-    options.release = 25
+    options.release = javaVersion.toInteger()
     options.encoding = 'UTF-8'
 }
 
