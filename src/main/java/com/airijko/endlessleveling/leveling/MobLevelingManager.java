@@ -94,6 +94,7 @@ public class MobLevelingManager {
     private final Map<Long, Float> trueBaseHealthCache = new ConcurrentHashMap<>();
     private volatile boolean missingLevelSourceModeWarned;
 
+    private final Map<String, GateOverride> gateOverrides = new ConcurrentHashMap<>();
     private final Map<String, AreaOverride> areaOverrides = new ConcurrentHashMap<>();
     private final Map<String, RuntimeFixedLevelOverride> runtimeFixedLevelOverrides = new ConcurrentHashMap<>();
     private final Set<String> fixedLevelFallbackLoggedWorlds = ConcurrentHashMap.newKeySet();
@@ -296,6 +297,20 @@ public class MobLevelingManager {
                         resolveAttempts);
             }
             return null;
+        }
+
+        Integer gateOverrideLevel = resolveRegisteredGateOverrideLevel(ref, effectiveStore, commandBuffer);
+        if (gateOverrideLevel != null && gateOverrideLevel > 0) {
+            int clamped = clampToConfiguredRange(gateOverrideLevel, effectiveStore);
+            if (shouldLogMobLevelDebug(ref, effectiveStore)) {
+                LOGGER.atFine().log(
+                        "[MOB_LEVEL_DEBUG] source=GATE_OVERRIDE mob=%d resolveAttempts=%d resolved=%d clamped=%d",
+                        ref.getIndex(),
+                        resolveAttempts,
+                        gateOverrideLevel,
+                        clamped);
+            }
+            return clamped;
         }
 
         Integer areaOverrideLevel = resolveRegisteredAreaOverrideLevel(ref, effectiveStore, commandBuffer);
@@ -597,6 +612,11 @@ public class MobLevelingManager {
     public int resolveMobLevel(Store<EntityStore> store, Vector3d mobPosition, Integer entityId) {
         if (isDebugStoreSuppressed(store)) {
             return 1;
+        }
+
+        Integer gateOverrideLevel = resolveRegisteredGateOverrideLevel(store, mobPosition, entityId);
+        if (gateOverrideLevel != null && gateOverrideLevel > 0) {
+            return Math.max(1, clampToConfiguredRange(gateOverrideLevel, store));
         }
 
         Integer areaOverrideLevel = resolveRegisteredAreaOverrideLevel(store, mobPosition, entityId);
@@ -1452,8 +1472,70 @@ public class MobLevelingManager {
         return true;
     }
 
+    public boolean registerGateLevelOverride(String id,
+            String worldId,
+            double centerX,
+            double centerZ,
+            double radius,
+            int minLevel,
+            int maxLevel) {
+        return registerGateLevelOverride(id, worldId, centerX, centerZ, radius, minLevel, maxLevel, null);
+    }
+
+    public boolean registerGateLevelOverride(String id,
+            String worldId,
+            double centerX,
+            double centerZ,
+            double radius,
+            int minLevel,
+            int maxLevel,
+            Integer bossLevelFromRangeMaxOffset) {
+        if (id == null || id.isBlank() || radius <= 0.0D || minLevel <= 0 || maxLevel <= 0) {
+            return false;
+        }
+        gateOverrides.put(id.trim(),
+                new GateOverride(
+                        id.trim(),
+                        worldId,
+                        centerX,
+                        centerZ,
+                        radius * radius,
+                        minLevel,
+                        maxLevel,
+                        bossLevelFromRangeMaxOffset));
+        return true;
+    }
+
     public boolean registerWorldLevelOverride(String id, String worldId, int minLevel, int maxLevel) {
         return registerAreaLevelOverride(id, worldId, 0.0D, 0.0D, Double.MAX_VALUE / 4.0D, minLevel, maxLevel);
+    }
+
+    public boolean registerWorldGateLevelOverride(String id, String worldId, int minLevel, int maxLevel) {
+        return registerGateLevelOverride(
+                id,
+                worldId,
+                0.0D,
+                0.0D,
+                Double.MAX_VALUE / 4.0D,
+                minLevel,
+                maxLevel,
+                null);
+    }
+
+    public boolean registerWorldGateLevelOverride(String id,
+            String worldId,
+            int minLevel,
+            int maxLevel,
+            Integer bossLevelFromRangeMaxOffset) {
+        return registerGateLevelOverride(
+                id,
+                worldId,
+                0.0D,
+                0.0D,
+                Double.MAX_VALUE / 4.0D,
+                minLevel,
+                maxLevel,
+                bossLevelFromRangeMaxOffset);
     }
 
     public boolean registerRuntimeFixedLevelOverride(String id, String worldId, int minLevel, int maxLevel) {
@@ -1488,6 +1570,73 @@ public class MobLevelingManager {
 
         Vector3d mobPos = resolveWorldPosition(ref, commandBuffer);
         return resolveRegisteredAreaOverrideLevel(store, mobPos, ref != null ? ref.getIndex() : null);
+    }
+
+    private Integer resolveRegisteredGateOverrideLevel(Ref<EntityStore> ref,
+            Store<EntityStore> store,
+            CommandBuffer<EntityStore> commandBuffer) {
+        if (store == null) {
+            return null;
+        }
+
+        Vector3d mobPos = resolveWorldPosition(ref, commandBuffer);
+        return resolveRegisteredGateOverrideLevel(store, mobPos, ref != null ? ref.getIndex() : null);
+    }
+
+    private Integer resolveRegisteredGateOverrideLevel(Store<EntityStore> store,
+            Vector3d mobPosition,
+            Integer entityId) {
+        if (store == null || mobPosition == null || gateOverrides.isEmpty()) {
+            return null;
+        }
+
+        List<String> worldIds = resolveWorldIdentifierCandidates(store, true);
+        if (worldIds.isEmpty()) {
+            return null;
+        }
+
+        GateOverride best = null;
+        int bestSourcePriority = -1;
+        int bestSpecificity = -1;
+        String bestId = null;
+
+        for (GateOverride override : gateOverrides.values()) {
+            if (override == null || !matchesAreaOverrideWorld(override.worldId(), worldIds)) {
+                continue;
+            }
+
+            double distanceSq = horizontalDistanceSquared(
+                    mobPosition,
+                    new Vector3d(override.centerX(), mobPosition.getY(), override.centerZ()));
+            if (distanceSq > override.radiusSq()) {
+                continue;
+            }
+
+            int sourcePriority = gateOverrideSourcePriority(override.id());
+            int specificity = override.worldId() == null ? 0 : override.worldId().replace("*", "").length();
+            String normalizedId = override.id() == null ? "" : override.id().trim().toLowerCase(Locale.ROOT);
+
+            if (sourcePriority > bestSourcePriority
+                    || (sourcePriority == bestSourcePriority && specificity > bestSpecificity)
+                    || (sourcePriority == bestSourcePriority
+                            && specificity == bestSpecificity
+                            && (bestId == null || normalizedId.compareTo(bestId) < 0))) {
+                best = override;
+                bestSourcePriority = sourcePriority;
+                bestSpecificity = specificity;
+                bestId = normalizedId;
+            }
+        }
+
+        if (best == null) {
+            return null;
+        }
+
+        return rollLevelInRange(
+                normalizeLevelRange(best.minLevel(), best.maxLevel(), store),
+                entityId,
+                mobPosition,
+                0xEA73F1D6A4B2C901L);
     }
 
     private Integer resolveRegisteredAreaOverrideLevel(Store<EntityStore> store,
@@ -1528,7 +1677,14 @@ public class MobLevelingManager {
             return false;
         }
 
-        String overrideWorldId = override.worldId();
+        return matchesAreaOverrideWorld(override.worldId(), worldIds);
+    }
+
+    private boolean matchesAreaOverrideWorld(String overrideWorldId, List<String> worldIds) {
+        if (worldIds == null || worldIds.isEmpty()) {
+            return false;
+        }
+
         if (overrideWorldId == null || overrideWorldId.isBlank()) {
             return true;
         }
@@ -1557,11 +1713,34 @@ public class MobLevelingManager {
         return false;
     }
 
+    private int gateOverrideSourcePriority(String id) {
+        if (id == null || id.isBlank()) {
+            return 0;
+        }
+
+        String normalizedId = id.trim().toLowerCase(Locale.ROOT);
+        if (normalizedId.startsWith("elportal:gate:")
+                || normalizedId.startsWith("elportal:fixed:")
+                || normalizedId.startsWith("elportal-gate-")
+                || normalizedId.startsWith("elportal-fixed-")) {
+            return 2;
+        }
+
+        return 1;
+    }
+
     public boolean removeAreaLevelOverride(String id) {
         if (id == null || id.isBlank()) {
             return false;
         }
         return areaOverrides.remove(id.trim()) != null;
+    }
+
+    public boolean removeGateLevelOverride(String id) {
+        if (id == null || id.isBlank()) {
+            return false;
+        }
+        return gateOverrides.remove(id.trim()) != null;
     }
 
     public boolean removeRuntimeFixedLevelOverride(String id) {
@@ -1573,6 +1752,10 @@ public class MobLevelingManager {
 
     public void clearAreaLevelOverrides() {
         areaOverrides.clear();
+    }
+
+    public void clearGateLevelOverrides() {
+        gateOverrides.clear();
     }
 
     public void clearRuntimeFixedLevelOverrides() {
@@ -1615,6 +1798,7 @@ public class MobLevelingManager {
         worldIdentifierMissRetryAtStore.clear();
         worldOverrideKeyByStore.clear();
         worldXpBlacklistByStore.clear();
+        gateOverrides.clear();
         runtimeFixedLevelOverrides.clear();
         fixedLevelFallbackLoggedWorlds.clear();
     }
@@ -1634,6 +1818,7 @@ public class MobLevelingManager {
 
     public void shutdownRuntimeState() {
         clearAllEntityLevelOverrides();
+        gateOverrides.clear();
         areaOverrides.clear();
         runtimeFixedLevelOverrides.clear();
         fixedLevelLocks.clear();
@@ -1842,7 +2027,10 @@ public class MobLevelingManager {
         }
         if (configuredRange == null) {
             Integer levelFromRangeMaxOffset = parseInteger(matchedOverride.get("Level_From_Range_Max_Offset"));
-            Integer runtimeBossOffset = resolveRuntimeFixedBossLevelFromRangeMaxOffset(store);
+            Integer runtimeBossOffset = resolveGateBossLevelFromRangeMaxOffset(store);
+            if (runtimeBossOffset == null) {
+                runtimeBossOffset = resolveRuntimeFixedBossLevelFromRangeMaxOffset(store);
+            }
             if (runtimeBossOffset != null) {
                 levelFromRangeMaxOffset = runtimeBossOffset;
             }
@@ -3085,6 +3273,49 @@ public class MobLevelingManager {
         return override == null ? null : override.bossLevelFromRangeMaxOffset();
     }
 
+    private Integer resolveGateBossLevelFromRangeMaxOffset(Store<EntityStore> store) {
+        if (store == null || gateOverrides.isEmpty()) {
+            return null;
+        }
+
+        List<String> worldIds = resolveWorldIdentifierCandidates(store, true);
+        if (worldIds.isEmpty()) {
+            return null;
+        }
+
+        GateOverride best = null;
+        int bestSourcePriority = -1;
+        int bestSpecificity = -1;
+        String bestId = null;
+
+        for (GateOverride override : gateOverrides.values()) {
+            if (override == null || !matchesAreaOverrideWorld(override.worldId(), worldIds)) {
+                continue;
+            }
+
+            if (override.bossLevelFromRangeMaxOffset() == null) {
+                continue;
+            }
+
+            int sourcePriority = gateOverrideSourcePriority(override.id());
+            int specificity = override.worldId() == null ? 0 : override.worldId().replace("*", "").length();
+            String normalizedId = override.id() == null ? "" : override.id().trim().toLowerCase(Locale.ROOT);
+
+            if (sourcePriority > bestSourcePriority
+                    || (sourcePriority == bestSourcePriority && specificity > bestSpecificity)
+                    || (sourcePriority == bestSourcePriority
+                            && specificity == bestSpecificity
+                            && (bestId == null || normalizedId.compareTo(bestId) < 0))) {
+                best = override;
+                bestSourcePriority = sourcePriority;
+                bestSpecificity = specificity;
+                bestId = normalizedId;
+            }
+        }
+
+        return best == null ? null : best.bossLevelFromRangeMaxOffset();
+    }
+
     private RuntimeFixedLevelOverride resolveRuntimeFixedLevelOverride(Store<EntityStore> store) {
         if (store == null || runtimeFixedLevelOverrides.isEmpty()) {
             return null;
@@ -4161,7 +4392,17 @@ public class MobLevelingManager {
         return best;
     }
 
-    private record AreaOverride(String id,
+        private record GateOverride(String id,
+            String worldId,
+            double centerX,
+            double centerZ,
+            double radiusSq,
+            int minLevel,
+            int maxLevel,
+            Integer bossLevelFromRangeMaxOffset) {
+        }
+
+        private record AreaOverride(String id,
             String worldId,
             double centerX,
             double centerZ,

@@ -318,6 +318,35 @@ public final class EndlessLevelingAPI {
                 && mobLevelingManager.registerWorldLevelOverride(id, worldId, minLevel, maxLevel);
     }
 
+        /**
+         * Register a world-wide GATE override; min/max equal means flat.
+         * GATE overrides are evaluated before generic area overrides.
+         */
+        public boolean registerMobWorldGateLevelOverride(String id, String worldId, int minLevel, int maxLevel) {
+        MobLevelingManager mobLevelingManager = mobLevelingManager();
+        return mobLevelingManager != null
+            && mobLevelingManager.registerWorldGateLevelOverride(id, worldId, minLevel, maxLevel);
+        }
+
+        /**
+         * Register a world-wide GATE override with optional runtime replacement for
+         * Mob_Overrides.Level_From_Range_Max_Offset.
+         */
+        public boolean registerMobWorldGateLevelOverride(String id,
+            String worldId,
+            int minLevel,
+            int maxLevel,
+            int bossLevelFromRangeMaxOffset) {
+        MobLevelingManager mobLevelingManager = mobLevelingManager();
+        return mobLevelingManager != null
+            && mobLevelingManager.registerWorldGateLevelOverride(
+                id,
+                worldId,
+                minLevel,
+                maxLevel,
+                bossLevelFromRangeMaxOffset);
+        }
+
     /**
      * Register a world-wide dynamic FIXED Level_Source override.
      * This keeps scaling on the normal config path while replacing the live
@@ -354,6 +383,12 @@ public final class EndlessLevelingAPI {
         return mobLevelingManager != null && mobLevelingManager.removeAreaLevelOverride(id);
     }
 
+    /** Remove a previously registered GATE override. */
+    public boolean removeMobGateLevelOverride(String id) {
+        MobLevelingManager mobLevelingManager = mobLevelingManager();
+        return mobLevelingManager != null && mobLevelingManager.removeGateLevelOverride(id);
+    }
+
     /** Remove a previously registered world-wide dynamic FIXED Level_Source override. */
     public boolean removeMobWorldFixedLevelOverride(String id) {
         MobLevelingManager mobLevelingManager = mobLevelingManager();
@@ -365,6 +400,14 @@ public final class EndlessLevelingAPI {
         MobLevelingManager mobLevelingManager = mobLevelingManager();
         if (mobLevelingManager != null) {
             mobLevelingManager.clearAreaLevelOverrides();
+        }
+    }
+
+    /** Clear all GATE overrides. */
+    public void clearMobGateLevelOverrides() {
+        MobLevelingManager mobLevelingManager = mobLevelingManager();
+        if (mobLevelingManager != null) {
+            mobLevelingManager.clearGateLevelOverrides();
         }
     }
 
