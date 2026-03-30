@@ -299,16 +299,50 @@ public class MobLevelingManager {
             return null;
         }
 
-        Integer gateOverrideLevel = resolveRegisteredGateOverrideLevel(ref, effectiveStore, commandBuffer);
+        GateOverrideRollOutcome gateOverride = resolveRegisteredGateOverrideOutcome(ref, effectiveStore, commandBuffer);
+        Integer gateOverrideLevel = gateOverride == null ? null : gateOverride.rolledLevel();
         if (gateOverrideLevel != null && gateOverrideLevel > 0) {
+            MobOverrideMatch mobOverrideMatch = resolveMatchingMobOverrideMatch(ref, effectiveStore, commandBuffer);
+            Integer matchedMobOffset = mobOverrideMatch == null
+                ? null
+                : parseInteger(mobOverrideMatch.overrideMap().get("Level_From_Range_Max_Offset"));
+            Integer runtimeGateBossOffset = resolveGateBossLevelFromRangeMaxOffset(effectiveStore);
+            Integer runtimeFixedBossOffset = resolveRuntimeFixedBossLevelFromRangeMaxOffset(effectiveStore);
+
+            // Gate overrides should still honor boss-style mob overrides by pinning to range max + offset.
+            // Prefer runtime gate offset (from gate registration), then runtime fixed, then static mob offset.
+            if (gateOverride.override() != null && matchedMobOffset != null) {
+            int bossOffset = runtimeGateBossOffset != null
+                ? runtimeGateBossOffset
+                : (runtimeFixedBossOffset != null ? runtimeFixedBossOffset : matchedMobOffset);
+            gateOverrideLevel = gateOverride.override().maxLevel() + Math.max(0, bossOffset);
+            }
+
             int clamped = clampToConfiguredRange(gateOverrideLevel, effectiveStore);
             if (shouldLogMobLevelDebug(ref, effectiveStore)) {
                 LOGGER.atFine().log(
-                        "[MOB_LEVEL_DEBUG] source=GATE_OVERRIDE mob=%d resolveAttempts=%d resolved=%d clamped=%d",
+                "[MOB_LEVEL_DEBUG] source=GATE_OVERRIDE mob=%d resolveAttempts=%d resolved=%d clamped=%d world=%s gateOverrideId=%s gateWorld=%s gateRange=%d-%d gateBossOffset=%s npcType=%s matchedMobOverride=%s matchedMobOffset=%s runtimeGateBossOffset=%s runtimeFixedBossOffset=%s",
                         ref.getIndex(),
                         resolveAttempts,
                         gateOverrideLevel,
-                        clamped);
+                clamped,
+                safeDebugValue(resolveWorldIdentifier(effectiveStore)),
+                gateOverride == null || gateOverride.override() == null
+                    ? "<none>"
+                    : safeDebugValue(gateOverride.override().id()),
+                gateOverride == null || gateOverride.override() == null
+                    ? "<none>"
+                    : safeDebugValue(gateOverride.override().worldId()),
+                gateOverride == null || gateOverride.override() == null ? -1 : gateOverride.override().minLevel(),
+                gateOverride == null || gateOverride.override() == null ? -1 : gateOverride.override().maxLevel(),
+                gateOverride == null || gateOverride.override() == null
+                    ? "<none>"
+                    : safeDebugValue(gateOverride.override().bossLevelFromRangeMaxOffset()),
+                mobOverrideMatch == null ? "<none>" : safeDebugValue(mobOverrideMatch.mobType()),
+                mobOverrideMatch == null ? "<none>" : safeDebugValue(mobOverrideMatch.overrideId()),
+                safeDebugValue(matchedMobOffset),
+                safeDebugValue(runtimeGateBossOffset),
+                safeDebugValue(runtimeFixedBossOffset));
             }
             return clamped;
         }
@@ -1575,15 +1609,29 @@ public class MobLevelingManager {
     private Integer resolveRegisteredGateOverrideLevel(Ref<EntityStore> ref,
             Store<EntityStore> store,
             CommandBuffer<EntityStore> commandBuffer) {
+        GateOverrideRollOutcome outcome = resolveRegisteredGateOverrideOutcome(ref, store, commandBuffer);
+        return outcome == null ? null : outcome.rolledLevel();
+    }
+
+    private GateOverrideRollOutcome resolveRegisteredGateOverrideOutcome(Ref<EntityStore> ref,
+            Store<EntityStore> store,
+            CommandBuffer<EntityStore> commandBuffer) {
         if (store == null) {
             return null;
         }
 
         Vector3d mobPos = resolveWorldPosition(ref, commandBuffer);
-        return resolveRegisteredGateOverrideLevel(store, mobPos, ref != null ? ref.getIndex() : null);
+        return resolveRegisteredGateOverrideOutcome(store, mobPos, ref != null ? ref.getIndex() : null);
     }
 
     private Integer resolveRegisteredGateOverrideLevel(Store<EntityStore> store,
+            Vector3d mobPosition,
+            Integer entityId) {
+        GateOverrideRollOutcome outcome = resolveRegisteredGateOverrideOutcome(store, mobPosition, entityId);
+        return outcome == null ? null : outcome.rolledLevel();
+    }
+
+    private GateOverrideRollOutcome resolveRegisteredGateOverrideOutcome(Store<EntityStore> store,
             Vector3d mobPosition,
             Integer entityId) {
         if (store == null || mobPosition == null || gateOverrides.isEmpty()) {
@@ -1632,11 +1680,12 @@ public class MobLevelingManager {
             return null;
         }
 
-        return rollLevelInRange(
+        int rolledLevel = rollLevelInRange(
                 normalizeLevelRange(best.minLevel(), best.maxLevel(), store),
                 entityId,
                 mobPosition,
                 0xEA73F1D6A4B2C901L);
+        return new GateOverrideRollOutcome(best, rolledLevel);
     }
 
     private Integer resolveRegisteredAreaOverrideLevel(Store<EntityStore> store,
@@ -2071,6 +2120,13 @@ public class MobLevelingManager {
     private Map<?, ?> resolveMatchingMobOverride(Ref<EntityStore> ref,
             Store<EntityStore> store,
             CommandBuffer<EntityStore> commandBuffer) {
+        MobOverrideMatch match = resolveMatchingMobOverrideMatch(ref, store, commandBuffer);
+        return match == null ? null : match.overrideMap();
+    }
+
+    private MobOverrideMatch resolveMatchingMobOverrideMatch(Ref<EntityStore> ref,
+            Store<EntityStore> store,
+            CommandBuffer<EntityStore> commandBuffer) {
         if (ref == null || store == null) {
             return null;
         }
@@ -2102,7 +2158,7 @@ public class MobLevelingManager {
             }
 
             if (mobMatchesOverrideRule(mobType, overrideId, overrideMap.get("Names"))) {
-                return overrideMap;
+                return new MobOverrideMatch(overrideId, mobType, overrideMap);
             }
         }
 
@@ -4422,5 +4478,11 @@ public class MobLevelingManager {
             int minLevel,
             int maxLevel,
             Integer bossLevelFromRangeMaxOffset) {
+        }
+
+        private record GateOverrideRollOutcome(GateOverride override, int rolledLevel) {
+        }
+
+        private record MobOverrideMatch(String overrideId, String mobType, Map<?, ?> overrideMap) {
         }
 }
