@@ -3096,29 +3096,68 @@ public class MobLevelingManager {
         }
 
         RuntimeFixedLevelOverride best = null;
-        int bestScore = -1;
+        int bestSourcePriority = -1;
+        int bestMatchType = -1;
+        int bestSpecificity = -1;
+        String bestId = null;
         for (RuntimeFixedLevelOverride override : runtimeFixedLevelOverrides.values()) {
-            if (override == null || !matchesRuntimeFixedLevelWorld(override.worldId(), worldIds)) {
+            if (override == null) {
                 continue;
             }
 
-            int score = override.worldId().replace("*", "").length();
-            if (score > bestScore) {
+            int matchType = runtimeFixedLevelWorldMatchType(override.worldId(), worldIds);
+            if (matchType < 0) {
+                continue;
+            }
+
+            int sourcePriority = runtimeFixedLevelOverrideSourcePriority(override.id());
+            int specificity = override.worldId().replace("*", "").length();
+            String normalizedId = override.id() == null
+                    ? ""
+                    : override.id().trim().toLowerCase(Locale.ROOT);
+
+            if (sourcePriority > bestSourcePriority
+                    || (sourcePriority == bestSourcePriority && matchType > bestMatchType)
+                    || (sourcePriority == bestSourcePriority
+                            && matchType == bestMatchType
+                            && specificity > bestSpecificity)
+                    || (sourcePriority == bestSourcePriority
+                            && matchType == bestMatchType
+                            && specificity == bestSpecificity
+                            && (bestId == null || normalizedId.compareTo(bestId) < 0))) {
                 best = override;
-                bestScore = score;
+                bestSourcePriority = sourcePriority;
+                bestMatchType = matchType;
+                bestSpecificity = specificity;
+                bestId = normalizedId;
             }
         }
 
         return best;
     }
 
-    private boolean matchesRuntimeFixedLevelWorld(String rule, List<String> worldIds) {
+    private int runtimeFixedLevelOverrideSourcePriority(String id) {
+        if (id == null || id.isBlank()) {
+            return 0;
+        }
+
+        String normalizedId = id.trim().toLowerCase(Locale.ROOT);
+        if (normalizedId.startsWith("elportal:fixed:") || normalizedId.startsWith("elportal-fixed-")) {
+            // Gate-scoped runtime overrides must beat generic third-party overrides.
+            return 2;
+        }
+
+        return 1;
+    }
+
+    private int runtimeFixedLevelWorldMatchType(String rule, List<String> worldIds) {
         if (rule == null || rule.isBlank() || worldIds == null || worldIds.isEmpty()) {
-            return false;
+            return -1;
         }
 
         String normalizedRule = rule.trim().toLowerCase(Locale.ROOT);
         String ruleCore = normalizedRule.replace("*", "");
+        int best = -1;
         for (String worldId : worldIds) {
             if (worldId == null || worldId.isBlank()) {
                 continue;
@@ -3126,19 +3165,30 @@ public class MobLevelingManager {
 
             String normalizedWorld = worldId.trim().toLowerCase(Locale.ROOT);
             if (normalizedRule.contains("*")) {
-                if (matchesWildcard(normalizedWorld, normalizedRule)
-                        || (!ruleCore.isEmpty() && normalizedWorld.contains(ruleCore))) {
-                    return true;
+                if (matchesWildcard(normalizedWorld, normalizedRule)) {
+                    best = Math.max(best, 2);
+                    continue;
+                }
+                if (!ruleCore.isEmpty() && normalizedWorld.contains(ruleCore)) {
+                    best = Math.max(best, 1);
                 }
                 continue;
             }
 
-            if (normalizedWorld.equals(normalizedRule) || normalizedWorld.contains(normalizedRule)) {
-                return true;
+            if (normalizedWorld.equals(normalizedRule)) {
+                best = Math.max(best, 4);
+                continue;
+            }
+            if (normalizedWorld.contains(normalizedRule)) {
+                best = Math.max(best, 3);
             }
         }
 
-        return false;
+        return best;
+    }
+
+    private boolean matchesRuntimeFixedLevelWorld(String rule, List<String> worldIds) {
+        return runtimeFixedLevelWorldMatchType(rule, worldIds) >= 0;
     }
 
     private Object resolveWorldOverrideValue(String path, Store<EntityStore> store) {
