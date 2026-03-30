@@ -260,13 +260,13 @@ public class RaceManager {
             return;
         }
 
-        int consumeFloor = Math.max(0, maxRaceSwitches - SWAP_CONSUME_COUNT);
-        // Respect admin-granted bonus swaps above the configured cap.
-        // Anti-exploit auto-consumption should only affect baseline configured swaps.
-        if (hasAssignedRace(data)
-            && data.getRemainingRaceSwitches() <= maxRaceSwitches
-            && data.getRemainingRaceSwitches() > consumeFloor) {
-            data.setRemainingRaceSwitches(consumeFloor);
+        if (hasAssignedRace(data) && !data.isRaceSwapAntiExploitConsumedAtLevel()) {
+            int remaining = data.getRemainingRaceSwitches();
+            // One-time consume: remove exactly one baseline-configured swap.
+            if (remaining > 0 && remaining <= maxRaceSwitches) {
+                data.setRemainingRaceSwitches(Math.max(0, remaining - SWAP_CONSUME_COUNT));
+            }
+            data.setRaceSwapAntiExploitConsumedAtLevel(true);
         }
 
         // If race is unassigned (None) and swaps are exhausted, grant exactly one
@@ -295,6 +295,10 @@ public class RaceManager {
 
         data.setRemainingRaceSwitches(1);
         LOGGER.atInfo().log("Granted one emergency race swap because race is None and swaps were exhausted.");
+    }
+
+    public void settleAntiExploit(PlayerData data) {
+        applyLevelThresholdSwapConsumption(data);
     }
 
     private boolean isSwapAntiExploitEnabled() {

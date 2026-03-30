@@ -1,7 +1,5 @@
 package com.airijko.endlessleveling.classes;
 
-import com.airijko.endlessleveling.classes.CharacterClassDefinition;
-import com.airijko.endlessleveling.classes.WeaponConfig;
 import com.airijko.endlessleveling.player.PlayerData;
 import com.airijko.endlessleveling.enums.ArchetypePassiveType;
 import com.airijko.endlessleveling.enums.ClassAssignmentSlot;
@@ -678,17 +676,25 @@ public class ClassManager {
         if (data.getLevel() < getSwapConsumeLevelThreshold()) {
             return;
         }
-        int consumeFloor = Math.max(0, maxClassSwitches - SWAP_CONSUME_COUNT);
+
         if (hasAssignedClassInSlot(data, ClassAssignmentSlot.PRIMARY)
-            && data.getRemainingPrimaryClassSwitches() <= maxClassSwitches
-                && data.getRemainingPrimaryClassSwitches() > consumeFloor) {
-            data.setRemainingPrimaryClassSwitches(consumeFloor);
+                && !data.isPrimaryClassSwapAntiExploitConsumedAtLevel()) {
+            int remaining = data.getRemainingPrimaryClassSwitches();
+            // One-time consume: remove exactly one baseline-configured swap.
+            if (remaining > 0 && remaining <= maxClassSwitches) {
+                data.setRemainingPrimaryClassSwitches(Math.max(0, remaining - SWAP_CONSUME_COUNT));
+            }
+            data.setPrimaryClassSwapAntiExploitConsumedAtLevel(true);
         }
         if (isSecondaryClassEnabled()
                 && hasAssignedClassInSlot(data, ClassAssignmentSlot.SECONDARY)
-            && data.getRemainingSecondaryClassSwitches() <= maxClassSwitches
-                && data.getRemainingSecondaryClassSwitches() > consumeFloor) {
-            data.setRemainingSecondaryClassSwitches(consumeFloor);
+                && !data.isSecondaryClassSwapAntiExploitConsumedAtLevel()) {
+            int remaining = data.getRemainingSecondaryClassSwitches();
+            // One-time consume: remove exactly one baseline-configured swap.
+            if (remaining > 0 && remaining <= maxClassSwitches) {
+                data.setRemainingSecondaryClassSwitches(Math.max(0, remaining - SWAP_CONSUME_COUNT));
+            }
+            data.setSecondaryClassSwapAntiExploitConsumedAtLevel(true);
         }
 
         // If a slot is unassigned (None) and fully exhausted, grant exactly one
@@ -705,6 +711,10 @@ public class ClassManager {
         }
         String classId = slot == ClassAssignmentSlot.PRIMARY ? data.getPrimaryClassId() : data.getSecondaryClassId();
         return classId != null && !classId.isBlank() && !"none".equalsIgnoreCase(classId.trim());
+    }
+
+    public void settleAntiExploit(PlayerData data) {
+        applyLevelThresholdSwapConsumption(data);
     }
 
     private boolean isSwapAntiExploitEnabled() {

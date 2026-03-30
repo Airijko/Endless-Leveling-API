@@ -2,6 +2,7 @@ package com.airijko.endlessleveling.commands.races;
 
 import com.airijko.endlessleveling.player.PlayerData;
 import com.airijko.endlessleveling.player.PlayerDataManager;
+import com.airijko.endlessleveling.races.RaceManager;
 import com.airijko.endlessleveling.util.PartnerConsoleGuard;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.AbstractCommand;
@@ -26,6 +27,7 @@ import java.util.concurrent.CompletableFuture;
  */
 public class AddRaceSwapCommand extends AbstractCommand {
 
+    private final RaceManager raceManager;
     private final PlayerDataManager playerDataManager;
 
     private final RequiredArg<String> playerArg =
@@ -33,8 +35,9 @@ public class AddRaceSwapCommand extends AbstractCommand {
         private final RequiredArg<Integer> countArg =
             this.withRequiredArg("count", "Number of swaps to add", ArgTypes.INTEGER);
 
-    public AddRaceSwapCommand(PlayerDataManager playerDataManager) {
+    public AddRaceSwapCommand(RaceManager raceManager, PlayerDataManager playerDataManager) {
         super("addswap", "Grant an additional race swap to a player");
+        this.raceManager = raceManager;
         this.playerDataManager = playerDataManager;
         this.addUsageVariant(new AddRaceSwapSelfVariant());
         this.addUsageVariant(new AddRaceSwapTargetVariant());
@@ -93,6 +96,12 @@ public class AddRaceSwapCommand extends AbstractCommand {
 
             PlayerRef selfRef = Universe.get().getPlayer(targetData.getUuid());
             targetName = selfRef != null ? selfRef.getUsername() : targetData.getPlayerName();
+        }
+
+        // Settle the anti-exploit flag BEFORE adding swaps so the one-time consume
+        // fires on the current state and doesn't eat the newly granted swaps.
+        if (raceManager != null) {
+            raceManager.settleAntiExploit(targetData);
         }
 
         int before = targetData.getRemainingRaceSwitches();

@@ -18,11 +18,7 @@ import com.hypixel.hytale.server.core.asset.type.soundevent.config.SoundEvent;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.modules.entity.damage.Damage;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
-import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue;
 import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
-import com.hypixel.hytale.server.core.modules.entitystats.modifier.Modifier.ModifierTarget;
-import com.hypixel.hytale.server.core.modules.entitystats.modifier.StaticModifier;
-import com.hypixel.hytale.server.core.modules.entitystats.modifier.StaticModifier.CalculationType;
 import com.hypixel.hytale.server.core.universe.world.ParticleUtil;
 import com.hypixel.hytale.server.core.universe.world.SoundUtil;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -33,8 +29,6 @@ import java.util.Locale;
 public final class GraspOfTheUndyingAugment extends Augment
         implements AugmentHooks.OnHitAugment, AugmentHooks.PassiveStatAugment {
     public static final String ID = "grasp_of_the_undying";
-    private static final String MAX_HP_BONUS_KEY = "EL_" + ID + "_max_hp_bonus";
-    private static final String LEGACY_MAX_HP_BONUS_KEY = ID + "_max_hp_bonus";
 
     private static final String[] TRIGGER_VFX_IDS = new String[] {
         "Impact_Blade_01",
@@ -150,53 +144,6 @@ public final class GraspOfTheUndyingAugment extends Augment
             state.setStacks(0);
             state.setExpiresAt(0L);
         }
-
-        applyMaxHealthBonus(context.getStatMap(), state.getStacks());
-    }
-
-    private void applyMaxHealthBonus(EntityStatMap statMap, int stacks) {
-        if (statMap == null) {
-            return;
-        }
-
-        EntityStatValue hpBefore = statMap.get(DefaultEntityStatTypes.getHealth());
-        if (hpBefore == null || hpBefore.getMax() <= 0f) {
-            return;
-        }
-
-        float previousMax = hpBefore.getMax();
-        float previousCurrent = hpBefore.get();
-
-        statMap.removeModifier(DefaultEntityStatTypes.getHealth(), MAX_HP_BONUS_KEY);
-        statMap.removeModifier(DefaultEntityStatTypes.getHealth(), LEGACY_MAX_HP_BONUS_KEY);
-        statMap.update();
-
-        int safeStacks = maxStacks > 0
-            ? Math.max(0, Math.min(maxStacks, stacks))
-            : Math.max(0, stacks);
-        double totalBonus = flatHealthPerStack * safeStacks;
-        if (Math.abs(totalBonus) > 0.0001D) {
-            statMap.putModifier(DefaultEntityStatTypes.getHealth(),
-                    MAX_HP_BONUS_KEY,
-                    new StaticModifier(ModifierTarget.MAX, CalculationType.ADDITIVE, (float) totalBonus));
-            statMap.update();
-        }
-
-        EntityStatValue hpUpdated = statMap.get(DefaultEntityStatTypes.getHealth());
-        if (hpUpdated == null || hpUpdated.getMax() <= 0f) {
-            return;
-        }
-
-        float newMax = hpUpdated.getMax();
-        float ratio = 1.0f;
-        if (Float.isFinite(previousMax) && previousMax > 0.01f && Float.isFinite(previousCurrent)) {
-            ratio = previousCurrent / previousMax;
-        }
-        if (!Float.isFinite(ratio)) {
-            ratio = 1.0f;
-        }
-        float adjustedCurrent = Math.max(1.0f, Math.min(newMax, ratio * newMax));
-        statMap.setStatValue(DefaultEntityStatTypes.getHealth(), adjustedCurrent);
     }
 
     private void refreshStackExpiryWhileInCombat(AugmentHooks.PassiveStatContext context,
@@ -306,5 +253,13 @@ public final class GraspOfTheUndyingAugment extends Augment
     private int resolveSoundIndex(String id) {
         int index = SoundEvent.getAssetMap().getIndex(id);
         return index == Integer.MIN_VALUE ? 0 : index;
+    }
+
+    public double getFlatHealthPerStack() {
+        return flatHealthPerStack;
+    }
+
+    public int getConfiguredMaxStacks() {
+        return maxStacks;
     }
 }

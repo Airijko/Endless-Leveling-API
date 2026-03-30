@@ -34,7 +34,7 @@ public class RaceCommand extends AbstractPlayerCommand {
         this.addSubCommand(new RaceChooseCommand(raceManager, playerDataManager));
         this.addSubCommand(new ToggleRaceModelCommand());
         this.addSubCommand(new RacePathsCommand(raceManager));
-        this.addSubCommand(new AddRaceSwapCommand(playerDataManager));
+        this.addSubCommand(new AddRaceSwapCommand(raceManager, playerDataManager));
     }
 
     @Override

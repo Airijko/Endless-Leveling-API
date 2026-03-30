@@ -633,6 +633,8 @@ public final class MobAugmentExecutor {
                 }
             }
         }
+
+        AugmentPassiveHealthReconciler.reconcile(statMap, instance.augments, instance.runtimeState);
     }
 
     private String summarizeCategories(List<Augment> augments) {

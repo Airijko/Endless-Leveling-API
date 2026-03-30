@@ -36,17 +36,16 @@ public final class MagicBladeAugment extends Augment implements AugmentHooks.OnH
                         0.0D));
     }
 
+    public double getSorceryWeaponConversionPercent() {
+        return sorceryWeaponConversionPercent;
+    }
+
     @Override
     public float onHit(AugmentHooks.HitContext context) {
         if (context == null) {
             return 0f;
         }
         double totalMultiplierBonus = 0.0D;
-
-        if (sorceryWeaponConversionPercent > 0.0D) {
-            double sorceryPercent = AugmentUtils.resolveSorcery(context);
-            totalMultiplierBonus += (sorceryPercent * sorceryWeaponConversionPercent) / 100.0D;
-        }
 
         if (bonusWeaponType != null && context.getWeaponType() == bonusWeaponType) {
             float classWeaponMultiplier = context.getClassWeaponMultiplier();
@@ -57,9 +56,6 @@ public final class MagicBladeAugment extends Augment implements AugmentHooks.OnH
             totalMultiplierBonus += normalizedWeaponBonus;
         }
 
-        return AugmentUtils.applyAdditiveBonusFromBase(
-                context.getDamage(),
-                context.getBaseDamage(),
-                totalMultiplierBonus);
+        return AugmentUtils.applyMultiplier(context.getDamage(), totalMultiplierBonus);
     }
 }

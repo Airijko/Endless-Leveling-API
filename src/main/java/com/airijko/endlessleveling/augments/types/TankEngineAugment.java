@@ -9,12 +9,6 @@ import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
-import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
-import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue;
-import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
-import com.hypixel.hytale.server.core.modules.entitystats.modifier.Modifier.ModifierTarget;
-import com.hypixel.hytale.server.core.modules.entitystats.modifier.StaticModifier;
-import com.hypixel.hytale.server.core.modules.entitystats.modifier.StaticModifier.CalculationType;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import java.util.Map;
@@ -24,8 +18,6 @@ public final class TankEngineAugment extends Augment
     public static final String ID = "tank_engine";
     private static final long INTERNAL_STACKING_DELAY_MILLIS = 400L;
     private static final String STACK_DELAY_STATE_ID = ID + "_stack_delay";
-    private static final String MAX_HP_BONUS_KEY = "EL_" + ID + "_max_hp_bonus";
-    private static final String LEGACY_MAX_HP_BONUS_KEY = ID + "_max_hp_bonus";
 
     private final double flatHealthPerStack;
     private final double percentMaxHealthPerStack;
@@ -73,7 +65,7 @@ public final class TankEngineAugment extends Augment
 
     @Override
     public void applyPassive(AugmentHooks.PassiveStatContext context) {
-        if (context == null || context.getRuntimeState() == null || context.getStatMap() == null) {
+        if (context == null || context.getRuntimeState() == null) {
             return;
         }
 
@@ -97,71 +89,6 @@ public final class TankEngineAugment extends Augment
                 }
             }
         }
-
-        applyMaxHealthBonus(context.getStatMap(), state.getStacks());
-    }
-
-    private void applyMaxHealthBonus(EntityStatMap statMap, int stacks) {
-        if (statMap == null) {
-            return;
-        }
-
-        EntityStatValue hpBefore = statMap.get(DefaultEntityStatTypes.getHealth());
-        if (hpBefore == null || hpBefore.getMax() <= 0f) {
-            return;
-        }
-        float previousMax = hpBefore.getMax();
-        float previousCurrent = hpBefore.get();
-
-        statMap.removeModifier(DefaultEntityStatTypes.getHealth(), MAX_HP_BONUS_KEY);
-        statMap.removeModifier(DefaultEntityStatTypes.getHealth(), LEGACY_MAX_HP_BONUS_KEY);
-        statMap.update();
-
-        EntityStatValue hpBaseline = statMap.get(DefaultEntityStatTypes.getHealth());
-        if (hpBaseline == null || hpBaseline.getMax() <= 0f) {
-            return;
-        }
-
-        int safeStacks = Math.max(0, Math.min(maxStacks, stacks));
-        double flatBonus = flatHealthPerStack * safeStacks;
-        double healthMultiplier = resolveHealthMultiplier(safeStacks);
-        double baselineMax = hpBaseline.getMax();
-
-        double targetMax = excludeFlatFromPercentScaling
-                ? (baselineMax * healthMultiplier) + flatBonus
-                : (baselineMax + flatBonus) * healthMultiplier;
-        double totalBonus = targetMax - baselineMax;
-
-        if (Math.abs(totalBonus) > 0.0001D) {
-            statMap.putModifier(DefaultEntityStatTypes.getHealth(),
-                    MAX_HP_BONUS_KEY,
-                    new StaticModifier(ModifierTarget.MAX, CalculationType.ADDITIVE, (float) totalBonus));
-            statMap.update();
-        }
-
-        EntityStatValue hpUpdated = statMap.get(DefaultEntityStatTypes.getHealth());
-        if (hpUpdated == null || hpUpdated.getMax() <= 0f) {
-            return;
-        }
-        float newMax = hpUpdated.getMax();
-        float ratio = 1.0f;
-        if (Float.isFinite(previousMax) && previousMax > 0.01f && Float.isFinite(previousCurrent)) {
-            ratio = previousCurrent / previousMax;
-        }
-        if (!Float.isFinite(ratio)) {
-            ratio = 1.0f;
-        }
-        float adjustedCurrent = Math.max(1.0f, Math.min(newMax, ratio * newMax));
-        statMap.setStatValue(DefaultEntityStatTypes.getHealth(), adjustedCurrent);
-    }
-
-    private double resolveHealthMultiplier(int safeStacks) {
-        if (safeStacks <= 0) {
-            return 1.0D;
-        }
-
-        double percentRatio = Math.max(0.0D, percentMaxHealthPerStack * safeStacks);
-        return 1.0D + percentRatio;
     }
 
     private void gainStack(AugmentRuntimeState runtime,
@@ -201,5 +128,21 @@ public final class TankEngineAugment extends Augment
 
     private static void markStackDelay(AugmentRuntimeState runtime, long now) {
         runtime.getState(STACK_DELAY_STATE_ID).setLastProc(now);
+    }
+
+    public double getFlatHealthPerStack() {
+        return flatHealthPerStack;
+    }
+
+    public double getPercentMaxHealthPerStack() {
+        return percentMaxHealthPerStack;
+    }
+
+    public int getConfiguredMaxStacks() {
+        return maxStacks;
+    }
+
+    public boolean isExcludeFlatFromPercentScaling() {
+        return excludeFlatFromPercentScaling;
     }
 }

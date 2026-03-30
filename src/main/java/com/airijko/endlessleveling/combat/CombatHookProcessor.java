@@ -9,6 +9,7 @@ import com.airijko.endlessleveling.enums.ArchetypePassiveType;
 import com.airijko.endlessleveling.enums.ClassWeaponType;
 import com.airijko.endlessleveling.enums.DamageLayer;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
+import com.airijko.endlessleveling.augments.AugmentUtils;
 import com.airijko.endlessleveling.classes.ClassManager;
 import com.airijko.endlessleveling.leveling.MobLevelingManager;
 import com.airijko.endlessleveling.passives.PassiveManager;
@@ -131,6 +132,17 @@ public final class CombatHookProcessor {
         float baseAmount = usesSorcery
                 ? skillManager.applySorceryModifier(damage.getAmount(), playerData)
                 : skillManager.applyStrengthModifier(damage.getAmount(), playerData);
+        double magicBladeConversionMultiplier = 0.0D;
+        if (augmentExecutor != null) {
+            double conversionPercent = augmentExecutor.resolveMagicBladeSorceryConversionMultiplier(playerData);
+            if (conversionPercent > 0.0D) {
+                double sorceryPercent = skillManager.calculatePlayerSorcery(playerData);
+                magicBladeConversionMultiplier = (sorceryPercent * conversionPercent) / 100.0D;
+            }
+        }
+        if (magicBladeConversionMultiplier > 0.0D) {
+            baseAmount = AugmentUtils.applyMultiplier(baseAmount, magicBladeConversionMultiplier);
+        }
         SkillManager.CritResult critResult = skillManager.applyCriticalHit(playerData, baseAmount);
         float critDamage = critResult.damage;
 

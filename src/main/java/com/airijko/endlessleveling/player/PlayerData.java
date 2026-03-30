@@ -578,6 +578,14 @@ public class PlayerData {
         decrementRemainingRaceSwitches();
     }
 
+    public boolean isRaceSwapAntiExploitConsumedAtLevel() {
+        return getActiveProfile().isRaceSwapAntiExploitConsumedAtLevel();
+    }
+
+    public void setRaceSwapAntiExploitConsumedAtLevel(boolean consumed) {
+        getActiveProfile().setRaceSwapAntiExploitConsumedAtLevel(consumed);
+    }
+
     public String getPrimaryClassId() {
         return getActiveProfile().getPrimaryClassId();
     }
@@ -670,6 +678,14 @@ public class PlayerData {
         decrementRemainingPrimaryClassSwitches();
     }
 
+    public boolean isPrimaryClassSwapAntiExploitConsumedAtLevel() {
+        return getActiveProfile().isPrimaryClassSwapAntiExploitConsumedAtLevel();
+    }
+
+    public void setPrimaryClassSwapAntiExploitConsumedAtLevel(boolean consumed) {
+        getActiveProfile().setPrimaryClassSwapAntiExploitConsumedAtLevel(consumed);
+    }
+
     public int getSecondaryClassSwitchCount() {
         return getRemainingSecondaryClassSwitches();
     }
@@ -680,6 +696,14 @@ public class PlayerData {
 
     public void incrementSecondaryClassSwitchCount() {
         decrementRemainingSecondaryClassSwitches();
+    }
+
+    public boolean isSecondaryClassSwapAntiExploitConsumedAtLevel() {
+        return getActiveProfile().isSecondaryClassSwapAntiExploitConsumedAtLevel();
+    }
+
+    public void setSecondaryClassSwapAntiExploitConsumedAtLevel(boolean consumed) {
+        getActiveProfile().setSecondaryClassSwapAntiExploitConsumedAtLevel(consumed);
     }
 
     /**
@@ -728,12 +752,15 @@ public class PlayerData {
         private final LinkedHashSet<String> completedClassForms;
         private long lastRaceChangeEpochSeconds;
         private int remainingRaceSwitches;
+        private boolean raceSwapAntiExploitConsumedAtLevel;
         private String primaryClassId;
         private String secondaryClassId;
         private long lastPrimaryClassChangeEpochSeconds;
         private long lastSecondaryClassChangeEpochSeconds;
         private int remainingPrimaryClassSwitches;
         private int remainingSecondaryClassSwitches;
+        private boolean primaryClassSwapAntiExploitConsumedAtLevel;
+        private boolean secondaryClassSwapAntiExploitConsumedAtLevel;
 
         private String name;
 
@@ -760,12 +787,15 @@ public class PlayerData {
             this.completedClassForms = new LinkedHashSet<>();
             this.lastRaceChangeEpochSeconds = 0L;
             this.remainingRaceSwitches = 0;
+            this.raceSwapAntiExploitConsumedAtLevel = false;
             this.primaryClassId = null;
             this.secondaryClassId = null;
             this.lastPrimaryClassChangeEpochSeconds = 0L;
             this.lastSecondaryClassChangeEpochSeconds = 0L;
             this.remainingPrimaryClassSwitches = 0;
             this.remainingSecondaryClassSwitches = 0;
+            this.primaryClassSwapAntiExploitConsumedAtLevel = false;
+            this.secondaryClassSwapAntiExploitConsumedAtLevel = false;
             this.name = (name == null || name.isBlank()) ? "Profile" : name;
         }
 
@@ -1172,6 +1202,14 @@ public class PlayerData {
             decrementRemainingRaceSwitches();
         }
 
+        public boolean isRaceSwapAntiExploitConsumedAtLevel() {
+            return raceSwapAntiExploitConsumedAtLevel;
+        }
+
+        public void setRaceSwapAntiExploitConsumedAtLevel(boolean consumed) {
+            this.raceSwapAntiExploitConsumedAtLevel = consumed;
+        }
+
         public String getPrimaryClassId() {
             return primaryClassId;
         }
@@ -1282,6 +1320,14 @@ public class PlayerData {
             decrementRemainingPrimaryClassSwitches();
         }
 
+        public boolean isPrimaryClassSwapAntiExploitConsumedAtLevel() {
+            return primaryClassSwapAntiExploitConsumedAtLevel;
+        }
+
+        public void setPrimaryClassSwapAntiExploitConsumedAtLevel(boolean consumed) {
+            this.primaryClassSwapAntiExploitConsumedAtLevel = consumed;
+        }
+
         public int getSecondaryClassSwitchCount() {
             return getRemainingSecondaryClassSwitches();
         }
@@ -1292,6 +1338,14 @@ public class PlayerData {
 
         public void incrementSecondaryClassSwitchCount() {
             decrementRemainingSecondaryClassSwitches();
+        }
+
+        public boolean isSecondaryClassSwapAntiExploitConsumedAtLevel() {
+            return secondaryClassSwapAntiExploitConsumedAtLevel;
+        }
+
+        public void setSecondaryClassSwapAntiExploitConsumedAtLevel(boolean consumed) {
+            this.secondaryClassSwapAntiExploitConsumedAtLevel = consumed;
         }
     }
 }

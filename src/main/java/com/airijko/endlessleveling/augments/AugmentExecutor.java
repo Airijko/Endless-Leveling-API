@@ -16,6 +16,7 @@ import com.airijko.endlessleveling.player.PlayerData;
 import com.airijko.endlessleveling.enums.ClassWeaponType;
 import com.airijko.endlessleveling.player.SkillManager;
 import com.airijko.endlessleveling.augments.types.DeathBombAugment;
+import com.airijko.endlessleveling.augments.types.MagicBladeAugment;
 import com.airijko.endlessleveling.util.ChatMessageTemplate;
 import com.airijko.endlessleveling.util.ChatMessageStrings;
 import com.airijko.endlessleveling.util.PlayerChatNotifier;
@@ -312,6 +313,31 @@ public final class AugmentExecutor {
                 handler.applyPassive(context);
             }
         }
+
+        AugmentPassiveHealthReconciler.reconcile(statMap, augments, runtime);
+    }
+
+    public double resolveMagicBladeSorceryConversionMultiplier(@Nonnull PlayerData playerData) {
+        if (playerData == null) {
+            return 0.0D;
+        }
+        Map<String, String> selected = playerData.getSelectedAugmentsSnapshot();
+        if (selected == null || selected.isEmpty()) {
+            return 0.0D;
+        }
+
+        for (String rawId : selected.values()) {
+            String normalized = normalizeSelectedAugmentId(rawId);
+            if (!MagicBladeAugment.ID.equals(normalized)) {
+                continue;
+            }
+            Augment augment = augmentManager.createAugment(MagicBladeAugment.ID);
+            if (augment instanceof MagicBladeAugment magicBlade) {
+                return Math.max(0.0D, magicBlade.getSorceryWeaponConversionPercent());
+            }
+            return 0.0D;
+        }
+        return 0.0D;
     }
 
     private void cleanupStalePassiveHealthModifiers(EntityStatMap statMap, Set<String> selectedAugmentIds) {

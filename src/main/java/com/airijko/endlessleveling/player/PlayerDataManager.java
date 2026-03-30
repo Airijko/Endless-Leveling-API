@@ -736,6 +736,9 @@ public class PlayerDataManager {
         raceRemaining = grantEmergencySwapForNoneSelection(raceRemaining, maxRaceSwitches,
                 hasAssignedSelection(profile.getRaceId()));
         profile.setRemainingRaceSwitches(raceRemaining);
+        profile.setRaceSwapAntiExploitConsumedAtLevel(parseBoolean(
+            raceMap != null ? raceMap.get("antiExploitConsumedAtLevel") : null,
+            false));
 
         Map<String, Object> classesNode = castToStringObjectMap(source.get("classes"));
         String primaryClassId = parseClassId(classesNode != null ? classesNode.get("primary") : null);
@@ -820,6 +823,15 @@ public class PlayerDataManager {
         profile.setLastSecondaryClassChangeEpochSeconds(secondaryClassTimestamp);
         profile.setRemainingPrimaryClassSwitches(primaryClassRemaining);
         profile.setRemainingSecondaryClassSwitches(secondaryClassRemaining);
+        boolean classAntiExploitConsumed = parseBoolean(classesNode != null
+            ? classesNode.get("antiExploitConsumedAtLevel")
+            : null, false);
+        profile.setPrimaryClassSwapAntiExploitConsumedAtLevel(parseBoolean(classesNode != null
+            ? classesNode.get("primaryAntiExploitConsumedAtLevel")
+            : null, classAntiExploitConsumed));
+        profile.setSecondaryClassSwapAntiExploitConsumedAtLevel(parseBoolean(classesNode != null
+            ? classesNode.get("secondaryAntiExploitConsumedAtLevel")
+            : null, classAntiExploitConsumed));
     }
 
     private int parseProfileIndex(String key) {
@@ -1297,6 +1309,7 @@ public class PlayerDataManager {
                     }
                     raceSection.put("lastChangedEpochSeconds", profile.getLastRaceChangeEpochSeconds());
                     raceSection.put("remainingSwitchCount", profile.getRemainingRaceSwitches());
+                    raceSection.put("antiExploitConsumedAtLevel", profile.isRaceSwapAntiExploitConsumedAtLevel());
                     if (!profile.getCompletedRaceFormsSnapshot().isEmpty()) {
                         raceSection.put("completedForms", profile.getCompletedRaceFormsSnapshot());
                     }
@@ -1318,6 +1331,10 @@ public class PlayerDataManager {
                     classesSection.put("secondaryLastChangedEpochSeconds", secondaryChanged);
                     classesSection.put("primaryRemainingSwitchCount", primarySwitchCount);
                     classesSection.put("secondaryRemainingSwitchCount", secondarySwitchCount);
+                        classesSection.put("primaryAntiExploitConsumedAtLevel",
+                            profile.isPrimaryClassSwapAntiExploitConsumedAtLevel());
+                        classesSection.put("secondaryAntiExploitConsumedAtLevel",
+                            profile.isSecondaryClassSwapAntiExploitConsumedAtLevel());
                     classesSection.put("lastChangedEpochSeconds", Math.max(primaryChanged, secondaryChanged));
                     profileMap.put("classes", classesSection);
 
