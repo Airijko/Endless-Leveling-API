@@ -3544,6 +3544,31 @@ public class MobLevelingManager {
             return;
         }
         out.add(normalized);
+        addWorldIdentifierAliases(out, normalized);
+    }
+
+    private void addWorldIdentifierAliases(Set<String> out, String worldId) {
+        if (out == null || worldId == null || worldId.isBlank()) {
+            return;
+        }
+
+        String trimmed = worldId.trim();
+        String lowered = trimmed.toLowerCase(Locale.ROOT);
+
+        if (lowered.startsWith("instance-")) {
+            String suffix = trimmed.substring("instance-".length());
+            if (!suffix.isBlank()) {
+                out.add("el_gate_" + suffix);
+            }
+            return;
+        }
+
+        if (lowered.startsWith("el_gate_")) {
+            String suffix = trimmed.substring("el_gate_".length());
+            if (!suffix.isBlank()) {
+                out.add("instance-" + suffix);
+            }
+        }
     }
 
     private void addWorldIdentifierFromUniverseLookup(Set<String> out, Object world) {
