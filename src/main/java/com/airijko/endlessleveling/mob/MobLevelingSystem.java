@@ -653,8 +653,11 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         EntityRuntimeState state = getOrCreateEntityState(entityKey, ref.getIndex(), store);
         state.lastSeenTimeMillis = currentTimeMillis;
 
-        if (mobLevelingManager.isEntityBlacklisted(ref, store, commandBuffer)) {
-            clearTrackedNameplateIfNeeded(ref, commandBuffer, state);
+        boolean mobLevelingEnabled = mobLevelingManager.isMobLevelingEnabled(store);
+        boolean worldBlacklisted = mobLevelingManager.isWorldXpBlacklisted(store);
+        boolean entityBlacklisted = mobLevelingManager.isEntityBlacklisted(ref, store, commandBuffer);
+        if (!mobLevelingEnabled || worldBlacklisted || entityBlacklisted) {
+            clearMobLevelingStateForBlockedEntity(ref, commandBuffer, state);
             return;
         }
 
@@ -1461,6 +1464,19 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         }
         clearOrRemoveNameplate(ref, commandBuffer);
         resetNameplateState(state);
+    }
+
+    private void clearMobLevelingStateForBlockedEntity(Ref<EntityStore> ref,
+            CommandBuffer<EntityStore> commandBuffer,
+            EntityRuntimeState state) {
+        if (ref == null) {
+            return;
+        }
+
+        stripMobHealthModifiers(ref, commandBuffer);
+        clearTrackedNameplateIfNeeded(ref, commandBuffer, state);
+        clearMobLevelRuntimeStateForEntity(ref, commandBuffer);
+        markEntityChunkDirty(ref, commandBuffer);
     }
 
     private void resetNameplateState(EntityRuntimeState state) {

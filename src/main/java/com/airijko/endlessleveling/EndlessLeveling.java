@@ -9,6 +9,7 @@
 
 package com.airijko.endlessleveling;
 
+import com.airijko.endlessleveling.analytics.HStats;
 import com.airijko.endlessleveling.classes.ClassWeaponResolver;
 import com.airijko.endlessleveling.classes.WeaponConfig;
 import com.airijko.endlessleveling.augments.AugmentExecutor;
@@ -69,9 +70,11 @@ import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 
 import javax.annotation.Nonnull;
+import java.nio.charset.StandardCharsets;
 import java.security.CodeSource;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.UUID;
 
 public class EndlessLeveling extends JavaPlugin {
 
@@ -80,6 +83,7 @@ public class EndlessLeveling extends JavaPlugin {
     public static final String DEFAULT_BRAND_NAME = "Endless Leveling";
     public static final String DEFAULT_COMMAND_PREFIX = "/lvl";
     public static final String DEFAULT_MESSAGE_PREFIX = "[EndlessLeveling] ";
+    private static final String HSTATS_MOD_UUID = "fffbb440-4831-4a02-8581-ae505a778381";
     private static final String PARTNER_ADDON_MAIN_CLASS = "com.airijko.endlessleveling.EndlessLevelingPartnerAddon";
     private static final String ARANK_ADDON_MAIN_CLASS = "com.airijko.endlessleveling.EndlessLevelingARankAddon";
 
@@ -413,6 +417,7 @@ public class EndlessLeveling extends JavaPlugin {
         ClassWeaponResolver.configure(WeaponConfig.load(filesManager.getWeaponsFile()));
 
         LoggingManager.configureFromConfig(configManager);
+        initializeHStats();
 
         raceManager = new RaceManager(configManager, filesManager);
         classManager = new ClassManager(configManager, filesManager);
@@ -616,6 +621,51 @@ public class EndlessLeveling extends JavaPlugin {
 
         LOGGER.atInfo().log("Plugin initialized! Plugin folder: %s",
                 filesManager.getPluginFolder().getAbsolutePath());
+    }
+
+    private void initializeHStats() {
+        String configuredModUuid = HSTATS_MOD_UUID.trim();
+        if (configuredModUuid.isBlank() || configuredModUuid.equalsIgnoreCase("replace-with-your-hstats-mod-uuid")) {
+            LOGGER.atWarning().log(
+                    "HStats requires a valid HSTATS_MOD_UUID in EndlessLeveling.java.");
+            return;
+        }
+
+        try {
+            UUID.fromString(configuredModUuid);
+        } catch (IllegalArgumentException ex) {
+            LOGGER.atWarning().log("HStats mod UUID is invalid: %s", configuredModUuid);
+            return;
+        }
+
+        String version = resolvePluginManifestVersion();
+        new HStats(configuredModUuid, version);
+        LOGGER.atInfo().log("HStats analytics initialized (mod version %s).", version);
+    }
+
+    private String resolvePluginManifestVersion() {
+        try (var in = EndlessLeveling.class.getClassLoader().getResourceAsStream("manifest.json")) {
+            if (in == null) {
+                return "Unknown";
+            }
+            String json = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+            int keyIndex = json.indexOf("\"Version\"");
+            if (keyIndex < 0) {
+                return "Unknown";
+            }
+
+            int colon = json.indexOf(':', keyIndex);
+            int firstQuote = json.indexOf('"', colon + 1);
+            int secondQuote = json.indexOf('"', firstQuote + 1);
+            if (colon < 0 || firstQuote < 0 || secondQuote < 0) {
+                return "Unknown";
+            }
+
+            String parsed = json.substring(firstQuote + 1, secondQuote).trim();
+            return parsed.isEmpty() ? "Unknown" : parsed;
+        } catch (Exception ignored) {
+            return "Unknown";
+        }
     }
 
     protected void shutdown() {
