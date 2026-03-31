@@ -503,7 +503,8 @@ public class EndlessLeveling extends JavaPlugin {
                 LOGGER.atWarning().log("NameplateBuilder detected but EL_Player_Race segment registration failed.");
             }
 
-            boolean playerPrimaryClassDescribed = NameplateBuilderCompatibility.describeELPlayerClassPrimarySegment(this);
+            boolean playerPrimaryClassDescribed = NameplateBuilderCompatibility
+                    .describeELPlayerClassPrimarySegment(this);
             if (playerPrimaryClassDescribed) {
                 LOGGER.atInfo().log("NameplateBuilder detected; registered EL_Player_Class_Primary segment.");
             } else {
@@ -541,7 +542,8 @@ public class EndlessLeveling extends JavaPlugin {
                 raceManager, augmentUnlockManager);
         DungeonTierJoinNotificationListener dungeonTierJoinNotificationListener = new DungeonTierJoinNotificationListener();
         this.getEventRegistry().registerGlobal(PlayerReadyEvent.class, playerDataListener::onPlayerReady);
-        this.getEventRegistry().registerGlobal(PlayerReadyEvent.class, dungeonTierJoinNotificationListener::onPlayerReady);
+        this.getEventRegistry().registerGlobal(PlayerReadyEvent.class,
+                dungeonTierJoinNotificationListener::onPlayerReady);
         this.getEventRegistry().registerGlobal(PlayerDisconnectEvent.class, playerDataListener::onPlayerDisconnect);
 
         if (partyManager.isAvailable()) {
@@ -597,21 +599,22 @@ public class EndlessLeveling extends JavaPlugin {
         shutdownCoordinator = new EndlessLevelingShutdownCoordinator(this);
         resolveRemoveWorldEventClass().ifPresentOrElse(eventClass -> {
             this.getEventRegistry().registerGlobal((Class) eventClass,
-                event -> shutdownCoordinator.runPreShutdownEntityCleanup("RemoveWorldEvent"));
-            LOGGER.atInfo().log("Registered pre-shutdown cleanup listener using world event class %s", eventClass.getName());
+                    event -> shutdownCoordinator.runPreShutdownEntityCleanup("RemoveWorldEvent"));
+            LOGGER.atInfo().log("Registered pre-shutdown cleanup listener using world event class %s",
+                    eventClass.getName());
         }, () -> LOGGER.atWarning().log(
-            "No supported remove-world event class found; cleanup will rely on ShutdownEvent/plugin shutdown paths."));
+                "No supported remove-world event class found; cleanup will rely on ShutdownEvent/plugin shutdown paths."));
         resolveShutdownEventClass().ifPresentOrElse(eventClass -> {
             this.getEventRegistry().registerGlobal((Class) eventClass,
-                event -> shutdownCoordinator.runPreShutdownEntityCleanup("ShutdownEvent"));
+                    event -> shutdownCoordinator.runPreShutdownEntityCleanup("ShutdownEvent"));
             LOGGER.atInfo().log("Registered pre-shutdown cleanup listener using event class %s", eventClass.getName());
         }, () -> LOGGER.atWarning().log(
-            "No supported shutdown event class found; relying on plugin shutdown() cleanup path."));
+                "No supported shutdown event class found; relying on plugin shutdown() cleanup path."));
 
         // Register commands via helper class to keep main class clean.
         String commandRoot = CommandRegistrar.registerCommands(
                 this.getCommandRegistry(),
-            this.getEventRegistry(),
+                this.getEventRegistry(),
                 partyManager,
                 raceManager,
                 classManager,
@@ -628,9 +631,10 @@ public class EndlessLeveling extends JavaPlugin {
 
     private void initializeHStats() {
         String configuredModUuid = HSTATS_MOD_UUID.trim();
-        if (configuredModUuid.isBlank() || configuredModUuid.equalsIgnoreCase("replace-with-your-hstats-mod-uuid")) {
+        if (configuredModUuid.isBlank()) {
             LOGGER.atWarning().log(
                     "HStats requires a valid HSTATS_MOD_UUID in EndlessLeveling.java.");
+            appendShutlog("HStats disabled: UUID is blank");
             return;
         }
 
