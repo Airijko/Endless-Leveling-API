@@ -15,6 +15,9 @@ import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import javax.annotation.Nonnull;
+import java.net.HttpURLConnection;
+import java.net.URI;
+import java.net.URL;
 
 public class DebugCommand extends AbstractPlayerCommand {
 
@@ -33,6 +36,7 @@ public class DebugCommand extends AbstractPlayerCommand {
         this.addSubCommand(new StatTestCommand());
         this.addSubCommand(new DistanceCenterSubCommand());
         this.addSubCommand(new MobLevelsSubCommand());
+        this.addSubCommand(new HStatSubCommand());
     }
 
     @Override
@@ -41,7 +45,66 @@ public class DebugCommand extends AbstractPlayerCommand {
             @Nonnull Ref<EntityStore> ref,
             @Nonnull PlayerRef senderRef,
             @Nonnull World world) {
-        senderRef.sendMessage(Message.raw("Usage: /el debug stattest | /el debug distancecenter | /el debug moblevels").color("#ffcc66"));
+        senderRef.sendMessage(Message.raw("Usage: /el debug stattest | /el debug distancecenter | /el debug moblevels | /el debug hstat")
+                .color("#ffcc66"));
+    }
+
+    private final class HStatSubCommand extends AbstractPlayerCommand {
+
+        private static final String HSTATS_HEALTHCHECK_URL = "https://api.hstats.dev/api/";
+
+        private HStatSubCommand() {
+            super("hstat", "Check HStats API connectivity from this server");
+            this.addAliases("hstats", "metricstest", "metricsping");
+        }
+
+        @Override
+        protected void execute(@Nonnull CommandContext commandContext,
+                @Nonnull Store<EntityStore> store,
+                @Nonnull Ref<EntityStore> ref,
+                @Nonnull PlayerRef senderRef,
+                @Nonnull World world) {
+            senderRef.sendMessage(Message.raw("Checking HStats connectivity...").color("#9fb6d3"));
+
+            long startedAt = System.nanoTime();
+            try {
+                URL url = URI.create(HSTATS_HEALTHCHECK_URL).toURL();
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                connection.setRequestMethod("GET");
+                connection.setConnectTimeout(4000);
+                connection.setReadTimeout(4000);
+                connection.setUseCaches(false);
+
+                int responseCode = connection.getResponseCode();
+                long elapsedMs = (System.nanoTime() - startedAt) / 1_000_000L;
+                connection.disconnect();
+
+                senderRef.sendMessage(Message.raw(
+                        "HStats reachable: HTTP " + responseCode + " in " + elapsedMs
+                                + "ms (endpoint: " + HSTATS_HEALTHCHECK_URL + ")")
+                        .color("#6cff78"));
+                senderRef.sendMessage(Message.raw(
+                        "If startup log also shows 'HStats analytics initialized', metrics should be active.")
+                        .color("#4fd7f7"));
+            } catch (Exception ex) {
+                long elapsedMs = (System.nanoTime() - startedAt) / 1_000_000L;
+                senderRef.sendMessage(Message.raw(
+                        "HStats connection failed after " + elapsedMs + "ms: " + ex.getClass().getSimpleName()
+                                + " - " + sanitize(ex.getMessage()))
+                        .color("#ff6666"));
+                senderRef.sendMessage(Message.raw(
+                        "Check firewall/proxy/DNS and outbound HTTPS to api.hstats.dev:443.")
+                        .color("#ff9900"));
+            }
+        }
+
+        private String sanitize(String value) {
+            if (value == null || value.isBlank()) {
+                return "No additional error details.";
+            }
+            String cleaned = value.replace('\n', ' ').replace('\r', ' ').trim();
+            return cleaned.length() > 180 ? cleaned.substring(0, 180) + "..." : cleaned;
+        }
     }
 
     private final class DistanceCenterSubCommand extends AbstractPlayerCommand {

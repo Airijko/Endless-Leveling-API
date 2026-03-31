@@ -30,13 +30,6 @@ public class AddClassSwapCommand extends AbstractCommand {
     private final ClassManager classManager;
     private final PlayerDataManager playerDataManager;
 
-    private final RequiredArg<String> playerArg =
-            this.withRequiredArg("player", "Target player name", ArgTypes.STRING);
-    private final RequiredArg<String> slotArg =
-            this.withRequiredArg("slot", "primary|secondary|both", ArgTypes.STRING);
-    private final RequiredArg<Integer> countArg =
-            this.withRequiredArg("count", "Number of swaps to add", ArgTypes.INTEGER);
-
     public AddClassSwapCommand(ClassManager classManager, PlayerDataManager playerDataManager) {
         super("addswap", "Grant an additional class swap to a player");
         this.classManager = classManager;
@@ -48,7 +41,9 @@ public class AddClassSwapCommand extends AbstractCommand {
     @Nullable
     @Override
     protected CompletableFuture<Void> execute(@Nonnull CommandContext context) {
-        return executeInternal(context, playerArg.get(context), slotArg.get(context), countArg.get(context));
+        context.sendMessage(Message.raw("Usage: /el classes addswap <slot> <count> or /el classes addswap <player> <slot> <count>")
+                .color("#9fb6d3"));
+        return CompletableFuture.completedFuture(null);
     }
 
     private CompletableFuture<Void> executeInternal(@Nonnull CommandContext context,
