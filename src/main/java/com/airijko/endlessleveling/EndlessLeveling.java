@@ -70,6 +70,7 @@ import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 
 import javax.annotation.Nonnull;
+import java.nio.charset.StandardCharsets;
 import java.security.CodeSource;
 import java.util.Locale;
 import java.util.Optional;
@@ -81,7 +82,7 @@ public class EndlessLeveling extends JavaPlugin {
     public static final String DEFAULT_BRAND_NAME = "Endless Leveling";
     public static final String DEFAULT_COMMAND_PREFIX = "/lvl";
     public static final String DEFAULT_MESSAGE_PREFIX = "[EndlessLeveling] ";
-    private static final String HSTATS_MOD_UUID = "fffbb440-4831-4a02-8581-ae505a778381";
+    private static final String HSTATS_MOD_UUID = "70cf8395-17a1-4d0e-8165-1bb208e2c1f3";
     private static final String HSTATS_MOD_VERSION = "7.2.0";
     private static final String PARTNER_ADDON_MAIN_CLASS = "com.airijko.endlessleveling.EndlessLevelingPartnerAddon";
     private static final String ARANK_ADDON_MAIN_CLASS = "com.airijko.endlessleveling.EndlessLevelingARankAddon";
@@ -416,7 +417,7 @@ public class EndlessLeveling extends JavaPlugin {
         ClassWeaponResolver.configure(WeaponConfig.load(filesManager.getWeaponsFile()));
 
         LoggingManager.configureFromConfig(configManager);
-        new HStats(HSTATS_MOD_UUID, HSTATS_MOD_VERSION);
+        new HStats(HSTATS_MOD_UUID, resolvePluginManifestVersion());
 
         raceManager = new RaceManager(configManager, filesManager);
         classManager = new ClassManager(configManager, filesManager);
@@ -630,6 +631,32 @@ public class EndlessLeveling extends JavaPlugin {
             shutdownCoordinator = new EndlessLevelingShutdownCoordinator(this);
         }
         shutdownCoordinator.handlePluginShutdown();
+    }
+
+    private String resolvePluginManifestVersion() {
+        try (var in = EndlessLeveling.class.getClassLoader().getResourceAsStream("manifest.json")) {
+            if (in == null) {
+                return HSTATS_MOD_VERSION;
+            }
+
+            String json = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+            int keyIndex = json.indexOf("\"Version\"");
+            if (keyIndex < 0) {
+                return HSTATS_MOD_VERSION;
+            }
+
+            int colon = json.indexOf(':', keyIndex);
+            int firstQuote = json.indexOf('"', colon + 1);
+            int secondQuote = json.indexOf('"', firstQuote + 1);
+            if (colon < 0 || firstQuote < 0 || secondQuote < 0) {
+                return HSTATS_MOD_VERSION;
+            }
+
+            String parsed = json.substring(firstQuote + 1, secondQuote).trim();
+            return parsed.isEmpty() ? HSTATS_MOD_VERSION : parsed;
+        } catch (Exception ignored) {
+            return HSTATS_MOD_VERSION;
+        }
     }
 
     private Optional<Class<?>> resolveInventoryChangeEventClass() {
