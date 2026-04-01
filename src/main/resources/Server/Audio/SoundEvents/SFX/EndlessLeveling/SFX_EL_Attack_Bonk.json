@@ -2,17 +2,17 @@
   "Layers": [
     {
       "Files": [
-        "Sounds/Gates/dexter-meme.ogg"
+        "Sounds/Gates/bonk.ogg"
       ],
       "RandomSettings": {
         "MinPitch": 0,
         "MaxPitch": 0,
         "MinVolume": 0
       },
-      "Volume": 3.5
+      "Volume": 2.0
     }
   ],
   "Volume": 0,
-  "MaxDistance": 25,
-  "StartAttenuationDistance": 2
+  "MaxDistance": 30,
+  "StartAttenuationDistance": 3
 }

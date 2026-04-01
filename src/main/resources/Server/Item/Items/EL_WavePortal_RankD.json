@@ -1,0 +1,52 @@
+{
+  "TranslationProperties": {
+    "Name": "endlesslevelingaddon.items.portal_d01.name",
+    "Description": "endlesslevelingaddon.items.portal_d01.description"
+  },
+  "Icon": "Icons/ItemsGenerated/MajorDungeons_PortalKey.png",
+  "Categories": [
+    "Blocks.Structural"
+  ],
+  "PlayerAnimationsId": "Block",
+  "MaxStack": 1,
+  "Quality": "Uncommon",
+  "InteractionConfig": {
+    "UseDistance": {
+      "Adventure": 4.0,
+      "Creative": 5.0
+    }
+  },
+  "BlockType": {
+    "AmbientSoundEventId": "SFX_Portal_Neutral",
+    "DrawType": "Cube",
+    "Material": "Solid",
+    "Opacity": "Transparent",
+    "HitboxType": "EL_WavePortal_Anchor",
+    "RequiresAlphaBlending": true,
+    "Group": "Stone",
+    "Textures": [
+      {
+        "All": "BlockTextures/MJ_Invisible_Block.png",
+        "Weight": 1
+      }
+    ],
+    "BlockParticleSetId": "Stone",
+    "BlockSoundSetId": "Stone",
+    "Particles": [
+      {
+        "SystemId": "EL_MagicPortal_Circle_Wave",
+        "PositionOffset": {
+          "X": 0.5,
+          "Y": 0.5,
+          "Z": 0.5
+        },
+        "Scale": 8.0
+      }
+    ],
+    "InteractionHint": "Wave Portal Anchor",
+    "Flags": {
+      "IsUsable": true
+    },
+    "Interactions": {}
+  }
+}

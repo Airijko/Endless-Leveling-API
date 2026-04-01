@@ -9,6 +9,7 @@ import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.server.core.HytaleServer;
 import com.hypixel.hytale.server.core.Message;
+import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.protocol.SoundCategory;
 import com.hypixel.hytale.server.core.asset.type.soundevent.config.SoundEvent;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
@@ -38,13 +39,10 @@ public final class PortalVisualManager {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
 
-    private static final List<String> PORTAL_PARTICLE_IDS = List.of(
-            "EL_MagicPortal_Circle",
-            "EL_MagicPortal_Circle_Wave",
-            "EL_MagicPortal_Red",
-            "EL_MagicPortal_Red_Wave");
+    private static final List<String> PORTAL_PARTICLE_IDS = List.of();
     private static final String WAVE_GATE_SPAWN_SOUND_ID = "SFX_EL_S_Rank_Gate_Spawn";
-        private static final String WAVE_10_SECOND_COUNTDOWN_SOUND_ID = "SFX_EL_DungeonBreak_10_Second_Countdown";
+    private static final String WAVE_10_SECOND_COUNTDOWN_SOUND_ID = "SFX_EL_DungeonBreak_10_Second_Countdown";
+    private static final String GATE_GROUND_SIGN_BLOCK_ID = "Furniture_Construction_Sign";
 
     private static final long DEFAULT_VISUAL_LIFETIME_SECONDS = 90L;
     private static final int DEFAULT_PLACEMENT_ATTEMPTS = 14;
@@ -96,46 +94,61 @@ public final class PortalVisualManager {
     public static boolean spawnSneakPeekNearPlayer(@Nonnull World world,
                                                     @Nonnull PlayerRef playerRef,
                                                     @Nonnull Ref<EntityStore> sourceRef) {
-        return spawnVisualNearPlayer(world, playerRef, sourceRef, true);
+        return spawnSneakPeekNearPlayerDetailed(world, playerRef, sourceRef) != null;
+    }
+
+    @Nullable
+    public static SpawnedPortalDetails spawnSneakPeekNearPlayerDetailed(@Nonnull World world,
+                                                                        @Nonnull PlayerRef playerRef,
+                                                                        @Nonnull Ref<EntityStore> sourceRef) {
+        return spawnVisualNearPlayerDetailed(world, playerRef, sourceRef, true);
     }
 
     public static boolean spawnVisualNearPlayer(@Nonnull World world,
                                                  @Nonnull PlayerRef playerRef,
                                                  @Nonnull Ref<EntityStore> sourceRef,
                                                  boolean sneakPeek) {
+        return spawnVisualNearPlayerDetailed(world, playerRef, sourceRef, sneakPeek) != null;
+    }
+
+    @Nullable
+    public static SpawnedPortalDetails spawnVisualNearPlayerDetailed(@Nonnull World world,
+                                                                     @Nonnull PlayerRef playerRef,
+                                                                     @Nonnull Ref<EntityStore> sourceRef,
+                                                                     boolean sneakPeek) {
         PortalVisualBackendConfig config = backendConfig;
         if (config == null || !config.enabled()) {
-            return false;
+            return null;
         }
 
         String worldName = world.getName();
         if (worldName == null || worldName.isBlank()) {
-            return false;
+            return null;
         }
         if (!config.isWorldWhitelisted(worldName)) {
-            return false;
+            return null;
         }
 
         if (!isPlayerLevelEligible(playerRef, config.minLevelRequired())) {
-            return false;
+            return null;
         }
 
         int maxConcurrent = config.maxConcurrentSpawns();
         if (maxConcurrent >= 0 && ACTIVE_VISUAL_PORTALS.size() >= maxConcurrent) {
-            return false;
+            return null;
         }
 
         String effectId = resolveEffectId(sneakPeek);
         if (playerRef == null || playerRef.getTransform() == null || playerRef.getTransform().getPosition() == null) {
-            return false;
+            return null;
         }
         if (sourceRef == null || !sourceRef.isValid() || sourceRef.getStore() == null) {
-            return false;
+            return null;
         }
 
         List<Long> loadedChunkIndexes = resolveLoadedChunkIndexes(world);
         if (loadedChunkIndexes.isEmpty()) {
-            return false;
+            return null;
         }
 
         int attempts = Math.max(1, config.placementAttempts());
@@ -158,8 +171,11 @@ public final class PortalVisualManager {
             }
 
             Vector3d portalPos = new Vector3d(x + 0.5D, y + 0.05D, z + 0.5D);
-            registerVisualPortal(world, portalPos, effectId);
-            world.execute(() -> trySpawnParticle(effectId, portalPos, sourceRef));
+            registerVisualPortal(world, portalPos, effectId, x, y, z);
+            world.execute(() -> {
+                placeGateGroundSign(world, x, y, z);
+                trySpawnParticle(effectId, portalPos, sourceRef);
+            });
             if (isWavePortalEffect(effectId)) {
                 playWaveSpawnSoundToAllPlayers();
             }
@@ -169,11 +185,17 @@ public final class PortalVisualManager {
             if (config.announceOnSpawn()) {
                 playerRef.sendMessage(Message.raw("A visual dungeon portal crackles into view nearby.").color("#8be7ff"));
             }
-            return true;
+            return new SpawnedPortalDetails(resolveWorldUuid(world), x, y, z, portalPos, effectId);
         }
 
-        registerVisualPortal(world, fallbackPosition, effectId);
-        world.execute(() -> trySpawnParticle(effectId, fallbackPosition, sourceRef));
+        int fallbackX = MathUtil.floor(fallbackPosition.x);
+        int fallbackY = Math.max(1, MathUtil.floor(fallbackPosition.y));
+        int fallbackZ = MathUtil.floor(fallbackPosition.z);
+        registerVisualPortal(world, fallbackPosition, effectId, fallbackX, fallbackY, fallbackZ);
+        world.execute(() -> {
+            placeGateGroundSign(world, fallbackX, fallbackY, fallbackZ);
+            trySpawnParticle(effectId, fallbackPosition, sourceRef);
+        });
         if (isWavePortalEffect(effectId)) {
             playWaveSpawnSoundToAllPlayers();
         }
@@ -183,7 +205,7 @@ public final class PortalVisualManager {
         if (config.announceOnSpawn()) {
             playerRef.sendMessage(Message.raw("A visual dungeon portal crackles into view nearby.").color("#8be7ff"));
         }
-        return true;
+        return new SpawnedPortalDetails(resolveWorldUuid(world), fallbackX, fallbackY, fallbackZ, fallbackPosition, effectId);
     }
 
     private static void spawnRandomVisualNearOnlinePlayer() {
@@ -273,15 +295,18 @@ public final class PortalVisualManager {
             if (portal == null) {
                 continue;
             }
+            World world = universe.getWorld(portal.worldUuid());
             if (portal.expiresAtMillis() <= now) {
                 if (backendConfig != null && backendConfig.announceOnDespawn()) {
                     logDespawn(portal);
+                }
+                if (world != null) {
+                    world.execute(() -> removeGateGroundSign(world, portal));
                 }
                 ACTIVE_VISUAL_PORTALS.remove(portal.key());
                 continue;
             }
 
-            World world = universe.getWorld(portal.worldUuid());
             if (world == null) {
                 continue;
             }
@@ -317,19 +342,31 @@ public final class PortalVisualManager {
     private static void trySpawnParticle(@Nonnull String effectId,
                                          @Nonnull Vector3d position,
                                          @Nonnull Ref<EntityStore> sourceRef) {
+        if (effectId.isBlank()) {
+            return;
+        }
         try {
             ParticleUtil.spawnParticleEffect(effectId, position, sourceRef.getStore());
         } catch (Exception ignored) {
             // Fallback to first known particle to keep the portal visible even if one effect id is unavailable.
-            try {
-                ParticleUtil.spawnParticleEffect(PORTAL_PARTICLE_IDS.get(0), position, sourceRef.getStore());
-            } catch (Exception ignoredAgain) {
+            if (!PORTAL_PARTICLE_IDS.isEmpty()) {
+                try {
+                    ParticleUtil.spawnParticleEffect(PORTAL_PARTICLE_IDS.get(0), position, sourceRef.getStore());
+                } catch (Exception ignoredAgain) {
+                    LOGGER.atFine().log("[ELPortalVisual] Failed to spawn portal particle effect '%s'.", effectId);
+                }
+            } else {
                 LOGGER.atFine().log("[ELPortalVisual] Failed to spawn portal particle effect '%s'.", effectId);
             }
         }
     }
 
-    private static void registerVisualPortal(@Nonnull World world, @Nonnull Vector3d position, @Nonnull String effectId) {
+    private static void registerVisualPortal(@Nonnull World world,
+                                             @Nonnull Vector3d position,
+                                             @Nonnull String effectId,
+                                             int signX,
+                                             int signY,
+                                             int signZ) {
         UUID worldUuid = world.getWorldConfig() == null ? null : world.getWorldConfig().getUuid();
         if (worldUuid == null) {
             return;
@@ -350,17 +387,57 @@ public final class PortalVisualManager {
                 MathUtil.floor(position.z),
                 effectId);
 
-        ACTIVE_VISUAL_PORTALS.put(key, new ActiveVisualPortal(key, worldUuid, position, effectId, expiresAt));
+        ACTIVE_VISUAL_PORTALS.put(key, new ActiveVisualPortal(key, worldUuid, position, effectId, expiresAt, signX, signY, signZ));
+    }
+
+    @Nullable
+    private static UUID resolveWorldUuid(@Nonnull World world) {
+        return world.getWorldConfig() == null ? null : world.getWorldConfig().getUuid();
+    }
+
+    private static void placeGateGroundSign(@Nonnull World world, int x, int y, int z) {
+        try {
+            WorldChunk chunk = world.getChunkIfLoaded(ChunkUtil.indexChunkFromBlock(x, z));
+            if (chunk == null) {
+                return;
+            }
+            if (chunk.getBlock(x, y, z) != 0) {
+                return;
+            }
+            chunk.setBlock(x, y, z, GATE_GROUND_SIGN_BLOCK_ID);
+        } catch (Exception ex) {
+            LOGGER.atFine().log("[ELPortalVisual] Failed placing gate ground sign at (%d,%d,%d): %s", x, y, z, ex.getMessage());
+        }
+    }
+
+    private static void removeGateGroundSign(@Nonnull World world, @Nonnull ActiveVisualPortal portal) {
+        try {
+            WorldChunk chunk = world.getChunkIfLoaded(ChunkUtil.indexChunkFromBlock(portal.signX(), portal.signZ()));
+            if (chunk == null) {
+                return;
+            }
+            int existingBlock = chunk.getBlock(portal.signX(), portal.signY(), portal.signZ());
+            int expectedBlock = BlockType.getAssetMap().getIndex(GATE_GROUND_SIGN_BLOCK_ID);
+            if (expectedBlock != Integer.MIN_VALUE && existingBlock == expectedBlock) {
+                chunk.setBlock(portal.signX(), portal.signY(), portal.signZ(), 0);
+            }
+        } catch (Exception ex) {
+            LOGGER.atFine().log("[ELPortalVisual] Failed removing gate ground sign at (%d,%d,%d): %s",
+                    portal.signX(),
+                    portal.signY(),
+                    portal.signZ(),
+                    ex.getMessage());
+        }
     }
 
     @Nonnull
     private static String resolveEffectId(boolean sneakPeek) {
-        String configuredPeek = backendConfig != null ? backendConfig.sneakPeekEffectId() : "EL_MagicPortal_Circle_Wave";
-        String configuredDefault = backendConfig != null ? backendConfig.defaultEffectId() : "EL_MagicPortal_Circle";
+        String configuredPeek = backendConfig != null ? backendConfig.sneakPeekEffectId() : "";
+        String configuredDefault = backendConfig != null ? backendConfig.defaultEffectId() : "";
 
         String chosen = sneakPeek ? configuredPeek : configuredDefault;
         if (chosen == null || chosen.isBlank()) {
-            return PORTAL_PARTICLE_IDS.get(0);
+            return PORTAL_PARTICLE_IDS.isEmpty() ? "" : PORTAL_PARTICLE_IDS.get(0);
         }
         return chosen;
     }
@@ -501,10 +578,25 @@ public final class PortalVisualManager {
         return index == Integer.MIN_VALUE ? 0 : index;
     }
 
+    public static int countActivePortals() {
+        return ACTIVE_VISUAL_PORTALS.size();
+    }
+
+    public record SpawnedPortalDetails(@Nullable UUID worldUuid,
+                                       int x,
+                                       int y,
+                                       int z,
+                                       @Nonnull Vector3d position,
+                                       @Nonnull String effectId) {
+    }
+
     private record ActiveVisualPortal(String key,
                                       UUID worldUuid,
                                       Vector3d position,
                                       String effectId,
-                                      long expiresAtMillis) {
+                                      long expiresAtMillis,
+                                      int signX,
+                                      int signY,
+                                      int signZ) {
     }
 }

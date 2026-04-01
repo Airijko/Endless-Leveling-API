@@ -93,8 +93,8 @@ public final class PortalVisualBackendConfig {
                 ? castMap(map)
                 : Map.of();
 
-        String defaultEffectId = asString(visualsMap.get("default_effect"), "EL_MagicPortal_Circle");
-        String sneakPeekEffectId = asString(visualsMap.get("sneak_peek_effect"), "EL_MagicPortal_Circle_Wave");
+        String defaultEffectId = asString(visualsMap.get("default_effect"), "");
+        String sneakPeekEffectId = asString(visualsMap.get("sneak_peek_effect"), "");
         long pulseIntervalMillis = Math.max(500L, asLong(visualsMap.get("pulse_interval_millis"), 1800L));
         int placementAttempts = Math.max(1, asInt(visualsMap.get("placement_attempts"), 14));
 

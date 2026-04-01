@@ -15,6 +15,7 @@ import com.airijko.endlessleveling.commands.subcommands.AugmentTestCommand;
 import com.airijko.endlessleveling.commands.subcommands.PrestigeCommand;
 import com.airijko.endlessleveling.commands.subcommands.SetLevelCommand;
 import com.airijko.endlessleveling.commands.subcommands.SetPrestigeCommand;
+import com.airijko.endlessleveling.commands.gate.GateCommand;
 import com.airijko.endlessleveling.commands.subcommands.PortalVisualCommand;
 import com.airijko.endlessleveling.commands.subcommands.DebugCommand;
 import com.airijko.endlessleveling.commands.subcommands.ToggleHudCommand;
@@ -86,6 +87,7 @@ public class EndlessLevelingCommand extends AbstractCommand {
                 this.addSubCommand(new AugmentCommand());
                 this.addSubCommand(new AugmentTestCommand());
                 this.addSubCommand(new PortalVisualCommand());
+                this.addSubCommand(new GateCommand());
                 this.addSubCommand(new ToggleHudCommand());
 
                 addGuiShortcut("leaderboards", "Open the EndlessLeveling Leaderboards page",

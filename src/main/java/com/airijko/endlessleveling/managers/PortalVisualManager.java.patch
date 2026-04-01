@@ -1,0 +1,2 @@
+--- We need to add countActivePortals() method to PortalVisualManager
+This is just a note for now - we'll add this method directly to the file

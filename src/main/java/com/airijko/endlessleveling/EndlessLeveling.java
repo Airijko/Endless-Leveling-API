@@ -31,6 +31,7 @@ import com.airijko.endlessleveling.managers.EventHookManager;
 import com.airijko.endlessleveling.managers.LanguageManager;
 import com.airijko.endlessleveling.managers.LoggingManager;
 import com.airijko.endlessleveling.managers.MemeSoundManager;
+import com.airijko.endlessleveling.managers.NaturalGateSpawner;
 import com.airijko.endlessleveling.managers.PortalVisualManager;
 import com.airijko.endlessleveling.managers.PluginFilesManager;
 import com.airijko.endlessleveling.leveling.LevelingManager;
@@ -54,6 +55,7 @@ import com.airijko.endlessleveling.systems.PassiveRegenSystem;
 import com.airijko.endlessleveling.mob.MobDamageScalingSystem;
 import com.airijko.endlessleveling.mob.MobLevelingSystem;
 import com.airijko.endlessleveling.drops.LuckDoubleDropSystem;
+import com.airijko.endlessleveling.systems.PlayerAttackBonkSoundSystem;
 import com.airijko.endlessleveling.systems.PlayerCombatPostApplyProbeSystem;
 import com.airijko.endlessleveling.systems.PlayerCombatSystem;
 import com.airijko.endlessleveling.systems.PlayerDefenseSystem;
@@ -579,6 +581,7 @@ public class EndlessLeveling extends JavaPlugin {
                         skillManager, augmentExecutor));
         this.getEntityStoreRegistry().registerSystem(new ArmyOfTheDeadDeathSystem());
         this.getEntityStoreRegistry().registerSystem(new PlayerDeathSoundSystem());
+        this.getEntityStoreRegistry().registerSystem(new PlayerAttackBonkSoundSystem());
         this.getEntityStoreRegistry().registerSystem(new ArmyOfTheDeadCleanupSystem());
         this.getEntityStoreRegistry().registerSystem(new MobDamageScalingSystem(mobLevelingManager));
         movementHasteSystem = new MovementHasteSystem(playerDataManager, skillManager, augmentRuntimeManager);
@@ -603,6 +606,7 @@ public class EndlessLeveling extends JavaPlugin {
         this.getEntityStoreRegistry().registerSystem(uiIntegrityAlertSystem);
         this.getEntityStoreRegistry().registerSystem(new WitherEffectSystem());
         PortalVisualManager.initialize(this);
+        NaturalGateSpawner.initialize(this);
         MemeSoundManager.initialize();
         boolean registeredFallbackGatesManager = EndlessLevelingAPI.get().registerManagerIfAbsent(
             EndlessLevelingAPI.GATE_MANAGER_KEY,
@@ -740,6 +744,7 @@ public class EndlessLeveling extends JavaPlugin {
     protected void shutdown() {
         MemeSoundManager.shutdown();
         PortalVisualManager.shutdown();
+        NaturalGateSpawner.shutdown();
         EndlessLevelingAPI.get().unregisterManager(EndlessLevelingAPI.GATE_MANAGER_KEY, CoreSneakPeekGatesManager.INSTANCE);
         if (shutdownCoordinator == null) {
             shutdownCoordinator = new EndlessLevelingShutdownCoordinator(this);

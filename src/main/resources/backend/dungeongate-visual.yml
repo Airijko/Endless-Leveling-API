@@ -27,7 +27,7 @@ min_level_required: 1
 
 # Visual-only section. No gameplay wave data is included.
 visuals:
-  default_effect: EL_MagicPortal_Circle
-  sneak_peek_effect: EL_MagicPortal_Circle_Wave
+  default_effect: "EL_MagicPortal_Circle"
+  sneak_peek_effect: "EL_MagicPortal_Red"
   pulse_interval_millis: 1800
   placement_attempts: 14

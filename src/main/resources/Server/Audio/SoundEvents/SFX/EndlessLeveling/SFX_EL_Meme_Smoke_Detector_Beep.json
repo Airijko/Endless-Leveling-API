@@ -2,7 +2,7 @@
   "Layers": [
     {
       "Files": [
-        "Sounds/Gates/smoke-detector-beep.mp3"
+        "Sounds/Gates/smoke-detector-beep.ogg"
       ],
       "RandomSettings": {
         "MinPitch": 0,
