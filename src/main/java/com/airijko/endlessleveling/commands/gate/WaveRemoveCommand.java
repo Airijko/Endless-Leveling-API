@@ -15,55 +15,58 @@ import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Spawn a visual wave gate portal near the player.
+ * Remove active wave gate previews.
  */
-public final class WaveSpawnCommand extends AbstractCommand {
+public final class WaveRemoveCommand extends AbstractCommand {
 
-    public WaveSpawnCommand() {
-        super("spawn", "Spawn a wave gate portal near you");
+    public WaveRemoveCommand() {
+        super("remove", "Remove active wave gate preview(s)");
+        this.addAliases("clear", "despawn");
         this.setAllowsExtraArguments(true);
     }
 
     @Nullable
     @Override
     protected CompletableFuture<Void> execute(CommandContext context) {
-        if (!(context.sender() instanceof Player player)) {
-            context.sendMessage(Message.raw("This command requires being in-world.").color("#ff9900"));
-            return CompletableFuture.completedFuture(null);
-        }
-
         List<String> args = extractTrailingArgs(context);
-        GateRankTier forcedRankTier = args.isEmpty() ? null : parseRankTier(args.get(0));
-        if (!args.isEmpty() && forcedRankTier == null && !"random".equalsIgnoreCase(args.get(0))) {
-            context.sendMessage(Message.raw("Usage: /gate wave spawn [s|a|b|c|d|e|random]").color("#ffcc66"));
+        if (args.isEmpty()) {
+            if (!(context.sender() instanceof Player player)) {
+                context.sendMessage(Message.raw("Usage: /gate wave remove <all|rank>").color("#ffcc66"));
+                return CompletableFuture.completedFuture(null);
+            }
+            PlayerRef playerRef = player.getPlayerRef();
+            if (playerRef == null) {
+                context.sendMessage(Message.raw("Could not resolve your player reference.").color("#ff6666"));
+                return CompletableFuture.completedFuture(null);
+            }
+            boolean removed = WavePortalPreviewManager.removePreviewForPlayer(playerRef);
+            context.sendMessage(Message.raw(removed
+                            ? "Removed your active wave preview."
+                            : "You have no active wave preview to remove.")
+                    .color(removed ? "#6cff78" : "#ffcc66"));
             return CompletableFuture.completedFuture(null);
         }
 
-        String rankLabel = forcedRankTier == null ? "random" : forcedRankTier.letter() + "-rank";
-        context.sendMessage(Message.raw("Attempting to spawn wave gate portal (" + rankLabel + ")...").color("#ffcc66"));
-
-        PlayerRef playerRef = player.getPlayerRef();
-        if (playerRef == null) {
-            context.sendMessage(Message.raw("Could not resolve your player reference.").color("#ff6666"));
+        String mode = args.get(0).toLowerCase(Locale.ROOT);
+        if ("all".equals(mode)) {
+            int removed = WavePortalPreviewManager.removeAllPreviews();
+            context.sendMessage(Message.raw("Removed wave previews: " + removed).color("#6cff78"));
             return CompletableFuture.completedFuture(null);
         }
 
-        return WavePortalPreviewManager.spawnPreviewNearPlayer(playerRef, forcedRankTier)
-                .handle((snapshot, throwable) -> {
-                    if (throwable != null || snapshot == null) {
-                        context.sendMessage(Message.raw("Failed to spawn wave gate portal. Check requirements.").color("#ff6666"));
-                        return null;
-                    }
+        GateRankTier rankTier = parseRankTier(mode);
+        if (rankTier == null) {
+            context.sendMessage(Message.raw("Usage: /gate wave remove <all|s|a|b|c|d|e>").color("#ffcc66"));
+            return CompletableFuture.completedFuture(null);
+        }
 
-                    context.sendMessage(Message.raw(String.format(
-                                    "Wave gate portal spawned: %s-rank at (%d, %d, %d)",
-                                    snapshot.rankTier().letter(),
-                                    snapshot.x(),
-                                    snapshot.y(),
-                                    snapshot.z()))
-                            .color("#6cff78"));
-                    return null;
-                });
+        int removed = WavePortalPreviewManager.removePreviewsByRank(rankTier);
+        context.sendMessage(Message.raw(String.format(Locale.ROOT,
+                        "Removed %s-rank wave previews: %d",
+                        rankTier.letter(),
+                        removed))
+                .color(rankTier.color().hex()));
+        return CompletableFuture.completedFuture(null);
     }
 
     @Nullable

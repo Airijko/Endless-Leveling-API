@@ -21,7 +21,7 @@ public final class GateCommand extends AbstractCommand {
     @Nullable
     @Override
     protected CompletableFuture<Void> execute(CommandContext context) {
-        context.sendMessage(Message.raw("Usage: /gate wave <spawn|status>").color("#ffcc66"));
+        context.sendMessage(Message.raw("Usage: /gate wave <spawn [rank]|remove [all|rank]|status>").color("#ffcc66"));
         return CompletableFuture.completedFuture(null);
     }
 }

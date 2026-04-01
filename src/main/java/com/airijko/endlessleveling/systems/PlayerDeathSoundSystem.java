@@ -24,7 +24,8 @@ public final class PlayerDeathSoundSystem extends DeathSystems.OnDeathSystem {
 
         private static final String[] PLAYER_DEATH_SOUND_IDS = {
             "SFX_EL_Player_Death_Fahhh",
-            "SFX_EL_Player_Death_Dexter_Meme"
+            "SFX_EL_Player_Death_Dexter_Meme",
+            "SFX_EL_Player_Death_Roblox"
         };
 
     @Nonnull

@@ -1,6 +1,4 @@
 # EndlessLeveling backend-only dungeon gate config for visual portal spawning.
-# This file stays packaged in the jar and is not initialized in the mods folder.
-
 enabled: true
 
 # Spawn cadence uses a random minute between min and max (inclusive).

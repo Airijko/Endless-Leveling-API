@@ -4,13 +4,18 @@ import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.api.EndlessLevelingAPI;
 import com.airijko.endlessleveling.enums.GateRankTier;
 import com.airijko.endlessleveling.enums.PortalGateColor;
+import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.logger.HytaleLogger;
+import com.hypixel.hytale.protocol.SoundCategory;
 import com.hypixel.hytale.server.core.HytaleServer;
 import com.hypixel.hytale.server.core.Message;
+import com.hypixel.hytale.server.core.asset.type.soundevent.config.SoundEvent;
 import com.hypixel.hytale.server.core.util.EventTitleUtil;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
+import com.hypixel.hytale.server.core.universe.world.SoundUtil;
 import com.hypixel.hytale.server.core.universe.world.World;
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -374,10 +379,55 @@ public final class NaturalGateSpawner {
      * Play sound to all players (S-Rank gate spawn sound).
      */
     private static void playSoundToAllPlayers(@Nonnull String soundEventId) {
-        // Note: Sound playing requires access to world execution context and entity stores.
-        // For now, we log that sound would be played. Full implementation requires
-        // more context from the addon's sound utilities.
-        LOGGER.atFine().log("[ELGateSpawner] Would play sound: %s", soundEventId);
+        Universe universe = Universe.get();
+        if (universe == null) {
+            return;
+        }
+
+        int soundIndex = resolveSoundIndex(soundEventId);
+        if (soundIndex == 0) {
+            LOGGER.atWarning().log("[ELGateSpawner] Missing sound event id: %s", soundEventId);
+            return;
+        }
+
+        for (PlayerRef playerRef : universe.getPlayers()) {
+            if (playerRef == null || !playerRef.isValid()) {
+                continue;
+            }
+
+            UUID worldUuid = playerRef.getWorldUuid();
+            if (worldUuid == null) {
+                continue;
+            }
+
+            World playerWorld = universe.getWorld(worldUuid);
+            if (playerWorld == null) {
+                continue;
+            }
+
+            playerWorld.execute(() -> {
+                Ref<EntityStore> playerEntityRef = playerRef.getReference();
+                if (playerEntityRef == null || !playerEntityRef.isValid()) {
+                    return;
+                }
+
+                try {
+                    SoundUtil.playSoundEvent2d(playerEntityRef, soundIndex, SoundCategory.SFX, playerEntityRef.getStore());
+                } catch (Exception ex) {
+                    LOGGER.atWarning().log("[ELGateSpawner] Failed S-rank spawn SFX for player=%s: %s",
+                            playerRef.getUsername(),
+                            ex.getMessage());
+                }
+            });
+        }
+    }
+
+    private static int resolveSoundIndex(@Nullable String soundEventId) {
+        if (soundEventId == null || soundEventId.isBlank()) {
+            return 0;
+        }
+        int index = SoundEvent.getAssetMap().getIndex(soundEventId);
+        return index == Integer.MIN_VALUE ? 0 : index;
     }
 
     /**

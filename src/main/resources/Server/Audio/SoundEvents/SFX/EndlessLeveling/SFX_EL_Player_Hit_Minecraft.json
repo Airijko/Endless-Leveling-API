@@ -1,0 +1,18 @@
+{
+  "Layers": [
+    {
+      "Files": [
+        "Sounds/Gates/minecraft_hit.ogg"
+      ],
+      "RandomSettings": {
+        "MinPitch": 0,
+        "MaxPitch": 0,
+        "MinVolume": 0
+      },
+      "Volume": 3.0
+    }
+  ],
+  "Volume": 0,
+  "MaxDistance": 20,
+  "StartAttenuationDistance": 2
+}

@@ -60,6 +60,7 @@ import com.airijko.endlessleveling.systems.PlayerCombatPostApplyProbeSystem;
 import com.airijko.endlessleveling.systems.PlayerCombatSystem;
 import com.airijko.endlessleveling.systems.PlayerDefenseSystem;
 import com.airijko.endlessleveling.systems.PlayerDeathSoundSystem;
+import com.airijko.endlessleveling.systems.PlayerIncomingHitSoundSystem;
 import com.airijko.endlessleveling.systems.MovementHasteSystem;
 import com.airijko.endlessleveling.systems.PlayerNameplateSystem;
 import com.airijko.endlessleveling.systems.PlayerRaceStatSystem;
@@ -581,6 +582,7 @@ public class EndlessLeveling extends JavaPlugin {
                         skillManager, augmentExecutor));
         this.getEntityStoreRegistry().registerSystem(new ArmyOfTheDeadDeathSystem());
         this.getEntityStoreRegistry().registerSystem(new PlayerDeathSoundSystem());
+        this.getEntityStoreRegistry().registerSystem(new PlayerIncomingHitSoundSystem());
         this.getEntityStoreRegistry().registerSystem(new PlayerAttackBonkSoundSystem());
         this.getEntityStoreRegistry().registerSystem(new ArmyOfTheDeadCleanupSystem());
         this.getEntityStoreRegistry().registerSystem(new MobDamageScalingSystem(mobLevelingManager));
