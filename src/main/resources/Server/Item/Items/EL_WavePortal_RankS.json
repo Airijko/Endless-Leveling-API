@@ -3,7 +3,7 @@
     "Name": "endlesslevelingaddon.items.portal_d01.name",
     "Description": "endlesslevelingaddon.items.portal_d01.description"
   },
-  "Icon": "Icons/ItemsGenerated/MajorDungeons_PortalKey.png",
+  "Icon": "Icons/ItemsGenerated/PortalKey_Howling_Sands.png",
   "Categories": [
     "Blocks.Structural"
   ],
