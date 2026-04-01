@@ -10,6 +10,7 @@
 package com.airijko.endlessleveling;
 
 import com.airijko.endlessleveling.analytics.HStats;
+import com.airijko.endlessleveling.api.EndlessLevelingAPI;
 import com.airijko.endlessleveling.classes.ClassWeaponResolver;
 import com.airijko.endlessleveling.classes.WeaponConfig;
 import com.airijko.endlessleveling.augments.AugmentExecutor;
@@ -25,9 +26,12 @@ import com.airijko.endlessleveling.listeners.PartyListener;
 import com.airijko.endlessleveling.listeners.PlayerDataListener;
 import com.airijko.endlessleveling.listeners.DungeonTierJoinNotificationListener;
 import com.airijko.endlessleveling.managers.ConfigManager;
+import com.airijko.endlessleveling.managers.CoreSneakPeekGatesManager;
 import com.airijko.endlessleveling.managers.EventHookManager;
 import com.airijko.endlessleveling.managers.LanguageManager;
 import com.airijko.endlessleveling.managers.LoggingManager;
+import com.airijko.endlessleveling.managers.MemeSoundManager;
+import com.airijko.endlessleveling.managers.PortalVisualManager;
 import com.airijko.endlessleveling.managers.PluginFilesManager;
 import com.airijko.endlessleveling.leveling.LevelingManager;
 import com.airijko.endlessleveling.leveling.MobLevelingManager;
@@ -53,6 +57,7 @@ import com.airijko.endlessleveling.drops.LuckDoubleDropSystem;
 import com.airijko.endlessleveling.systems.PlayerCombatPostApplyProbeSystem;
 import com.airijko.endlessleveling.systems.PlayerCombatSystem;
 import com.airijko.endlessleveling.systems.PlayerDefenseSystem;
+import com.airijko.endlessleveling.systems.PlayerDeathSoundSystem;
 import com.airijko.endlessleveling.systems.MovementHasteSystem;
 import com.airijko.endlessleveling.systems.PlayerNameplateSystem;
 import com.airijko.endlessleveling.systems.PlayerRaceStatSystem;
@@ -573,6 +578,7 @@ public class EndlessLeveling extends JavaPlugin {
                 .registerSystem(new SwiftnessKillSystem(playerDataManager, passiveManager, archetypePassiveManager,
                         skillManager, augmentExecutor));
         this.getEntityStoreRegistry().registerSystem(new ArmyOfTheDeadDeathSystem());
+        this.getEntityStoreRegistry().registerSystem(new PlayerDeathSoundSystem());
         this.getEntityStoreRegistry().registerSystem(new ArmyOfTheDeadCleanupSystem());
         this.getEntityStoreRegistry().registerSystem(new MobDamageScalingSystem(mobLevelingManager));
         movementHasteSystem = new MovementHasteSystem(playerDataManager, skillManager, augmentRuntimeManager);
@@ -596,6 +602,18 @@ public class EndlessLeveling extends JavaPlugin {
         uiIntegrityAlertSystem = new UiIntegrityAlertSystem(uiTitleIntegrityGuard);
         this.getEntityStoreRegistry().registerSystem(uiIntegrityAlertSystem);
         this.getEntityStoreRegistry().registerSystem(new WitherEffectSystem());
+        PortalVisualManager.initialize(this);
+        MemeSoundManager.initialize();
+        boolean registeredFallbackGatesManager = EndlessLevelingAPI.get().registerManagerIfAbsent(
+            EndlessLevelingAPI.GATE_MANAGER_KEY,
+            CoreSneakPeekGatesManager.INSTANCE);
+        if (registeredFallbackGatesManager) {
+            LOGGER.atInfo().log("Registered core fallback gates manager under key '%s'.",
+                EndlessLevelingAPI.GATE_MANAGER_KEY);
+        } else {
+            LOGGER.atInfo().log("Using externally provided gates manager under key '%s'.",
+                EndlessLevelingAPI.GATE_MANAGER_KEY);
+        }
         shutdownCoordinator = new EndlessLevelingShutdownCoordinator(this);
         resolveRemoveWorldEventClass().ifPresentOrElse(eventClass -> {
             this.getEventRegistry().registerGlobal((Class) eventClass,
@@ -720,6 +738,9 @@ public class EndlessLeveling extends JavaPlugin {
     }
 
     protected void shutdown() {
+        MemeSoundManager.shutdown();
+        PortalVisualManager.shutdown();
+        EndlessLevelingAPI.get().unregisterManager(EndlessLevelingAPI.GATE_MANAGER_KEY, CoreSneakPeekGatesManager.INSTANCE);
         if (shutdownCoordinator == null) {
             shutdownCoordinator = new EndlessLevelingShutdownCoordinator(this);
         }

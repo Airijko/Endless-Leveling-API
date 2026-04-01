@@ -1,0 +1,43 @@
+{
+  "World_Overrides": {
+    "el_gate_*": {
+      "Enable_XP": true,
+      "Experience": {
+        "Global_XP_Multiplier": 1.0
+      },
+      "Level_Range": {
+        "Max": "ENDLESS"
+      },
+      "Scaling": {
+        "Health": {
+          "Base_Multiplier": 3.0,
+          "Per_Level": 0.075
+        },
+        "Damage": {
+          "Base_Multiplier": 1.25,
+          "Per_Level": 0.065
+        },
+        "Defense": {
+          "At_Negative_Max_Difference": 0.25,
+          "At_Positive_Max_Difference": 0.8,
+          "Below_Negative_Max_Difference": 0.0,
+          "Above_Positive_Max_Difference": 0.9
+        }
+      },
+      "Mob_Overrides": {
+        "Azaroth": {
+          "Level_From_Range_Max_Offset": 10
+        },
+        "Katherina": {
+          "Level_From_Range_Max_Offset": 10
+        },
+        "Construct_Ancient_Dark_Titan": {
+          "Level_From_Range_Max_Offset": 10
+        },
+        "Baron": {
+          "Level_From_Range_Max_Offset": 10
+        }
+      }
+    }
+  }
+}

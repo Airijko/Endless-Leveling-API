@@ -25,6 +25,8 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 
 /**
@@ -34,6 +36,8 @@ import java.util.function.Function;
 public final class EndlessLevelingAPI {
 
     private static final EndlessLevelingAPI INSTANCE = new EndlessLevelingAPI();
+    public static final String GATE_MANAGER_KEY = "gates";
+    private final ConcurrentMap<String, Object> managerRegistry = new ConcurrentHashMap<>();
 
     private EndlessLevelingAPI() {
     }
@@ -609,6 +613,98 @@ public final class EndlessLevelingAPI {
         }
         ArchetypePassiveManager manager = archetypePassiveManager();
         return manager != null && manager.unregisterArchetypePassiveSource(source);
+    }
+
+    // ----------------------
+    // Named Manager Registry
+    // ----------------------
+
+    /**
+     * Register a named manager object.
+     *
+     * <p>When replaceExisting is false, registration succeeds only if the key is not
+     * already present. When true, the existing mapping is replaced atomically.
+     */
+    public boolean registerManager(String key, Object manager, boolean replaceExisting) {
+        String normalized = normalizeManagerKey(key);
+        if (normalized == null || manager == null) {
+            return false;
+        }
+
+        if (replaceExisting) {
+            managerRegistry.put(normalized, manager);
+            return true;
+        }
+        return managerRegistry.putIfAbsent(normalized, manager) == null;
+    }
+
+    /**
+     * Register a named manager only when no mapping exists yet.
+     */
+    public boolean registerManagerIfAbsent(String key, Object manager) {
+        return registerManager(key, manager, false);
+    }
+
+    /**
+     * Register a named manager and allow replacing an existing mapping.
+     */
+    public boolean registerManager(String key, Object manager) {
+        return registerManager(key, manager, true);
+    }
+
+    /**
+     * Get a named manager as a raw object.
+     */
+    public Object getManager(String key) {
+        String normalized = normalizeManagerKey(key);
+        return normalized == null ? null : managerRegistry.get(normalized);
+    }
+
+    /**
+     * Get a named manager when it matches the requested type.
+     */
+    public <T> T getManager(String key, Class<T> managerType) {
+        if (managerType == null) {
+            return null;
+        }
+        Object manager = getManager(key);
+        if (!managerType.isInstance(manager)) {
+            return null;
+        }
+        return managerType.cast(manager);
+    }
+
+    /**
+     * Remove a named manager mapping.
+     */
+    public boolean unregisterManager(String key) {
+        String normalized = normalizeManagerKey(key);
+        return normalized != null && managerRegistry.remove(normalized) != null;
+    }
+
+    /**
+     * Remove a named manager only if the current value equals expectedManager.
+     */
+    public boolean unregisterManager(String key, Object expectedManager) {
+        String normalized = normalizeManagerKey(key);
+        return normalized != null && expectedManager != null
+                && managerRegistry.remove(normalized, expectedManager);
+    }
+
+    /**
+     * Return true when a manager mapping exists for the key.
+     */
+    public boolean hasManager(String key) {
+        String normalized = normalizeManagerKey(key);
+        return normalized != null && managerRegistry.containsKey(normalized);
+    }
+
+    private String normalizeManagerKey(String key) {
+        if (key == null) {
+            return null;
+        }
+        String normalized = key.trim().toLowerCase();
+        return normalized.isEmpty() ? null : normalized;
     }
 
     private PlayerData getData(UUID uuid) {

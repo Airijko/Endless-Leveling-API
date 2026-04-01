@@ -1,0 +1,77 @@
+{
+  "Spawners": [
+    {
+      "SpawnerId": "EL_MagicPortal_Circle_Spawn",
+      "RotationOffset": {
+        "Pitch": 90.0
+      }
+    },
+    {
+      "SpawnerId": "EL_MagicPortal_Circle_Flash",
+      "RotationOffset": {
+        "Pitch": 90.0
+      }
+    },
+    {
+      "SpawnerId": "EL_MagicPortal_Circle_CenterCircle",
+      "RotationOffset": {
+        "Pitch": 90.0
+      }
+    },
+    {
+      "SpawnerId": "EL_MagicPortal_Circle_Waves",
+      "StartDelay": 0,
+      "PositionOffset": {
+        "Y": 0.2
+      },
+      "RotationOffset": {
+        "Pitch": 90.0
+      }
+    },
+    {
+      "SpawnerId": "EL_MagicPortal_Circle_SmokeAlpha",
+      "StartDelay": 0,
+      "PositionOffset": {
+        "Y": 0.2
+      },
+      "RotationOffset": {
+        "Pitch": 90.0
+      }
+    },
+    {
+      "SpawnerId": "EL_MagicPortal_Circle_Wave_Sparks",
+      "StartDelay": 0,
+      "RotationOffset": {
+        "Pitch": 90.0
+      }
+    },
+    {
+      "SpawnerId": "EL_MagicPortal_Circle_Wave_SparksRunes",
+      "RotationOffset": {
+        "Pitch": 90.0
+      }
+    },
+    {
+      "SpawnerId": "EL_MagicPortal_Circle_Center",
+      "StartDelay": 0.5,
+      "RotationOffset": {
+        "Pitch": 90.0
+      }
+    },
+    {
+      "SpawnerId": "EL_MagicPortal_Circle_CenterGlow",
+      "StartDelay": 0.5,
+      "RotationOffset": {
+        "Pitch": 90.0
+      }
+    },
+    {
+      "SpawnerId": "EL_MagicPortal_Circle_Wave_SmokeMiddle",
+      "RotationOffset": {
+        "Pitch": 90.0
+      }
+    }
+  ],
+  "CullDistance": 50.0,
+  "IsImportant": false
+}

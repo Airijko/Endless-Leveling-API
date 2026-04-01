@@ -1,0 +1,33 @@
+# EndlessLeveling backend-only dungeon gate config for visual portal spawning.
+# This file stays packaged in the jar and is not initialized in the mods folder.
+
+enabled: true
+
+# Spawn cadence uses a random minute between min and max (inclusive).
+spawn_interval_minutes_min: 25
+spawn_interval_minutes_max: 40
+
+# Number of active visual portals allowed concurrently. -1 disables the cap.
+max_concurrent_spawns: 5
+
+# Eligible world names for natural visual portal spawn checks.
+portal_world_whitelist:
+  - world
+  - default
+  - endless
+
+announce_on_spawn: true
+announce_on_despawn: true
+
+# Visual lifetime in minutes before auto-expiration. -1 never expires.
+gate_duration_minutes: 45
+
+# Preserved from addon config for spawn eligibility filtering.
+min_level_required: 1
+
+# Visual-only section. No gameplay wave data is included.
+visuals:
+  default_effect: EL_MagicPortal_Circle
+  sneak_peek_effect: EL_MagicPortal_Circle_Wave
+  pulse_interval_millis: 1800
+  placement_attempts: 14
