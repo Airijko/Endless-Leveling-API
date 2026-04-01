@@ -25,6 +25,8 @@ import com.airijko.endlessleveling.listeners.PartyListener;
 import com.airijko.endlessleveling.listeners.PlayerDataListener;
 import com.airijko.endlessleveling.listeners.DungeonTierJoinNotificationListener;
 import com.airijko.endlessleveling.managers.ConfigManager;
+import com.airijko.endlessleveling.managers.CoreGateTypeRuntimeManager;
+import com.airijko.endlessleveling.managers.CoreWaveGateSessionManager;
 import com.airijko.endlessleveling.managers.EventHookManager;
 import com.airijko.endlessleveling.managers.LanguageManager;
 import com.airijko.endlessleveling.managers.LoggingManager;
@@ -120,6 +122,8 @@ public class EndlessLeveling extends JavaPlugin {
     private UiTitleIntegrityGuard uiTitleIntegrityGuard;
     private UiIntegrityAlertSystem uiIntegrityAlertSystem;
     private EndlessLevelingShutdownCoordinator shutdownCoordinator;
+    private CoreGateTypeRuntimeManager coreGateTypeRuntimeManager;
+    private CoreWaveGateSessionManager coreWaveGateSessionManager;
     private volatile String brandName = DEFAULT_BRAND_NAME;
     private volatile String commandPrefix = DEFAULT_COMMAND_PREFIX;
     private volatile String messagePrefix = DEFAULT_MESSAGE_PREFIX;
@@ -212,6 +216,14 @@ public class EndlessLeveling extends JavaPlugin {
 
     public UiIntegrityAlertSystem getUiIntegrityAlertSystem() {
         return uiIntegrityAlertSystem;
+    }
+
+    public CoreGateTypeRuntimeManager getCoreGateTypeRuntimeManager() {
+        return coreGateTypeRuntimeManager;
+    }
+
+    public CoreWaveGateSessionManager getCoreWaveGateSessionManager() {
+        return coreWaveGateSessionManager;
     }
 
     public AugmentManager getAugmentManager() {
@@ -621,6 +633,14 @@ public class EndlessLeveling extends JavaPlugin {
                 playerDataManager,
                 augmentManager);
 
+        coreGateTypeRuntimeManager = new CoreGateTypeRuntimeManager();
+        coreWaveGateSessionManager = new CoreWaveGateSessionManager();
+        coreWaveGateSessionManager.start();
+        com.airijko.endlessleveling.api.EndlessLevelingAPI.get()
+            .registerWaveGateSessionBridge(coreWaveGateSessionManager, true);
+        coreGateTypeRuntimeManager.start();
+        this.getEventRegistry().registerGlobal(PlayerReadyEvent.class, coreGateTypeRuntimeManager::onPlayerReady);
+
         if (augmentSyncValidator != null) {
             augmentSyncValidator.auditAndNotify();
         }
@@ -720,6 +740,14 @@ public class EndlessLeveling extends JavaPlugin {
     }
 
     protected void shutdown() {
+        if (coreGateTypeRuntimeManager != null) {
+            coreGateTypeRuntimeManager.shutdown();
+        }
+        if (coreWaveGateSessionManager != null) {
+            com.airijko.endlessleveling.api.EndlessLevelingAPI.get()
+                    .unregisterWaveGateSessionBridge(coreWaveGateSessionManager);
+            coreWaveGateSessionManager.shutdown();
+        }
         if (shutdownCoordinator == null) {
             shutdownCoordinator = new EndlessLevelingShutdownCoordinator(this);
         }
