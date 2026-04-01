@@ -68,6 +68,11 @@ public final class WavePortalPreviewManager {
     public static CompletableFuture<WavePreviewSnapshot> spawnPreviewNearPlayer(@Nonnull PlayerRef playerRef,
                                                                                 @Nullable GateRankTier forcedRankTier) {
         CompletableFuture<WavePreviewSnapshot> future = new CompletableFuture<>();
+        if (!NaturalGateSpawner.isGateSpawningEnabled()) {
+            future.complete(null);
+            return future;
+        }
+
         UUID playerUuid = playerRef.getUuid();
         if (playerUuid == null) {
             future.complete(null);

@@ -74,12 +74,21 @@ public final class NaturalGateSpawner {
     private static volatile long configuredSpawnIntervalMax = DEFAULT_SPAWN_INTERVAL_MINUTES_MAX;
     private static volatile int configuredMinLevelRequired = DEFAULT_MIN_LEVEL_REQUIRED;
     private static volatile List<String> configuredPortalWorlds = DEFAULT_PORTAL_WORLDS;
+    private static volatile boolean gateSpawningEnabled = true;
 
     private NaturalGateSpawner() {
     }
 
     public static void initialize(@Nonnull EndlessLeveling owner) {
         plugin = owner;
+        PortalVisualBackendConfig backendConfig = PortalVisualBackendConfig.load();
+        gateSpawningEnabled = backendConfig != null && backendConfig.enabled();
+
+        if (!gateSpawningEnabled) {
+            LOGGER.atInfo().log("[ELGateSpawner] Disabled by backend/dungeongate-visual.yml (enabled=false)");
+            return;
+        }
+
         scheduleNextSpawnTick();
         LOGGER.atInfo().log("[ELGateSpawner] Initialized with interval %d-%d minutes",
                 configuredSpawnIntervalMin,
@@ -99,7 +108,14 @@ public final class NaturalGateSpawner {
      * Manually trigger a random gate spawn near the given player.
      */
     public static boolean spawnGateNearPlayer(@Nonnull PlayerRef playerRef) {
+        if (!gateSpawningEnabled) {
+            return false;
+        }
         return spawnGateNearPlayerInternal(playerRef, false);
+    }
+
+    public static boolean isGateSpawningEnabled() {
+        return gateSpawningEnabled;
     }
 
     @Nonnull
@@ -215,6 +231,9 @@ public final class NaturalGateSpawner {
             if (plugin == null) {
                 return;
             }
+            if (!gateSpawningEnabled) {
+                return;
+            }
 
             Universe universe = Universe.get();
             if (universe == null) {
@@ -243,12 +262,15 @@ public final class NaturalGateSpawner {
     }
 
     private static void scheduleNextSpawnTick() {
+        if (!gateSpawningEnabled) {
+            return;
+        }
         long delayMinutes = resolveRandomSpawnIntervalMinutes();
         periodicTask = HytaleServer.SCHEDULED_EXECUTOR.schedule(() -> {
             try {
                 spawnNaturalGateTick();
             } finally {
-                if (plugin != null) {
+                if (plugin != null && gateSpawningEnabled) {
                     scheduleNextSpawnTick();
                 }
             }
