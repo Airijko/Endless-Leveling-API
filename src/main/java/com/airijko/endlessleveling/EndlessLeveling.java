@@ -89,8 +89,8 @@ public class EndlessLeveling extends JavaPlugin {
     public static final String DEFAULT_BRAND_NAME = "Endless Leveling";
     public static final String DEFAULT_COMMAND_PREFIX = "/lvl";
     public static final String DEFAULT_MESSAGE_PREFIX = "[EndlessLeveling] ";
-    private static final String HSTATS_MOD_UUID = "fffbb440-4831-4a02-8581-ae505a778381";
-    private static final String HSTATS_MOD_VERSION = "7.1.0";
+    private static final String HSTATS_MOD_UUID = "70cf8395-17a1-4d0e-8165-1bb208e2c1f3";
+    private static final String HSTATS_MOD_VERSION = "7.1.3";
     private static final String PARTNER_ADDON_MAIN_CLASS = "com.airijko.endlessleveling.EndlessLevelingPartnerAddon";
     private static final String ARANK_ADDON_MAIN_CLASS = "com.airijko.endlessleveling.EndlessLevelingARankAddon";
 
