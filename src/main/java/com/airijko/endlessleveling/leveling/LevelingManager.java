@@ -16,12 +16,15 @@ import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.protocol.SoundCategory;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
+import com.hypixel.hytale.server.core.asset.type.soundevent.config.SoundEvent;
 import com.hypixel.hytale.server.core.util.EventTitleUtil;
 import com.hypixel.hytale.server.core.util.NotificationUtil;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.universe.world.World;
+import com.hypixel.hytale.server.core.universe.world.SoundUtil;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import javax.annotation.Nonnull;
@@ -40,6 +43,7 @@ import com.airijko.endlessleveling.managers.ConfigManager;
 public class LevelingManager {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
+    private static final String LEVEL_UP_SOUND_ID = "SFX_EL_Player_Level_Up";
 
     private final PlayerDataManager playerDataManager;
     private final SkillManager skillManager;
@@ -382,6 +386,8 @@ public class LevelingManager {
         if (playerRef == null)
             return;
 
+        playLevelUpSound(playerRef);
+
         // Level-Up Title
         Message primaryMessage = Message.raw("Level Up!").color("#FFD700");
         Message secondaryMessage = Message.raw("You are now level " + player.getLevel()).color("#FFFFFF");
@@ -396,6 +402,29 @@ public class LevelingManager {
                 Message.raw(" to allocate your points").color("#ff9d00"));
         var icon = new ItemStack("Ingredient_Ice_Essence", 1).toPacket();
         NotificationUtil.sendNotification(playerRef.getPacketHandler(), notifPrimary, notifSecondary, icon);
+    }
+
+    private void playLevelUpSound(@Nonnull PlayerRef playerRef) {
+        Ref<EntityStore> ref = playerRef.getReference();
+        if (ref == null || !ref.isValid() || ref.getStore() == null) {
+            return;
+        }
+
+        int soundIndex = resolveSoundIndex(LEVEL_UP_SOUND_ID);
+        if (soundIndex == 0) {
+            return;
+        }
+
+        try {
+            SoundUtil.playSoundEvent2d(ref, soundIndex, SoundCategory.SFX, ref.getStore());
+        } catch (Exception ex) {
+            LOGGER.atWarning().log("Failed to play level-up sound '%s': %s", LEVEL_UP_SOUND_ID, ex.getMessage());
+        }
+    }
+
+    private int resolveSoundIndex(@Nonnull String soundEventId) {
+        int index = SoundEvent.getAssetMap().getIndex(soundEventId);
+        return index == Integer.MIN_VALUE ? 0 : index;
     }
 
     private boolean canNotifyPrestigeAvailable(PlayerData player) {

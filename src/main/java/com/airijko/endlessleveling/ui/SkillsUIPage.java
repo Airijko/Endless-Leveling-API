@@ -13,7 +13,9 @@ import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.protocol.SoundCategory;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
+import com.hypixel.hytale.server.core.asset.type.soundevent.config.SoundEvent;
 import com.hypixel.hytale.server.core.entity.entities.player.pages.InteractiveCustomUIPage;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
@@ -21,6 +23,7 @@ import static com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindin
 import static com.hypixel.hytale.server.core.ui.builder.EventData.of;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
+import com.hypixel.hytale.server.core.universe.world.SoundUtil;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import javax.annotation.Nonnull;
@@ -30,6 +33,7 @@ import java.util.EnumMap;
 
 public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
+        private static final String SKILL_SUBMIT_SOUND_ID = "SFX_EL_Skill_Submit_Emaad";
         private static final SkillBinding[] SKILL_BINDINGS = java.util.Arrays.stream(AttributeTheme.values())
                         .map(theme -> new SkillBinding(theme.uiSuffix(), theme.skillsIconSelector(), theme.type()))
                         .toArray(SkillBinding[]::new);
@@ -564,6 +568,7 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
         private void applyPreviewChanges(@Nonnull Ref<EntityStore> ref, @Nonnull Store<EntityStore> store,
                         @Nonnull PlayerData playerData) {
+                int previousSkillPoints = playerData.getSkillPoints();
                 previewLevels.forEach(playerData::setPlayerSkillAttributeLevel);
                 playerData.setSkillPoints(previewSkillPoints);
 
@@ -582,6 +587,12 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
                 playerDataManager.save(playerData);
                 syncPreviewFromPlayerData(playerData);
+
+                int spentPoints = Math.max(0, previousSkillPoints - previewSkillPoints);
+                if (spentPoints > 0) {
+                        playSkillSubmitSound(ref);
+                }
+
                 if (ref != null && store != null) {
                         boolean applied = skillManager.applyAllSkillModifiers(ref, store, playerData);
                         if (!applied) {
@@ -596,6 +607,30 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                         LOGGER.atWarning().log("applyPreviewChanges: missing ref/store for player %s",
                                         playerRef.getUuid());
                 }
+        }
+
+        private void playSkillSubmitSound(@Nonnull Ref<EntityStore> ref) {
+                if (ref == null || !ref.isValid() || ref.getStore() == null) {
+                        return;
+                }
+
+                int soundIndex = resolveSoundIndex(SKILL_SUBMIT_SOUND_ID);
+                if (soundIndex == 0) {
+                        return;
+                }
+
+                try {
+                        SoundUtil.playSoundEvent2d(ref, soundIndex, SoundCategory.SFX, ref.getStore());
+                } catch (Exception ex) {
+                        LOGGER.atWarning().log("Failed to play skill submit sound '%s': %s",
+                                        SKILL_SUBMIT_SOUND_ID,
+                                        ex.getMessage());
+                }
+        }
+
+        private int resolveSoundIndex(@Nonnull String soundEventId) {
+                int index = SoundEvent.getAssetMap().getIndex(soundEventId);
+                return index == Integer.MIN_VALUE ? 0 : index;
         }
 
         private double resolveResourcePreviewTotal(@Nonnull PlayerData playerData,

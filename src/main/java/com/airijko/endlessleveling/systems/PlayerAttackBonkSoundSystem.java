@@ -19,17 +19,20 @@ import com.hypixel.hytale.server.core.universe.world.SoundUtil;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import javax.annotation.Nonnull;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Plays a bonk sound when player attacks another entity with 10% chance.
+ * Plays a meme attack sound when player attacks another entity with 20% chance.
  */
 public final class PlayerAttackBonkSoundSystem extends DamageEventSystem {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
-    private static final String BONK_SOUND_ID = "SFX_EL_Attack_Bonk";
-    private static final double BONK_TRIGGER_CHANCE = 0.10; // 10% chance
+    private static final List<String> ATTACK_SOUND_IDS = List.of(
+            "SFX_EL_Attack_Bonk",
+            "SFX_EL_Attack_TacoBell_Bong");
+    private static final double BONK_TRIGGER_CHANCE = 0.20; // 20% chance
 
     @Nonnull
     @Override
@@ -64,14 +67,16 @@ public final class PlayerAttackBonkSoundSystem extends DamageEventSystem {
             return;
         }
 
-        // 10% chance to play bonk sound
+        // 20% chance to play an attack meme sound
         if (ThreadLocalRandom.current().nextDouble() < BONK_TRIGGER_CHANCE) {
             playSoundToAttacker(attackerRef);
         }
     }
 
     private static void playSoundToAttacker(@Nonnull Ref<EntityStore> attackerRef) {
-        int soundIndex = resolveSoundIndex(BONK_SOUND_ID);
+        int randomIndex = ThreadLocalRandom.current().nextInt(ATTACK_SOUND_IDS.size());
+        String soundId = ATTACK_SOUND_IDS.get(randomIndex);
+        int soundIndex = resolveSoundIndex(soundId);
         if (soundIndex == 0) {
             return;
         }
@@ -79,7 +84,7 @@ public final class PlayerAttackBonkSoundSystem extends DamageEventSystem {
         try {
             SoundUtil.playSoundEvent2d(attackerRef, soundIndex, SoundCategory.SFX, attackerRef.getStore());
         } catch (Exception ex) {
-            LOGGER.atWarning().log("[ELAttackBonk] Failed to play bonk sound: %s", ex.getMessage());
+            LOGGER.atWarning().log("[ELAttackBonk] Failed to play attack sound '%s': %s", soundId, ex.getMessage());
         }
     }
 
