@@ -70,14 +70,9 @@ import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 
 import javax.annotation.Nonnull;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.security.CodeSource;
 import java.util.Locale;
 import java.util.Optional;
-import java.util.UUID;
 
 public class EndlessLeveling extends JavaPlugin {
 
@@ -87,6 +82,7 @@ public class EndlessLeveling extends JavaPlugin {
     public static final String DEFAULT_COMMAND_PREFIX = "/lvl";
     public static final String DEFAULT_MESSAGE_PREFIX = "[EndlessLeveling] ";
     private static final String HSTATS_MOD_UUID = "fffbb440-4831-4a02-8581-ae505a778381";
+    private static final String HSTATS_MOD_VERSION = "7.2.0";
     private static final String PARTNER_ADDON_MAIN_CLASS = "com.airijko.endlessleveling.EndlessLevelingPartnerAddon";
     private static final String ARANK_ADDON_MAIN_CLASS = "com.airijko.endlessleveling.EndlessLevelingARankAddon";
 
@@ -420,7 +416,7 @@ public class EndlessLeveling extends JavaPlugin {
         ClassWeaponResolver.configure(WeaponConfig.load(filesManager.getWeaponsFile()));
 
         LoggingManager.configureFromConfig(configManager);
-        initializeHStats();
+        new HStats(HSTATS_MOD_UUID, HSTATS_MOD_VERSION);
 
         raceManager = new RaceManager(configManager, filesManager);
         classManager = new ClassManager(configManager, filesManager);
@@ -627,96 +623,6 @@ public class EndlessLeveling extends JavaPlugin {
 
         LOGGER.atInfo().log("Plugin initialized! Plugin folder: %s",
                 filesManager.getPluginFolder().getAbsolutePath());
-    }
-
-    private void initializeHStats() {
-        String configuredModUuid = HSTATS_MOD_UUID.trim();
-        if (configuredModUuid.isBlank()) {
-            LOGGER.atWarning().log(
-                    "HStats requires a valid HSTATS_MOD_UUID in EndlessLeveling.java.");
-            appendShutlog("HStats disabled: UUID is blank");
-            return;
-        }
-
-        try {
-            UUID.fromString(configuredModUuid);
-        } catch (IllegalArgumentException ex) {
-            LOGGER.atWarning().log("HStats mod UUID is invalid: %s", configuredModUuid);
-            return;
-        }
-
-        ensureHStatsForceEnabled();
-
-        String version = resolvePluginManifestVersion();
-        try {
-            new HStats(configuredModUuid, version);
-            LOGGER.atInfo().log("HStats analytics initialized (mod version %s).", version);
-        } catch (Throwable t) {
-            LOGGER.atWarning().log("HStats analytics failed to initialize: %s", t.toString());
-        }
-    }
-
-    private void ensureHStatsForceEnabled() {
-        Path serverUuidFile = Path.of("hstats-server-uuid.txt");
-        String existingUuid = null;
-
-        try {
-            if (Files.exists(serverUuidFile)) {
-                String content = Files.readString(serverUuidFile, StandardCharsets.UTF_8);
-                String[] tokens = content.split("\\R");
-                for (String token : tokens) {
-                    String trimmed = token.trim();
-                    if (trimmed.matches("[0-9a-fA-F-]{36}")) {
-                        existingUuid = trimmed;
-                        break;
-                    }
-                }
-            }
-        } catch (IOException ignored) {
-            // Fall through and regenerate file content.
-        }
-
-        if (existingUuid == null) {
-            existingUuid = UUID.randomUUID().toString();
-        }
-
-        String normalized = String.join("\n",
-                "HStats - Hytale Mod Metrics (hstats.dev)",
-                "HStats is a simple metrics system for Hytale mods. This file is here because one of your mods/plugins uses it, please do not modify the UUID. HStats will apply little to no effect on your server and analytics are anonymous, however you can still disable it.",
-                "",
-                "enabled=true",
-                existingUuid);
-
-        try {
-            Files.writeString(serverUuidFile, normalized, StandardCharsets.UTF_8);
-        } catch (IOException ex) {
-            LOGGER.atWarning().log("Unable to persist hstats-server-uuid.txt: %s", ex.getMessage());
-        }
-    }
-
-    private String resolvePluginManifestVersion() {
-        try (var in = EndlessLeveling.class.getClassLoader().getResourceAsStream("manifest.json")) {
-            if (in == null) {
-                return "Unknown";
-            }
-            String json = new String(in.readAllBytes(), StandardCharsets.UTF_8);
-            int keyIndex = json.indexOf("\"Version\"");
-            if (keyIndex < 0) {
-                return "Unknown";
-            }
-
-            int colon = json.indexOf(':', keyIndex);
-            int firstQuote = json.indexOf('"', colon + 1);
-            int secondQuote = json.indexOf('"', firstQuote + 1);
-            if (colon < 0 || firstQuote < 0 || secondQuote < 0) {
-                return "Unknown";
-            }
-
-            String parsed = json.substring(firstQuote + 1, secondQuote).trim();
-            return parsed.isEmpty() ? "Unknown" : parsed;
-        } catch (Exception ignored) {
-            return "Unknown";
-        }
     }
 
     protected void shutdown() {

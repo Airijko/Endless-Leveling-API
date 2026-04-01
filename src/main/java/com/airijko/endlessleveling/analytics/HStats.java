@@ -1,15 +1,15 @@
 /*
- * HStats - Hytale Mod Metrics (hstats.dev)
- *
- * HStats is a simple metrics system for Hytale mods. Inspired by bStats.
- * This file is designed to be copied into your mod's source code, so you
- * can easily integrate HStats into your mod.
- *
- * You are not allowed to modify the code in this file besides the package name.
- * If you are found to have modified information being sent to HStats, you will be
- * banned from using the service. (Also it's a stats website why would you do that)
- *
- * Created by Al3xWarrior
+    * HStats - Hytale Mod Metrics (hstats.dev)
+    *
+    * HStats is a simple metrics system for Hytale mods. Inspired by bStats.
+    * This file is designed to be copied into your mod's source code, so you
+    * can easily integrate HStats into your mod.
+    *
+    * You are not allowed to modify the code in this file besides the package name.
+    * If you are found to have modified information being sent to HStats, you will be
+    * banned from using the service. (Also it's a stats website why would you do that)
+    *
+    * Created by Al3xWarrior
  */
 package com.airijko.endlessleveling.analytics;
 
@@ -19,10 +19,7 @@ import com.hypixel.hytale.server.core.universe.Universe;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URI;
-import java.net.URL;
-import java.net.URLEncoder;
+import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -45,8 +42,7 @@ public class HStats {
     /**
      * Initializes HStats for your mod.
      *
-     * @param modUUID The unique UUID of your mod. You can find this by creating
-     *                an account on hstats.dev and registering your mod.
+     * @param modUUID    The unique UUID of your mod. You can find this by creating an account on hstats.dev and registering your mod.
      * @param modVersion The current version of your mod. This is determined by you.
      */
     public HStats(String modUUID, String modVersion) {
@@ -96,26 +92,21 @@ public class HStats {
         Path serverUUIDFile = Paths.get("hstats-server-uuid.txt");
         try {
             if (Files.exists(serverUUIDFile)) {
-                String content = Files.readString(serverUUIDFile).trim();
-                String[] lines = content.split("\\n");
-                if (lines.length < 5) {
+                String content = Files.readString(serverUUIDFile);
+                content = content.trim();
+                String[] lines = content.split("\n");
+                if (lines.length < 5)
                     return null;
-                }
 
                 String enabled = lines[3].split("=")[1].trim();
-                if (!enabled.equalsIgnoreCase("true")) {
+                if (!enabled.equalsIgnoreCase("true"))
                     return null;
-                }
                 return lines[4];
+            } else {
+                String uuid = UUID.randomUUID().toString();
+                Files.writeString(serverUUIDFile, "HStats - Hytale Mod Metrics (hstats.dev)\nHStats is a simple metrics system for Hytale mods. This file is here because one of your mods/plugins uses it, please do not modify the UUID. HStats will apply little to no effect on your server and analytics are anonymous, however you can still disable it.\n\nenabled=true\n" + uuid);
+                return uuid;
             }
-
-            String uuid = UUID.randomUUID().toString();
-            Files.writeString(serverUUIDFile,
-                    "HStats - Hytale Mod Metrics (hstats.dev)\\n"
-                            + "HStats is a simple metrics system for Hytale mods. This file is here because one of your mods/plugins uses it, please do not modify the UUID. HStats will apply little to no effect on your server and analytics are anonymous, however you can still disable it.\\n\\n"
-                            + "enabled=true\\n"
-                            + uuid);
-            return uuid;
         } catch (IOException e) {
             return null;
         }
@@ -133,8 +124,8 @@ public class HStats {
             StringJoiner sj = new StringJoiner("&");
             for (Map.Entry<String, String> entry : arguments.entrySet()) {
                 sj.add(URLEncoder.encode(entry.getKey(), StandardCharsets.UTF_8)
-                        + "="
-                        + URLEncoder.encode(entry.getValue(), StandardCharsets.UTF_8));
+                        + "=" +
+                        URLEncoder.encode(entry.getValue(), StandardCharsets.UTF_8));
             }
 
             byte[] out = sj.toString().getBytes(StandardCharsets.UTF_8);
@@ -148,9 +139,8 @@ public class HStats {
             InputStream is = (code >= 200 && code < 300) ? http.getInputStream() : http.getErrorStream();
             String body = (is != null) ? new String(is.readAllBytes(), StandardCharsets.UTF_8) : "";
 
-            if (DEBUG) {
+            if (DEBUG)
                 System.out.println("Metrics POST -> " + code + " " + body);
-            }
 
             http.disconnect();
         } catch (Exception e) {

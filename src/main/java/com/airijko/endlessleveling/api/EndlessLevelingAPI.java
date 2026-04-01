@@ -18,6 +18,15 @@ import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveSource;
 import com.airijko.endlessleveling.races.RaceDefinition;
 import com.airijko.endlessleveling.races.RaceManager;
 import com.airijko.endlessleveling.player.SkillManager;
+import com.airijko.endlessleveling.api.gates.DungeonGateContentProvider;
+import com.airijko.endlessleveling.api.gates.DungeonGateLifecycleBridge;
+import com.airijko.endlessleveling.api.gates.DungeonWaveGateBridge;
+import com.airijko.endlessleveling.api.gates.GateInstanceRoutingBridge;
+import com.airijko.endlessleveling.api.gates.InstanceDungeonDefinition;
+import com.airijko.endlessleveling.api.gates.WaveGateContentProvider;
+import com.airijko.endlessleveling.api.gates.WaveGateRuntimeBridge;
+import com.airijko.endlessleveling.api.gates.WaveGateSessionBridge;
+import com.airijko.endlessleveling.api.gates.WaveGateSessionExecutorBridge;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -25,6 +34,10 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.Locale;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 /**
@@ -34,6 +47,19 @@ import java.util.function.Function;
 public final class EndlessLevelingAPI {
 
     private static final EndlessLevelingAPI INSTANCE = new EndlessLevelingAPI();
+
+    private static final String DUNGEON_GATES_MANAGER_KEY = "dungeon-gates";
+    private static final String DUNGEON_GATES_LIFECYCLE_MANAGER_KEY = "dungeon-gates.lifecycle";
+    private static final String WAVE_GATES_RUNTIME_MANAGER_KEY = "wave-gates.runtime";
+    private static final String WAVE_GATES_SESSION_MANAGER_KEY = "wave-gates.session";
+    private static final String WAVE_GATES_SESSION_EXECUTOR_MANAGER_KEY = "wave-gates.session.executor";
+    private static final String GATE_INSTANCE_ROUTING_MANAGER_KEY = "gates.instance-routing";
+    private static final String INSTANCE_DUNGEON_DEFINITION_MANAGER_KEY = "dungeons.instance";
+    private static final String DUNGEON_CONTENT_PROVIDER_KEY = "dungeon-content-provider";
+    private static final String WAVE_CONTENT_PROVIDER_KEY = "wave-content-provider";
+
+    private final Map<String, Object> managers = new ConcurrentHashMap<>();
+    private final Map<String, InstanceDungeonDefinition> instanceDungeonsById = new ConcurrentHashMap<>();
 
     private EndlessLevelingAPI() {
     }
@@ -609,6 +635,305 @@ public final class EndlessLevelingAPI {
         }
         ArchetypePassiveManager manager = archetypePassiveManager();
         return manager != null && manager.unregisterArchetypePassiveSource(source);
+    }
+
+    // ----------------------
+    // Generic manager registry
+    // ----------------------
+
+    public boolean registerManager(String key, Object manager, boolean replaceExisting) {
+        String normalizedKey = normalizeKey(key);
+        if (normalizedKey == null || manager == null) {
+            return false;
+        }
+
+        if (!replaceExisting && managers.containsKey(normalizedKey)) {
+            return false;
+        }
+
+        managers.put(normalizedKey, manager);
+        return true;
+    }
+
+    public boolean unregisterManager(String key, Object manager) {
+        String normalizedKey = normalizeKey(key);
+        if (normalizedKey == null || manager == null) {
+            return false;
+        }
+        return managers.remove(normalizedKey, manager);
+    }
+
+    public Object getManager(String key) {
+        String normalizedKey = normalizeKey(key);
+        return normalizedKey == null ? null : managers.get(normalizedKey);
+    }
+
+    // ----------------------
+    // Gate bridge registration
+    // ----------------------
+
+    public boolean registerDungeonWaveGateBridge(DungeonWaveGateBridge bridge, boolean replaceExisting) {
+        return registerManager(DUNGEON_GATES_MANAGER_KEY, bridge, replaceExisting);
+    }
+
+    public boolean unregisterDungeonWaveGateBridge(DungeonWaveGateBridge bridge) {
+        return unregisterManager(DUNGEON_GATES_MANAGER_KEY, bridge);
+    }
+
+    public boolean registerWaveGateRuntimeBridge(WaveGateRuntimeBridge bridge, boolean replaceExisting) {
+        return registerManager(WAVE_GATES_RUNTIME_MANAGER_KEY, bridge, replaceExisting);
+    }
+
+    public boolean unregisterWaveGateRuntimeBridge(WaveGateRuntimeBridge bridge) {
+        return unregisterManager(WAVE_GATES_RUNTIME_MANAGER_KEY, bridge);
+    }
+
+    public boolean registerDungeonGateLifecycleBridge(DungeonGateLifecycleBridge bridge, boolean replaceExisting) {
+        return registerManager(DUNGEON_GATES_LIFECYCLE_MANAGER_KEY, bridge, replaceExisting);
+    }
+
+    public boolean unregisterDungeonGateLifecycleBridge(DungeonGateLifecycleBridge bridge) {
+        return unregisterManager(DUNGEON_GATES_LIFECYCLE_MANAGER_KEY, bridge);
+    }
+
+    public boolean registerWaveGateSessionBridge(WaveGateSessionBridge bridge, boolean replaceExisting) {
+        return registerManager(WAVE_GATES_SESSION_MANAGER_KEY, bridge, replaceExisting);
+    }
+
+    public boolean unregisterWaveGateSessionBridge(WaveGateSessionBridge bridge) {
+        return unregisterManager(WAVE_GATES_SESSION_MANAGER_KEY, bridge);
+    }
+
+    public boolean registerWaveGateSessionExecutorBridge(WaveGateSessionExecutorBridge bridge, boolean replaceExisting) {
+        return registerManager(WAVE_GATES_SESSION_EXECUTOR_MANAGER_KEY, bridge, replaceExisting);
+    }
+
+    public boolean unregisterWaveGateSessionExecutorBridge(WaveGateSessionExecutorBridge bridge) {
+        return unregisterManager(WAVE_GATES_SESSION_EXECUTOR_MANAGER_KEY, bridge);
+    }
+
+    public boolean registerGateInstanceRoutingBridge(GateInstanceRoutingBridge bridge, boolean replaceExisting) {
+        return registerManager(GATE_INSTANCE_ROUTING_MANAGER_KEY, bridge, replaceExisting);
+    }
+
+    public boolean unregisterGateInstanceRoutingBridge(GateInstanceRoutingBridge bridge) {
+        return unregisterManager(GATE_INSTANCE_ROUTING_MANAGER_KEY, bridge);
+    }
+
+    public DungeonGateLifecycleBridge getDungeonGateLifecycleBridge() {
+        Object manager = getManager(DUNGEON_GATES_LIFECYCLE_MANAGER_KEY);
+        return manager instanceof DungeonGateLifecycleBridge bridge ? bridge : null;
+    }
+
+    public WaveGateSessionBridge getWaveGateSessionBridge() {
+        Object manager = getManager(WAVE_GATES_SESSION_MANAGER_KEY);
+        return manager instanceof WaveGateSessionBridge bridge ? bridge : null;
+    }
+
+    public GateInstanceRoutingBridge getGateInstanceRoutingBridge() {
+        Object manager = getManager(GATE_INSTANCE_ROUTING_MANAGER_KEY);
+        return manager instanceof GateInstanceRoutingBridge bridge ? bridge : null;
+    }
+
+    // ----------------------
+    // Content providers
+    // ----------------------
+
+    public boolean registerDungeonGateContentProvider(DungeonGateContentProvider provider, boolean replaceExisting) {
+        return registerManager(DUNGEON_CONTENT_PROVIDER_KEY + ":" + provider.getProviderId(), provider, replaceExisting);
+    }
+
+    public boolean unregisterDungeonGateContentProvider(DungeonGateContentProvider provider) {
+        return unregisterManager(DUNGEON_CONTENT_PROVIDER_KEY + ":" + provider.getProviderId(), provider);
+    }
+
+    public boolean registerGateContentProvider(DungeonGateContentProvider provider, boolean replaceExisting) {
+        return registerDungeonGateContentProvider(provider, replaceExisting);
+    }
+
+    public boolean unregisterGateContentProvider(DungeonGateContentProvider provider) {
+        return unregisterDungeonGateContentProvider(provider);
+    }
+
+    public boolean registerWaveGateContentProvider(WaveGateContentProvider provider, boolean replaceExisting) {
+        return registerManager(WAVE_CONTENT_PROVIDER_KEY + ":" + provider.getProviderId(), provider, replaceExisting);
+    }
+
+    public boolean unregisterWaveGateContentProvider(WaveGateContentProvider provider) {
+        return unregisterManager(WAVE_CONTENT_PROVIDER_KEY + ":" + provider.getProviderId(), provider);
+    }
+
+    public boolean registerWaveContentProvider(WaveGateContentProvider provider, boolean replaceExisting) {
+        return registerWaveGateContentProvider(provider, replaceExisting);
+    }
+
+    public boolean unregisterWaveContentProvider(WaveGateContentProvider provider) {
+        return unregisterWaveGateContentProvider(provider);
+    }
+
+    // ----------------------
+    // Instance dungeons
+    // ----------------------
+
+    public boolean registerInstanceDungeon(InstanceDungeonDefinition definition, boolean replaceExisting) {
+        if (definition == null || normalizeKey(definition.dungeonId()) == null) {
+            return false;
+        }
+
+        String id = normalizeKey(definition.dungeonId());
+        if (!replaceExisting && instanceDungeonsById.containsKey(id)) {
+            return false;
+        }
+
+        instanceDungeonsById.put(id, definition);
+        registerManager(INSTANCE_DUNGEON_DEFINITION_MANAGER_KEY + ":" + id, definition, true);
+        return true;
+    }
+
+    public boolean unregisterInstanceDungeon(InstanceDungeonDefinition definition) {
+        if (definition == null || normalizeKey(definition.dungeonId()) == null) {
+            return false;
+        }
+
+        String id = normalizeKey(definition.dungeonId());
+        InstanceDungeonDefinition removed = instanceDungeonsById.remove(id);
+        if (removed != null) {
+            unregisterManager(INSTANCE_DUNGEON_DEFINITION_MANAGER_KEY + ":" + id, removed);
+            return true;
+        }
+        return false;
+    }
+
+    public InstanceDungeonDefinition getInstanceDungeon(String dungeonId) {
+        String id = normalizeKey(dungeonId);
+        return id == null ? null : instanceDungeonsById.get(id);
+    }
+
+    public List<InstanceDungeonDefinition> getInstanceDungeons() {
+        return List.copyOf(instanceDungeonsById.values());
+    }
+
+    public InstanceDungeonDefinition getInstanceDungeonByBlockId(String blockId) {
+        String normalizedBlock = normalizeToken(blockId);
+        if (normalizedBlock == null) {
+            return null;
+        }
+
+        for (InstanceDungeonDefinition definition : instanceDungeonsById.values()) {
+            if (normalizedBlock.equals(normalizeToken(definition.basePortalBlockId()))) {
+                return definition;
+            }
+        }
+        return null;
+    }
+
+    public InstanceDungeonDefinition getInstanceDungeonByRoutingTemplate(String templateName) {
+        String normalizedTemplate = normalizeToken(templateName);
+        if (normalizedTemplate == null) {
+            return null;
+        }
+
+        for (InstanceDungeonDefinition definition : instanceDungeonsById.values()) {
+            if (normalizedTemplate.equals(normalizeToken(definition.routingTemplateName()))
+                    || normalizedTemplate.equals(normalizeToken(definition.legacyTemplateName()))) {
+                return definition;
+            }
+        }
+        return null;
+    }
+
+    public InstanceDungeonDefinition getInstanceDungeonByWorldName(String worldName) {
+        String normalizedWorld = normalizeToken(worldName);
+        if (normalizedWorld == null) {
+            return null;
+        }
+
+        for (InstanceDungeonDefinition definition : instanceDungeonsById.values()) {
+            String token = normalizeToken(definition.worldNameToken());
+            if (token != null && normalizedWorld.startsWith("el_gate_" + token + "_")) {
+                return definition;
+            }
+        }
+        return null;
+    }
+
+    public String canonicalizeInstanceDungeonRoutingTemplate(String templateName) {
+        InstanceDungeonDefinition definition = getInstanceDungeonByRoutingTemplate(templateName);
+        return definition == null ? templateName : definition.routingTemplateName();
+    }
+
+    public String resolveInstanceDungeonOriginalTemplateName(String templateName) {
+        InstanceDungeonDefinition definition = getInstanceDungeonByRoutingTemplate(templateName);
+        return definition == null ? templateName : definition.legacyTemplateName();
+    }
+
+    public String resolveInstanceDungeonDisplayName(String templateName) {
+        InstanceDungeonDefinition definition = getInstanceDungeonByRoutingTemplate(templateName);
+        return definition == null ? templateName : definition.displayName();
+    }
+
+    public String resolveInstanceDungeonSpawnSuffix(String templateName) {
+        InstanceDungeonDefinition definition = getInstanceDungeonByRoutingTemplate(templateName);
+        return definition == null ? null : definition.spawnSuffix();
+    }
+
+    public String resolveInstanceDungeonBasePortalBlockId(String templateName) {
+        InstanceDungeonDefinition definition = getInstanceDungeonByRoutingTemplate(templateName);
+        return definition == null ? null : definition.basePortalBlockId();
+    }
+
+    public String buildInstanceDungeonWorldName(String routingTemplateName, String gateIdentity) {
+        InstanceDungeonDefinition definition = getInstanceDungeonByRoutingTemplate(routingTemplateName);
+        String dungeonToken = definition == null
+                ? sanitizeToken(routingTemplateName)
+                : sanitizeToken(definition.worldNameToken());
+        String gateToken = sanitizeToken(gateIdentity);
+        return "el_gate_" + dungeonToken + "_" + gateToken;
+    }
+
+    public String buildInstanceDungeonGroupId(String gateIdentity, String routingTemplateName) {
+        InstanceDungeonDefinition definition = getInstanceDungeonByRoutingTemplate(routingTemplateName);
+        String dungeonToken = definition == null
+                ? sanitizeToken(routingTemplateName)
+                : sanitizeToken(definition.worldNameToken());
+        String gateToken = sanitizeToken(gateIdentity);
+        return "el_gate:" + dungeonToken + ":" + gateToken;
+    }
+
+    public boolean isInstanceDungeonOriginalTemplate(String templateName) {
+        return getInstanceDungeonByRoutingTemplate(templateName) != null;
+    }
+
+    private static String normalizeKey(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private static String normalizeToken(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private static String sanitizeToken(String value) {
+        String normalized = normalizeToken(value);
+        if (normalized == null) {
+            return "unknown";
+        }
+
+        StringBuilder builder = new StringBuilder(normalized.length());
+        for (int i = 0; i < normalized.length(); i++) {
+            char c = normalized.charAt(i);
+            if ((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')) {
+                builder.append(c);
+            } else {
+                builder.append('_');
+            }
+        }
+        return builder.toString();
     }
 
     private PlayerData getData(UUID uuid) {
