@@ -81,6 +81,8 @@ public final class NavUIHelper {
                 ui.set("#NavRaces.Text", Lang.tr(playerRef.getUuid(), "ui.nav.races", "RACES"));
                 ui.set("#NavClasses.Text", Lang.tr(playerRef.getUuid(), "ui.nav.classes", "CLASSES"));
                 ui.set("#NavAugments.Text", Lang.tr(playerRef.getUuid(), "ui.nav.augments", "AUGMENTS"));
+                ui.set("#NavDungeons.Text", Lang.tr(playerRef.getUuid(), "ui.nav.dungeons", "DUNGEONS"));
+                ui.set("#NavAddons.Text", Lang.tr(playerRef.getUuid(), "ui.nav.addons", "ADDONS"));
                 ui.set("#NavLeaderboards.Text", Lang.tr(playerRef.getUuid(), "ui.nav.leaderboards", "LEADERBOARDS"));
                 ui.set("#NavParty.Text", Lang.tr(playerRef.getUuid(), "ui.nav.party", "PARTY"));
 
@@ -208,6 +210,8 @@ public final class NavUIHelper {
                 setNavButtonSelected(ui, "#NavProfile", "profile".equalsIgnoreCase(activeNav));
                 setNavButtonSelected(ui, "#NavSkills", "skills".equalsIgnoreCase(activeNav));
                 setNavButtonSelected(ui, "#NavAugments", "augments".equalsIgnoreCase(activeNav));
+                setNavButtonSelected(ui, "#NavDungeons", "dungeons".equalsIgnoreCase(activeNav));
+                setNavButtonSelected(ui, "#NavAddons", "addons".equalsIgnoreCase(activeNav));
                 setNavButtonSelected(ui, "#NavRaces", "races".equalsIgnoreCase(activeNav));
                 setNavButtonSelected(ui, "#NavClasses", "classes".equalsIgnoreCase(activeNav));
                 setNavButtonSelected(ui, "#NavLeaderboards", "leaderboards".equalsIgnoreCase(activeNav));
@@ -230,6 +234,8 @@ public final class NavUIHelper {
                 events.addEventBinding(Activating, "#NavClasses", of("Action", "nav:classes"), false);
                 events.addEventBinding(Activating, "#NavSkills", of("Action", "nav:skills"), false);
                 events.addEventBinding(Activating, "#NavAugments", of("Action", "nav:augments"), false);
+                events.addEventBinding(Activating, "#NavDungeons", of("Action", "nav:dungeons"), false);
+                events.addEventBinding(Activating, "#NavAddons", of("Action", "nav:addons"), false);
                 events.addEventBinding(Activating, "#NavLeaderboards", of("Action", "nav:leaderboards"), false);
                 events.addEventBinding(Activating, "#NavParty", of("Action", "nav:party"), false);
                 events.addEventBinding(Activating, "#NavSupport", of("Action", "nav:support"), false);
@@ -279,6 +285,12 @@ public final class NavUIHelper {
                         case "augments" -> player.getPageManager()
                                         .openCustomPage(ref, store,
                                                         new AugmentsUIPage(playerRef, CustomPageLifetime.CanDismiss));
+                        case "dungeons" -> player.getPageManager()
+                                        .openCustomPage(ref, store,
+                                                        new DungeonsUIPage(playerRef, CustomPageLifetime.CanDismiss));
+                        case "addons" -> player.getPageManager()
+                                        .openCustomPage(ref, store,
+                                                        new AddonsUIPage(playerRef, CustomPageLifetime.CanDismiss));
                         case "leaderboards" -> player.getPageManager()
                                         .openCustomPage(ref, store, new LeaderboardsUIPage(playerRef,
                                                         CustomPageLifetime.CanDismiss));

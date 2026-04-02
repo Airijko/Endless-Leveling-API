@@ -1,0 +1,186 @@
+$C = "../Common.ui";
+$Nav = "Nav/LeftNavPanel.ui";
+
+@AddonCard = Group {
+    Anchor: (Width: 250, Height: 312);
+    LayoutMode: Top;
+    Background: #0b141f(0.92);
+    Padding: (Full: 14);
+
+    Group {
+        Anchor: (Height: 118, Bottom: 14);
+        Background: @BannerColor;
+        Padding: (Left: 12, Right: 12, Top: 10, Bottom: 10);
+
+        Label #AddonCardBadge {
+            Text: @BadgeText;
+            Anchor: (Height: 16);
+            Style: (FontSize: 10, TextColor: #e6eff9, RenderBold: true, LetterSpacing: 1);
+        }
+
+        Label #AddonCardImageTitle {
+            Text: @BannerTitle;
+            Anchor: (Bottom: 4, Height: 40);
+            Style: (FontSize: 20, TextColor: #ffffff, RenderBold: true, VerticalAlignment: Bottom, Wrap: true);
+        }
+    }
+
+    Label #AddonCardTitle {
+        Text: @CardTitle;
+        Anchor: (Height: 24, Bottom: 6);
+        Style: (FontSize: 17, TextColor: #ffffff, RenderBold: true, VerticalAlignment: Center);
+    }
+
+    Label #AddonCardVersion {
+        Text: @VersionText;
+        Anchor: (Height: 18, Bottom: 8);
+        Style: (FontSize: 11, TextColor: #89c4ff, RenderBold: true, VerticalAlignment: Center);
+    }
+
+    Label #AddonCardDescription {
+        Text: @DescriptionText;
+        FlexWeight: 1;
+        Style: (FontSize: 12, TextColor: #bdd0e8, Wrap: true);
+    }
+
+    Group { Anchor: (Height: 10); }
+
+    Group {
+        Anchor: (Height: 1);
+        Background: #ffffff(0.08);
+    }
+
+    Group { Anchor: (Height: 10); }
+
+    Label #AddonCardFooter {
+        Text: @FooterText;
+        Anchor: (Height: 18);
+        Style: (FontSize: 11, TextColor: #7d91a8);
+    }
+};
+
+$C.@PageOverlay {
+    $C.@DecoratedContainer {
+        Anchor: (Width: 1000, Height: 700);
+        #Title {
+            Group {
+                $C.@Title #AddonsTitle {
+                    @Text = "ENDLESS LEVELING";
+                }
+            }
+        }
+
+        #Content {
+            LayoutMode: Left;
+            Padding: (Full: 0);
+
+            $Nav.@LeftNavPanel {}
+
+            Group #RightPanel {
+                FlexWeight: 1;
+                LayoutMode: Top;
+                Anchor: (Right: 7, Bottom: 7);
+
+                Group #Header {
+                    LayoutMode: Left;
+                    Anchor: (Height: 60);
+                    Padding: (Horizontal: 16, Vertical: 10);
+
+                    Label #AddonsTitleLabel {
+                        Text: "Addons";
+                        Anchor: (Height: 60);
+                        Style: (FontSize: 22, TextColor: #ffffff, RenderBold: true, VerticalAlignment: Center);
+                    }
+
+                    Group { FlexWeight: 1; }
+
+                    Group {
+                        LayoutMode: Left;
+                        Background: #0f1c29(0.92);
+                        Anchor: (Height: 40);
+                        Padding: (Full: 8);
+
+                        Label #AddonsIntroText {
+                            Text: "Core-compatible addon packs currently tracked in this workspace.";
+                            Style: (TextColor: #aaccff, FontSize: 14, VerticalAlignment: Center);
+                        }
+                    }
+                }
+
+                Group {
+                    Anchor: (Height: 1);
+                    Background: #2b3542;
+                }
+
+                Group #Main {
+                    LayoutMode: TopScrolling;
+                    ScrollbarStyle: $C.@DefaultScrollbarStyle;
+                    FlexWeight: 1;
+                    Padding: (Full: 16);
+
+                    Group #OverviewCard {
+                        LayoutMode: Top;
+                        Background: #0b141f(0.88);
+                        Padding: (Full: 18);
+
+                        Label {
+                            Text: "Addon Shelf";
+                            Anchor: (Height: 24);
+                            Style: (FontSize: 18, TextColor: #ffffff, RenderBold: true);
+                        }
+
+                        Group { Anchor: (Height: 6); }
+
+                        Label {
+                            Text: "These cards summarize the addon modules layered around Endless Leveling in this workspace, from dungeon integration to partner-branding packs.";
+                            Style: (FontSize: 13, TextColor: #bfd0e4, Wrap: true);
+                        }
+                    }
+
+                    Group { Anchor: (Height: 18); }
+
+                    Group {
+                        LayoutMode: Left;
+                        Anchor: (Height: 312, Bottom: 14);
+
+                        @AddonCard {
+                            @BannerColor = #18354b;
+                            @BadgeText = "DUNGEON GATES";
+                            @BannerTitle = "EL Addon";
+                            @CardTitle = "EndlessLevelingAddon";
+                            @VersionText = "v2.2.0";
+                            @DescriptionText = "The integration layer that bridges Endless Leveling with external dungeon content, registers instance dungeons, and manages gate runtime routing.";
+                            @FooterText = "Optional deps: MajorDungeons, Endgame&QoL";
+                        }
+
+                        Group { Anchor: (Width: 12); }
+
+                        @AddonCard {
+                            @BannerColor = #3d214a;
+                            @BadgeText = "A-RANK PACK";
+                            @BannerTitle = "A-Rank";
+                            @CardTitle = "EndlessLevelingARankAddon";
+                            @VersionText = "v1.2";
+                            @DescriptionText = "An addon-side extension pack scaffold for registering extra classes, races, augments, and passives on top of the core mod.";
+                            @FooterText = "Main class: EndlessLevelingARankAddon";
+                        }
+
+                        Group { Anchor: (Width: 12); }
+
+                        @AddonCard {
+                            @BannerColor = #294835;
+                            @BadgeText = "PARTNER BRANDING";
+                            @BannerTitle = "Histatu";
+                            @CardTitle = "EndlessLevelingPartnerAddon";
+                            @VersionText = "v1.1";
+                            @DescriptionText = "The partner addon variant that carries branding assets plus example registration content for a branded Endless Leveling deployment.";
+                            @FooterText = "Workspace folder: Hytale-Histatu-Partner";
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+$C.@BackButton {}
