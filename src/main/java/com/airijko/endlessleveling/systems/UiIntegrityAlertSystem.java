@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Sends recurring alerts when unauthorized UI title modifications are detected.
@@ -31,11 +32,14 @@ public final class UiIntegrityAlertSystem extends TickingSystem<EntityStore> {
     private static final long STARTUP_CONSOLE_DELAY_MILLIS = 10_000L;
     private static final long FIRST_JOIN_ALERT_DELAY_MILLIS = 10_000L;
     private static final long ALERT_INTERVAL_MILLIS = 60_000L;
+    private static final long ALARM_INTERVAL_MIN_MILLIS = 30_000L;
+    private static final long ALARM_INTERVAL_MAX_MILLIS = 45_000L;
 
     private final UiTitleIntegrityGuard integrityGuard;
     private final Map<UUID, Long> nextAlertAtByPlayer = new ConcurrentHashMap<>();
     private float elapsedSeconds = 0.0f;
     private long systemStartedAtMillis = -1L;
+    private long nextAlarmAtMillis = -1L;
     private boolean consoleWarningLogged = false;
     private boolean startupEvaluationCompleted = false;
     private boolean integrityViolationActive = false;
@@ -53,6 +57,7 @@ public final class UiIntegrityAlertSystem extends TickingSystem<EntityStore> {
             integrityViolationActive = integrityGuard.getLastResult().modified();
             if (!integrityViolationActive) {
                 nextAlertAtByPlayer.clear();
+                nextAlarmAtMillis = -1L;
                 return;
             }
         }
@@ -81,6 +86,7 @@ public final class UiIntegrityAlertSystem extends TickingSystem<EntityStore> {
 
         if (!unauthorized) {
             nextAlertAtByPlayer.clear();
+            nextAlarmAtMillis = -1L;
             return;
         }
 
@@ -95,7 +101,11 @@ public final class UiIntegrityAlertSystem extends TickingSystem<EntityStore> {
                 ========================================
                 """);
             UiIntegrityAlertSound.playForAllOnlinePlayers();
+            nextAlarmAtMillis = now + nextAlarmDelayMillis();
             consoleWarningLogged = true;
+        } else if (consoleWarningLogged && nextAlarmAtMillis > 0L && now >= nextAlarmAtMillis) {
+            UiIntegrityAlertSound.playForAllOnlinePlayers();
+            nextAlarmAtMillis = now + nextAlarmDelayMillis();
         }
 
         Set<UUID> onlinePlayers = new HashSet<>();
@@ -104,8 +114,6 @@ public final class UiIntegrityAlertSystem extends TickingSystem<EntityStore> {
             nextAlertAtByPlayer.clear();
             return;
         }
-
-        final boolean[] sentAnyPlayerAlert = new boolean[] { false };
 
         store.forEachChunk(PLAYER_QUERY, (ArchetypeChunk<EntityStore> chunk,
                 CommandBuffer<EntityStore> commandBuffer) -> {
@@ -144,14 +152,9 @@ public final class UiIntegrityAlertSystem extends TickingSystem<EntityStore> {
                 }
 
                 integrityGuard.notifyPlayerIfUnauthorized(playerRef, integrityResult);
-                sentAnyPlayerAlert[0] = true;
                 nextAlertAtByPlayer.put(uuid, now + ALERT_INTERVAL_MILLIS);
             }
         });
-
-        if (sentAnyPlayerAlert[0]) {
-            UiIntegrityAlertSound.playForAllOnlinePlayers();
-        }
 
         for (UUID trackedPlayerId : nextAlertAtByPlayer.keySet()) {
             if (!onlinePlayers.contains(trackedPlayerId)) {
@@ -169,9 +172,14 @@ public final class UiIntegrityAlertSystem extends TickingSystem<EntityStore> {
         nextAlertAtByPlayer.clear();
         elapsedSeconds = 0.0f;
         systemStartedAtMillis = -1L;
+        nextAlarmAtMillis = -1L;
         consoleWarningLogged = false;
         startupEvaluationCompleted = false;
         integrityViolationActive = false;
         return cleared;
+    }
+
+    private static long nextAlarmDelayMillis() {
+        return ThreadLocalRandom.current().nextLong(ALARM_INTERVAL_MIN_MILLIS, ALARM_INTERVAL_MAX_MILLIS + 1L);
     }
 }
