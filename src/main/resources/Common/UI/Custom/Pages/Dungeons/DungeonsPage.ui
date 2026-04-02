@@ -1,6 +1,14 @@
 $C = "../../Common.ui";
 $Nav = "../Nav/LeftNavPanel.ui";
 
+@DownloadButtonStyle = TextButtonStyle(
+    Default:  (Background: $C.@DefaultSquareButtonDefaultBackground,  LabelStyle: $C.@DefaultButtonLabelStyle),
+    Hovered:  (Background: $C.@DefaultSquareButtonHoveredBackground,  LabelStyle: $C.@DefaultButtonLabelStyle),
+    Pressed:  (Background: $C.@DefaultSquareButtonPressedBackground,  LabelStyle: $C.@DefaultButtonLabelStyle),
+    Disabled: (Background: $C.@DefaultSquareButtonDisabledBackground, LabelStyle: $C.@DefaultButtonDisabledLabelStyle),
+    Sounds: $C.@ButtonSounds,
+);
+
 $C.@PageOverlay {
     $C.@DecoratedContainer {
         Anchor: (Width: 1000, Height: 700);
@@ -22,25 +30,6 @@ $C.@PageOverlay {
                 FlexWeight: 1;
                 LayoutMode: Top;
                 Anchor: (Right: 7, Bottom: 7);
-
-                Group #Header {
-                    LayoutMode: Left;
-                    Anchor: (Height: 60);
-                    Padding: (Horizontal: 16, Vertical: 10);
-
-                    Label #DungeonsTitleLabel {
-                        Text: "Dungeons";
-                        Anchor: (Height: 60);
-                        Style: (FontSize: 22, TextColor: #ffffff, RenderBold: true, VerticalAlignment: Center);
-                    }
-
-                    Group { FlexWeight: 1; }
-                }
-
-                Group {
-                    Anchor: (Height: 1);
-                    Background: #2b3542;
-                }
 
                 Group #Main {
                     LayoutMode: TopScrolling;
@@ -72,14 +61,42 @@ $C.@PageOverlay {
                     Group #EndgameSection {
                         LayoutMode: Top;
 
-                        Label {
-                            Text: "ENDGAME";
-                            Anchor: (Height: 24, Bottom: 10);
-                            Style: (FontSize: 16, TextColor: #d2ecff, RenderBold: true, LetterSpacing: 1);
+                        Group {
+                            LayoutMode: Left;
+                            Anchor: (Height: 30, Bottom: 10);
+
+                            Label {
+                                Text: "ENDGAME";
+                                Anchor: (Height: 24);
+                                Style: (FontSize: 16, TextColor: #d2ecff, RenderBold: true, LetterSpacing: 1, VerticalAlignment: Center);
+                            }
+
+                            Group { FlexWeight: 1; }
+
+                            Label #EndgameNotInstalledLabel {
+                                Text: "Not Installed";
+                                Anchor: (Height: 20, Right: 10);
+                                Visible: false;
+                                Style: (FontSize: 12, TextColor: #e07070, RenderBold: true, VerticalAlignment: Center);
+                            }
+
+                            $C.@TextButton #EndgameInstallButton {
+                                Text: "Download";
+                                Anchor: (Width: 100, Height: 28);
+                                Padding: (Horizontal: 10);
+                                Style: @DownloadButtonStyle;
+                                Visible: false;
+                            }
                         }
 
                         Group #EndgameCards {
                             LayoutMode: Top;
+                        }
+
+                        Group #EndgameDimOverlay {
+                            Anchor: (Top: 0, Left: 0, Right: 0, Bottom: 0);
+                            Background: #000000(0.55);
+                            Visible: false;
                         }
                     }
 
@@ -88,14 +105,42 @@ $C.@PageOverlay {
                     Group #MajorSection {
                         LayoutMode: Top;
 
-                        Label {
-                            Text: "MAJOR DUNGEONS";
-                            Anchor: (Height: 24, Bottom: 10);
-                            Style: (FontSize: 16, TextColor: #ffd58a, RenderBold: true, LetterSpacing: 1);
+                        Group {
+                            LayoutMode: Left;
+                            Anchor: (Height: 30, Bottom: 10);
+
+                            Label {
+                                Text: "MAJOR DUNGEONS";
+                                Anchor: (Height: 24);
+                                Style: (FontSize: 16, TextColor: #ffd58a, RenderBold: true, LetterSpacing: 1, VerticalAlignment: Center);
+                            }
+
+                            Group { FlexWeight: 1; }
+
+                            Label #MajorNotInstalledLabel {
+                                Text: "Not Installed";
+                                Anchor: (Height: 20, Right: 10);
+                                Visible: false;
+                                Style: (FontSize: 12, TextColor: #e07070, RenderBold: true, VerticalAlignment: Center);
+                            }
+
+                            $C.@TextButton #MajorInstallButton {
+                                Text: "Download";
+                                Anchor: (Width: 100, Height: 28);
+                                Padding: (Horizontal: 10);
+                                Style: @DownloadButtonStyle;
+                                Visible: false;
+                            }
                         }
 
                         Group #MajorCards {
                             LayoutMode: Top;
+                        }
+
+                        Group #MajorDimOverlay {
+                            Anchor: (Top: 0, Left: 0, Right: 0, Bottom: 0);
+                            Background: #000000(0.55);
+                            Visible: false;
                         }
                     }
                 }

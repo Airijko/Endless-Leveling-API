@@ -23,37 +23,6 @@ $C.@PageOverlay {
                 LayoutMode: Top;
                 Anchor: (Right: 7, Bottom: 7);
 
-                Group #Header {
-                    LayoutMode: Left;
-                    Anchor: (Height: 60);
-                    Padding: (Horizontal: 16, Vertical: 10);
-
-                    Label #AddonsTitleLabel {
-                        Text: "Addons";
-                        Anchor: (Height: 60);
-                        Style: (FontSize: 22, TextColor: #ffffff, RenderBold: true, VerticalAlignment: Center);
-                    }
-
-                    Group { FlexWeight: 1; }
-
-                    Group {
-                        LayoutMode: Left;
-                        Background: #0f1c29(0.92);
-                        Anchor: (Height: 40);
-                        Padding: (Full: 8);
-
-                        Label #AddonsIntroText {
-                            Text: "Core-compatible addon packs currently tracked in this workspace.";
-                            Style: (TextColor: #aaccff, FontSize: 14, VerticalAlignment: Center);
-                        }
-                    }
-                }
-
-                Group {
-                    Anchor: (Height: 1);
-                    Background: #2b3542;
-                }
-
                 Group #Main {
                     LayoutMode: TopScrolling;
                     ScrollbarStyle: $C.@DefaultScrollbarStyle;

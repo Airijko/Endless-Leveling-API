@@ -98,14 +98,6 @@
       Text: "AUGMENTS";
     }
 
-    @LeftNavButton #NavDungeons {
-      Text: "DUNGEONS";
-    }
-
-    @LeftNavButton #NavAddons {
-      Text: "ADDONS";
-    }
-
     Group { Anchor: (Height: 24); }
 
     @LeftNavButton #NavRaces {
@@ -116,6 +108,15 @@
       Text: "CLASSES";
     }
 
+    Group { Anchor: (Height: 24); }
+
+    @LeftNavButton #NavDungeons {
+      Text: "DUNGEONS";
+    }
+
+    @LeftNavButton #NavAddons {
+      Text: "ADDONS";
+    }
     Group { Anchor: (Height: 24); }
 
     @LeftNavButton #NavLeaderboards {
