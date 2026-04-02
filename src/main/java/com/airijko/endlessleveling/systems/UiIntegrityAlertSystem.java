@@ -86,9 +86,13 @@ public final class UiIntegrityAlertSystem extends TickingSystem<EntityStore> {
         if (!consoleWarningLogged
                 && unauthorized
                 && now - systemStartedAtMillis >= STARTUP_CONSOLE_DELAY_MILLIS) {
-            LOGGER.atSevere().log("UI integrity security warning detected: %s", String.join(" | ",
-                    integrityResult.violations().stream().map(UiTitleIntegrityGuard.TitleViolation::toLogString)
-                            .toList()));
+            LOGGER.atSevere().log("""
+
+                ========================================
+                UI INTEGRITY SECURITY ALERT
+                Unauthorized UI edits were detected.
+                ========================================
+                """);
             consoleWarningLogged = true;
         }
 

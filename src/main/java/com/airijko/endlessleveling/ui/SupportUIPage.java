@@ -2,6 +2,9 @@ package com.airijko.endlessleveling.ui;
 
 import javax.annotation.Nonnull;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.security.PartnerBrandingAllowlist;
 import com.airijko.endlessleveling.util.Lang;
@@ -61,6 +64,10 @@ public class SupportUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         EndlessLeveling plugin = EndlessLeveling.getInstance();
         boolean partnerAddonDetected = isPartnerAddonDetected();
         boolean partnerAddonValid = partnerAddonDetected && plugin != null && plugin.isPartnerAddonAuthorized();
+        boolean showNoticeCard = !partnerAddonValid;
+
+        ui.set("#NoticeCard.Visible", showNoticeCard);
+        ui.set("#NoticeCardSpacer.Visible", showNoticeCard);
 
         ui.set("#SupportPartnerSectionTitle.Text",
                 Lang.tr(playerRef.getUuid(), "ui.support.partner.section", "Official Endless Partners"));
@@ -81,12 +88,6 @@ public class SupportUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             ui.set("#SupportPartnerAddonValidationValue.Style.TextColor", "#ff6b6b");
         }
 
-        ui.set("#SupportPartnerServerListLabel.Text",
-                Lang.tr(playerRef.getUuid(), "ui.support.partner.servers.label", "Authorized Partner Servers"));
-        String partnerServerNames = PartnerBrandingAllowlist.getPartnerServerNames().isEmpty()
-                ? Lang.tr(playerRef.getUuid(), "ui.support.partner.servers.none", "None")
-                : String.join(", ", PartnerBrandingAllowlist.getPartnerServerNames());
-        ui.set("#SupportPartnerServerListValue.Text", partnerServerNames);
         ui.set("#SupportDiscordTitle.Text",
                 Lang.tr(playerRef.getUuid(), "ui.support.discord_title", "Need help?"));
         ui.set("#SupportDiscordDescription.Text",
@@ -94,6 +95,18 @@ public class SupportUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                         "For support, issues, and help, join our Discord community."));
         ui.set("#SupportDiscordButton.Text",
                 Lang.tr(playerRef.getUuid(), "ui.support.discord_button", "JOIN DISCORD"));
+
+        List<String> orderedPartnerServers = getOrderedPartnerServerNames();
+        ui.set("#SupportServerCard1Name.Text",
+                orderedPartnerServers.isEmpty() ? "Endless Leveling" : orderedPartnerServers.get(0));
+        ui.set("#SupportServerCard1Host.Text", "endlessleveling.net");
+
+        boolean hasSecondaryPartner = orderedPartnerServers.size() > 1;
+        ui.set("#SupportServerCard2.Visible", hasSecondaryPartner);
+        if (hasSecondaryPartner) {
+            ui.set("#SupportServerCard2Name.Text", orderedPartnerServers.get(1));
+            ui.set("#SupportServerCard2Host.Text", resolvePartnerHost(orderedPartnerServers.get(1)));
+        }
     }
 
     @Override
@@ -121,6 +134,32 @@ public class SupportUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
         NavUIHelper.handleNavAction(data.action, ref, store, playerRef);
     }
+
+        @Nonnull
+        private List<String> getOrderedPartnerServerNames() {
+                List<String> ordered = new ArrayList<>();
+                ordered.add("Endless Leveling");
+
+                for (String name : PartnerBrandingAllowlist.getPartnerServerNames()) {
+                        if (name == null || name.isBlank() || "Endless Leveling".equalsIgnoreCase(name)) {
+                                continue;
+                        }
+                        ordered.add(name);
+                }
+
+                return ordered;
+        }
+
+        @Nonnull
+        private String resolvePartnerHost(@Nonnull String serverName) {
+                if ("Histatu".equalsIgnoreCase(serverName)) {
+                        return "play.histatu.net";
+                }
+                if ("Endless Leveling".equalsIgnoreCase(serverName)) {
+                        return "endlessleveling.net";
+                }
+                return "authorized partner";
+        }
 
         private boolean isPartnerAddonDetected() {
                 return isAddonClassPresent("com.airijko.endlessleveling.EndlessLevelingPartnerAddon")

@@ -1,5 +1,6 @@
 package com.airijko.endlessleveling.security;
 
+import com.airijko.endlessleveling.util.UiIntegrityAlertSound;
 import com.airijko.endlessleveling.util.DiscordLinkResolver;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.Message;
@@ -196,6 +197,8 @@ public final class UiTitleIntegrityGuard {
             Message.raw("2) Ping ").color("#ffd166"),
             Message.raw("@juhjuh").color("#ff8ec7"),
             Message.raw(" (Airijko) and attach a screenshot.").color("#ffd166")));
+
+        UiIntegrityAlertSound.playForRecipientAndAdministrators(playerRef);
     }
 
     private void validateNavSplit(Map<String, List<ResourceSnapshot>> resourceCache, List<TitleViolation> violations) {
