@@ -29,7 +29,7 @@ Group {
     }
 
     Label {
-        Text: "The partner addon variant that carries branding assets plus example registration content for a branded Endless Leveling deployment.";
+        Text: "Includes all addons and features, monetization commands, priority support, placement under featured servers in the mod page, the mod itself, and YouTube videos.";
         FlexWeight: 1;
         Style: (FontSize: 12, TextColor: #bdd0e8, Wrap: true);
     }

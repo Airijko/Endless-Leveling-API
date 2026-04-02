@@ -66,7 +66,7 @@ $C.@PageOverlay {
                             Anchor: (Height: 30, Bottom: 10);
 
                             Label {
-                                Text: "ENDGAME";
+                                Text: "ENDGAME & QOL";
                                 Anchor: (Height: 24);
                                 Style: (FontSize: 16, TextColor: #d2ecff, RenderBold: true, LetterSpacing: 1, VerticalAlignment: Center);
                             }

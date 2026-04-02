@@ -29,7 +29,7 @@ Group {
     }
 
     Label {
-        Text: "An addon-side extension pack scaffold for registering extra classes, races, augments, and passives on top of the core mod.";
+        Text: "Includes all addons and features I will ever make, plus monetization commands.";
         FlexWeight: 1;
         Style: (FontSize: 12, TextColor: #bdd0e8, Wrap: true);
     }

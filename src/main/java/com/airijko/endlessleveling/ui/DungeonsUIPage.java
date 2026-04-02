@@ -19,7 +19,7 @@ import static com.hypixel.hytale.server.core.ui.builder.EventData.of;
 
 public class DungeonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
-    private static final String OVERVIEW_DESCRIPTION = "Explore every integrated dungeon at a glance. Endgame cards highlight high-pressure encounters, while Major Dungeons cards map the D01 to D03 progression route.";
+    private static final String OVERVIEW_DESCRIPTION = "Browse dungeon integrations for Endless Leveling and see which supported packs are installed on this server.";
     private static final String IMAGE_SOURCE_BASE = "Common/UI/Custom/Pages/Dungeons/Cards/Images/";
     private static final String FROZEN_IMAGE_PATH = IMAGE_SOURCE_BASE + "EndgameFrozenPlaceholder.png";
     private static final String SWAMP_IMAGE_PATH = IMAGE_SOURCE_BASE + "EndgameSwampPlaceholder.png";

@@ -126,7 +126,9 @@ public class AddonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
         ui.set("#CoreAddonsSection.Visible", showCore);
         ui.set("#PartnerAddonsSection.Visible", showPartners);
+        ui.set("#CoreToPartnersSpacer.Visible", showCore && showPartners);
         ui.set("#ModPartnersSection.Visible", showModPartners);
+        ui.set("#ModPartnersToExtensionsSpacer.Visible", showModPartners && showPartnerExtensions);
         ui.set("#PartnerExtensionsSection.Visible", showPartnerExtensions);
 
         if (FILTER_MOD_PARTNERS.equals(filter)) {

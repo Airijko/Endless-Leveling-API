@@ -172,7 +172,7 @@ $C.@PageOverlay {
                                             }
                                         }
 
-                                        Group { Anchor: (Height: 24); }
+                                        Group #CoreToPartnersSpacer { Anchor: (Height: 24); }
 
                                         Group #PartnerAddonsSection {
                                             LayoutMode: Top;
@@ -205,7 +205,7 @@ $C.@PageOverlay {
                                                 }
                                             }
 
-                                            Group { Anchor: (Height: 24); }
+                                            Group #ModPartnersToExtensionsSpacer { Anchor: (Height: 24); }
 
                                             Group #PartnerExtensionsSection {
                                                 LayoutMode: Top;
