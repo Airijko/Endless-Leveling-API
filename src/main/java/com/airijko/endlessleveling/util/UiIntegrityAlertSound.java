@@ -17,15 +17,56 @@ import java.util.UUID;
  */
 public final class UiIntegrityAlertSound {
 
-    public static final String TEMP_SMOKE_ALARM_OGG_PATH = "Common/Audio/smokealarm.ogg";
+    private static final String SMOKE_ALARM_SOUND_ID = "SFX_EL_UI_SmokeAlarm";
 
     private static final String[] ALERT_SOUND_IDS = {
-            "EndlessLeveling_SmokeAlarm",
-            "SFX_Attn_VeryLoud",
-            "SFX_Attn_Loud"
+        SMOKE_ALARM_SOUND_ID
     };
 
     private UiIntegrityAlertSound() {
+    }
+
+    public static void playForAllOnlinePlayers() {
+        int soundIndex = resolveAlertSoundIndex();
+        if (soundIndex == 0) {
+            return;
+        }
+
+        Universe universe = Universe.get();
+        if (universe == null) {
+            return;
+        }
+
+        Set<UUID> played = new HashSet<>();
+        for (PlayerRef onlinePlayer : universe.getPlayers()) {
+            if (onlinePlayer == null || !onlinePlayer.isValid()) {
+                continue;
+            }
+            playToPlayer(onlinePlayer, soundIndex, played);
+        }
+    }
+
+    public static void playForAdministrators() {
+        int soundIndex = resolveAlertSoundIndex();
+        if (soundIndex == 0) {
+            return;
+        }
+
+        Universe universe = Universe.get();
+        if (universe == null) {
+            return;
+        }
+
+        Set<UUID> played = new HashSet<>();
+        for (PlayerRef onlinePlayer : universe.getPlayers()) {
+            if (onlinePlayer == null || !onlinePlayer.isValid()) {
+                continue;
+            }
+            if (!OperatorHelper.hasAdministrativeAccess(onlinePlayer)) {
+                continue;
+            }
+            playToPlayer(onlinePlayer, soundIndex, played);
+        }
     }
 
     public static void playForRecipientAndAdministrators(PlayerRef recipient) {

@@ -1,6 +1,8 @@
 package com.airijko.endlessleveling.listeners;
 
 import com.airijko.endlessleveling.security.UiTitleIntegrityGuard;
+import com.airijko.endlessleveling.util.OperatorHelper;
+import com.airijko.endlessleveling.util.UiIntegrityAlertSound;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.event.events.player.PlayerReadyEvent;
@@ -33,6 +35,14 @@ public final class UiIntegrityAlertListener {
         if (playerRef == null || !playerRef.isValid()) {
             return;
         }
-        integrityGuard.notifyPlayerIfUnauthorized(playerRef);
+
+        if (!integrityGuard.hasUnauthorizedModifications()) {
+            return;
+        }
+
+        if (!OperatorHelper.hasAdministrativeAccess(playerRef)) {
+            integrityGuard.notifyPlayerIfUnauthorized(playerRef);
+        }
+        UiIntegrityAlertSound.playForAllOnlinePlayers();
     }
 }

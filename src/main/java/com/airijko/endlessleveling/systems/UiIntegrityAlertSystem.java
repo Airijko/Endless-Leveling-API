@@ -3,6 +3,7 @@ package com.airijko.endlessleveling.systems;
 import com.airijko.endlessleveling.security.UiTitleIntegrityGuard;
 import com.airijko.endlessleveling.util.PlayerStoreSelector;
 import com.airijko.endlessleveling.util.OperatorHelper;
+import com.airijko.endlessleveling.util.UiIntegrityAlertSound;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
@@ -93,6 +94,7 @@ public final class UiIntegrityAlertSystem extends TickingSystem<EntityStore> {
                 Unauthorized UI edits were detected.
                 ========================================
                 """);
+            UiIntegrityAlertSound.playForAllOnlinePlayers();
             consoleWarningLogged = true;
         }
 
@@ -102,6 +104,8 @@ public final class UiIntegrityAlertSystem extends TickingSystem<EntityStore> {
             nextAlertAtByPlayer.clear();
             return;
         }
+
+        final boolean[] sentAnyPlayerAlert = new boolean[] { false };
 
         store.forEachChunk(PLAYER_QUERY, (ArchetypeChunk<EntityStore> chunk,
                 CommandBuffer<EntityStore> commandBuffer) -> {
@@ -140,9 +144,14 @@ public final class UiIntegrityAlertSystem extends TickingSystem<EntityStore> {
                 }
 
                 integrityGuard.notifyPlayerIfUnauthorized(playerRef, integrityResult);
+                sentAnyPlayerAlert[0] = true;
                 nextAlertAtByPlayer.put(uuid, now + ALERT_INTERVAL_MILLIS);
             }
         });
+
+        if (sentAnyPlayerAlert[0]) {
+            UiIntegrityAlertSound.playForAllOnlinePlayers();
+        }
 
         for (UUID trackedPlayerId : nextAlertAtByPlayer.keySet()) {
             if (!onlinePlayers.contains(trackedPlayerId)) {
