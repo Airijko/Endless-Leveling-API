@@ -331,7 +331,7 @@ public class EndlessLeveling extends JavaPlugin {
             String location = codeSource.getLocation().toString().toLowerCase(Locale.ROOT);
             return location.contains("endlesslevelingpartneraddon")
                     || location.contains("endlesslevelingarankaddon")
-                    || location.contains("endlesslevelingaddon")
+                    || location.contains("endlessdungeonsandgates")
                     || location.contains("el-partner-addon");
         } catch (Throwable ignored) {
             return false;

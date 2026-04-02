@@ -23,7 +23,7 @@ Group {
     }
 
     Label {
-        Text: "EndlessLevelingAddon";
+        Text: "EndlessDungeonsAndGates";
         Anchor: (Height: 24, Bottom: 6);
         Style: (FontSize: 17, TextColor: #ffffff, RenderBold: true, VerticalAlignment: Center);
     }
