@@ -6,52 +6,32 @@ Group {
 
     Group {
         Anchor: (Height: 118, Bottom: 14);
-        Background: #294835;
+        Background: #2a1f40;
         Padding: (Left: 12, Right: 12, Top: 10, Bottom: 10);
 
         Label {
-            Text: "PARTNER BRANDING";
+            Text: "ABILITY SYSTEM";
             Anchor: (Height: 16);
             Style: (FontSize: 10, TextColor: #e6eff9, RenderBold: true, LetterSpacing: 1);
         }
 
         Label {
-            Text: "Histatu";
+            Text: "Abilities";
             Anchor: (Bottom: 4, Height: 40);
             Style: (FontSize: 20, TextColor: #ffffff, RenderBold: true, Wrap: true);
         }
     }
 
     Label {
-        Text: "EndlessLevelingPartnerAddon";
-        Anchor: (Height: 24, Bottom: 6);
-        Style: (FontSize: 17, TextColor: #ffffff, RenderBold: true, VerticalAlignment: Center);
-    }
-
-    Label {
-        Text: "v1.1";
+        Text: "Work in progress";
         Anchor: (Height: 18, Bottom: 8);
         Style: (FontSize: 11, TextColor: #89c4ff, RenderBold: true, VerticalAlignment: Center);
     }
 
     Label {
-        Text: "The partner addon variant that carries branding assets plus example registration content for a branded Endless Leveling deployment.";
+        Text: "Keybindable abilities with custom actions, powers, and cooldown behavior.";
         FlexWeight: 1;
         Style: (FontSize: 12, TextColor: #bdd0e8, Wrap: true);
     }
 
-    Group { Anchor: (Height: 10); }
-
-    Group {
-        Anchor: (Height: 1);
-        Background: #ffffff(0.08);
-    }
-
-    Group { Anchor: (Height: 10); }
-
-    Label {
-        Text: "Workspace folder: Hytale-Histatu-Partner";
-        Anchor: (Height: 18);
-        Style: (FontSize: 11, TextColor: #7d91a8);
-    }
 }

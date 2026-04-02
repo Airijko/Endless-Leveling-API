@@ -1,62 +1,371 @@
 $C = "../../Common.ui";
 $Nav = "../Nav/LeftNavPanel.ui";
 
+@AddonFilterButtonStyle = TextButtonStyle(
+    Default: (Background: $C.@DefaultSquareButtonDefaultBackground, LabelStyle: $C.@DefaultButtonLabelStyle),
+    Hovered: (Background: $C.@DefaultSquareButtonHoveredBackground, LabelStyle: $C.@DefaultButtonLabelStyle),
+    Pressed: (Background: $C.@DefaultSquareButtonPressedBackground, LabelStyle: $C.@DefaultButtonLabelStyle),
+    Disabled: (Background: $C.@DefaultSquareButtonDisabledBackground, LabelStyle: $C.@DefaultButtonDisabledLabelStyle),
+    Sounds: $C.@ButtonSounds,
+);
+
 $C.@PageOverlay {
-    $C.@DecoratedContainer {
-        Anchor: (Width: 1000, Height: 700);
-        #Title {
-            Group {
-                $C.@Title #AddonsTitle {
-                    @Text = "ENDLESS LEVELING";
-                }
-            }
-        }
+    Group {
+        LayoutMode: Middle;
 
-        #Content {
+        Group {
             LayoutMode: Left;
-            Padding: (Full: 0);
+            Anchor: (Width: 1680, Height: 700);
 
-            $Nav.@LeftNavPanel {}
-
-            Group #RightPanel {
-                FlexWeight: 1;
+            Group {
                 LayoutMode: Top;
-                Anchor: (Right: 7, Bottom: 7);
+                Anchor: (Width: 1680, Height: 700);
 
-                Group #Main {
-                    LayoutMode: TopScrolling;
-                    ScrollbarStyle: $C.@DefaultScrollbarStyle;
-                    FlexWeight: 1;
-                    Padding: (Full: 16);
+                Group {
+                    LayoutMode: Middle;
+                    Anchor: (Width: 1680);
 
-                    Group #OverviewCard {
-                        LayoutMode: Top;
-                        Background: #0b141f(0.88);
-                        Padding: (Full: 18);
+                    Group {
+                        LayoutMode: Left;
 
-                        Label {
-                            Text: "Addon Shelf";
-                            Anchor: (Height: 24);
-                            Style: (FontSize: 18, TextColor: #ffffff, RenderBold: true);
+                        $C.@DecoratedContainer {
+                            Anchor: (Width: 300, Height: 700);
+
+                            #Title {
+                                Group {
+                                    $C.@Title #DeveloperInfo { @Text = "ENDLESS ADDONS"; }
+                                }
+                            }
+
+                            #Content {
+                                LayoutMode: Top;
+                                Padding: (Full: 12);
+
+                                Group { Anchor: (Height: 7); }
+
+                                Group #AddonsLeftBannerCard {
+                                    Anchor: (Height: 126, Bottom: 12);
+                                    Background: #0b141f(0.6);
+                                    Padding: (Left: 7, Right: 7, Top: 7, Bottom: 7);
+
+                                    Group #AddonsLeftBanner {
+
+                                        Group #AddonsLeftBannerImage {
+                                            Anchor: (Width: 286, Height: 169, Top: -24);
+                                            Background: (TexturePath: "Images/EndlessBanner.png");
+                                        }
+                                    }
+                                }
+
+                                Group #AddonsInfoCard {
+                                    LayoutMode: Top;
+                                    Background: #0b141f(0.52);
+                                    Padding: (Full: 12);
+
+                                    Label #AddonsAboutTitle {
+                                        Text: "About";
+                                        Anchor: (Height: 22, Bottom: 4);
+                                        Style: (FontSize: 16, TextColor: #ffffff, RenderBold: true, VerticalAlignment: Center);
+                                    }
+
+                                    Label #AddonsAboutBody {
+                                        Text: "Built by Airijko. These Endless Leveling addons, DLC, and integrations are currently locked behind Patreon support.";
+                                        Style: (FontSize: 12, TextColor: #bdd0e8, Wrap: true);
+                                        Anchor: (Bottom: 10);
+                                    }
+
+                                    Group {
+                                        Anchor: (Height: 1, Bottom: 10);
+                                        Background: #ffffff(0.08);
+                                    }
+
+                                    Label #AddonsSupportTitle {
+                                        Text: "Support";
+                                        Anchor: (Height: 22, Bottom: 4);
+                                        Style: (FontSize: 16, TextColor: #ffffff, RenderBold: true, VerticalAlignment: Center);
+                                    }
+
+                                    Label #AddonsSupportBody {
+                                        Text: "Some addons may later release as public demo versions, but only months from now.";
+                                        Style: (FontSize: 12, TextColor: #bdd0e8, Wrap: true);
+                                        Anchor: (Bottom: 10);
+                                    }
+
+                                    Group {
+                                        LayoutMode: Middle;
+                                        Anchor: (Bottom: 2);
+
+                                        $C.@TextButton #AddonsPatreonButton {
+                                            Text: "Support on Patreon";
+                                            Anchor: (Width: 220, Height: 34);
+                                            Padding: (Horizontal: 12);
+                                        }
+                                    }
+                                }
+
+                                Group { FlexWeight: 1; }
+
+                                Label #AddonsPanelFootnote {
+                                    Text: "Thank you for supporting Endless Leveling.";
+                                    Style: (FontSize: 11, TextColor: #7d91a8, Wrap: true, HorizontalAlignment: Center);
+                                    Anchor: (Bottom: 4);
+                                    Padding: (Horizontal: 12);
+                                }
+                            }
                         }
 
-                        Group { Anchor: (Height: 6); }
+                        Group { Anchor: (Width: 40); }
+                        
+                        $C.@DecoratedContainer {
+                            Anchor: (Width: 1000, Height: 700);
+                            #Title {
+                                Group {
+                                    $C.@Title #AddonsTitle {
+                                        @Text = "ENDLESS LEVELING";
+                                    }
+                                }
+                            }
 
-                        Label {
-                            Text: "These cards summarize the addon modules layered around Endless Leveling in this workspace, from dungeon integration to partner-branding packs.";
-                            Style: (FontSize: 13, TextColor: #bfd0e4, Wrap: true);
+                            #Content {
+                                LayoutMode: Left;
+                                Padding: (Full: 0);
+
+                                $Nav.@LeftNavPanel {}
+
+                                Group #RightPanel {
+                                    FlexWeight: 1;
+                                    LayoutMode: Top;
+                                    Anchor: (Right: 7, Bottom: 7);
+
+                                    Group #Main {
+                                        LayoutMode: TopScrolling;
+                                        ScrollbarStyle: $C.@DefaultScrollbarStyle;
+                                        FlexWeight: 1;
+                                        Padding: (Full: 16);
+
+                                        Group #CoreAddonsSection {
+                                            LayoutMode: Top;
+
+                                            Group #OverviewCard {
+                                                LayoutMode: Top;
+                                                Background: #0b141f(0.88);
+                                                Padding: (Full: 18);
+
+                                                Label {
+                                                    Text: "Endless Addons";
+                                                    Anchor: (Height: 24);
+                                                    Style: (FontSize: 18, TextColor: #ffffff, RenderBold: true);
+                                                }
+
+                                                Group { Anchor: (Height: 6); }
+
+                                                Label {
+                                                    Text: "This page covers Endless Leveling addons, DLC-style expansions, external integrations, and collaboration or partner modules.";
+                                                    Style: (FontSize: 13, TextColor: #bfd0e4, Wrap: true);
+                                                }
+                                            }
+
+                                            Group { Anchor: (Height: 18); }
+
+                                            Group #AddonCards {
+                                                LayoutMode: Top;
+                                            }
+                                        }
+
+                                        Group { Anchor: (Height: 24); }
+
+                                        Group #PartnerAddonsSection {
+                                            LayoutMode: Top;
+
+                                            Group #ModPartnersSection {
+                                                LayoutMode: Top;
+                                                Group #ModPartnersHeader {
+                                                    LayoutMode: Top;
+                                                    Background: #0b141f(0.88);
+                                                    Padding: (Full: 18);
+
+                                                    Label {
+                                                        Text: "Mod Partners";
+                                                        Anchor: (Height: 24);
+                                                        Style: (FontSize: 18, TextColor: #ffffff, RenderBold: true);
+                                                    }
+
+                                                    Group { Anchor: (Height: 6); }
+
+                                                    Label {
+                                                        Text: "External mods officially partnered with Endless Leveling.";
+                                                        Style: (FontSize: 13, TextColor: #bfd0e4, Wrap: true);
+                                                    }
+                                                }
+
+                                                Group { Anchor: (Height: 18); }
+
+                                                Group #ModPartnerCards {
+                                                    LayoutMode: Top;
+                                                }
+                                            }
+
+                                            Group { Anchor: (Height: 24); }
+
+                                            Group #PartnerExtensionsSection {
+                                                LayoutMode: Top;
+
+                                                Group #ExtensionsHeader {
+                                                    LayoutMode: Top;
+                                                    Background: #0b141f(0.88);
+                                                    Padding: (Full: 18);
+
+                                                    Label {
+                                                        Text: "Partner Extensions";
+                                                        Anchor: (Height: 24);
+                                                        Style: (FontSize: 18, TextColor: #ffffff, RenderBold: true);
+                                                    }
+
+                                                    Group { Anchor: (Height: 6); }
+
+                                                    Label {
+                                                        Text: "First-party partner extension packs for Endless Leveling.";
+                                                        Style: (FontSize: 13, TextColor: #bfd0e4, Wrap: true);
+                                                    }
+                                                }
+
+                                                Group { Anchor: (Height: 18); }
+
+                                                Group #ExtensionAddonCards {
+                                                    LayoutMode: Top;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
-                    }
+                        
+                        Group { Anchor: (Width: 40); }
 
-                    Group { Anchor: (Height: 18); }
+                        $C.@DecoratedContainer {
+                            Anchor: (Width: 300, Height: 700);
 
-                    Group #AddonCards {
-                        LayoutMode: Top;
+                            #Title {
+                                Group {
+                                    $C.@Title #CommunityPanelTitle { @Text = "COMMUNITY ADDONS"; }
+                                }
+                            }
+
+                            #Content {
+                                LayoutMode: Top;
+                                Padding: (Full: 12);
+
+                                Group #CommunityFiltersCard {
+                                    LayoutMode: Top;
+                                    Background: #0b141f(0.52);
+                                    Padding: (Full: 12);
+
+                                    Label #CommunityPanelBody {
+                                        Text: "Use these buttons to switch which addon sections are shown.";
+                                        Style: (FontSize: 12, TextColor: #bdd0e8, Wrap: true);
+                                        Anchor: (Bottom: 10);
+                                    }
+
+                                    Label {
+                                        Text: "Filters";
+                                        Anchor: (Height: 16, Bottom: 8);
+                                        Style: (FontSize: 11, TextColor: #9fb6d3, RenderBold: true, LetterSpacing: 1);
+                                    }
+
+                                    Group {
+                                        Anchor: (Height: 1, Bottom: 10);
+                                        Background: #ffffff(0.08);
+                                    }
+
+                                    Group {
+                                        Anchor: (Width: 252, Height: 36, Bottom: 8);
+
+                                        TextButton #ShowAllAddonsButton {
+                                            Text: "Endless Leveling Addons";
+                                            Anchor: (Width: 252, Height: 34);
+                                            Padding: (Left: 42, Right: 12);
+                                            Style: @AddonFilterButtonStyle;
+                                        }
+
+                                        Group {
+                                            Anchor: (Width: 20, Height: 20, Left: 12, Top: 7);
+                                            Background: (TexturePath: "Images/puzzle.png");
+                                        }
+                                    }
+
+                                    Group {
+                                        Anchor: (Width: 252, Height: 36, Bottom: 8);
+
+                                        TextButton #ShowModPartnersButton {
+                                            Text: "Mod Partners";
+                                            Anchor: (Width: 252, Height: 34);
+                                            Padding: (Left: 42, Right: 12);
+                                            Style: @AddonFilterButtonStyle;
+                                        }
+
+                                        Group {
+                                            Anchor: (Width: 20, Height: 20, Left: 12, Top: 7);
+                                            Background: (TexturePath: "Images/partnership.png");
+                                        }
+                                    }
+
+                                    Group {
+                                        Anchor: (Width: 252, Height: 36, Bottom: 8);
+
+                                        TextButton #ShowCommunityAddonsButton {
+                                            Text: "Community Addons";
+                                            Anchor: (Width: 252, Height: 34);
+                                            Padding: (Left: 42, Right: 12);
+                                            Style: @AddonFilterButtonStyle;
+                                        }
+
+                                        Group {
+                                            Anchor: (Width: 20, Height: 20, Left: 12, Top: 7);
+                                            Background: (TexturePath: "Images/community.png");
+                                        }
+                                    }
+
+                                    Group {
+                                        Anchor: (Width: 252, Height: 36, Bottom: 0);
+
+                                        TextButton #ShowPartnerExtensionsButton {
+                                            Text: "Partner Extentions";
+                                            Anchor: (Width: 252, Height: 34);
+                                            Padding: (Left: 42, Right: 12);
+                                            Style: @AddonFilterButtonStyle;
+                                        }
+
+                                        Group {
+                                            Anchor: (Width: 20, Height: 20, Left: 12, Top: 7);
+                                            Background: (TexturePath: "Images/shines.png");
+                                        }
+                                    }
+                                }
+
+                                Group { Anchor: (Height: 10); }
+
+                                Group #CommunityStatusCard {
+                                    LayoutMode: Top;
+                                    Background: #0b141f(0.40);
+                                    Padding: (Full: 12);
+
+                                    Label #AddonSectionStatus {
+                                        Text: "Showing: Endless Leveling Addons";
+                                        Style: (FontSize: 12, TextColor: #9fb6d3, Wrap: true, HorizontalAlignment: Center);
+                                        Anchor: (Bottom: 2);
+                                    }
+                                }
+
+                                Group { FlexWeight: 1; }
+                            }
+                        }
                     }
                 }
             }
         }
     }
 }
+
 
 $C.@BackButton {}

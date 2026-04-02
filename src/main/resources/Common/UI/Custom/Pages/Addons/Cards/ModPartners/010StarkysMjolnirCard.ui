@@ -6,32 +6,31 @@ Group {
 
     Group {
         Anchor: (Height: 118, Bottom: 14);
-        Background: #18354b;
+        Background: #3f2d16;
         Padding: (Left: 12, Right: 12, Top: 10, Bottom: 10);
 
         Label {
-            Text: "SOLO LEVELING-LIKE GATES";
+            Text: "MOD PARTNER";
             Anchor: (Height: 16);
             Style: (FontSize: 10, TextColor: #e6eff9, RenderBold: true, LetterSpacing: 1);
         }
 
         Label {
-            Text: "Dungeons and Gates";
+            Text: "Starky's Mjolnir";
             Anchor: (Bottom: 4, Height: 40);
             Style: (FontSize: 20, TextColor: #ffffff, RenderBold: true, Wrap: true);
         }
     }
 
     Label {
-        Text: "v2.2.0";
+        Text: "External Mod Partner";
         Anchor: (Height: 18, Bottom: 8);
         Style: (FontSize: 11, TextColor: #89c4ff, RenderBold: true, VerticalAlignment: Center);
     }
 
     Label {
-        Text: "Integrates official Endless dungeons and external dungeon mods into Solo Leveling-like world gates.";
+        Text: "Thor-inspired hammer mod integrated as a mod partner addon for dungeon and combat themed servers.";
         FlexWeight: 1;
         Style: (FontSize: 12, TextColor: #bdd0e8, Wrap: true);
     }
-
 }
