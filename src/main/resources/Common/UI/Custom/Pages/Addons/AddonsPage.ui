@@ -44,7 +44,7 @@ $C.@PageOverlay {
                                 Group { Anchor: (Height: 7); }
 
                                 Group #AddonsLeftBannerCard {
-                                    Anchor: (Height: 126, Bottom: 12);
+                                    Anchor: (Height: 126, Bottom: 24);
                                     Background: #0b141f(0.6);
                                     Padding: (Left: 7, Right: 7, Top: 7, Bottom: 7);
 
