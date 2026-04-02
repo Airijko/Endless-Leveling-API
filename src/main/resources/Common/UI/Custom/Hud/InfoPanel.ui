@@ -1,7 +1,7 @@
 // Player level, race, class info
 Group #InfoPanel {
   LayoutMode: Top;
-  Anchor: (Bottom: 15, Left: 275, Width: 260);
+  Anchor: (Bottom: 15, Left: 225, Width: 260);
   Padding: (Full: 4);
 
   Group { FlexWeight: 1; }
