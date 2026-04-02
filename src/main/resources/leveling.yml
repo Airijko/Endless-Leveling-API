@@ -1,6 +1,6 @@
 # Leveling formula used to calculate XP required for the next level.
 default:
-  expression: "base * ((log(level)+1) * (sqrt(level)))^1.75"
+  expression: "base * ((log(level)+1) * (sqrt(level)))^1.8"
   # LOG10 (default) or LN
   log_mode: LOG10
   base: 100

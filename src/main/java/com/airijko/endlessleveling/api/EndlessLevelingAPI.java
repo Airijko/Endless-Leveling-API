@@ -849,8 +849,13 @@ public final class EndlessLevelingAPI {
         }
 
         for (InstanceDungeonDefinition definition : instanceDungeonsById.values()) {
-            String token = normalizeToken(definition.worldNameToken());
-            if (token != null && normalizedWorld.startsWith("el_gate_" + token + "_")) {
+            String originalTemplateToken = normalizeToken(resolveInstanceDungeonWorldPrefix(definition));
+            String routingTemplateToken = normalizeToken(definition.routingTemplateName());
+            String legacyWorldToken = normalizeToken(definition.worldNameToken());
+
+            if ((originalTemplateToken != null && normalizedWorld.startsWith("el_gate_" + originalTemplateToken + "_"))
+                    || (routingTemplateToken != null && normalizedWorld.startsWith("el_gate_" + routingTemplateToken + "_"))
+                    || (legacyWorldToken != null && normalizedWorld.startsWith("el_gate_" + legacyWorldToken + "_"))) {
                 return definition;
             }
         }
@@ -886,8 +891,8 @@ public final class EndlessLevelingAPI {
         InstanceDungeonDefinition definition = getInstanceDungeonByRoutingTemplate(routingTemplateName);
         String dungeonToken = definition == null
                 ? sanitizeToken(routingTemplateName)
-                : sanitizeToken(definition.worldNameToken());
-        String gateToken = sanitizeToken(gateIdentity);
+                : sanitizeToken(resolveInstanceDungeonWorldPrefix(definition));
+        String gateToken = sanitizeToken(stripGateIdentityPrefix(gateIdentity));
         return "el_gate_" + dungeonToken + "_" + gateToken;
     }
 
@@ -895,9 +900,9 @@ public final class EndlessLevelingAPI {
         InstanceDungeonDefinition definition = getInstanceDungeonByRoutingTemplate(routingTemplateName);
         String dungeonToken = definition == null
                 ? sanitizeToken(routingTemplateName)
-                : sanitizeToken(definition.worldNameToken());
-        String gateToken = sanitizeToken(gateIdentity);
-        return "el_gate:" + dungeonToken + ":" + gateToken;
+                : sanitizeToken(resolveInstanceDungeonWorldPrefix(definition));
+        String gateToken = sanitizeToken(stripGateIdentityPrefix(gateIdentity));
+        return "el_gate_" + dungeonToken + "_" + gateToken;
     }
 
     public boolean isInstanceDungeonOriginalTemplate(String templateName) {
@@ -934,6 +939,30 @@ public final class EndlessLevelingAPI {
             }
         }
         return builder.toString();
+    }
+
+    private static String resolveInstanceDungeonWorldPrefix(InstanceDungeonDefinition definition) {
+        if (definition.legacyTemplateName() != null && !definition.legacyTemplateName().isBlank()) {
+            return definition.legacyTemplateName();
+        }
+        if (definition.routingTemplateName() != null && !definition.routingTemplateName().isBlank()) {
+            return definition.routingTemplateName();
+        }
+        return definition.worldNameToken();
+    }
+
+    private static String stripGateIdentityPrefix(String gateIdentity) {
+        String normalized = normalizeToken(gateIdentity);
+        if (normalized == null) {
+            return null;
+        }
+        if (normalized.startsWith("el_gate:")) {
+            return normalized.substring("el_gate:".length());
+        }
+        if (normalized.startsWith("el_gate_")) {
+            return normalized.substring("el_gate_".length());
+        }
+        return normalized;
     }
 
     private PlayerData getData(UUID uuid) {

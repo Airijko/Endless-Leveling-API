@@ -18,15 +18,20 @@ import com.airijko.endlessleveling.util.Lang;
 import com.airijko.endlessleveling.util.PlayerChatNotifier;
 import com.airijko.endlessleveling.util.WorldContextUtil;
 import com.airijko.endlessleveling.systems.PlayerNameplateSystem;
+import com.hypixel.hytale.math.util.ChunkUtil;
+import com.hypixel.hytale.math.util.MathUtil;
+import com.hypixel.hytale.math.vector.Transform;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.event.events.player.PlayerDisconnectEvent;
 import com.hypixel.hytale.server.core.event.events.player.PlayerReadyEvent;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
+import com.hypixel.hytale.server.core.modules.entity.teleport.Teleport;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
+import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.util.NotificationUtil;
 
@@ -81,21 +86,21 @@ public class PlayerDataListener {
         var world = player.getWorld();
         if (world == null) {
             boolean inInstanceWorld = false;
-            processPlayerReadyOnWorldThread(playerData, playerRef, entityRef, store, inInstanceWorld);
+            processPlayerReadyOnWorldThread(playerData, playerRef, entityRef, store, null, inInstanceWorld);
             return;
         }
 
         try {
             world.execute(() -> {
                 boolean inInstanceWorld = WorldContextUtil.isInstanceContext(world, entityRef, store);
-                processPlayerReadyOnWorldThread(playerData, playerRef, entityRef, store, inInstanceWorld);
+                processPlayerReadyOnWorldThread(playerData, playerRef, entityRef, store, world, inInstanceWorld);
             });
         } catch (Exception ex) {
             LOGGER.atWarning().withCause(ex).log(
                     "Failed to enqueue PlayerReady world task for %s; applying fallback path",
                     playerRef.getUsername());
             boolean inInstanceWorld = WorldContextUtil.isInstanceWorld(world);
-            processPlayerReadyOnWorldThread(playerData, playerRef, null, null, inInstanceWorld);
+            processPlayerReadyOnWorldThread(playerData, playerRef, null, null, world, inInstanceWorld);
         }
     }
 
@@ -103,8 +108,13 @@ public class PlayerDataListener {
             @Nonnull PlayerRef playerRef,
             Ref<EntityStore> entityRef,
             Store<EntityStore> store,
+                World world,
             boolean inInstanceWorld) {
         UUID uuid = playerRef.getUuid();
+
+            if (!inInstanceWorld && world != null && entityRef != null && store != null) {
+                ensureSafeLoginPosition(playerRef, entityRef, store, world);
+            }
 
         MobLevelingManager mobLevelingManager = EndlessLeveling.getInstance().getMobLevelingManager();
         if (mobLevelingManager != null && store != null) {
@@ -180,6 +190,38 @@ public class PlayerDataListener {
         if (playerData.getSkillPoints() > 0) {
             notifyAvailableSkillPoints(playerRef, playerData.getSkillPoints());
         }
+    }
+
+    private void ensureSafeLoginPosition(@Nonnull PlayerRef playerRef,
+            @Nonnull Ref<EntityStore> entityRef,
+            @Nonnull Store<EntityStore> store,
+            @Nonnull World world) {
+        Transform currentTransform = playerRef.getTransform();
+        if (currentTransform == null || currentTransform.getPosition() == null) {
+            return;
+        }
+
+        int blockX = MathUtil.floor(currentTransform.getPosition().x);
+        int blockZ = MathUtil.floor(currentTransform.getPosition().z);
+        long chunkIndex = ChunkUtil.indexChunkFromBlock(blockX, blockZ);
+        if (world.getChunkIfLoaded(chunkIndex) != null) {
+            return;
+        }
+
+        Transform spawnTransform = world.getWorldConfig() != null && world.getWorldConfig().getSpawnProvider() != null
+                ? world.getWorldConfig().getSpawnProvider().getSpawnPoint(world, playerRef.getUuid())
+                : null;
+        if (spawnTransform == null) {
+            return;
+        }
+
+        store.addComponent(entityRef, Teleport.getComponentType(), Teleport.createForPlayer(world, spawnTransform));
+        LOGGER.atWarning().log(
+                "Queued safe login teleport for %s: current chunk (%d,%d) not loaded in world %s; moving to spawn.",
+                playerRef.getUsername(),
+                blockX,
+                blockZ,
+                world.getName());
     }
 
     private void scheduleSkillRetry(@Nonnull UUID uuid, @Nonnull String username) {
