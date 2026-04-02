@@ -24,9 +24,14 @@ public class AddonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             @Nonnull UIEventBuilder events,
             @Nonnull Store<EntityStore> store) {
 
-        ui.append("Pages/AddonsPage.ui");
+        ui.append("Pages/Addons/AddonsPage.ui");
+        ModularCardUiAppender.appendFolder(ui,
+            "#AddonCards",
+            "Common/UI/Custom/Pages/Addons/Cards",
+            "Pages/Addons/Cards",
+            3);
         NavUIHelper.applyNavVersion(ui, playerRef, "addons",
-                "Common/UI/Custom/Pages/AddonsPage.ui",
+            "Common/UI/Custom/Pages/Addons/AddonsPage.ui",
                 "#AddonsTitle");
         NavUIHelper.bindNavEvents(events);
     }

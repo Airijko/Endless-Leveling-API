@@ -1,0 +1,57 @@
+Group {
+    Anchor: (Width: 250, Height: 312, Right: 12);
+    LayoutMode: Top;
+    Background: #0b141f(0.92);
+    Padding: (Full: 14);
+
+    Group {
+        Anchor: (Height: 118, Bottom: 14);
+        Background: #3d214a;
+        Padding: (Left: 12, Right: 12, Top: 10, Bottom: 10);
+
+        Label {
+            Text: "A-RANK PACK";
+            Anchor: (Height: 16);
+            Style: (FontSize: 10, TextColor: #e6eff9, RenderBold: true, LetterSpacing: 1);
+        }
+
+        Label {
+            Text: "A-Rank";
+            Anchor: (Bottom: 4, Height: 40);
+            Style: (FontSize: 20, TextColor: #ffffff, RenderBold: true, Wrap: true);
+        }
+    }
+
+    Label {
+        Text: "EndlessLevelingARankAddon";
+        Anchor: (Height: 24, Bottom: 6);
+        Style: (FontSize: 17, TextColor: #ffffff, RenderBold: true, VerticalAlignment: Center);
+    }
+
+    Label {
+        Text: "v1.2";
+        Anchor: (Height: 18, Bottom: 8);
+        Style: (FontSize: 11, TextColor: #89c4ff, RenderBold: true, VerticalAlignment: Center);
+    }
+
+    Label {
+        Text: "An addon-side extension pack scaffold for registering extra classes, races, augments, and passives on top of the core mod.";
+        FlexWeight: 1;
+        Style: (FontSize: 12, TextColor: #bdd0e8, Wrap: true);
+    }
+
+    Group { Anchor: (Height: 10); }
+
+    Group {
+        Anchor: (Height: 1);
+        Background: #ffffff(0.08);
+    }
+
+    Group { Anchor: (Height: 10); }
+
+    Label {
+        Text: "Main class: EndlessLevelingARankAddon";
+        Anchor: (Height: 18);
+        Style: (FontSize: 11, TextColor: #7d91a8);
+    }
+}

@@ -1,0 +1,93 @@
+$C = "../../Common.ui";
+$Nav = "../Nav/LeftNavPanel.ui";
+
+$C.@PageOverlay {
+    $C.@DecoratedContainer {
+        Anchor: (Width: 1000, Height: 700);
+        #Title {
+            Group {
+                $C.@Title #AddonsTitle {
+                    @Text = "ENDLESS LEVELING";
+                }
+            }
+        }
+
+        #Content {
+            LayoutMode: Left;
+            Padding: (Full: 0);
+
+            $Nav.@LeftNavPanel {}
+
+            Group #RightPanel {
+                FlexWeight: 1;
+                LayoutMode: Top;
+                Anchor: (Right: 7, Bottom: 7);
+
+                Group #Header {
+                    LayoutMode: Left;
+                    Anchor: (Height: 60);
+                    Padding: (Horizontal: 16, Vertical: 10);
+
+                    Label #AddonsTitleLabel {
+                        Text: "Addons";
+                        Anchor: (Height: 60);
+                        Style: (FontSize: 22, TextColor: #ffffff, RenderBold: true, VerticalAlignment: Center);
+                    }
+
+                    Group { FlexWeight: 1; }
+
+                    Group {
+                        LayoutMode: Left;
+                        Background: #0f1c29(0.92);
+                        Anchor: (Height: 40);
+                        Padding: (Full: 8);
+
+                        Label #AddonsIntroText {
+                            Text: "Core-compatible addon packs currently tracked in this workspace.";
+                            Style: (TextColor: #aaccff, FontSize: 14, VerticalAlignment: Center);
+                        }
+                    }
+                }
+
+                Group {
+                    Anchor: (Height: 1);
+                    Background: #2b3542;
+                }
+
+                Group #Main {
+                    LayoutMode: TopScrolling;
+                    ScrollbarStyle: $C.@DefaultScrollbarStyle;
+                    FlexWeight: 1;
+                    Padding: (Full: 16);
+
+                    Group #OverviewCard {
+                        LayoutMode: Top;
+                        Background: #0b141f(0.88);
+                        Padding: (Full: 18);
+
+                        Label {
+                            Text: "Addon Shelf";
+                            Anchor: (Height: 24);
+                            Style: (FontSize: 18, TextColor: #ffffff, RenderBold: true);
+                        }
+
+                        Group { Anchor: (Height: 6); }
+
+                        Label {
+                            Text: "These cards summarize the addon modules layered around Endless Leveling in this workspace, from dungeon integration to partner-branding packs.";
+                            Style: (FontSize: 13, TextColor: #bfd0e4, Wrap: true);
+                        }
+                    }
+
+                    Group { Anchor: (Height: 18); }
+
+                    Group #AddonCards {
+                        LayoutMode: Top;
+                    }
+                }
+            }
+        }
+    }
+}
+
+$C.@BackButton {}

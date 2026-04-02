@@ -1,0 +1,52 @@
+Group {
+    Anchor: (Width: 250, Right: 12);
+    LayoutMode: Top;
+    Background: #0b141f(0.92);
+    Padding: (Full: 14);
+
+    Group {
+        Anchor: (Height: 132, Bottom: 14);
+        Background: #3d1d33;
+        Padding: (Left: 4, Right: 4, Top: 4, Bottom: 4);
+
+        Group #KatherinaBannerImage {
+            Anchor: (Top: 0, Left: 0, Right: 0, Bottom: 0);
+            Background: (TexturePath: "../Images/MajorKatherinaPlaceholder.png");
+            Visible: false;
+
+            Group {
+                Anchor: (Top: 0, Left: 0, Right: 0, Bottom: 0);
+                Background: #000000(0.3);
+            }
+        }
+
+        Label {
+            Text: "D02";
+            Anchor: (Height: 16);
+            Style: (FontSize: 10, TextColor: #d9e7f6, RenderBold: true, LetterSpacing: 1);
+        }
+
+        Label {
+            Text: "Katherina";
+            Anchor: (Bottom: 4, Height: 40);
+            Style: (FontSize: 18, TextColor: #ffffff, RenderBold: true, Wrap: true);
+        }
+    }
+
+    Label {
+        Text: "Katherina";
+        Anchor: (Height: 24, Bottom: 6);
+        Style: (FontSize: 17, TextColor: #ffffff, RenderBold: true, VerticalAlignment: Center);
+    }
+
+    Label {
+        Text: "Major Dungeons 0.4.5";
+        Anchor: (Height: 18, Bottom: 10);
+        Style: (FontSize: 11, TextColor: #7fb7ff, RenderBold: true, VerticalAlignment: Center);
+    }
+
+    Label {
+        Text: "A mid-chain dungeon focused on sustained mechanics, control checks, and layered encounter phases.";
+        Style: (FontSize: 12, TextColor: #bdd0e8, Wrap: true);
+    }
+}
