@@ -23,9 +23,9 @@ public final class NameplateBuilderCompatibility {
     private static final String EL_SUMMON_LABEL = "EL_Summon_Label";
 
     private static volatile boolean initialized = false;
-    private static volatile Method describeMethod = null;
-    private static volatile Method registerMethod = null;
-    private static volatile Method removeMethod = null;
+    private static volatile Method defineMethod = null;
+    private static volatile Method setTextMethod = null;
+    private static volatile Method clearTextMethod = null;
     private static volatile Object segmentTargetNpcs = null;
     private static volatile Object segmentTargetPlayers = null;
 
@@ -42,7 +42,7 @@ public final class NameplateBuilderCompatibility {
         }
 
         try {
-            describeMethod.invoke(
+            defineMethod.invoke(
                     null,
                     plugin,
                     EL_MOB_LEVEL,
@@ -61,7 +61,7 @@ public final class NameplateBuilderCompatibility {
         }
 
         try {
-            describeMethod.invoke(
+            defineMethod.invoke(
                     null,
                     plugin,
                     EL_PLAYER_LEVEL,
@@ -80,7 +80,7 @@ public final class NameplateBuilderCompatibility {
         }
 
         try {
-            describeMethod.invoke(
+            defineMethod.invoke(
                     null,
                     plugin,
                     EL_SUMMON_LABEL,
@@ -99,7 +99,7 @@ public final class NameplateBuilderCompatibility {
         }
 
         try {
-            describeMethod.invoke(
+            defineMethod.invoke(
                     null,
                     plugin,
                     EL_MOB_LEVEL,
@@ -118,7 +118,7 @@ public final class NameplateBuilderCompatibility {
         }
 
         try {
-            describeMethod.invoke(
+            defineMethod.invoke(
                     null,
                     plugin,
                     EL_MOB_NAME,
@@ -137,7 +137,7 @@ public final class NameplateBuilderCompatibility {
         }
 
         try {
-            describeMethod.invoke(
+            defineMethod.invoke(
                     null,
                     plugin,
                     EL_MOB_HEALTH,
@@ -156,7 +156,7 @@ public final class NameplateBuilderCompatibility {
         }
 
         try {
-            describeMethod.invoke(
+            defineMethod.invoke(
                     null,
                     plugin,
                     EL_PLAYER_PRESTIGE_LEVEL,
@@ -175,7 +175,7 @@ public final class NameplateBuilderCompatibility {
         }
 
         try {
-            describeMethod.invoke(
+            defineMethod.invoke(
                     null,
                     plugin,
                     EL_PLAYER_RACE,
@@ -194,7 +194,7 @@ public final class NameplateBuilderCompatibility {
         }
 
         try {
-            describeMethod.invoke(
+            defineMethod.invoke(
                     null,
                     plugin,
                     EL_PLAYER_CLASS_PRIMARY,
@@ -213,7 +213,7 @@ public final class NameplateBuilderCompatibility {
         }
 
         try {
-            describeMethod.invoke(
+            defineMethod.invoke(
                     null,
                     plugin,
                     EL_PLAYER_CLASS_SECONDARY,
@@ -232,7 +232,7 @@ public final class NameplateBuilderCompatibility {
         }
 
         try {
-            describeMethod.invoke(
+            defineMethod.invoke(
                     null,
                     plugin,
                     EL_PLAYER_NAME,
@@ -251,7 +251,7 @@ public final class NameplateBuilderCompatibility {
         }
 
         try {
-            registerMethod.invoke(null, store, entityRef, EL_MOB_LEVEL, "Lv." + level);
+            setTextMethod.invoke(null, store, entityRef, EL_MOB_LEVEL, "Lv." + level);
             return true;
         } catch (Throwable ignored) {
             return false;
@@ -264,7 +264,7 @@ public final class NameplateBuilderCompatibility {
         }
 
         try {
-            registerMethod.invoke(null, store, entityRef, EL_MOB_NAME, text);
+            setTextMethod.invoke(null, store, entityRef, EL_MOB_NAME, text);
             return true;
         } catch (Throwable ignored) {
             return false;
@@ -277,7 +277,7 @@ public final class NameplateBuilderCompatibility {
         }
 
         try {
-            registerMethod.invoke(null, store, entityRef, EL_SUMMON_LABEL, text);
+            setTextMethod.invoke(null, store, entityRef, EL_SUMMON_LABEL, text);
             return true;
         } catch (Throwable ignored) {
             return false;
@@ -290,7 +290,7 @@ public final class NameplateBuilderCompatibility {
         }
 
         try {
-            registerMethod.invoke(null, store, entityRef, EL_PLAYER_LEVEL, "Lv." + level);
+            setTextMethod.invoke(null, store, entityRef, EL_PLAYER_LEVEL, "Lv." + level);
             return true;
         } catch (Throwable ignored) {
             return false;
@@ -303,7 +303,7 @@ public final class NameplateBuilderCompatibility {
         }
 
         try {
-            registerMethod.invoke(null, store, entityRef, EL_MOB_LEVEL, "Lv." + level);
+            setTextMethod.invoke(null, store, entityRef, EL_MOB_LEVEL, "Lv." + level);
             return true;
         } catch (Throwable ignored) {
             return false;
@@ -316,7 +316,7 @@ public final class NameplateBuilderCompatibility {
         }
 
         try {
-            registerMethod.invoke(null, store, entityRef, EL_MOB_NAME, name);
+            setTextMethod.invoke(null, store, entityRef, EL_MOB_NAME, name);
             return true;
         } catch (Throwable ignored) {
             return false;
@@ -334,7 +334,7 @@ public final class NameplateBuilderCompatibility {
 
         try {
             String healthText = String.format("%.0f/%.0f❤", currentHealth, maxHealth);
-            registerMethod.invoke(null, store, entityRef, EL_MOB_HEALTH, healthText);
+            setTextMethod.invoke(null, store, entityRef, EL_MOB_HEALTH, healthText);
             return true;
         } catch (Throwable ignored) {
             return false;
@@ -347,7 +347,7 @@ public final class NameplateBuilderCompatibility {
         }
 
         try {
-            registerMethod.invoke(null, store, entityRef, EL_PLAYER_PRESTIGE_LEVEL, "P." + prestigeLevel);
+            setTextMethod.invoke(null, store, entityRef, EL_PLAYER_PRESTIGE_LEVEL, "P." + prestigeLevel);
             return true;
         } catch (Throwable ignored) {
             return false;
@@ -360,7 +360,7 @@ public final class NameplateBuilderCompatibility {
         }
 
         try {
-            registerMethod.invoke(null, store, entityRef, EL_PLAYER_RACE, race);
+            setTextMethod.invoke(null, store, entityRef, EL_PLAYER_RACE, race);
             return true;
         } catch (Throwable ignored) {
             return false;
@@ -373,7 +373,7 @@ public final class NameplateBuilderCompatibility {
         }
 
         try {
-            registerMethod.invoke(null, store, entityRef, EL_PLAYER_CLASS_PRIMARY, classPrimary);
+            setTextMethod.invoke(null, store, entityRef, EL_PLAYER_CLASS_PRIMARY, classPrimary);
             return true;
         } catch (Throwable ignored) {
             return false;
@@ -386,7 +386,7 @@ public final class NameplateBuilderCompatibility {
         }
 
         try {
-            registerMethod.invoke(null, store, entityRef, EL_PLAYER_CLASS_SECONDARY, classSecondary);
+            setTextMethod.invoke(null, store, entityRef, EL_PLAYER_CLASS_SECONDARY, classSecondary);
             return true;
         } catch (Throwable ignored) {
             return false;
@@ -399,7 +399,7 @@ public final class NameplateBuilderCompatibility {
         }
 
         try {
-            registerMethod.invoke(null, store, entityRef, EL_PLAYER_NAME, playerName);
+            setTextMethod.invoke(null, store, entityRef, EL_PLAYER_NAME, playerName);
             return true;
         } catch (Throwable ignored) {
             return false;
@@ -412,7 +412,7 @@ public final class NameplateBuilderCompatibility {
         }
 
         try {
-            removeMethod.invoke(null, store, entityRef, EL_MOB_LEVEL);
+            clearTextMethod.invoke(null, store, entityRef, EL_MOB_LEVEL);
             return true;
         } catch (Throwable ignored) {
             return false;
@@ -425,7 +425,7 @@ public final class NameplateBuilderCompatibility {
         }
 
         try {
-            removeMethod.invoke(null, store, entityRef, EL_SUMMON_LABEL);
+            clearTextMethod.invoke(null, store, entityRef, EL_SUMMON_LABEL);
             return true;
         } catch (Throwable ignored) {
             return false;
@@ -438,7 +438,7 @@ public final class NameplateBuilderCompatibility {
         }
 
         try {
-            removeMethod.invoke(null, store, entityRef, EL_PLAYER_LEVEL);
+            clearTextMethod.invoke(null, store, entityRef, EL_PLAYER_LEVEL);
             return true;
         } catch (Throwable ignored) {
             return false;
@@ -451,7 +451,7 @@ public final class NameplateBuilderCompatibility {
         }
 
         try {
-            removeMethod.invoke(null, store, entityRef, EL_PLAYER_PRESTIGE_LEVEL);
+            clearTextMethod.invoke(null, store, entityRef, EL_PLAYER_PRESTIGE_LEVEL);
             return true;
         } catch (Throwable ignored) {
             return false;
@@ -464,7 +464,7 @@ public final class NameplateBuilderCompatibility {
         }
 
         try {
-            removeMethod.invoke(null, store, entityRef, EL_PLAYER_RACE);
+            clearTextMethod.invoke(null, store, entityRef, EL_PLAYER_RACE);
             return true;
         } catch (Throwable ignored) {
             return false;
@@ -477,7 +477,7 @@ public final class NameplateBuilderCompatibility {
         }
 
         try {
-            removeMethod.invoke(null, store, entityRef, EL_PLAYER_CLASS_PRIMARY);
+            clearTextMethod.invoke(null, store, entityRef, EL_PLAYER_CLASS_PRIMARY);
             return true;
         } catch (Throwable ignored) {
             return false;
@@ -490,7 +490,7 @@ public final class NameplateBuilderCompatibility {
         }
 
         try {
-            removeMethod.invoke(null, store, entityRef, EL_PLAYER_CLASS_SECONDARY);
+            clearTextMethod.invoke(null, store, entityRef, EL_PLAYER_CLASS_SECONDARY);
             return true;
         } catch (Throwable ignored) {
             return false;
@@ -503,7 +503,7 @@ public final class NameplateBuilderCompatibility {
         }
 
         try {
-            removeMethod.invoke(null, store, entityRef, EL_PLAYER_NAME);
+            clearTextMethod.invoke(null, store, entityRef, EL_PLAYER_NAME);
             return true;
         } catch (Throwable ignored) {
             return false;
@@ -516,7 +516,7 @@ public final class NameplateBuilderCompatibility {
         }
 
         try {
-            removeMethod.invoke(null, store, entityRef, EL_MOB_LEVEL);
+            clearTextMethod.invoke(null, store, entityRef, EL_MOB_LEVEL);
             return true;
         } catch (Throwable ignored) {
             return false;
@@ -529,7 +529,7 @@ public final class NameplateBuilderCompatibility {
         }
 
         try {
-            removeMethod.invoke(null, store, entityRef, EL_MOB_NAME);
+            clearTextMethod.invoke(null, store, entityRef, EL_MOB_NAME);
             return true;
         } catch (Throwable ignored) {
             return false;
@@ -542,7 +542,7 @@ public final class NameplateBuilderCompatibility {
         }
 
         try {
-            removeMethod.invoke(null, store, entityRef, EL_MOB_HEALTH);
+            clearTextMethod.invoke(null, store, entityRef, EL_MOB_HEALTH);
             return true;
         } catch (Throwable ignored) {
             return false;
@@ -552,7 +552,7 @@ public final class NameplateBuilderCompatibility {
     @SuppressWarnings({ "unchecked", "rawtypes" })
     private static synchronized boolean ensureInitialized() {
         if (initialized) {
-            return describeMethod != null && registerMethod != null && removeMethod != null
+            return defineMethod != null && setTextMethod != null && clearTextMethod != null
                     && segmentTargetNpcs != null;
         }
 
@@ -562,21 +562,24 @@ public final class NameplateBuilderCompatibility {
             Class<?> apiClass = Class.forName(API_CLASS);
             Class<?> segmentTargetClass = Class.forName(SEGMENT_TARGET_CLASS);
 
-            describeMethod = apiClass.getMethod(
-                    "describe",
+                defineMethod = resolveMethod(
+                    apiClass,
+                    new String[] { "define", "describe" },
                     JavaPlugin.class,
                     String.class,
                     String.class,
                     segmentTargetClass,
                     String.class);
-            registerMethod = apiClass.getMethod(
-                    "register",
+                setTextMethod = resolveMethod(
+                    apiClass,
+                    new String[] { "setText", "register" },
                     Store.class,
                     Ref.class,
                     String.class,
                     String.class);
-            removeMethod = apiClass.getMethod(
-                    "remove",
+                clearTextMethod = resolveMethod(
+                    apiClass,
+                    new String[] { "clearText", "remove" },
                     Store.class,
                     Ref.class,
                     String.class);
@@ -585,13 +588,25 @@ public final class NameplateBuilderCompatibility {
             segmentTargetPlayers = resolveSegmentTargetPlayer(segmentTargetClass);
             return true;
         } catch (Throwable ignored) {
-            describeMethod = null;
-            registerMethod = null;
-            removeMethod = null;
+            defineMethod = null;
+            setTextMethod = null;
+            clearTextMethod = null;
             segmentTargetNpcs = null;
             segmentTargetPlayers = null;
             return false;
         }
+    }
+
+    private static Method resolveMethod(Class<?> owner, String[] candidates, Class<?>... parameterTypes)
+            throws NoSuchMethodException {
+        for (String candidate : candidates) {
+            try {
+                return owner.getMethod(candidate, parameterTypes);
+            } catch (NoSuchMethodException ignored) {
+            }
+        }
+
+        throw new NoSuchMethodException("No matching method found: " + String.join(", ", candidates));
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
