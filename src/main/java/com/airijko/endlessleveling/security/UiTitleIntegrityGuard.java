@@ -32,9 +32,11 @@ public final class UiTitleIntegrityGuard {
 
     private static final List<SelectorCheck> SELECTOR_CHECKS = List.of(
         new SelectorCheck("Common/UI/Custom/Pages/SkillsPage.ui", "SkillsPageTitle"),
+        new SelectorCheck("Common/UI/Custom/Pages/Addons/AddonsPage.ui", "AddonsTitle"),
         new SelectorCheck("Common/UI/Custom/Pages/Augments/AugmentsPage.ui", "AugmentsPageTitle"),
         new SelectorCheck("Common/UI/Custom/Pages/Classes/ClassesPage.ui", "ClassTitle"),
         new SelectorCheck("Common/UI/Custom/Pages/Classes/ClassPathsPage.ui", "ClassPathsTitle"),
+        new SelectorCheck("Common/UI/Custom/Pages/Dungeons/DungeonsPage.ui", "DungeonsTitle"),
         new SelectorCheck("Common/UI/Custom/Pages/Leaderboards/LeaderboardsPage.ui", "LeaderboardsTitle"),
         new SelectorCheck("Common/UI/Custom/Pages/Profile/ProfilePage.ui", "ProfileTitle"),
         new SelectorCheck("Common/UI/Custom/Pages/Races/RacesPage.ui", "RacesTitle"),
