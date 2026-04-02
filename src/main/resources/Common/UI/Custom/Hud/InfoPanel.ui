@@ -1,0 +1,82 @@
+// Player level, race, class info
+Group #InfoPanel {
+  LayoutMode: Top;
+  Anchor: (Bottom: 15, Left: 275, Width: 260);
+  Padding: (Full: 4);
+
+  Group { FlexWeight: 1; }
+
+  Label #Level {
+    Anchor: (Height: 18, Top: 4);
+    Text: "Level";
+    Style: (TextColor: #ffe8d7, FontSize: 12, RenderBold: true);
+  }
+
+  Group #InfoMobLevel {
+    LayoutMode: Left;
+    Anchor: (Height: 18, Top: 4);
+
+    Label #InfoMobLevelPrefix {
+      Style: (FontSize: 11, TextColor: #ffad42);
+      Text: "Local mobs: ";
+    }
+
+    Label #InfoMobLevelValue {
+      Anchor: (Left: 2);
+      Style: (FontSize: 11, TextColor: #dbe4e7);
+      Text: "--";
+    }
+  }
+
+  Group #InfoRace {
+    LayoutMode: Left;
+    Anchor: (Height: 18, Top: 4);
+
+    ItemIcon #InfoRaceIcon {
+      Anchor: (Width: 16, Height: 16, Top: 1);
+      Visible: false;
+    }
+
+    Label #InfoRacePrefix {
+      Anchor: (Left: 6);
+      Style: (FontSize: 11, TextColor: #4fd7f7);
+      Text: "Race: ";
+    }
+
+    Label #InfoRaceValue {
+      Anchor: (Left: 2);
+      Style: (FontSize: 11, TextColor: #dbe4e7);
+      Text: "--";
+    }
+  }
+
+  Group #PrimaryClassRow {
+    LayoutMode: Left;
+
+    ItemIcon #PrimaryIcon {
+      Anchor: (Width: 16, Height: 16, Top: 1);
+      Visible: false;
+    }
+
+    Label #PrimaryClass {
+      Anchor: (Height: 18, Left: 6);
+      Style: (FontSize: 11, TextColor: #dbe4e7);
+      Text: "--";
+    }
+  }
+
+  Group #SecondaryClassRow {
+    LayoutMode: Left;
+
+    ItemIcon #SecondaryIcon {
+      Anchor: (Width: 16, Height: 16, Top: 1);
+      Visible: false;
+    }
+
+    Label #SecondaryClass {
+      Anchor: (Height: 18, Left: 6);
+      Style: (FontSize: 11, TextColor: #dbe4e7);
+      Text: "--";
+    }
+  }
+}

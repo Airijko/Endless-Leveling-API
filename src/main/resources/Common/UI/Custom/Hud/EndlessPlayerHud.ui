@@ -71,11 +71,12 @@ Group #EndlessPlayerLevel {
   }
 }
 
-
+// ==================== InfoPanel ====================
 // Player level, race, class info
+// See InfoPanel.ui for reference implementation
 Group #InfoPanel {
   LayoutMode: Top;
-  Anchor: (Bottom: 15, Left: 15, Width: 260);
+  Anchor: (Bottom: 15, Left: 375, Width: 260);
   Padding: (Full: 4);
 
   Group { FlexWeight: 1; }

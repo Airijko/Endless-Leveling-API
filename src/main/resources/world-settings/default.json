@@ -86,6 +86,7 @@
           "Tang",
           "Tang*",
           "Eel",
+          "Totem",
           "Salmon",
           "Foal",
           "Stag",
@@ -101,7 +102,7 @@
         "Max": "ENDLESS"
       },
       "Level_Source": {
-        "Mode": "DISTANCE",
+        "Mode": "MIXED",
         "Distance_Level": {
           "Start_Level": 1,
           "Blocks_Per_Level": 100,
@@ -126,7 +127,7 @@
         "Damage": {
           "Enabled": true,
           "Base_Multiplier": 1.0,
-          "Per_Level": 0.05
+          "Per_Level": 0.035
         },
         "Defense": {
           "Enabled": true,
