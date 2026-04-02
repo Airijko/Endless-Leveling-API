@@ -456,6 +456,8 @@ public class EndlessLeveling extends JavaPlugin {
             LOGGER.atWarning().log("PartyPro not detected; party features will stay disabled.");
         }
 
+        NameplateBuilderCompatibility.setPlayerDataManager(playerDataManager);
+
         if (NameplateBuilderCompatibility.isAvailable()) {
             boolean elLevelDescribed = NameplateBuilderCompatibility.describeELShowLevelSegment(this);
             if (elLevelDescribed) {

@@ -96,6 +96,13 @@ public class PlayerNameplateSystem extends TickingSystem<EntityStore> {
             return;
         }
 
+        if (NameplateBuilderCompatibility.isAvailable()) {
+            if (!lastLabels.isEmpty()) {
+                lastLabels.clear();
+            }
+            return;
+        }
+
         elapsedSeconds += deltaSeconds;
         if (elapsedSeconds < UPDATE_INTERVAL_SECONDS) {
             return;
@@ -152,27 +159,6 @@ public class PlayerNameplateSystem extends TickingSystem<EntityStore> {
                 String previous = lastLabels.get(uuid);
                 if (signature.equals(previous)) {
                     continue;
-                }
-
-                if (NameplateBuilderCompatibility.isAvailable()) {
-                    boolean registeredLevel = NameplateBuilderCompatibility.registerPlayerLevel(
-                        ref.getStore(), ref, playerData.getLevel());
-                    boolean registeredPrestige = NameplateBuilderCompatibility.registerELPlayerPrestigeLevel(
-                        ref.getStore(), ref, Math.max(0, playerData.getPrestigeLevel()));
-                    boolean registeredRace = NameplateBuilderCompatibility.registerELPlayerRace(
-                        ref.getStore(), ref, race);
-                    boolean registeredPrimary = NameplateBuilderCompatibility.registerELPlayerClassPrimary(
-                        ref.getStore(), ref, classPrimary);
-                    boolean registeredSecondary = NameplateBuilderCompatibility.registerELPlayerClassSecondary(
-                        ref.getStore(), ref, classSecondary);
-                    boolean registeredName = NameplateBuilderCompatibility.registerELPlayerName(
-                        ref.getStore(), ref, baseName);
-
-                    if (registeredLevel && registeredPrestige && registeredRace
-                        && registeredPrimary && registeredSecondary && registeredName) {
-                    lastLabels.put(uuid, signature);
-                    continue;
-                    }
                 }
 
                 String label = String.format("Lv. %d %s", playerData.getLevel(), baseName);
