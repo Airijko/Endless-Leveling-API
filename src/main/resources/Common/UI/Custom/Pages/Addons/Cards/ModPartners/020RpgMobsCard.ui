@@ -1,4 +1,4 @@
-Button #StarkysMjolnirCard {
+Button #RpgMobsCard {
     Anchor: (Width: 250, Height: 312, Right: 12);
     LayoutMode: Top;
     Background: #0b141f(0.92);
@@ -6,7 +6,7 @@ Button #StarkysMjolnirCard {
 
     Group {
         Anchor: (Height: 118, Bottom: 14);
-        Background: #3f2d16;
+        Background: #2f2a19;
         Padding: (Left: 12, Right: 12, Top: 10, Bottom: 10);
 
         Label {
@@ -16,7 +16,7 @@ Button #StarkysMjolnirCard {
         }
 
         Label {
-            Text: "Starky's Mjolnir";
+            Text: "RPG Mobs";
             Anchor: (Bottom: 4, Height: 40);
             Style: (FontSize: 20, TextColor: #ffffff, RenderBold: true, Wrap: true);
         }
@@ -29,7 +29,7 @@ Button #StarkysMjolnirCard {
     }
 
     Label {
-        Text: "Thor-inspired hammer mod integrated as a mod partner addon for dungeon and combat themed servers.";
+        Text: "RPG creature and encounter expansion integrated as an official mod partner for dungeon and progression worlds.";
         FlexWeight: 1;
         Style: (FontSize: 12, TextColor: #bdd0e8, Wrap: true);
     }

@@ -677,36 +677,31 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 int lifeLevel = getPreviewLevel(SkillAttributeType.LIFE_FORCE);
                 double lifeTotal = resolveResourcePreviewTotal(playerData, SkillAttributeType.LIFE_FORCE, lifeLevel);
                 ui.set("#LifeForceLevel.Text", String.valueOf(lifeLevel));
-                ui.set("#LifeForceValue.Text",
-                                formatResourceDisplay(lifeTotal, tr("ui.skills.resource.health", "Health")));
+                ui.set("#LifeForceValue.Text", withUnit(formatResourceDisplay(lifeTotal), "HEALTH"));
 
                 int strLevel = getPreviewLevel(SkillAttributeType.STRENGTH);
                 SkillManager.StrengthBreakdown strengthPreview = skillManager.getStrengthBreakdown(playerData,
                                 strLevel);
                 ui.set("#StrengthLevel.Text", String.valueOf(strLevel));
-                ui.set("#StrengthValue.Text",
-                                tr("ui.skills.value.strength", "+{0}% Damage",
-                                                formatNumber(strengthPreview.totalValue())));
+                ui.set("#StrengthValue.Text", withUnit("+" + formatNumber(strengthPreview.totalValue()) + "%", "PHYS DMG"));
 
                 int sorcLevel = getPreviewLevel(SkillAttributeType.SORCERY);
                 double sorceryTotal = skillManager.calculateSkillAttributeTotalBonus(playerData,
                                 SkillAttributeType.SORCERY,
                                 sorcLevel);
                 ui.set("#SorceryLevel.Text", String.valueOf(sorcLevel));
-                ui.set("#SorceryValue.Text",
-                                tr("ui.skills.value.sorcery", "+{0}% Magic Damage", formatNumber(sorceryTotal)));
+                ui.set("#SorceryValue.Text", withUnit("+" + formatNumber(sorceryTotal) + "%", "MAG DMG"));
 
                 int defLevel = getPreviewLevel(SkillAttributeType.DEFENSE);
                 SkillManager.DefenseBreakdown defensePreview = skillManager.getDefenseBreakdown(playerData, defLevel);
                 ui.set("#DefenseLevel.Text", String.valueOf(defLevel));
-                ui.set("#DefenseValue.Text", tr("ui.skills.value.defense", "{0}% Reduction",
-                                formatNumber(defensePreview.resistance() * 100)));
+                ui.set("#DefenseValue.Text", withUnit(formatNumber(defensePreview.resistance() * 100) + "%", "RESISTANCE"));
 
                 int hasteLevel = getPreviewLevel(SkillAttributeType.HASTE);
                 SkillManager.HasteBreakdown hastePreview = skillManager.getHasteBreakdown(playerData, hasteLevel);
                 double hastePercent = (hastePreview.totalMultiplier() - 1.0f) * 100.0f;
                 ui.set("#HasteLevel.Text", String.valueOf(hasteLevel));
-                ui.set("#HasteValue.Text", tr("ui.skills.value.haste", "+{0}% Speed", formatNumber(hastePercent)));
+                ui.set("#HasteValue.Text", withUnit("+" + formatNumber(hastePercent) + "%", "SPEED"));
 
                 int precLevel = getPreviewLevel(SkillAttributeType.PRECISION);
                 ui.set("#PrecisionLevel.Text", String.valueOf(precLevel));
@@ -716,36 +711,31 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 double precisionTotal = precisionPreview != null
                                 ? precisionPreview.totalPercent()
                                 : Math.min(100.0D, getPrecisionPreviewPercent(playerData, precLevel));
-                ui.set("#PrecisionValue.Text",
-                                tr("ui.skills.value.precision", "{0}% Crit Chance", formatNumber(precisionTotal)));
+                ui.set("#PrecisionValue.Text", withUnit(formatNumber(precisionTotal) + "%", "CRIT RATE"));
 
                 int ferLevel = getPreviewLevel(SkillAttributeType.FEROCITY);
                 SkillManager.FerocityBreakdown ferocityPreview = skillManager.getFerocityBreakdown(playerData,
                                 ferLevel);
                 ui.set("#FerocityLevel.Text", String.valueOf(ferLevel));
-                ui.set("#FerocityValue.Text",
-                                tr("ui.skills.value.ferocity", "+{0}% Crit Damage",
-                                                formatNumber(ferocityPreview.totalValue())));
+                ui.set("#FerocityValue.Text", withUnit("+" + formatNumber(ferocityPreview.totalValue()) + "%", "CRIT DMG"));
 
                 int stamLevel = getPreviewLevel(SkillAttributeType.STAMINA);
                 double staminaTotal = resolveResourcePreviewTotal(playerData, SkillAttributeType.STAMINA, stamLevel);
                 ui.set("#StaminaLevel.Text", String.valueOf(stamLevel));
-                ui.set("#StaminaValue.Text",
-                                formatResourceDisplay(staminaTotal, tr("ui.skills.resource.stamina", "Stamina")));
+                ui.set("#StaminaValue.Text", withUnit(formatResourceDisplay(staminaTotal), "STAMINA"));
 
                 int flowLevel = getPreviewLevel(SkillAttributeType.FLOW);
                 double flowTotal = resolveResourcePreviewTotal(playerData, SkillAttributeType.FLOW,
                                 flowLevel);
                 ui.set("#FlowLevel.Text", String.valueOf(flowLevel));
-                ui.set("#FlowValue.Text", formatResourceDisplay(flowTotal, tr("ui.skills.resource.flow", "Flow")));
+                ui.set("#FlowValue.Text", withUnit(formatResourceDisplay(flowTotal), "MANA"));
 
                 int discLevel = getPreviewLevel(SkillAttributeType.DISCIPLINE);
                 double discBonus = skillManager.calculateSkillAttributeTotalBonus(playerData,
                                 SkillAttributeType.DISCIPLINE,
                                 discLevel);
                 ui.set("#DisciplineLevel.Text", String.valueOf(discLevel));
-                ui.set("#DisciplineValue.Text",
-                                tr("ui.skills.value.discipline", "+{0}% XP Gain", formatNumber(discBonus)));
+                ui.set("#DisciplineValue.Text", withUnit("+" + formatNumber(discBonus) + "%", "XP"));
 
                 applyExcessPanelValues(ui, playerData);
         }
@@ -936,11 +926,11 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 return skillManager.isCritAttributeLocked(playerData, type);
         }
 
-        private String formatResourceDisplay(double total, String label) {
+        private String formatResourceDisplay(double total) {
                 if (total <= 0.0D) {
-                        return tr("ui.skills.value.resource", "{0} {1}", 0, label);
+                        return "0";
                 }
-                return tr("ui.skills.value.resource", "{0} {1}", formatNumber(total), label);
+                return formatNumber(total);
         }
 
         private String formatNumber(double value) {
@@ -949,6 +939,10 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                         formatted = formatted.replaceAll("0+$", "").replaceAll("\\.$", "");
                 }
                 return formatted;
+        }
+
+        private String withUnit(@Nonnull String value, @Nonnull String unit) {
+                return value + " " + unit;
         }
 
         private String tr(String key, String fallback, Object... args) {
@@ -974,9 +968,6 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         }
 
         private void applyStaticLabels(@Nonnull UICommandBuilder ui) {
-                ui.set("#SkillsTitleLabel.Text", tr("ui.skills.page.title", "Skill Attributes"));
-                ui.set("#SkillsIntroText.Text",
-                                tr("ui.skills.page.subtitle", "Allocate points to shape your combat identity."));
                 ui.set("#SkillsFooterHint.Text",
                                 tr("ui.skills.page.footer_hint",
                                                 "Undo to revert pending tweaks, apply to lock them in."));

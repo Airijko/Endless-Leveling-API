@@ -298,18 +298,47 @@ $C.@PageOverlay {
 
                         Group { Anchor: (Width: 40); }
 
-                        $C.@DecoratedContainer {
+                        Group #AugmentInfoPanelRoot {
                             Anchor: (Width: 300, Height: 700);
 
-                            #Title {
-                                Group {
-                                    $C.@Title #AugmentInfoPanel { @Text = "AUGMENT INFO"; }
-                                }
+                            Group #AugmentInfoBgCommon {
+                                Anchor: (Top: 0, Left: 0, Right: 0, Bottom: 0);
+                                Background: (TexturePath: "../../Tiles/TileCommon.png", Border: 20);
+                                Visible: true;
                             }
 
-                            #Content {
+                            Group #AugmentInfoBgElite {
+                                Anchor: (Top: 0, Left: 0, Right: 0, Bottom: 0);
+                                Background: (TexturePath: "../../Tiles/TileElite.png", Border: 20);
+                                Visible: false;
+                            }
+
+                            Group #AugmentInfoBgLegendary {
+                                Anchor: (Top: 0, Left: 0, Right: 0, Bottom: 0);
+                                Background: (TexturePath: "../../Tiles/TileLegendary.png", Border: 20);
+                                Visible: false;
+                            }
+
+                            Group #AugmentInfoBgMythic {
+                                Anchor: (Top: 0, Left: 0, Right: 0, Bottom: 0);
+                                Background: (TexturePath: "../../Tiles/TileMythic.png", Border: 20);
+                                Visible: false;
+                            }
+
+                            Group #AugmentInfoPanelContent {
                                 LayoutMode: Top;
+                                Anchor: (Top: 8, Left: 0, Right: 0, Bottom: 16);
                                 Padding: (Full: 12);
+
+                                Group {
+                                    LayoutMode: Middle;
+                                    Anchor: (Height: 40, Bottom: 8);
+
+                                    Label #AugmentInfoPanel {
+                                        Text: "AUGMENT INFO";
+                                        Style: (FontSize: 20, TextColor: #e6edf5, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
+                                    }
+                                }
 
                                 Group #AugmentInfoScrollArea {
                                     FlexWeight: 1;

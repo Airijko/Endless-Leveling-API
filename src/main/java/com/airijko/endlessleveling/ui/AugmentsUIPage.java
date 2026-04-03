@@ -4,6 +4,7 @@ import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentManager;
 import com.airijko.endlessleveling.augments.AugmentUnlockManager;
+import com.airijko.endlessleveling.augments.AugmentValueReader;
 import com.airijko.endlessleveling.augments.types.CommonAugment;
 import com.airijko.endlessleveling.player.PlayerData;
 import com.airijko.endlessleveling.enums.PassiveTier;
@@ -153,16 +154,19 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 return;
             }
             if (action.startsWith("augment:hover:")) {
+                String augmentId = action.substring("augment:hover:".length());
+
+                UICommandBuilder commandBuilder = new UICommandBuilder();
+                UIEventBuilder eventBuilder = new UIEventBuilder();
+
                 if (this.selectedAugmentId == null) {
-                    String id = action.substring("augment:hover:".length());
-                    UICommandBuilder commandBuilder = new UICommandBuilder();
-                    UIEventBuilder eventBuilder = new UIEventBuilder();
-                    applyInfoPanel(commandBuilder, id.isBlank() ? null : id);
-                    this.sendUpdate(commandBuilder, eventBuilder, false);
+                    applyInfoPanel(commandBuilder, augmentId.isBlank() ? null : augmentId);
                 }
+
+                this.sendUpdate(commandBuilder, eventBuilder, false);
                 return;
             }
-            if ("augment:hoverend".equals(action)) {
+            if (action.startsWith("augment:hoverend:")) {
                 if (this.selectedAugmentId == null) {
                     UICommandBuilder commandBuilder = new UICommandBuilder();
                     UIEventBuilder eventBuilder = new UIEventBuilder();
@@ -221,6 +225,7 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         applyLeftPanel(ui, playerData);
 
         Set<String> ownedIds = resolveOwnedIds(playerData);
+        Set<String> ownedCommonAttributes = resolveOwnedCommonAttributes(playerData);
         List<OwnedAugmentCard> unlockedCards = applySearchOwned(buildOwnedCards(playerData));
         Collection<AugmentDefinition> all = augmentManager.getAugments().values();
 
@@ -228,7 +233,8 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         List<AugmentDefinition> mythicAugments = new java.util.ArrayList<>();
         List<AugmentDefinition> legendaryAugments = new java.util.ArrayList<>();
         List<AugmentDefinition> eliteAugments = new java.util.ArrayList<>();
-        List<AugmentDefinition> commonAugments = new java.util.ArrayList<>();
+        List<AugmentDefinition> additionalCommonAugments = new java.util.ArrayList<>();
+        AugmentDefinition baseCommonDefinition = null;
 
         for (AugmentDefinition def : all) {
             boolean owned = ownedIds.contains(def.getId());
@@ -244,7 +250,11 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                         eliteAugments.add(def);
                         break;
                     case COMMON:
-                        commonAugments.add(def);
+                        if (CommonAugment.ID.equalsIgnoreCase(def.getId())) {
+                            baseCommonDefinition = def;
+                        } else {
+                            additionalCommonAugments.add(def);
+                        }
                         break;
                 }
             }
@@ -254,17 +264,21 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         mythicAugments.sort(Comparator.comparing(AugmentDefinition::getName));
         legendaryAugments.sort(Comparator.comparing(AugmentDefinition::getName));
         eliteAugments.sort(Comparator.comparing(AugmentDefinition::getName));
-        commonAugments.sort(Comparator.comparing(AugmentDefinition::getName));
+        additionalCommonAugments.sort(Comparator.comparing(AugmentDefinition::getName));
 
         // Apply search filter to all sections
         mythicAugments = applySearch(mythicAugments);
         legendaryAugments = applySearch(legendaryAugments);
         eliteAugments = applySearch(eliteAugments);
-        commonAugments = applySearch(commonAugments);
+        additionalCommonAugments = applySearch(additionalCommonAugments);
+
+        List<String> commonVariantIds = buildCommonVariantIds(baseCommonDefinition, ownedCommonAttributes);
+        commonVariantIds.addAll(additionalCommonAugments.stream().map(AugmentDefinition::getId).toList());
+        commonVariantIds = applySearchAugmentIds(commonVariantIds);
 
         int totalResults = unlockedCards.size() + mythicAugments.size() + legendaryAugments.size()
             + eliteAugments.size()
-                + commonAugments.size();
+                + commonVariantIds.size();
         ui.set("#AugmentsResultLabel.Text", tr("ui.augments.page.results", "Results: {0}", totalResults));
 
         // Build UNLOCKED section
@@ -280,7 +294,7 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         buildSection(ui, events, eliteAugments, "#EliteCards", "#EliteSection", ownedIds);
 
         // Build COMMON section
-        buildSection(ui, events, commonAugments, "#CommonCards", "#CommonSection", ownedIds);
+        buildSectionById(ui, events, commonVariantIds, "#CommonCards", "#CommonSection");
     }
 
     private void applyInfoPanel(@Nonnull UICommandBuilder ui, String augmentId) {
@@ -288,6 +302,7 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         AugmentDefinition def = (augmentId != null && augmentManager != null)
                 ? augmentManager.getAugment(augmentId)
                 : null;
+        applyInfoPanelBackground(ui, def != null ? def.getTier() : null);
 
         if (def == null) {
             ui.set("#AugmentInfoIcon.Visible", false);
@@ -327,16 +342,21 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
         ui.set("#AugmentInfoDivider.Visible", true);
 
-        // If this is a common augment, show only the individual stat and its rolled value
+        // Common augment variants can either be selected rolls or catalog entries.
+        // Selected entries show rolled values, while catalog entries show configured ranges.
         if (presentation.commonStatOffer() != null && CommonAugment.ID.equalsIgnoreCase(def.getId())) {
             CommonAugment.CommonStatOffer statOffer = presentation.commonStatOffer();
-            String statName = augmentPresentationMapper.formatCommonStatDisplayName(statOffer.attributeKey());
-            double value = statOffer.rolledValue();
-            double roundedVal = Math.round(value * 100.0D) / 100.0D;
-            String statValueStr = (roundedVal == (long) roundedVal) ? String.format(Locale.ROOT, "%d", (long) roundedVal) : String.format(Locale.ROOT, "%.2f", roundedVal);
-            String statLine = statName + ": " + statValueStr;
+            boolean selectedCommonOffer = isOwnedCommonSelection(playerData, augmentId);
+            boolean catalogCommonVariant = statOffer.rolledValue() < 0.0D;
+            String statLine = (selectedCommonOffer || !catalogCommonVariant)
+                    ? formatCommonStatRolledLine(statOffer)
+                    : formatCommonStatRangeLine(def, statOffer.attributeKey());
+
+            String desc = def.getDescription();
+            boolean hasDesc = desc != null && !desc.isBlank();
+            ui.set("#AugmentInfoDescription.Text", hasDesc ? desc : "");
+            ui.set("#AugmentInfoDescription.Visible", hasDesc);
             applyInfoSections(ui, List.of(new InfoSection("", statLine, "#c5d4e8")));
-            ui.set("#AugmentInfoDescription.Visible", false);
         } else {
             String desc = def.getDescription();
             boolean hasDesc = desc != null && !desc.isBlank();
@@ -769,10 +789,12 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             ui.set(base + " #ItemIcon.ItemId", presentation.iconItemId());
             ui.set(base + " #ItemName.Text", presentation.displayName());
             ui.set(base + " #ItemName.Style.TextColor", tierColor(def.getTier()));
+            applyGridEntryTierBackground(ui, base, def.getTier());
 
-            events.addEventBinding(Activating, base, of("Action", "augment:select:" + def.getId()), false);
-            events.addEventBinding(MouseEntered, base, of("Action", "augment:hover:" + def.getId()), false);
-            events.addEventBinding(MouseExited, base, of("Action", "augment:hoverend"), false);
+            String hitButtonSelector = base + " #HitButton";
+            events.addEventBinding(Activating, hitButtonSelector, of("Action", "augment:select:" + def.getId()), false);
+            events.addEventBinding(MouseEntered, hitButtonSelector, of("Action", "augment:hover:" + def.getId()), false);
+            events.addEventBinding(MouseExited, hitButtonSelector, of("Action", "augment:hoverend:" + def.getId()), false);
 
             cardsInCurrentRow++;
             if (cardsInCurrentRow >= GRID_ITEMS_PER_ROW) {
@@ -865,10 +887,12 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             AugmentDefinition definition = augmentManager != null ? augmentManager.getAugment(card.id()) : null;
             ui.set(base + " #ItemName.Style.TextColor",
                     definition != null ? tierColor(definition.getTier()) : AugmentTheme.gridUnownedColor());
+                applyGridEntryTierBackground(ui, base, definition != null ? definition.getTier() : null);
 
-            events.addEventBinding(Activating, base, of("Action", "augment:select:" + card.id()), false);
-            events.addEventBinding(MouseEntered, base, of("Action", "augment:hover:" + card.id()), false);
-            events.addEventBinding(MouseExited, base, of("Action", "augment:hoverend"), false);
+            String hitButtonSelector = base + " #HitButton";
+            events.addEventBinding(Activating, hitButtonSelector, of("Action", "augment:select:" + card.id()), false);
+                events.addEventBinding(MouseEntered, hitButtonSelector, of("Action", "augment:hover:" + card.id()), false);
+                events.addEventBinding(MouseExited, hitButtonSelector, of("Action", "augment:hoverend:" + card.id()), false);
 
             cardsInCurrentRow++;
             if (cardsInCurrentRow >= GRID_ITEMS_PER_ROW) {
@@ -883,12 +907,77 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         return rowIndex;
     }
 
+    private void buildSectionById(@Nonnull UICommandBuilder ui,
+            @Nonnull UIEventBuilder events,
+            @Nonnull List<String> augmentIds,
+            @Nonnull String cardsSelector,
+            @Nonnull String sectionSelector) {
+        boolean hasContent = !augmentIds.isEmpty();
+        ui.set(sectionSelector + ".Visible", hasContent);
+
+        if (!hasContent) {
+            return;
+        }
+
+        int rowIndex = 0;
+        int cardsInCurrentRow = 0;
+
+        for (String augmentId : augmentIds) {
+            AugmentDefinition def = augmentManager != null ? augmentManager.getAugment(augmentId) : null;
+            if (def == null) {
+                continue;
+            }
+
+            if (cardsInCurrentRow == 0) {
+                ui.appendInline(cardsSelector, "Group { LayoutMode: Left; Anchor: (Bottom: 0); }");
+            }
+
+            AugmentPresentationMapper.AugmentPresentationData presentation = augmentPresentationMapper.map(def, augmentId);
+
+            ui.append(cardsSelector + "[" + rowIndex + "]", "Pages/Augments/AugmentGridEntry.ui");
+            String base = cardsSelector + "[" + rowIndex + "][" + cardsInCurrentRow + "]";
+
+            ui.set(base + " #ItemIcon.ItemId", presentation.iconItemId());
+            ui.set(base + " #ItemName.Text", presentation.displayName());
+            ui.set(base + " #ItemName.Style.TextColor", tierColor(def.getTier()));
+            applyGridEntryTierBackground(ui, base, def.getTier());
+
+            String hitButtonSelector = base + " #HitButton";
+            events.addEventBinding(Activating, hitButtonSelector, of("Action", "augment:select:" + augmentId), false);
+            events.addEventBinding(MouseEntered, hitButtonSelector, of("Action", "augment:hover:" + augmentId), false);
+            events.addEventBinding(MouseExited, hitButtonSelector, of("Action", "augment:hoverend:" + augmentId), false);
+
+            cardsInCurrentRow++;
+            if (cardsInCurrentRow >= GRID_ITEMS_PER_ROW) {
+                cardsInCurrentRow = 0;
+                rowIndex++;
+            }
+        }
+    }
+
     private List<AugmentDefinition> applySearch(List<AugmentDefinition> source) {
         if (searchQuery == null || searchQuery.isBlank()) {
             return source;
         }
         return source.stream()
                 .filter(def -> matchesSearch(def, searchQuery))
+                .collect(Collectors.toList());
+    }
+
+    private List<String> applySearchAugmentIds(@Nonnull List<String> source) {
+        if (searchQuery == null || searchQuery.isBlank()) {
+            return source;
+        }
+        return source.stream()
+                .filter(id -> {
+                    AugmentDefinition def = augmentManager != null ? augmentManager.getAugment(id) : null;
+                    AugmentPresentationMapper.AugmentPresentationData presentation = augmentPresentationMapper.map(def, id);
+                    String normalizedId = id == null ? "" : id.toLowerCase(Locale.ROOT);
+                    String normalizedName = presentation.displayName() == null
+                            ? ""
+                            : presentation.displayName().toLowerCase(Locale.ROOT);
+                    return normalizedId.contains(searchQuery) || normalizedName.contains(searchQuery);
+                })
                 .collect(Collectors.toList());
     }
 
@@ -996,6 +1085,89 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         return ids;
     }
 
+    private Set<String> resolveOwnedCommonAttributes(PlayerData playerData) {
+        if (playerData == null) {
+            return Set.of();
+        }
+
+        Set<String> ownedAttributes = new HashSet<>();
+        for (String selectedId : playerData.getSelectedAugmentsSnapshot().values()) {
+            CommonAugment.CommonStatOffer offer = CommonAugment.parseStatOfferId(selectedId);
+            if (offer != null && offer.attributeKey() != null && !offer.attributeKey().isBlank()) {
+                ownedAttributes.add(offer.attributeKey().toLowerCase(Locale.ROOT));
+            }
+        }
+        return ownedAttributes;
+    }
+
+    private List<String> buildCommonVariantIds(AugmentDefinition commonDefinition, Set<String> ownedCommonAttributes) {
+        if (commonDefinition == null) {
+            return new ArrayList<>();
+        }
+
+        Map<String, Object> buffs = AugmentValueReader.getMap(commonDefinition.getPassives(), "buffs");
+        List<String> attributes = new ArrayList<>(buffs.keySet());
+        attributes.sort(Comparator.comparing(augmentPresentationMapper::formatCommonStatDisplayName));
+
+        List<String> variantIds = new ArrayList<>();
+        for (String attributeKey : attributes) {
+            if (attributeKey == null || attributeKey.isBlank()) {
+                continue;
+            }
+            String normalized = attributeKey.trim().toLowerCase(Locale.ROOT);
+            if (ownedCommonAttributes.contains(normalized)) {
+                continue;
+            }
+
+            variantIds.add(CommonAugment.buildStatOfferId(normalized, -1.0D));
+        }
+
+        return variantIds;
+    }
+
+    private boolean isOwnedCommonSelection(PlayerData playerData, String augmentId) {
+        if (playerData == null || augmentId == null || augmentId.isBlank()) {
+            return false;
+        }
+
+        String normalizedTarget = augmentId.trim().toLowerCase(Locale.ROOT);
+        for (String selectedId : playerData.getSelectedAugmentsSnapshot().values()) {
+            if (selectedId != null && selectedId.trim().toLowerCase(Locale.ROOT).equals(normalizedTarget)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String formatCommonStatRolledLine(CommonAugment.CommonStatOffer statOffer) {
+        String statName = augmentPresentationMapper.formatCommonStatDisplayName(statOffer.attributeKey());
+        String statValueStr = formatCommonValue(statOffer.rolledValue());
+        return statName + ": " + statValueStr;
+    }
+
+    private String formatCommonStatRangeLine(AugmentDefinition definition, String attributeKey) {
+        String statName = augmentPresentationMapper.formatCommonStatDisplayName(attributeKey);
+        Map<String, Object> buffs = AugmentValueReader.getMap(definition.getPassives(), "buffs");
+        Map<String, Object> section = AugmentValueReader.getMap(buffs, attributeKey);
+
+        double baseValue = AugmentValueReader.getDouble(section, "value", 0.0D);
+        double minValue = AugmentValueReader.getDouble(section, "min_value", baseValue);
+        double maxValue = AugmentValueReader.getDouble(section, "max_value", baseValue);
+
+        if (Math.abs(maxValue - minValue) < 0.0001D) {
+            return statName + ": " + formatCommonValue(minValue);
+        }
+
+        return formatCommonValue(minValue) + "-" + formatCommonValue(maxValue) + " " + statName;
+    }
+
+    private String formatCommonValue(double value) {
+        double rounded = Math.round(value * 100.0D) / 100.0D;
+        return (rounded == (long) rounded)
+                ? String.format(Locale.ROOT, "%d", (long) rounded)
+                : String.format(Locale.ROOT, "%.2f", rounded);
+    }
+
     private record OwnedAugmentCard(String id, String displayName, String iconItemId) {
     }
 
@@ -1012,6 +1184,22 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
     private String tr(String key, String fallback, Object... args) {
         return Lang.tr(playerRef.getUuid(), key, fallback, args);
+    }
+
+    private void applyGridEntryTierBackground(@Nonnull UICommandBuilder ui, @Nonnull String base, PassiveTier tier) {
+        PassiveTier resolvedTier = tier == null ? PassiveTier.COMMON : tier;
+        ui.set(base + " #ItemBgCommon.Visible", resolvedTier == PassiveTier.COMMON);
+        ui.set(base + " #ItemBgElite.Visible", resolvedTier == PassiveTier.ELITE);
+        ui.set(base + " #ItemBgLegendary.Visible", resolvedTier == PassiveTier.LEGENDARY);
+        ui.set(base + " #ItemBgMythic.Visible", resolvedTier == PassiveTier.MYTHIC);
+    }
+
+    private void applyInfoPanelBackground(@Nonnull UICommandBuilder ui, PassiveTier tier) {
+        PassiveTier resolvedTier = tier == null ? PassiveTier.COMMON : tier;
+        ui.set("#AugmentInfoBgCommon.Visible", resolvedTier == PassiveTier.COMMON);
+        ui.set("#AugmentInfoBgElite.Visible", resolvedTier == PassiveTier.ELITE);
+        ui.set("#AugmentInfoBgLegendary.Visible", resolvedTier == PassiveTier.LEGENDARY);
+        ui.set("#AugmentInfoBgMythic.Visible", resolvedTier == PassiveTier.MYTHIC);
     }
 
     private String tierColor(PassiveTier tier) {

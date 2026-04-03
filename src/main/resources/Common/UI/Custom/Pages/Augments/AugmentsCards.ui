@@ -43,7 +43,7 @@ $C.@PageOverlay {
                     LayoutMode: Left;
 
                     // Card 1
-                    Button #AugmentCard1 {
+                    Group #AugmentCard1 {
                         Anchor: (Width: 300, Height: 480);
 
                         Group #AugmentCard1BgCommon {
@@ -161,17 +161,20 @@ $C.@PageOverlay {
                             }
                         }
 
-                        Group #AugmentCard1Overlay {
+                        Button #AugmentCard1HitButton {
                             Anchor: (Top: 0, Left: 0, Right: 0, Bottom: 0);
-                            Background: #ffffff(0.16);
-                            Visible: false;
+                            Style: (
+                                Default: (Background: #000000(0)),
+                                Hovered: (Background: #ffffff(0.16)),
+                                Pressed: (Background: #ffffff(0.24))
+                            );
                         }
                     }
 
                     Group { Anchor: (Width: 40); }
 
                     // Card 2
-                    Button #AugmentCard2 {
+                    Group #AugmentCard2 {
                         Anchor: (Width: 300, Height: 480);
 
                         Group #AugmentCard2BgCommon {
@@ -289,17 +292,20 @@ $C.@PageOverlay {
                         }
                         }
 
-                        Group #AugmentCard2Overlay {
+                        Button #AugmentCard2HitButton {
                             Anchor: (Top: 0, Left: 0, Right: 0, Bottom: 0);
-                            Background: #ffffff(0.16);
-                            Visible: false;
+                            Style: (
+                                Default: (Background: #000000(0)),
+                                Hovered: (Background: #ffffff(0.16)),
+                                Pressed: (Background: #ffffff(0.24))
+                            );
                         }
                     }
 
                     Group { Anchor: (Width: 40); }
 
                     // Card 3
-                    Button #AugmentCard3 {
+                    Group #AugmentCard3 {
                         Anchor: (Width: 300, Height: 480);
 
                         Group #AugmentCard3BgCommon {
@@ -416,10 +422,13 @@ $C.@PageOverlay {
                         }
                         }
 
-                        Group #AugmentCard3Overlay {
+                        Button #AugmentCard3HitButton {
                             Anchor: (Top: 0, Left: 0, Right: 0, Bottom: 0);
-                            Background: #ffffff(0.16);
-                            Visible: false;
+                            Style: (
+                                Default: (Background: #000000(0)),
+                                Hovered: (Background: #ffffff(0.16)),
+                                Pressed: (Background: #ffffff(0.24))
+                            );
                         }
                     }
                 }

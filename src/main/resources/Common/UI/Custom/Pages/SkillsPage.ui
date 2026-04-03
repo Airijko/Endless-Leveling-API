@@ -264,41 +264,12 @@ $C.@PageOverlay {
                                     LayoutMode: Top;
                                     Anchor: (Right: 7, Bottom: 7);
 
-                                    // -------- Title --------
-                                    Group #Header {
-                                        LayoutMode: Left;
-                                        Anchor: (Height: 60);
-                                        Padding: (Horizontal: 16, Vertical: 10);
-
-                                        Label #SkillsTitleLabel {
-                                            Text: "Skill Attributes";
-                                            Anchor: (Height: 60);
-                                            Style: (FontSize: 22, TextColor: #ffffff, RenderBold: true, VerticalAlignment: Center);
-                                        }
-
-                                        Group { FlexWeight: 1; }
-
-                                        Group #SkillsIntro {
-                                            LayoutMode: Left;
-                                            Background: #0b141f(0.92);
-                                            Anchor: (Height: 40);
-                                            Padding: (Full: 8);
-
-                                            Label #SkillsIntroText {
-                                                Style: (TextColor: #aaccff, FontSize: 14, VerticalAlignment: Center);
-                                                Text: "Allocate points to shape your combat identity.";
-                                            }
-                                        }
-                                    }
-
-                                    Group { Anchor: (Height: 1); Background: #2b3542; }
-
                                     // -------- SKILLS --------
                                     Group #Main {
                                         FlexWeight: 1;
-                                        LayoutMode: TopScrolling;
-                                        ScrollbarStyle: $C.@DefaultScrollbarStyle;
-                                        Padding: (Full: 16);
+                                        LayoutMode: Top;
+                                        Background: #050910(0.85);
+                                        Padding: (Horizontal: 16, Top: 16);
 
                                         Group { Anchor: (Height: 2); }
 
@@ -312,7 +283,8 @@ $C.@PageOverlay {
                                                 // ---------------- LIFE FORCE ----------------
                                                 Group #LifeForce {
                                                     LayoutMode: Top;
-                                                    Background: #0b141f(0.8);
+                                                    Anchor: (Height: 100);
+                                                    Background: (TexturePath: "../Tiles/TileDefault2x.png");
                                                     Padding: (Full: 12);
 
                                                     Group {
@@ -320,7 +292,7 @@ $C.@PageOverlay {
 
                                                         Group {
                                                             Anchor: (Width: 56, Height: 56);
-                                                            Background: #050b16(0.85);
+                                                            Background: (TexturePath: "../Tiles/TileRowBackground.png");
                                                             LayoutMode: Middle;
                                                             Padding: (Full: 8);
                                                             ItemIcon #LifeForceIcon {
@@ -404,14 +376,15 @@ $C.@PageOverlay {
                                                 // ---------------- STRENGTH ----------------
                                                 Group #Strength {
                                                     LayoutMode: Top;
-                                                    Background: #0b141f(0.8);
+                                                    Anchor: (Height: 100);
+                                                    Background: (TexturePath: "../Tiles/TileDefault2x.png");
                                                     Padding: (Full: 12);
 
                                                     Group {
                                                         LayoutMode: Left;
                                                         Group {
                                                             Anchor: (Width: 56, Height: 56);
-                                                            Background: #050b16(0.85);
+                                                            Background: (TexturePath: "../Tiles/TileRowBackground.png");
                                                             LayoutMode: Middle;
                                                             Padding: (Full: 8);
                                                             ItemIcon #StrengthIcon {
@@ -488,8 +461,6 @@ $C.@PageOverlay {
                                                         Style: (TextColor: #ffe0c5, FontSize: 12);
                                                         Text: "Adds damage multipliers to every hit.";
                                                     }
-
-                                                    Group { Anchor: (Height: 6); }
                                                 }
 
                                                 Group { Anchor: (Height: 12); }
@@ -497,14 +468,15 @@ $C.@PageOverlay {
                                                 // ---------------- PRECISION ----------------
                                                 Group #Precision {
                                                     LayoutMode: Top;
-                                                    Background: #0b141f(0.8);
+                                                    Anchor: (Height: 100);
+                                                    Background: (TexturePath: "../Tiles/TileDefault2x.png");
                                                     Padding: (Full: 12);
 
                                                     Group {
                                                         LayoutMode: Left;
                                                         Group {
                                                             Anchor: (Width: 56, Height: 56);
-                                                            Background: #050b16(0.85);
+                                                            Background: (TexturePath: "../Tiles/TileRowBackground.png");
                                                             LayoutMode: Middle;
                                                             Padding: (Full: 8);
                                                             ItemIcon #PrecisionIcon {
@@ -589,14 +561,15 @@ $C.@PageOverlay {
                                                 // ---------------- HASTE ----------------
                                                 Group #Haste {
                                                     LayoutMode: Top;
-                                                    Background: #0b141f(0.8);
+                                                    Anchor: (Height: 100);
+                                                    Background: (TexturePath: "../Tiles/TileDefault2x.png");
                                                     Padding: (Full: 12);
 
                                                     Group {
                                                         LayoutMode: Left;
                                                         Group {
                                                             Anchor: (Width: 56, Height: 56);
-                                                            Background: #050b16(0.85);
+                                                            Background: (TexturePath: "../Tiles/TileRowBackground.png");
                                                             LayoutMode: Middle;
                                                             Padding: (Full: 8);
                                                             ItemIcon #HasteIcon {
@@ -681,14 +654,15 @@ $C.@PageOverlay {
                                                 // ---------------- FLOW ----------------
                                                 Group #Flow {
                                                     LayoutMode: Top;
-                                                    Background: #0b141f(0.8);
+                                                    Anchor: (Height: 100);
+                                                    Background: (TexturePath: "../Tiles/TileDefault2x.png");
                                                     Padding: (Full: 12);
 
                                                     Group {
                                                         LayoutMode: Left;
                                                         Group {
                                                             Anchor: (Width: 56, Height: 56);
-                                                            Background: #050b16(0.85);
+                                                            Background: (TexturePath: "../Tiles/TileRowBackground.png");
                                                             LayoutMode: Middle;
                                                             Padding: (Full: 8);
                                                             ItemIcon #FlowIcon {
@@ -778,14 +752,15 @@ $C.@PageOverlay {
                                                 // ---------------- DEFENSE ----------------
                                                 Group #Defense {
                                                     LayoutMode: Top;
-                                                    Background: #0b141f(0.8);
+                                                    Anchor: (Height: 100);
+                                                    Background: (TexturePath: "../Tiles/TileDefault2x.png");
                                                     Padding: (Full: 12);
 
                                                     Group {
                                                         LayoutMode: Left;
                                                         Group {
                                                             Anchor: (Width: 56, Height: 56);
-                                                            Background: #050b16(0.85);
+                                                            Background: (TexturePath: "../Tiles/TileRowBackground.png");
                                                             LayoutMode: Middle;
                                                             Padding: (Full: 8);
                                                             ItemIcon #DefenseIcon {
@@ -869,14 +844,15 @@ $C.@PageOverlay {
                                                 // ---------------- SORCERY ----------------
                                                 Group #Sorcery {
                                                     LayoutMode: Top;
-                                                    Background: #0b141f(0.8);
+                                                    Anchor: (Height: 100);
+                                                    Background: (TexturePath: "../Tiles/TileDefault2x.png");
                                                     Padding: (Full: 12);
 
                                                     Group {
                                                         LayoutMode: Left;
                                                         Group {
                                                             Anchor: (Width: 56, Height: 56);
-                                                            Background: #050b16(0.85);
+                                                            Background: (TexturePath: "../Tiles/TileRowBackground.png");
                                                             LayoutMode: Middle;
                                                             Padding: (Full: 8);
                                                             ItemIcon #SorceryIcon {
@@ -960,14 +936,15 @@ $C.@PageOverlay {
                                                 // ---------------- FEROCITY ----------------
                                                 Group #Ferocity {
                                                     LayoutMode: Top;
-                                                    Background: #0b141f(0.8);
+                                                    Anchor: (Height: 100);
+                                                    Background: (TexturePath: "../Tiles/TileDefault2x.png");
                                                     Padding: (Full: 12);
 
                                                     Group {
                                                         LayoutMode: Left;
                                                         Group {
                                                             Anchor: (Width: 56, Height: 56);
-                                                            Background: #050b16(0.85);
+                                                            Background: (TexturePath: "../Tiles/TileRowBackground.png");
                                                             LayoutMode: Middle;
                                                             Padding: (Full: 8);
                                                             ItemIcon #FerocityIcon {
@@ -1052,14 +1029,15 @@ $C.@PageOverlay {
                                                 // ---------------- STAMINA ----------------
                                                 Group #Stamina {
                                                     LayoutMode: Top;
-                                                    Background: #0b141f(0.8);
+                                                    Anchor: (Height: 100);
+                                                    Background: (TexturePath: "../Tiles/TileDefault2x.png");
                                                     Padding: (Full: 12);
 
                                                     Group {
                                                         LayoutMode: Left;
                                                         Group {
                                                             Anchor: (Width: 56, Height: 56);
-                                                            Background: #050b16(0.85);
+                                                            Background: (TexturePath: "../Tiles/TileRowBackground.png");
                                                             LayoutMode: Middle;
                                                             Padding: (Full: 8);
                                                             ItemIcon #StaminaIcon {
@@ -1144,14 +1122,15 @@ $C.@PageOverlay {
                                                 // ---------------- DISCIPLINE ----------------
                                                 Group #Discipline {
                                                     LayoutMode: Top;
-                                                    Background: #0b141f(0.8);
+                                                    Anchor: (Height: 100);
+                                                    Background: (TexturePath: "../Tiles/TileDefault2x.png");
                                                     Padding: (Full: 12);
 
                                                     Group {
                                                         LayoutMode: Left;
                                                         Group {
                                                             Anchor: (Width: 56, Height: 56);
-                                                            Background: #050b16(0.85);
+                                                            Background: (TexturePath: "../Tiles/TileRowBackground.png");
                                                             LayoutMode: Middle;
                                                             Padding: (Full: 8);
                                                             ItemIcon #DisciplineIcon {
@@ -1248,7 +1227,7 @@ $C.@PageOverlay {
                                             LayoutMode: Left;
                                             Padding: (Full: 20);
                                             Background: #0b141f(0.95);
-                                            Anchor: (Height: 80);
+                                            Anchor: (Height: 70);
 
                                             Group {
                                                 LayoutMode: Top;

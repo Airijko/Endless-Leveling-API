@@ -2,34 +2,64 @@ $C = "../../Common.ui";
 
 // Single augment tile used by the searchable grid.
 
-Button {
-    Anchor: (Width: 136, Bottom: 10, Right: 10);
-    Padding: (Full: 12);
-    Background: (Color: #050b16(0.85));
-    LayoutMode: Top;
-    Style: (
-        Hovered: (
-            Background: #1a2d47(0.9)
-        ),
-        Pressed: (
-            Background: #142338(0.9)
-        )
-    );
-    TextTooltipStyle: $C.@DefaultTextTooltipStyle;
+Group {
+    Anchor: (Width: 140, Height: 140, Bottom: 10, Right: 10);
 
-    ItemIcon #ItemIcon {
-        Anchor: (Width: 67, Height: 67, Bottom: 5);
+    Group #ItemBgCommon {
+        Anchor: (Top: 0, Left: 0, Right: 0, Bottom: 0);
+        Background: (TexturePath: "../../Tiles/TileBorderCommon.png");
         Visible: true;
     }
 
-    Label #ItemName {
-        Style: (
-            FontSize: 14,
-            RenderBold: true,
-            TextColor: #ffffff,
-            Wrap: true,
-            HorizontalAlignment: Center
-        );
-        Anchor: (Bottom: 5);
+    Group #ItemBgElite {
+        Anchor: (Top: 0, Left: 0, Right: 0, Bottom: 0);
+        Background: (TexturePath: "../../Tiles/TileBorderElite.png");
+        Visible: false;
     }
+
+    Group #ItemBgLegendary {
+        Anchor: (Top: 0, Left: 0, Right: 0, Bottom: 0);
+        Background: (TexturePath: "../../Tiles/TileBorderLegendary.png");
+        Visible: false;
+    }
+
+    Group #ItemBgMythic {
+        Anchor: (Top: 0, Left: 0, Right: 0, Bottom: 0);
+        Background: (TexturePath: "../../Tiles/TileBorderMythic.png");
+        Visible: false;
+    }
+
+    Group {
+        LayoutMode: Top;
+        Anchor: (Top: 0, Left: 0, Right: 0, Bottom: 0);
+        Padding: (Full: 12);
+
+        ItemIcon #ItemIcon {
+            Anchor: (Width: 68, Height: 68, Bottom: 6);
+            Visible: true;
+        }
+
+        Label #ItemName {
+            Style: (
+                FontSize: 14,
+                RenderBold: true,
+                TextColor: #ffffff,
+                Wrap: true,
+                HorizontalAlignment: Center
+            );
+            Anchor: (Bottom: 5);
+        }
+    }
+
+    // Front-most hit target and hover glow so the effect is not hidden by tile backgrounds.
+    Button #HitButton {
+        Anchor: (Top: 0, Left: 0, Right: 0, Bottom: 0);
+        TextTooltipStyle: $C.@DefaultTextTooltipStyle;
+        Style: (
+            Default: (Background: #000000(0)),
+            Hovered: (Background: #88d7ff(0.22)),
+            Pressed: (Background: #a8e6ff(0.30))
+        );
+    }
+
 }
