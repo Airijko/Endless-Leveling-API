@@ -97,10 +97,10 @@ public class AugmentsChoosePage extends InteractiveCustomUIPage<SkillsUIPage.Dat
             applyCard(ui, i + 1, offerId, augment, noAugmentState);
         }
 
-        String chooseText = tr("ui.augments.actions.choose", "Choose");
-        ui.set("#AugmentCard1Choose.Text", chooseText);
-        ui.set("#AugmentCard2Choose.Text", chooseText);
-        ui.set("#AugmentCard3Choose.Text", chooseText);
+        PassiveTier activeTier = resolveActiveOfferTier(playerData);
+        applyTierCardBackground(ui, 1, activeTier);
+        applyTierCardBackground(ui, 2, activeTier);
+        applyTierCardBackground(ui, 3, activeTier);
 
         int remainingRerollsForTier = getRemainingRerollsForActiveTier(playerData);
         boolean privilegedBypass = hasPrivilegedRerollBypass();
@@ -118,9 +118,6 @@ public class AugmentsChoosePage extends InteractiveCustomUIPage<SkillsUIPage.Dat
         ui.set("#AugmentsRefreshButton.Text", tr("ui.augments.actions.refresh", "Refresh Offers"));
         ui.set("#AugmentsRefreshButton.Visible", shouldShowRefreshButton());
 
-        events.addEventBinding(Activating, "#AugmentCard1Choose", of("Action", "augment:choose:0"), false);
-        events.addEventBinding(Activating, "#AugmentCard2Choose", of("Action", "augment:choose:1"), false);
-        events.addEventBinding(Activating, "#AugmentCard3Choose", of("Action", "augment:choose:2"), false);
         events.addEventBinding(Activating, "#AugmentCard1Reroll", of("Action", "augment:reroll:0"), false);
         events.addEventBinding(Activating, "#AugmentCard2Reroll", of("Action", "augment:reroll:1"), false);
         events.addEventBinding(Activating, "#AugmentCard3Reroll", of("Action", "augment:reroll:2"), false);
@@ -160,6 +157,15 @@ public class AugmentsChoosePage extends InteractiveCustomUIPage<SkillsUIPage.Dat
             return tr("ui.augments.tier.default", "AUGMENTS");
         }
         return first.getTier().name();
+    }
+
+    private void applyTierCardBackground(@Nonnull UICommandBuilder ui, int slotIndex, PassiveTier tier) {
+        PassiveTier resolvedTier = tier == null ? PassiveTier.COMMON : tier;
+        String base = "#AugmentCard" + slotIndex;
+        ui.set(base + "BgCommon.Visible", resolvedTier == PassiveTier.COMMON);
+        ui.set(base + "BgElite.Visible", resolvedTier == PassiveTier.ELITE);
+        ui.set(base + "BgLegendary.Visible", resolvedTier == PassiveTier.LEGENDARY);
+        ui.set(base + "BgMythic.Visible", resolvedTier == PassiveTier.MYTHIC);
     }
 
     private List<AugmentDefinition> pickPlayerAugments(PlayerData playerData) {
@@ -425,7 +431,6 @@ public class AugmentsChoosePage extends InteractiveCustomUIPage<SkillsUIPage.Dat
         String titleSelector = "#AugmentCard" + slotIndex + "Title";
         String descriptionSelector = "#AugmentCard" + slotIndex + "Description";
         String iconSelector = "#AugmentCard" + slotIndex + "Icon";
-        String chooseSelector = "#AugmentCard" + slotIndex + "Choose";
         String[] sectionSelectors = cardSectionSelectors(slotIndex);
 
         AugmentPresentationMapper.AugmentPresentationData presentation = augment != null
@@ -453,11 +458,8 @@ public class AugmentsChoosePage extends InteractiveCustomUIPage<SkillsUIPage.Dat
             } else {
                 ui.set(descriptionSelector + ".Style.TextColor", "#e6edf5");
             }
-            ui.set(chooseSelector + ".Visible", false);
             return;
         }
-
-        ui.set(chooseSelector + ".Visible", true);
 
         String title = presentation != null ? presentation.displayName() : augment.getName();
         ui.set(titleSelector + ".Text", title.toUpperCase(Locale.ROOT));

@@ -43,16 +43,48 @@ $C.@PageOverlay {
                     LayoutMode: Left;
 
                     // Card 1
-                    $C.@DecoratedContainer {
+                    Group #AugmentCard1 {
                         Anchor: (Width: 300, Height: 480);
 
-                        #Title {
-                            Group {
-                                $C.@Title #AugmentCard1Title { @Text = "AUGMENT"; }
+                        Group #AugmentCard1BgCommon {
+                            Anchor: (Top: 0, Left: 0, Right: 0, Bottom: 0);
+                            Background: (TexturePath: "../../Tiles/TileCommon.png");
+                            Visible: true;
+                        }
+
+                        Group #AugmentCard1BgElite {
+                            Anchor: (Top: 0, Left: 0, Right: 0, Bottom: 0);
+                            Background: (TexturePath: "../../Tiles/TileElite.png");
+                            Visible: false;
+                        }
+
+                        Group #AugmentCard1BgLegendary {
+                            Anchor: (Top: 0, Left: 0, Right: 0, Bottom: 0);
+                            Background: (TexturePath: "../../Tiles/TileLegendary.png");
+                            Visible: false;
+                        }
+
+                        Group #AugmentCard1BgMythic {
+                            Anchor: (Top: 0, Left: 0, Right: 0, Bottom: 0);
+                            Background: (TexturePath: "../../Tiles/TileMythic.png");
+                            Visible: false;
+                        }
+
+                        Group #AugmentCard1Content {
+                            LayoutMode: Top;
+                            Anchor: (Top: 0, Left: 0, Right: 0, Bottom: 0);
+
+                        Group {
+                            LayoutMode: Middle;
+                            Anchor: (Width: 300, Height: 44);
+
+                            Label #AugmentCard1Title {
+                                Text: "AUGMENT";
+                                Style: (FontSize: 17, TextColor: #e6edf5, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
                             }
                         }
 
-                        #Content {
+                        Group {
                             LayoutMode: Top;
                             Padding: (Full: 14);
 
@@ -126,21 +158,54 @@ $C.@PageOverlay {
                                 Group { Anchor: (Height: 14); }
                             }
                         }
+                        }
                     }
 
                     Group { Anchor: (Width: 40); }
 
                     // Card 2
-                    $C.@DecoratedContainer {
+                    Group #AugmentCard2 {
                         Anchor: (Width: 300, Height: 480);
 
-                        #Title {
-                            Group {
-                                $C.@Title #AugmentCard2Title { @Text = "AUGMENT"; }
+                        Group #AugmentCard2BgCommon {
+                            Anchor: (Top: 0, Left: 0, Right: 0, Bottom: 0);
+                            Background: (TexturePath: "../../Tiles/TileCommon.png");
+                            Visible: true;
+                        }
+
+                        Group #AugmentCard2BgElite {
+                            Anchor: (Top: 0, Left: 0, Right: 0, Bottom: 0);
+                            Background: (TexturePath: "../../Tiles/TileElite.png");
+                            Visible: false;
+                        }
+
+                        Group #AugmentCard2BgLegendary {
+                            Anchor: (Top: 0, Left: 0, Right: 0, Bottom: 0);
+                            Background: (TexturePath: "../../Tiles/TileLegendary.png");
+                            Visible: false;
+                        }
+
+                        Group #AugmentCard2BgMythic {
+                            Anchor: (Top: 0, Left: 0, Right: 0, Bottom: 0);
+                            Background: (TexturePath: "../../Tiles/TileMythic.png");
+                            Visible: false;
+                        }
+
+                        Group #AugmentCard2Content {
+                            LayoutMode: Top;
+                            Anchor: (Top: 0, Left: 0, Right: 0, Bottom: 0);
+
+                        Group {
+                            LayoutMode: Middle;
+                            Anchor: (Width: 300, Height: 44);
+
+                            Label #AugmentCard2Title {
+                                Text: "AUGMENT";
+                                Style: (FontSize: 17, TextColor: #e6edf5, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
                             }
                         }
 
-                        #Content {
+                        Group {
                             LayoutMode: Top;
                             Padding: (Full: 14);
 
@@ -214,21 +279,54 @@ $C.@PageOverlay {
                                 Group { Anchor: (Height: 14); }
                             }
                         }
+                        }
                     }
 
                     Group { Anchor: (Width: 40); }
 
                     // Card 3
-                    $C.@DecoratedContainer {
+                    Group #AugmentCard3 {
                         Anchor: (Width: 300, Height: 480);
 
-                        #Title {
-                            Group {
-                                $C.@Title #AugmentCard3Title { @Text = "AUGMENT"; }
+                        Group #AugmentCard3BgCommon {
+                            Anchor: (Top: 0, Left: 0, Right: 0, Bottom: 0);
+                            Background: (TexturePath: "../../Tiles/TileCommon.png");
+                            Visible: true;
+                        }
+
+                        Group #AugmentCard3BgElite {
+                            Anchor: (Top: 0, Left: 0, Right: 0, Bottom: 0);
+                            Background: (TexturePath: "../../Tiles/TileElite.png");
+                            Visible: false;
+                        }
+
+                        Group #AugmentCard3BgLegendary {
+                            Anchor: (Top: 0, Left: 0, Right: 0, Bottom: 0);
+                            Background: (TexturePath: "../../Tiles/TileLegendary.png");
+                            Visible: false;
+                        }
+
+                        Group #AugmentCard3BgMythic {
+                            Anchor: (Top: 0, Left: 0, Right: 0, Bottom: 0);
+                            Background: (TexturePath: "../../Tiles/TileMythic.png");
+                            Visible: false;
+                        }
+
+                        Group #AugmentCard3Content {
+                            LayoutMode: Top;
+                            Anchor: (Top: 0, Left: 0, Right: 0, Bottom: 0);
+
+                        Group {
+                            LayoutMode: Middle;
+                            Anchor: (Width: 300, Height: 44);
+
+                            Label #AugmentCard3Title {
+                                Text: "AUGMENT";
+                                Style: (FontSize: 17, TextColor: #e6edf5, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
                             }
                         }
 
-                        #Content {
+                        Group {
                             LayoutMode: Top;
                             Padding: (Full: 14);
 
@@ -302,13 +400,14 @@ $C.@PageOverlay {
                                 Group { Anchor: (Height: 14); }
                             }
                         }
+                        }
                     }
                 }
             }
 
-            Group { Anchor: (Height: 24); }
+            Group { Anchor: (Height: 14); }
 
-            // Buttons row (centered)
+            // Reroll row (centered, slim)
             Group {
                 LayoutMode: Middle;
                 Anchor: (Width: 980);
@@ -319,33 +418,14 @@ $C.@PageOverlay {
 
                     Group {
                         Anchor: (Width: 300);
-                        LayoutMode: Top;
+                        LayoutMode: Middle;
 
-                        Group {
-                            LayoutMode: Middle;
-                            Anchor: (Height: 36);
-
-                            $C.@TextButton #AugmentCard1Choose {
-                                Text: "Choose";
-                                Anchor: (Width: 140, Height: 36);
-                                Padding: (Horizontal: 16, Vertical: 6);
-                                Style: @ChooseButtonStyle;
-                            }
-                        }
-
-                        Group { Anchor: (Height: 6); }
-
-                        Group {
-                            LayoutMode: Middle;
-                            Anchor: (Height: 32);
-
-                            $C.@TextButton #AugmentCard1Reroll {
-                                Text: "Reroll";
-                                Anchor: (Width: 140, Height: 32);
-                                Padding: (Horizontal: 12, Vertical: 5);
-                                Style: @ChooseButtonStyle;
-                                Visible: false;
-                            }
+                        $C.@TextButton #AugmentCard1Reroll {
+                            Text: "Reroll";
+                            Anchor: (Width: 140, Height: 30);
+                            Padding: (Horizontal: 12, Vertical: 4);
+                            Style: @ChooseButtonStyle;
+                            Visible: false;
                         }
                     }
 
@@ -353,33 +433,14 @@ $C.@PageOverlay {
 
                     Group {
                         Anchor: (Width: 300);
-                        LayoutMode: Top;
+                        LayoutMode: Middle;
 
-                        Group {
-                            LayoutMode: Middle;
-                            Anchor: (Height: 36);
-
-                            $C.@TextButton #AugmentCard2Choose {
-                                Text: "Choose";
-                                Anchor: (Width: 140, Height: 36);
-                                Padding: (Horizontal: 16, Vertical: 6);
-                                Style: @ChooseButtonStyle;
-                            }
-                        }
-
-                        Group { Anchor: (Height: 6); }
-
-                        Group {
-                            LayoutMode: Middle;
-                            Anchor: (Height: 32);
-
-                            $C.@TextButton #AugmentCard2Reroll {
-                                Text: "Reroll";
-                                Anchor: (Width: 140, Height: 32);
-                                Padding: (Horizontal: 12, Vertical: 5);
-                                Style: @ChooseButtonStyle;
-                                Visible: false;
-                            }
+                        $C.@TextButton #AugmentCard2Reroll {
+                            Text: "Reroll";
+                            Anchor: (Width: 140, Height: 30);
+                            Padding: (Horizontal: 12, Vertical: 4);
+                            Style: @ChooseButtonStyle;
+                            Visible: false;
                         }
                     }
 
@@ -387,39 +448,20 @@ $C.@PageOverlay {
 
                     Group {
                         Anchor: (Width: 300);
-                        LayoutMode: Top;
+                        LayoutMode: Middle;
 
-                        Group {
-                            LayoutMode: Middle;
-                            Anchor: (Height: 36);
-
-                            $C.@TextButton #AugmentCard3Choose {
-                                Text: "Choose";
-                                Anchor: (Width: 140, Height: 36);
-                                Padding: (Horizontal: 16, Vertical: 6);
-                                Style: @ChooseButtonStyle;
-                            }
-                        }
-
-                        Group { Anchor: (Height: 6); }
-
-                        Group {
-                            LayoutMode: Middle;
-                            Anchor: (Height: 32);
-
-                            $C.@TextButton #AugmentCard3Reroll {
-                                Text: "Reroll";
-                                Anchor: (Width: 140, Height: 32);
-                                Padding: (Horizontal: 12, Vertical: 5);
-                                Style: @ChooseButtonStyle;
-                                Visible: false;
-                            }
+                        $C.@TextButton #AugmentCard3Reroll {
+                            Text: "Reroll";
+                            Anchor: (Width: 140, Height: 30);
+                            Padding: (Horizontal: 12, Vertical: 4);
+                            Style: @ChooseButtonStyle;
+                            Visible: false;
                         }
                     }
                 }
             }
 
-            Group { Anchor: (Height: 48); }
+            Group { Anchor: (Height: 32); }
 
             Group {
                 LayoutMode: Middle;
