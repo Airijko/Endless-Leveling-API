@@ -46,8 +46,7 @@ public final class CommandRegistrar {
             scheduleFallbackStartupLog(commandRoot);
         }
 
-        // Always log the final command route at severe level so it appears in all standard log filters.
-        LOGGER.atSevere().log("EndlessLeveling final command root selected = '/%s' (candidates=%s)", commandRoot,
+        LOGGER.atInfo().log("EndlessLeveling final command root selected = '/%s' (candidates=%s)", commandRoot,
                 String.join(", ", ROOT_CANDIDATES));
 
         EndlessLevelingCommand rootCommand = new EndlessLevelingCommand(commandRoot);
