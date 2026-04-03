@@ -8,7 +8,7 @@
   Label #Level {
     Anchor: (Height: 20, Bottom: 4);
     Text: "Level";
-    Style: (TextColor: #f0c040, FontSize: 13, RenderBold: true, RenderUppercase: true, LetterSpacing: 1);
+    Style: (TextColor: #f0c040, FontSize: 13, RenderBold: true, RenderUppercase: true, LetterSpacing: 1, VerticalAlignment: Center);
   }
 
   Group {
@@ -21,13 +21,13 @@
     Anchor: (Height: 16, Top: 5);
 
     Label #InfoMobLevelPrefix {
-      Style: (FontSize: 10, TextColor: #7a6a3a, RenderUppercase: true, LetterSpacing: 1);
+      Style: (FontSize: 10, TextColor: #7a6a3a, RenderUppercase: true, LetterSpacing: 1, VerticalAlignment: Center);
       Text: "Local Mobs: ";
     }
 
     Label #InfoMobLevelValue {
       Anchor: (Left: 2);
-      Style: (FontSize: 11, TextColor: #e8e8b0, RenderBold: true);
+      Style: (FontSize: 11, TextColor: #e8e8b0, RenderBold: true, VerticalAlignment: Center);
       Text: "--";
     }
   }
@@ -37,19 +37,19 @@
     Anchor: (Height: 16, Top: 3);
 
     ItemIcon #InfoRaceIcon {
-      Anchor: (Width: 13, Height: 13, Top: 1);
+      Anchor: (Width: 13, Height: 13);
       Visible: false;
     }
 
     Label #InfoRacePrefix {
       Anchor: (Left: 2);
-      Style: (FontSize: 10, TextColor: #7a6a3a, RenderUppercase: true, LetterSpacing: 1);
+      Style: (FontSize: 10, TextColor: #7a6a3a, RenderUppercase: true, LetterSpacing: 1, VerticalAlignment: Center);
       Text: "Race: ";
     }
 
     Label #InfoRaceValue {
       Anchor: (Left: 2);
-      Style: (FontSize: 11, TextColor: #7dd4c0, RenderBold: true);
+      Style: (FontSize: 11, TextColor: #7dd4c0, RenderBold: true, VerticalAlignment: Center);
       Text: "--";
     }
   }
@@ -64,13 +64,13 @@
     Anchor: (Height: 18, Top: 5);
 
     ItemIcon #PrimaryIcon {
-      Anchor: (Width: 13, Height: 13, Top: 2);
+      Anchor: (Width: 13, Height: 13);
       Visible: false;
     }
 
     Label #PrimaryClass {
       Anchor: (Height: 18, Left: 3);
-      Style: (FontSize: 12, TextColor: #f0c040, RenderBold: true);
+      Style: (FontSize: 12, TextColor: #f0c040, RenderBold: true, VerticalAlignment: Center);
       Text: "--";
     }
   }
@@ -80,13 +80,13 @@
     Anchor: (Height: 16, Top: 2);
 
     ItemIcon #SecondaryIcon {
-      Anchor: (Width: 13, Height: 13, Top: 1);
+      Anchor: (Width: 13, Height: 13);
       Visible: false;
     }
 
     Label #SecondaryClass {
       Anchor: (Height: 16, Left: 3);
-      Style: (FontSize: 11, TextColor: #a0a8c8, RenderBold: true);
+      Style: (FontSize: 11, TextColor: #a0a8c8, RenderBold: true, VerticalAlignment: Center);
       Text: "--";
     }
   }
