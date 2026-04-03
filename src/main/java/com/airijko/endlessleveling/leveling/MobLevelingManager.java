@@ -52,6 +52,8 @@ import java.util.SplittableRandom;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+import javax.annotation.Nullable;
+
 public class MobLevelingManager {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
@@ -67,6 +69,8 @@ public class MobLevelingManager {
     private static final String LEGACY_WORLD_SETTINGS_LOAD_ORDER_FILE = "load-order.json";
 
     private final ConfigManager configManager;
+    private volatile Boolean mobNameplateEnabledOverride;
+    private volatile Boolean playerNameplateEnabledOverride;
     private final File worldSettingsFolder;
     private final PlayerDataManager playerDataManager;
     private final Gson gson = new Gson();
@@ -1472,7 +1476,29 @@ public class MobLevelingManager {
     }
 
     public boolean shouldRenderMobNameplate() {
+        if (mobNameplateEnabledOverride != null) {
+            return mobNameplateEnabledOverride.booleanValue();
+        }
         return getConfigBoolean("Mob_Leveling.Nameplate.Enabled", true, null);
+    }
+
+    public void setMobNameplateEnabledOverride(@Nullable Boolean enabled) {
+        mobNameplateEnabledOverride = enabled;
+    }
+
+    public boolean shouldRenderPlayerNameplate() {
+        if (playerNameplateEnabledOverride != null) {
+            return playerNameplateEnabledOverride.booleanValue();
+        }
+        return getConfigBoolean("Player_Nameplate.Enabled", true, null);
+    }
+
+    public void setPlayerNameplateEnabledOverride(@Nullable Boolean enabled) {
+        playerNameplateEnabledOverride = enabled;
+    }
+
+    public int getPlayerNameplateUpdateTicks() {
+        return Math.max(1, getConfigInt("Player_Nameplate.Nameplate_Update_Ticks", 20, null));
     }
 
     public boolean shouldShowMobNameplateLevel() {

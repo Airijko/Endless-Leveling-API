@@ -190,6 +190,11 @@ public class PlayerDataListener {
         if (playerData.getSkillPoints() > 0) {
             notifyAvailableSkillPoints(playerRef, playerData.getSkillPoints());
         }
+
+        PlayerNameplateSystem playerNameplateSystem = EndlessLeveling.getInstance().getPlayerNameplateSystem();
+        if (playerNameplateSystem != null) {
+            playerNameplateSystem.requestRefresh(uuid);
+        }
     }
 
     private void ensureSafeLoginPosition(@Nonnull PlayerRef playerRef,
@@ -267,6 +272,9 @@ public class PlayerDataListener {
         Ref<EntityStore> playerEntityRef = playerRef.getReference();
         Store<EntityStore> playerStore = playerEntityRef != null ? playerEntityRef.getStore() : null;
         PlayerNameplateSystem playerNameplateSystem = EndlessLeveling.getInstance().getPlayerNameplateSystem();
+        if (playerNameplateSystem != null) {
+            playerNameplateSystem.forgetPlayer(uuid);
+        }
         if (playerEntityRef != null && playerStore != null && !playerStore.isShutdown()) {
             queuePlayerRuntimeCleanup(playerRef, playerEntityRef, playerStore, playerNameplateSystem);
         }

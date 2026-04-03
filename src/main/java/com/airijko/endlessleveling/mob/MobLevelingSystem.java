@@ -111,6 +111,14 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         return removeAllNameplatesForStore(store, 3000L);
     }
 
+    public int removeAllKnownMobNameplates() {
+        int removed = 0;
+        for (Store<EntityStore> store : new ArrayList<>(knownStoresForCleanup)) {
+            removed += removeAllNameplatesForStore(store);
+        }
+        return removed;
+    }
+
     private int removeAllNameplatesForStore(Store<EntityStore> store, long timeoutMillis) {
         if (store == null) {
             LOGGER.atInfo().log("[MOB_SHUTDOWN_DEBUG] removeAllNameplatesForStore skipped: store is null");

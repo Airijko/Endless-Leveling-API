@@ -116,4 +116,11 @@ Mob_Leveling:
     # - 1: update every tick (smoothest, highest update cost)
     # - 5: update every 5 ticks (~4 updates/sec at 20 TPS)
     # - 10: update every 10 ticks (~2 updates/sec at 20 TPS)
-    Nameplate_Update_Ticks: 1
+    Nameplate_Update_Ticks: 5
+
+# Player nameplate controls are separate from mob nameplate controls.
+Player_Nameplate:
+  # Enables or disables EndlessLeveling player nameplate augmentation completely.
+  # When disabled, EL removes its level/prestige/race/class/nameplate segments and leaves the base player name only.
+  Enabled: true
+  # Player nameplates are event-driven and refresh only when relevant player data changes (level, prestige, race, class, profile change).

@@ -1,5 +1,6 @@
 package com.airijko.endlessleveling.player;
 
+import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.enums.PassiveType;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.hypixel.hytale.logger.HytaleLogger;
@@ -12,6 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -148,6 +150,9 @@ public class PlayerData {
         if (switchToNew) {
             this.activeProfileIndex = index;
         }
+        if (switchToNew || index == this.activeProfileIndex) {
+            requestPlayerNameplateRefresh();
+        }
         LOGGER.atInfo().log("Player %s created profile slot %d (active=%s)",
                 playerName, index, switchToNew);
         return true;
@@ -164,9 +169,11 @@ public class PlayerData {
             return false;
         }
 
+        boolean activeProfileDeleted = this.activeProfileIndex == index;
         profiles.remove(index);
-        if (this.activeProfileIndex == index) {
+        if (activeProfileDeleted) {
             this.activeProfileIndex = this.profiles.keySet().stream().min(Integer::compareTo).orElse(1);
+            requestPlayerNameplateRefresh();
         }
         LOGGER.atInfo().log("Player %s deleted profile slot %d", playerName, index);
         return true;
@@ -186,6 +193,7 @@ public class PlayerData {
         }
 
         this.activeProfileIndex = index;
+        requestPlayerNameplateRefresh();
         LOGGER.atInfo().log("Player %s switched to profile slot %d", playerName, index);
         return ProfileSwitchResult.SWITCHED_EXISTING;
     }
@@ -213,6 +221,7 @@ public class PlayerData {
         } else {
             this.activeProfileIndex = requestedActiveIndex;
         }
+        requestPlayerNameplateRefresh();
     }
 
     public void resetActiveProfileToDefaults() {
@@ -229,6 +238,7 @@ public class PlayerData {
         }
 
         profiles.put(slot, PlayerProfile.fresh(baseSkillPoints, profileName));
+        requestPlayerNameplateRefresh();
     }
 
     public int getBaseSkillPoints() {
@@ -290,9 +300,14 @@ public class PlayerData {
     }
 
     public void setLevel(int level) {
+        PlayerProfile profile = getActiveProfile();
+        if (profile.getLevel() == level) {
+            return;
+        }
         LOGGER.atFine().log("Setting Level for %s (UUID: %s) profile %d to %d", playerName, uuid,
                 activeProfileIndex, level);
-        getActiveProfile().setLevel(level);
+        profile.setLevel(level);
+        requestPlayerNameplateRefresh();
     }
 
     public int getPrestigeLevel() {
@@ -300,13 +315,18 @@ public class PlayerData {
     }
 
     public void setPrestigeLevel(int prestigeLevel) {
+        PlayerProfile profile = getActiveProfile();
+        if (profile.getPrestigeLevel() == prestigeLevel) {
+            return;
+        }
         LOGGER.atFine().log("Setting Prestige for %s (UUID: %s) profile %d to %d", playerName, uuid,
                 activeProfileIndex, prestigeLevel);
-        getActiveProfile().setPrestigeLevel(prestigeLevel);
+        profile.setPrestigeLevel(prestigeLevel);
+        requestPlayerNameplateRefresh();
     }
 
     public void incrementPrestigeLevel() {
-        getActiveProfile().setPrestigeLevel(getActiveProfile().getPrestigeLevel() + 1);
+        setPrestigeLevel(getPrestigeLevel() + 1);
     }
 
     public int getSkillPoints() {
@@ -511,7 +531,12 @@ public class PlayerData {
     }
 
     public void setRaceId(String raceId) {
-        getActiveProfile().setRaceId(raceId);
+        PlayerProfile profile = getActiveProfile();
+        if (Objects.equals(profile.getRaceId(), raceId)) {
+            return;
+        }
+        profile.setRaceId(raceId);
+        requestPlayerNameplateRefresh();
     }
 
     public List<String> getCompletedRaceFormsSnapshot() {
@@ -591,7 +616,12 @@ public class PlayerData {
     }
 
     public void setPrimaryClassId(String classId) {
-        getActiveProfile().setPrimaryClassId(classId);
+        PlayerProfile profile = getActiveProfile();
+        if (Objects.equals(profile.getPrimaryClassId(), classId)) {
+            return;
+        }
+        profile.setPrimaryClassId(classId);
+        requestPlayerNameplateRefresh();
     }
 
     public String getSecondaryClassId() {
@@ -599,7 +629,12 @@ public class PlayerData {
     }
 
     public void setSecondaryClassId(String classId) {
-        getActiveProfile().setSecondaryClassId(classId);
+        PlayerProfile profile = getActiveProfile();
+        if (Objects.equals(profile.getSecondaryClassId(), classId)) {
+            return;
+        }
+        profile.setSecondaryClassId(classId);
+        requestPlayerNameplateRefresh();
     }
 
     public long getLastPrimaryClassChangeEpochSeconds() {
@@ -624,6 +659,18 @@ public class PlayerData {
 
     public void setRemainingClassSwitches(int count) {
         getActiveProfile().setRemainingClassSwitches(count);
+    }
+
+    private void requestPlayerNameplateRefresh() {
+        EndlessLeveling plugin = EndlessLeveling.getInstance();
+        if (plugin == null) {
+            return;
+        }
+
+        var playerNameplateSystem = plugin.getPlayerNameplateSystem();
+        if (playerNameplateSystem != null) {
+            playerNameplateSystem.requestRefresh(uuid);
+        }
     }
 
     public void decrementRemainingClassSwitches() {

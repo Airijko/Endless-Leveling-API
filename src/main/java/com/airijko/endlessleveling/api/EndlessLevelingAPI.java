@@ -10,6 +10,7 @@ import com.airijko.endlessleveling.player.PlayerData;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.airijko.endlessleveling.leveling.LevelingManager;
 import com.airijko.endlessleveling.leveling.MobLevelingManager;
+import com.airijko.endlessleveling.mob.MobLevelingSystem;
 import com.airijko.endlessleveling.player.PlayerAttributeManager;
 import com.airijko.endlessleveling.player.PlayerDataManager;
 import com.airijko.endlessleveling.leveling.PartyManager;
@@ -18,6 +19,7 @@ import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveSource;
 import com.airijko.endlessleveling.races.RaceDefinition;
 import com.airijko.endlessleveling.races.RaceManager;
 import com.airijko.endlessleveling.player.SkillManager;
+import com.airijko.endlessleveling.systems.PlayerNameplateSystem;
 import com.airijko.endlessleveling.api.gates.DungeonGateContentProvider;
 import com.airijko.endlessleveling.api.gates.DungeonGateLifecycleBridge;
 import com.airijko.endlessleveling.api.gates.DungeonWaveGateBridge;
@@ -271,6 +273,70 @@ public final class EndlessLevelingAPI {
     public String getCommandPrefix() {
         EndlessLeveling plugin = plugin();
         return plugin != null ? plugin.getCommandPrefix() : EndlessLeveling.DEFAULT_COMMAND_PREFIX;
+    }
+
+    /** Effective mob nameplate state after config and API override resolution. */
+    public boolean areMobNameplatesEnabled() {
+        MobLevelingManager mobLevelingManager = mobLevelingManager();
+        return mobLevelingManager == null || mobLevelingManager.shouldRenderMobNameplate();
+    }
+
+    /** Force mob nameplates on or off at runtime without editing leveling.yml. */
+    public void setMobNameplatesEnabled(boolean enabled) {
+        MobLevelingManager mobLevelingManager = mobLevelingManager();
+        if (mobLevelingManager == null) {
+            return;
+        }
+        mobLevelingManager.setMobNameplateEnabledOverride(enabled);
+
+        MobLevelingSystem mobLevelingSystem = mobLevelingSystem();
+        if (mobLevelingSystem != null) {
+            if (!enabled) {
+                mobLevelingSystem.removeAllKnownMobNameplates();
+            }
+            mobLevelingSystem.requestFullMobRescale();
+        }
+    }
+
+    /** Clear the runtime mob-nameplate override and fall back to leveling.yml. */
+    public void resetMobNameplatesEnabled() {
+        MobLevelingManager mobLevelingManager = mobLevelingManager();
+        if (mobLevelingManager == null) {
+            return;
+        }
+        mobLevelingManager.setMobNameplateEnabledOverride(null);
+
+        MobLevelingSystem mobLevelingSystem = mobLevelingSystem();
+        if (mobLevelingSystem != null) {
+            mobLevelingSystem.requestFullMobRescale();
+        }
+    }
+
+    /** Effective player nameplate state after config and API override resolution. */
+    public boolean arePlayerNameplatesEnabled() {
+        PlayerNameplateSystem playerNameplateSystem = playerNameplateSystem();
+        return playerNameplateSystem == null || playerNameplateSystem.arePlayerNameplatesEnabled();
+    }
+
+    /** Force player nameplates on or off at runtime without editing leveling.yml. */
+    public void setPlayerNameplatesEnabled(boolean enabled) {
+        PlayerNameplateSystem playerNameplateSystem = playerNameplateSystem();
+        if (playerNameplateSystem == null) {
+            return;
+        }
+        playerNameplateSystem.setPlayerNameplatesEnabledOverride(enabled);
+        if (!enabled) {
+            playerNameplateSystem.removeAllKnownNameplates();
+        }
+    }
+
+    /** Clear the runtime player-nameplate override and fall back to leveling.yml. */
+    public void resetPlayerNameplatesEnabled() {
+        PlayerNameplateSystem playerNameplateSystem = playerNameplateSystem();
+        if (playerNameplateSystem == null) {
+            return;
+        }
+        playerNameplateSystem.clearPlayerNameplatesEnabledOverride();
     }
 
     /**
@@ -1007,6 +1073,16 @@ public final class EndlessLevelingAPI {
     private MobLevelingManager mobLevelingManager() {
         EndlessLeveling plugin = plugin();
         return plugin != null ? plugin.getMobLevelingManager() : null;
+    }
+
+    private MobLevelingSystem mobLevelingSystem() {
+        EndlessLeveling plugin = plugin();
+        return plugin != null ? plugin.getMobLevelingSystem() : null;
+    }
+
+    private PlayerNameplateSystem playerNameplateSystem() {
+        EndlessLeveling plugin = plugin();
+        return plugin != null ? plugin.getPlayerNameplateSystem() : null;
     }
 
     private PartyManager partyManager() {
