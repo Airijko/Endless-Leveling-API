@@ -10,6 +10,7 @@ import com.airijko.endlessleveling.enums.themes.AugmentTheme;
 import com.airijko.endlessleveling.player.PlayerDataManager;
 import com.airijko.endlessleveling.util.Lang;
 import com.airijko.endlessleveling.util.LocalizationKey;
+import com.airijko.endlessleveling.util.OperatorHelper;
 import com.airijko.endlessleveling.util.PlayerChatNotifier;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
@@ -101,9 +102,48 @@ public class AugmentsChoosePage extends InteractiveCustomUIPage<SkillsUIPage.Dat
         ui.set("#AugmentCard2Choose.Text", chooseText);
         ui.set("#AugmentCard3Choose.Text", chooseText);
 
+        int remainingRerollsForTier = getRemainingRerollsForActiveTier(playerData);
+        boolean privilegedBypass = hasPrivilegedRerollBypass();
+        String rerollText = privilegedBypass
+                ? tr("ui.augments.actions.reroll_infinite", "Reroll (INF)")
+                : tr("ui.augments.actions.reroll", "Reroll ({0})", remainingRerollsForTier);
+        ui.set("#AugmentCard1Reroll.Text", rerollText);
+        ui.set("#AugmentCard2Reroll.Text", rerollText);
+        ui.set("#AugmentCard3Reroll.Text", rerollText);
+
+        ui.set("#AugmentCard1Reroll.Visible", !choices.isEmpty() && choices.size() > 0 && (remainingRerollsForTier > 0 || privilegedBypass));
+        ui.set("#AugmentCard2Reroll.Visible", choices.size() > 1 && (remainingRerollsForTier > 0 || privilegedBypass));
+        ui.set("#AugmentCard3Reroll.Visible", choices.size() > 2 && (remainingRerollsForTier > 0 || privilegedBypass));
+
+        ui.set("#AugmentsRefreshButton.Text", tr("ui.augments.actions.refresh", "Refresh Offers"));
+        ui.set("#AugmentsRefreshButton.Visible", shouldShowRefreshButton());
+
         events.addEventBinding(Activating, "#AugmentCard1Choose", of("Action", "augment:choose:0"), false);
         events.addEventBinding(Activating, "#AugmentCard2Choose", of("Action", "augment:choose:1"), false);
         events.addEventBinding(Activating, "#AugmentCard3Choose", of("Action", "augment:choose:2"), false);
+        events.addEventBinding(Activating, "#AugmentCard1Reroll", of("Action", "augment:reroll:0"), false);
+        events.addEventBinding(Activating, "#AugmentCard2Reroll", of("Action", "augment:reroll:1"), false);
+        events.addEventBinding(Activating, "#AugmentCard3Reroll", of("Action", "augment:reroll:2"), false);
+        events.addEventBinding(Activating, "#AugmentsRefreshButton", of("Action", "augment:refresh"), false);
+    }
+
+    private boolean shouldShowRefreshButton() {
+        return OperatorHelper.hasAdministrativeAccess(playerRef);
+    }
+
+    private boolean hasPrivilegedRerollBypass() {
+        return OperatorHelper.hasAdministrativeAccess(playerRef);
+    }
+
+    private int getRemainingRerollsForActiveTier(PlayerData playerData) {
+        if (playerData == null || augmentUnlockManager == null) {
+            return 0;
+        }
+        PassiveTier activeTier = resolveActiveOfferTier(playerData);
+        if (activeTier == null) {
+            return 0;
+        }
+        return Math.max(0, augmentUnlockManager.getRemainingRerolls(playerData, activeTier));
     }
 
     private String resolveTierTitle(PlayerData playerData, List<AugmentDefinition> augments) {
@@ -160,13 +200,25 @@ public class AugmentsChoosePage extends InteractiveCustomUIPage<SkillsUIPage.Dat
             @Nonnull SkillsUIPage.Data data) {
         super.handleDataEvent(ref, store, data);
 
-        if (data.action == null || data.action.isBlank() || !data.action.startsWith("augment:choose:")) {
+        if (data.action == null || data.action.isBlank()) {
+            return;
+        }
+
+        String action = data.action.trim();
+        if ("augment:refresh".equalsIgnoreCase(action)) {
+            handleRefreshAction(ref, store);
+            return;
+        }
+
+        boolean chooseAction = action.startsWith("augment:choose:");
+        boolean rerollAction = action.startsWith("augment:reroll:");
+        if (!chooseAction && !rerollAction) {
             return;
         }
 
         int index;
         try {
-            index = Integer.parseInt(data.action.substring("augment:choose:".length()));
+            index = Integer.parseInt(action.substring((rerollAction ? "augment:reroll:" : "augment:choose:").length()));
         } catch (NumberFormatException ex) {
             return;
         }
@@ -195,6 +247,54 @@ public class AugmentsChoosePage extends InteractiveCustomUIPage<SkillsUIPage.Dat
             playerRef
                     .sendMessage(Message.raw(tr("ui.augments.error.tier_unresolved", "Unable to resolve augment tier."))
                             .color("#ff6666"));
+            return;
+        }
+
+        if (rerollAction) {
+            int remaining = augmentUnlockManager.getRemainingRerolls(playerData, tier);
+            boolean privilegedBypass = hasPrivilegedRerollBypass();
+            if (remaining <= 0 && !privilegedBypass) {
+                playerRef.sendMessage(Message.raw(tr("ui.augments.error.no_rerolls_tier",
+                        "No rerolls available for {0} tier.", tier.name())).color("#ff9900"));
+                reopenChoosePage(ref, store);
+                return;
+            }
+
+            String tierKey = tier.name();
+            int usedBefore = playerData.getAugmentRerollsUsedForTier(tierKey);
+            int bonusBefore = playerData.getAugmentRerollBonusForTier(tierKey);
+
+            if (privilegedBypass && remaining <= 0) {
+                playerData.setAugmentRerollBonusForTier(tierKey, bonusBefore + 1);
+            }
+
+            String replaced = augmentUnlockManager.tryConsumeRerollForOffer(playerData, tier, choice.id());
+            if (replaced == null || replaced.isBlank()) {
+                if (privilegedBypass) {
+                    playerData.setAugmentRerollBonusForTier(tierKey, bonusBefore);
+                    playerData.setAugmentRerollsUsedForTier(tierKey, usedBefore);
+                    playerDataManager.save(playerData);
+                }
+                playerRef.sendMessage(Message.raw(tr("ui.augments.error.reroll_failed",
+                        "Reroll failed. Try again.")).color("#ff6666"));
+                reopenChoosePage(ref, store);
+                return;
+            }
+
+            if (privilegedBypass) {
+                playerData.setAugmentRerollBonusForTier(tierKey, bonusBefore);
+                playerData.setAugmentRerollsUsedForTier(tierKey, usedBefore);
+                playerDataManager.save(playerData);
+            }
+
+            int remainingAfter = augmentUnlockManager.getRemainingRerolls(playerData, tier);
+            String success = privilegedBypass
+                    ? tr("ui.augments.reroll.success_bypass",
+                            "Rerolled {0} offer. Operator/Admin bypass active (no reroll consumed).", tier.name())
+                    : tr("ui.augments.reroll.success",
+                            "Rerolled {0} offer. Remaining rerolls: {1}", tier.name(), remainingAfter);
+            playerRef.sendMessage(Message.raw(success).color("#4fd7f7"));
+            reopenChoosePage(ref, store);
             return;
         }
 
@@ -228,6 +328,41 @@ public class AugmentsChoosePage extends InteractiveCustomUIPage<SkillsUIPage.Dat
                     Message.raw(PlayerChatNotifier.stripKnownPrefix(builder.toString())).color("#4fd7f7"));
         }
 
+        Player player = store.getComponent(ref, Player.getComponentType());
+        if (player != null) {
+            player.getPageManager().openCustomPage(ref, store,
+                    new AugmentsChoosePage(playerRef, CustomPageLifetime.CanDismiss));
+        }
+    }
+
+    private void handleRefreshAction(@Nonnull Ref<EntityStore> ref, @Nonnull Store<EntityStore> store) {
+        if (!OperatorHelper.hasAdministrativeAccess(playerRef)) {
+            playerRef.sendMessage(Message.raw(tr("ui.augments.error.refresh_permission",
+                    "You do not have permission to refresh augment offers.")).color("#ff6666"));
+            return;
+        }
+
+        if (playerDataManager == null || augmentUnlockManager == null) {
+            playerRef.sendMessage(Message.raw(tr("ui.augments.error.data_unavailable",
+                    "Augment data unavailable.")).color("#ff6666"));
+            return;
+        }
+
+        PlayerData playerData = playerDataManager.get(playerRef.getUuid());
+        if (playerData == null) {
+            playerRef.sendMessage(Message.raw(tr("ui.augments.error.playerdata_unavailable",
+                    "Unable to load your player data. Try reopening this page.")).color("#ff6666"));
+            return;
+        }
+
+        augmentUnlockManager.refreshUnlocks(playerData);
+        playerDataManager.save(playerData);
+        playerRef.sendMessage(Message.raw(tr("ui.augments.refresh.success",
+                "Refreshed augment offers for your active profile.")).color("#4fd7f7"));
+        reopenChoosePage(ref, store);
+    }
+
+    private void reopenChoosePage(@Nonnull Ref<EntityStore> ref, @Nonnull Store<EntityStore> store) {
         Player player = store.getComponent(ref, Player.getComponentType());
         if (player != null) {
             player.getPageManager().openCustomPage(ref, store,

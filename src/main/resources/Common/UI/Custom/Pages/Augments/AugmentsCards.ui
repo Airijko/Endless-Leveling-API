@@ -319,13 +319,33 @@ $C.@PageOverlay {
 
                     Group {
                         Anchor: (Width: 300);
-                        LayoutMode: Middle;
+                        LayoutMode: Top;
 
-                        $C.@TextButton #AugmentCard1Choose {
-                            Text: "Choose";
-                            Anchor: (Width: 140, Height: 36);
-                            Padding: (Horizontal: 16, Vertical: 6);
-                            Style: @ChooseButtonStyle;
+                        Group {
+                            LayoutMode: Middle;
+                            Anchor: (Height: 36);
+
+                            $C.@TextButton #AugmentCard1Choose {
+                                Text: "Choose";
+                                Anchor: (Width: 140, Height: 36);
+                                Padding: (Horizontal: 16, Vertical: 6);
+                                Style: @ChooseButtonStyle;
+                            }
+                        }
+
+                        Group { Anchor: (Height: 6); }
+
+                        Group {
+                            LayoutMode: Middle;
+                            Anchor: (Height: 32);
+
+                            $C.@TextButton #AugmentCard1Reroll {
+                                Text: "Reroll";
+                                Anchor: (Width: 140, Height: 32);
+                                Padding: (Horizontal: 12, Vertical: 5);
+                                Style: @ChooseButtonStyle;
+                                Visible: false;
+                            }
                         }
                     }
 
@@ -333,13 +353,33 @@ $C.@PageOverlay {
 
                     Group {
                         Anchor: (Width: 300);
-                        LayoutMode: Middle;
+                        LayoutMode: Top;
 
-                        $C.@TextButton #AugmentCard2Choose {
-                            Text: "Choose";
-                            Anchor: (Width: 140, Height: 36);
-                            Padding: (Horizontal: 16, Vertical: 6);
-                            Style: @ChooseButtonStyle;
+                        Group {
+                            LayoutMode: Middle;
+                            Anchor: (Height: 36);
+
+                            $C.@TextButton #AugmentCard2Choose {
+                                Text: "Choose";
+                                Anchor: (Width: 140, Height: 36);
+                                Padding: (Horizontal: 16, Vertical: 6);
+                                Style: @ChooseButtonStyle;
+                            }
+                        }
+
+                        Group { Anchor: (Height: 6); }
+
+                        Group {
+                            LayoutMode: Middle;
+                            Anchor: (Height: 32);
+
+                            $C.@TextButton #AugmentCard2Reroll {
+                                Text: "Reroll";
+                                Anchor: (Width: 140, Height: 32);
+                                Padding: (Horizontal: 12, Vertical: 5);
+                                Style: @ChooseButtonStyle;
+                                Visible: false;
+                            }
                         }
                     }
 
@@ -347,15 +387,50 @@ $C.@PageOverlay {
 
                     Group {
                         Anchor: (Width: 300);
-                        LayoutMode: Middle;
+                        LayoutMode: Top;
 
-                        $C.@TextButton #AugmentCard3Choose {
-                            Text: "Choose";
-                            Anchor: (Width: 140, Height: 36);
-                            Padding: (Horizontal: 16, Vertical: 6);
-                            Style: @ChooseButtonStyle;
+                        Group {
+                            LayoutMode: Middle;
+                            Anchor: (Height: 36);
+
+                            $C.@TextButton #AugmentCard3Choose {
+                                Text: "Choose";
+                                Anchor: (Width: 140, Height: 36);
+                                Padding: (Horizontal: 16, Vertical: 6);
+                                Style: @ChooseButtonStyle;
+                            }
+                        }
+
+                        Group { Anchor: (Height: 6); }
+
+                        Group {
+                            LayoutMode: Middle;
+                            Anchor: (Height: 32);
+
+                            $C.@TextButton #AugmentCard3Reroll {
+                                Text: "Reroll";
+                                Anchor: (Width: 140, Height: 32);
+                                Padding: (Horizontal: 12, Vertical: 5);
+                                Style: @ChooseButtonStyle;
+                                Visible: false;
+                            }
                         }
                     }
+                }
+            }
+
+            Group { Anchor: (Height: 48); }
+
+            Group {
+                LayoutMode: Middle;
+                Anchor: (Width: 980);
+
+                $C.@TextButton #AugmentsRefreshButton {
+                    Text: "Refresh";
+                    Anchor: (Width: 160, Height: 34);
+                    Padding: (Horizontal: 14, Vertical: 6);
+                    Style: @ChooseButtonStyle;
+                    Visible: false;
                 }
             }
         }

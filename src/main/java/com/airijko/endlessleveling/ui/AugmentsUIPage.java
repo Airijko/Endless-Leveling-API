@@ -10,9 +10,11 @@ import com.airijko.endlessleveling.enums.PassiveTier;
 import com.airijko.endlessleveling.enums.themes.AugmentTheme;
 import com.airijko.endlessleveling.player.PlayerDataManager;
 import com.airijko.endlessleveling.util.Lang;
+import com.airijko.endlessleveling.util.OperatorHelper;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
+import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.entity.entities.player.pages.InteractiveCustomUIPage;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
@@ -103,6 +105,8 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         events.addEventBinding(ValueChanged, "#SearchInput", of("@SearchQuery", "#SearchInput.Value"), false);
         events.addEventBinding(Activating, "#OpenAugmentsChooseButton", of("Action", "augment:open_choose"),
                 false);
+        events.addEventBinding(Activating, "#AugmentInfoRerollButton", of("Action", "augment:reroll:selected"),
+            false);
 
         buildGrid(ui, events);
         applyInfoPanel(ui, selectedAugmentId);
@@ -113,7 +117,8 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         ui.set("#AugmentsOverviewDescription.Text", tr("ui.augments.page.left.description",
                 "Augments are powerful passive enhancements that permanently strengthen your character. Earn them by reaching level milestones and through prestige."));
         ui.set("#AugmentsCollectionTitle.Text", tr("ui.augments.page.left.collection_title", "YOUR COLLECTION"));
-        ui.set("#AugmentsRerollsTitle.Text", tr("ui.augments.page.left.rerolls_title", "REROLLS USED"));
+        ui.set("#AugmentsRerollsTitle.Text", tr("ui.augments.page.left.rerolls_available_title", "REROLLS AVAILABLE"));
+        ui.set("#AugmentRerollTotal.Text", tr("ui.augments.page.rerolls.total", "Total: {0}", 0));
         ui.set("#AugmentsInfoText.Text",
                 tr("ui.augments.page.left.hover_hint", "Hover over an augment to preview it."));
         ui.set("#SearchInput.PlaceholderText", tr("ui.augments.page.search_placeholder", "Search augments..."));
@@ -141,6 +146,10 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             String action = data.action.trim();
             if ("augment:open_choose".equalsIgnoreCase(action)) {
                 openChoosePage(ref, store);
+                return;
+            }
+            if ("augment:reroll:selected".equalsIgnoreCase(action)) {
+                handleSelectedAugmentReroll(ref, store);
                 return;
             }
             if (action.startsWith("augment:hover:")) {
@@ -275,6 +284,7 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     }
 
     private void applyInfoPanel(@Nonnull UICommandBuilder ui, String augmentId) {
+        PlayerData playerData = playerDataManager != null ? playerDataManager.get(playerRef.getUuid()) : null;
         AugmentDefinition def = (augmentId != null && augmentManager != null)
                 ? augmentManager.getAugment(augmentId)
                 : null;
@@ -286,6 +296,7 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             ui.set("#AugmentInfoTier.Visible", false);
             ui.set("#AugmentInfoDivider.Visible", false);
             ui.set("#AugmentInfoDescription.Visible", false);
+            ui.set("#AugmentInfoRerollButton.Visible", false);
             applyInfoSections(ui, List.of());
             return;
         }
@@ -301,6 +312,18 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         ui.set("#AugmentInfoTier.Text", tierName);
         ui.set("#AugmentInfoTier.Style.TextColor", tierColor(def.getTier()));
         ui.set("#AugmentInfoTier.Visible", !tierName.isBlank());
+
+        int remainingForSelectedTier = resolveRemainingRerolls(playerData, def.getTier());
+        boolean privilegedRerollBypass = hasPrivilegedRerollAccess();
+        boolean isPersistedSelection = isSelectedAugmentOwned(playerData, augmentId, def);
+        boolean showRerollButton = isPersistedSelection && (remainingForSelectedTier > 0 || privilegedRerollBypass)
+            && this.selectedAugmentId != null
+            && this.selectedAugmentId.equalsIgnoreCase(augmentId);
+        ui.set("#AugmentInfoRerollButton.Text",
+            privilegedRerollBypass
+                ? tr("ui.augments.page.info.reroll_button_infinite", "REROLL (INF)")
+                : tr("ui.augments.page.info.reroll_button", "REROLL ({0})", remainingForSelectedTier));
+        ui.set("#AugmentInfoRerollButton.Visible", showRerollButton);
 
         ui.set("#AugmentInfoDivider.Visible", true);
 
@@ -522,15 +545,179 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 tr("ui.augments.page.stats.elite", "Elite: {0} / {1}", eliteOwned, totalElite));
         ui.set("#AugmentStatCommon.Text", tr("ui.augments.page.stats.common", "Common: {0}", commonOwned));
 
-        Map<String, Integer> rerolls = playerData != null ? playerData.getAugmentRerollsUsedSnapshot() : Map.of();
+        int mythicRerolls = resolveRemainingRerolls(playerData, PassiveTier.MYTHIC);
+        int legendaryRerolls = resolveRemainingRerolls(playerData, PassiveTier.LEGENDARY);
+        int eliteRerolls = resolveRemainingRerolls(playerData, PassiveTier.ELITE);
+        int commonRerolls = resolveRemainingRerolls(playerData, PassiveTier.COMMON);
+        int totalRerolls = mythicRerolls + legendaryRerolls + eliteRerolls + commonRerolls;
+
+        ui.set("#AugmentRerollTotal.Text",
+            tr("ui.augments.page.rerolls.total", "Total: {0}", totalRerolls));
+
         ui.set("#AugmentRerollMythic.Text",
-                tr("ui.augments.page.rerolls.mythic", "Mythic: {0}", rerolls.getOrDefault("MYTHIC", 0)));
+                tr("ui.augments.page.rerolls.mythic", "Mythic: {0}", mythicRerolls));
         ui.set("#AugmentRerollLegendary.Text",
-            tr("ui.augments.page.rerolls.legendary", "Legendary: {0}", rerolls.getOrDefault("LEGENDARY", 0)));
+            tr("ui.augments.page.rerolls.legendary", "Legendary: {0}", legendaryRerolls));
         ui.set("#AugmentRerollElite.Text",
-                tr("ui.augments.page.rerolls.elite", "Elite: {0}", rerolls.getOrDefault("ELITE", 0)));
+                tr("ui.augments.page.rerolls.elite", "Elite: {0}", eliteRerolls));
         ui.set("#AugmentRerollCommon.Text",
-                tr("ui.augments.page.rerolls.common", "Common: {0}", rerolls.getOrDefault("COMMON", 0)));
+                tr("ui.augments.page.rerolls.common", "Common: {0}", commonRerolls));
+    }
+
+    private int resolveRemainingRerolls(PlayerData playerData, PassiveTier tier) {
+        if (playerData == null || tier == null || augmentUnlockManager == null) {
+            return 0;
+        }
+        return Math.max(0, augmentUnlockManager.getRemainingRerolls(playerData, tier));
+    }
+
+    private boolean hasPrivilegedRerollAccess() {
+        return OperatorHelper.hasAdministrativeAccess(playerRef);
+    }
+
+    private boolean isSelectedAugmentOwned(PlayerData playerData, String augmentId, AugmentDefinition selectedDef) {
+        if (playerData == null || augmentId == null || augmentId.isBlank()) {
+            return false;
+        }
+
+        String normalizedTarget = augmentId.trim().toLowerCase(Locale.ROOT);
+        String selectedCanonical = selectedDef != null && selectedDef.getId() != null
+                ? selectedDef.getId().trim().toLowerCase(Locale.ROOT)
+                : normalizedTarget;
+
+        for (String selectedId : playerData.getSelectedAugmentsSnapshot().values()) {
+            if (selectedId == null || selectedId.isBlank()) {
+                continue;
+            }
+
+            String normalizedSelected = selectedId.trim().toLowerCase(Locale.ROOT);
+            if (normalizedSelected.equals(normalizedTarget)) {
+                return true;
+            }
+
+            AugmentDefinition ownedDef = augmentManager != null ? augmentManager.getAugment(selectedId) : null;
+            if (ownedDef != null && ownedDef.getId() != null) {
+                String ownedCanonical = ownedDef.getId().trim().toLowerCase(Locale.ROOT);
+                if (ownedCanonical.equals(selectedCanonical)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private void handleSelectedAugmentReroll(@Nonnull Ref<EntityStore> ref, @Nonnull Store<EntityStore> store) {
+        if (selectedAugmentId == null || selectedAugmentId.isBlank()) {
+            playerRef.sendMessage(Message.raw(tr("ui.augments.error.reroll_nothing_selected",
+                    "Select an owned augment first.")).color("#ff9900"));
+            return;
+        }
+
+        if (playerDataManager == null || augmentUnlockManager == null || augmentManager == null) {
+            playerRef.sendMessage(Message.raw(tr("ui.augments.error.data_unavailable",
+                    "Augment data unavailable.")).color("#ff6666"));
+            return;
+        }
+
+        PlayerData playerData = playerDataManager.get(playerRef.getUuid());
+        if (playerData == null) {
+            playerRef.sendMessage(Message.raw(tr("ui.augments.error.playerdata_unavailable",
+                    "Unable to load your player data. Try reopening this page.")).color("#ff6666"));
+            return;
+        }
+
+        String slotKey = null;
+        String selectedCanonical = selectedAugmentId.trim().toLowerCase(Locale.ROOT);
+        AugmentDefinition selectedDef = augmentManager.getAugment(selectedAugmentId);
+        if (selectedDef != null && selectedDef.getId() != null) {
+            selectedCanonical = selectedDef.getId().trim().toLowerCase(Locale.ROOT);
+        }
+
+        for (Map.Entry<String, String> entry : playerData.getSelectedAugmentsSnapshot().entrySet()) {
+            String candidateId = entry.getValue();
+            if (candidateId == null || candidateId.isBlank()) {
+                continue;
+            }
+
+            String candidateCanonical = candidateId.trim().toLowerCase(Locale.ROOT);
+            AugmentDefinition candidateDef = augmentManager.getAugment(candidateId);
+            if (candidateDef != null && candidateDef.getId() != null) {
+                candidateCanonical = candidateDef.getId().trim().toLowerCase(Locale.ROOT);
+            }
+
+            if (candidateCanonical.equals(selectedCanonical)) {
+                slotKey = entry.getKey();
+                break;
+            }
+        }
+
+        if (slotKey == null || slotKey.isBlank()) {
+            playerRef.sendMessage(Message.raw(tr("ui.augments.error.reroll_not_owned",
+                    "That augment is not in your selected unlocks.")).color("#ff9900"));
+            return;
+        }
+
+        PassiveTier tier;
+        try {
+            String tierKey = slotKey;
+            int hashIndex = tierKey.indexOf('#');
+            if (hashIndex >= 0) {
+                tierKey = tierKey.substring(0, hashIndex);
+            }
+            int colonIndex = tierKey.indexOf(':');
+            if (colonIndex >= 0) {
+                tierKey = tierKey.substring(0, colonIndex);
+            }
+            tier = PassiveTier.valueOf(tierKey.trim().toUpperCase(Locale.ROOT));
+        } catch (Exception ex) {
+            playerRef.sendMessage(Message.raw(tr("ui.augments.error.tier_unresolved",
+                    "Unable to resolve augment tier.")).color("#ff6666"));
+            return;
+        }
+
+        int remaining = augmentUnlockManager.getRemainingRerolls(playerData, tier);
+        boolean privilegedBypass = hasPrivilegedRerollAccess();
+        if (remaining <= 0 && !privilegedBypass) {
+            playerRef.sendMessage(Message.raw(tr("ui.augments.error.no_rerolls_tier",
+                    "No rerolls available for {0} tier.", tier.name())).color("#ff9900"));
+            return;
+        }
+
+        String tierKey = tier.name();
+        int offersBefore = playerData.getAugmentOffersForTier(tierKey).size();
+        playerData.setSelectedAugmentForTier(slotKey, null);
+        if (!privilegedBypass) {
+            playerData.incrementAugmentRerollsUsedForTier(tierKey);
+        }
+        augmentUnlockManager.ensureUnlocks(playerData);
+
+        int offersAfter = playerData.getAugmentOffersForTier(tierKey).size();
+        if (offersAfter <= offersBefore) {
+            boolean forced = augmentUnlockManager.forceOfferBundleForTier(playerData, tier);
+            if (!forced) {
+                playerDataManager.save(playerData);
+                playerRef.sendMessage(Message.raw(tr("ui.augments.error.reroll_failed",
+                        "Reroll failed. Try again.")).color("#ff6666"));
+                return;
+            }
+        }
+
+        playerDataManager.save(playerData);
+        this.selectedAugmentId = null;
+
+        UICommandBuilder commandBuilder = new UICommandBuilder();
+        UIEventBuilder eventBuilder = new UIEventBuilder();
+        buildGrid(commandBuilder, eventBuilder);
+        applyInfoPanel(commandBuilder, null);
+        this.sendUpdate(commandBuilder, eventBuilder, false);
+
+        int remainingAfter = augmentUnlockManager.getRemainingRerolls(playerData, tier);
+        String successMessage = privilegedBypass
+            ? tr("ui.augments.reroll.success_bypass",
+                "Rerolled {0} selection. Operator/Admin bypass active (no reroll consumed).", tier.name())
+            : tr("ui.augments.reroll.success",
+                "Rerolled {0} selection. Remaining rerolls: {1}", tier.name(), remainingAfter);
+        playerRef.sendMessage(Message.raw(successMessage).color("#4fd7f7"));
     }
 
     private int countSelectedForTier(PlayerData playerData, PassiveTier tier) {

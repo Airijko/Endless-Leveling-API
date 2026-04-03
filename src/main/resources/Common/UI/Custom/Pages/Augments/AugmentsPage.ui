@@ -110,9 +110,16 @@ $C.@PageOverlay {
                                 }
 
                                 Label #AugmentsRerollsTitle {
-                                    Text: "REROLLS USED";
+                                    Text: "REROLLS AVAILABLE";
                                     Style: (FontSize: 11, TextColor: #9fb6d3, RenderBold: true, HorizontalAlignment: Center);
                                     Anchor: (Height: 16, Bottom: 8);
+                                    Padding: (Horizontal: 12);
+                                }
+
+                                Label #AugmentRerollTotal {
+                                    Text: "Total: 0";
+                                    Style: (FontSize: 13, TextColor: #c5d4e8);
+                                    Anchor: (Height: 20, Bottom: 4);
                                     Padding: (Horizontal: 12);
                                 }
 
@@ -465,6 +472,15 @@ $C.@PageOverlay {
                                             }
                                         }
                                     }
+                                }
+
+                                Group { Anchor: (Height: 8); }
+
+                                $C.@TextButton #AugmentInfoRerollButton {
+                                    Text: "REROLL";
+                                    Anchor: (Width: 220, Height: 34);
+                                    Padding: (Horizontal: 14, Vertical: 6);
+                                    Visible: false;
                                 }
                             }
                         }
