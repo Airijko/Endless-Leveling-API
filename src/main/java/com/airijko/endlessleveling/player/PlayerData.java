@@ -526,6 +526,22 @@ public class PlayerData {
         return Collections.unmodifiableMap(getActiveProfile().getPassiveLevels());
     }
 
+    public boolean isAutoAllocateEnabled(SkillAttributeType type) {
+        return getActiveProfile().isAutoAllocateEnabled(type);
+    }
+
+    public void setAutoAllocateEnabled(SkillAttributeType type, boolean enabled) {
+        getActiveProfile().setAutoAllocateEnabled(type, enabled);
+    }
+
+    public int getAutoAllocatePointsPerLevel() {
+        return getActiveProfile().getAutoAllocatePointsPerLevel();
+    }
+
+    public void setAutoAllocatePointsPerLevel(int value) {
+        getActiveProfile().setAutoAllocatePointsPerLevel(value);
+    }
+
     public String getRaceId() {
         return getActiveProfile().getRaceId();
     }
@@ -789,6 +805,8 @@ public class PlayerData {
         private int skillPoints;
         private final Map<SkillAttributeType, Integer> attributes;
         private final Map<PassiveType, Integer> passiveLevels;
+        private final Map<SkillAttributeType, Boolean> autoAllocateEnabled;
+        private int autoAllocatePointsPerLevel;
         private final Map<String, List<String>> augmentOffers;
         private final Map<String, String> selectedAugments;
         private final Map<String, Map<String, Double>> augmentValueRolls;
@@ -824,6 +842,11 @@ public class PlayerData {
             for (PassiveType passiveType : PassiveType.values()) {
                 this.passiveLevels.put(passiveType, 0);
             }
+            this.autoAllocateEnabled = new EnumMap<>(SkillAttributeType.class);
+            for (SkillAttributeType type : SkillAttributeType.values()) {
+                this.autoAllocateEnabled.put(type, false);
+            }
+            this.autoAllocatePointsPerLevel = 0;
             this.augmentOffers = new LinkedHashMap<>();
             this.selectedAugments = new LinkedHashMap<>();
             this.augmentValueRolls = new LinkedHashMap<>();
@@ -904,6 +927,26 @@ public class PlayerData {
 
         public Map<PassiveType, Integer> getPassiveLevels() {
             return passiveLevels;
+        }
+
+        public boolean isAutoAllocateEnabled(SkillAttributeType type) {
+            return autoAllocateEnabled.getOrDefault(type, false);
+        }
+
+        public void setAutoAllocateEnabled(SkillAttributeType type, boolean enabled) {
+            autoAllocateEnabled.put(type, enabled);
+        }
+
+        public Map<SkillAttributeType, Boolean> getAutoAllocateEnabled() {
+            return autoAllocateEnabled;
+        }
+
+        public int getAutoAllocatePointsPerLevel() {
+            return Math.max(0, autoAllocatePointsPerLevel);
+        }
+
+        public void setAutoAllocatePointsPerLevel(int value) {
+            this.autoAllocatePointsPerLevel = Math.max(0, value);
         }
 
         public Map<String, List<String>> getAugmentOffers() {

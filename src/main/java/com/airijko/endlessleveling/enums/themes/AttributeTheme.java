@@ -255,6 +255,18 @@ public enum AttributeTheme {
         return "#RaceAttribute" + uiSuffix + "Note";
     }
 
+    public String autoAllocateLabelSelector() {
+        return "#AutoAllocate" + uiSuffix + "Label";
+    }
+
+    public String quickSpendLabelSelector() {
+        return "#QuickSpend" + uiSuffix + "Label";
+    }
+
+    public String quickSpendInputSelector() {
+        return "#QuickSpend" + uiSuffix + "Input";
+    }
+
     public static AttributeTheme fromType(SkillAttributeType type) {
         return type == null ? null : BY_TYPE.get(type);
     }

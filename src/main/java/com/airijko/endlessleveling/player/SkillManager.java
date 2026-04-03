@@ -111,7 +111,7 @@ public class SkillManager {
     public void loadConfigValues() {
         try {
             baseSkillPoints = getIntFromLevelingConfig("baseSkillPoints", 8);
-            skillPointsPerLevel = getIntFromLevelingConfig("skillPointsPerLevel", 4);
+            skillPointsPerLevel = getIntFromLevelingConfig("skillPointsPerLevel", 5);
             loadClassInnateAttributeLevelCaps();
             loadDefenseCapRoles();
             LOGGER.atInfo().log("SkillManager loaded: baseSkillPoints=%d, skillPointsPerLevel=%d",
@@ -119,7 +119,7 @@ public class SkillManager {
         } catch (Exception e) {
             LOGGER.atSevere().log("Failed to load skill points: %s", e.getMessage());
             baseSkillPoints = 8;
-            skillPointsPerLevel = 4;
+            skillPointsPerLevel = 5;
             loadDefaultClassInnateAttributeLevelCaps();
             loadDefaultDefenseCapRoles();
         }
@@ -334,9 +334,119 @@ public class SkillManager {
         player.setSkillPoints(player.getSkillPoints() + skillPointsPerLevel);
     }
 
+    public AutoAllocateResult applyAutoAllocationOnLevelUp(PlayerData playerData) {
+        if (playerData == null) {
+            return AutoAllocateResult.none();
+        }
+
+        SkillAttributeType selectedAttribute = resolveSelectedAutoAllocateAttribute(playerData);
+        if (selectedAttribute == null) {
+            return AutoAllocateResult.none();
+        }
+
+        int configuredSpend = Math.max(0, playerData.getAutoAllocatePointsPerLevel());
+        int availablePoints = Math.max(0, playerData.getSkillPoints());
+        int requestedSpend = Math.min(configuredSpend, availablePoints);
+        if (requestedSpend <= 0) {
+            return AutoAllocateResult.none();
+        }
+
+        SkillSpendResult spendResult = spendSkillPointsOnAttribute(playerData, selectedAttribute, requestedSpend);
+        if (spendResult.applied()) {
+            return AutoAllocateResult.applied(selectedAttribute, spendResult.spentPoints(), requestedSpend);
+        }
+        if (spendResult.blockReason() != null) {
+            return AutoAllocateResult.blocked(selectedAttribute, requestedSpend, spendResult.blockReason());
+        }
+        return AutoAllocateResult.none();
+    }
+
+    public SkillSpendResult spendSkillPointsOnAttribute(PlayerData playerData,
+            SkillAttributeType attributeType,
+            int requestedPoints) {
+        if (playerData == null || attributeType == null) {
+            return SkillSpendResult.none();
+        }
+
+        int availablePoints = Math.max(0, playerData.getSkillPoints());
+        int requested = Math.max(0, requestedPoints);
+        int clampedRequested = Math.min(requested, availablePoints);
+        if (clampedRequested <= 0) {
+            return SkillSpendResult.blocked(attributeType, requested, "not_enough_points");
+        }
+
+        if (isCritAttributeLocked(playerData, attributeType)) {
+            return SkillSpendResult.blocked(attributeType, requested, "crit_locked");
+        }
+
+        int currentLevel = Math.max(0, playerData.getPlayerSkillAttributeLevel(attributeType));
+        int acceptedSpend = clampSpendByEffectiveCap(playerData, attributeType, currentLevel, clampedRequested);
+        if (acceptedSpend <= 0) {
+            return SkillSpendResult.blocked(attributeType, requested, "effective_cap_reached");
+        }
+
+        playerData.setPlayerSkillAttributeLevel(attributeType, currentLevel + acceptedSpend);
+        playerData.setSkillPoints(Math.max(0, availablePoints - acceptedSpend));
+        return SkillSpendResult.applied(attributeType, acceptedSpend, requested);
+    }
+
     /** Calculate total skill points for a given level */
     public int calculateTotalSkillPoints(int level) {
         return baseSkillPoints + skillPointsPerLevel * (level - 1);
+    }
+
+    private SkillAttributeType resolveSelectedAutoAllocateAttribute(PlayerData playerData) {
+        if (playerData == null) {
+            return null;
+        }
+        for (SkillAttributeType type : SkillAttributeType.values()) {
+            if (playerData.isAutoAllocateEnabled(type)) {
+                return type;
+            }
+        }
+        return null;
+    }
+
+    private int clampSpendByEffectiveCap(PlayerData playerData,
+            SkillAttributeType attributeType,
+            int currentLevel,
+            int requestedPoints) {
+        int requested = Math.max(0, requestedPoints);
+        if (requested <= 0 || !isEffectiveCapLimitedAttribute(attributeType)) {
+            return requested;
+        }
+
+        int safeCurrentLevel = Math.max(0, currentLevel);
+        int accepted = 0;
+        double metricAtCurrent = getEffectiveCapMetric(playerData, attributeType, safeCurrentLevel);
+        for (int i = 0; i < requested; i++) {
+            int candidateLevel = safeCurrentLevel + accepted + 1;
+            double metricAtCandidate = getEffectiveCapMetric(playerData, attributeType, candidateLevel);
+            if (metricAtCandidate <= metricAtCurrent + 1e-6D) {
+                break;
+            }
+            accepted++;
+            metricAtCurrent = metricAtCandidate;
+        }
+        return accepted;
+    }
+
+    private boolean isEffectiveCapLimitedAttribute(SkillAttributeType attributeType) {
+        return attributeType == SkillAttributeType.PRECISION || attributeType == SkillAttributeType.DEFENSE;
+    }
+
+    private double getEffectiveCapMetric(PlayerData playerData, SkillAttributeType attributeType, int previewLevel) {
+        return switch (attributeType) {
+            case PRECISION -> {
+                PrecisionBreakdown breakdown = getPrecisionBreakdown(playerData, previewLevel);
+                yield breakdown != null ? breakdown.totalPercent() : 0.0D;
+            }
+            case DEFENSE -> {
+                DefenseBreakdown breakdown = getDefenseBreakdown(playerData, previewLevel);
+                yield breakdown != null ? (breakdown.resistance() * 100.0D) : 0.0D;
+            }
+            default -> 0.0D;
+        };
     }
 
     public int getSkillPointsPerLevel() {
@@ -345,6 +455,36 @@ public class SkillManager {
 
     public int getBaseSkillPoints() {
         return baseSkillPoints;
+    }
+
+    public record AutoAllocateResult(SkillAttributeType attribute, int spentPoints, int requestedPoints, boolean applied,
+            String blockReason) {
+        public static AutoAllocateResult none() {
+            return new AutoAllocateResult(null, 0, 0, false, null);
+        }
+
+        public static AutoAllocateResult applied(SkillAttributeType attribute, int spentPoints, int requestedPoints) {
+            return new AutoAllocateResult(attribute, spentPoints, requestedPoints, true, null);
+        }
+
+        public static AutoAllocateResult blocked(SkillAttributeType attribute, int requestedPoints, String blockReason) {
+            return new AutoAllocateResult(attribute, 0, requestedPoints, false, blockReason);
+        }
+    }
+
+    public record SkillSpendResult(SkillAttributeType attribute, int spentPoints, int requestedPoints, boolean applied,
+            String blockReason) {
+        public static SkillSpendResult none() {
+            return new SkillSpendResult(null, 0, 0, false, null);
+        }
+
+        public static SkillSpendResult applied(SkillAttributeType attribute, int spentPoints, int requestedPoints) {
+            return new SkillSpendResult(attribute, spentPoints, requestedPoints, true, null);
+        }
+
+        public static SkillSpendResult blocked(SkillAttributeType attribute, int requestedPoints, String blockReason) {
+            return new SkillSpendResult(attribute, 0, requestedPoints, false, blockReason);
+        }
     }
 
     public double getSkillAttributeConfigValue(SkillAttributeType type) {

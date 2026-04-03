@@ -43,7 +43,7 @@ $C.@PageOverlay {
                     LayoutMode: Left;
 
                     // Card 1
-                    Group #AugmentCard1 {
+                    Button #AugmentCard1 {
                         Anchor: (Width: 300, Height: 480);
 
                         Group #AugmentCard1BgCommon {
@@ -74,97 +74,104 @@ $C.@PageOverlay {
                             LayoutMode: Top;
                             Anchor: (Top: 0, Left: 0, Right: 0, Bottom: 0);
 
-                        Group {
-                            LayoutMode: Middle;
-                            Anchor: (Width: 300, Height: 44);
+                            Group {
+                                LayoutMode: Middle;
+                                Anchor: (Width: 300, Height: 44);
 
-                            Label #AugmentCard1Title {
-                                Text: "AUGMENT";
-                                Style: (FontSize: 17, TextColor: #e6edf5, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
+                                Label #AugmentCard1Title {
+                                    Text: "AUGMENT";
+                                    Style: (FontSize: 17, TextColor: #e6edf5, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
+                                }
                             }
-                        }
-
-                        Group {
-                            LayoutMode: Top;
-                            Padding: (Full: 14);
 
                             Group {
                                 LayoutMode: Top;
-                                Anchor: (Width: 240);
+                                Padding: (Full: 14);
 
                                 Group {
-                                    Anchor: (Width: 100, Height: 100);
-                                    LayoutMode: Middle;
-                                    Background: #050b16(0.65);
+                                    LayoutMode: Top;
+                                    Anchor: (Width: 240);
 
-                                    ItemIcon #AugmentCard1Icon {
-                                        Anchor: (Width: 90, Height: 90);
+                                    Group {
+                                        Anchor: (Width: 100, Height: 100);
+                                        LayoutMode: Middle;
+                                        Background: #050b16(0.65);
+
+                                        ItemIcon #AugmentCard1Icon {
+                                            Anchor: (Width: 90, Height: 90);
+                                            Visible: false;
+                                        }
+                                    }
+
+                                    Group { Anchor: (Height: 10); }
+
+                                    Label #AugmentCard1Description {
+                                        Text: "Loading augment...";
+                                        Style: (FontSize: 16, TextColor: #e6edf5, RenderBold: true, Wrap: true, HorizontalAlignment: Center, VerticalAlignment: Center);
+                                    }
+
+                                    Group { Anchor: (Height: 8); }
+
+                                    Label #AugmentCard1Buffs {
+                                        Text: "Buffs: -";
+                                        Style: (FontSize: 14, TextColor: #cdd9ec, Wrap: true, HorizontalAlignment: Center);
                                         Visible: false;
                                     }
+
+                                    Label #AugmentCard1Debuffs {
+                                        Text: "Debuffs: -";
+                                        Style: (FontSize: 14, TextColor: #ffb3b3, Wrap: true, HorizontalAlignment: Center);
+                                        Visible: false;
+                                    }
+
+                                    Label #AugmentCard1SelfDamage {
+                                        Text: "";
+                                        Style: (FontSize: 14, TextColor: #ffb86b, Wrap: true, HorizontalAlignment: Center);
+                                        Visible: false;
+                                    }
+
+                                    Label #AugmentCard1Neutral {
+                                        Text: "";
+                                        Style: (FontSize: 14, TextColor: #e6edf5, Wrap: true, HorizontalAlignment: Center);
+                                        Visible: false;
+                                    }
+
+                                    Label #AugmentCard1Notes {
+                                        Text: "";
+                                        Style: (FontSize: 13, TextColor: #c9d2de, Wrap: true, HorizontalAlignment: Center);
+                                        Visible: false;
+                                    }
+
+                                    Group { Anchor: (Height: 6); }
+
+                                    Label #AugmentCard1Duration {
+                                        Text: "Duration: -";
+                                        Style: (FontSize: 14, TextColor: #b7c6d9, Wrap: true, HorizontalAlignment: Center);
+                                        Visible: false;
+                                    }
+
+                                    Label #AugmentCard1Cooldown {
+                                        Text: "Cooldown: -";
+                                        Style: (FontSize: 14, TextColor: #b7c6d9, Wrap: true, HorizontalAlignment: Center);
+                                        Visible: false;
+                                    }
+
+                                    Group { Anchor: (Height: 14); }
                                 }
-
-                                Group { Anchor: (Height: 10); }
-
-                                Label #AugmentCard1Description {
-                                    Text: "Loading augment...";
-                                    Style: (FontSize: 16, TextColor: #e6edf5, RenderBold: true, Wrap: true, HorizontalAlignment: Center, VerticalAlignment: Center);
-                                }
-
-                                Group { Anchor: (Height: 8); }
-
-                                Label #AugmentCard1Buffs {
-                                    Text: "Buffs: -";
-                                    Style: (FontSize: 14, TextColor: #cdd9ec, Wrap: true, HorizontalAlignment: Center);
-                                    Visible: false;
-                                }
-
-                                Label #AugmentCard1Debuffs {
-                                    Text: "Debuffs: -";
-                                    Style: (FontSize: 14, TextColor: #ffb3b3, Wrap: true, HorizontalAlignment: Center);
-                                    Visible: false;
-                                }
-
-                                Label #AugmentCard1SelfDamage {
-                                    Text: "";
-                                    Style: (FontSize: 14, TextColor: #ffb86b, Wrap: true, HorizontalAlignment: Center);
-                                    Visible: false;
-                                }
-
-                                Label #AugmentCard1Neutral {
-                                    Text: "";
-                                    Style: (FontSize: 14, TextColor: #e6edf5, Wrap: true, HorizontalAlignment: Center);
-                                    Visible: false;
-                                }
-
-                                Label #AugmentCard1Notes {
-                                    Text: "";
-                                    Style: (FontSize: 13, TextColor: #c9d2de, Wrap: true, HorizontalAlignment: Center);
-                                    Visible: false;
-                                }
-
-                                Group { Anchor: (Height: 6); }
-
-                                Label #AugmentCard1Duration {
-                                    Text: "Duration: -";
-                                    Style: (FontSize: 14, TextColor: #b7c6d9, Wrap: true, HorizontalAlignment: Center);
-                                    Visible: false;
-                                }
-
-                                Label #AugmentCard1Cooldown {
-                                    Text: "Cooldown: -";
-                                    Style: (FontSize: 14, TextColor: #b7c6d9, Wrap: true, HorizontalAlignment: Center);
-                                    Visible: false;
-                                }
-                                Group { Anchor: (Height: 14); }
                             }
                         }
+
+                        Group #AugmentCard1Overlay {
+                            Anchor: (Top: 0, Left: 0, Right: 0, Bottom: 0);
+                            Background: #ffffff(0.16);
+                            Visible: false;
                         }
                     }
 
                     Group { Anchor: (Width: 40); }
 
                     // Card 2
-                    Group #AugmentCard2 {
+                    Button #AugmentCard2 {
                         Anchor: (Width: 300, Height: 480);
 
                         Group #AugmentCard2BgCommon {
@@ -222,6 +229,7 @@ $C.@PageOverlay {
                                         Anchor: (Width: 90, Height: 90);
                                         Visible: false;
                                     }
+                                    
                                 }
 
                                 Group { Anchor: (Height: 10); }
@@ -280,12 +288,18 @@ $C.@PageOverlay {
                             }
                         }
                         }
+
+                        Group #AugmentCard2Overlay {
+                            Anchor: (Top: 0, Left: 0, Right: 0, Bottom: 0);
+                            Background: #ffffff(0.16);
+                            Visible: false;
+                        }
                     }
 
                     Group { Anchor: (Width: 40); }
 
                     // Card 3
-                    Group #AugmentCard3 {
+                    Button #AugmentCard3 {
                         Anchor: (Width: 300, Height: 480);
 
                         Group #AugmentCard3BgCommon {
@@ -400,6 +414,12 @@ $C.@PageOverlay {
                                 Group { Anchor: (Height: 14); }
                             }
                         }
+                        }
+
+                        Group #AugmentCard3Overlay {
+                            Anchor: (Top: 0, Left: 0, Right: 0, Bottom: 0);
+                            Background: #ffffff(0.16);
+                            Visible: false;
                         }
                     }
                 }

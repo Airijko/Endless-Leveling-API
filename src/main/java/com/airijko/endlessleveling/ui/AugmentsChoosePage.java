@@ -20,6 +20,8 @@ import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
 import static com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType.Activating;
+import static com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType.MouseEntered;
+import static com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType.MouseExited;
 import static com.hypixel.hytale.server.core.ui.builder.EventData.of;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -121,7 +123,16 @@ public class AugmentsChoosePage extends InteractiveCustomUIPage<SkillsUIPage.Dat
         events.addEventBinding(Activating, "#AugmentCard1Reroll", of("Action", "augment:reroll:0"), false);
         events.addEventBinding(Activating, "#AugmentCard2Reroll", of("Action", "augment:reroll:1"), false);
         events.addEventBinding(Activating, "#AugmentCard3Reroll", of("Action", "augment:reroll:2"), false);
+        events.addEventBinding(Activating, "#AugmentCard1", of("Action", "augment:choose:0"), false);
+        events.addEventBinding(Activating, "#AugmentCard2", of("Action", "augment:choose:1"), false);
+        events.addEventBinding(Activating, "#AugmentCard3", of("Action", "augment:choose:2"), false);
         events.addEventBinding(Activating, "#AugmentsRefreshButton", of("Action", "augment:refresh"), false);
+        events.addEventBinding(MouseEntered, "#AugmentCard1", of("Action", "augment:card:hover:1"), false);
+        events.addEventBinding(MouseExited, "#AugmentCard1", of("Action", "augment:card:hoverend:1"), false);
+        events.addEventBinding(MouseEntered, "#AugmentCard2", of("Action", "augment:card:hover:2"), false);
+        events.addEventBinding(MouseExited, "#AugmentCard2", of("Action", "augment:card:hoverend:2"), false);
+        events.addEventBinding(MouseEntered, "#AugmentCard3", of("Action", "augment:card:hover:3"), false);
+        events.addEventBinding(MouseExited, "#AugmentCard3", of("Action", "augment:card:hoverend:3"), false);
     }
 
     private boolean shouldShowRefreshButton() {
@@ -216,6 +227,22 @@ public class AugmentsChoosePage extends InteractiveCustomUIPage<SkillsUIPage.Dat
             return;
         }
 
+        if (action.startsWith("augment:card:hover:")) {
+            String slot = action.substring("augment:card:hover:".length());
+            UICommandBuilder commandBuilder = new UICommandBuilder();
+            UIEventBuilder eventBuilder = new UIEventBuilder();
+            commandBuilder.set("#AugmentCard" + slot + "Overlay.Visible", true);
+            this.sendUpdate(commandBuilder, eventBuilder, false);
+            return;
+        }
+        if (action.startsWith("augment:card:hoverend:")) {
+            String slot = action.substring("augment:card:hoverend:".length());
+            UICommandBuilder commandBuilder = new UICommandBuilder();
+            UIEventBuilder eventBuilder = new UIEventBuilder();
+            commandBuilder.set("#AugmentCard" + slot + "Overlay.Visible", false);
+            this.sendUpdate(commandBuilder, eventBuilder, false);
+            return;
+        }
         boolean chooseAction = action.startsWith("augment:choose:");
         boolean rerollAction = action.startsWith("augment:reroll:");
         if (!chooseAction && !rerollAction) {

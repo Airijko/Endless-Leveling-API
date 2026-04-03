@@ -18,6 +18,7 @@ import com.hypixel.hytale.server.core.entity.entities.player.pages.InteractiveCu
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
 import static com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType.Activating;
+import static com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType.ValueChanged;
 import static com.hypixel.hytale.server.core.ui.builder.EventData.of;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
@@ -35,6 +36,7 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                         .toArray(SkillBinding[]::new);
 
         private final EnumMap<SkillAttributeType, Integer> previewLevels = new EnumMap<>(SkillAttributeType.class);
+        private final EnumMap<SkillAttributeType, Integer> quickSpendInputs = new EnumMap<>(SkillAttributeType.class);
         private int previewSkillPoints = 0;
         private boolean previewInitialized = false;
         private static final int MIN_ATTRIBUTE_LEVEL = 0;
@@ -96,6 +98,29 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 events.addEventBinding(Activating, "#ResetSkills", of("Action", "reset"), false);
                 events.addEventBinding(Activating, "#RefundExcessSkills", of("Action", "refund_excess"), false);
 
+                // Bind auto-allocate checkbox toggles for all skill attributes.
+                for (SkillBinding binding : SKILL_BINDINGS) {
+                        String toggleId = "#AutoAllocate" + binding.uiPrefix() + "Toggle";
+                        String attrName = binding.attribute().name();
+                        LOGGER.atInfo().log("Binding event: %s -> toggle_auto_allocate:%s", toggleId, attrName);
+                        events.addEventBinding(ValueChanged, toggleId, of("Action", "toggle_auto_allocate:" + attrName), false);
+                }
+
+                for (SkillBinding binding : SKILL_BINDINGS) {
+                        String inputId = "#QuickSpend" + binding.uiPrefix() + "Input";
+                        String applyId = "#QuickSpend" + binding.uiPrefix() + "Apply";
+                        String attrName = binding.attribute().name();
+                        String valueKey = "@QuickSpend" + binding.uiPrefix() + "Value";
+                        LOGGER.atInfo().log("Binding event: %s -> %s", inputId, valueKey);
+                        LOGGER.atInfo().log("Binding event: %s -> quick_spend:%s", applyId, attrName);
+                        events.addEventBinding(ValueChanged, inputId, of(valueKey, inputId + ".Value"), false);
+                        events.addEventBinding(Activating, applyId, of("Action", "quick_spend:" + attrName), false);
+                }
+
+                        // Bind slider value changes so current value text updates in real time.
+                        events.addEventBinding(ValueChanged, "#AutoAllocatePerLevelSlider",
+                                        of("@AutoAllocatePerLevelValue", "#AutoAllocatePerLevelSlider.Value"), false);
+
                 // -----------------------------
                 // UI VALUES
                 // -----------------------------
@@ -118,6 +143,9 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
                 ensurePreviewState(playerData);
 
+                applyAutoAllocateSliderValue(ui, playerData);
+                applyAutoAllocateToggleStates(ui, playerData);
+                applyQuickSpendInputValues(ui);
                 applySkillValues(ui, playerData);
         }
 
@@ -127,6 +155,40 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                         @Nonnull Store<EntityStore> store,
                         @Nonnull Data data) {
                 super.handleDataEvent(ref, store, data);
+
+                if (data != null && data.autoAllocatePerLevelValue != null) {
+                        int skillPointsPerLevelMax = Math.max(0,
+                                        skillManager != null ? skillManager.getSkillPointsPerLevel() : 5);
+                        int sliderValue = data.autoAllocatePerLevelValue;
+                        sliderValue = Math.max(0, Math.min(sliderValue, skillPointsPerLevelMax));
+
+                        PlayerData sliderPlayerData = EndlessLeveling.getInstance()
+                                        .getPlayerDataManager()
+                                        .get(playerRef.getUuid());
+                        if (sliderPlayerData != null) {
+                                sliderPlayerData.setAutoAllocatePointsPerLevel(sliderValue);
+                        }
+
+                        UICommandBuilder sliderUi = new UICommandBuilder();
+                        sliderUi.set("#AutoAllocatePerLevelSlider.Value", sliderValue);
+                        sliderUi.set("#AutoAllocatePerLevelValue.Text", String.valueOf(sliderValue));
+                        sendUpdate(sliderUi, false);
+
+                        if (data.action == null || data.action.isEmpty()) {
+                                return;
+                        }
+                }
+
+                if (data != null) {
+                        UICommandBuilder quickSpendUi = new UICommandBuilder();
+                        boolean quickSpendChanged = applyQuickSpendInputUpdates(data, quickSpendUi);
+                        if (quickSpendChanged) {
+                                sendUpdate(quickSpendUi, false);
+                                if (data.action == null || data.action.isEmpty()) {
+                                        return;
+                                }
+                        }
+                }
 
                 // First, handle navigation actions (switching between pages)
                 if (data.action != null && !data.action.isEmpty()) {
@@ -386,7 +448,139 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                                                                 LOGGER.atSevere().log("Invalid attribute: %s",
                                                                                 attrName);
                                                         }
-                                                }
+                                                        } else if (act.matches("toggle_auto_allocate:(\\w+)")) {
+                                                                String[] parts = act.split(":");
+                                                                String attrName = parts[1];
+                                                                try {
+                                                                        SkillAttributeType selectedType = SkillAttributeType
+                                                                                        .valueOf(attrName);
+                                                                        boolean selectedWasEnabled = playerData
+                                                                                        .isAutoAllocateEnabled(selectedType);
+
+                                                                        // Radio-style behavior: enabling one turns all others off.
+                                                                        if (selectedWasEnabled) {
+                                                                                playerData.setAutoAllocateEnabled(selectedType, false);
+                                                                        } else {
+                                                                                for (SkillBinding binding : SKILL_BINDINGS) {
+                                                                                        SkillAttributeType type = binding.attribute();
+                                                                                        playerData.setAutoAllocateEnabled(type,
+                                                                                                        type == selectedType);
+                                                                                }
+                                                                        }
+
+                                                                        String newState = playerData
+                                                                                        .isAutoAllocateEnabled(selectedType) ? "ON"
+                                                                                                        : "OFF";
+                                                                        player.sendMessage(Message
+                                                                                        .raw(tr(
+                                                                                                        "ui.skills.message.auto_allocate_toggled",
+                                                                                                        "Auto-allocate {0}: {1}",
+                                                                                                        selectedType.name(),
+                                                                                                        newState))
+                                                                                        .color("#ffc300"));
+                                                                        LOGGER.atInfo().log(
+                                                                                        "Updated exclusive auto-allocate selection: %s -> %s for player %s",
+                                                                                        attrName, newState,
+                                                                                        playerRef.getUuid());
+                                                                        refreshUI = true;
+                                                                } catch (IllegalArgumentException iae) {
+                                                                        player.sendMessage(Message
+                                                                                        .raw(tr("ui.skills.error.invalid_attribute",
+                                                                                                        "Invalid attribute: {0}",
+                                                                                                        attrName))
+                                                                                        .color("#ff0000"));
+                                                                        LOGGER.atSevere().log("Invalid attribute: %s",
+                                                                                        attrName);
+                                                                }
+                                                        } else if (act.matches("quick_spend:(\\w+)")) {
+                                                                String[] parts = act.split(":");
+                                                                String attrName = parts[1];
+                                                                try {
+                                                                        SkillAttributeType type = SkillAttributeType.valueOf(attrName);
+                                                                        int requestedAmount = Math.max(0,
+                                                                                        quickSpendInputs.getOrDefault(type, 0));
+                                                                        if (requestedAmount <= 0) {
+                                                                                player.sendMessage(Message
+                                                                                                .raw(tr("ui.skills.error.quick_spend_invalid_amount",
+                                                                                                                "Enter a quick-spend amount greater than 0 for {0}.",
+                                                                                                                type.name()))
+                                                                                                .color("#ff0000"));
+                                                                        } else {
+                                                                                SkillManager.SkillSpendResult spendResult = skillManager
+                                                                                                .spendSkillPointsOnAttribute(
+                                                                                                                playerData,
+                                                                                                                type,
+                                                                                                                requestedAmount);
+                                                                                if (spendResult.applied()) {
+                                                                                        quickSpendInputs.put(type, 0);
+                                                                                        playerDataManager.save(playerData);
+                                                                                        if (ref != null && store != null) {
+                                                                                                boolean applied = skillManager
+                                                                                                                .applyAllSkillModifiers(
+                                                                                                                                ref,
+                                                                                                                                store,
+                                                                                                                                playerData);
+                                                                                                if (!applied) {
+                                                                                                        LOGGER.atFine().log(
+                                                                                                                        "quick_spend: modifiers deferred for %s",
+                                                                                                                        playerRef.getUuid());
+                                                                                                        var retrySystem = EndlessLeveling
+                                                                                                                        .getInstance()
+                                                                                                                        .getPlayerRaceStatSystem();
+                                                                                                        if (retrySystem != null) {
+                                                                                                                retrySystem.scheduleRetry(
+                                                                                                                                playerData.getUuid());
+                                                                                                        }
+                                                                                                }
+                                                                                        }
+                                                                                        syncPreviewFromPlayerData(playerData);
+                                                                                        player.sendMessage(Message
+                                                                                                        .raw(tr(
+                                                                                                                        "ui.skills.message.quick_spend_applied",
+                                                                                                                        "Applied {0} point(s) to {1} immediately.",
+                                                                                                                        spendResult.spentPoints(),
+                                                                                                                        type.name()))
+                                                                                                        .color("#00ff00"));
+                                                                                        LOGGER.atInfo().log(
+                                                                                                        "Applied quick-spend of %d to %s for player %s",
+                                                                                                        spendResult.spentPoints(),
+                                                                                                        type.name(),
+                                                                                                        playerRef.getUuid());
+                                                                                        refreshUI = true;
+                                                                                } else {
+                                                                                        String reason = spendResult.blockReason();
+                                                                                        Message response = switch (reason) {
+                                                                                                case "crit_locked" -> Message
+                                                                                                                .raw(tr(
+                                                                                                                                "ui.skills.error.crit_locked",
+                                                                                                                                "This build cannot invest in {0}.",
+                                                                                                                                type.name()))
+                                                                                                                .color("#ff0000");
+                                                                                                case "effective_cap_reached" -> Message
+                                                                                                                .raw(tr(
+                                                                                                                                "ui.skills.error.effective_cap_reached",
+                                                                                                                                "{0} is already at its effective cap.",
+                                                                                                                                type.name()))
+                                                                                                                .color("#ff0000");
+                                                                                                default -> Message
+                                                                                                                .raw(tr(
+                                                                                                                                "ui.skills.error.not_enough_points",
+                                                                                                                                "Not enough skill points"))
+                                                                                                                .color("#ff0000");
+                                                                                        };
+                                                                                        player.sendMessage(response);
+                                                                                }
+                                                                        }
+                                                                } catch (IllegalArgumentException iae) {
+                                                                        player.sendMessage(Message
+                                                                                        .raw(tr("ui.skills.error.invalid_attribute",
+                                                                                                        "Invalid attribute: {0}",
+                                                                                                        attrName))
+                                                                                        .color("#ff0000"));
+                                                                        LOGGER.atSevere().log("Invalid attribute: %s",
+                                                                                        attrName);
+                                                                }
+                                                        }
                                         } catch (Exception e) {
                                                 player.sendMessage(Message
                                                                 .raw(tr("ui.skills.error.action_failed",
@@ -421,9 +615,61 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                         return;
                 }
                 UICommandBuilder ui = new UICommandBuilder();
+                applyAutoAllocateSliderBounds(ui);
+                applyAutoAllocateSliderValue(ui, playerData);
+                applyAutoAllocateToggleStates(ui, playerData);
+                applyQuickSpendInputValues(ui);
                 applySkillValues(ui, playerData);
                 sendUpdate(ui, false);
         }
+
+        private boolean applyQuickSpendInputUpdates(@Nonnull Data data, @Nonnull UICommandBuilder ui) {
+                boolean changed = false;
+                for (SkillBinding binding : SKILL_BINDINGS) {
+                        Integer incomingValue = getQuickSpendValue(data, binding.attribute());
+                        if (incomingValue == null) {
+                                continue;
+                        }
+
+                        int normalizedValue = Math.max(0, incomingValue);
+                        Integer previousValue = quickSpendInputs.put(binding.attribute(), normalizedValue);
+                        if (previousValue == null || previousValue != normalizedValue) {
+                                changed = true;
+                        }
+                        ui.set("#QuickSpend" + binding.uiPrefix() + "Input.Value", normalizedValue);
+                }
+                return changed;
+        }
+
+        private void applyQuickSpendInputValues(@Nonnull UICommandBuilder ui) {
+                for (SkillBinding binding : SKILL_BINDINGS) {
+                        int currentValue = Math.max(0, quickSpendInputs.getOrDefault(binding.attribute(), 0));
+                        ui.set("#QuickSpend" + binding.uiPrefix() + "Input.Value", currentValue);
+                }
+        }
+
+        private Integer getQuickSpendValue(@Nonnull Data data, @Nonnull SkillAttributeType type) {
+                return switch (type) {
+                        case LIFE_FORCE -> data.quickSpendLifeForceValue;
+                        case STRENGTH -> data.quickSpendStrengthValue;
+                        case DEFENSE -> data.quickSpendDefenseValue;
+                        case HASTE -> data.quickSpendHasteValue;
+                        case PRECISION -> data.quickSpendPrecisionValue;
+                        case FEROCITY -> data.quickSpendFerocityValue;
+                        case STAMINA -> data.quickSpendStaminaValue;
+                        case DISCIPLINE -> data.quickSpendDisciplineValue;
+                        case FLOW -> data.quickSpendFlowValue;
+                        case SORCERY -> data.quickSpendSorceryValue;
+                };
+        }
+
+                private void applyAutoAllocateToggleStates(@Nonnull UICommandBuilder ui, @Nonnull PlayerData playerData) {
+                        for (SkillBinding binding : SKILL_BINDINGS) {
+                                String toggleId = "#AutoAllocate" + binding.uiPrefix() + "Toggle";
+                                boolean isEnabled = playerData.isAutoAllocateEnabled(binding.attribute());
+                                ui.set(toggleId + ".Value", isEnabled);
+                        }
+                }
 
         private void applySkillValues(UICommandBuilder ui, PlayerData playerData) {
                 ui.set("#SKILLPOINTS.Text", tr("ui.skills.points", "SKILL POINTS: {0}", previewSkillPoints));
@@ -713,6 +959,11 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 for (AttributeTheme theme : AttributeTheme.values()) {
                         ui.set(theme.skillsLabelSelector() + ".Text", tr(theme.labelKey(), theme.labelFallback()));
                         ui.set(theme.skillsLabelSelector() + ".Style.TextColor", theme.labelColor());
+                        ui.set(theme.autoAllocateLabelSelector() + ".Text", tr(theme.labelKey(), theme.labelFallback()));
+                        ui.set(theme.autoAllocateLabelSelector() + ".Style.TextColor", theme.labelColor());
+                        ui.set(theme.quickSpendLabelSelector() + ".Text", tr(theme.labelKey(), theme.labelFallback()));
+                        ui.set(theme.quickSpendLabelSelector() + ".Style.TextColor", theme.labelColor());
+                        ui.set(theme.quickSpendInputSelector() + ".Style.TextColor", theme.valueColor());
                         ui.set(theme.skillsValueSelector() + ".Style.TextColor", theme.valueColor());
                         ui.set(theme.skillsLevelPrefixSelector() + ".Style.TextColor", theme.profileLevelColor());
                         ui.set(theme.skillsLevelSelector() + ".Style.TextColor", theme.profileLevelColor());
@@ -731,7 +982,7 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                                                 "Undo to revert pending tweaks, apply to lock them in."));
                 ui.set("#ResetSkills.Text", tr("ui.skills.page.undo", "UNDO"));
                 ui.set("#ApplySkills.Text", tr("ui.skills.page.apply", "APPLY"));
-                ui.set("#ExcessSkillsPanel.Text", tr("ui.skills.excess.title", "EXCESS SKILL POINTS"));
+                ui.set("#ExcessSkillsPanel.Text", tr("ui.skills.side_panel.title", "POINT MANAGEMENT"));
                 ui.set("#ExcessPrecisionLabel.Text", tr("ui.skills.excess.precision", "Precision overflow:"));
                 ui.set("#ExcessDefenseLabel.Text", tr("ui.skills.excess.defense", "Defense overflow:"));
                 ui.set("#ExcessTotalLabel.Text", tr("ui.skills.excess.total", "Refundable total:"));
@@ -739,11 +990,25 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                                 tr("ui.skills.excess.apply_hint",
                                                 "This updates your pending points. Press APPLY to confirm."));
                 ui.set("#RefundExcessSkills.Text", tr("ui.skills.excess.button.none", "REFUND EXCESS ONLY"));
+                applyAutoAllocateSliderBounds(ui);
 
                 String lv = tr("ui.skills.level_prefix", "Lv.");
                 for (AttributeTheme theme : AttributeTheme.values()) {
                         ui.set(theme.skillsLevelPrefixSelector() + ".Text", lv);
                 }
+        }
+
+        private void applyAutoAllocateSliderBounds(@Nonnull UICommandBuilder ui) {
+                int skillPointsPerLevelMax = Math.max(0, skillManager != null ? skillManager.getSkillPointsPerLevel() : 5);
+                ui.set("#AutoAllocatePerLevelSlider.Max", skillPointsPerLevelMax);
+                ui.set("#AutoAllocatePerLevelMax.Text", String.valueOf(skillPointsPerLevelMax));
+        }
+
+        private void applyAutoAllocateSliderValue(@Nonnull UICommandBuilder ui, @Nonnull PlayerData playerData) {
+                int skillPointsPerLevelMax = Math.max(0, skillManager != null ? skillManager.getSkillPointsPerLevel() : 5);
+                int sliderValue = Math.max(0, Math.min(playerData.getAutoAllocatePointsPerLevel(), skillPointsPerLevelMax));
+                ui.set("#AutoAllocatePerLevelSlider.Value", sliderValue);
+                ui.set("#AutoAllocatePerLevelValue.Text", String.valueOf(sliderValue));
         }
 
         private void applySkillIcons(UICommandBuilder ui) {
@@ -766,6 +1031,17 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         public static class Data {
 
                 public String action;
+                public Integer autoAllocatePerLevelValue;
+                public Integer quickSpendLifeForceValue;
+                public Integer quickSpendStrengthValue;
+                public Integer quickSpendDefenseValue;
+                public Integer quickSpendHasteValue;
+                public Integer quickSpendPrecisionValue;
+                public Integer quickSpendFerocityValue;
+                public Integer quickSpendStaminaValue;
+                public Integer quickSpendDisciplineValue;
+                public Integer quickSpendFlowValue;
+                public Integer quickSpendSorceryValue;
 
                 // Optional search query used by pages that support filtering lists (e.g. party
                 // invites).
@@ -773,6 +1049,17 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
                 public Data() {
                         this.action = "";
+                        this.autoAllocatePerLevelValue = null;
+                        this.quickSpendLifeForceValue = null;
+                        this.quickSpendStrengthValue = null;
+                        this.quickSpendDefenseValue = null;
+                        this.quickSpendHasteValue = null;
+                        this.quickSpendPrecisionValue = null;
+                        this.quickSpendFerocityValue = null;
+                        this.quickSpendStaminaValue = null;
+                        this.quickSpendDisciplineValue = null;
+                        this.quickSpendFlowValue = null;
+                        this.quickSpendSorceryValue = null;
                         this.searchQuery = null;
                 }
 
@@ -780,6 +1067,50 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                                 .append(new KeyedCodec<>("Action", Codec.STRING),
                                                 (d, v) -> d.action = v,
                                                 d -> d.action)
+                                .add()
+                                .append(new KeyedCodec<>("@AutoAllocatePerLevelValue", Codec.INTEGER),
+                                                (d, v) -> d.autoAllocatePerLevelValue = v,
+                                                d -> d.autoAllocatePerLevelValue)
+                                .add()
+                                .append(new KeyedCodec<>("@QuickSpendLifeForceValue", Codec.INTEGER),
+                                                (d, v) -> d.quickSpendLifeForceValue = v,
+                                                d -> d.quickSpendLifeForceValue)
+                                .add()
+                                .append(new KeyedCodec<>("@QuickSpendStrengthValue", Codec.INTEGER),
+                                                (d, v) -> d.quickSpendStrengthValue = v,
+                                                d -> d.quickSpendStrengthValue)
+                                .add()
+                                .append(new KeyedCodec<>("@QuickSpendDefenseValue", Codec.INTEGER),
+                                                (d, v) -> d.quickSpendDefenseValue = v,
+                                                d -> d.quickSpendDefenseValue)
+                                .add()
+                                .append(new KeyedCodec<>("@QuickSpendHasteValue", Codec.INTEGER),
+                                                (d, v) -> d.quickSpendHasteValue = v,
+                                                d -> d.quickSpendHasteValue)
+                                .add()
+                                .append(new KeyedCodec<>("@QuickSpendPrecisionValue", Codec.INTEGER),
+                                                (d, v) -> d.quickSpendPrecisionValue = v,
+                                                d -> d.quickSpendPrecisionValue)
+                                .add()
+                                .append(new KeyedCodec<>("@QuickSpendFerocityValue", Codec.INTEGER),
+                                                (d, v) -> d.quickSpendFerocityValue = v,
+                                                d -> d.quickSpendFerocityValue)
+                                .add()
+                                .append(new KeyedCodec<>("@QuickSpendStaminaValue", Codec.INTEGER),
+                                                (d, v) -> d.quickSpendStaminaValue = v,
+                                                d -> d.quickSpendStaminaValue)
+                                .add()
+                                .append(new KeyedCodec<>("@QuickSpendDisciplineValue", Codec.INTEGER),
+                                                (d, v) -> d.quickSpendDisciplineValue = v,
+                                                d -> d.quickSpendDisciplineValue)
+                                .add()
+                                .append(new KeyedCodec<>("@QuickSpendFlowValue", Codec.INTEGER),
+                                                (d, v) -> d.quickSpendFlowValue = v,
+                                                d -> d.quickSpendFlowValue)
+                                .add()
+                                .append(new KeyedCodec<>("@QuickSpendSorceryValue", Codec.INTEGER),
+                                                (d, v) -> d.quickSpendSorceryValue = v,
+                                                d -> d.quickSpendSorceryValue)
                                 .add()
                                 .append(new KeyedCodec<>("@SearchQuery", Codec.STRING),
                                                 (d, v) -> d.searchQuery = v,

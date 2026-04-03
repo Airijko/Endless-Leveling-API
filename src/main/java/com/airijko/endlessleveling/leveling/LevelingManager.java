@@ -316,9 +316,25 @@ public class LevelingManager {
 
         // Delegate skill point addition to SkillManager
         skillManager.addSkillPoints(player);
+        SkillManager.AutoAllocateResult autoAllocateResult = skillManager.applyAutoAllocationOnLevelUp(player);
 
         LOGGER.atInfo().log("Player %s leveled up to %d! Total skill points: %d",
                 player.getPlayerName(), player.getLevel(), skillManager.calculateTotalSkillPoints(player.getLevel()));
+        if (autoAllocateResult.applied()) {
+            LOGGER.atInfo().log(
+                "Auto-allocated %d/%d point(s) into %s for %s on level-up",
+                autoAllocateResult.spentPoints(),
+                autoAllocateResult.requestedPoints(),
+                autoAllocateResult.attribute(),
+                player.getPlayerName());
+        } else if (autoAllocateResult.attribute() != null && autoAllocateResult.blockReason() != null) {
+            LOGGER.atInfo().log(
+                "Skipped auto-allocation for %s on %s (requested=%d reason=%s)",
+                player.getPlayerName(),
+                autoAllocateResult.attribute(),
+                autoAllocateResult.requestedPoints(),
+                autoAllocateResult.blockReason());
+        }
 
         if (passiveManager != null) {
             PassiveManager.PassiveSyncResult passiveResult = passiveManager.syncPassives(player);

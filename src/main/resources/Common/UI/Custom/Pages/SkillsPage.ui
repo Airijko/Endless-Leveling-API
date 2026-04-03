@@ -9,6 +9,34 @@ $Nav = "Nav/LeftNavPanel.ui";
     Sounds: $C.@ButtonSounds,
 );
 
+@QuickSpendApplyStyle = TextButtonStyle(
+    Default: (Background: $C.@DefaultSquareButtonDefaultBackground, LabelStyle: (TextColor: #d6e9ff, FontSize: 11, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center)),
+    Hovered: (Background: $C.@DefaultSquareButtonHoveredBackground, LabelStyle: (TextColor: #e7f2ff, FontSize: 11, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center)),
+    Pressed: (Background: $C.@DefaultSquareButtonPressedBackground, LabelStyle: (TextColor: #ffffff, FontSize: 11, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center)),
+    Disabled: (Background: $C.@DefaultSquareButtonDisabledBackground, LabelStyle: $C.@DefaultButtonDisabledLabelStyle),
+    Sounds: $C.@ButtonSounds,
+);
+
+@AutoAllocateCheckBoxStyle = CheckBoxStyle(
+    Unchecked: (
+        DefaultBackground: (Color: #00000000),
+        HoveredBackground: (Color: #6b8fc0(0.20)),
+        PressedBackground: (Color: #6b8fc0(0.34))
+    ),
+    Checked: (
+        DefaultBackground: (Color: #f0cf78),
+        HoveredBackground: (Color: #f6d98a),
+        PressedBackground: (Color: #dfbe69)
+    )
+);
+
+@AutoAllocateCheckBox = CheckBox {
+    Anchor: (Width: 20, Height: 20);
+    Background: (Color: #16253a);
+    Padding: (Full: 4);
+    Style: @AutoAllocateCheckBoxStyle;
+};
+
 @ButtonClusterWidth = 180;
 
 $C.@PageOverlay {
@@ -30,7 +58,188 @@ $C.@PageOverlay {
                     Group {
                         LayoutMode: Left;
 
-                        Group { Anchor: (Width: 340); }
+                        $C.@DecoratedContainer {
+                            Anchor: (Width: 300, Height: 700);
+
+                            #Title {
+                                Group {
+                                    $C.@Title #SkillsAttributesTitle { @Text = "SKILL ATTRIBUTES"; }
+                                }
+                            }
+
+                            #Content {
+                                LayoutMode: Top;
+                                Padding: (Horizontal: 12, Bottom: 12);
+                                
+                                Group #SkillsQoLPanel {
+                                    LayoutMode: Top;
+                                    Padding: (Vertical: 12);
+
+                                    Group #SkillsInfoBlock {
+                                        LayoutMode: Top;
+                                        Background: #0b141f(0.84);
+                                        Padding: (Full: 10);
+
+                                        Label #SkillsInfoTitle {
+                                            Text: "AUTOMATION SETUP";
+                                            Style: (TextColor: #f4f9ff, FontSize: 14, RenderBold: true);
+                                        }
+
+                                        Group { Anchor: (Height: 4); }
+
+                                        Label #SkillsInfoBody {
+                                            Text: "Configure automatic skill point spending and quick allocation rules.";
+                                            Style: (TextColor: #c0cee5, FontSize: 12, Wrap: true);
+                                        }
+                                    }
+
+                                    Group #AutoAllocateRow {
+                                        LayoutMode: Top;
+                                        Background: #0b141f(0.78);
+                                        Padding: (Full: 8);
+
+                                        Label #AutoAllocateLabel {
+                                            Text: "Auto allocate on level";
+                                            Style: (TextColor: #d5e4f7, FontSize: 13, RenderBold: true);
+                                        }
+
+                                        Group { Anchor: (Height: 2); }
+
+                                        Label #AutoAllocateHint {
+                                            Text: "Choose which attributes can automatically receive points when you gain levels.";
+                                            Style: (TextColor: #9ab0ca, FontSize: 11, Wrap: true);
+                                        }
+
+                                        Group { Anchor: (Height: 8); }
+
+                                        Group #AutoAllocatePerLevelRow {
+                                            LayoutMode: Left;
+
+                                            Label #AutoAllocatePerLevelLabel {
+                                                Text: "Points per level";
+                                                Style: (TextColor: #cddcf0, FontSize: 12);
+                                                Anchor: (Width: 92);
+                                            }
+
+                                            Label #AutoAllocatePerLevelMin {
+                                                Text: "0";
+                                                Style: (TextColor: #8ca2bd, FontSize: 11);
+                                                Anchor: (Width: 10, Height: 18);
+                                            }
+
+                                            Group { Anchor: (Width: 6); }
+
+                                            Slider #AutoAllocatePerLevelSlider {
+                                                Value: 0;
+                                                Min: 0;
+                                                Max: 0;
+                                                Step: 1;
+                                                Style: $C.@DefaultSliderStyle;
+                                                Anchor: (Width: 70, Height: 6);
+                                            }
+
+                                            Group { Anchor: (Width: 6); }
+
+                                            Label #AutoAllocatePerLevelValue {
+                                                Text: "0";
+                                                Style: (TextColor: #ffc300, FontSize: 11, RenderBold: true);
+                                                Anchor: (Width: 15, Height: 18);
+                                            }
+
+                                            Label { Text: "/"; Style: (TextColor: #8ca2bd, FontSize: 11); Anchor: (Width: 6, Height: 18); }
+
+                                            Label #AutoAllocatePerLevelMax {
+                                                Text: "0";
+                                                Style: (TextColor: #8ca2bd, FontSize: 11, RenderBold: true);
+                                                Anchor: (Width: 15, Height: 18);
+                                            }
+                                        }
+
+                                        Group { Anchor: (Height: 8); }
+
+                                        Group {
+                                            Anchor: (Height: 1);
+                                            Background: #243142;
+                                        }
+
+                                        Group { Anchor: (Height: 8); }
+
+                                        Group #AutoAllocateLifeForceRow {
+                                            LayoutMode: Left;
+                                            Padding: (Vertical: 2);
+                                            Label #AutoAllocateLifeForceLabel { Text: "Life Force"; Style: (TextColor: #f4f9ff, FontSize: 13, RenderBold: true); FlexWeight: 1; }
+                                            @AutoAllocateCheckBox #AutoAllocateLifeForceToggle { Value: false; }
+                                        }
+
+                                        Group #AutoAllocateStrengthRow {
+                                            LayoutMode: Left;
+                                            Padding: (Vertical: 2);
+                                            Label #AutoAllocateStrengthLabel { Text: "Strength"; Style: (TextColor: #ffe8d7, FontSize: 13, RenderBold: true); FlexWeight: 1; }
+                                            @AutoAllocateCheckBox #AutoAllocateStrengthToggle { Value: false; }
+                                        }
+
+                                        Group #AutoAllocatePrecisionRow {
+                                            LayoutMode: Left;
+                                            Padding: (Vertical: 2);
+                                            Label #AutoAllocatePrecisionLabel { Text: "Precision"; Style: (TextColor: #dff6ff, FontSize: 13, RenderBold: true); FlexWeight: 1; }
+                                            @AutoAllocateCheckBox #AutoAllocatePrecisionToggle { Value: false; }
+                                        }
+
+                                        Group #AutoAllocateHasteRow {
+                                            LayoutMode: Left;
+                                            Padding: (Vertical: 2);
+                                            Label #AutoAllocateHasteLabel { Text: "Haste"; Style: (TextColor: #f7e2ff, FontSize: 13, RenderBold: true); FlexWeight: 1; }
+                                            @AutoAllocateCheckBox #AutoAllocateHasteToggle { Value: false; }
+                                        }
+
+                                        Group #AutoAllocateFlowRow {
+                                            LayoutMode: Left;
+                                            Padding: (Vertical: 2);
+                                            Label #AutoAllocateFlowLabel { Text: "Flow"; Style: (TextColor: #e1f4ff, FontSize: 13, RenderBold: true); FlexWeight: 1; }
+                                            @AutoAllocateCheckBox #AutoAllocateFlowToggle { Value: false; }
+                                        }
+
+                                        Group #AutoAllocateDefenseRow {
+                                            LayoutMode: Left;
+                                            Padding: (Vertical: 2);
+                                            Label #AutoAllocateDefenseLabel { Text: "Defense"; Style: (TextColor: #ddfff3, FontSize: 13, RenderBold: true); FlexWeight: 1; }
+                                            @AutoAllocateCheckBox #AutoAllocateDefenseToggle { Value: false; }
+                                        }
+
+                                        Group #AutoAllocateSorceryRow {
+                                            LayoutMode: Left;
+                                            Padding: (Vertical: 2);
+                                            Label #AutoAllocateSorceryLabel { Text: "Sorcery"; Style: (TextColor: #d7baff, FontSize: 13, RenderBold: true); FlexWeight: 1; }
+                                            @AutoAllocateCheckBox #AutoAllocateSorceryToggle { Value: false; }
+                                        }
+
+                                        Group #AutoAllocateFerocityRow {
+                                            LayoutMode: Left;
+                                            Padding: (Vertical: 2);
+                                            Label #AutoAllocateFerocityLabel { Text: "Ferocity"; Style: (TextColor: #ffdbe9, FontSize: 13, RenderBold: true); FlexWeight: 1; }
+                                            @AutoAllocateCheckBox #AutoAllocateFerocityToggle { Value: false; }
+                                        }
+
+                                        Group #AutoAllocateStaminaRow {
+                                            LayoutMode: Left;
+                                            Padding: (Vertical: 2);
+                                            Label #AutoAllocateStaminaLabel { Text: "Stamina"; Style: (TextColor: #ecffd0, FontSize: 13, RenderBold: true); FlexWeight: 1; }
+                                            @AutoAllocateCheckBox #AutoAllocateStaminaToggle { Value: false; }
+                                        }
+
+                                        Group #AutoAllocateDisciplineRow {
+                                            LayoutMode: Left;
+                                            Padding: (Vertical: 2);
+                                            Label #AutoAllocateDisciplineLabel { Text: "Discipline"; Style: (TextColor: #f4f4ff, FontSize: 13, RenderBold: true); FlexWeight: 1; }
+                                            @AutoAllocateCheckBox #AutoAllocateDisciplineToggle { Value: false; }
+                                        }
+
+                                    }
+                                }
+                            }
+                        }
+
+                        Group { Anchor: (Width: 40); }
 
                         $C.@DecoratedContainer {
                             Anchor: (Width: 1000, Height: 700);
@@ -90,6 +299,8 @@ $C.@PageOverlay {
                                         LayoutMode: TopScrolling;
                                         ScrollbarStyle: $C.@DefaultScrollbarStyle;
                                         Padding: (Full: 16);
+
+                                        Group { Anchor: (Height: 2); }
 
                                         Group #Skills {
                                             LayoutMode: Left;
@@ -1089,17 +1300,130 @@ $C.@PageOverlay {
 
                             #Title {
                                 Group {
-                                    $C.@Title #ExcessSkillsPanel { @Text = "EXCESS SKILL POINTS"; }
+                                    $C.@Title #ExcessSkillsPanel { @Text = "POINT MANAGEMENT"; }
                                 }
                             }
 
                             #Content {
                                 LayoutMode: Top;
-                                Padding: (Horizontal: 12, Bottom: 12);
-
+                                Padding: (Horizontal: 12);
+                                
                                 Group #ExcessPanelMain {
                                     LayoutMode: Top;
-                                    Padding: (Vertical: 12);
+                                    Padding: (Top: 12, Bottom: 8);
+                                    FlexWeight: 1;
+
+                                    Group #QuickSpendSection {
+                                        LayoutMode: Top;
+                                        Background: #0b141f(0.78);
+                                        Padding: (Full: 8);
+
+                                        Label #QuickSpendTitle {
+                                            Text: "Quick spend";
+                                            Style: (TextColor: #d5e4f7, FontSize: 13, RenderBold: true);
+                                        }
+
+                                        Group { Anchor: (Height: 2); }
+
+                                        Label #QuickSpendHint {
+                                            Text: "Type a number and queue it into one attribute without repeated +1 or +5 clicks.";
+                                            Style: (TextColor: #9ab0ca, FontSize: 11, Wrap: true);
+                                        }
+
+                                        Group { Anchor: (Height: 8); }
+
+                                        Group #QuickSpendLifeForceRow {
+                                            LayoutMode: Left;
+                                            Padding: (Vertical: 2);
+                                            Label #QuickSpendLifeForceLabel { Text: "Life Force"; Style: (TextColor: #f4f9ff, FontSize: 13, RenderBold: true); FlexWeight: 1; }
+                                            NumberField #QuickSpendLifeForceInput { Value: 0; Anchor: (Width: 54, Height: 24); Style: (FontSize: 12, TextColor: #cddcf0); Padding: (Left: 6); Background: $C.@InputBoxBackground; }
+                                            Group { Anchor: (Width: 6); }
+                                            $C.@TextButton #QuickSpendLifeForceApply { Text: "APPLY"; Anchor: (Width: 58, Height: 24); Padding: (Horizontal: 6, Vertical: 3); FlexWeight: 0; Style: @QuickSpendApplyStyle; }
+                                        }
+
+                                        Group #QuickSpendStrengthRow {
+                                            LayoutMode: Left;
+                                            Padding: (Vertical: 2);
+                                            Label #QuickSpendStrengthLabel { Text: "Strength"; Style: (TextColor: #ffe8d7, FontSize: 13, RenderBold: true); FlexWeight: 1; }
+                                            NumberField #QuickSpendStrengthInput { Value: 0; Anchor: (Width: 54, Height: 24); Style: (FontSize: 12, TextColor: #cddcf0); Padding: (Left: 6); Background: $C.@InputBoxBackground; }
+                                            Group { Anchor: (Width: 6); }
+                                            $C.@TextButton #QuickSpendStrengthApply { Text: "APPLY"; Anchor: (Width: 58, Height: 24); Padding: (Horizontal: 6, Vertical: 3); FlexWeight: 0; Style: @QuickSpendApplyStyle; }
+                                        }
+
+                                        Group #QuickSpendPrecisionRow {
+                                            LayoutMode: Left;
+                                            Padding: (Vertical: 2);
+                                            Label #QuickSpendPrecisionLabel { Text: "Precision"; Style: (TextColor: #dff6ff, FontSize: 13, RenderBold: true); FlexWeight: 1; }
+                                            NumberField #QuickSpendPrecisionInput { Value: 0; Anchor: (Width: 54, Height: 24); Style: (FontSize: 12, TextColor: #cddcf0); Padding: (Left: 6); Background: $C.@InputBoxBackground; }
+                                            Group { Anchor: (Width: 6); }
+                                            $C.@TextButton #QuickSpendPrecisionApply { Text: "APPLY"; Anchor: (Width: 58, Height: 24); Padding: (Horizontal: 6, Vertical: 3); FlexWeight: 0; Style: @QuickSpendApplyStyle; }
+                                        }
+
+                                        Group #QuickSpendHasteRow {
+                                            LayoutMode: Left;
+                                            Padding: (Vertical: 2);
+                                            Label #QuickSpendHasteLabel { Text: "Haste"; Style: (TextColor: #f7e2ff, FontSize: 13, RenderBold: true); FlexWeight: 1; }
+                                            NumberField #QuickSpendHasteInput { Value: 0; Anchor: (Width: 54, Height: 24); Style: (FontSize: 12, TextColor: #cddcf0); Padding: (Left: 6); Background: $C.@InputBoxBackground; }
+                                            Group { Anchor: (Width: 6); }
+                                            $C.@TextButton #QuickSpendHasteApply { Text: "APPLY"; Anchor: (Width: 58, Height: 24); Padding: (Horizontal: 6, Vertical: 3); FlexWeight: 0; Style: @QuickSpendApplyStyle; }
+                                        }
+
+                                        Group #QuickSpendFlowRow {
+                                            LayoutMode: Left;
+                                            Padding: (Vertical: 2);
+                                            Label #QuickSpendFlowLabel { Text: "Flow"; Style: (TextColor: #e1f4ff, FontSize: 13, RenderBold: true); FlexWeight: 1; }
+                                            NumberField #QuickSpendFlowInput { Value: 0; Anchor: (Width: 54, Height: 24); Style: (FontSize: 12, TextColor: #cddcf0); Padding: (Left: 6); Background: $C.@InputBoxBackground; }
+                                            Group { Anchor: (Width: 6); }
+                                            $C.@TextButton #QuickSpendFlowApply { Text: "APPLY"; Anchor: (Width: 58, Height: 24); Padding: (Horizontal: 6, Vertical: 3); FlexWeight: 0; Style: @QuickSpendApplyStyle; }
+                                        }
+
+                                        Group #QuickSpendDefenseRow {
+                                            LayoutMode: Left;
+                                            Padding: (Vertical: 2);
+                                            Label #QuickSpendDefenseLabel { Text: "Defense"; Style: (TextColor: #ddfff3, FontSize: 13, RenderBold: true); FlexWeight: 1; }
+                                            NumberField #QuickSpendDefenseInput { Value: 0; Anchor: (Width: 54, Height: 24); Style: (FontSize: 12, TextColor: #cddcf0); Padding: (Left: 6); Background: $C.@InputBoxBackground; }
+                                            Group { Anchor: (Width: 6); }
+                                            $C.@TextButton #QuickSpendDefenseApply { Text: "APPLY"; Anchor: (Width: 58, Height: 24); Padding: (Horizontal: 6, Vertical: 3); FlexWeight: 0; Style: @QuickSpendApplyStyle; }
+                                        }
+
+                                        Group #QuickSpendSorceryRow {
+                                            LayoutMode: Left;
+                                            Padding: (Vertical: 2);
+                                            Label #QuickSpendSorceryLabel { Text: "Sorcery"; Style: (TextColor: #d7baff, FontSize: 13, RenderBold: true); FlexWeight: 1; }
+                                            NumberField #QuickSpendSorceryInput { Value: 0; Anchor: (Width: 54, Height: 24); Style: (FontSize: 12, TextColor: #cddcf0); Padding: (Left: 6); Background: $C.@InputBoxBackground; }
+                                            Group { Anchor: (Width: 6); }
+                                            $C.@TextButton #QuickSpendSorceryApply { Text: "APPLY"; Anchor: (Width: 58, Height: 24); Padding: (Horizontal: 6, Vertical: 3); FlexWeight: 0; Style: @QuickSpendApplyStyle; }
+                                        }
+
+                                        Group #QuickSpendFerocityRow {
+                                            LayoutMode: Left;
+                                            Padding: (Vertical: 2);
+                                            Label #QuickSpendFerocityLabel { Text: "Ferocity"; Style: (TextColor: #ffdbe9, FontSize: 13, RenderBold: true); FlexWeight: 1; }
+                                            NumberField #QuickSpendFerocityInput { Value: 0; Anchor: (Width: 54, Height: 24); Style: (FontSize: 12, TextColor: #cddcf0); Padding: (Left: 6); Background: $C.@InputBoxBackground; }
+                                            Group { Anchor: (Width: 6); }
+                                            $C.@TextButton #QuickSpendFerocityApply { Text: "APPLY"; Anchor: (Width: 58, Height: 24); Padding: (Horizontal: 6, Vertical: 3); FlexWeight: 0; Style: @QuickSpendApplyStyle; }
+                                        }
+
+                                        Group #QuickSpendStaminaRow {
+                                            LayoutMode: Left;
+                                            Padding: (Vertical: 2);
+                                            Label #QuickSpendStaminaLabel { Text: "Stamina"; Style: (TextColor: #ecffd0, FontSize: 13, RenderBold: true); FlexWeight: 1; }
+                                            NumberField #QuickSpendStaminaInput { Value: 0; Anchor: (Width: 54, Height: 24); Style: (FontSize: 12, TextColor: #cddcf0); Padding: (Left: 6); Background: $C.@InputBoxBackground; }
+                                            Group { Anchor: (Width: 6); }
+                                            $C.@TextButton #QuickSpendStaminaApply { Text: "APPLY"; Anchor: (Width: 58, Height: 24); Padding: (Horizontal: 6, Vertical: 3); FlexWeight: 0; Style: @QuickSpendApplyStyle; }
+                                        }
+
+                                        Group #QuickSpendDisciplineRow {
+                                            LayoutMode: Left;
+                                            Padding: (Vertical: 2);
+                                            Label #QuickSpendDisciplineLabel { Text: "Discipline"; Style: (TextColor: #f4f4ff, FontSize: 13, RenderBold: true); FlexWeight: 1; }
+                                            NumberField #QuickSpendDisciplineInput { Value: 0; Anchor: (Width: 54, Height: 24); Style: (FontSize: 12, TextColor: #cddcf0); Padding: (Left: 6); Background: $C.@InputBoxBackground; }
+                                            Group { Anchor: (Width: 6); }
+                                            $C.@TextButton #QuickSpendDisciplineApply { Text: "APPLY"; Anchor: (Width: 58, Height: 24); Padding: (Horizontal: 6, Vertical: 3); FlexWeight: 0; Style: @QuickSpendApplyStyle; }
+                                        }
+                                    }
+
+                                    Group { FlexWeight: 1; }
 
                                     Label #ExcessStatusLabel {
                                         Text: "No excess points right now.";

@@ -656,6 +656,23 @@ public class PlayerDataManager {
             }
         }
 
+        Map<String, Object> autoAllocateNode = castToStringObjectMap(source.get("autoAllocate"));
+        if (autoAllocateNode != null) {
+            profile.setAutoAllocatePointsPerLevel(parseInt(autoAllocateNode.get("pointsPerLevel"), 0));
+            String selectedAttribute = parseString(autoAllocateNode.get("selectedAttribute"));
+            SkillAttributeType selectedType = null;
+            if (selectedAttribute != null && !selectedAttribute.isBlank()) {
+                try {
+                    selectedType = SkillAttributeType.valueOf(selectedAttribute);
+                } catch (IllegalArgumentException ignored) {
+                    selectedType = null;
+                }
+            }
+            for (SkillAttributeType type : SkillAttributeType.values()) {
+                profile.setAutoAllocateEnabled(type, type == selectedType);
+            }
+        }
+
         Map<String, Object> passivesNode = castToStringObjectMap(source.get("passives"));
         boolean loadedPassives = false;
         if (passivesNode != null) {
@@ -1299,6 +1316,16 @@ public class PlayerDataManager {
                                 profile.getAttributes().getOrDefault(type, 0));
                     }
                     profileMap.put("attributes", profileAttrs);
+
+                    Map<String, Object> autoAllocateSection = new LinkedHashMap<>();
+                    autoAllocateSection.put("pointsPerLevel", profile.getAutoAllocatePointsPerLevel());
+                    for (SkillAttributeType type : SkillAttributeType.values()) {
+                        if (profile.isAutoAllocateEnabled(type)) {
+                            autoAllocateSection.put("selectedAttribute", type.name());
+                            break;
+                        }
+                    }
+                    profileMap.put("autoAllocate", autoAllocateSection);
 
                     Map<String, Object> raceSection = new LinkedHashMap<>();
                     String raceId = profile.getRaceId();
