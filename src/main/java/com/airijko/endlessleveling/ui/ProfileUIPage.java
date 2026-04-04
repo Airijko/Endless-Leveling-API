@@ -182,7 +182,7 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             ui.set(base + " #SlotLabel.Text", tr("ui.profile.list.slot", "Slot {0}", slot));
             ui.set(base + " #ProfileName.Text", profile.getName());
             ui.set(base + " #LevelValue.Text", tr("ui.profile.list.level", "Level {0}", profile.getLevel()));
-            ui.set(base + " #XpValue.Text", tr("ui.profile.list.xp", "{0} XP", formatNumber(profile.getXp())));
+            ui.set(base + " #XpValue.Text", tr("ui.profile.list.xp", "{0} XP", String.valueOf((long) profile.getXp())));
             ui.set(base + " #StatusBadge.Text", active ? tr("ui.profile.list.status.active", "ACTIVE") : "");
             ui.set(base + " #ConfirmDeleteLabel.Text",
                     tr("ui.profile.list.delete.confirm", "Delete {0}?", profile.getName()));
@@ -215,7 +215,7 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         PlayerProfile profile = resolveActiveProfile(data);
         ui.set("#DetailLevelValue.Text", String.valueOf(profile.getLevel()));
         ui.set("#DetailPrestigeValue.Text", String.valueOf(profile.getPrestigeLevel()));
-        ui.set("#DetailXpValue.Text", tr("ui.profile.list.xp", "{0} XP", formatNumber(profile.getXp())));
+        ui.set("#DetailXpValue.Text", tr("ui.profile.list.xp", "{0} XP", String.valueOf((long) profile.getXp())));
         ui.set("#DetailRaceValue.Text", getRaceDisplay(profile));
         ui.set("#DetailPrimaryClassValue.Text", getPrimaryClassDisplay(profile));
         ui.set("#DetailSecondaryClassValue.Text", getSecondaryClassDisplay(profile));

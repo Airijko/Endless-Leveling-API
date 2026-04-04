@@ -264,6 +264,11 @@ public class PlayerDataListener {
             passiveManager.resetRuntimeState(uuid);
         }
 
+        var archetypePassiveManager = EndlessLeveling.getInstance().getArchetypePassiveManager();
+        if (archetypePassiveManager != null) {
+            archetypePassiveManager.clearSnapshot(uuid);
+        }
+
 		var movementHasteSystem = EndlessLeveling.getInstance().getMovementHasteSystem();
 		if (movementHasteSystem != null) {
 			movementHasteSystem.clearPlayer(uuid);

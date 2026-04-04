@@ -15,6 +15,9 @@ import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
@@ -31,6 +34,9 @@ public class ArchetypePassiveManager {
 
     private final List<PassiveSource> builtinSources;
     private final List<ArchetypePassiveSource> externalSources;
+    private final Map<UUID, CachedSnapshot> snapshotCache = new ConcurrentHashMap<>();
+
+    private record CachedSnapshot(String signature, ArchetypePassiveSnapshot snapshot) {}
 
     public ArchetypePassiveManager(RaceManager raceManager, ClassManager classManager) {
         List<PassiveSource> builder = new ArrayList<>();
@@ -49,6 +55,12 @@ public class ArchetypePassiveManager {
             return ArchetypePassiveSnapshot.empty();
         }
 
+        String signature = buildArchetypeSignature(playerData);
+        CachedSnapshot cached = snapshotCache.get(playerData.getUuid());
+        if (cached != null && Objects.equals(cached.signature(), signature)) {
+            return cached.snapshot();
+        }
+
         EnumMap<ArchetypePassiveType, ArchetypePassiveSource.StackAccumulator> totals = new EnumMap<>(
                 ArchetypePassiveType.class);
         EnumMap<ArchetypePassiveType, List<RacePassiveDefinition>> grouped = new EnumMap<>(ArchetypePassiveType.class);
@@ -65,19 +77,40 @@ public class ArchetypePassiveManager {
             }
         }
 
+        ArchetypePassiveSnapshot result;
         if (totals.isEmpty() && grouped.isEmpty()) {
-            return ArchetypePassiveSnapshot.empty();
+            result = ArchetypePassiveSnapshot.empty();
+        } else {
+            Map<ArchetypePassiveType, Double> resolvedTotals = totals.entrySet().stream()
+                    .collect(() -> new EnumMap<>(ArchetypePassiveType.class),
+                            (map, entry) -> map.put(entry.getKey(), entry.getValue().value()),
+                            Map::putAll);
+            Map<ArchetypePassiveType, Double> immutableTotals = Collections.unmodifiableMap(resolvedTotals);
+            Map<ArchetypePassiveType, List<RacePassiveDefinition>> immutableDefinitions = grouped.entrySet().stream()
+                    .collect(() -> new EnumMap<>(ArchetypePassiveType.class),
+                            (map, entry) -> map.put(entry.getKey(), List.copyOf(entry.getValue())),
+                            Map::putAll);
+            result = new ArchetypePassiveSnapshot(immutableTotals, Collections.unmodifiableMap(immutableDefinitions));
         }
-        Map<ArchetypePassiveType, Double> resolvedTotals = totals.entrySet().stream()
-                .collect(() -> new EnumMap<>(ArchetypePassiveType.class),
-                        (map, entry) -> map.put(entry.getKey(), entry.getValue().value()),
-                        Map::putAll);
-        Map<ArchetypePassiveType, Double> immutableTotals = Collections.unmodifiableMap(resolvedTotals);
-        Map<ArchetypePassiveType, List<RacePassiveDefinition>> immutableDefinitions = grouped.entrySet().stream()
-                .collect(() -> new EnumMap<>(ArchetypePassiveType.class),
-                        (map, entry) -> map.put(entry.getKey(), List.copyOf(entry.getValue())),
-                        Map::putAll);
-        return new ArchetypePassiveSnapshot(immutableTotals, Collections.unmodifiableMap(immutableDefinitions));
+
+        snapshotCache.put(playerData.getUuid(), new CachedSnapshot(signature, result));
+        return result;
+    }
+
+    /**
+     * Invalidates the cached snapshot for a player (call on race/class change or disconnect).
+     */
+    public void clearSnapshot(UUID uuid) {
+        if (uuid != null) {
+            snapshotCache.remove(uuid);
+        }
+    }
+
+    private static String buildArchetypeSignature(PlayerData playerData) {
+        String race = playerData.getRaceId();
+        String primary = playerData.getPrimaryClassId();
+        String secondary = playerData.getSecondaryClassId();
+        return (race != null ? race : "") + "|" + (primary != null ? primary : "") + "|" + (secondary != null ? secondary : "");
     }
 
     /**

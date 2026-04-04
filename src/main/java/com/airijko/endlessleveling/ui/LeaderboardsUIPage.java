@@ -339,10 +339,7 @@ public class LeaderboardsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Dat
     }
 
     private String formatXp(double xp) {
-        if (Math.abs(xp - Math.rint(xp)) < 0.0001D) {
-            return String.format(Locale.ROOT, "%,.0f", xp);
-        }
-        return String.format(Locale.ROOT, "%,.2f", xp);
+        return String.format(Locale.ROOT, "%,.0f", xp);
     }
 
     @Override

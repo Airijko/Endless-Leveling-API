@@ -2,7 +2,7 @@ Group {
     LayoutMode: Top;
     Group {
         LayoutMode: Top;
-        Background: #0f1d2d(0.65);
+        Background: (TexturePath: "../../Tiles/TileDefault2x.png");
         Padding: (Left: 10, Right: 10, Top: 5, Bottom: 5);
 
         Group {

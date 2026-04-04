@@ -266,8 +266,6 @@ public final class AugmentExecutor {
         DeathBombAugment.tickPendingBombs(commandBuffer, playerRef);
 
         var runtime = runtimeManager.getRuntimeState(playerData.getUuid());
-        runtime.clearPermanentAttributeBonuses();
-
         Map<String, String> selected = playerData.getSelectedAugmentsSnapshot();
         Set<String> selectedAugmentIds = toSelectedAugmentIds(selected.values());
         String signature = buildSelectionSignature(selectedAugmentIds);
@@ -276,6 +274,7 @@ public final class AugmentExecutor {
         if (!Objects.equals(previousSignature, signature) && statMap != null) {
             cleanupStalePassiveHealthModifiers(statMap, selectedAugmentIds);
             runtime.retainAugmentStates(selectedAugmentIds);
+            runtime.clearPermanentAttributeBonuses();
             runtime.setPassiveSelectionSignature(signature);
         }
 
@@ -283,12 +282,9 @@ public final class AugmentExecutor {
             return;
         }
 
-        List<Augment> augments = resolve(playerData);
-        if (augments.isEmpty()) {
-            return;
-        }
-
-        notifyCooldowns(playerData, runtime, commandBuffer, playerRef, augments);
+        // Single pass: create each augment once and apply its passive in the same loop.
+        // This replaces the previous resolve() + second createAugment() double-creation pattern.
+        List<Augment> augments = new ArrayList<>(selected.size());
         for (Map.Entry<String, String> entry : selected.entrySet()) {
             String selectionKey = entry.getKey();
             String augmentId = entry.getValue();
@@ -301,6 +297,7 @@ public final class AugmentExecutor {
                 continue;
             }
 
+            augments.add(augment);
             if (augment instanceof PassiveStatAugment handler) {
                 PassiveStatContext context = new PassiveStatContext(playerData,
                         runtime,
@@ -314,6 +311,11 @@ public final class AugmentExecutor {
             }
         }
 
+        if (augments.isEmpty()) {
+            return;
+        }
+
+        notifyCooldowns(playerData, runtime, commandBuffer, playerRef, augments);
         AugmentPassiveHealthReconciler.reconcile(statMap, augments, runtime);
     }
 
