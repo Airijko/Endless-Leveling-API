@@ -305,6 +305,44 @@ public final class NameplateBuilderCompatibility {
     /**
      * Sets the NPC admin chain to the given segments in order, but only if no admin chain
      * has been configured yet (initial-setup semantics). Existing admin configurations are
+     * preserved. Does NOT lock the chain — players can still customise their nameplate.
+     */
+    public static boolean initNpcAdminChain(JavaPlugin plugin, String... segmentIds) {
+        if (plugin == null || !ensureInitialized() || initAdminChainMethod == null
+                || segmentTargetNpcs == null) {
+            return false;
+        }
+        try {
+            initAdminChainMethod.invoke(null, plugin, segmentTargetNpcs, false,
+                    java.util.Arrays.asList(segmentIds));
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    /**
+     * Sets the player admin chain to the given segments in order, but only if no admin chain
+     * has been configured yet (initial-setup semantics). Existing admin configurations are
+     * preserved. Does NOT lock the chain — players can still customise their nameplate.
+     */
+    public static boolean initPlayerAdminChain(JavaPlugin plugin, String... segmentIds) {
+        if (plugin == null || !ensureInitialized() || initAdminChainMethod == null
+                || segmentTargetPlayers == null) {
+            return false;
+        }
+        try {
+            initAdminChainMethod.invoke(null, plugin, segmentTargetPlayers, false,
+                    java.util.Arrays.asList(segmentIds));
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    /**
+     * Sets the NPC admin chain to the given segments in order, but only if no admin chain
+     * has been configured yet (initial-setup semantics). Existing admin configurations are
      * preserved.
      */
     public static boolean initAndLockNpcAdminChain(JavaPlugin plugin, String... segmentIds) {
