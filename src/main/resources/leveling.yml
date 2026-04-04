@@ -116,7 +116,7 @@ Mob_Leveling:
     # - 3:  ~150ms (recommended)
     # - 5:  ~250ms
     # - 10: ~500ms
-    Nameplate_Update_Ticks: 5
+    Nameplate_Update_Ticks: 10
 
 # Player nameplate controls are separate from mob nameplate controls.
 Player_Nameplate:
