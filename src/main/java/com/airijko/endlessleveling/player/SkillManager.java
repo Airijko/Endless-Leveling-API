@@ -1,5 +1,6 @@
 package com.airijko.endlessleveling.player;
 
+import com.airijko.endlessleveling.api.EndlessLevelingAPI;
 import com.airijko.endlessleveling.augments.AugmentRuntimeManager;
 import com.airijko.endlessleveling.classes.CharacterClassDefinition;
 import com.airijko.endlessleveling.player.PlayerData;
@@ -339,8 +340,13 @@ public class SkillManager {
             return AutoAllocateResult.none();
         }
 
+        // Check API guards before proceeding
+        if (!EndlessLevelingAPI.get().isAutoAllocateAllowed(playerData.getUuid())) {
+            return AutoAllocateResult.none();
+        }
+
         SkillAttributeType selectedAttribute = resolveSelectedAutoAllocateAttribute(playerData);
-        if (selectedAttribute == null) {
+        if (selectedAttribute == null || EndlessLevelingAPI.get().isSkillAttributeHidden(selectedAttribute)) {
             return AutoAllocateResult.none();
         }
 
@@ -359,6 +365,26 @@ public class SkillManager {
             return AutoAllocateResult.blocked(selectedAttribute, requestedSpend, spendResult.blockReason());
         }
         return AutoAllocateResult.none();
+    }
+
+    /**
+     * Spend all available skill points into the player's selected auto-allocate
+     * attribute. Returns the total number of points spent.
+     */
+    public int applyBulkAutoAllocate(PlayerData playerData) {
+        if (playerData == null) {
+            return 0;
+        }
+        SkillAttributeType selectedAttribute = resolveSelectedAutoAllocateAttribute(playerData);
+        if (selectedAttribute == null || EndlessLevelingAPI.get().isSkillAttributeHidden(selectedAttribute)) {
+            return 0;
+        }
+        int availablePoints = Math.max(0, playerData.getSkillPoints());
+        if (availablePoints <= 0) {
+            return 0;
+        }
+        SkillSpendResult result = spendSkillPointsOnAttribute(playerData, selectedAttribute, availablePoints);
+        return result.applied() ? result.spentPoints() : 0;
     }
 
     public SkillSpendResult spendSkillPointsOnAttribute(PlayerData playerData,
