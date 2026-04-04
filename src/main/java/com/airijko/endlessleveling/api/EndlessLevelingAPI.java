@@ -33,14 +33,18 @@ import com.airijko.endlessleveling.api.gates.WaveGateSessionExecutorBridge;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * Lightweight public API surface for other mods to query EndlessLeveling state
@@ -62,6 +66,15 @@ public final class EndlessLevelingAPI {
 
     private final Map<String, Object> managers = new ConcurrentHashMap<>();
     private final Map<String, InstanceDungeonDefinition> instanceDungeonsById = new ConcurrentHashMap<>();
+
+    // Hidden skill attributes — these are excluded from the skills UI and cannot receive points.
+    private final Set<SkillAttributeType> hiddenSkillAttributes = ConcurrentHashMap.newKeySet();
+
+    // Runtime mob-type blacklist — entries are matched as substring against normalized mob type IDs.
+    private final Set<String> runtimeMobBlacklist = ConcurrentHashMap.newKeySet();
+
+    // Auto-allocate guards — ALL must pass for auto-allocation to proceed.
+    private final List<Predicate<UUID>> autoAllocateGuards = new CopyOnWriteArrayList<>();
 
     private EndlessLevelingAPI() {
     }
@@ -701,6 +714,154 @@ public final class EndlessLevelingAPI {
         }
         ArchetypePassiveManager manager = archetypePassiveManager();
         return manager != null && manager.unregisterArchetypePassiveSource(source);
+    }
+
+    // ----------------------
+    // Skill attribute visibility
+    // ----------------------
+
+    /**
+     * Hide a skill attribute from the skills UI. Hidden attributes cannot
+     * receive point allocations and their UI section is not rendered.
+     */
+    public void hideSkillAttribute(SkillAttributeType type) {
+        if (type != null) {
+            hiddenSkillAttributes.add(type);
+        }
+    }
+
+    /** Restore a previously hidden skill attribute so it appears in the UI again. */
+    public void showSkillAttribute(SkillAttributeType type) {
+        if (type != null) {
+            hiddenSkillAttributes.remove(type);
+        }
+    }
+
+    /** Check whether a skill attribute is currently hidden. */
+    public boolean isSkillAttributeHidden(SkillAttributeType type) {
+        return type != null && hiddenSkillAttributes.contains(type);
+    }
+
+    /** Returns an unmodifiable snapshot of all currently hidden skill attributes. */
+    public Set<SkillAttributeType> getHiddenSkillAttributes() {
+        return hiddenSkillAttributes.isEmpty()
+                ? Set.of()
+                : Collections.unmodifiableSet(EnumSet.copyOf(hiddenSkillAttributes));
+    }
+
+    // ----------------------
+    // Runtime mob blacklist
+    // ----------------------
+
+    /**
+     * Add a mob-type blacklist entry at runtime. The entry is matched as a
+     * case-insensitive substring against NPC type IDs (same rules as
+     * Blacklist_Mob_Types in leveling.yml). Blacklisted mobs will not
+     * receive EL levels or nameplates.
+     */
+    public void addMobBlacklistEntry(String entry) {
+        if (entry != null && !entry.isBlank()) {
+            runtimeMobBlacklist.add(entry.trim().toUpperCase(Locale.ROOT).replace(' ', '_'));
+        }
+    }
+
+    /** Remove a previously added runtime mob-type blacklist entry. */
+    public void removeMobBlacklistEntry(String entry) {
+        if (entry != null && !entry.isBlank()) {
+            runtimeMobBlacklist.remove(entry.trim().toUpperCase(Locale.ROOT).replace(' ', '_'));
+        }
+    }
+
+    /** Check whether the runtime blacklist contains a given entry. */
+    public boolean hasMobBlacklistEntry(String entry) {
+        if (entry == null || entry.isBlank()) {
+            return false;
+        }
+        return runtimeMobBlacklist.contains(entry.trim().toUpperCase(Locale.ROOT).replace(' ', '_'));
+    }
+
+    /** Returns an unmodifiable snapshot of all runtime mob blacklist entries. */
+    public Set<String> getRuntimeMobBlacklist() {
+        return runtimeMobBlacklist.isEmpty()
+                ? Set.of()
+                : Set.copyOf(runtimeMobBlacklist);
+    }
+
+    /**
+     * Returns a live read-only view of the runtime mob blacklist. Safe for
+     * concurrent iteration but may reflect concurrent modifications. Use this
+     * in hot paths (per-entity-per-tick) to avoid copying overhead.
+     */
+    public Set<String> getRuntimeMobBlacklistView() {
+        return Collections.unmodifiableSet(runtimeMobBlacklist);
+    }
+
+    /** Clear all runtime mob blacklist entries. */
+    public void clearRuntimeMobBlacklist() {
+        runtimeMobBlacklist.clear();
+    }
+
+    // ----------------------
+    // Auto-allocate guards
+    // ----------------------
+
+    /**
+     * Register a guard predicate for auto-allocation on level-up.
+     * All registered guards must return {@code true} for the given player UUID
+     * for auto-allocation to proceed. If any guard returns {@code false},
+     * auto-allocation is skipped (skill points are still granted, just not spent).
+     *
+     * <p>Guards are evaluated on the server thread during level-up processing.
+     * Keep implementations fast and non-blocking.</p>
+     */
+    public void addAutoAllocateGuard(Predicate<UUID> guard) {
+        if (guard != null) {
+            autoAllocateGuards.add(guard);
+        }
+    }
+
+    /** Remove a previously registered auto-allocate guard. */
+    public void removeAutoAllocateGuard(Predicate<UUID> guard) {
+        if (guard != null) {
+            autoAllocateGuards.remove(guard);
+        }
+    }
+
+    /**
+     * Spend all available skill points using the player's auto-allocate settings.
+     * Unlike the per-level-up allocation (which spends only the configured
+     * points-per-level), this drains all unspent points into the selected
+     * attribute. Useful for deferred/lazy allocation triggered by an external
+     * event (e.g. NPC interaction).
+     *
+     * @return the number of points actually spent, or 0 if nothing was allocated.
+     */
+    public int applyPendingAutoAllocate(UUID playerUuid) {
+        if (playerUuid == null) {
+            return 0;
+        }
+        SkillManager sm = skillManager();
+        PlayerData data = getData(playerUuid);
+        if (sm == null || data == null) {
+            return 0;
+        }
+        return sm.applyBulkAutoAllocate(data);
+    }
+
+    /**
+     * Test whether auto-allocation is currently permitted for the given player.
+     * Returns {@code true} if no guards are registered or all guards pass.
+     */
+    public boolean isAutoAllocateAllowed(UUID playerUuid) {
+        if (playerUuid == null || autoAllocateGuards.isEmpty()) {
+            return true;
+        }
+        for (Predicate<UUID> guard : autoAllocateGuards) {
+            if (!guard.test(playerUuid)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     // ----------------------

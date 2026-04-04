@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Locale;
 
 import com.airijko.endlessleveling.EndlessLeveling;
+import com.airijko.endlessleveling.api.EndlessLevelingAPI;
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentManager;
 import com.airijko.endlessleveling.augments.types.CommonAugment;
@@ -147,6 +148,12 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
     private void applyStaticLabels(@Nonnull UICommandBuilder ui) {
         for (AttributeTheme theme : AttributeTheme.values()) {
+            if (EndlessLevelingAPI.get().isSkillAttributeHidden(theme.type())) {
+                ui.set(theme.profileLabelSelector() + ".Visible", false);
+                ui.set(theme.profileValueSelector() + ".Visible", false);
+                ui.set(theme.profileLevelSelector() + ".Visible", false);
+                continue;
+            }
             ui.set(theme.profileLabelSelector() + ".Text", tr(theme.labelKey(), theme.labelFallback()));
             ui.set(theme.profileLabelSelector() + ".Style.TextColor", theme.labelColor());
             ui.set(theme.profileValueSelector() + ".Style.TextColor", theme.valueColor());
@@ -930,6 +937,15 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             @Nonnull String valueSelector,
             @Nonnull String levelSelector,
             @Nonnull AttributeDisplay display) {
+        if (EndlessLevelingAPI.get().isSkillAttributeHidden(type)) {
+            AttributeTheme theme = AttributeTheme.fromType(type);
+            if (theme != null) {
+                ui.set(theme.profileLabelSelector() + ".Visible", false);
+                ui.set(theme.profileValueSelector() + ".Visible", false);
+                ui.set(theme.profileLevelSelector() + ".Visible", false);
+            }
+            return;
+        }
         AttributeTheme theme = AttributeTheme.fromType(type);
         String baseLabel = theme != null ? tr(theme.labelKey(), theme.labelFallback()) : toDisplay(type.name());
 

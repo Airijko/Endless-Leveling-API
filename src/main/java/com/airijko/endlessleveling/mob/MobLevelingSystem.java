@@ -82,6 +82,8 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
     // Cached once per tick to avoid per-entity config lookups, string splitting, and collection iteration.
     private boolean cachedDebugMobLevelFlow = false;
     private boolean cachedDebugMobCommonDefense = false;
+    // Local delayed-tick counter for health-eval cadence (immune to world-tick alignment issues)
+    private int delayedTickCounter = 0;
 
     public MobLevelingSystem() {
         super(SYSTEM_INTERVAL_SECONDS);
@@ -547,9 +549,10 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         boolean showNameInNameplate = mobLevelingManager.shouldShowMobNameplateName();
         boolean showHealthInNameplate = mobLevelingManager.shouldShowMobNameplateHealth();
         int nameplateUpdateTicks = mobLevelingManager.getMobNameplateUpdateTicks();
+        int localTick = delayedTickCounter++;
         boolean evaluateHealthDeltaThisTick = !showHealthInNameplate
             || nameplateUpdateTicks <= 1
-            || Math.floorMod(tickCount, nameplateUpdateTicks) == 0;
+            || Math.floorMod(localTick, nameplateUpdateTicks) == 0;
         boolean renderAnyNameplateText = showMobLevelUi
             && (showLevelInNameplate || showNameInNameplate || showHealthInNameplate);
         boolean shouldResetAllMobs = fullMobRescaleRequested.getAndSet(false);

@@ -27,6 +27,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import javax.annotation.Nonnull;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.logger.HytaleLogger;
+import com.airijko.endlessleveling.api.EndlessLevelingAPI;
 import java.util.EnumMap;
 
 public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
@@ -81,6 +82,10 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
                 // Bind all skill buttons in a loop for clarity and maintainability
                 for (SkillBinding binding : SKILL_BINDINGS) {
+                        if (isAttributeHidden(binding.attribute())) {
+                                hideAttributeUI(ui, binding);
+                                continue;
+                        }
                         String plus1Id = "#" + binding.uiPrefix() + "Plus1";
                         String plus5Id = "#" + binding.uiPrefix() + "Plus5";
                         String minus1Id = "#" + binding.uiPrefix() + "Minus1";
@@ -100,6 +105,7 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
                 // Bind auto-allocate checkbox toggles for all skill attributes.
                 for (SkillBinding binding : SKILL_BINDINGS) {
+                        if (isAttributeHidden(binding.attribute())) continue;
                         String toggleId = "#AutoAllocate" + binding.uiPrefix() + "Toggle";
                         String attrName = binding.attribute().name();
                         LOGGER.atInfo().log("Binding event: %s -> toggle_auto_allocate:%s", toggleId, attrName);
@@ -107,6 +113,7 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 }
 
                 for (SkillBinding binding : SKILL_BINDINGS) {
+                        if (isAttributeHidden(binding.attribute())) continue;
                         String inputId = "#QuickSpend" + binding.uiPrefix() + "Input";
                         String applyId = "#QuickSpend" + binding.uiPrefix() + "Apply";
                         String attrName = binding.attribute().name();
@@ -305,6 +312,9 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                                                         try {
                                                                 SkillAttributeType type = SkillAttributeType
                                                                                 .valueOf(attrName);
+                                                                if (isAttributeHidden(type)) {
+                                                                        throw new IllegalArgumentException("hidden");
+                                                                }
                                                                 int current = getPreviewLevel(type);
                                                                 if ("add".equals(op)) {
                                                                         if (isVanguardCritAttributeLocked(playerData,
@@ -454,6 +464,9 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                                                                 try {
                                                                         SkillAttributeType selectedType = SkillAttributeType
                                                                                         .valueOf(attrName);
+                                                                        if (isAttributeHidden(selectedType)) {
+                                                                                throw new IllegalArgumentException("hidden");
+                                                                        }
                                                                         boolean selectedWasEnabled = playerData
                                                                                         .isAutoAllocateEnabled(selectedType);
 
@@ -497,6 +510,9 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                                                                 String attrName = parts[1];
                                                                 try {
                                                                         SkillAttributeType type = SkillAttributeType.valueOf(attrName);
+                                                                        if (isAttributeHidden(type)) {
+                                                                                throw new IllegalArgumentException("hidden");
+                                                                        }
                                                                         int requestedAmount = Math.max(0,
                                                                                         quickSpendInputs.getOrDefault(type, 0));
                                                                         if (requestedAmount <= 0) {
@@ -626,6 +642,7 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         private boolean applyQuickSpendInputUpdates(@Nonnull Data data, @Nonnull UICommandBuilder ui) {
                 boolean changed = false;
                 for (SkillBinding binding : SKILL_BINDINGS) {
+                        if (isAttributeHidden(binding.attribute())) continue;
                         Integer incomingValue = getQuickSpendValue(data, binding.attribute());
                         if (incomingValue == null) {
                                 continue;
@@ -643,6 +660,7 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
         private void applyQuickSpendInputValues(@Nonnull UICommandBuilder ui) {
                 for (SkillBinding binding : SKILL_BINDINGS) {
+                        if (isAttributeHidden(binding.attribute())) continue;
                         int currentValue = Math.max(0, quickSpendInputs.getOrDefault(binding.attribute(), 0));
                         ui.set("#QuickSpend" + binding.uiPrefix() + "Input.Value", currentValue);
                 }
@@ -665,6 +683,7 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
                 private void applyAutoAllocateToggleStates(@Nonnull UICommandBuilder ui, @Nonnull PlayerData playerData) {
                         for (SkillBinding binding : SKILL_BINDINGS) {
+                                if (isAttributeHidden(binding.attribute())) continue;
                                 String toggleId = "#AutoAllocate" + binding.uiPrefix() + "Toggle";
                                 boolean isEnabled = playerData.isAutoAllocateEnabled(binding.attribute());
                                 ui.set(toggleId + ".Value", isEnabled);
@@ -674,78 +693,98 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         private void applySkillValues(UICommandBuilder ui, PlayerData playerData) {
                 ui.set("#SKILLPOINTS.Text", tr("ui.skills.points", "SKILL POINTS: {0}", previewSkillPoints));
 
-                int lifeLevel = getPreviewLevel(SkillAttributeType.LIFE_FORCE);
-                double lifeTotal = resolveResourcePreviewTotal(playerData, SkillAttributeType.LIFE_FORCE, lifeLevel);
-                ui.set("#LifeForceLevel.Text", String.valueOf(lifeLevel));
-                ui.set("#LifeForceValue.Text",
-                                formatResourceDisplay(lifeTotal, tr("ui.skills.resource.health", "Health")));
+                if (!isAttributeHidden(SkillAttributeType.LIFE_FORCE)) {
+                        int lifeLevel = getPreviewLevel(SkillAttributeType.LIFE_FORCE);
+                        double lifeTotal = resolveResourcePreviewTotal(playerData, SkillAttributeType.LIFE_FORCE, lifeLevel);
+                        ui.set("#LifeForceLevel.Text", String.valueOf(lifeLevel));
+                        ui.set("#LifeForceValue.Text",
+                                        formatResourceDisplay(lifeTotal, tr("ui.skills.resource.health", "Health")));
+                }
 
-                int strLevel = getPreviewLevel(SkillAttributeType.STRENGTH);
-                SkillManager.StrengthBreakdown strengthPreview = skillManager.getStrengthBreakdown(playerData,
-                                strLevel);
-                ui.set("#StrengthLevel.Text", String.valueOf(strLevel));
-                ui.set("#StrengthValue.Text",
-                                tr("ui.skills.value.strength", "+{0}% Damage",
-                                                formatNumber(strengthPreview.totalValue())));
+                if (!isAttributeHidden(SkillAttributeType.STRENGTH)) {
+                        int strLevel = getPreviewLevel(SkillAttributeType.STRENGTH);
+                        SkillManager.StrengthBreakdown strengthPreview = skillManager.getStrengthBreakdown(playerData,
+                                        strLevel);
+                        ui.set("#StrengthLevel.Text", String.valueOf(strLevel));
+                        ui.set("#StrengthValue.Text",
+                                        tr("ui.skills.value.strength", "+{0}% Damage",
+                                                        formatNumber(strengthPreview.totalValue())));
+                }
 
-                int sorcLevel = getPreviewLevel(SkillAttributeType.SORCERY);
-                double sorceryTotal = skillManager.calculateSkillAttributeTotalBonus(playerData,
-                                SkillAttributeType.SORCERY,
-                                sorcLevel);
-                ui.set("#SorceryLevel.Text", String.valueOf(sorcLevel));
-                ui.set("#SorceryValue.Text",
-                                tr("ui.skills.value.sorcery", "+{0}% Magic Damage", formatNumber(sorceryTotal)));
+                if (!isAttributeHidden(SkillAttributeType.SORCERY)) {
+                        int sorcLevel = getPreviewLevel(SkillAttributeType.SORCERY);
+                        double sorceryTotal = skillManager.calculateSkillAttributeTotalBonus(playerData,
+                                        SkillAttributeType.SORCERY,
+                                        sorcLevel);
+                        ui.set("#SorceryLevel.Text", String.valueOf(sorcLevel));
+                        ui.set("#SorceryValue.Text",
+                                        tr("ui.skills.value.sorcery", "+{0}% Magic Damage", formatNumber(sorceryTotal)));
+                }
 
-                int defLevel = getPreviewLevel(SkillAttributeType.DEFENSE);
-                SkillManager.DefenseBreakdown defensePreview = skillManager.getDefenseBreakdown(playerData, defLevel);
-                ui.set("#DefenseLevel.Text", String.valueOf(defLevel));
-                ui.set("#DefenseValue.Text", tr("ui.skills.value.defense", "{0}% Reduction",
-                                formatNumber(defensePreview.resistance() * 100)));
+                if (!isAttributeHidden(SkillAttributeType.DEFENSE)) {
+                        int defLevel = getPreviewLevel(SkillAttributeType.DEFENSE);
+                        SkillManager.DefenseBreakdown defensePreview = skillManager.getDefenseBreakdown(playerData, defLevel);
+                        ui.set("#DefenseLevel.Text", String.valueOf(defLevel));
+                        ui.set("#DefenseValue.Text", tr("ui.skills.value.defense", "{0}% Reduction",
+                                        formatNumber(defensePreview.resistance() * 100)));
+                }
 
-                int hasteLevel = getPreviewLevel(SkillAttributeType.HASTE);
-                SkillManager.HasteBreakdown hastePreview = skillManager.getHasteBreakdown(playerData, hasteLevel);
-                double hastePercent = (hastePreview.totalMultiplier() - 1.0f) * 100.0f;
-                ui.set("#HasteLevel.Text", String.valueOf(hasteLevel));
-                ui.set("#HasteValue.Text", tr("ui.skills.value.haste", "+{0}% Speed", formatNumber(hastePercent)));
+                if (!isAttributeHidden(SkillAttributeType.HASTE)) {
+                        int hasteLevel = getPreviewLevel(SkillAttributeType.HASTE);
+                        SkillManager.HasteBreakdown hastePreview = skillManager.getHasteBreakdown(playerData, hasteLevel);
+                        double hastePercent = (hastePreview.totalMultiplier() - 1.0f) * 100.0f;
+                        ui.set("#HasteLevel.Text", String.valueOf(hasteLevel));
+                        ui.set("#HasteValue.Text", tr("ui.skills.value.haste", "+{0}% Speed", formatNumber(hastePercent)));
+                }
 
-                int precLevel = getPreviewLevel(SkillAttributeType.PRECISION);
-                ui.set("#PrecisionLevel.Text", String.valueOf(precLevel));
-                SkillManager.PrecisionBreakdown precisionPreview = skillManager != null
-                                ? skillManager.getPrecisionBreakdown(playerData, precLevel)
-                                : null;
-                double precisionTotal = precisionPreview != null
-                                ? precisionPreview.totalPercent()
-                                : Math.min(100.0D, getPrecisionPreviewPercent(playerData, precLevel));
-                ui.set("#PrecisionValue.Text",
-                                tr("ui.skills.value.precision", "{0}% Crit Chance", formatNumber(precisionTotal)));
+                if (!isAttributeHidden(SkillAttributeType.PRECISION)) {
+                        int precLevel = getPreviewLevel(SkillAttributeType.PRECISION);
+                        ui.set("#PrecisionLevel.Text", String.valueOf(precLevel));
+                        SkillManager.PrecisionBreakdown precisionPreview = skillManager != null
+                                        ? skillManager.getPrecisionBreakdown(playerData, precLevel)
+                                        : null;
+                        double precisionTotal = precisionPreview != null
+                                        ? precisionPreview.totalPercent()
+                                        : Math.min(100.0D, getPrecisionPreviewPercent(playerData, precLevel));
+                        ui.set("#PrecisionValue.Text",
+                                        tr("ui.skills.value.precision", "{0}% Crit Chance", formatNumber(precisionTotal)));
+                }
 
-                int ferLevel = getPreviewLevel(SkillAttributeType.FEROCITY);
-                SkillManager.FerocityBreakdown ferocityPreview = skillManager.getFerocityBreakdown(playerData,
-                                ferLevel);
-                ui.set("#FerocityLevel.Text", String.valueOf(ferLevel));
-                ui.set("#FerocityValue.Text",
-                                tr("ui.skills.value.ferocity", "+{0}% Crit Damage",
-                                                formatNumber(ferocityPreview.totalValue())));
+                if (!isAttributeHidden(SkillAttributeType.FEROCITY)) {
+                        int ferLevel = getPreviewLevel(SkillAttributeType.FEROCITY);
+                        SkillManager.FerocityBreakdown ferocityPreview = skillManager.getFerocityBreakdown(playerData,
+                                        ferLevel);
+                        ui.set("#FerocityLevel.Text", String.valueOf(ferLevel));
+                        ui.set("#FerocityValue.Text",
+                                        tr("ui.skills.value.ferocity", "+{0}% Crit Damage",
+                                                        formatNumber(ferocityPreview.totalValue())));
+                }
 
-                int stamLevel = getPreviewLevel(SkillAttributeType.STAMINA);
-                double staminaTotal = resolveResourcePreviewTotal(playerData, SkillAttributeType.STAMINA, stamLevel);
-                ui.set("#StaminaLevel.Text", String.valueOf(stamLevel));
-                ui.set("#StaminaValue.Text",
-                                formatResourceDisplay(staminaTotal, tr("ui.skills.resource.stamina", "Stamina")));
+                if (!isAttributeHidden(SkillAttributeType.STAMINA)) {
+                        int stamLevel = getPreviewLevel(SkillAttributeType.STAMINA);
+                        double staminaTotal = resolveResourcePreviewTotal(playerData, SkillAttributeType.STAMINA, stamLevel);
+                        ui.set("#StaminaLevel.Text", String.valueOf(stamLevel));
+                        ui.set("#StaminaValue.Text",
+                                        formatResourceDisplay(staminaTotal, tr("ui.skills.resource.stamina", "Stamina")));
+                }
 
-                int flowLevel = getPreviewLevel(SkillAttributeType.FLOW);
-                double flowTotal = resolveResourcePreviewTotal(playerData, SkillAttributeType.FLOW,
-                                flowLevel);
-                ui.set("#FlowLevel.Text", String.valueOf(flowLevel));
-                ui.set("#FlowValue.Text", formatResourceDisplay(flowTotal, tr("ui.skills.resource.flow", "Flow")));
+                if (!isAttributeHidden(SkillAttributeType.FLOW)) {
+                        int flowLevel = getPreviewLevel(SkillAttributeType.FLOW);
+                        double flowTotal = resolveResourcePreviewTotal(playerData, SkillAttributeType.FLOW,
+                                        flowLevel);
+                        ui.set("#FlowLevel.Text", String.valueOf(flowLevel));
+                        ui.set("#FlowValue.Text", formatResourceDisplay(flowTotal, tr("ui.skills.resource.flow", "Flow")));
+                }
 
-                int discLevel = getPreviewLevel(SkillAttributeType.DISCIPLINE);
-                double discBonus = skillManager.calculateSkillAttributeTotalBonus(playerData,
-                                SkillAttributeType.DISCIPLINE,
-                                discLevel);
-                ui.set("#DisciplineLevel.Text", String.valueOf(discLevel));
-                ui.set("#DisciplineValue.Text",
-                                tr("ui.skills.value.discipline", "+{0}% XP Gain", formatNumber(discBonus)));
+                if (!isAttributeHidden(SkillAttributeType.DISCIPLINE)) {
+                        int discLevel = getPreviewLevel(SkillAttributeType.DISCIPLINE);
+                        double discBonus = skillManager.calculateSkillAttributeTotalBonus(playerData,
+                                        SkillAttributeType.DISCIPLINE,
+                                        discLevel);
+                        ui.set("#DisciplineLevel.Text", String.valueOf(discLevel));
+                        ui.set("#DisciplineValue.Text",
+                                        tr("ui.skills.value.discipline", "+{0}% XP Gain", formatNumber(discBonus)));
+                }
 
                 applyExcessPanelValues(ui, playerData);
         }
@@ -1130,6 +1169,19 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 boolean hasExcess() {
                         return totalRefunded() > 0;
                 }
+        }
+
+        /** Check whether a skill attribute is hidden via the API. */
+        protected static boolean isAttributeHidden(SkillAttributeType type) {
+                return EndlessLevelingAPI.get().isSkillAttributeHidden(type);
+        }
+
+        /** Hide all UI elements for a given skill attribute. */
+        private static void hideAttributeUI(UICommandBuilder ui, SkillBinding binding) {
+                String prefix = binding.uiPrefix();
+                ui.set("#" + prefix + ".Visible", false);
+                ui.set("#AutoAllocate" + prefix + "Row.Visible", false);
+                ui.set("#QuickSpend" + prefix + "Row.Visible", false);
         }
 
 }

@@ -3,6 +3,7 @@ package com.airijko.endlessleveling.leveling;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.airijko.endlessleveling.EndlessLeveling;
+import com.airijko.endlessleveling.api.EndlessLevelingAPI;
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentManager;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
@@ -1151,6 +1152,18 @@ public class MobLevelingManager {
         }
 
         String normalizedType = normalizeMobType(mobType);
+
+        // Check runtime blacklist entries from the API first (iterate backing set directly).
+        for (String runtimeEntry : EndlessLevelingAPI.get().getRuntimeMobBlacklistView()) {
+            if (runtimeEntry.contains("*")) {
+                if (matchesWildcard(normalizedType, runtimeEntry)) {
+                    return true;
+                }
+            } else if (normalizedType.contains(runtimeEntry)) {
+                return true;
+            }
+        }
+
         Object raw = resolveConfigValue("Blacklist_Mob_Types", null, store);
         if (raw == UNSET_CONFIG_VALUE || raw == null) {
             raw = configManager.get("Mob_Leveling.Blacklist_Mob_Types", null, false);
