@@ -1,6 +1,7 @@
 package com.airijko.endlessleveling.ui;
 
 import com.airijko.endlessleveling.EndlessLeveling;
+import com.airijko.endlessleveling.api.EndlessLevelingAPI;
 import com.airijko.endlessleveling.player.PlayerData;
 import com.airijko.endlessleveling.enums.ArchetypePassiveType;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
@@ -269,6 +270,12 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         ui.set("#ConfirmRaceButton.Text", tr("ui.races.actions.swap", "SWAP"));
 
         for (AttributeTheme theme : AttributeTheme.values()) {
+            if (EndlessLevelingAPI.get().isSkillAttributeHidden(theme.type())) {
+                ui.set(theme.raceLabelSelector() + ".Visible", false);
+                ui.set(theme.raceValueSelector() + ".Visible", false);
+                ui.set(theme.raceNoteSelector() + ".Visible", false);
+                continue;
+            }
             ui.set(theme.raceLabelSelector() + ".Text", tr(theme.labelKey(), theme.labelFallback()));
             ui.set(theme.raceLabelSelector() + ".Style.TextColor", theme.labelColor());
             ui.set(theme.raceValueSelector() + ".Style.TextColor", theme.valueColor());
@@ -958,6 +965,11 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             @Nonnull RaceDefinition race,
             @Nonnull SkillAttributeType type,
             @Nonnull String selectorPrefix) {
+        if (EndlessLevelingAPI.get().isSkillAttributeHidden(type)) {
+            ui.set(selectorPrefix + "Value.Visible", false);
+            ui.set(selectorPrefix + "Note.Visible", false);
+            return;
+        }
         boolean hasAttribute = race.getBaseAttributes().containsKey(type);
         double value = race.getBaseAttribute(type, 0.0D);
         String formatted = hasAttribute ? formatRaceAttributeValue(type, value) : tr("hud.common.unavailable", "--");
