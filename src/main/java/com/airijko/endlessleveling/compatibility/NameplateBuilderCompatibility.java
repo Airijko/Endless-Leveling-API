@@ -37,6 +37,9 @@ public final class NameplateBuilderCompatibility {
     private static volatile Method clearTextMethod = null;
     private static volatile Method segmentBuilderResolverMethod = null;
     private static volatile Method segmentBuilderCacheTicksMethod = null;
+    private static volatile Method addToAdminChainMethod = null;
+    private static volatile Method addToAdminChainIfRegisteredMethod = null;
+    private static volatile Method setAdminChainMethod = null;
     private static volatile Class<?> segmentResolverInterface = null;
     private static volatile Object segmentTargetNpcs = null;
     private static volatile Object segmentTargetPlayers = null;
@@ -264,6 +267,74 @@ public final class NameplateBuilderCompatibility {
                     segmentTargetPlayers,
                     "PlayerName");
             attachPlayerResolver(segmentBuilder, EL_PLAYER_NAME);
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    public static boolean setAndLockNpcAdminChain(JavaPlugin plugin, String... segmentIds) {
+        if (plugin == null || !ensureInitialized() || setAdminChainMethod == null
+                || segmentTargetNpcs == null) {
+            return false;
+        }
+        try {
+            setAdminChainMethod.invoke(null, plugin, segmentTargetNpcs, true,
+                    java.util.Arrays.asList(segmentIds));
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    public static boolean setAndLockPlayerAdminChain(JavaPlugin plugin, String... segmentIds) {
+        if (plugin == null || !ensureInitialized() || setAdminChainMethod == null
+                || segmentTargetPlayers == null) {
+            return false;
+        }
+        try {
+            setAdminChainMethod.invoke(null, plugin, segmentTargetPlayers, true,
+                    java.util.Arrays.asList(segmentIds));
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    public static boolean addNpcSegmentToAdminChainIfRegistered(String segmentId) {
+        if (segmentId == null || segmentId.isBlank()
+                || !ensureInitialized() || addToAdminChainIfRegisteredMethod == null
+                || segmentTargetNpcs == null) {
+            return false;
+        }
+        try {
+            addToAdminChainIfRegisteredMethod.invoke(null, segmentId, segmentTargetNpcs);
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    public static boolean addNpcSegmentToAdminChain(JavaPlugin plugin, String segmentId) {
+        if (plugin == null || segmentId == null || segmentId.isBlank()
+                || !ensureInitialized() || addToAdminChainMethod == null || segmentTargetNpcs == null) {
+            return false;
+        }
+        try {
+            addToAdminChainMethod.invoke(null, plugin, segmentId, segmentTargetNpcs);
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    public static boolean addPlayerSegmentToAdminChain(JavaPlugin plugin, String segmentId) {
+        if (plugin == null || segmentId == null || segmentId.isBlank()
+                || !ensureInitialized() || addToAdminChainMethod == null || segmentTargetPlayers == null) {
+            return false;
+        }
+        try {
+            addToAdminChainMethod.invoke(null, plugin, segmentId, segmentTargetPlayers);
             return true;
         } catch (Throwable ignored) {
             return false;
@@ -619,6 +690,24 @@ public final class NameplateBuilderCompatibility {
                     segmentBuilderClass,
                     new String[] { "cacheTicks" },
                     int.class);
+                addToAdminChainMethod = resolveOptionalMethod(
+                    apiClass,
+                    new String[] { "addToAdminChain" },
+                    JavaPlugin.class,
+                    String.class,
+                    segmentTargetClass);
+                addToAdminChainIfRegisteredMethod = resolveOptionalMethod(
+                    apiClass,
+                    new String[] { "addToAdminChainIfRegistered" },
+                    String.class,
+                    segmentTargetClass);
+                setAdminChainMethod = resolveOptionalMethod(
+                    apiClass,
+                    new String[] { "setAdminChain" },
+                    JavaPlugin.class,
+                    segmentTargetClass,
+                    boolean.class,
+                    java.util.List.class);
 
             segmentTargetNpcs = Enum.valueOf((Class<? extends Enum>) segmentTargetClass.asSubclass(Enum.class), "NPCS");
             segmentTargetPlayers = resolveSegmentTargetPlayer(segmentTargetClass);
@@ -629,6 +718,9 @@ public final class NameplateBuilderCompatibility {
             clearTextMethod = null;
             segmentBuilderResolverMethod = null;
             segmentBuilderCacheTicksMethod = null;
+            addToAdminChainMethod = null;
+            addToAdminChainIfRegisteredMethod = null;
+            setAdminChainMethod = null;
             segmentResolverInterface = null;
             segmentTargetNpcs = null;
             segmentTargetPlayers = null;

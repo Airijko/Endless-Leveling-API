@@ -534,6 +534,10 @@ public class EndlessLeveling extends JavaPlugin {
                 LOGGER.atWarning().log(
                         "NameplateBuilder detected but EL_Summon_Label segment registration failed (falling back to native summon nameplate text).");
             }
+
+            NameplateBuilderCompatibility.setAndLockNpcAdminChain(this, "EL_Mob_Level", "EL_Mob_Health");
+            NameplateBuilderCompatibility.addNpcSegmentToAdminChainIfRegistered("ELITE_TIER_PREFIX");
+            NameplateBuilderCompatibility.setAndLockPlayerAdminChain(this, "EL_Player_Level", "EL_Player_Name");
         }
 
         // Register event listeners
