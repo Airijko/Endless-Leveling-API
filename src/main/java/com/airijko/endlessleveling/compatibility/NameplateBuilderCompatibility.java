@@ -40,6 +40,7 @@ public final class NameplateBuilderCompatibility {
     private static volatile Method addToAdminChainMethod = null;
     private static volatile Method addToAdminChainIfRegisteredMethod = null;
     private static volatile Method setAdminChainMethod = null;
+    private static volatile Method initAdminChainMethod = null;
     private static volatile Class<?> segmentResolverInterface = null;
     private static volatile Object segmentTargetNpcs = null;
     private static volatile Object segmentTargetPlayers = null;
@@ -294,6 +295,44 @@ public final class NameplateBuilderCompatibility {
         }
         try {
             setAdminChainMethod.invoke(null, plugin, segmentTargetPlayers, true,
+                    java.util.Arrays.asList(segmentIds));
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    /**
+     * Sets the NPC admin chain to the given segments in order, but only if no admin chain
+     * has been configured yet (initial-setup semantics). Existing admin configurations are
+     * preserved.
+     */
+    public static boolean initAndLockNpcAdminChain(JavaPlugin plugin, String... segmentIds) {
+        if (plugin == null || !ensureInitialized() || initAdminChainMethod == null
+                || segmentTargetNpcs == null) {
+            return false;
+        }
+        try {
+            initAdminChainMethod.invoke(null, plugin, segmentTargetNpcs, true,
+                    java.util.Arrays.asList(segmentIds));
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    /**
+     * Sets the player admin chain to the given segments in order, but only if no admin chain
+     * has been configured yet (initial-setup semantics). Existing admin configurations are
+     * preserved.
+     */
+    public static boolean initAndLockPlayerAdminChain(JavaPlugin plugin, String... segmentIds) {
+        if (plugin == null || !ensureInitialized() || initAdminChainMethod == null
+                || segmentTargetPlayers == null) {
+            return false;
+        }
+        try {
+            initAdminChainMethod.invoke(null, plugin, segmentTargetPlayers, true,
                     java.util.Arrays.asList(segmentIds));
             return true;
         } catch (Throwable ignored) {
@@ -708,6 +747,13 @@ public final class NameplateBuilderCompatibility {
                     segmentTargetClass,
                     boolean.class,
                     java.util.List.class);
+                initAdminChainMethod = resolveOptionalMethod(
+                    apiClass,
+                    new String[] { "initAdminChain" },
+                    JavaPlugin.class,
+                    segmentTargetClass,
+                    boolean.class,
+                    java.util.List.class);
 
             segmentTargetNpcs = Enum.valueOf((Class<? extends Enum>) segmentTargetClass.asSubclass(Enum.class), "NPCS");
             segmentTargetPlayers = resolveSegmentTargetPlayer(segmentTargetClass);
@@ -721,6 +767,7 @@ public final class NameplateBuilderCompatibility {
             addToAdminChainMethod = null;
             addToAdminChainIfRegisteredMethod = null;
             setAdminChainMethod = null;
+            initAdminChainMethod = null;
             segmentResolverInterface = null;
             segmentTargetNpcs = null;
             segmentTargetPlayers = null;
