@@ -161,6 +161,12 @@ public class XpEventSystem extends DeathSystems.OnDeathSystem {
             ? snapshotMobLevel
             : (mobLevelingManager != null ? mobLevelingManager.resolveMobLevel(ref, commandBuffer) : 1);
         String mobLevelSource = snapshotMobLevel != null ? "snapshot" : "fallback";
+        if ("fallback".equals(mobLevelSource) && mobLevelingManager != null) {
+            LOGGER.atFine().log(
+                "XP-LevelDiag target=%d resolvedMobLvl=%d [%s]",
+                ref.getIndex(), mobLevel,
+                mobLevelingManager.getMobLevelSnapshotDiagnostic(ref, store, commandBuffer));
+        }
 
         float cachedMaxHealth = mobLevelingManager != null
             ? mobLevelingManager.getEntityMaxHealthSnapshot(ref, store, commandBuffer)

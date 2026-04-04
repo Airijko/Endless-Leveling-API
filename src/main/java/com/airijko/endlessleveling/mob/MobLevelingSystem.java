@@ -56,6 +56,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class MobLevelingSystem extends DelayedSystem<EntityStore> {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
+    private static final HytaleLogger NAMEPLATE_LOGGER = HytaleLogger.get("com.airijko.endlessleveling.mob.MobLevelingSystem.nameplate");
     private static final Query<EntityStore> ENTITY_QUERY = Query.any();
     private static final String MOB_HEALTH_SCALE_MODIFIER_KEY = "EL_MOB_HEALTH_SCALE";
     private static final String MOB_AUGMENT_LIFE_FORCE_MODIFIER_KEY = "EL_MOB_AUGMENT_LIFE_FORCE";
@@ -70,6 +71,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
     private static final long SUMMON_HEALTH_ANOMALY_LOG_COOLDOWN_MS = 3000L;
     private static final String DEBUG_SECTION_MOB_LEVEL_FLOW = "mob_level_flow";
     private static final String DEBUG_SECTION_MOB_COMMON_DEFENSE = "mob_common_defense";
+    private static final String DEBUG_SECTION_MOB_LEVEL_NAMEPLATE = "mob_level_nameplate";
 
     private final MobLevelingManager mobLevelingManager = EndlessLeveling.getInstance().getMobLevelingManager();
     private final java.util.Random random = new java.util.Random();
@@ -82,6 +84,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
     // Cached once per tick to avoid per-entity config lookups, string splitting, and collection iteration.
     private boolean cachedDebugMobLevelFlow = false;
     private boolean cachedDebugMobCommonDefense = false;
+    private boolean cachedDebugMobLevelNameplate = false;
 
     public MobLevelingSystem() {
         super(SYSTEM_INTERVAL_SECONDS);
@@ -541,15 +544,16 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
 
         cachedDebugMobLevelFlow = isDebugSectionEnabled(DEBUG_SECTION_MOB_LEVEL_FLOW);
         cachedDebugMobCommonDefense = isDebugSectionEnabled(DEBUG_SECTION_MOB_COMMON_DEFENSE);
+        cachedDebugMobLevelNameplate = isDebugSectionEnabled(DEBUG_SECTION_MOB_LEVEL_NAMEPLATE);
 
         boolean showMobLevelUi = mobLevelingManager.shouldRenderMobNameplate();
         boolean showLevelInNameplate = mobLevelingManager.shouldShowMobNameplateLevel();
         boolean showNameInNameplate = mobLevelingManager.shouldShowMobNameplateName();
         boolean showHealthInNameplate = mobLevelingManager.shouldShowMobNameplateHealth();
         int nameplateUpdateTicks = mobLevelingManager.getMobNameplateUpdateTicks();
-        boolean evaluateHealthDeltaThisTick = !showHealthInNameplate
-            || nameplateUpdateTicks <= 1
-            || Math.floorMod(tickCount, nameplateUpdateTicks) == 0;
+        // evaluateHealthDeltaThisTick is now a per-entity decision based on lastHealthUpdateTick.
+        // The boolean here just carries whether health display is active at all this tick cycle.
+        boolean healthDisplayActive = showHealthInNameplate;
         boolean renderAnyNameplateText = showMobLevelUi
             && (showLevelInNameplate || showNameInNameplate || showHealthInNameplate);
         boolean shouldResetAllMobs = fullMobRescaleRequested.getAndSet(false);
@@ -578,8 +582,9 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
                                 renderAnyNameplateText,
                                 showLevelInNameplate,
                                 showNameInNameplate,
-                                showHealthInNameplate,
-                                evaluateHealthDeltaThisTick,
+                                healthDisplayActive,
+                                nameplateUpdateTicks,
+                                tickCount,
                                 currentTimeMillis,
                             playerChunkViewports);
                     }
@@ -639,9 +644,10 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
             boolean showLevelInNameplate,
             boolean showNameInNameplate,
             boolean showHealthInNameplate,
-                boolean evaluateHealthDeltaThisTick,
+            int nameplateUpdateTicks,
+            int currentWorldTick,
             long currentTimeMillis,
-                    List<PlayerChunkViewport> playerChunkViewports) {
+            List<PlayerChunkViewport> playerChunkViewports) {
         if (ref == null || commandBuffer == null) {
             return;
         }
@@ -704,6 +710,24 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
                 mobLevelingManager.recordEntityResolvedLevel(fallbackEntityKey, mobLevel);
             }
             state.lastRecordedResolvedLevel = mobLevel;
+
+            // Seed the health snapshot immediately on first level assignment so that XP
+            // calculations are never stuck with cached=-1 when a mob dies before
+            // applyHealthModifier runs.  This records the mob's current native max HP as a
+            // conservative floor; applyHealthModifier will overwrite it with the scaled value
+            // once health is processed.
+            if (mobLevelingManager.getEntityMaxHealthSnapshot(entityKey) <= 0f) {
+                EntityStatMap statMapForSeed = commandBuffer.getComponent(ref, EntityStatMap.getComponentType());
+                if (statMapForSeed != null) {
+                    EntityStatValue hpStat = statMapForSeed.get(DefaultEntityStatTypes.getHealth());
+                    if (hpStat != null && Float.isFinite(hpStat.getMax()) && hpStat.getMax() > 0f) {
+                        mobLevelingManager.recordEntityMaxHealth(entityKey, hpStat.getMax());
+                        if (fallbackEntityKey != entityKey) {
+                            mobLevelingManager.recordEntityMaxHealth(fallbackEntityKey, hpStat.getMax());
+                        }
+                    }
+                }
+            }
         }
 
         if (state.appliedLevel <= 0) {
@@ -765,12 +789,25 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
                 && Float.isFinite(currentMaxHpForNameplate)
                 && currentMaxHpForNameplate > 0.0f;
 
+            // Per-entity health update cadence: fire when enough world ticks have elapsed
+            // since this entity's nameplate was last updated. This avoids modulo alignment
+            // issues caused by DelayedSystem firing at non-deterministic world tick offsets.
+            boolean tickWindowElapsed = nameplateUpdateTicks <= 1
+                || (currentWorldTick - state.lastHealthUpdateTick) >= nameplateUpdateTicks;
+            // Optimization: skip delta math entirely when mob is at full HP and was at full HP
+            // last check — there is nothing to update in the nameplate.
+            boolean atFullHealth = hasFiniteHealthForNameplate
+                && currentHpForNameplate >= currentMaxHpForNameplate - 0.0001f;
             boolean healthChangedForNameplate =
                 showHealthInNameplate
-                    && evaluateHealthDeltaThisTick
+                    && tickWindowElapsed
                     && hasFiniteHealthForNameplate
+                    && !(atFullHealth && state.lastKnownAtFullHealth)
                     && (Math.abs(currentHpForNameplate - state.lastNameplateHealthValue) > 0.0001f
                         || Math.abs(currentMaxHpForNameplate - state.lastNameplateMaxHealthValue) > 0.0001f);
+            if (hasFiniteHealthForNameplate) {
+                state.lastKnownAtFullHealth = atFullHealth;
+            }
 
             if (state.lastAppliedNameplateLevel != mobLevel
                     || state.lastAppliedShowLevelInNameplate != showLevelInNameplate
@@ -778,6 +815,16 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
                     || state.lastAppliedShowHealthInNameplate != showHealthInNameplate
                     || state.lastAppliedNameplateText == null
                 || healthChangedForNameplate) {
+                if (cachedDebugMobLevelNameplate && state.lastAppliedNameplateLevel != mobLevel) {
+                    int prevLevel = state.lastAppliedNameplateLevel == Integer.MIN_VALUE ? -1 : state.lastAppliedNameplateLevel;
+                    NAMEPLATE_LOGGER.atInfo().log(
+                        "[MOB_LEVEL_NAMEPLATE] entity=%d uuid=%s nameplateLevel=%d prevNameplateLevel=%d uuidBacked=%s",
+                        ref.getIndex(),
+                        resolveUuid(ref, commandBuffer),
+                        mobLevel,
+                        prevLevel,
+                        trackingIdentity.uuidBacked());
+                }
                 boolean applied = applyNameplate(
                         ref,
                         commandBuffer,
@@ -792,6 +839,9 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
                 state.lastAppliedShowHealthInNameplate = showHealthInNameplate;
                 state.lastNameplateHealthValue = hasFiniteHealthForNameplate ? currentHpForNameplate : Float.NaN;
                 state.lastNameplateMaxHealthValue = hasFiniteHealthForNameplate ? currentMaxHpForNameplate : Float.NaN;
+                if (healthChangedForNameplate) {
+                    state.lastHealthUpdateTick = currentWorldTick;
+                }
                 if (cachedDebugMobLevelFlow) {
                     LOGGER.atInfo().log(
                             "[MOB_LEVEL_FLOW] entity=%d uuidBacked=%s phase=nameplate level=%d applied=%s hp=%.3f max=%.3f refreshedByHealthChange=%s finiteHealth=%s",
@@ -1027,8 +1077,11 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
                             restoredHealth.get(),
                             restoredHealth.getMax());
                 }
+                return true;
             }
-            return true;
+            // statMap.update() did not produce valid health yet; signal failure so the
+            // retry path re-attempts on the next cycle instead of permanently settling.
+            return false;
         }
 
         MobLevelingManager.MobHealthScalingResult scaled = mobLevelingManager.computeMobHealthScaling(
@@ -1076,49 +1129,52 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         statMap.setStatValue(healthIndex, targetValue);
         statMap.update();
         EntityStatValue updatedHealth = statMap.get(healthIndex);
-        if (updatedHealth != null && Float.isFinite(updatedHealth.getMax()) && updatedHealth.getMax() > 0.0f) {
-            mobLevelingManager.recordEntityMaxHealth(entityKey, updatedHealth.getMax());
-            if (hasFallbackAlias) {
-                mobLevelingManager.recordEntityMaxHealth(fallbackEntityKey, updatedHealth.getMax());
-            }
+        if (updatedHealth == null || !Float.isFinite(updatedHealth.getMax()) || updatedHealth.getMax() <= 0.0f) {
+            // statMap.update() did not produce valid health yet; signal failure so the
+            // retry path re-attempts on the next cycle instead of permanently settling.
+            return false;
+        }
+        mobLevelingManager.recordEntityMaxHealth(entityKey, updatedHealth.getMax());
+        if (hasFallbackAlias) {
+            mobLevelingManager.recordEntityMaxHealth(fallbackEntityKey, updatedHealth.getMax());
+        }
+        mobLevelingManager.recordEntityHealthComposition(
+            entityKey,
+            baseMax,
+            targetMax,
+            lifeForceBonus,
+            updatedHealth.getMax());
+        if (hasFallbackAlias) {
             mobLevelingManager.recordEntityHealthComposition(
-                entityKey,
+                fallbackEntityKey,
                 baseMax,
                 targetMax,
                 lifeForceBonus,
                 updatedHealth.getMax());
-            if (hasFallbackAlias) {
-                mobLevelingManager.recordEntityHealthComposition(
-                    fallbackEntityKey,
+        }
+        if (cachedDebugMobCommonDefense) {
+            LOGGER.atInfo().log(
+                    "[MOB_HEALTH_LAYER_DEBUG] entity=%d level=%d baseMax=%.3f scaledMax=%.3f lifeForceBonus=%.3f finalMax=%.3f current=%.3f ratio=%.4f",
+                    entityId,
+                    appliedLevel,
                     baseMax,
                     targetMax,
                     lifeForceBonus,
+                    updatedHealth.getMax(),
+                    updatedHealth.get(),
+                    ratio);
+        }
+        if (cachedDebugMobCommonDefense) {
+            LOGGER.atInfo().log(
+                    "[MOB_COMMON_DEFENSE][HEALTH_AUDIT] entity=%d level=%d scalingEnabled=true baseMax=%.3f scaledMax=%.3f lifeForceBonus=%.3f expectedCombinedMax=%.3f current=%.3f actualMax=%.3f",
+                    entityId,
+                    appliedLevel,
+                    baseMax,
+                    targetMax,
+                    lifeForceBonus,
+                    targetMaxWithAugments,
+                    updatedHealth.get(),
                     updatedHealth.getMax());
-            }
-            if (cachedDebugMobCommonDefense) {
-                LOGGER.atInfo().log(
-                        "[MOB_HEALTH_LAYER_DEBUG] entity=%d level=%d baseMax=%.3f scaledMax=%.3f lifeForceBonus=%.3f finalMax=%.3f current=%.3f ratio=%.4f",
-                        entityId,
-                        appliedLevel,
-                        baseMax,
-                        targetMax,
-                        lifeForceBonus,
-                        updatedHealth.getMax(),
-                        updatedHealth.get(),
-                        ratio);
-            }
-            if (cachedDebugMobCommonDefense) {
-                LOGGER.atInfo().log(
-                        "[MOB_COMMON_DEFENSE][HEALTH_AUDIT] entity=%d level=%d scalingEnabled=true baseMax=%.3f scaledMax=%.3f lifeForceBonus=%.3f expectedCombinedMax=%.3f current=%.3f actualMax=%.3f",
-                        entityId,
-                        appliedLevel,
-                        baseMax,
-                        targetMax,
-                        lifeForceBonus,
-                        targetMaxWithAugments,
-                        updatedHealth.get(),
-                        updatedHealth.getMax());
-            }
         }
         return true;
     }
@@ -1483,8 +1539,33 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
 
         stripMobHealthModifiers(ref, commandBuffer);
         clearTrackedNameplateIfNeeded(ref, commandBuffer, state);
-        clearMobLevelRuntimeStateForEntity(ref, commandBuffer);
+        // Do NOT call clearMobLevelRuntimeStateForEntity here — that would wipe the
+        // UUID-keyed level snapshot that XpEventSystem needs at death time.  A mob can
+        // die in the same tick it becomes "blocked" (world unidentifiable for one tick,
+        // world‑XP blacklist transient flip, etc.) and we must not orphan that snapshot.
+        // Instead, clean up only health/augment state and let EntityRuntimeState age out
+        // through the normal TTL prune path.
+        clearHealthStateForBlockedEntity(ref, commandBuffer);
         markEntityChunkDirty(ref, commandBuffer);
+    }
+
+    private void clearHealthStateForBlockedEntity(Ref<EntityStore> ref,
+            CommandBuffer<EntityStore> commandBuffer) {
+        if (ref == null || mobLevelingManager == null) {
+            return;
+        }
+        Store<EntityStore> store = ref.getStore();
+        int entityId = ref.getIndex();
+        if (entityId >= 0) {
+            mobLevelingManager.clearEntityLevelOverride(store, entityId);
+            summonHealthAnomalyLogTimes.remove(entityId);
+        }
+        long fallbackEntityKey = toEntityKey(store, entityId);
+        mobLevelingManager.forgetEntityHealthByKey(fallbackEntityKey);
+        TrackingIdentity identity = resolveTrackingIdentity(ref, commandBuffer);
+        if (identity != null && identity.key() != fallbackEntityKey) {
+            mobLevelingManager.forgetEntityHealthByKey(identity.key());
+        }
     }
 
     private void resetNameplateState(EntityRuntimeState state) {
@@ -1498,6 +1579,8 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         state.lastAppliedNameplateText = null;
         state.lastNameplateHealthValue = Float.NaN;
         state.lastNameplateMaxHealthValue = Float.NaN;
+        state.lastKnownAtFullHealth = false;
+        state.lastHealthUpdateTick = 0;
     }
 
     private EntityRuntimeState getOrCreateEntityState(long entityKey, int entityId, Store<EntityStore> store) {
@@ -1563,9 +1646,11 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
             try {
                 UUID uuid = uuidComponent.getUuid();
                 if (uuid != null) {
-                    long storePart = store == null ? 0L : Integer.toUnsignedLong(System.identityHashCode(store));
+                    // For UUID-backed entities the UUID is globally unique; do NOT
+                    // include storePart because ref.getStore() may be a different
+                    // Java object than the store parameter in other callbacks.
                     long uuidPart = uuid.getMostSignificantBits() ^ Long.rotateLeft(uuid.getLeastSignificantBits(), 1);
-                    return new TrackingIdentity(uuidPart ^ (storePart << 32), true);
+                    return new TrackingIdentity(uuidPart, true);
                 }
             } catch (Throwable ignored) {
             }
@@ -1744,6 +1829,8 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         private long lastHealthFlowLogMillis;
         private float lastNameplateHealthValue = Float.NaN;
         private float lastNameplateMaxHealthValue = Float.NaN;
+        private boolean lastKnownAtFullHealth = false;
+        private int lastHealthUpdateTick = 0;
         private int lastAppliedNameplateLevel = Integer.MIN_VALUE;
         private boolean lastAppliedShowLevelInNameplate;
         private boolean lastAppliedShowNameInNameplate;

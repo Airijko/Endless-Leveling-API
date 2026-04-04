@@ -111,11 +111,11 @@ Mob_Leveling:
     Show_Level: true
     Show_Name: true
     Show_Health: true
-    # Nameplate refresh cadence in world ticks.
-    # Example thresholds:
-    # - 1: update every tick (smoothest, highest update cost)
-    # - 5: update every 5 ticks (~4 updates/sec at 20 TPS)
-    # - 10: update every 10 ticks (~2 updates/sec at 20 TPS)
+    # Nameplate HP refresh cadence in world ticks (Hytale runs at 20 TPS).
+    # - 1:  every world tick (~50ms, smoothest, highest update cost)
+    # - 5:  every 5 world ticks (~0.25s, recommended)
+    # - 10: every 10 world ticks (~0.5s)
+    # - 20: every 20 world ticks (~1s)
     Nameplate_Update_Ticks: 5
 
 # Player nameplate controls are separate from mob nameplate controls.

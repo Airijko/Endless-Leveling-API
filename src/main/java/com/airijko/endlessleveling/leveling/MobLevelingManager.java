@@ -452,21 +452,8 @@ public class MobLevelingManager {
                 candidate.viewRadiusChunks());
     }
 
-    public void forgetEntity(int entityIndex) {
-        // Caller lacks store/UUID context. Prefer forgetEntityByKey or
-        // forgetEntity(store, index).
-    }
-
-    public void forgetEntity(Store<EntityStore> store, int entityIndex) {
-        long fallbackKey = toEntityKey(store, entityIndex);
-        entityHealthCompositionSnapshots.remove(fallbackKey);
-        entityResolvedLevelSnapshots.remove(fallbackKey);
-        entityAssignedAugmentSnapshots.remove(fallbackKey);
-        trueBaseHealthCache.remove(fallbackKey);
-    }
-
     public void forgetEntityByKey(long entityKey) {
-        if (entityKey < 0L) {
+        if (entityKey == -1L) {
             return;
         }
         entityHealthCompositionSnapshots.remove(entityKey);
@@ -475,8 +462,22 @@ public class MobLevelingManager {
         trueBaseHealthCache.remove(entityKey);
     }
 
+    /**
+     * Clears health/augment/base-health snapshots for this key but deliberately preserves
+     * the resolved-level entry. Use this for transient "blocked entity" cleanup paths where
+     * the mob may die immediately after and XpEventSystem still needs the level snapshot.
+     */
+    public void forgetEntityHealthByKey(long entityKey) {
+        if (entityKey == -1L) {
+            return;
+        }
+        entityHealthCompositionSnapshots.remove(entityKey);
+        entityAssignedAugmentSnapshots.remove(entityKey);
+        trueBaseHealthCache.remove(entityKey);
+    }
+
     public void recordEntityMaxHealth(long trackingKey, float maxHealth) {
-        if (trackingKey < 0L) {
+        if (trackingKey == -1L) {
             return;
         }
         if (!Float.isFinite(maxHealth) || maxHealth <= 0.0f) {
@@ -536,7 +537,7 @@ public class MobLevelingManager {
             float scaledMax,
             float lifeForceBonus,
             float combinedMax) {
-        if (trackingKey < 0L
+        if (trackingKey == -1L
                 || !Float.isFinite(baseMax)
                 || !Float.isFinite(scaledMax)
                 || !Float.isFinite(lifeForceBonus)
@@ -564,7 +565,7 @@ public class MobLevelingManager {
     }
 
     public void recordEntityResolvedLevel(long trackingKey, int level) {
-        if (trackingKey < 0L || level <= 0) {
+        if (trackingKey == -1L || level <= 0) {
             return;
         }
         entityResolvedLevelSnapshots.put(trackingKey, level);
@@ -595,11 +596,54 @@ public class MobLevelingManager {
             return primary;
         }
 
-        // Entity is UUID-backed (primary key != fallback key). The index-based fallback
-        // key may hold a stale level from a previous entity that occupied the same slot.
-        // If the UUID-keyed snapshot is missing, the mob hasn't been processed by
-        // MobLevelingSystem yet — return null so the caller resolves the level live.
-        return null;
+        // Entity is UUID-backed (primary key != fallback key). The UUID-keyed snapshot
+        // may be missing if: the UUID was assigned after MobLevelingSystem last ticked the
+        // entity; the snapshot was evicted by a forgetEntityByKey call (e.g. entity
+        // re-slotted); or there is a store-identity mismatch between recording and lookup.
+        // The index-keyed snapshot may also be stale (from a previous entity at the same
+        // slot), but using it is always more accurate than the zone-position fallback which
+        // produces catastrophically wrong results (e.g. level 10 for a level 99 mob).
+        Integer idxLevel = entityResolvedLevelSnapshots.get(fallbackKey);
+        return (idxLevel != null && idxLevel > 0) ? idxLevel : null;
+    }
+
+    /**
+     * Returns a diagnostic string showing what level snapshots exist for the given entity,
+     * split by UUID-keyed vs index-keyed tracking paths. Used for fallback-source XP logs.
+     */
+    public String getMobLevelSnapshotDiagnostic(Ref<EntityStore> ref,
+            Store<EntityStore> store,
+            CommandBuffer<EntityStore> commandBuffer) {
+        if (ref == null) {
+            return "ref=null";
+        }
+        Store<EntityStore> effectiveStore = store != null ? store : ref.getStore();
+        long primaryKey = resolveTrackingKey(ref, store, commandBuffer);
+        Integer primaryLvl = entityResolvedLevelSnapshots.get(primaryKey);
+        long idxKey = toEntityKey(effectiveStore, ref.getIndex());
+        Integer idxLvl = (idxKey != primaryKey) ? entityResolvedLevelSnapshots.get(idxKey) : null;
+
+        String uuidStr = "none";
+        try {
+            UUIDComponent uuidComponent = commandBuffer != null
+                    ? commandBuffer.getComponent(ref, UUIDComponent.getComponentType())
+                    : null;
+            if (uuidComponent == null && effectiveStore != null) {
+                uuidComponent = effectiveStore.getComponent(ref, UUIDComponent.getComponentType());
+            }
+            if (uuidComponent != null && uuidComponent.getUuid() != null) {
+                uuidStr = uuidComponent.getUuid().toString();
+            }
+        } catch (Throwable ignored) {
+        }
+
+        if (idxKey == primaryKey) {
+            return String.format("uuid=%s primaryKey=%d primaryLvl=%s (no-uuid; idxKey=same)",
+                    uuidStr, primaryKey, primaryLvl != null ? primaryLvl : "null");
+        }
+        return String.format("uuid=%s primaryKey=%d primaryLvl=%s idxKey=%d idxLvl=%s",
+                uuidStr, primaryKey, primaryLvl != null ? primaryLvl : "null",
+                idxKey, idxLvl != null ? idxLvl : "null");
     }
 
     /**
@@ -2785,7 +2829,7 @@ public class MobLevelingManager {
     private boolean shouldLogMobLevelDebug(Ref<EntityStore> ref, Store<EntityStore> store) {
         int entityId = ref != null ? ref.getIndex() : -1;
         long key = toEntityKey(store != null ? store : (ref != null ? ref.getStore() : null), entityId);
-        if (key < 0L) {
+        if (key == -1L) {
             return true;
         }
 
@@ -4319,10 +4363,13 @@ public class MobLevelingManager {
             try {
                 UUID uuid = uuidComponent.getUuid();
                 if (uuid != null) {
-                    long storePart = effectiveStore == null ? 0L
-                            : Integer.toUnsignedLong(System.identityHashCode(effectiveStore));
+                    // For UUID-backed entities the UUID itself is globally unique;
+                    // do NOT include storePart (System.identityHashCode) because the
+                    // same store may be represented by different Java objects across
+                    // callback boundaries (e.g. delayedTick vs onComponentAdded),
+                    // which would produce different keys for the same entity.
                     long uuidPart = uuid.getMostSignificantBits() ^ Long.rotateLeft(uuid.getLeastSignificantBits(), 1);
-                    return uuidPart ^ (storePart << 32);
+                    return uuidPart;
                 }
             } catch (Throwable ignored) {
             }

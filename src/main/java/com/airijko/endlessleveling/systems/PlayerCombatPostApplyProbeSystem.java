@@ -167,9 +167,9 @@ public class PlayerCombatPostApplyProbeSystem extends DamageEventSystem {
             try {
                 UUID uuid = uuidComponent.getUuid();
                 if (uuid != null) {
-                    long storePart = store == null ? 0L : Integer.toUnsignedLong(System.identityHashCode(store));
+                    // UUID-backed: no storePart; UUID is globally unique across contexts.
                     long uuidPart = uuid.getMostSignificantBits() ^ Long.rotateLeft(uuid.getLeastSignificantBits(), 1);
-                    return uuidPart ^ (storePart << 32);
+                    return uuidPart;
                 }
             } catch (Throwable ignored) {
             }
