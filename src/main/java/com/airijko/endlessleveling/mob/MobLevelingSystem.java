@@ -60,10 +60,10 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
     private static final Query<EntityStore> ENTITY_QUERY = Query.any();
     private static final String MOB_HEALTH_SCALE_MODIFIER_KEY = "EL_MOB_HEALTH_SCALE";
     private static final String MOB_AUGMENT_LIFE_FORCE_MODIFIER_KEY = "EL_MOB_AUGMENT_LIFE_FORCE";
-    private static final float SYSTEM_INTERVAL_SECONDS = 0.75f;
+    private static final float SYSTEM_INTERVAL_SECONDS = 0.1f;
     private static final long STALE_ENTITY_TTL_MILLIS = 100_000L;
     private static final long PASSIVE_STAT_TICK_INTERVAL_MILLIS = 1000L;
-    private static final long FLOW_HEALTH_RETRY_INTERVAL_MILLIS = 3000L;
+    private static final long FLOW_HEALTH_RETRY_INTERVAL_MILLIS = 500L;
     private static final long FLOW_HEALTH_LOG_COOLDOWN_MILLIS = 5000L;
     private static final int CHUNK_BIT_SHIFT = 5;
     private static final int MIN_PLAYER_VIEW_RADIUS_CHUNKS = 1;
@@ -72,12 +72,14 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
     private static final String DEBUG_SECTION_MOB_LEVEL_FLOW = "mob_level_flow";
     private static final String DEBUG_SECTION_MOB_COMMON_DEFENSE = "mob_common_defense";
     private static final String DEBUG_SECTION_MOB_LEVEL_NAMEPLATE = "mob_level_nameplate";
+    private static final String DEBUG_SECTION_MOB_HEALTH_NAMEPLATE = "mob_health_nameplate";
 
     private final MobLevelingManager mobLevelingManager = EndlessLeveling.getInstance().getMobLevelingManager();
     private final java.util.Random random = new java.util.Random();
 
     private final AtomicBoolean fullMobRescaleRequested = new AtomicBoolean(false);
     private long systemTimeMillis = 0L;
+    private java.lang.reflect.Method cachedGetTickMethod = null;
     private final Map<Long, EntityRuntimeState> entityStates = new ConcurrentHashMap<>();
     private final Set<Store<EntityStore>> knownStoresForCleanup = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final Map<Integer, Long> summonHealthAnomalyLogTimes = new ConcurrentHashMap<>();
@@ -85,6 +87,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
     private boolean cachedDebugMobLevelFlow = false;
     private boolean cachedDebugMobCommonDefense = false;
     private boolean cachedDebugMobLevelNameplate = false;
+    private boolean cachedDebugMobHealthNameplate = false;
 
     public MobLevelingSystem() {
         super(SYSTEM_INTERVAL_SECONDS);
@@ -545,14 +548,15 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         cachedDebugMobLevelFlow = isDebugSectionEnabled(DEBUG_SECTION_MOB_LEVEL_FLOW);
         cachedDebugMobCommonDefense = isDebugSectionEnabled(DEBUG_SECTION_MOB_COMMON_DEFENSE);
         cachedDebugMobLevelNameplate = isDebugSectionEnabled(DEBUG_SECTION_MOB_LEVEL_NAMEPLATE);
+        cachedDebugMobHealthNameplate = isDebugSectionEnabled(DEBUG_SECTION_MOB_HEALTH_NAMEPLATE);
 
         boolean showMobLevelUi = mobLevelingManager.shouldRenderMobNameplate();
         boolean showLevelInNameplate = mobLevelingManager.shouldShowMobNameplateLevel();
         boolean showNameInNameplate = mobLevelingManager.shouldShowMobNameplateName();
         boolean showHealthInNameplate = mobLevelingManager.shouldShowMobNameplateHealth();
         int nameplateUpdateTicks = mobLevelingManager.getMobNameplateUpdateTicks();
-        // evaluateHealthDeltaThisTick is now a per-entity decision based on lastHealthUpdateTick.
-        // The boolean here just carries whether health display is active at all this tick cycle.
+        // Nameplate_Update_Ticks is compared directly against Hytale world ticks (20 TPS).
+        // Obtained via store.getExternalData().getWorld().getTick() through reflection.
         boolean healthDisplayActive = showHealthInNameplate;
         boolean renderAnyNameplateText = showMobLevelUi
             && (showLevelInNameplate || showNameInNameplate || showHealthInNameplate);
@@ -572,6 +576,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
             return;
         }
 
+        long currentWorldTick = resolveWorldTick(store);
         store.forEachChunk(ENTITY_QUERY,
                 (ArchetypeChunk<EntityStore> chunk, CommandBuffer<EntityStore> commandBuffer) -> {
                     for (int i = 0; i < chunk.size(); i++) {
@@ -584,11 +589,27 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
                                 showNameInNameplate,
                                 healthDisplayActive,
                                 nameplateUpdateTicks,
-                                tickCount,
+                                currentWorldTick,
                                 currentTimeMillis,
                             playerChunkViewports);
                     }
                 });
+    }
+
+    private long resolveWorldTick(Store<EntityStore> store) {
+        try {
+            EntityStore externalData = store.getExternalData();
+            if (externalData == null) return 0L;
+            Object world = externalData.getWorld();
+            if (world == null) return 0L;
+            if (cachedGetTickMethod == null) {
+                cachedGetTickMethod = world.getClass().getMethod("getTick");
+            }
+            Object result = cachedGetTickMethod.invoke(world);
+            return result instanceof Number n ? n.longValue() : 0L;
+        } catch (Throwable ignored) {
+            return 0L;
+        }
     }
 
     private void cleanupStoreRuntimeState(Store<EntityStore> store) {
@@ -645,7 +666,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
             boolean showNameInNameplate,
             boolean showHealthInNameplate,
             int nameplateUpdateTicks,
-            int currentWorldTick,
+            long currentWorldTick,
             long currentTimeMillis,
             List<PlayerChunkViewport> playerChunkViewports) {
         if (ref == null || commandBuffer == null) {
@@ -741,7 +762,13 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
 
         // Health scaling must happen regardless of nameplate display setting, as it affects
         // both mob durability and XP calculation. The Show_Health setting only controls UI display.
-        if (state.augmentHealthReconcilePending && state.settledHealthLevel == mobLevel) {
+        // Only allow the re-settle trigger once the first passive tick has fired; while
+        // augmentPassiveDeferActive is true the life_force bonus is not yet available, so
+        // re-applying health early would cache a zero-lifeForce result and leave the flag
+        // permanently pending. The applyMobAugments path forces settled=0 directly when
+        // the passive fires so this guard does not prevent the post-passive re-settle.
+        if (state.augmentHealthReconcilePending && !state.augmentPassiveDeferActive
+                && state.settledHealthLevel == mobLevel) {
             // Augments became available after initial settle; do exactly one reconcile apply
             // so augmented health layers are included without recurring per-tick reapplication.
             state.settledHealthLevel = 0;
@@ -757,7 +784,19 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
                 if (healthApplied) {
                     state.settledHealthLevel = mobLevel;
                     state.nextHealthApplyAttemptMillis = currentTimeMillis;
-                    state.augmentHealthReconcilePending = false;
+                    // Don't clear augmentHealthReconcilePending while the first passive tick
+                    // is still deferred — life_force bonus is not yet in runtimeState, so
+                    // the reconcile re-settle must fire again once the passive tick completes.
+                    if (!state.augmentPassiveDeferActive) {
+                        state.augmentHealthReconcilePending = false;
+                    }
+                    // Max HP just changed: force nameplate re-render on the next cycle.
+                    // We null lastAppliedNameplateText rather than resetting the cached HP
+                    // values to NaN: NaN comparisons always return false, which would
+                    // permanently block the healthChangedForNameplate delta check and cause
+                    // both the max HP and current HP to stop updating in the nameplate.
+                    state.lastAppliedNameplateText = null;
+                    state.lastKnownAtFullHealth = false;
                 } else {
                     state.nextHealthApplyAttemptMillis = currentTimeMillis + FLOW_HEALTH_RETRY_INTERVAL_MILLIS;
                 }
@@ -789,24 +828,45 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
                 && Float.isFinite(currentMaxHpForNameplate)
                 && currentMaxHpForNameplate > 0.0f;
 
-            // Per-entity health update cadence: fire when enough world ticks have elapsed
-            // since this entity's nameplate was last updated. This avoids modulo alignment
-            // issues caused by DelayedSystem firing at non-deterministic world tick offsets.
-            boolean tickWindowElapsed = nameplateUpdateTicks <= 1
+            // Per-entity health update cadence: compare directly against Hytale world ticks
+            // (20 TPS). currentWorldTick = 0 means the world tick is unavailable this cycle
+            // (e.g. world not yet ready); treat as always elapsed to avoid blocking updates.
+            boolean tickWindowElapsed = currentWorldTick <= 0L
+                || nameplateUpdateTicks <= 1
                 || (currentWorldTick - state.lastHealthUpdateTick) >= nameplateUpdateTicks;
-            // Optimization: skip delta math entirely when mob is at full HP and was at full HP
-            // last check — there is nothing to update in the nameplate.
-            boolean atFullHealth = hasFiniteHealthForNameplate
-                && currentHpForNameplate >= currentMaxHpForNameplate - 0.0001f;
             boolean healthChangedForNameplate =
                 showHealthInNameplate
                     && tickWindowElapsed
                     && hasFiniteHealthForNameplate
-                    && !(atFullHealth && state.lastKnownAtFullHealth)
                     && (Math.abs(currentHpForNameplate - state.lastNameplateHealthValue) > 0.0001f
                         || Math.abs(currentMaxHpForNameplate - state.lastNameplateMaxHealthValue) > 0.0001f);
-            if (hasFiniteHealthForNameplate) {
-                state.lastKnownAtFullHealth = atFullHealth;
+            if (cachedDebugMobHealthNameplate && showHealthInNameplate) {
+                MobLevelingManager.MobHealthCompositionSnapshot hcs =
+                    mobLevelingManager.getEntityHealthCompositionSnapshot(entityKey);
+                Float trueBase = mobLevelingManager.getTrueBaseHealth(entityKey);
+                NAMEPLATE_LOGGER.atInfo().log(
+                    "[MOB_HEALTH_NAMEPLATE] entity=%d level=%d settled=%d gameTick=%d lastTick=%d elapsed=%d threshold=%d tickWindowElapsed=%s"
+                    + " hp=%.3f/%.3f lastHp=%.3f lastMax=%.3f hpDelta=%s changed=%s"
+                    + " trueBase=%s baseMax=%s scaledMax=%s lifeForce=%s combinedMax=%s",
+                    ref.getIndex(),
+                    mobLevel,
+                    state.settledHealthLevel,
+                    currentWorldTick,
+                    state.lastHealthUpdateTick,
+                    currentWorldTick - state.lastHealthUpdateTick,
+                    (long) nameplateUpdateTicks,
+                    tickWindowElapsed,
+                    currentHpForNameplate,
+                    currentMaxHpForNameplate,
+                    state.lastNameplateHealthValue,
+                    state.lastNameplateMaxHealthValue,
+                    hasFiniteHealthForNameplate ? String.format("%.3f", currentHpForNameplate - state.lastNameplateHealthValue) : "NaN",
+                    healthChangedForNameplate,
+                    trueBase != null ? String.format("%.3f", trueBase) : "null",
+                    hcs != null ? String.format("%.3f", hcs.baseMax()) : "null",
+                    hcs != null ? String.format("%.3f", hcs.scaledMax()) : "null",
+                    hcs != null ? String.format("%.3f", hcs.lifeForceBonus()) : "null",
+                    hcs != null ? String.format("%.3f", hcs.combinedMax()) : "null");
             }
 
             if (state.lastAppliedNameplateLevel != mobLevel
@@ -839,7 +899,10 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
                 state.lastAppliedShowHealthInNameplate = showHealthInNameplate;
                 state.lastNameplateHealthValue = hasFiniteHealthForNameplate ? currentHpForNameplate : Float.NaN;
                 state.lastNameplateMaxHealthValue = hasFiniteHealthForNameplate ? currentMaxHpForNameplate : Float.NaN;
-                if (healthChangedForNameplate) {
+                // Only stamp the health-clock when health drove this update.
+                // Non-health triggers (first-time null text, level change, config change)
+                // must NOT reset the clock or elapsed will always be 0 on the next sweep.
+                if (healthChangedForNameplate && currentWorldTick > 0L) {
                     state.lastHealthUpdateTick = currentWorldTick;
                 }
                 if (cachedDebugMobLevelFlow) {
@@ -929,7 +992,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
 
         int entityId = ref.getIndex();
         long fallbackEntityKey = toEntityKey(ref.getStore(), entityId);
-        boolean hasFallbackAlias = fallbackEntityKey >= 0L && fallbackEntityKey != entityKey;
+        boolean hasFallbackAlias = fallbackEntityKey != -1L && fallbackEntityKey != entityKey;
 
         PlayerRef playerRef = commandBuffer.getComponent(ref, PlayerRef.getComponentType());
         if (playerRef != null && playerRef.isValid()) {
@@ -1354,6 +1417,14 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
                     state.augmentHealthReconcilePending = true;
                 }
                 state.nextMobAugmentRegistrationCheckMillis = 0L;
+                // Defer the first passive tick by just enough time for applyHealthModifier
+                // to run once and cache trueBaseHealth (one system cycle = ~100ms).
+                // 200ms covers two cycles as a safe buffer — far less than the old 1000ms
+                // which was the main reason life_force applied so slowly on fresh spawns.
+                // The ongoing passive tick rate (PASSIVE_STAT_TICK_INTERVAL_MILLIS) is
+                // unchanged; only the initial post-registration defer is shortened.
+                state.lastPassiveStatTickMillis = currentTimeMillis - (PASSIVE_STAT_TICK_INTERVAL_MILLIS - 200L);
+                state.augmentPassiveDeferActive = true;
                 if (cachedDebugMobLevelFlow) {
                     LOGGER.atInfo().log(
                             "[MOB_LEVEL_FLOW] entity=%d uuidBacked=%s phase=augments registered=%s",
@@ -1362,8 +1433,22 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
                             true);
                 }
             } else {
-                state.mobHasAugments = false;
-                state.nextMobAugmentRegistrationCheckMillis = currentTimeMillis + 3000L;
+                // Two cases both return false from ensureMobAugmentsRegistered:
+                //   (a) mob already has augments registered (hasMobAugments UUID guard)
+                //   (b) mob genuinely has no augments to assign
+                // Only clear mobHasAugments for case (b). For case (a) the mob is
+                // initialized and the passive-tick path must keep running so the
+                // reconciler can maintain goliath/raidBoss % modifiers.
+                if (!state.mobAugmentsInitialized) {
+                    state.mobHasAugments = false;
+                }
+                // For uninitialized mobs, use a short retry — registration often fails on
+                // the first tick because the UUID component isn't attached to a fresh spawn
+                // yet.  A 3-second delay here is the main cause of visible slowness.
+                // For already-initialized mobs (case a), the longer interval keeps the
+                // periodic recheck cheap.
+                state.nextMobAugmentRegistrationCheckMillis = currentTimeMillis
+                        + (alreadyInitialized ? 3000L : 200L);
             }
         }
 
@@ -1388,6 +1473,15 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
 
         tickMobPassiveAugmentStats(ref, store, commandBuffer);
         state.lastPassiveStatTickMillis = currentTimeMillis;
+        state.augmentPassiveDeferActive = false;
+        // Passive just fired for the first time (or is re-ticking). Force an immediate
+        // health re-settle so augment bonuses (life_force, etc.) that were just written
+        // to runtimeState are picked up by applyHealthModifier in this same processEntity
+        // cycle rather than waiting a full tick for the re-settle trigger.
+        if (state.augmentHealthReconcilePending) {
+            state.settledHealthLevel = 0;
+            state.nextHealthApplyAttemptMillis = currentTimeMillis;
+        }
     }
 
         private boolean applyNameplate(Ref<EntityStore> ref,
@@ -1580,7 +1674,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         state.lastNameplateHealthValue = Float.NaN;
         state.lastNameplateMaxHealthValue = Float.NaN;
         state.lastKnownAtFullHealth = false;
-        state.lastHealthUpdateTick = 0;
+        state.lastHealthUpdateTick = 0L;
     }
 
     private EntityRuntimeState getOrCreateEntityState(long entityKey, int entityId, Store<EntityStore> store) {
@@ -1830,13 +1924,14 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         private float lastNameplateHealthValue = Float.NaN;
         private float lastNameplateMaxHealthValue = Float.NaN;
         private boolean lastKnownAtFullHealth = false;
-        private int lastHealthUpdateTick = 0;
+        private long lastHealthUpdateTick = 0L;
         private int lastAppliedNameplateLevel = Integer.MIN_VALUE;
         private boolean lastAppliedShowLevelInNameplate;
         private boolean lastAppliedShowNameInNameplate;
         private boolean lastAppliedShowHealthInNameplate;
         private String lastAppliedNameplateText;
         private boolean augmentHealthReconcilePending;
+        private boolean augmentPassiveDeferActive;
         private boolean mobAugmentsInitialized;
         private boolean mobHasAugments;
         private boolean flowInitializedLogged;

@@ -23,7 +23,6 @@ public class AddonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
     private static final String PATREON_URL = "https://www.patreon.com/cw/airijko";
     private static final String STARKY_MJOLNIR_URL = "https://www.curseforge.com/hytale/mods/starky-mjolnir";
-    private static final String RPG_MOBS_URL = "https://www.curseforge.com/hytale/mods/rpgmobs";
     private static final String FILTER_ALL = "all";
     private static final String FILTER_MOD_PARTNERS = "mod_partners";
     private static final String FILTER_COMMUNITY = "community";
@@ -63,7 +62,6 @@ public class AddonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         events.addEventBinding(Activating, "#ShowCommunityAddonsButton", of("Action", "addons:filter:community"), false);
         events.addEventBinding(Activating, "#ShowPartnerExtensionsButton", of("Action", "addons:filter:partner_extensions"), false);
         events.addEventBinding(Activating, "#StarkysMjolnirCard", of("Action", "addons:partner:starky_mjolnir"), false);
-        events.addEventBinding(Activating, "#RpgMobsCard", of("Action", "addons:partner:rpg_mobs"), false);
 
         applySectionFilter(ui, getCurrentFilter());
 
@@ -92,12 +90,6 @@ public class AddonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         if ("addons:partner:starky_mjolnir".equalsIgnoreCase(data.action)) {
             playerRef.sendMessage(Message.raw("Starky's Mjolnir on CurseForge:").color("#89c4ff"));
             playerRef.sendMessage(Message.raw("Starky's Mjolnir [Click Here]").link(STARKY_MJOLNIR_URL).color("#ffd08a"));
-            return;
-        }
-
-        if ("addons:partner:rpg_mobs".equalsIgnoreCase(data.action)) {
-            playerRef.sendMessage(Message.raw("RPG Mobs on CurseForge:").color("#89c4ff"));
-            playerRef.sendMessage(Message.raw("RPG Mobs [Click Here]").link(RPG_MOBS_URL).color("#ffd08a"));
             return;
         }
 

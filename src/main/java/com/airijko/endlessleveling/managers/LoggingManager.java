@@ -194,6 +194,9 @@ public final class LoggingManager {
         if ("mob_level_nameplate".equals(lowered)) {
             return LOGGER_PREFIX + ".mob.MobLevelingSystem.nameplate";
         }
+        if ("mob_health_nameplate".equals(lowered)) {
+            return LOGGER_PREFIX + ".mob.MobLevelingSystem.nameplate";
+        }
         if ("mob_augments".equals(lowered)) {
             return LOGGER_PREFIX + ".augments.MobAugmentExecutor";
         }

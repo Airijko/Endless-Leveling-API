@@ -656,7 +656,7 @@ public class MobLevelingManager {
      * scaling across ticks.
      */
     public void cacheTrueBaseHealth(long trackingKey, float trueBase) {
-        if (trackingKey >= 0L && Float.isFinite(trueBase) && trueBase > 0.0f) {
+        if (trackingKey != -1L && Float.isFinite(trueBase) && trueBase > 0.0f) {
             trueBaseHealthCache.putIfAbsent(trackingKey, trueBase);
         }
     }
