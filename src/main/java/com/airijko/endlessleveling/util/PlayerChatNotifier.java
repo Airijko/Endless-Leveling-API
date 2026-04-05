@@ -60,7 +60,7 @@ public final class PlayerChatNotifier {
         }
 
         List<Message> parts = new ArrayList<>();
-        parts.add(Message.raw(text(playerRef, ChatMessageTemplate.AUGMENTS_AVAILABLE_HEADER))
+        parts.add(Lang.message(ChatMessageTemplate.AUGMENTS_AVAILABLE_HEADER.localizationKey())
                 .color(ChatMessageTemplate.AUGMENTS_AVAILABLE_HEADER.colorHex()));
 
         for (PassiveTier tier : tiers) {
@@ -72,7 +72,7 @@ public final class PlayerChatNotifier {
         }
 
         parts.add(Message.raw("\n").color(ChatMessageStrings.Color.MUTED));
-        parts.add(Message.raw(text(playerRef, ChatMessageTemplate.AUGMENTS_AVAILABLE_FOOTER))
+        parts.add(Lang.message(ChatMessageTemplate.AUGMENTS_AVAILABLE_FOOTER.localizationKey())
                 .color(ChatMessageTemplate.AUGMENTS_AVAILABLE_FOOTER.colorHex()));
 
         send(playerRef, Message.join(parts.toArray(Message[]::new)));

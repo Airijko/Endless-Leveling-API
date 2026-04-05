@@ -64,9 +64,7 @@ public class LanguageCommand extends AbstractPlayerCommand {
     }
 
     private void sendUsage(PlayerRef senderRef) {
-        senderRef.sendMessage(Message.raw(Lang.tr(senderRef.getUuid(),
-                "command.language.usage",
-                "Usage: /el language list | /el language set <locale>")).color("#ffcc66"));
+        senderRef.sendMessage(Lang.message("command.language.usage").color("#ffcc66"));
     }
 
     private void applyLocaleChange(PlayerRef senderRef, PlayerData data, String requestedLocale) {
@@ -101,9 +99,7 @@ public class LanguageCommand extends AbstractPlayerCommand {
         if (playerDataManager != null && languageManager != null) {
             return true;
         }
-        senderRef.sendMessage(Message.raw(Lang.tr(senderRef.getUuid(),
-                "command.language.unavailable",
-                "Language manager is unavailable."))
+        senderRef.sendMessage(Lang.message("command.language.unavailable")
                 .color("#ff6666"));
         return false;
     }
@@ -113,9 +109,7 @@ public class LanguageCommand extends AbstractPlayerCommand {
         if (data != null) {
             return data;
         }
-        senderRef.sendMessage(Message.raw(Lang.tr(senderRef.getUuid(),
-                "command.language.data_not_loaded",
-                "Your player data is not loaded yet."))
+        senderRef.sendMessage(Lang.message("command.language.data_not_loaded")
                 .color("#ff6666"));
         return null;
     }

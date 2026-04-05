@@ -220,12 +220,16 @@ public class PlayerNameplateSystem extends TickingSystem<EntityStore> {
                 }
 
                 String label = String.format("Lv. %d %s", playerData.getLevel(), baseName);
-                Nameplate nameplate = commandBuffer.ensureAndGetComponent(ref, Nameplate.getComponentType());
-                if (nameplate == null) {
-                    continue;
+                Nameplate nameplate = commandBuffer.getComponent(ref, Nameplate.getComponentType());
+                if (nameplate != null) {
+                    nameplate.setText(label);
+                } else {
+                    commandBuffer.run(s -> {
+                        if (ref.isValid()) {
+                            s.ensureAndGetComponent(ref, Nameplate.getComponentType()).setText(label);
+                        }
+                    });
                 }
-
-                nameplate.setText(label);
                 lastLabels.put(uuid, signature);
                 dirtyPlayers.remove(uuid);
             }

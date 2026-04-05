@@ -1,9 +1,17 @@
 package com.airijko.endlessleveling.util;
 
+import com.airijko.endlessleveling.managers.LanguageManager;
+
+import javax.annotation.Nonnull;
+
 /**
  * Centralized localization key registry for chat notifications and HUD labels.
  *
- * Add new keys here first, then consume them via Lang.tr(...).
+ * Each key maps to a translation entry in both:
+ * - Hytale I18n: Server/Languages/{locale}/endlessleveling.lang (auto-prefixed as "endlessleveling.{key}")
+ * - Legacy YAML: lang/{locale}.yml (flattened dot-key)
+ *
+ * Add new keys here first, then consume them via {@link Lang#tr(LocalizationKey, Object...)}.
  */
 public enum LocalizationKey {
     NOTIFY_SKILLS_CHAT_HAVE("notify.skills.chat.have", "You still have "),
@@ -57,10 +65,18 @@ public enum LocalizationKey {
         this.fallback = fallback;
     }
 
+    /** The translation key used in both YAML and .lang files (without I18n prefix). */
     public String key() {
         return key;
     }
 
+    /** The fully-qualified key for Hytale's I18nModule (with "endlessleveling." prefix). */
+    @Nonnull
+    public String i18nKey() {
+        return LanguageManager.I18N_KEY_PREFIX + key;
+    }
+
+    /** Fallback English text if no translation is found. */
     public String fallback() {
         return fallback;
     }

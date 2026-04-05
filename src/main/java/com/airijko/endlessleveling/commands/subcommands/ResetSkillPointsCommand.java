@@ -75,9 +75,7 @@ public class ResetSkillPointsCommand extends AbstractCommand {
             if (senderIsPlayer) {
                 PlayerRef senderRef = Universe.get().getPlayer(senderPlayer.getUuid());
                 if (senderRef != null) {
-                    senderRef.sendMessage(Message.raw(Lang.tr(senderRef.getUuid(),
-                            "command.reset_skillpoints.system_unavailable",
-                            "Skill system is not initialised. Please contact an admin."))
+                    senderRef.sendMessage(Lang.message("command.reset_skillpoints.system_unavailable")
                             .color("#ff6666"));
                 } else {
                     commandContext.sendMessage(Message.raw("Skill system is not initialised. Please contact an admin.")
@@ -119,9 +117,7 @@ public class ResetSkillPointsCommand extends AbstractCommand {
 
             targetData = playerDataManager.get(senderRef.getUuid());
             if (targetData == null) {
-                senderRef.sendMessage(Message.raw(Lang.tr(senderRef.getUuid(),
-                        "command.reset_skillpoints.no_data",
-                        "No saved data found. Try rejoining."))
+                senderRef.sendMessage(Lang.message("command.reset_skillpoints.no_data")
                         .color("#ff6666"));
                 return CompletableFuture.completedFuture(null);
             }
@@ -143,14 +139,10 @@ public class ResetSkillPointsCommand extends AbstractCommand {
         }
 
         if (targetRef != null && (senderRef == null || !targetRef.getUuid().equals(senderRef.getUuid()))) {
-            targetRef.sendMessage(Message.raw(Lang.tr(targetRef.getUuid(),
-                    "command.reset_skillpoints.notify_target",
-                    "An admin reset your skill points to the default layout."))
+            targetRef.sendMessage(Lang.message("command.reset_skillpoints.notify_target")
                     .color("#4fd7f7"));
         } else if (!hasExplicitTarget && senderRef != null) {
-            senderRef.sendMessage(Message.raw(Lang.tr(senderRef.getUuid(),
-                    "command.reset_skillpoints.success_self",
-                    "Your skill points have been reset to the default layout."))
+            senderRef.sendMessage(Lang.message("command.reset_skillpoints.success_self")
                     .color("#4fd7f7"));
         }
 

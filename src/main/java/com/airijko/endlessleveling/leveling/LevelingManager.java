@@ -385,8 +385,8 @@ public class LevelingManager {
 
         var packetHandler = playerRef.getPacketHandler();
         int displayedXp = (int) Math.round(xpAmount);
-        var primaryMessage = Message.raw("Gained " + displayedXp + " XP!").color("#00FF00");
-        var secondaryMessage = Message.raw("Current level: " + player.getLevel()).color("#228B22");
+        var primaryMessage = Message.raw(Lang.tr("notify.xp.gained", "Gained {0} XP!", displayedXp)).color("#00FF00");
+        var secondaryMessage = Message.raw(Lang.tr("notify.xp.current_level", "Current level: {0}", player.getLevel())).color("#228B22");
         ItemStack iconStack = new ItemStack("Ingredient_Life_Essence", 1)
                 .withMetadata("el:xp_notification_nonce", new BsonString(UUID.randomUUID().toString()));
         var icon = iconStack.toPacket();
@@ -399,17 +399,17 @@ public class LevelingManager {
             return;
 
         // Level-Up Title
-        Message primaryMessage = Message.raw("Level Up!").color("#FFD700");
-        Message secondaryMessage = Message.raw("You are now level " + player.getLevel()).color("#FFFFFF");
+        Message primaryMessage = Lang.message("notify.levelup.title").color("#FFD700");
+        Message secondaryMessage = Message.raw(Lang.tr("notify.levelup.subtitle", "You are now level {0}", player.getLevel())).color("#FFFFFF");
         EventTitleUtil.showEventTitleToPlayer(playerRef, primaryMessage, secondaryMessage, true, null, 5, 1, 1);
 
         // Skill point notification
-        var notifPrimary = Message.raw("You gained " + skillManager.getSkillPointsPerLevel() + " skill points!")
+        var notifPrimary = Message.raw(Lang.tr("notify.levelup.skill_points", "You gained {0} skill points!", skillManager.getSkillPointsPerLevel()))
                 .color("#ffc300");
         var notifSecondary = Message.join(
-                Message.raw("Use ").color("#ff9d00"),
+                Lang.message("notify.levelup.use_prefix").color("#ff9d00"),
                 Message.raw(rootCommand()).color("#4fd7f7"),
-                Message.raw(" to allocate your points").color("#ff9d00"));
+                Lang.message("notify.levelup.allocate_suffix").color("#ff9d00"));
         var icon = new ItemStack("Ingredient_Ice_Essence", 1).toPacket();
         NotificationUtil.sendNotification(playerRef.getPacketHandler(), notifPrimary, notifSecondary, icon);
     }
@@ -435,17 +435,16 @@ public class LevelingManager {
 
         String rankupCommand = rootCommand() + " rankup";
 
-        Message title = Message.raw("Prestige Available!")
-                .color("#f0c15a");
-        Message subtitle = Message.raw("Use " + rankupCommand + " to prestige to the next tier.")
+        Message title = Lang.message("notify.prestige.available_title").color("#f0c15a");
+        Message subtitle = Message.raw(Lang.tr("notify.prestige.available_subtitle", "Use {0} to prestige to the next tier.", rankupCommand))
                 .color("#ffffff");
         EventTitleUtil.showEventTitleToPlayer(playerRef, title, subtitle, true, null, 6, 1, 1);
 
         Message chatBody = Message.join(
-                Message.raw("Prestige is ready! ").color("#ffc300"),
-                Message.raw("Use ").color("#ff9d00"),
+                Lang.message("notify.prestige.ready").color("#ffc300"),
+                Lang.message("notify.prestige.use_prefix").color("#ff9d00"),
                 Message.raw(rankupCommand).color("#4fd7f7"),
-                Message.raw(" to prestige to the next tier.").color("#ffc300"));
+                Lang.message("notify.prestige.use_suffix").color("#ffc300"));
         PlayerChatNotifier.send(playerRef, chatBody);
     }
 

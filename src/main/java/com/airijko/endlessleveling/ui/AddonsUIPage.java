@@ -5,7 +5,7 @@ import javax.annotation.Nonnull;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
-import com.hypixel.hytale.server.core.Message;
+import com.airijko.endlessleveling.util.Lang;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.entity.entities.player.pages.InteractiveCustomUIPage;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
@@ -82,14 +82,14 @@ public class AddonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         }
 
         if ("addons:patreon".equalsIgnoreCase(data.action)) {
-            playerRef.sendMessage(Message.raw("Support Endless Leveling on Patreon:").color("#f6a463"));
-            playerRef.sendMessage(Message.raw("Patreon - Airijko").link(PATREON_URL).color("#ffd08a"));
+            playerRef.sendMessage(Lang.message("ui.addons.patreon.prompt").color("#f6a463"));
+            playerRef.sendMessage(Lang.message("ui.addons.patreon.label").link(PATREON_URL).color("#ffd08a"));
             return;
         }
 
         if ("addons:partner:starky_mjolnir".equalsIgnoreCase(data.action)) {
-            playerRef.sendMessage(Message.raw("Starky's Mjolnir on CurseForge:").color("#89c4ff"));
-            playerRef.sendMessage(Message.raw("Starky's Mjolnir [Click Here]").link(STARKY_MJOLNIR_URL).color("#ffd08a"));
+            playerRef.sendMessage(Lang.message("ui.addons.starky.prompt").color("#89c4ff"));
+            playerRef.sendMessage(Lang.message("ui.addons.starky.label").link(STARKY_MJOLNIR_URL).color("#ffd08a"));
             return;
         }
 
@@ -140,13 +140,13 @@ public class AddonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         ui.set("#PartnerExtensionsSection.Visible", showPartnerExtensions);
 
         if (FILTER_MOD_PARTNERS.equals(filter)) {
-            ui.set("#AddonSectionStatus.Text", "Showing: Mod Partners");
+            ui.set("#AddonSectionStatus.Text", Lang.tr("ui.addons.filter.mod_partners", "Showing: Mod Partners"));
         } else if (FILTER_COMMUNITY.equals(filter)) {
-            ui.set("#AddonSectionStatus.Text", "Showing: Community Addons");
+            ui.set("#AddonSectionStatus.Text", Lang.tr("ui.addons.filter.community", "Showing: Community Addons"));
         } else if (FILTER_PARTNER_EXTENSIONS.equals(filter)) {
-            ui.set("#AddonSectionStatus.Text", "Showing: Partner Extentions");
+            ui.set("#AddonSectionStatus.Text", Lang.tr("ui.addons.filter.partner_extensions", "Showing: Partner Extentions"));
         } else {
-            ui.set("#AddonSectionStatus.Text", "Showing: Endless Leveling Addons");
+            ui.set("#AddonSectionStatus.Text", Lang.tr("ui.addons.filter.all", "Showing: Endless Leveling Addons"));
         }
     }
 }

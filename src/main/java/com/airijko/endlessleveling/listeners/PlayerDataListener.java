@@ -340,35 +340,29 @@ public class PlayerDataListener {
 
         var packetHandler = playerRef.getPacketHandler();
         var primaryMessage = Message.raw(
-            nn(Lang.tr(playerRef.getUuid(), "notify.skills.unspent.primary",
-                "You have {0} unspent skill points!", skillPoints),
-                "You have " + skillPoints + " unspent skill points!"))
+            Lang.tr(playerRef.getUuid(), "notify.skills.unspent.primary",
+                "You have {0} unspent skill points!", skillPoints))
                 .color("#ffc300");
         var secondaryMessage = Message.join(
-            Message.raw(nn(Lang.tr(playerRef.getUuid(), "notify.skills.unspent.secondary.open", "Open "),
-                "Open "))
+            Lang.message("notify.skills.unspent.secondary.open")
                         .color("#ff9d00"),
             Message.raw(nn(FixedValue.ROOT_COMMAND.value(), "/lvl"))
                 .color("#4fd7f7"),
-            Message.raw(nn(Lang.tr(playerRef.getUuid(), "notify.skills.unspent.secondary.close", " to invest them"),
-                " to invest them"))
+            Lang.message("notify.skills.unspent.secondary.close")
                         .color("#ff9d00"));
         var icon = new ItemStack("Ingredient_Ice_Essence", 1).toPacket();
         NotificationUtil.sendNotification(packetHandler, primaryMessage, secondaryMessage, icon);
 
         var chatMessage = Message.join(
-            Message.raw(nn(PlayerChatNotifier.text(playerRef, ChatMessageTemplate.SKILLS_CHAT_HAVE),
-                "You have "))
+            Lang.message(ChatMessageTemplate.SKILLS_CHAT_HAVE.localizationKey())
                 .color(nn(ChatMessageTemplate.SKILLS_CHAT_HAVE.colorHex(), "#ff9d00")),
                 Message.raw(String.valueOf(skillPoints)).color("#4fd7f7"),
-            Message.raw(nn(PlayerChatNotifier.text(playerRef, ChatMessageTemplate.SKILLS_CHAT_USE),
-                " skill points. Use "))
+            Lang.message(ChatMessageTemplate.SKILLS_CHAT_USE.localizationKey())
                 .color(nn(ChatMessageTemplate.SKILLS_CHAT_USE.colorHex(), "#ff9d00")),
             Message.raw(nn(PlayerChatNotifier.text(playerRef, ChatMessageTemplate.SKILLS_COMMAND),
                 "/lvl skills"))
                 .color(nn(ChatMessageTemplate.SKILLS_COMMAND.colorHex(), "#4fd7f7")),
-            Message.raw(nn(PlayerChatNotifier.text(playerRef, ChatMessageTemplate.SKILLS_CHAT_END),
-                " to invest them."))
+            Lang.message(ChatMessageTemplate.SKILLS_CHAT_END.localizationKey())
                 .color(nn(ChatMessageTemplate.SKILLS_CHAT_END.colorHex(), "#ff9d00")));
         PlayerChatNotifier.send(playerRef, chatMessage);
     }

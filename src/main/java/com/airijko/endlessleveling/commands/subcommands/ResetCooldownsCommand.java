@@ -45,9 +45,7 @@ public class ResetCooldownsCommand extends AbstractPlayerCommand {
         CommandUtil.requirePermission(commandContext.sender(), PERMISSION_NODE);
 
         if (passiveManager == null && augmentRuntimeManager == null) {
-            senderRef.sendMessage(Message.raw(Lang.tr(senderRef.getUuid(),
-                    "command.reset_cooldowns.unavailable",
-                    "Passive and augment managers are unavailable."))
+            senderRef.sendMessage(Lang.message("command.reset_cooldowns.unavailable")
                     .color("#ff6666"));
             return;
         }

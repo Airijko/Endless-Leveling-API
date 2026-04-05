@@ -13,6 +13,7 @@ import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
+import com.airijko.endlessleveling.util.Lang;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.entity.entities.player.pages.InteractiveCustomUIPage;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
@@ -87,7 +88,7 @@ public class ClassPathsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data>
 
         String titleClass = browsedClass != null ? resolveDisplayName(browsedClass)
                 : PlayerData.DEFAULT_PRIMARY_CLASS_ID;
-        ui.set("#ClassPathsTitleLabel.Text", titleClass + " Paths");
+        ui.set("#ClassPathsTitleLabel.Text", titleClass + " " + Lang.tr("ui.classpaths.title_suffix", "Paths"));
 
         if (selectedPathKey == null && browsedClass != null) {
             selectedPathKey = pathKey(browsedClass);
@@ -154,12 +155,12 @@ public class ClassPathsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data>
     private void handlePathAction(@Nonnull Ref<EntityStore> ref, @Nonnull Store<EntityStore> store) {
         PlayerData playerData = loadPlayerData();
         if (playerData == null) {
-            playerRef.sendMessage(Message.raw("Unable to load your class info right now.").color("#ff6666"));
+            playerRef.sendMessage(Lang.message("ui.classpaths.error.playerdata").color("#ff6666"));
             return;
         }
 
         if (classManager == null || !classManager.isEnabled()) {
-            playerRef.sendMessage(Message.raw("Classes are disabled.").color("#ff6666"));
+            playerRef.sendMessage(Lang.message("ui.classpaths.error.disabled").color("#ff6666"));
             return;
         }
 
@@ -167,7 +168,7 @@ public class ClassPathsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data>
         CharacterClassDefinition browsedClass = resolveBrowsedClass(currentClass);
         CharacterClassDefinition focusedClass = resolveFocusedClass(currentClass, browsedClass);
         if (focusedClass == null) {
-            playerRef.sendMessage(Message.raw("Select a class path first.").color("#ff9900"));
+            playerRef.sendMessage(Lang.message("ui.classpaths.error.select_first").color("#ff9900"));
             return;
         }
 
@@ -175,7 +176,7 @@ public class ClassPathsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data>
         NodeStatus status = resolveNodeStatus(focusedClass, baseTier, playerData, currentClass);
 
         if (status.isActive()) {
-            playerRef.sendMessage(Message.raw("That class form is already active.").color("#ff9900"));
+            playerRef.sendMessage(Lang.message("ui.classpaths.error.already_active").color("#ff9900"));
             return;
         }
 
@@ -183,14 +184,14 @@ public class ClassPathsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data>
             RaceAscensionEligibility eligibility = classManager.evaluateAscensionEligibility(playerData,
                     focusedClass.getId());
             if (eligibility != null && !eligibility.getBlockers().isEmpty()) {
-                playerRef.sendMessage(Message.raw("Cannot upgrade yet:").color("#ff6666"));
+                playerRef.sendMessage(Lang.message("ui.classpaths.error.cannot_upgrade").color("#ff6666"));
                 for (String blocker : eligibility.getBlockers()) {
                     playerRef.sendMessage(Message.join(
                             Message.raw(" - ").color("#ff6666"),
                             Message.raw(blocker).color("#ffc300")));
                 }
             } else {
-                playerRef.sendMessage(Message.raw("That class path is currently locked.").color("#ff6666"));
+                playerRef.sendMessage(Lang.message("ui.classpaths.error.locked").color("#ff6666"));
             }
             return;
         }
@@ -199,7 +200,7 @@ public class ClassPathsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data>
             RaceAscensionEligibility eligibility = classManager.evaluateAscensionEligibility(playerData,
                     focusedClass.getId());
             if (eligibility == null || !eligibility.isEligible()) {
-                playerRef.sendMessage(Message.raw("Cannot upgrade yet.").color("#ff6666"));
+                playerRef.sendMessage(Lang.message("ui.classpaths.error.cannot_upgrade_simple").color("#ff6666"));
                 if (eligibility != null) {
                     for (String blocker : eligibility.getBlockers()) {
                         playerRef.sendMessage(Message.join(
@@ -246,8 +247,8 @@ public class ClassPathsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data>
                     : focusedClass.getDisplayName();
             String verb = status.isAvailable() ? "advanced to" : "switched to";
             player.sendMessage(Message.join(
-                    Message.raw("[Classes] ").color("#4fd7f7"),
-                    Message.raw("You " + verb + " ").color("#ffffff"),
+                    Lang.message("ui.classpaths.chat.prefix").color("#4fd7f7"),
+                    Message.raw(" You " + verb + " ").color("#ffffff"),
                     Message.raw(display).color("#ffc300"),
                     Message.raw("!").color("#ffffff")));
         }
@@ -577,16 +578,16 @@ public class ClassPathsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data>
         CharacterClassDefinition focused = resolveFocusedClass(currentPlayerClass, browsedClass);
         if (focused == null) {
             ui.set("#PathInfoIcon.ItemId", "Ingredient_Life_Essence");
-            ui.set("#PathInfoName.Text", "Select a path");
-            ui.set("#PathInfoStatus.Text", "Waiting for selection");
+            ui.set("#PathInfoName.Text", Lang.tr("ui.classpaths.info.select_path", "Select a path"));
+            ui.set("#PathInfoStatus.Text", Lang.tr("ui.classpaths.info.waiting", "Waiting for selection"));
             ui.set("#PathInfoStatus.Style.TextColor", "#9fb6d3");
-            ui.set("#PathInfoPath.Text", "Path: -");
-            ui.set("#PathInfoStage.Text", "Stage: -");
-            ui.set("#PathInfoSource.Text", "Source: -");
-            ui.set("#PathInfoWeapons.Text", "Select a path to view weapon bonuses.");
-            ui.set("#PathInfoPassives.Text", "Select a path to view passives.");
-            ui.set("#PathInfoRequirements.Text", "Select a class path to inspect requirements.");
-            ui.set("#ChooseClassPathButton.Text", "SELECT PATH");
+            ui.set("#PathInfoPath.Text", Lang.tr("ui.classpaths.info.path_prefix", "Path:") + " -");
+            ui.set("#PathInfoStage.Text", Lang.tr("ui.classpaths.info.stage_prefix", "Stage:") + " -");
+            ui.set("#PathInfoSource.Text", Lang.tr("ui.classpaths.info.source_prefix", "Source:") + " -");
+            ui.set("#PathInfoWeapons.Text", Lang.tr("ui.classpaths.info.weapons_hint", "Select a path to view weapon bonuses."));
+            ui.set("#PathInfoPassives.Text", Lang.tr("ui.classpaths.info.passives_hint", "Select a path to view passives."));
+            ui.set("#PathInfoRequirements.Text", Lang.tr("ui.classpaths.info.requirements_hint", "Select a class path to inspect requirements."));
+            ui.set("#ChooseClassPathButton.Text", Lang.tr("ui.classpaths.info.select_button", "SELECT PATH"));
             return;
         }
 
@@ -616,8 +617,8 @@ public class ClassPathsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data>
         ui.set("#PathInfoName.Text", resolveDisplayName(focused));
         ui.set("#PathInfoStatus.Text", status.label());
         ui.set("#PathInfoStatus.Style.TextColor", status.color());
-        ui.set("#PathInfoPath.Text", "Path: " + pathLabel);
-        ui.set("#PathInfoStage.Text", "Stage: " + stageLabel);
+        ui.set("#PathInfoPath.Text", Lang.tr("ui.classpaths.info.path_prefix", "Path:") + " " + pathLabel);
+        ui.set("#PathInfoStage.Text", Lang.tr("ui.classpaths.info.stage_prefix", "Stage:") + " " + stageLabel);
         ui.set("#PathInfoSource.Text", resolveSourceLabel(focused));
         ui.set("#PathInfoWeapons.Text", buildWeaponsText(focused));
         ui.set("#PathInfoPassives.Text", buildPassivesText(focused));
@@ -769,7 +770,7 @@ public class ClassPathsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data>
         }
 
         Collections.sort(sources);
-        return "Source: " + String.join(", ", sources);
+        return Lang.tr("ui.classpaths.info.source_prefix", "Source:") + " " + String.join(", ", sources);
     }
 
     private String buildRequirementsText(NodeStatus status,

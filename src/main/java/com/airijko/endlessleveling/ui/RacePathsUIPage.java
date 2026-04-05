@@ -12,6 +12,7 @@ import com.airijko.endlessleveling.races.RacePassiveDefinition;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
+import com.airijko.endlessleveling.util.Lang;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.entity.entities.player.pages.InteractiveCustomUIPage;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
@@ -148,12 +149,12 @@ public class RacePathsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> 
     private void handlePathAction(@Nonnull Ref<EntityStore> ref, @Nonnull Store<EntityStore> store) {
         PlayerData playerData = loadPlayerData();
         if (playerData == null) {
-            playerRef.sendMessage(Message.raw("Unable to load your race info right now.").color("#ff6666"));
+            playerRef.sendMessage(Lang.message("ui.racepaths.error.playerdata").color("#ff6666"));
             return;
         }
 
         if (raceManager == null || !raceManager.isEnabled()) {
-            playerRef.sendMessage(Message.raw("Races are disabled.").color("#ff6666"));
+            playerRef.sendMessage(Lang.message("ui.racepaths.error.disabled").color("#ff6666"));
             return;
         }
 
@@ -161,7 +162,7 @@ public class RacePathsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> 
         RaceDefinition browsedRace = resolveBrowsedRace(currentRace);
         RaceDefinition focusedRace = resolveFocusedRace(currentRace, browsedRace);
         if (focusedRace == null) {
-            playerRef.sendMessage(Message.raw("Select a race path first.").color("#ff9900"));
+            playerRef.sendMessage(Lang.message("ui.racepaths.error.select_first").color("#ff9900"));
             return;
         }
 
@@ -169,7 +170,7 @@ public class RacePathsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> 
         NodeStatus status = resolveNodeStatus(focusedRace, baseTier, playerData, currentRace);
 
         if (status.isActive()) {
-            playerRef.sendMessage(Message.raw("That race form is already active.").color("#ff9900"));
+            playerRef.sendMessage(Lang.message("ui.racepaths.error.already_active").color("#ff9900"));
             return;
         }
 
@@ -177,14 +178,14 @@ public class RacePathsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> 
             RaceAscensionEligibility eligibility = raceManager.evaluateAscensionEligibility(playerData,
                     focusedRace.getId());
             if (eligibility != null && !eligibility.getBlockers().isEmpty()) {
-                playerRef.sendMessage(Message.raw("Cannot evolve yet:").color("#ff6666"));
+                playerRef.sendMessage(Lang.message("ui.racepaths.error.cannot_upgrade").color("#ff6666"));
                 for (String blocker : eligibility.getBlockers()) {
                     playerRef.sendMessage(Message.join(
                             Message.raw(" - ").color("#ff6666"),
                             Message.raw(blocker).color("#ffc300")));
                 }
             } else {
-                playerRef.sendMessage(Message.raw("That race path is currently locked.").color("#ff6666"));
+                playerRef.sendMessage(Lang.message("ui.racepaths.error.locked").color("#ff6666"));
             }
             return;
         }
@@ -193,7 +194,7 @@ public class RacePathsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> 
             RaceAscensionEligibility eligibility = raceManager.evaluateAscensionEligibility(playerData,
                     focusedRace.getId());
             if (eligibility == null || !eligibility.isEligible()) {
-                playerRef.sendMessage(Message.raw("Cannot evolve yet.").color("#ff6666"));
+                playerRef.sendMessage(Lang.message("ui.racepaths.error.cannot_upgrade_simple").color("#ff6666"));
                 if (eligibility != null) {
                     for (String blocker : eligibility.getBlockers()) {
                         playerRef.sendMessage(Message.join(
@@ -241,8 +242,8 @@ public class RacePathsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> 
             String display = focusedRace.getDisplayName() == null ? focusedRace.getId() : focusedRace.getDisplayName();
             String verb = status.isAvailable() ? "evolved into" : "switched to";
             player.sendMessage(Message.join(
-                    Message.raw("[Races] ").color("#4fd7f7"),
-                    Message.raw("You " + verb + " ").color("#ffffff"),
+                    Lang.message("ui.racepaths.chat.prefix").color("#4fd7f7"),
+                    Message.raw(" You " + verb + " ").color("#ffffff"),
                     Message.raw(display).color("#ffc300"),
                     Message.raw("!").color("#ffffff")));
         }
@@ -571,16 +572,16 @@ public class RacePathsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> 
         RaceDefinition focused = resolveFocusedRace(currentPlayerRace, browsedRace);
         if (focused == null) {
             ui.set("#PathInfoIcon.ItemId", RaceDefinition.DEFAULT_ICON_ITEM_ID);
-            ui.set("#PathInfoName.Text", "Select a path");
-            ui.set("#PathInfoStatus.Text", "Waiting for selection");
+            ui.set("#PathInfoName.Text", Lang.tr("ui.racepaths.info.select_path", "Select a path"));
+            ui.set("#PathInfoStatus.Text", Lang.tr("ui.racepaths.info.waiting", "Waiting for selection"));
             ui.set("#PathInfoStatus.Style.TextColor", "#9fb6d3");
-            ui.set("#PathInfoPath.Text", "Path: -");
-            ui.set("#PathInfoStage.Text", "Stage: -");
-            ui.set("#PathInfoSource.Text", "Source: -");
-            ui.set("#PathInfoAttributes.Text", "Select a path to view attribute stats.");
-            ui.set("#PathInfoPassives.Text", "Select a path to view passives.");
-            ui.set("#PathInfoRequirements.Text", "Select a race path to inspect requirements.");
-            ui.set("#ChooseRacePathButton.Text", "SELECT PATH");
+            ui.set("#PathInfoPath.Text", Lang.tr("ui.racepaths.info.path_prefix", "Path:") + " -");
+            ui.set("#PathInfoStage.Text", Lang.tr("ui.racepaths.info.stage_prefix", "Stage:") + " -");
+            ui.set("#PathInfoSource.Text", Lang.tr("ui.racepaths.info.source_prefix", "Source:") + " -");
+            ui.set("#PathInfoAttributes.Text", Lang.tr("ui.racepaths.info.passives_hint", "Select a path to view passives."));
+            ui.set("#PathInfoPassives.Text", Lang.tr("ui.racepaths.info.passives_hint", "Select a path to view passives."));
+            ui.set("#PathInfoRequirements.Text", Lang.tr("ui.racepaths.info.requirements_hint", "Select a race path to inspect requirements."));
+            ui.set("#ChooseRacePathButton.Text", Lang.tr("ui.racepaths.info.select_button", "SELECT PATH"));
             return;
         }
 
@@ -610,8 +611,8 @@ public class RacePathsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> 
         ui.set("#PathInfoName.Text", resolveDisplayName(focused));
         ui.set("#PathInfoStatus.Text", status.label());
         ui.set("#PathInfoStatus.Style.TextColor", status.color());
-        ui.set("#PathInfoPath.Text", "Path: " + pathLabel);
-        ui.set("#PathInfoStage.Text", "Stage: " + stageLabel);
+        ui.set("#PathInfoPath.Text", Lang.tr("ui.racepaths.info.path_prefix", "Path:") + " " + pathLabel);
+        ui.set("#PathInfoStage.Text", Lang.tr("ui.racepaths.info.stage_prefix", "Stage:") + " " + stageLabel);
         ui.set("#PathInfoSource.Text", resolveSourceLabel(focused));
         ui.set("#PathInfoAttributes.Text", buildAttributesText(focused));
         ui.set("#PathInfoPassives.Text", buildPassivesText(focused));

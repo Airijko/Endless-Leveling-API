@@ -1610,13 +1610,17 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
             }
         }
 
-        Nameplate nameplate = commandBuffer.ensureAndGetComponent(ref, Nameplate.getComponentType());
+        Nameplate nameplate = commandBuffer.getComponent(ref, Nameplate.getComponentType());
         if (nameplate != null) {
             nameplate.setText(label);
-            return true;
+        } else {
+            commandBuffer.run(store -> {
+                if (ref.isValid()) {
+                    store.ensureAndGetComponent(ref, Nameplate.getComponentType()).setText(label);
+                }
+            });
         }
-
-        return NameplateBuilderCompatibility.isAvailable();
+        return true;
     }
 
     private boolean shouldLogSummonHealthAnomaly(int entityId) {

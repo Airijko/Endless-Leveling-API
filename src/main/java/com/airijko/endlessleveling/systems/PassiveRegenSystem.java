@@ -24,6 +24,7 @@ import com.airijko.endlessleveling.passives.type.HealingAuraPassive;
 import com.airijko.endlessleveling.passives.type.ShieldingAuraPassive;
 import com.airijko.endlessleveling.passives.type.SecondWindPassive;
 import com.airijko.endlessleveling.util.ChatMessageTemplate;
+import com.airijko.endlessleveling.util.Lang;
 import com.airijko.endlessleveling.util.PlayerStoreSelector;
 import com.airijko.endlessleveling.util.PlayerChatNotifier;
 import com.hypixel.hytale.component.ArchetypeChunk;
@@ -792,8 +793,8 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
             return;
         }
 
-        Message primary = Message.raw("Passive Regeneration Activated").color("#4fd7f7");
-        Message secondary = Message.raw("Health is slowly returning").color("#ffffff");
+        Message primary = Lang.message("notify.passive.regen.title").color("#4fd7f7");
+        Message secondary = Lang.message("notify.passive.regen.subtitle").color("#ffffff");
         var icon = new ItemStack("Consumable_Potion_Health", 1).toPacket();
         NotificationUtil.sendNotification(packetHandler, primary, secondary, icon);
     }

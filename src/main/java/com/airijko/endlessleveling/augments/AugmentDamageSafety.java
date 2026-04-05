@@ -14,6 +14,13 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 public final class AugmentDamageSafety {
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
 
+    /**
+     * Re-entrancy guard to prevent infinite recursion when augment-driven damage
+     * triggers another damage event that re-invokes augment on-hit hooks.
+     * ThreadLocal is appropriate since each world ticks on its own thread.
+     */
+    private static final ThreadLocal<Boolean> REENTRANCY_GUARD = ThreadLocal.withInitial(() -> Boolean.FALSE);
+
     private AugmentDamageSafety() {
     }
 
@@ -27,7 +34,12 @@ public final class AugmentDamageSafety {
         if (!EntityRefUtil.isUsable(targetRef)) {
             return false;
         }
+        if (REENTRANCY_GUARD.get()) {
+            LOGGER.atFine().log("Blocked re-entrant augment damage source=%s target=%s", sourceTag, targetRef);
+            return false;
+        }
 
+        REENTRANCY_GUARD.set(true);
         try {
             DamageSystems.executeDamage(targetRef, commandBuffer, damage);
             return true;
@@ -44,6 +56,8 @@ public final class AugmentDamageSafety {
                     targetRef,
                     exception.getClass().getSimpleName());
             return false;
+        } finally {
+            REENTRANCY_GUARD.set(false);
         }
     }
 

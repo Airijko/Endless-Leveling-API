@@ -10,6 +10,7 @@ import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveManager;
 import com.airijko.endlessleveling.systems.PassiveRegenSystem;
 import com.airijko.endlessleveling.util.PlayerChatNotifier;
 import com.hypixel.hytale.logger.HytaleLogger;
+import com.airijko.endlessleveling.util.Lang;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
@@ -203,8 +204,8 @@ public class PassiveManager {
             String formattedValue = type.formatValue(snapshot.value());
             Message message = Message.join(
                     Message.raw(type.getDisplayName()).color("#ffc300"),
-                    Message.raw(" is now Level ").color("#ffffff"),
-                    Message.raw(String.valueOf(snapshot.level())).color("#4fd7f7"),
+                    Lang.message("notify.passive.levelup.now_level").color("#ffffff"),
+                    Message.raw(" " + snapshot.level()).color("#4fd7f7"),
                     Message.raw(" (" + formattedValue + ")").color("#9be7ff"));
             PlayerChatNotifier.send(ref, message);
 
@@ -229,7 +230,7 @@ public class PassiveManager {
         int totalAmount = safeBase + bonusAmount;
 
         Message chatMessage = Message.join(
-                Message.raw("Double drop! ").color("#ffffff"),
+                Lang.message("notify.passive.doubleDrop.prefix").color("#ffffff"),
                 Message.raw(dropName).color("#ffc300"),
                 Message.raw(" +" + bonusAmount + " (total x" + totalAmount + ")").color("#9be7ff"));
         PlayerChatNotifier.send(ref, chatMessage);
