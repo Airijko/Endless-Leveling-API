@@ -13,9 +13,9 @@ notify.augments.available.header = Választható fejlesztések érhetők el:
 notify.augments.available.footer = Használd a /lvl augments parancsot a választáshoz.
 notify.augments.cooldown.ready = {0} újra kész!
 notify.augments.generic = {0}
-notify.sync.summary = {0} játékosnál eltérő fejlesztési hely szám található:
-notify.sync.entry = - {0} [{1}: {2} van neki, de {3} kellene] -> /lvl augments reset {0}
-notify.sync.fixall = Összes javítása egyszerre: /lvl augments resetallplayers
+notify.augments.sync.summary = {0} játékosnál eltérő fejlesztési hely szám található:
+notify.augments.sync.entry = - {0} [{1}: {2} van neki, de {3} kellene] -> /lvl augments reset {0}
+notify.augments.sync.fixall = Összes javítása egyszerre: /lvl augments resetallplayers
 notify.passives.swiftness.faded = A gyorsaság elillant.
 notify.passives.adrenaline.triggered = Adrenalin aktiválva! {0}% állóképesség töltődik {1} mp alatt.
 notify.passives.generic = {0}
@@ -64,6 +64,7 @@ ui.settings.description.xp_notif = Értesítés tapasztalati pont szerzésekor.
 ui.settings.description.passive_levelup_notif = Értesítés, ha a passzív képességek szintet lépnek.
 ui.settings.description.luck_double_notif = Értesítés a szerencse alapú bónusz zsákmányokról.
 ui.settings.description.health_regen_notif = Értesítés az életerő regenerációról.
+ui.settings.description.augment_notif = Fejlesztési események chat-értesítéseinek ki-/bekapcsolása.
 ui.settings.description.race_model = Fajspecifikus karaktermodellek engedélyezése.
 ui.settings.player_hud.label = Játékos HUD
 ui.settings.player_hud.toggled = Játékos HUD {0}
@@ -77,6 +78,8 @@ ui.settings.luck_double_notif.label = Szerencse-bónusz értesítések
 ui.settings.luck_double_notif.toggled = Szerencse-bónusz értesítések {0}
 ui.settings.health_regen_notif.label = Életerő-reg. értesítések
 ui.settings.health_regen_notif.toggled = Életerő-reg. értesítések {0}
+ui.settings.augment_notif.label = Fejlesztési Értesítések
+ui.settings.augment_notif.toggled = Fejlesztési értesítések {0}
 ui.settings.race_model.label = Fajmodell megjelenítése
 ui.settings.race_model.globally_disabled = A fajmodellek szerveroldalon le vannak tiltva.
 ui.settings.race_model.enabled = Fajmodell megjelenítése bekapcsolva
@@ -107,6 +110,17 @@ ui.leaderboards.column.prestige = Prestízs
 ui.leaderboards.column.level = Szint
 ui.leaderboards.column.xp = TP
 ui.leaderboards.summary = {0}/{1} játékos megjelenítve • Rendezés: {2} {3} • Szűrő: Faj={4}, Kaszt={5}
+ui.support.page.title = Támogatás
+ui.support.mod_name = Endless Leveling
+ui.support.developer = Fejlesztő: Airijko
+ui.support.notice1 = Egyes újraterjesztett verziók módosítják a felületet vagy eltávolítják az Endless Leveling nevét és a krediteket.
+ui.support.notice2 = Ezek a verziók nem hivatalosak.
+ui.support.notice3 = Ha tetszik a mod, kérjük, támogasd az eredeti projektet és a fejlesztőt.
+ui.support.discord_title = Segítségre van szükséged?
+ui.support.discord_description = Támogatásért, problémákért és segítségért csatlakozz Discord-közösségünkhöz.
+ui.support.discord_button = CSATLAKOZÁS A DISCORDHOZ
+ui.support.discord_chat_prompt = Segítségre van szükséged vagy hibát szeretnél jelenteni? Kattints lent a Discordhoz való csatlakozáshoz.
+ui.support.discord_chat_link_label = Endless Leveling Discord
 ui.augments.tier.default = FEJLESZTÉSEK
 ui.augments.tier.common = GYAKORI
 ui.augments.actions.choose = Kiválasztás
@@ -315,6 +329,8 @@ ui.races.passive.type.retaliation = Megtorlás
 ui.races.passive.type.executioner = Hóhér
 ui.races.passive.type.swiftness = Gyorsaság
 ui.races.passive.type.wither = Elsorvadás
+ui.races.passive.type.army_of_the_dead = Holtak Serege
+ui.races.passive.type.true_edge = Igaz Él
 ui.races.passive.type.crit_defense = Kritikus védelem
 ui.races.passive.scope.hp = ÉP
 ui.races.passive.scope.stamina = Állóképesség
@@ -587,6 +603,7 @@ ui.nav.classes = KASZTOK
 ui.nav.leaderboards = RANGLISTA
 ui.nav.settings = BEÁLLÍT.
 ui.nav.augments = FEJL.
+ui.nav.support = TÁMOGATÁS
 ui.profile.playerdata.unavailable = Játékosadatok nem elérhetők.
 ui.profile.detail.title = Kiválasztott profil
 ui.profile.detail.subtitle.default = Válassz egy profilt a statisztikákhoz
@@ -641,3 +658,105 @@ command.reset_skillpoints.no_data = Nem található adat. Próbálj meg újra cs
 command.reset_skillpoints.success_target = Képességpontok visszaállítva {0} számára.
 command.reset_skillpoints.notify_target = Egy adminisztrátor visszaállította a képességpontjaidat az alapértelmezettre.
 command.reset_skillpoints.success_self = A képességpontjaid visszaálltak az alapértelmezett elrendezésre.
+
+# ============================================================
+# Leveling Notifications
+# ============================================================
+notify.xp.gained = {0} XP szerzeve!
+notify.xp.current_level = Jelenlegi szint: {0}
+notify.levelup.title = Szintlépés!
+notify.levelup.subtitle = Mostantól {0} szintű vagy
+notify.levelup.skill_points = {0} képességpontot kaptál!
+notify.levelup.use_prefix = Használd
+notify.levelup.allocate_suffix = a pontjaid elosztásához
+notify.prestige.available_title = Prestige elérhető!
+notify.prestige.available_subtitle = Használd {0} a következő szintre lépéshez.
+notify.prestige.ready = Prestige kész!
+notify.prestige.use_prefix = Használd
+notify.prestige.use_suffix = a következő szintre lépéshez.
+
+# ============================================================
+# Passive Notifications
+# ============================================================
+notify.passive.levelup.now_level = mostantól Szint
+notify.passive.doubleDrop.prefix = Dupla zsákmány!
+notify.passive.regen.title = Passzív Regeneráció Aktiválva
+notify.passive.regen.subtitle = Az életerő lassan visszatér
+
+# ============================================================
+# Class Paths UI
+# ============================================================
+ui.classpaths.title_suffix = Útvonalak
+ui.classpaths.error.playerdata = Nem sikerült betölteni a kaszt információkat.
+ui.classpaths.error.disabled = A kasztok le vannak tiltva.
+ui.classpaths.error.select_first = Először válassz egy kaszt-útvonalat.
+ui.classpaths.error.already_active = Ez a kasztforma már aktív.
+ui.classpaths.error.cannot_upgrade = Még nem fejleszthető:
+ui.classpaths.error.locked = Ez a kaszt-útvonal jelenleg zárolva van.
+ui.classpaths.error.cannot_upgrade_simple = Még nem fejleszthető.
+ui.classpaths.chat.prefix = [Kasztok]
+ui.classpaths.info.select_path = Válassz egy útvonalat
+ui.classpaths.info.waiting = Várakozás a kiválasztásra
+ui.classpaths.info.path_prefix = Útvonal:
+ui.classpaths.info.stage_prefix = Szint:
+ui.classpaths.info.source_prefix = Forrás:
+ui.classpaths.info.weapons_hint = Válassz egy útvonalat a fegyverbónuszok megtekintéséhez.
+ui.classpaths.info.passives_hint = Válassz egy útvonalat a passzívok megtekintéséhez.
+ui.classpaths.info.requirements_hint = Válassz egy kaszt-útvonalat a követelmények megtekintéséhez.
+ui.classpaths.info.select_button = ÚTVONAL KIVÁLASZTÁSA
+
+# ============================================================
+# Race Paths UI
+# ============================================================
+ui.racepaths.title_suffix = Útvonalak
+ui.racepaths.error.playerdata = Nem sikerült betölteni a faj információkat.
+ui.racepaths.error.disabled = A fajok le vannak tiltva.
+ui.racepaths.error.select_first = Először válassz egy faj-útvonalat.
+ui.racepaths.error.already_active = Ez a fajforma már aktív.
+ui.racepaths.error.cannot_upgrade = Még nem fejleszthető:
+ui.racepaths.error.locked = Ez a faj-útvonal jelenleg zárolva van.
+ui.racepaths.error.cannot_upgrade_simple = Még nem fejleszthető.
+ui.racepaths.chat.prefix = [Fajok]
+ui.racepaths.info.select_path = Válassz egy útvonalat
+ui.racepaths.info.waiting = Várakozás a kiválasztásra
+ui.racepaths.info.path_prefix = Útvonal:
+ui.racepaths.info.stage_prefix = Szint:
+ui.racepaths.info.source_prefix = Forrás:
+ui.racepaths.info.passives_hint = Válassz egy útvonalat a passzívok megtekintéséhez.
+ui.racepaths.info.requirements_hint = Válassz egy faj-útvonalat a követelmények megtekintéséhez.
+ui.racepaths.info.select_button = ÚTVONAL KIVÁLASZTÁSA
+
+# ============================================================
+# Class Passive Pretty Labels
+# ============================================================
+ui.classes.passive.pretty.na = n/a
+ui.classes.passive.pretty.ravenous_strike.title = Ragadozó életlopó csapások
+ui.classes.passive.pretty.ravenous_strike.flat = - Találati gyógyítás: {0}
+ui.classes.passive.pretty.ravenous_strike.strength = - Erő skálázás: {0}
+ui.classes.passive.pretty.ravenous_strike.sorcery = - Varázslat skálázás: {0}
+ui.classes.passive.pretty.ravenous_strike.note = - Hozzáadódik a sebző csapásaid gyógyításához
+ui.classes.passive.pretty.true_edge.title = Védelmet átütő csapások
+ui.classes.passive.pretty.true_edge.flat = - Fix igazi sebzés: {0} csapásonként
+ui.classes.passive.pretty.true_edge.ratio = - Bónusz igazi sebzés: {0} a védelem előtti sebzésből
+ui.classes.passive.pretty.true_edge.note = - Közvetlen életerővesztésként alkalmazzuk a találat után
+ui.classes.passive.pretty.army_of_the_dead.title = Élőholt idézés parancs
+ui.classes.passive.pretty.army_of_the_dead.base = - Alap idézések: {0}
+ui.classes.passive.pretty.army_of_the_dead.mana_scaling = - Skálázás: +1 idézés minden {0} manáért
+ui.classes.passive.pretty.army_of_the_dead.cap = - Idézési korlát: {0}
+ui.classes.passive.pretty.army_of_the_dead.trigger = - Kiváltó: {0}
+ui.classes.passive.pretty.army_of_the_dead.trigger_on_hit = Találatkor
+ui.classes.passive.pretty.army_of_the_dead.lifetime = - Élettartam: {0}s egyenként
+ui.classes.passive.pretty.army_of_the_dead.cooldown = - Újraéledési várakozás: {0}s idézenként
+ui.classes.passive.pretty.army_of_the_dead.inheritance = - Statisztika öröklés: {0}% a statjaidból
+
+# ============================================================
+# Addons UI
+# ============================================================
+ui.addons.patreon.prompt = Támogasd az Endless Levelinget a Patreon-on:
+ui.addons.patreon.label = Patreon - Airijko
+ui.addons.starky.prompt = Starky Mjolnirje a CurseForge-on:
+ui.addons.starky.label = Starky Mjolnirje [Kattints ide]
+ui.addons.filter.mod_partners = Megjelenítés: Mod Partnerek
+ui.addons.filter.community = Megjelenítés: Közösségi Bővítmények
+ui.addons.filter.partner_extensions = Megjelenítés: Partner Kiegészítők
+ui.addons.filter.all = Megjelenítés: Endless Leveling Bővítmények

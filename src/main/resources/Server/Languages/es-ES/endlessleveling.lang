@@ -13,9 +13,9 @@ notify.augments.available.header = Tienes aumentos disponibles para elegir:
 notify.augments.available.footer = Usa /lvl augments para seleccionar.
 notify.augments.cooldown.ready = ¡{0} está listo de nuevo!
 notify.augments.generic = {0}
-notify.sync.summary = {0} jugadores tienen recuentos de ranuras de aumento discrepantes:
-notify.sync.entry = - {0} [{1}: tiene {2}, debería tener {3}] -> /lvl augments reset {0}
-notify.sync.fixall = Para arreglar todos a la vez: /lvl augments resetallplayers
+notify.augments.sync.summary = {0} jugadores tienen recuentos de ranuras de aumento discrepantes:
+notify.augments.sync.entry = - {0} [{1}: tiene {2}, debería tener {3}] -> /lvl augments reset {0}
+notify.augments.sync.fixall = Para arreglar todos a la vez: /lvl augments resetallplayers
 notify.passives.swiftness.faded = La rapidez se ha agotado.
 notify.passives.adrenaline.triggered = ¡Adrenalina activada! Recuperando {0}% de resistencia durante {1}s.
 notify.passives.generic = {0}
@@ -64,6 +64,7 @@ ui.settings.description.xp_notif = Muestra notificaciones al ganar experiencia.
 ui.settings.description.passive_levelup_notif = Muestra actualizaciones cuando las pasivas suben de nivel.
 ui.settings.description.luck_double_notif = Notificaciones por botín extra debido a la suerte.
 ui.settings.description.health_regen_notif = Notificaciones al regenerar salud.
+ui.settings.description.augment_notif = Activa notificaciones de chat para eventos de estado de aumentos.
 ui.settings.description.race_model = Activa visualizaciones de personaje específicas de cada raza.
 ui.settings.player_hud.label = HUD de Jugador
 ui.settings.player_hud.toggled = HUD de Jugador {0}
@@ -77,6 +78,8 @@ ui.settings.luck_double_notif.label = Notificaciones de Botín Extra
 ui.settings.luck_double_notif.toggled = Notificaciones de Botín Extra {0}
 ui.settings.health_regen_notif.label = Notificaciones de Regen. de Salud
 ui.settings.health_regen_notif.toggled = Notificaciones de Regen. de Salud {0}
+ui.settings.augment_notif.label = Notificaciones de Aumentos
+ui.settings.augment_notif.toggled = Notificaciones de aumentos {0}
 ui.settings.race_model.label = Visualización de Modelo de Raza
 ui.settings.race_model.globally_disabled = Los modelos de raza están desactivados por el servidor.
 ui.settings.race_model.enabled = Visualización de modelo de raza activada
@@ -107,6 +110,17 @@ ui.leaderboards.column.prestige = Prestigio
 ui.leaderboards.column.level = Nivel
 ui.leaderboards.column.xp = EXP
 ui.leaderboards.summary = Mostrando {0}/{1} jugadores • Orden: {2} {3} • Filtro: Raza={4}, Clase={5}
+ui.support.page.title = Soporte
+ui.support.mod_name = Endless Leveling
+ui.support.developer = Desarrollador: Airijko
+ui.support.notice1 = Algunas versiones redistribuidas modifican la interfaz o eliminan el nombre y crédito de Endless Leveling.
+ui.support.notice2 = Esas versiones no son oficiales.
+ui.support.notice3 = Si disfrutas el mod, apoya el proyecto y al desarrollador original.
+ui.support.discord_title = ¿Necesitas ayuda?
+ui.support.discord_description = Para soporte, problemas y ayuda, únete a nuestra comunidad de Discord.
+ui.support.discord_button = UNIRSE A DISCORD
+ui.support.discord_chat_prompt = ¿Necesitas ayuda o quieres reportar un problema? Haz clic abajo para unirte a Discord.
+ui.support.discord_chat_link_label = Discord de Endless Leveling
 ui.augments.tier.default = AUMENTOS
 ui.augments.tier.common = COMÚN
 ui.augments.actions.choose = Seleccionar
@@ -315,6 +329,8 @@ ui.races.passive.type.retaliation = Represalia
 ui.races.passive.type.executioner = Verdugo
 ui.races.passive.type.swiftness = Rapidez
 ui.races.passive.type.wither = Descomposición
+ui.races.passive.type.army_of_the_dead = Ejército de los Muertos
+ui.races.passive.type.true_edge = Filo Verdadero
 ui.races.passive.type.crit_defense = Defensa Crítica
 ui.races.passive.scope.hp = PS
 ui.races.passive.scope.stamina = Resistencia
@@ -587,6 +603,7 @@ ui.nav.classes = CLASES
 ui.nav.leaderboards = CLASIF.
 ui.nav.settings = AJUSTES
 ui.nav.augments = AUMENTOS
+ui.nav.support = SOPORTE
 ui.profile.playerdata.unavailable = Datos del jugador no disponibles.
 ui.profile.detail.title = Perfil Seleccionado
 ui.profile.detail.subtitle.default = Elige un perfil para ver estadísticas
@@ -641,3 +658,105 @@ command.reset_skillpoints.no_data = No se encontraron datos. Intenta volver a en
 command.reset_skillpoints.success_target = Puntos de habilidad reiniciados para {0}.
 command.reset_skillpoints.notify_target = Un administrador ha reiniciado tus puntos de habilidad al diseño por defecto.
 command.reset_skillpoints.success_self = Tus puntos de habilidad han sido reiniciados al diseño por defecto.
+
+# ============================================================
+# Leveling Notifications
+# ============================================================
+notify.xp.gained = ¡{0} EXP ganada!
+notify.xp.current_level = Nivel actual: {0}
+notify.levelup.title = ¡Subiste de nivel!
+notify.levelup.subtitle = Ahora eres nivel {0}
+notify.levelup.skill_points = ¡Has ganado {0} puntos de habilidad!
+notify.levelup.use_prefix = Usa
+notify.levelup.allocate_suffix = para asignar tus puntos
+notify.prestige.available_title = ¡Prestigio disponible!
+notify.prestige.available_subtitle = Usa {0} para ascender al siguiente rango.
+notify.prestige.ready = ¡Prestigio listo!
+notify.prestige.use_prefix = Usa
+notify.prestige.use_suffix = para ascender al siguiente rango.
+
+# ============================================================
+# Passive Notifications
+# ============================================================
+notify.passive.levelup.now_level = es ahora Nivel
+notify.passive.doubleDrop.prefix = ¡Botín doble!
+notify.passive.regen.title = Regeneración Pasiva Activada
+notify.passive.regen.subtitle = La salud se está recuperando lentamente
+
+# ============================================================
+# Class Paths UI
+# ============================================================
+ui.classpaths.title_suffix = Rutas
+ui.classpaths.error.playerdata = No se pudo cargar la información de la clase.
+ui.classpaths.error.disabled = Las clases están desactivadas.
+ui.classpaths.error.select_first = Selecciona una ruta de clase primero.
+ui.classpaths.error.already_active = Esa forma de clase ya está activa.
+ui.classpaths.error.cannot_upgrade = No se puede mejorar aún:
+ui.classpaths.error.locked = Esa ruta de clase está bloqueada actualmente.
+ui.classpaths.error.cannot_upgrade_simple = No se puede mejorar aún.
+ui.classpaths.chat.prefix = [Clases]
+ui.classpaths.info.select_path = Selecciona una ruta
+ui.classpaths.info.waiting = Esperando selección
+ui.classpaths.info.path_prefix = Ruta:
+ui.classpaths.info.stage_prefix = Nivel:
+ui.classpaths.info.source_prefix = Origen:
+ui.classpaths.info.weapons_hint = Selecciona una ruta para ver bonos de armas.
+ui.classpaths.info.passives_hint = Selecciona una ruta para ver pasivas.
+ui.classpaths.info.requirements_hint = Selecciona una ruta de clase para ver requisitos.
+ui.classpaths.info.select_button = SELECCIONAR RUTA
+
+# ============================================================
+# Race Paths UI
+# ============================================================
+ui.racepaths.title_suffix = Rutas
+ui.racepaths.error.playerdata = No se pudo cargar la información de la raza.
+ui.racepaths.error.disabled = Las razas están desactivadas.
+ui.racepaths.error.select_first = Selecciona una ruta de raza primero.
+ui.racepaths.error.already_active = Esa forma de raza ya está activa.
+ui.racepaths.error.cannot_upgrade = No se puede mejorar aún:
+ui.racepaths.error.locked = Esa ruta de raza está bloqueada actualmente.
+ui.racepaths.error.cannot_upgrade_simple = No se puede mejorar aún.
+ui.racepaths.chat.prefix = [Razas]
+ui.racepaths.info.select_path = Selecciona una ruta
+ui.racepaths.info.waiting = Esperando selección
+ui.racepaths.info.path_prefix = Ruta:
+ui.racepaths.info.stage_prefix = Nivel:
+ui.racepaths.info.source_prefix = Origen:
+ui.racepaths.info.passives_hint = Selecciona una ruta para ver pasivas.
+ui.racepaths.info.requirements_hint = Selecciona una ruta de raza para ver requisitos.
+ui.racepaths.info.select_button = SELECCIONAR RUTA
+
+# ============================================================
+# Class Passive Pretty Labels
+# ============================================================
+ui.classes.passive.pretty.na = n/d
+ui.classes.passive.pretty.ravenous_strike.title = Golpes de robo de vida depredadores
+ui.classes.passive.pretty.ravenous_strike.flat = - Curación al golpear: {0}
+ui.classes.passive.pretty.ravenous_strike.strength = - Escala con fuerza: {0}
+ui.classes.passive.pretty.ravenous_strike.sorcery = - Escala con hechicería: {0}
+ui.classes.passive.pretty.ravenous_strike.note = - Se suma a la curación de tus golpes dañinos
+ui.classes.passive.pretty.true_edge.title = Golpes que perforan defensa
+ui.classes.passive.pretty.true_edge.flat = - Daño verdadero fijo: {0} por golpe
+ui.classes.passive.pretty.true_edge.ratio = - Daño verdadero bonus: {0} del daño pre-defensa
+ui.classes.passive.pretty.true_edge.note = - Se aplica como pérdida directa de salud tras el golpe
+ui.classes.passive.pretty.army_of_the_dead.title = Comando de invocaciones no-muertas
+ui.classes.passive.pretty.army_of_the_dead.base = - Invocaciones base: {0}
+ui.classes.passive.pretty.army_of_the_dead.mana_scaling = - Escalado: +1 invocación por cada {0} maná
+ui.classes.passive.pretty.army_of_the_dead.cap = - Máximo de invocaciones: {0}
+ui.classes.passive.pretty.army_of_the_dead.trigger = - Activación: {0}
+ui.classes.passive.pretty.army_of_the_dead.trigger_on_hit = Al golpear
+ui.classes.passive.pretty.army_of_the_dead.lifetime = - Duración: {0}s cada una
+ui.classes.passive.pretty.army_of_the_dead.cooldown = - Enfriamiento de reaparición: {0}s por invocación
+ui.classes.passive.pretty.army_of_the_dead.inheritance = - Herencia de atributos: {0}% de tus estadísticas
+
+# ============================================================
+# Addons UI
+# ============================================================
+ui.addons.patreon.prompt = Apoya Endless Leveling en Patreon:
+ui.addons.patreon.label = Patreon - Airijko
+ui.addons.starky.prompt = Mjolnir de Starky en CurseForge:
+ui.addons.starky.label = Mjolnir de Starky [Clic aquí]
+ui.addons.filter.mod_partners = Mostrando: Socios del mod
+ui.addons.filter.community = Mostrando: Addons de la comunidad
+ui.addons.filter.partner_extensions = Mostrando: Extensiones de socios
+ui.addons.filter.all = Mostrando: Addons de Endless Leveling

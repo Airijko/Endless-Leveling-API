@@ -13,9 +13,9 @@ notify.augments.available.header = Aprimoramentos disponíveis para escolha:
 notify.augments.available.footer = Use /lvl augments para selecionar.
 notify.augments.cooldown.ready = {0} está pronto para uso!
 notify.augments.generic = {0}
-notify.sync.summary = {0} jogadores têm contagem de slots de aprimoramento incorreta:
-notify.sync.entry = - {0} [{1}: tem {2}, deveria ter {3}] -> /lvl augments reset {0}
-notify.sync.fixall = Corrigir todos: /lvl augments resetallplayers
+notify.augments.sync.summary = {0} jogadores têm contagem de slots de aprimoramento incorreta:
+notify.augments.sync.entry = - {0} [{1}: tem {2}, deveria ter {3}] -> /lvl augments reset {0}
+notify.augments.sync.fixall = Corrigir todos: /lvl augments resetallplayers
 notify.passives.swiftness.faded = A rapidez desapareceu.
 notify.passives.adrenaline.triggered = Adrenalina ativada! {0}% de Estamina regenerada em {1}s.
 notify.passives.generic = {0}
@@ -64,6 +64,7 @@ ui.settings.description.xp_notif = Receber notificações ao ganhar XP.
 ui.settings.description.passive_levelup_notif = Notificar quando habilidades passivas subirem de nível.
 ui.settings.description.luck_double_notif = Notificar sobre bônus de loot baseados em sorte.
 ui.settings.description.health_regen_notif = Receber notificações de regeneração de vida.
+ui.settings.description.augment_notif = Ativa notificações de chat para eventos de status de aprimoramentos.
 ui.settings.description.race_model = Habilitar modelos de personagem específicos de cada raça.
 ui.settings.player_hud.label = HUD do Jogador
 ui.settings.player_hud.toggled = HUD do Jogador {0}
@@ -77,6 +78,8 @@ ui.settings.luck_double_notif.label = Notificações de Sorte
 ui.settings.luck_double_notif.toggled = Notificações de Sorte {0}
 ui.settings.health_regen_notif.label = Notificações de Regeneração
 ui.settings.health_regen_notif.toggled = Notificações de Regeneração {0}
+ui.settings.augment_notif.label = Notificações de Aprimoramentos
+ui.settings.augment_notif.toggled = Notificações de aprimoramentos {0}
 ui.settings.race_model.label = Exibir Modelo de Raça
 ui.settings.race_model.globally_disabled = Modelos de raça estão desativados no servidor.
 ui.settings.race_model.enabled = Exibir Modelo de Raça ligado
@@ -107,6 +110,17 @@ ui.leaderboards.column.prestige = Prestígio
 ui.leaderboards.column.level = Nível
 ui.leaderboards.column.xp = XP
 ui.leaderboards.summary = Exibindo {0}/{1} • Ordem: {2} {3} • Filtro: Raça={4}, Classe={5}
+ui.support.page.title = Suporte
+ui.support.mod_name = Endless Leveling
+ui.support.developer = Desenvolvedor: Airijko
+ui.support.notice1 = Algumas versões redistribuídas alteram a interface ou removem o nome e os créditos do Endless Leveling.
+ui.support.notice2 = Essas versões não são oficiais.
+ui.support.notice3 = Se você gosta do mod, por favor apoie o projeto original e o desenvolvedor.
+ui.support.discord_title = Precisa de ajuda?
+ui.support.discord_description = Para suporte, problemas e ajuda, entre na nossa comunidade do Discord.
+ui.support.discord_button = ENTRAR NO DISCORD
+ui.support.discord_chat_prompt = Precisa de ajuda ou quer reportar um problema? Clique abaixo para entrar no Discord.
+ui.support.discord_chat_link_label = Discord do Endless Leveling
 ui.augments.tier.default = APRIMORAMENTOS
 ui.augments.tier.common = COMUM
 ui.augments.actions.choose = Escolher
@@ -315,6 +329,8 @@ ui.races.passive.type.retaliation = Retaliação
 ui.races.passive.type.executioner = Carrasco
 ui.races.passive.type.swiftness = Rapidez
 ui.races.passive.type.wither = Decomposição
+ui.races.passive.type.army_of_the_dead = Exército dos Mortos
+ui.races.passive.type.true_edge = Fio Verdadeiro
 ui.races.passive.type.crit_defense = Defesa Crítica
 ui.races.passive.scope.hp = Vida
 ui.races.passive.scope.stamina = Estamina
@@ -587,6 +603,7 @@ ui.nav.classes = CLASSES
 ui.nav.leaderboards = RANKING
 ui.nav.settings = CONFIG.
 ui.nav.augments = APRIMOR.
+ui.nav.support = SUPORTE
 ui.profile.playerdata.unavailable = Dados do jogador indisponíveis.
 ui.profile.detail.title = Detalhes do Perfil
 ui.profile.detail.subtitle.default = Selecione um perfil para ver atributos
@@ -641,3 +658,105 @@ command.reset_skillpoints.no_data = Dados não encontrados. Tente reconectar.
 command.reset_skillpoints.success_target = Pontos de habilidade resetados para {0}.
 command.reset_skillpoints.notify_target = Um administrador resetou seus pontos de habilidade para o padrão.
 command.reset_skillpoints.success_self = Seus pontos de habilidade foram resetados para a configuração padrão.
+
+# ============================================================
+# Leveling Notifications
+# ============================================================
+notify.xp.gained = {0} XP ganho!
+notify.xp.current_level = Nível atual: {0}
+notify.levelup.title = Subiu de Nível!
+notify.levelup.subtitle = Agora você é nível {0}
+notify.levelup.skill_points = Você ganhou {0} pontos de habilidade!
+notify.levelup.use_prefix = Use
+notify.levelup.allocate_suffix = para distribuir seus pontos
+notify.prestige.available_title = Prestígio Disponível!
+notify.prestige.available_subtitle = Use {0} para avançar ao próximo nível.
+notify.prestige.ready = Prestígio pronto!
+notify.prestige.use_prefix = Use
+notify.prestige.use_suffix = para avançar ao próximo nível.
+
+# ============================================================
+# Passive Notifications
+# ============================================================
+notify.passive.levelup.now_level = agora é Nível
+notify.passive.doubleDrop.prefix = Drop duplo!
+notify.passive.regen.title = Regeneração Passiva Ativada
+notify.passive.regen.subtitle = A vida está voltando lentamente
+
+# ============================================================
+# Class Paths UI
+# ============================================================
+ui.classpaths.title_suffix = Caminhos
+ui.classpaths.error.playerdata = Não foi possível carregar as informações da classe.
+ui.classpaths.error.disabled = Classes estão desativadas.
+ui.classpaths.error.select_first = Selecione um caminho de classe primeiro.
+ui.classpaths.error.already_active = Essa forma de classe já está ativa.
+ui.classpaths.error.cannot_upgrade = Não é possível melhorar ainda:
+ui.classpaths.error.locked = Esse caminho de classe está bloqueado no momento.
+ui.classpaths.error.cannot_upgrade_simple = Não é possível melhorar ainda.
+ui.classpaths.chat.prefix = [Classes]
+ui.classpaths.info.select_path = Selecione um caminho
+ui.classpaths.info.waiting = Aguardando seleção
+ui.classpaths.info.path_prefix = Caminho:
+ui.classpaths.info.stage_prefix = Estágio:
+ui.classpaths.info.source_prefix = Origem:
+ui.classpaths.info.weapons_hint = Selecione um caminho para ver bônus de armas.
+ui.classpaths.info.passives_hint = Selecione um caminho para ver passivas.
+ui.classpaths.info.requirements_hint = Selecione um caminho de classe para inspecionar requisitos.
+ui.classpaths.info.select_button = SELECIONAR CAMINHO
+
+# ============================================================
+# Race Paths UI
+# ============================================================
+ui.racepaths.title_suffix = Caminhos
+ui.racepaths.error.playerdata = Não foi possível carregar as informações da raça.
+ui.racepaths.error.disabled = Raças estão desativadas.
+ui.racepaths.error.select_first = Selecione um caminho de raça primeiro.
+ui.racepaths.error.already_active = Essa forma de raça já está ativa.
+ui.racepaths.error.cannot_upgrade = Não é possível melhorar ainda:
+ui.racepaths.error.locked = Esse caminho de raça está bloqueado no momento.
+ui.racepaths.error.cannot_upgrade_simple = Não é possível melhorar ainda.
+ui.racepaths.chat.prefix = [Raças]
+ui.racepaths.info.select_path = Selecione um caminho
+ui.racepaths.info.waiting = Aguardando seleção
+ui.racepaths.info.path_prefix = Caminho:
+ui.racepaths.info.stage_prefix = Estágio:
+ui.racepaths.info.source_prefix = Origem:
+ui.racepaths.info.passives_hint = Selecione um caminho para ver passivas.
+ui.racepaths.info.requirements_hint = Selecione um caminho de raça para inspecionar requisitos.
+ui.racepaths.info.select_button = SELECIONAR CAMINHO
+
+# ============================================================
+# Class Passive Pretty Labels
+# ============================================================
+ui.classes.passive.pretty.na = n/d
+ui.classes.passive.pretty.ravenous_strike.title = Golpes predatórios de roubo de vida
+ui.classes.passive.pretty.ravenous_strike.flat = - Cura ao acertar: {0}
+ui.classes.passive.pretty.ravenous_strike.strength = - Escala de força: {0}
+ui.classes.passive.pretty.ravenous_strike.sorcery = - Escala de feitiçaria: {0}
+ui.classes.passive.pretty.ravenous_strike.note = - Adicionado à cura dos seus golpes ofensivos
+ui.classes.passive.pretty.true_edge.title = Golpes que perfuram defesa
+ui.classes.passive.pretty.true_edge.flat = - Dano verdadeiro fixo: {0} por golpe
+ui.classes.passive.pretty.true_edge.ratio = - Dano verdadeiro bônus: {0} do dano pré-defesa
+ui.classes.passive.pretty.true_edge.note = - Aplicado como perda direta de vida após o golpe
+ui.classes.passive.pretty.army_of_the_dead.title = Comando de invocações mortas-vivas
+ui.classes.passive.pretty.army_of_the_dead.base = - Invocações base: {0}
+ui.classes.passive.pretty.army_of_the_dead.mana_scaling = - Escala: +1 invocação a cada {0} mana
+ui.classes.passive.pretty.army_of_the_dead.cap = - Limite de invocações: {0}
+ui.classes.passive.pretty.army_of_the_dead.trigger = - Gatilho: {0}
+ui.classes.passive.pretty.army_of_the_dead.trigger_on_hit = Ao acertar
+ui.classes.passive.pretty.army_of_the_dead.lifetime = - Duração: {0}s cada
+ui.classes.passive.pretty.army_of_the_dead.cooldown = - Tempo de reaparecimento: {0}s por invocação
+ui.classes.passive.pretty.army_of_the_dead.inheritance = - Herança de atributos: {0}% dos seus atributos
+
+# ============================================================
+# Addons UI
+# ============================================================
+ui.addons.patreon.prompt = Apoie o Endless Leveling no Patreon:
+ui.addons.patreon.label = Patreon - Airijko
+ui.addons.starky.prompt = Mjolnir do Starky no CurseForge:
+ui.addons.starky.label = Mjolnir do Starky [Clique aqui]
+ui.addons.filter.mod_partners = Mostrando: Parceiros do Mod
+ui.addons.filter.community = Mostrando: Addons da Comunidade
+ui.addons.filter.partner_extensions = Mostrando: Extensões de Parceiros
+ui.addons.filter.all = Mostrando: Addons do Endless Leveling
