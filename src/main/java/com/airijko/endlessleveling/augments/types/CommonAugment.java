@@ -17,6 +17,8 @@ public final class CommonAugment extends Augment implements AugmentHooks.Passive
     private static final String LEGACY_ID = "basic";
     private static final String OFFER_DELIMITER = "::";
 
+    private static final double RANGE_EPSILON = 0.0001D;
+
     private final BonusRange lifeForceRange;
     private final BonusRange strengthRange;
     private final BonusRange sorceryRange;
@@ -27,6 +29,19 @@ public final class CommonAugment extends Augment implements AugmentHooks.Passive
     private final BonusRange disciplineRange;
     private final BonusRange flowRange;
     private final BonusRange staminaRange;
+
+    // Pre-computed flags: true when a stat range can produce non-zero values.
+    // Avoids resolveRoll + setAttributeBonus calls for permanently-zero stats.
+    private final boolean hasLifeForce;
+    private final boolean hasStrength;
+    private final boolean hasSorcery;
+    private final boolean hasDefense;
+    private final boolean hasHaste;
+    private final boolean hasPrecision;
+    private final boolean hasFerocity;
+    private final boolean hasDiscipline;
+    private final boolean hasFlow;
+    private final boolean hasStamina;
 
     public CommonAugment(AugmentDefinition definition) {
         super(definition);
@@ -41,6 +56,16 @@ public final class CommonAugment extends Augment implements AugmentHooks.Passive
         this.disciplineRange = readRange(buffs, "discipline");
         this.flowRange = readRange(buffs, "flow");
         this.staminaRange = readRange(buffs, "stamina");
+        this.hasLifeForce = lifeForceRange.max() > RANGE_EPSILON;
+        this.hasStrength = strengthRange.max() > RANGE_EPSILON;
+        this.hasSorcery = sorceryRange.max() > RANGE_EPSILON;
+        this.hasDefense = defenseRange.max() > RANGE_EPSILON;
+        this.hasHaste = hasteRange.max() > RANGE_EPSILON;
+        this.hasPrecision = precisionRange.max() > RANGE_EPSILON;
+        this.hasFerocity = ferocityRange.max() > RANGE_EPSILON;
+        this.hasDiscipline = disciplineRange.max() > RANGE_EPSILON;
+        this.hasFlow = flowRange.max() > RANGE_EPSILON;
+        this.hasStamina = staminaRange.max() > RANGE_EPSILON;
     }
 
     @Override
@@ -63,104 +88,85 @@ public final class CommonAugment extends Augment implements AugmentHooks.Passive
         }
         String sourcePrefix = buildSourcePrefix(selectionKey);
 
-        // Mob common offers are encoded as a single rolled stat; avoid writing all 10
-        // attributes every passive tick in mob flow.
-        if (context.getPlayerData() == null && selectedOffer != null) {
+        // Stat offers encode a single rolled stat — write only that attribute
+        // regardless of whether this is a mob or player context.
+        if (selectedOffer != null) {
             applySelectedMobOffer(context, sourcePrefix, selectedOffer);
             return;
         }
 
-        double lifeForceBonus = selectedOffer == null
-                ? resolveRoll(context, selectionKey, "life_force", lifeForceRange)
-                : resolveSelectedOfferBonus(selectedOffer, "life_force");
-        double strengthBonus = selectedOffer == null
-                ? resolveRoll(context, selectionKey, "strength", strengthRange)
-                : resolveSelectedOfferBonus(selectedOffer, "strength");
-        double sorceryBonus = selectedOffer == null
-                ? resolveRoll(context, selectionKey, "sorcery", sorceryRange)
-                : resolveSelectedOfferBonus(selectedOffer, "sorcery");
-        double defenseBonus = selectedOffer == null
-                ? resolveRoll(context, selectionKey, "defense", defenseRange)
-                : resolveSelectedOfferBonus(selectedOffer, "defense");
-        double hasteBonus = selectedOffer == null
-                ? resolveRoll(context, selectionKey, "haste", hasteRange)
-                : resolveSelectedOfferBonus(selectedOffer, "haste");
-        double precisionBonus = selectedOffer == null
-                ? resolveRoll(context, selectionKey, "precision", precisionRange)
-                : resolveSelectedOfferBonus(selectedOffer, "precision");
-        double ferocityBonus = selectedOffer == null
-                ? resolveRoll(context, selectionKey, "ferocity", ferocityRange)
-                : resolveSelectedOfferBonus(selectedOffer, "ferocity");
-        double disciplineBonus = selectedOffer == null
-                ? resolveRoll(context, selectionKey, "discipline", disciplineRange)
-                : resolveSelectedOfferBonus(selectedOffer, "discipline");
-        double flowBonus = selectedOffer == null
-                ? resolveRoll(context, selectionKey, "flow", flowRange)
-                : resolveSelectedOfferBonus(selectedOffer, "flow");
-        double staminaBonus = selectedOffer == null
-                ? resolveRoll(context, selectionKey, "stamina", staminaRange)
-                : resolveSelectedOfferBonus(selectedOffer, "stamina");
-
-        AugmentUtils.setAttributeBonus(context.getRuntimeState(),
-                sourcePrefix + "_life_force",
-                SkillAttributeType.LIFE_FORCE,
-                lifeForceBonus,
-                0L);
-        AugmentUtils.setAttributeBonus(context.getRuntimeState(),
-                sourcePrefix + "_strength",
-                SkillAttributeType.STRENGTH,
-                strengthBonus,
-                0L);
-        AugmentUtils.setAttributeBonus(context.getRuntimeState(),
-                sourcePrefix + "_sorcery",
-                SkillAttributeType.SORCERY,
-                sorceryBonus,
-                0L);
-        AugmentUtils.setAttributeBonus(context.getRuntimeState(),
-                sourcePrefix + "_defense",
-                SkillAttributeType.DEFENSE,
-                defenseBonus,
-                0L);
-        AugmentUtils.setAttributeBonus(context.getRuntimeState(),
-                sourcePrefix + "_haste",
-                SkillAttributeType.HASTE,
-                hasteBonus,
-                0L);
-        AugmentUtils.setAttributeBonus(context.getRuntimeState(),
-                sourcePrefix + "_precision",
-                SkillAttributeType.PRECISION,
-                precisionBonus,
-                0L);
-        AugmentUtils.setAttributeBonus(context.getRuntimeState(),
-                sourcePrefix + "_ferocity",
-                SkillAttributeType.FEROCITY,
-                ferocityBonus,
-                0L);
-        AugmentUtils.setAttributeBonus(context.getRuntimeState(),
-                sourcePrefix + "_discipline",
-                SkillAttributeType.DISCIPLINE,
-                disciplineBonus,
-                0L);
-        AugmentUtils.setAttributeBonus(context.getRuntimeState(),
-                sourcePrefix + "_flow",
-                SkillAttributeType.FLOW,
-                flowBonus,
-                0L);
-        AugmentUtils.setAttributeBonus(context.getRuntimeState(),
-                sourcePrefix + "_stamina",
-                SkillAttributeType.STAMINA,
-                staminaBonus,
-                0L);
-    }
-
-    private double resolveSelectedOfferBonus(CommonStatOffer selectedOffer, String expectedStatKey) {
-        if (selectedOffer == null || expectedStatKey == null || expectedStatKey.isBlank()) {
-            return 0.0D;
+        // Player path: resolve each stat from cached rolls. Skip stats whose
+        // configured range is zero — they can never produce a non-zero bonus.
+        if (hasLifeForce) {
+            AugmentUtils.setAttributeBonus(context.getRuntimeState(),
+                    sourcePrefix + "_life_force",
+                    SkillAttributeType.LIFE_FORCE,
+                    resolveRoll(context, selectionKey, "life_force", lifeForceRange),
+                    0L);
         }
-        if (!expectedStatKey.equalsIgnoreCase(selectedOffer.attributeKey())) {
-            return 0.0D;
+        if (hasStrength) {
+            AugmentUtils.setAttributeBonus(context.getRuntimeState(),
+                    sourcePrefix + "_strength",
+                    SkillAttributeType.STRENGTH,
+                    resolveRoll(context, selectionKey, "strength", strengthRange),
+                    0L);
         }
-        return selectedOffer.rolledValue();
+        if (hasSorcery) {
+            AugmentUtils.setAttributeBonus(context.getRuntimeState(),
+                    sourcePrefix + "_sorcery",
+                    SkillAttributeType.SORCERY,
+                    resolveRoll(context, selectionKey, "sorcery", sorceryRange),
+                    0L);
+        }
+        if (hasDefense) {
+            AugmentUtils.setAttributeBonus(context.getRuntimeState(),
+                    sourcePrefix + "_defense",
+                    SkillAttributeType.DEFENSE,
+                    resolveRoll(context, selectionKey, "defense", defenseRange),
+                    0L);
+        }
+        if (hasHaste) {
+            AugmentUtils.setAttributeBonus(context.getRuntimeState(),
+                    sourcePrefix + "_haste",
+                    SkillAttributeType.HASTE,
+                    resolveRoll(context, selectionKey, "haste", hasteRange),
+                    0L);
+        }
+        if (hasPrecision) {
+            AugmentUtils.setAttributeBonus(context.getRuntimeState(),
+                    sourcePrefix + "_precision",
+                    SkillAttributeType.PRECISION,
+                    resolveRoll(context, selectionKey, "precision", precisionRange),
+                    0L);
+        }
+        if (hasFerocity) {
+            AugmentUtils.setAttributeBonus(context.getRuntimeState(),
+                    sourcePrefix + "_ferocity",
+                    SkillAttributeType.FEROCITY,
+                    resolveRoll(context, selectionKey, "ferocity", ferocityRange),
+                    0L);
+        }
+        if (hasDiscipline) {
+            AugmentUtils.setAttributeBonus(context.getRuntimeState(),
+                    sourcePrefix + "_discipline",
+                    SkillAttributeType.DISCIPLINE,
+                    resolveRoll(context, selectionKey, "discipline", disciplineRange),
+                    0L);
+        }
+        if (hasFlow) {
+            AugmentUtils.setAttributeBonus(context.getRuntimeState(),
+                    sourcePrefix + "_flow",
+                    SkillAttributeType.FLOW,
+                    resolveRoll(context, selectionKey, "flow", flowRange),
+                    0L);
+        }
+        if (hasStamina) {
+            AugmentUtils.setAttributeBonus(context.getRuntimeState(),
+                    sourcePrefix + "_stamina",
+                    SkillAttributeType.STAMINA,
+                    resolveRoll(context, selectionKey, "stamina", staminaRange),
+                    0L);
+        }
     }
 
     private void applySelectedMobOffer(AugmentHooks.PassiveStatContext context,

@@ -66,6 +66,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
     private static final long FLOW_HEALTH_RETRY_INTERVAL_MILLIS = 500L;
     private static final long FLOW_HEALTH_LOG_COOLDOWN_MILLIS = 5000L;
     private static final long LEVEL_REVALIDATION_INTERVAL_MILLIS = 5000L;
+    private static final long BLACKLIST_RECHECK_INTERVAL_MILLIS = 5000L;
     private static final int CHUNK_BIT_SHIFT = 5;
     private static final int MIN_PLAYER_VIEW_RADIUS_CHUNKS = 1;
     private static final int PLAYER_VIEW_RADIUS_BUFFER_CHUNKS = 1;
@@ -565,6 +566,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
 
         if (shouldResetAllMobs) {
             mobLevelingManager.clearAllEntityLevelOverrides();
+            mobLevelingManager.clearMobTypeBlacklistCache();
             entityStates.clear();
         }
 
@@ -727,11 +729,26 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
 
         boolean mobLevelingEnabled = mobLevelingManager.isMobLevelingEnabled(store);
         boolean worldBlacklisted = mobLevelingManager.isWorldXpBlacklisted(store);
-        boolean entityBlacklisted = mobLevelingManager.isEntityBlacklisted(ref, store, commandBuffer);
+        boolean entityBlacklisted;
+        if (!mobLevelingEnabled || worldBlacklisted) {
+            entityBlacklisted = false; // skip the expensive per-entity check
+        } else if (state.cachedBlacklistStatus != 0
+                && currentTimeMillis < state.nextBlacklistCheckMillis) {
+            entityBlacklisted = state.cachedBlacklistStatus == 2;
+        } else {
+            entityBlacklisted = mobLevelingManager.isEntityBlacklisted(ref, store, commandBuffer);
+            state.cachedBlacklistStatus = (byte) (entityBlacklisted ? 2 : 1);
+            state.nextBlacklistCheckMillis = currentTimeMillis + BLACKLIST_RECHECK_INTERVAL_MILLIS;
+        }
         if (!mobLevelingEnabled || worldBlacklisted || entityBlacklisted) {
-            clearMobLevelingStateForBlockedEntity(ref, commandBuffer, state);
+            if (!state.blockedStateCleared) {
+                clearMobLevelingStateForBlockedEntity(ref, commandBuffer, state);
+                state.blockedStateCleared = true;
+            }
             return;
         }
+        // Entity transitioned from blocked to allowed — allow future re-clearing if needed.
+        state.blockedStateCleared = false;
 
         if (!isWithinActivePlayerChunk(ref, commandBuffer, playerChunkViewports)) {
             clearTrackedNameplateIfNeeded(ref, commandBuffer, state);
@@ -2010,6 +2027,10 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         private boolean flowInitializedLogged;
         private long lastTrackingKey = -1L;
         private long lastLevelRevalidationMillis;
+        // Blacklist cache: 0 = unchecked, 1 = allowed, 2 = blacklisted.
+        private byte cachedBlacklistStatus;
+        private long nextBlacklistCheckMillis;
+        private boolean blockedStateCleared;
 
         private void copyFrom(EntityRuntimeState other) {
             this.appliedLevel = other.appliedLevel;
@@ -2036,6 +2057,9 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
             this.lastKnownAtFullHealth = other.lastKnownAtFullHealth;
             this.flowInitializedLogged = other.flowInitializedLogged;
             this.lastLevelRevalidationMillis = other.lastLevelRevalidationMillis;
+            this.cachedBlacklistStatus = other.cachedBlacklistStatus;
+            this.nextBlacklistCheckMillis = other.nextBlacklistCheckMillis;
+            this.blockedStateCleared = other.blockedStateCleared;
         }
 
         private boolean hasNameplateState() {

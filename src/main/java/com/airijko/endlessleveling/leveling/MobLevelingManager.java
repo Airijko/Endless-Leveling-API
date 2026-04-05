@@ -106,6 +106,8 @@ public class MobLevelingManager {
     // Stateless design: do not maintain per-entity mutable state in maps.
     private volatile MobAugmentTierPools cachedMobAugmentTierPools;
     private volatile Map<String, Object> worldSettingsMap = Map.of();
+    // Cached blacklist: mob-type → blacklisted?  Cleared on config reload / runtime blacklist change.
+    private final Map<String, Boolean> mobTypeBlacklistCache = new ConcurrentHashMap<>();
 
     private enum LevelSourceMode {
         PLAYER,
@@ -1197,6 +1199,17 @@ public class MobLevelingManager {
 
         String normalizedType = normalizeMobType(mobType);
 
+        Boolean cached = mobTypeBlacklistCache.get(normalizedType);
+        if (cached != null) {
+            return cached;
+        }
+
+        boolean result = isMobTypeBlacklistedUncached(normalizedType, store);
+        mobTypeBlacklistCache.put(normalizedType, result);
+        return result;
+    }
+
+    private boolean isMobTypeBlacklistedUncached(String normalizedType, Store<EntityStore> store) {
         // Check runtime API blacklist first (hot path — uses live unmodifiable view).
         for (String runtimeEntry : EndlessLevelingAPI.get().getRuntimeMobBlacklistView()) {
             if (runtimeEntry.contains("*")) {
@@ -1237,6 +1250,10 @@ public class MobLevelingManager {
         }
 
         return false;
+    }
+
+    public void clearMobTypeBlacklistCache() {
+        mobTypeBlacklistCache.clear();
     }
 
     public boolean isEntityBlacklisted(Ref<EntityStore> ref,
