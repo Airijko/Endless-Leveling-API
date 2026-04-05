@@ -65,6 +65,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
     private static final long PASSIVE_STAT_TICK_INTERVAL_MILLIS = 1000L;
     private static final long FLOW_HEALTH_RETRY_INTERVAL_MILLIS = 500L;
     private static final long FLOW_HEALTH_LOG_COOLDOWN_MILLIS = 5000L;
+    private static final long LEVEL_REVALIDATION_INTERVAL_MILLIS = 5000L;
     private static final int CHUNK_BIT_SHIFT = 5;
     private static final int MIN_PLAYER_VIEW_RADIUS_CHUNKS = 1;
     private static final int PLAYER_VIEW_RADIUS_BUFFER_CHUNKS = 1;
@@ -687,6 +688,42 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         long entityKey = trackingIdentity.key();
         EntityRuntimeState state = getOrCreateEntityState(entityKey, ref.getIndex(), store);
         state.lastSeenTimeMillis = currentTimeMillis;
+
+        // Entity key migration: when a mob's tracking key changes (e.g., UUID component
+        // becomes available after initial index-based tracking), carry over runtime state
+        // and manager-side snapshots to prevent level/XP desync.
+        if (state.lastTrackingKey != -1L && state.lastTrackingKey != entityKey) {
+            // Key changed on a subsequent tick — migrate from old key
+            EntityRuntimeState oldKeyState = entityStates.remove(state.lastTrackingKey);
+            if (oldKeyState != null && oldKeyState != state && oldKeyState.appliedLevel > 0
+                    && state.appliedLevel <= 0) {
+                state.copyFrom(oldKeyState);
+            }
+            migrateEntityKeySnapshots(state.lastTrackingKey, entityKey);
+            if (cachedDebugMobLevelFlow) {
+                LOGGER.atInfo().log(
+                        "[MOB_LEVEL_FLOW] entity=%d keyMigration oldKey=%d newKey=%d migratedLevel=%d",
+                        ref.getIndex(), state.lastTrackingKey, entityKey, state.appliedLevel);
+            }
+        } else if (state.lastTrackingKey == -1L && state.appliedLevel <= 0
+                && trackingIdentity.uuidBacked()) {
+            // First tick with UUID-based key: check if an index-based state already exists
+            // from an earlier tick when the UUID component wasn't available yet.
+            long indexKey = toEntityKey(store, ref.getIndex());
+            if (indexKey != entityKey) {
+                EntityRuntimeState indexState = entityStates.remove(indexKey);
+                if (indexState != null && indexState.appliedLevel > 0) {
+                    state.copyFrom(indexState);
+                    migrateEntityKeySnapshots(indexKey, entityKey);
+                    if (cachedDebugMobLevelFlow) {
+                        LOGGER.atInfo().log(
+                                "[MOB_LEVEL_FLOW] entity=%d indexKeyMigration indexKey=%d uuidKey=%d migratedLevel=%d",
+                                ref.getIndex(), indexKey, entityKey, state.appliedLevel);
+                    }
+                }
+            }
+        }
+        state.lastTrackingKey = entityKey;
 
         boolean mobLevelingEnabled = mobLevelingManager.isMobLevelingEnabled(store);
         boolean worldBlacklisted = mobLevelingManager.isWorldXpBlacklisted(store);
@@ -1662,6 +1699,38 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         }
     }
 
+    /**
+     * Copies manager-side snapshots (level, health composition, true base health) from
+     * {@code sourceKey} to {@code targetKey}. Used during entity key migration when the
+     * tracking key changes (e.g., UUID component becomes available after index-based tracking).
+     */
+    private void migrateEntityKeySnapshots(long sourceKey, long targetKey) {
+        if (sourceKey == targetKey || sourceKey == -1L || targetKey == -1L || mobLevelingManager == null) {
+            return;
+        }
+
+        Integer level = mobLevelingManager.getEntityResolvedLevelSnapshot(sourceKey);
+        if (level != null && level > 0) {
+            mobLevelingManager.recordEntityResolvedLevel(targetKey, level);
+        }
+
+        MobLevelingManager.MobHealthCompositionSnapshot healthSnapshot =
+                mobLevelingManager.getEntityHealthCompositionSnapshot(sourceKey);
+        if (healthSnapshot != null && Float.isFinite(healthSnapshot.combinedMax())
+                && healthSnapshot.combinedMax() > 0f) {
+            mobLevelingManager.recordEntityHealthComposition(targetKey,
+                    healthSnapshot.baseMax(),
+                    healthSnapshot.scaledMax(),
+                    healthSnapshot.lifeForceBonus(),
+                    healthSnapshot.combinedMax());
+        }
+
+        Float trueBase = mobLevelingManager.getTrueBaseHealth(sourceKey);
+        if (trueBase != null && Float.isFinite(trueBase) && trueBase > 0f) {
+            mobLevelingManager.cacheTrueBaseHealth(targetKey, trueBase);
+        }
+    }
+
     private void resetNameplateState(EntityRuntimeState state) {
         if (state == null) {
             return;
@@ -1935,6 +2004,35 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         private boolean mobAugmentsInitialized;
         private boolean mobHasAugments;
         private boolean flowInitializedLogged;
+        private long lastTrackingKey = -1L;
+        private long lastLevelRevalidationMillis;
+
+        private void copyFrom(EntityRuntimeState other) {
+            this.appliedLevel = other.appliedLevel;
+            this.lastRecordedResolvedLevel = other.lastRecordedResolvedLevel;
+            this.settledHealthLevel = other.settledHealthLevel;
+            this.resolveAttempts = other.resolveAttempts;
+            this.resolveAssignments = other.resolveAssignments;
+            this.mobAugmentsInitialized = other.mobAugmentsInitialized;
+            this.mobHasAugments = other.mobHasAugments;
+            this.augmentHealthReconcilePending = other.augmentHealthReconcilePending;
+            this.augmentPassiveDeferActive = other.augmentPassiveDeferActive;
+            this.lastPassiveStatTickMillis = other.lastPassiveStatTickMillis;
+            this.nextMobAugmentRegistrationCheckMillis = other.nextMobAugmentRegistrationCheckMillis;
+            this.nextHealthApplyAttemptMillis = other.nextHealthApplyAttemptMillis;
+            this.lastHealthFlowLogMillis = other.lastHealthFlowLogMillis;
+            this.lastAppliedNameplateLevel = other.lastAppliedNameplateLevel;
+            this.lastAppliedNameplateText = other.lastAppliedNameplateText;
+            this.lastAppliedShowLevelInNameplate = other.lastAppliedShowLevelInNameplate;
+            this.lastAppliedShowNameInNameplate = other.lastAppliedShowNameInNameplate;
+            this.lastAppliedShowHealthInNameplate = other.lastAppliedShowHealthInNameplate;
+            this.lastNameplateHealthValue = other.lastNameplateHealthValue;
+            this.lastNameplateMaxHealthValue = other.lastNameplateMaxHealthValue;
+            this.lastHealthUpdateTick = other.lastHealthUpdateTick;
+            this.lastKnownAtFullHealth = other.lastKnownAtFullHealth;
+            this.flowInitializedLogged = other.flowInitializedLogged;
+            this.lastLevelRevalidationMillis = other.lastLevelRevalidationMillis;
+        }
 
         private boolean hasNameplateState() {
             return lastAppliedNameplateText != null
