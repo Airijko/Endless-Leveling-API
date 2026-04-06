@@ -399,7 +399,7 @@ public final class DeathBombAugment extends Augment
                 continue;
             }
 
-            if (!EntityRefUtil.isUsable(targetRef)) {
+            if (!EntityRefUtil.isAliveAndUsable(targetRef, commandBuffer)) {
                 continue;
             }
 

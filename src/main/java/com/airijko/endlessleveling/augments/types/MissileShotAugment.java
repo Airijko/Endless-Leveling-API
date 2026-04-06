@@ -141,7 +141,7 @@ public final class MissileShotAugment extends Augment implements AugmentHooks.On
             if (attackerRef != null && targetRef.equals(attackerRef)) {
                 continue;
             }
-            if (!EntityRefUtil.isUsable(targetRef)) {
+            if (!EntityRefUtil.isAliveAndUsable(targetRef, commandBuffer)) {
                 continue;
             }
 

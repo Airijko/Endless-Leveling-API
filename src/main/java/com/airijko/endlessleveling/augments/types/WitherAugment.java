@@ -246,6 +246,14 @@ public final class WitherAugment extends Augment implements AugmentHooks.OnHitAu
         if (ref == null || commandBuffer == null || !EntityRefUtil.isUsable(ref)) {
             return;
         }
+        // Skip entities already marked for removal to avoid "Entity can't be
+        // removed and also receive an update" tracker errors.
+        if (!EntityRefUtil.isAliveAndUsable(ref, commandBuffer)) {
+            String key = keyFor(ref, commandBuffer);
+            ACTIVE_WITHER.remove(key);
+            LOGGER.atFine().log("Wither removed: target dead/unusable key=%s target=%s", key, ref);
+            return;
+        }
         String key = keyFor(ref, commandBuffer);
         ActiveWither state = ACTIVE_WITHER.get(key);
         if (state == null) {
@@ -316,10 +324,10 @@ public final class WitherAugment extends Augment implements AugmentHooks.OnHitAu
         Ref<EntityStore> sourceRef = sanitizeSourceRefForTarget(state, ref);
         Damage witherTickDamage = PlayerCombatSystem.createAugmentDotDamage(sourceRef, (float) damage);
 
-        if (!EntityRefUtil.isUsable(ref)) {
+        if (!EntityRefUtil.isAliveAndUsable(ref, commandBuffer)) {
             clearSlowIfPossible(state, commandBuffer, ref);
             ACTIVE_WITHER.remove(key);
-            LOGGER.atFine().log("Wither removed: target became unusable key=%s target=%s", key, ref);
+            LOGGER.atFine().log("Wither removed: target dead/unusable key=%s target=%s", key, ref);
             return;
         }
 
@@ -438,6 +446,9 @@ public final class WitherAugment extends Augment implements AugmentHooks.OnHitAu
             Ref<EntityStore> ref) {
         if (state == null || commandBuffer == null || ref == null || !EntityRefUtil.isUsable(ref)
                 || state.movementSpeedSlowPercent <= 0.0D) {
+            return;
+        }
+        if (!EntityRefUtil.isAliveAndUsable(ref, commandBuffer)) {
             return;
         }
         String key = keyFor(ref, commandBuffer);

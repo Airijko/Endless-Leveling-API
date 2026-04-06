@@ -5,6 +5,7 @@ import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.modules.entity.damage.Damage;
+import com.hypixel.hytale.server.core.modules.entity.damage.DeathComponent;
 import com.hypixel.hytale.server.core.modules.entity.damage.DamageSystems;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
@@ -32,6 +33,12 @@ public final class AugmentDamageSafety {
             return false;
         }
         if (!EntityRefUtil.isUsable(targetRef)) {
+            return false;
+        }
+        // Prevent updating entities already marked for removal — triggers the
+        // "Entity can't be removed and also receive an update" tracker error.
+        if (EntityRefUtil.tryGetComponent(commandBuffer, targetRef, DeathComponent.getComponentType()) != null) {
+            LOGGER.atFine().log("Skipped augment damage for dying entity source=%s target=%s", sourceTag, targetRef);
             return false;
         }
         if (REENTRANCY_GUARD.get()) {

@@ -44,6 +44,10 @@ public class LanguageManager {
     public static final String I18N_KEY_PREFIX = "endlessleveling.";
     private static final String LANG_RESOURCE_DIR = "Server/Languages/";
     private static final String LANG_FILE_NAME = "endlessleveling.lang";
+    /** Bundled locales in Hytale format (must match src/main/resources/Server/Languages/ directories). */
+    private static final List<String> BUNDLED_HYTALE_LOCALES = List.of(
+            "de-DE", "en-US", "es-ES", "fr-FR", "hu-HU",
+            "it-IT", "pl-PL", "pt-BR", "tr-TR");
 
     private final ConfigManager configManager;
     /** Deployed Server/Languages/ directory on disk (mod root). */
@@ -96,24 +100,30 @@ public class LanguageManager {
     }
 
     public List<String> getAvailableLocales() {
-        // Scan deployed Server/Languages/ directory for locale folders with .lang files
+        // Start from bundled JAR locales (always available)
+        List<String> locales = new ArrayList<>();
+        for (String hytaleLocale : BUNDLED_HYTALE_LOCALES) {
+            locales.add(fromHytaleLocale(hytaleLocale));
+        }
+
+        // Add any additional locales from the deployed Server/Languages/ directory
         if (Files.isDirectory(serverLanguagesDir)) {
             try (DirectoryStream<Path> stream = Files.newDirectoryStream(serverLanguagesDir,
                     entry -> Files.isDirectory(entry)
                             && Files.exists(entry.resolve(LANG_FILE_NAME)))) {
-                List<String> locales = new ArrayList<>();
                 for (Path dir : stream) {
-                    locales.add(fromHytaleLocale(dir.getFileName().toString()));
-                }
-                if (!locales.isEmpty()) {
-                    locales.sort(Comparator.naturalOrder());
-                    return Collections.unmodifiableList(locales);
+                    String locale = fromHytaleLocale(dir.getFileName().toString());
+                    if (!locales.contains(locale)) {
+                        locales.add(locale);
+                    }
                 }
             } catch (IOException e) {
                 LOGGER.atWarning().log("Failed to scan language directories: %s", e.getMessage());
             }
         }
-        return List.of(DEFAULT_LOCALE);
+
+        locales.sort(Comparator.naturalOrder());
+        return Collections.unmodifiableList(locales);
     }
 
     public boolean isLocaleAvailable(String locale) {

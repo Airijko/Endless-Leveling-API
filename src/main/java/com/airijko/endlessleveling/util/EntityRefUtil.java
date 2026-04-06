@@ -5,6 +5,7 @@ import com.hypixel.hytale.component.ComponentAccessor;
 import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.server.core.modules.entity.damage.DeathComponent;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 public final class EntityRefUtil {
@@ -45,6 +46,23 @@ public final class EntityRefUtil {
             return accessor.getComponent(ref, componentType);
         } catch (IllegalStateException ignored) {
             return null;
+        }
+    }
+
+    /**
+     * Returns true when the ref is usable AND the entity has not been marked
+     * for removal (no {@link DeathComponent}).  Use this before applying any
+     * component updates (damage, effects, movement, stats) to avoid the
+     * "Entity can't be removed and also receive an update" tracker error.
+     */
+    public static boolean isAliveAndUsable(Ref<EntityStore> ref, ComponentAccessor<EntityStore> accessor) {
+        if (!isUsable(ref) || accessor == null) {
+            return false;
+        }
+        try {
+            return accessor.getComponent(ref, DeathComponent.getComponentType()) == null;
+        } catch (IllegalStateException ignored) {
+            return false;
         }
     }
 }

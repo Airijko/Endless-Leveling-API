@@ -30,11 +30,15 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Diagnostic probe that runs after ApplyDamage to inspect final HP/death state.
+ *
+ * Only flags genuinely anomalous situations — an entity whose HP was at zero
+ * snapping back to full max without a death/respawn cycle.  Normal HP increases
+ * between damage events (healing, regen, passive-health reconciliation) are
+ * expected and not flagged.
  */
 public class PlayerCombatPostApplyProbeSystem extends DamageEventSystem {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
-    private final Map<Long, Integer> lethalWithoutDeathStreak = new ConcurrentHashMap<>();
     private final Map<Long, Float> lastObservedHpByTarget = new ConcurrentHashMap<>();
     private final MobLevelingManager mobLevelingManager;
 
@@ -78,8 +82,7 @@ public class PlayerCombatPostApplyProbeSystem extends DamageEventSystem {
 
         Ref<EntityStore> targetRef = archetypeChunk.getReferenceTo(index);
         PlayerRef targetPlayer = EntityRefUtil.tryGetComponent(commandBuffer, targetRef, PlayerRef.getComponentType());
-        boolean targetIsPlayer = targetPlayer != null && targetPlayer.isValid();
-        if (targetIsPlayer) {
+        if (targetPlayer != null && targetPlayer.isValid()) {
             return;
         }
 
@@ -99,55 +102,33 @@ public class PlayerCombatPostApplyProbeSystem extends DamageEventSystem {
                 DeathComponent.getComponentType()) != null;
         int targetId = targetRef.getIndex();
         long targetKey = resolveTrackingKey(targetRef, commandBuffer);
-        int mobLevel = mobLevelingManager != null ? mobLevelingManager.resolveMobLevel(targetRef, commandBuffer) : 1;
 
         if (dead) {
-            lethalWithoutDeathStreak.remove(targetKey);
             lastObservedHpByTarget.remove(targetKey);
+            return;
         }
-
-        lethalWithoutDeathStreak.remove(targetKey);
 
         Float previousObservedHp = lastObservedHpByTarget.get(targetKey);
         if (Float.isFinite(hp)) {
             lastObservedHpByTarget.put(targetKey, hp);
         }
 
-        if (!dead && previousObservedHp != null && Float.isFinite(previousObservedHp) && Float.isFinite(hp)) {
-            if (hp > previousObservedHp + 1.0f) {
-                LOGGER.atWarning().log(
-                        "HpJumpWithoutDeath target=%d previousHp=%.3f currentHp=%.3f max=%.3f dead=%s",
-                        targetId,
-                        previousObservedHp,
-                        hp,
-                        max,
-                        dead);
-            }
-            if (previousObservedHp <= 0.0001f && max > 0.0f && hp >= max - 0.001f) {
-                LOGGER.atWarning().log(
-                        "HpResetAfterZeroWithoutDeath target=%d previousHp=%.3f currentHp=%.3f max=%.3f dead=%s",
-                        targetId,
-                        previousObservedHp,
-                        hp,
-                        max,
-                        dead);
-            }
+        // Only flag the truly anomalous case: HP was at zero (should be dead) but
+        // jumped back to full max without a death cycle.
+        if (previousObservedHp != null
+                && Float.isFinite(previousObservedHp) && Float.isFinite(hp) && Float.isFinite(max)
+                && previousObservedHp <= 0.0001f
+                && max > 0.0f
+                && hp >= max - 0.001f) {
+            LOGGER.atWarning().log(
+                    "HpResetAfterZeroWithoutDeath target=%d previousHp=%.3f currentHp=%.3f max=%.3f",
+                    targetId, previousObservedHp, hp, max);
         }
 
-        LOGGER.atInfo().log(
+        int mobLevel = mobLevelingManager != null ? mobLevelingManager.resolveMobLevel(targetRef, commandBuffer) : 1;
+        LOGGER.atFine().log(
                 "PlayerHitPostApply target=%d attacker=%d finalDamage=%.3f hp=%.3f max=%.3f mobLevel=%d",
-                targetId,
-                attackerRef.getIndex(),
-                damage.getAmount(),
-                hp,
-                max,
-                mobLevel);
-    }
-
-    private long toEntityKey(Store<EntityStore> store, int entityId) {
-        long storePart = store == null ? 0L : Integer.toUnsignedLong(System.identityHashCode(store));
-        long entityPart = Integer.toUnsignedLong(entityId);
-        return (storePart << 32) | entityPart;
+                targetId, attackerRef.getIndex(), damage.getAmount(), hp, max, mobLevel);
     }
 
     private long resolveTrackingKey(Ref<EntityStore> ref, CommandBuffer<EntityStore> commandBuffer) {
@@ -155,26 +136,26 @@ public class PlayerCombatPostApplyProbeSystem extends DamageEventSystem {
             return -1L;
         }
 
-        Store<EntityStore> store = ref.getStore();
+        Store<EntityStore> refStore = ref.getStore();
         UUIDComponent uuidComponent = EntityRefUtil.tryGetComponent(commandBuffer, ref,
                 UUIDComponent.getComponentType());
 
-        if (uuidComponent == null && store != null) {
-            uuidComponent = EntityRefUtil.tryGetComponent(store, ref, UUIDComponent.getComponentType());
+        if (uuidComponent == null && refStore != null) {
+            uuidComponent = EntityRefUtil.tryGetComponent(refStore, ref, UUIDComponent.getComponentType());
         }
 
         if (uuidComponent != null) {
             try {
                 UUID uuid = uuidComponent.getUuid();
                 if (uuid != null) {
-                    // UUID-backed: no storePart; UUID is globally unique across contexts.
-                    long uuidPart = uuid.getMostSignificantBits() ^ Long.rotateLeft(uuid.getLeastSignificantBits(), 1);
-                    return uuidPart;
+                    return uuid.getMostSignificantBits() ^ Long.rotateLeft(uuid.getLeastSignificantBits(), 1);
                 }
             } catch (Throwable ignored) {
             }
         }
 
-        return toEntityKey(store, ref.getIndex());
+        long storePart = refStore == null ? 0L : Integer.toUnsignedLong(System.identityHashCode(refStore));
+        long entityPart = Integer.toUnsignedLong(ref.getIndex());
+        return (storePart << 32) | entityPart;
     }
 }

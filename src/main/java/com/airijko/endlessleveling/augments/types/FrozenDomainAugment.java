@@ -317,6 +317,11 @@ public final class FrozenDomainAugment extends Augment
             if (isSamePartyTarget(sourceUuid, sourcePartyLeader, targetRef, commandBuffer, partyManager)) {
                 continue;
             }
+            // Skip dead entities to avoid "Entity can't be removed and also
+            // receive an update" tracker errors.
+            if (!EntityRefUtil.isAliveAndUsable(targetRef, commandBuffer)) {
+                continue;
+            }
 
             EntityStatMap targetStats = EntityRefUtil.tryGetComponent(commandBuffer,
                     targetRef,
@@ -387,6 +392,9 @@ public final class FrozenDomainAugment extends Augment
             CommandBuffer<EntityStore> commandBuffer,
             Ref<EntityStore> ref) {
         if (state == null || commandBuffer == null || ref == null || state.slowPercent <= 0.0D) {
+            return;
+        }
+        if (!EntityRefUtil.isAliveAndUsable(ref, commandBuffer)) {
             return;
         }
         if (!matchesExpectedUuid(state.targetUuid, resolveEntityUuid(ref, commandBuffer))) {

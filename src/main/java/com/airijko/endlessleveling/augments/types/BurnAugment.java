@@ -260,9 +260,9 @@ public final class BurnAugment extends Augment
 
             Damage burnTickDamage = PlayerCombatSystem.createAugmentDotDamage(sourceRef, (float) burnDamage);
 
-            // Validate entity is still usable before applying damage (entity may have
-            // become invisible)
-            if (!EntityRefUtil.isUsable(targetRef)) {
+            // Skip dead or unusable entities to avoid "Entity can't be removed and
+            // also receive an update" tracker errors.
+            if (!EntityRefUtil.isAliveAndUsable(targetRef, commandBuffer)) {
                 continue;
             }
 

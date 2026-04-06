@@ -143,7 +143,7 @@ public final class ArcaneCataclysmAugment extends Augment implements AugmentHook
             if (attackerRef != null && targetRef.equals(attackerRef)) {
                 continue;
             }
-            if (!EntityRefUtil.isUsable(targetRef)) {
+            if (!EntityRefUtil.isAliveAndUsable(targetRef, commandBuffer)) {
                 continue;
             }
 
