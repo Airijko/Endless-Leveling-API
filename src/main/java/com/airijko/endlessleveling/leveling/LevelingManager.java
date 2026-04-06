@@ -238,6 +238,9 @@ public class LevelingManager {
         // Notify XP gain
         notifyXpGain(player, adjustedXp);
 
+        // Notify external XP grant listeners (e.g. EndlessMarriage XP sharing)
+        com.airijko.endlessleveling.api.EndlessLevelingAPI.get().notifyXpGrantListeners(uuid, adjustedXp);
+
         // Handle level-ups
         boolean leveledUp = false;
         while (player.getLevel() < effectiveCap

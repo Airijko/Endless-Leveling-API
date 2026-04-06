@@ -43,6 +43,7 @@ import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -76,6 +77,10 @@ public final class EndlessLevelingAPI {
 
     // Auto-allocate guards — ALL must pass for auto-allocation to proceed.
     private final List<Predicate<UUID>> autoAllocateGuards = new CopyOnWriteArrayList<>();
+
+    // XP grant listeners — notified after a player receives XP via addXp().
+    // Parameters: (playerUuid, adjustedXpAmount).
+    private final List<BiConsumer<UUID, Double>> xpGrantListeners = new CopyOnWriteArrayList<>();
 
     private EndlessLevelingAPI() {
     }
@@ -868,6 +873,93 @@ public final class EndlessLevelingAPI {
             }
         }
         return true;
+    }
+
+    // ----------------------
+    // XP grant listeners
+    // ----------------------
+
+    /**
+     * Register a listener that is notified after a player receives XP via
+     * {@link #grantXp} or {@code LevelingManager.addXp()}. The listener
+     * receives the player UUID and the adjusted (post-bonus) XP amount.
+     *
+     * <p>Listeners run on the server thread. Keep implementations fast and
+     * non-blocking. If a listener itself calls {@code grantXp}, it must guard
+     * against infinite recursion (e.g. via a ThreadLocal flag).</p>
+     */
+    public void addXpGrantListener(BiConsumer<UUID, Double> listener) {
+        if (listener != null) {
+            xpGrantListeners.add(listener);
+        }
+    }
+
+    /** Remove a previously registered XP grant listener. */
+    public void removeXpGrantListener(BiConsumer<UUID, Double> listener) {
+        if (listener != null) {
+            xpGrantListeners.remove(listener);
+        }
+    }
+
+    /**
+     * Called by LevelingManager after XP is added to a player. External mods
+     * should not call this directly.
+     */
+    public void notifyXpGrantListeners(UUID uuid, double adjustedXp) {
+        if (uuid == null || xpGrantListeners.isEmpty()) {
+            return;
+        }
+        for (BiConsumer<UUID, Double> listener : xpGrantListeners) {
+            try {
+                listener.accept(uuid, adjustedXp);
+            } catch (Exception ignored) {
+                // Don't let a broken listener crash XP processing.
+            }
+        }
+    }
+
+    // ----------------------
+    // Marriage convenience helpers
+    // ----------------------
+
+    /**
+     * Check whether a player is currently married. Delegates to the marriage
+     * manager registered via the generic manager registry under key "marriage".
+     *
+     * @return true if married, false otherwise or if no marriage manager is registered.
+     */
+    public boolean isMarried(UUID uuid) {
+        Object manager = getManager("marriage");
+        if (manager == null || uuid == null) {
+            return false;
+        }
+        try {
+            var method = manager.getClass().getMethod("isMarried", UUID.class);
+            Object result = method.invoke(manager, uuid);
+            return result instanceof Boolean b && b;
+        } catch (Exception ignored) {
+            return false;
+        }
+    }
+
+    /**
+     * Get the spouse UUID for a married player. Delegates to the marriage
+     * manager registered via the generic manager registry under key "marriage".
+     *
+     * @return the spouse UUID, or null if not married or no marriage manager is registered.
+     */
+    public UUID getSpouseUuid(UUID uuid) {
+        Object manager = getManager("marriage");
+        if (manager == null || uuid == null) {
+            return null;
+        }
+        try {
+            var method = manager.getClass().getMethod("getSpouse", UUID.class);
+            Object result = method.invoke(manager, uuid);
+            return result instanceof UUID spouse ? spouse : null;
+        } catch (Exception ignored) {
+            return null;
+        }
     }
 
     // ----------------------
