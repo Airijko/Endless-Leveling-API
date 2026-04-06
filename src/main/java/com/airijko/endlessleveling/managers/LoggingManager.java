@@ -200,6 +200,9 @@ public final class LoggingManager {
         if ("mob_augments".equals(lowered)) {
             return LOGGER_PREFIX + ".augments.MobAugmentExecutor";
         }
+        if ("xp_death_diag".equals(lowered)) {
+            return LOGGER_PREFIX + ".leveling.XpEventSystem.diag";
+        }
         // Allow shorthand like "augments" or ".systems"; fall back to full package if
         // provided.
         if (trimmed.startsWith(LOGGER_PREFIX)) {

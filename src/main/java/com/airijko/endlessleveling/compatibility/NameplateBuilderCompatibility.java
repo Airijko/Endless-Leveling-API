@@ -444,6 +444,25 @@ public final class NameplateBuilderCompatibility {
         }
     }
 
+    /**
+     * Write arbitrary text to any registered NPC nameplate segment by ID.
+     * External mods can use this to populate custom segments (e.g. ELITE_TIER_PREFIX)
+     * without coupling to EL's internal segment constants.
+     */
+    public static boolean setNpcSegmentText(Store<EntityStore> store, Ref<EntityStore> entityRef,
+            String segmentId, String text) {
+        if (store == null || entityRef == null || segmentId == null || segmentId.isBlank()
+                || !ensureInitialized()) {
+            return false;
+        }
+        try {
+            setTextMethod.invoke(null, store, entityRef, segmentId, text == null ? "" : text);
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
     public static boolean registerSummonText(Store<EntityStore> store, Ref<EntityStore> entityRef, String text) {
         if (store == null || entityRef == null || text == null || text.isBlank() || !ensureInitialized()) {
             return false;

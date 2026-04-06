@@ -415,12 +415,18 @@ public class MobLevelingManager {
             Integer runtimeFixedBossOffset = resolveRuntimeFixedBossLevelFromRangeMaxOffset(effectiveStore);
 
             // Gate overrides should still honor boss-style mob overrides by pinning to range max + offset.
-            // Prefer runtime gate offset (from gate registration), then runtime fixed, then static mob offset.
-            if (gateOverride.override() != null && matchedMobOffset != null) {
-            int bossOffset = runtimeGateBossOffset != null
-                ? runtimeGateBossOffset
-                : (runtimeFixedBossOffset != null ? runtimeFixedBossOffset : matchedMobOffset);
-            gateOverrideLevel = gateOverride.override().maxLevel() + Math.max(0, bossOffset);
+            // Enter the boss block when the mob matches any Mob_Override AND we have an offset source:
+            // static Level_From_Range_Max_Offset, runtime gate offset, or runtime fixed offset.
+            boolean hasBossOffset = matchedMobOffset != null
+                    || runtimeGateBossOffset != null
+                    || runtimeFixedBossOffset != null;
+            if (gateOverride.override() != null && mobOverrideMatch != null && hasBossOffset) {
+                int bossOffset = runtimeGateBossOffset != null
+                    ? runtimeGateBossOffset
+                    : (runtimeFixedBossOffset != null
+                        ? runtimeFixedBossOffset
+                        : (matchedMobOffset != null ? matchedMobOffset : 0));
+                gateOverrideLevel = gateOverride.override().maxLevel() + Math.max(0, bossOffset);
             }
 
             int clamped = clampToConfiguredRange(gateOverrideLevel, effectiveStore);
@@ -1264,6 +1270,7 @@ public class MobLevelingManager {
         appendStringRules(rules, getWorldSettingsValue("Blacklisted_Worlds"));
         appendStringRules(rules, getWorldSettingsValue("XP_Blacklisted_Worlds"));
         appendStringRules(rules, getWorldSettingsValue("XP_Blacklisted_Words"));
+
         if (rules.isEmpty()) {
             return false;
         }
@@ -1282,6 +1289,41 @@ public class MobLevelingManager {
                     if (matchesWildcard(normalized, candidate)) {
                         return true;
                     }
+                } else if (normalized.contains(candidate)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Check whether a world matches patterns in the runtime XP blacklist only
+     * (added via {@link EndlessLevelingAPI#addXpBlacklistedWorld}).
+     * Unlike {@link #isWorldXpBlacklisted(Store)}, this does NOT prevent mob leveling —
+     * it only suppresses XP on kill. Called by XpEventSystem.
+     */
+    public boolean isWorldRuntimeXpBlacklisted(Store<EntityStore> store) {
+        Set<String> runtimePatterns = EndlessLevelingAPI.get().getRuntimeXpBlacklistedWorlds();
+        if (runtimePatterns.isEmpty()) return false;
+
+        String resolvedWorldId = resolveWorldIdentifier(store);
+        List<String> worldIds;
+        if (resolvedWorldId != null && !resolvedWorldId.isBlank()) {
+            worldIds = List.of(resolvedWorldId);
+        } else {
+            worldIds = resolveWorldIdentifierCandidates(store, false);
+        }
+        if (worldIds.isEmpty()) return false;
+
+        for (String worldId : worldIds) {
+            if (worldId == null || worldId.isBlank()) continue;
+            String normalized = worldId.toLowerCase(Locale.ROOT);
+            for (String pattern : runtimePatterns) {
+                if (pattern == null || pattern.isBlank()) continue;
+                String candidate = pattern.trim().toLowerCase(Locale.ROOT);
+                if (candidate.contains("*")) {
+                    if (matchesWildcard(normalized, candidate)) return true;
                 } else if (normalized.contains(candidate)) {
                     return true;
                 }
@@ -4387,6 +4429,13 @@ public class MobLevelingManager {
             } catch (IOException | RuntimeException e) {
                 LOGGER.atWarning().log("Failed to load world settings bundle %s: %s", filePath, e.getMessage());
             }
+        }
+
+        // Merge runtime overrides from the API (registered by external mods).
+        // These load last so they always win over file-based settings.
+        Map<String, Object> runtimeOverrides = EndlessLevelingAPI.get().buildRuntimeWorldOverridesMap();
+        if (!runtimeOverrides.isEmpty()) {
+            deepMergeMaps(merged, runtimeOverrides);
         }
 
         worldSettingsMap = Map.copyOf(merged);

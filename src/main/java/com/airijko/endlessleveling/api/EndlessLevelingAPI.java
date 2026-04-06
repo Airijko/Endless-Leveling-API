@@ -30,6 +30,18 @@ import com.airijko.endlessleveling.api.gates.WaveGateRuntimeBridge;
 import com.airijko.endlessleveling.api.gates.WaveGateSessionBridge;
 import com.airijko.endlessleveling.api.gates.WaveGateSessionExecutorBridge;
 
+import com.airijko.endlessleveling.compatibility.NameplateBuilderCompatibility;
+import com.airijko.endlessleveling.enums.PassiveTier;
+import com.airijko.endlessleveling.util.FixedValue;
+import com.hypixel.hytale.component.CommandBuffer;
+import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
+import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
+import com.hypixel.hytale.server.core.modules.entitystats.modifier.Modifier;
+import com.hypixel.hytale.server.core.modules.entitystats.modifier.StaticModifier;
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -81,6 +93,21 @@ public final class EndlessLevelingAPI {
     // XP grant listeners — notified after a player receives XP via addXp().
     // Parameters: (playerUuid, adjustedXpAmount).
     private final List<BiConsumer<UUID, Double>> xpGrantListeners = new CopyOnWriteArrayList<>();
+
+    // Per-entity XP multiplier — external mods can register a multiplier for specific entities.
+    private final ConcurrentHashMap<Integer, Double> entityXpMultipliers = new ConcurrentHashMap<>();
+
+    // Mob post-process listeners — fired after MobLevelingSystem assigns a level for the first time.
+    private final List<MobPostProcessListener> mobPostProcessListeners = new CopyOnWriteArrayList<>();
+
+    // Runtime world overrides — merged on top of file-based world-settings during load.
+    // Outer key = world key (e.g. "instance-frozen_dungeon"), inner map mirrors the JSON structure.
+    private final ConcurrentHashMap<String, Map<String, Object>> runtimeWorldOverrides = new ConcurrentHashMap<>();
+
+    // Runtime XP blacklist — world patterns added here are checked in addition to
+    // the file-based XP_Blacklisted_Worlds. Supports wildcards (*) and substring matching.
+    private final Set<String> runtimeXpBlacklistedWorlds = ConcurrentHashMap.newKeySet();
+    private final Set<String> runtimeXpBlacklistedWorldsView = Collections.unmodifiableSet(runtimeXpBlacklistedWorlds);
 
     private EndlessLevelingAPI() {
     }
@@ -402,6 +429,125 @@ public final class EndlessLevelingAPI {
     }
 
     // ------------
+    // Entity XP multipliers
+    // ------------
+
+    /**
+     * Register an XP multiplier for a specific entity. When this entity dies, the
+     * base XP reward is multiplied by this value. Multipliers from different sources
+     * do not stack — only a single value per entity is stored. Set to 1.0 to clear.
+     */
+    public void setEntityXpMultiplier(int entityIndex, double multiplier) {
+        if (multiplier == 1.0D) {
+            entityXpMultipliers.remove(entityIndex);
+        } else {
+            entityXpMultipliers.put(entityIndex, multiplier);
+        }
+    }
+
+    public void clearEntityXpMultiplier(int entityIndex) {
+        entityXpMultipliers.remove(entityIndex);
+    }
+
+    public double getEntityXpMultiplier(int entityIndex) {
+        return entityXpMultipliers.getOrDefault(entityIndex, 1.0D);
+    }
+
+    // ------------
+    // Mob post-process hooks
+    // ------------
+
+    /**
+     * Register a listener that is called after MobLevelingSystem assigns a level
+     * to a mob for the first time. External mods can use this to apply additional
+     * modifiers (health, effects, nameplates) immediately after level assignment.
+     */
+    public void registerMobPostProcessListener(MobPostProcessListener listener) {
+        if (listener != null) {
+            mobPostProcessListeners.add(listener);
+        }
+    }
+
+    public void unregisterMobPostProcessListener(MobPostProcessListener listener) {
+        if (listener != null) {
+            mobPostProcessListeners.remove(listener);
+        }
+    }
+
+    /**
+     * Fire all registered mob post-process listeners. Called internally by
+     * MobLevelingSystem — external mods should not call this directly.
+     */
+    public void fireMobPostProcessListeners(Ref<EntityStore> ref, Store<EntityStore> store,
+            CommandBuffer<EntityStore> commandBuffer, int assignedLevel) {
+        for (MobPostProcessListener listener : mobPostProcessListeners) {
+            try {
+                listener.onMobProcessed(ref, store, commandBuffer, assignedLevel);
+            } catch (Exception e) {
+                // Isolate listener failures so they don't break the mob leveling pipeline.
+            }
+        }
+    }
+
+    // ------------
+    // Entity stat modifier helpers
+    // ------------
+
+    /**
+     * Apply a named multiplicative health modifier to a mob's max HP via EntityStatMap.
+     * The modifier stacks with existing modifiers (EL health scaling, etc.) and is
+     * identified by the given key for later removal.
+     *
+     * @param modifierKey unique key identifying this modifier (e.g. "ELITE_HEALTH_SCALE")
+     * @param multiplier  raw multiplicative factor applied to max HP (e.g. 1.5 for +50%)
+     */
+    public boolean applyHealthModifier(Ref<EntityStore> ref, Store<EntityStore> store,
+            CommandBuffer<EntityStore> commandBuffer, String modifierKey, float multiplier) {
+        if (ref == null || store == null || commandBuffer == null
+                || modifierKey == null || modifierKey.isBlank()) {
+            return false;
+        }
+        EntityStatMap statMap = commandBuffer.getComponent(ref, EntityStatMap.getComponentType());
+        if (statMap == null) {
+            return false;
+        }
+        var healthStat = statMap.get(DefaultEntityStatTypes.getHealth());
+        if (healthStat == null) {
+            return false;
+        }
+        statMap.putModifier(DefaultEntityStatTypes.getHealth(), modifierKey,
+                new StaticModifier(Modifier.ModifierTarget.MAX, StaticModifier.CalculationType.MULTIPLICATIVE,
+                        multiplier));
+        return true;
+    }
+
+    /**
+     * Remove a previously applied named health modifier from a mob.
+     */
+    public boolean removeHealthModifier(Ref<EntityStore> ref, Store<EntityStore> store,
+            CommandBuffer<EntityStore> commandBuffer, String modifierKey) {
+        if (ref == null || store == null || commandBuffer == null
+                || modifierKey == null || modifierKey.isBlank()) {
+            return false;
+        }
+        EntityStatMap statMap = commandBuffer.getComponent(ref, EntityStatMap.getComponentType());
+        if (statMap == null) {
+            return false;
+        }
+        Modifier removed = statMap.removeModifier(DefaultEntityStatTypes.getHealth(), modifierKey);
+        return removed != null;
+    }
+
+    /**
+     * Write arbitrary text to any registered NPC nameplate segment by ID.
+     * Convenience wrapper around {@link NameplateBuilderCompatibility#setNpcSegmentText}.
+     */
+    public boolean setNpcNameplateSegment(Store<EntityStore> store, Ref<EntityStore> ref,
+            String segmentId, String text) {
+        return NameplateBuilderCompatibility.setNpcSegmentText(store, ref, segmentId, text);
+    }
+
+    // ------------
     // Mob overrides
     // ------------
 
@@ -540,6 +686,184 @@ public final class EndlessLevelingAPI {
         if (mobLevelingManager != null) {
             mobLevelingManager.reloadWorldSettingsOnly();
         }
+    }
+
+    // -------------------------------------------------------
+    // Runtime world overrides (programmatic world-settings)
+    // -------------------------------------------------------
+
+    /**
+     * Set the mob level range for a world. Internally sets the Level_Source to FIXED
+     * with the given range, which overrides any file-based world-settings for this key.
+     * Call {@link #reloadWorldSettings()} afterwards to apply.
+     */
+    public void setWorldLevelRange(String worldKey, int minLevel, int maxLevel) {
+        if (worldKey == null || worldKey.isBlank()) return;
+        Map<String, Object> world = runtimeWorldOverrides.computeIfAbsent(worldKey, k -> new ConcurrentHashMap<>());
+        world.put("Level_Source", Map.of(
+                "Mode", "FIXED",
+                "Fixed_Level", Map.of("Level", minLevel == maxLevel
+                        ? String.valueOf(minLevel)
+                        : minLevel + "-" + maxLevel)));
+    }
+
+    /**
+     * Pin a specific mob type to a fixed level in a world. The mob type ID is
+     * normalized (uppercased, dashes/spaces to underscores) to match EL's internal
+     * convention.
+     * Call {@link #reloadWorldSettings()} afterwards to apply.
+     */
+    @SuppressWarnings("unchecked")
+    public void setWorldMobLevel(String worldKey, String mobTypeId, int fixedLevel) {
+        if (worldKey == null || worldKey.isBlank() || mobTypeId == null || mobTypeId.isBlank()) return;
+        String normalized = mobTypeId.trim().replace('-', '_').replace('.', '_')
+                .replace(' ', '_').toUpperCase(Locale.ROOT);
+        Map<String, Object> world = runtimeWorldOverrides.computeIfAbsent(worldKey, k -> new ConcurrentHashMap<>());
+        Map<String, Object> mobOverrides = (Map<String, Object>) world.computeIfAbsent(
+                "Mob_Overrides", k -> new ConcurrentHashMap<>());
+        mobOverrides.put(normalized, Map.of("Level", fixedLevel));
+    }
+
+    /**
+     * Set a global XP multiplier for a world. Use "default" as the key to affect
+     * the overworld / any world without a specific override.
+     * Call {@link #reloadWorldSettings()} afterwards to apply.
+     */
+    public void setWorldXpMultiplier(String worldKey, double multiplier) {
+        if (worldKey == null || worldKey.isBlank()) return;
+        Map<String, Object> world = runtimeWorldOverrides.computeIfAbsent(worldKey, k -> new ConcurrentHashMap<>());
+        world.put("Experience", Map.of("Global_XP_Multiplier", multiplier));
+    }
+
+    /** Remove all runtime overrides for a specific world key. */
+    public void clearWorldOverrides(String worldKey) {
+        if (worldKey != null) runtimeWorldOverrides.remove(worldKey);
+    }
+
+    /** Remove all runtime world overrides. */
+    public void clearAllWorldOverrides() {
+        runtimeWorldOverrides.clear();
+    }
+
+    /**
+     * Build the runtime overrides as a single map matching the World_Overrides JSON
+     * structure. Called internally by MobLevelingManager during settings reload.
+     * Returns an empty map if no runtime overrides are registered.
+     */
+    public Map<String, Object> buildRuntimeWorldOverridesMap() {
+        if (runtimeWorldOverrides.isEmpty()) return Map.of();
+        Map<String, Object> result = new LinkedHashMap<>();
+        Map<String, Object> worldOverrides = new LinkedHashMap<>();
+        for (Map.Entry<String, Map<String, Object>> entry : runtimeWorldOverrides.entrySet()) {
+            worldOverrides.put(entry.getKey(), new LinkedHashMap<>(entry.getValue()));
+        }
+        result.put("World_Overrides", worldOverrides);
+        return result;
+    }
+
+    // -------------------------------------------------------
+    // Runtime XP world blacklist
+    // -------------------------------------------------------
+
+    /**
+     * Add a world pattern to the runtime XP blacklist. Mobs killed in worlds
+     * matching this pattern will grant no XP. Supports wildcards (*) and
+     * substring matching, same rules as XP_Blacklisted_Worlds in world-settings.
+     * Takes effect immediately — no reload needed.
+     */
+    public void addXpBlacklistedWorld(String pattern) {
+        if (pattern != null && !pattern.isBlank()) {
+            runtimeXpBlacklistedWorlds.add(pattern.trim());
+        }
+    }
+
+    /** Remove a pattern previously added via {@link #addXpBlacklistedWorld}. */
+    public void removeXpBlacklistedWorld(String pattern) {
+        if (pattern != null) {
+            runtimeXpBlacklistedWorlds.remove(pattern.trim());
+        }
+    }
+
+    /** Clear all runtime XP blacklist patterns. */
+    public void clearXpBlacklistedWorlds() {
+        runtimeXpBlacklistedWorlds.clear();
+    }
+
+    /** Returns an unmodifiable view of the runtime XP blacklist patterns. */
+    public Set<String> getRuntimeXpBlacklistedWorlds() {
+        return runtimeXpBlacklistedWorldsView;
+    }
+
+    // -------------------------------------------------------
+    // Chat / notification customization
+    // -------------------------------------------------------
+
+    /**
+     * Override the command shown in EL's skill-point notifications and chat messages.
+     * For example, set to "/rl hub" so players see "Use /rl hub to spend them."
+     * Pass null to reset to default ("/lvl").
+     */
+    public void setCommandPrefix(String prefix) {
+        if (prefix == null) {
+            FixedValue.ROOT_COMMAND.reset();
+        } else {
+            FixedValue.ROOT_COMMAND.setValue(prefix);
+        }
+    }
+
+    /**
+     * Override the chat prefix EL prepends to chat messages (default: "[EndlessLeveling] ").
+     * Pass null to reset to default.
+     */
+    public void setChatPrefix(String prefix) {
+        if (prefix == null) {
+            FixedValue.CHAT_PREFIX.reset();
+        } else {
+            FixedValue.CHAT_PREFIX.setValue(prefix);
+        }
+    }
+
+    // -------------------------------------------------------
+    // Augment snapshot / restore
+    // -------------------------------------------------------
+
+    /**
+     * Take a snapshot of a player's currently selected augments. Returns an immutable
+     * copy of the tier-key → augment-id map. This can be stored and later passed to
+     * {@link #restoreAugments} to revert the player's augment state.
+     */
+    public Map<String, String> snapshotAugments(UUID playerUuid) {
+        PlayerData data = getData(playerUuid);
+        if (data == null) return Collections.emptyMap();
+        return data.getSelectedAugmentsSnapshot();
+    }
+
+    /**
+     * Replace a player's selected augments with a previously captured snapshot.
+     * Clears the current selections first, then restores each entry from the snapshot.
+     */
+    public void restoreAugments(UUID playerUuid, Map<String, String> snapshot) {
+        PlayerData data = getData(playerUuid);
+        if (data == null || snapshot == null) return;
+        data.clearSelectedAugments();
+        for (Map.Entry<String, String> entry : snapshot.entrySet()) {
+            data.setSelectedAugmentForTier(entry.getKey(), entry.getValue());
+        }
+    }
+
+    /**
+     * Add a temporary augment selection for a player, stacking with existing picks.
+     * Uses the augment's tier as the selection key (with automatic #2, #3 suffixes
+     * if that tier already has a selection). Returns false if the player or augment
+     * is not found.
+     */
+    public boolean applyTempAugment(UUID playerUuid, String augmentId) {
+        PlayerData data = getData(playerUuid);
+        if (data == null || augmentId == null || augmentId.isBlank()) return false;
+        AugmentDefinition def = getAugmentDefinition(augmentId);
+        if (def == null) return false;
+        data.addSelectedAugmentForTier(def.getTier().name(), augmentId);
+        return true;
     }
 
     /**

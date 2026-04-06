@@ -1,6 +1,7 @@
 package com.airijko.endlessleveling.mob;
 
 import com.airijko.endlessleveling.EndlessLeveling;
+import com.airijko.endlessleveling.api.EndlessLevelingAPI;
 import com.airijko.endlessleveling.augments.MobAugmentExecutor;
 import com.airijko.endlessleveling.compatibility.NameplateBuilderCompatibility;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
@@ -807,6 +808,8 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
 
         if (state.appliedLevel <= 0) {
             state.appliedLevel = mobLevel;
+            // Notify external mods that a mob has been assigned its level for the first time.
+            EndlessLevelingAPI.get().fireMobPostProcessListeners(ref, store, commandBuffer, mobLevel);
         }
 
         // Apply/retry mob augment registration and passive-stat ticks before health scaling.
