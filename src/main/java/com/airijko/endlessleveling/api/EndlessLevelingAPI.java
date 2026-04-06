@@ -109,7 +109,7 @@ public final class EndlessLevelingAPI {
     private final Set<String> runtimeXpBlacklistedWorldsView = Collections.unmodifiableSet(runtimeXpBlacklistedWorlds);
 
     // Notification suppression — suppressed types are silently skipped by EL's notification code.
-    private final Set<ELNotificationType> suppressedNotifications = EnumSet.noneOf(ELNotificationType.class);
+    private final Set<ELNotificationType> suppressedNotifications = ConcurrentHashMap.newKeySet();
 
     private EndlessLevelingAPI() {
     }
