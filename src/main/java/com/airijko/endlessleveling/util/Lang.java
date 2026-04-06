@@ -15,9 +15,8 @@ import javax.annotation.Nonnull;
  * <ul>
  *   <li>{@link #tr} methods return pre-resolved {@code String} values
  *       (server-side resolution, positional args like {0}, {1})</li>
- *   <li>{@link #message} methods return {@link Message} objects backed by
- *       {@code Message.translation()} so the <b>client</b> resolves the
- *       translation in the player's own language</li>
+ *   <li>{@link #message} methods return {@link Message} objects with
+ *       server-resolved text wrapped in {@code Message.raw()}</li>
  * </ul>
  */
 public final class Lang {
@@ -69,36 +68,41 @@ public final class Lang {
         return tr(playerUuid, localizationKey.key(), localizationKey.fallback(), args);
     }
 
-    // ---- Message-based translation (client-side resolution via Hytale I18n) ----
+    // ---- Message-based translation (server-side resolution) ----
 
     /**
-     * Returns a {@link Message} that the client resolves in the player's language.
-     * Uses the fully-qualified I18n key ("endlessleveling.{key}").
+     * Returns a {@link Message} with server-resolved translation text.
      *
-     * Use this instead of {@code Message.raw(Lang.tr(...))} when sending messages
-     * to players, so the client displays text in their own language.
+     * Mod translation keys are only loaded into the server's I18nModule;
+     * the Hytale client does not receive mod .lang files, so
+     * {@code Message.translation()} would display raw keys in chat,
+     * notifications, and event titles.  Resolving server-side via
+     * {@code Message.raw(tr(...))} ensures players always see real text.
      */
     @Nonnull
     public static Message message(@Nonnull LocalizationKey localizationKey) {
-        return Message.translation(localizationKey.i18nKey());
+        return Message.raw(tr(localizationKey));
     }
 
     /**
-     * Returns a {@link Message} for the given translation key (without prefix).
-     * The "endlessleveling." prefix is added automatically.
+     * Returns a server-resolved {@link Message} for the given translation key
+     * (without the "endlessleveling." prefix — it is added internally).
      */
     @Nonnull
     public static Message message(@Nonnull String key) {
-        return Message.translation(LanguageManager.I18N_KEY_PREFIX + key);
+        return Message.raw(tr(key, key));
     }
 
     /**
-     * Returns a {@link Message} for the given fully-qualified I18n key.
-     * Use this when the key already includes the "endlessleveling." prefix.
+     * Returns a server-resolved {@link Message} for the given fully-qualified
+     * I18n key.  Use when the key already includes the "endlessleveling." prefix.
      */
     @Nonnull
     public static Message messageFullKey(@Nonnull String fullI18nKey) {
-        return Message.translation(fullI18nKey);
+        String stripped = fullI18nKey.startsWith(LanguageManager.I18N_KEY_PREFIX)
+                ? fullI18nKey.substring(LanguageManager.I18N_KEY_PREFIX.length())
+                : fullI18nKey;
+        return Message.raw(tr(stripped, fullI18nKey));
     }
 
     // ---- Internal ----
