@@ -5,10 +5,10 @@
 meta.locale_name = Türkçe (TR)
 notify.skills.unspent.primary = Harcanmamış {0} yetenek puanın var!
 notify.skills.unspent.secondary.open = Aç
-notify.skills.unspent.secondary.close =  ve onları harca
+notify.skills.unspent.secondary.close = ve onları harca
 notify.skills.chat.have = Hâlâ
-notify.skills.chat.use =  yetenek puanın var. Harcamak için
-notify.skills.chat.end =  kullan.
+notify.skills.chat.use = yetenek puanın var. Harcamak için
+notify.skills.chat.end = kullan.
 notify.augments.available.header = Seçebileceğin augmentler var:
 notify.augments.available.footer = Seçmek için /lvl augments kullan.
 notify.augments.cooldown.ready = {0} tekrar hazır!
@@ -44,10 +44,10 @@ hud.mob.level.single = Sv. {0}
 hud.mob.level.single_compact = Sv {0}
 hud.mob.level.range = Sv. {0}-{1}
 hud.mob.prefix = Yakındaki yaratıklar:
-hud.level.no_data = SV --   XP: 0 / --
-hud.level.without_leveling = SV {0}   XP: {1}
-hud.level.max = SV {0}   MAKS SEVİYE
-hud.level.progress = SV {0}   XP: {1} / {2}
+hud.level.no_data = SV -- XP: 0 / --
+hud.level.without_leveling = SV {0} XP: {1}
+hud.level.max = SV {0} MAKS SEVİYE
+hud.level.progress = SV {0} XP: {1} / {2}
 ui.common.toggle.true = AÇIK
 ui.common.toggle.false = KAPALI
 ui.common.toggle.disabled = DEVRE DIŞI
@@ -149,15 +149,15 @@ ui.augments.effect.cooldown = Bekleme süresi: {0}
 ui.augments.effect.duration_per_stack = Yığın başına süre: {0}
 ui.augments.effect.duration = Süre: {0}
 ui.augments.effect.max_stacks = Maks yığın: {0}
-ui.augments.effect.note.full_at_health =  (tam değer <= {0}% canda)
-ui.augments.effect.note.full_at_ratio =  (tam değer {0}x oranında)
-ui.augments.effect.note.range =  (menzil {0}-{1})
-ui.augments.effect.note.full_at_distance =  (tam değer {0} mesafede)
-ui.augments.effect.note.at_max_stacks =  (maks yığında)
-ui.augments.effect.note.max_value_at_health =  (maks değer {0}% canda)
-ui.augments.effect.note.missing_health =  (eksik cana göre ölçeklenir)
-ui.augments.effect.note.condition.above =  ({0}% {1} üzerinde)
-ui.augments.effect.note.condition.below =  ({0}% {1} altında)
+ui.augments.effect.note.full_at_health = (tam değer <= {0}% canda)
+ui.augments.effect.note.full_at_ratio = (tam değer {0}x oranında)
+ui.augments.effect.note.range = (menzil {0}-{1})
+ui.augments.effect.note.full_at_distance = (tam değer {0} mesafede)
+ui.augments.effect.note.at_max_stacks = (maks yığında)
+ui.augments.effect.note.max_value_at_health = (maks değer {0}% canda)
+ui.augments.effect.note.missing_health = (eksik cana göre ölçeklenir)
+ui.augments.effect.note.condition.above = ({0}% {1} üzerinde)
+ui.augments.effect.note.condition.below = ({0}% {1} altında)
 ui.augments.effect.note.missing_health_line = Eksik cana göre ölçeklenir
 ui.augments.effect.label.strength = Güç
 ui.augments.effect.label.sorcery = Büyü
@@ -400,10 +400,8 @@ ui.races.evolution.criteria.forms = - Gerekli formlar: {0}
 ui.races.evolution.criteria.augments = - Gerekli augmentler: {0}
 ui.races.evolution.criteria.none = Gereksinimler: yok
 ui.races.evolution.criteria.general.none = Gereksinimler: yalnızca yetenek hedefleri
-ui.races.evolution.criteria.general.prefix = Gereksinimler:
-{0}
-ui.races.evolution.criteria.skills.prefix = Eğitilebilir Yetenek Hedefleri:
-{0}
+ui.races.evolution.criteria.general.prefix = Gereksinimler: {0}
+ui.races.evolution.criteria.skills.prefix = Eğitilebilir Yetenek Hedefleri: {0}
 ui.classes.count = {0} {1}
 ui.classes.count_none = 0 mevcut
 ui.classes.count_word.singular = sınıf
@@ -553,10 +551,8 @@ ui.classes.evolution.criteria.forms = - Gerekli formlar: {0}
 ui.classes.evolution.criteria.augments = - Gerekli augmentler: {0}
 ui.classes.evolution.criteria.none = Gereksinimler: yok
 ui.classes.evolution.criteria.general.none = Gereksinimler: yalnızca yetenek hedefleri
-ui.classes.evolution.criteria.general.prefix = Gereksinimler:
-{0}
-ui.classes.evolution.criteria.skills.prefix = Eğitilebilir Yetenek Hedefleri:
-{0}
+ui.classes.evolution.criteria.general.prefix = Gereksinimler: {0}
+ui.classes.evolution.criteria.skills.prefix = Eğitilebilir Yetenek Hedefleri: {0}
 ui.skills.unknown = Bilinmeyen
 ui.skills.points = YETENEK PUANLARI: {0}
 ui.skills.page.title = Yetenek Nitelikleri
@@ -752,3 +748,8 @@ ui.addons.filter.mod_partners = Gösterilen: Mod Ortakları
 ui.addons.filter.community = Gösterilen: Topluluk Eklentileri
 ui.addons.filter.partner_extensions = Gösterilen: Ortak Uzantıları
 ui.addons.filter.all = Gösterilen: Endless Leveling Eklentileri
+
+
+# ===== Ported from legacy YAML =====
+ui.common.toggle.False = KAPALI
+ui.common.toggle.True = AÇIK

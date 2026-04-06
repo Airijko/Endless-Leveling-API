@@ -37,7 +37,6 @@ public class PluginFilesManager {
     private static final String RACES_FOLDER_NAME = "races";
     private static final String CLASSES_FOLDER_NAME = "classes";
     private static final String AUGMENTS_FOLDER_NAME = "augments";
-    private static final String LANG_FOLDER_NAME = "lang";
     private static final String WORLD_SETTINGS_FOLDER_NAME = "world-settings";
     private static final String WEAPONS_FILE_NAME = "weapons.json";
     private static final String PARTYDATA_FILE_NAME = "parties.json";
@@ -63,7 +62,6 @@ public class PluginFilesManager {
     private final File racesFolder;
     private final File classesFolder;
     private final File augmentsFolder;
-    private final File langFolder;
     private final File worldSettingsFolder;
 
     private final File weaponsFile;
@@ -88,7 +86,6 @@ public class PluginFilesManager {
         this.racesFolder = new File(pluginFolder, RACES_FOLDER_NAME);
         this.classesFolder = new File(pluginFolder, CLASSES_FOLDER_NAME);
         this.augmentsFolder = new File(pluginFolder, AUGMENTS_FOLDER_NAME);
-        this.langFolder = new File(pluginFolder, LANG_FOLDER_NAME);
         this.worldSettingsFolder = new File(pluginFolder, WORLD_SETTINGS_FOLDER_NAME);
 
         createFolders();
@@ -104,7 +101,6 @@ public class PluginFilesManager {
         // Seed bundled augments only when the directory is empty so per-file deletions can disable augments.
         seedResourceDirectoryIfEmpty("augments", augmentsFolder);
         seedResourceDirectoryIfEmpty("world-settings", worldSettingsFolder);
-        exportResourceDirectory("lang", langFolder, false);
     }
 
     /** Create the plugin folder and player data folder */
@@ -116,7 +112,6 @@ public class PluginFilesManager {
             Files.createDirectories(racesFolder.toPath());
             Files.createDirectories(classesFolder.toPath());
             Files.createDirectories(augmentsFolder.toPath());
-            Files.createDirectories(langFolder.toPath());
             Files.createDirectories(worldSettingsFolder.toPath());
             LOGGER.atInfo().log("Plugin folders initialized at: %s", pluginFolder.getAbsolutePath());
         } catch (IOException e) {
@@ -156,10 +151,6 @@ public class PluginFilesManager {
 
     public File getAugmentsFolder() {
         return augmentsFolder;
-    }
-
-    public File getLangFolder() {
-        return langFolder;
     }
 
     public File getWorldSettingsFolder() {

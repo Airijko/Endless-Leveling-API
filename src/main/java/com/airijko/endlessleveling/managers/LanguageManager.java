@@ -4,12 +4,13 @@ import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.player.PlayerData;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.modules.i18n.I18nModule;
-import org.yaml.snakeyaml.Yaml;
 
-import java.io.File;
-import java.io.FileReader;
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.Reader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -21,18 +22,19 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Stream;
 
 import javax.annotation.Nullable;
 
 /**
- * Language manager that delegates to Hytale's built-in I18nModule as the
- * primary translation source. The mod's .lang files in
- * Server/Languages/{locale}/endlessleveling.lang are loaded automatically
- * by the I18n system from the asset pack.
- *
- * The legacy YAML lang/ files are kept as an override layer so that server
- * operators who have customized translations continue to work.
+ * Language manager that loads translations from the mod's .lang files at
+ * {@code Server/Languages/{locale}/endlessleveling.lang}.
+ * <p>
+ * Resolution order:
+ * <ol>
+ *   <li>Deployed .lang file on disk (allows server operator customisation)</li>
+ *   <li>Bundled .lang file from the JAR (guaranteed baseline)</li>
+ *   <li>Hytale I18nModule (in case the asset-pack has additional keys)</li>
+ * </ol>
  */
 public class LanguageManager {
 
@@ -40,26 +42,23 @@ public class LanguageManager {
     private static final String DEFAULT_LOCALE = "en_US";
     /** Prefix that Hytale's I18n system applies to keys from endlessleveling.lang */
     public static final String I18N_KEY_PREFIX = "endlessleveling.";
+    private static final String LANG_RESOURCE_DIR = "Server/Languages/";
+    private static final String LANG_FILE_NAME = "endlessleveling.lang";
 
-    private final PluginFilesManager filesManager;
     private final ConfigManager configManager;
-    private final boolean forceBuiltinLanguages;
-    private final Yaml yaml = new Yaml();
+    /** Deployed Server/Languages/ directory on disk (mod root). */
+    private final Path serverLanguagesDir;
 
     private volatile String activeLocale = DEFAULT_LOCALE;
     private volatile String fallbackLocale = DEFAULT_LOCALE;
-    // Legacy YAML override translations
     private volatile Map<String, String> activeTranslations = Collections.emptyMap();
     private volatile Map<String, String> fallbackTranslations = Collections.emptyMap();
     private final Map<String, Map<String, String>> localeCache = new ConcurrentHashMap<>();
 
     public LanguageManager(PluginFilesManager filesManager, ConfigManager configManager) {
-        this.filesManager = filesManager;
         this.configManager = configManager;
-        Object forceFlag = configManager != null
-                ? configManager.get("force_builtin_languages", Boolean.TRUE, false)
-                : Boolean.TRUE;
-        this.forceBuiltinLanguages = parseBoolean(forceFlag, true);
+        this.serverLanguagesDir = filesManager.getPluginFolder().toPath()
+                .resolve("Server").resolve("Languages");
         reload();
     }
 
@@ -67,7 +66,6 @@ public class LanguageManager {
         String configuredLocale = normalizeLocale(Objects.toString(
                 configManager != null ? configManager.get("language.locale", DEFAULT_LOCALE, false) : DEFAULT_LOCALE,
                 DEFAULT_LOCALE));
-        syncBuiltinLanguagesIfNeeded();
 
         String configuredFallback = normalizeLocale(Objects.toString(
                 configManager != null ? configManager.get("language.fallback_locale", DEFAULT_LOCALE, false)
@@ -76,12 +74,12 @@ public class LanguageManager {
 
         localeCache.clear();
 
-        Map<String, String> loadedFallback = loadLocaleMap(configuredFallback, true);
+        Map<String, String> loadedFallback = loadLangTranslations(configuredFallback);
         Map<String, String> loadedActive;
         if (configuredLocale.equalsIgnoreCase(configuredFallback)) {
             loadedActive = loadedFallback;
         } else {
-            loadedActive = loadLocaleMap(configuredLocale, false);
+            loadedActive = loadLangTranslations(configuredLocale);
         }
 
         fallbackLocale = configuredFallback;
@@ -89,7 +87,7 @@ public class LanguageManager {
         fallbackTranslations = loadedFallback;
         activeTranslations = loadedActive;
 
-        LOGGER.atInfo().log("Language loaded: locale=%s, fallback=%s, yaml_keys=%d, i18n_primary=true",
+        LOGGER.atInfo().log("Language loaded: locale=%s, fallback=%s, lang_keys=%d",
                 activeLocale, fallbackLocale, activeTranslations.size());
     }
 
@@ -98,38 +96,36 @@ public class LanguageManager {
     }
 
     public List<String> getAvailableLocales() {
-        File folder = filesManager.getLangFolder();
-        if (folder == null || !folder.exists() || !folder.isDirectory()) {
-            return List.of(DEFAULT_LOCALE);
-        }
-
-        File[] files = folder.listFiles((dir, name) -> name != null && name.toLowerCase(Locale.ROOT).endsWith(".yml"));
-        if (files == null || files.length == 0) {
-            return List.of(DEFAULT_LOCALE);
-        }
-
-        List<String> locales = new ArrayList<>();
-        for (File file : files) {
-            String name = file.getName();
-            int dot = name.lastIndexOf('.');
-            if (dot <= 0) {
-                continue;
+        // Scan deployed Server/Languages/ directory for locale folders with .lang files
+        if (Files.isDirectory(serverLanguagesDir)) {
+            try (DirectoryStream<Path> stream = Files.newDirectoryStream(serverLanguagesDir,
+                    entry -> Files.isDirectory(entry)
+                            && Files.exists(entry.resolve(LANG_FILE_NAME)))) {
+                List<String> locales = new ArrayList<>();
+                for (Path dir : stream) {
+                    locales.add(fromHytaleLocale(dir.getFileName().toString()));
+                }
+                if (!locales.isEmpty()) {
+                    locales.sort(Comparator.naturalOrder());
+                    return Collections.unmodifiableList(locales);
+                }
+            } catch (IOException e) {
+                LOGGER.atWarning().log("Failed to scan language directories: %s", e.getMessage());
             }
-            locales.add(normalizeLocale(name.substring(0, dot)));
         }
-
-        if (locales.isEmpty()) {
-            return List.of(DEFAULT_LOCALE);
-        }
-
-        locales.sort(Comparator.naturalOrder());
-        return Collections.unmodifiableList(locales.stream().distinct().toList());
+        return List.of(DEFAULT_LOCALE);
     }
 
     public boolean isLocaleAvailable(String locale) {
-        String normalized = normalizeLocale(locale);
-        File langFile = new File(filesManager.getLangFolder(), normalized + ".yml");
-        return langFile.exists() && langFile.isFile();
+        String hytaleLocale = toHytaleLocale(normalizeLocale(locale));
+        // Deployed directory check
+        Path langFile = serverLanguagesDir.resolve(hytaleLocale).resolve(LANG_FILE_NAME);
+        if (Files.exists(langFile)) {
+            return true;
+        }
+        // JAR resource check
+        String resourcePath = LANG_RESOURCE_DIR + hytaleLocale + "/" + LANG_FILE_NAME;
+        return LanguageManager.class.getClassLoader().getResource(resourcePath) != null;
     }
 
     public void invalidateLocaleCache(String locale) {
@@ -140,12 +136,13 @@ public class LanguageManager {
     /**
      * Translates a key using the server's active locale.
      * Resolution order:
-     * 1. YAML override (active locale)
+     * 1. .lang translations (active locale)
      * 2. Hytale I18nModule (active locale, prefixed key)
-     * 3. YAML override (fallback locale)
+     * 3. .lang translations (fallback locale)
      * 4. Hytale I18nModule (fallback locale, prefixed key)
-     * 5. Provided fallback string
-     * 6. The key itself
+     * 5. Hytale I18nModule (en-US)
+     * 6. Provided fallback string
+     * 7. The key itself
      */
     public String tr(String key, String fallback, Object... args) {
         String template = resolveTemplate(key, fallback);
@@ -154,8 +151,6 @@ public class LanguageManager {
 
     /**
      * Translates a key using a specific player's preferred locale.
-     * Uses the player's Hytale client language (PlayerRef.getLanguage())
-     * with fallback to PlayerData language preference and then server default.
      */
     public String tr(UUID playerUuid, String key, String fallback, Object... args) {
         String locale = resolvePlayerLocale(playerUuid);
@@ -217,7 +212,7 @@ public class LanguageManager {
             return fallback != null ? fallback : "";
         }
 
-        // 1. YAML override (active locale)
+        // 1. .lang translations (active locale)
         String translated = activeTranslations.get(key);
         if (translated != null) {
             return translated;
@@ -229,7 +224,7 @@ public class LanguageManager {
             return translated;
         }
 
-        // 3. YAML override (fallback locale)
+        // 3. .lang translations (fallback locale)
         translated = fallbackTranslations.get(key);
         if (translated != null) {
             return translated;
@@ -259,7 +254,7 @@ public class LanguageManager {
 
         String normalizedLocale = normalizeLocale(locale);
 
-        // 1. YAML override (requested locale)
+        // 1. .lang translations (requested locale)
         Map<String, String> localeTranslations = getLocaleTranslations(normalizedLocale);
         String translated = localeTranslations.get(key);
         if (translated != null) {
@@ -272,7 +267,7 @@ public class LanguageManager {
             return translated;
         }
 
-        // 3. YAML fallback
+        // 3. .lang fallback translations
         translated = fallbackTranslations.get(key);
         if (translated != null) {
             return translated;
@@ -284,7 +279,7 @@ public class LanguageManager {
             return translated;
         }
 
-        // 5. YAML active
+        // 5. .lang active translations
         translated = activeTranslations.get(key);
         if (translated != null) {
             return translated;
@@ -307,7 +302,7 @@ public class LanguageManager {
         if (normalized.equalsIgnoreCase(fallbackLocale)) {
             return fallbackTranslations;
         }
-        return localeCache.computeIfAbsent(normalized, loc -> loadLocaleMap(loc, false));
+        return localeCache.computeIfAbsent(normalized, this::loadLangTranslations);
     }
 
     /**
@@ -330,53 +325,65 @@ public class LanguageManager {
         return normalizeLocale(locale.trim().replace('-', '_'));
     }
 
-    // ---- Legacy YAML loading (override layer) ----
+    // ---- .lang file loading ----
 
-    private Map<String, String> loadLocaleMap(String locale, boolean required) {
-        File langFile = new File(filesManager.getLangFolder(), locale + ".yml");
-        if (!langFile.exists()) {
-            if (required) {
-                LOGGER.atWarning().log("Language file %s is missing. Falling back to empty translations.",
-                        langFile.getAbsolutePath());
+    /**
+     * Loads translations from the endlessleveling.lang file for the given locale.
+     * Tries the deployed Server/Languages/ directory first (allows server-operator
+     * customisation), then falls back to the bundled JAR resource.
+     */
+    private Map<String, String> loadLangTranslations(String locale) {
+        String hytaleLocale = toHytaleLocale(locale);
+
+        // Try deployed file first
+        Path deployedFile = serverLanguagesDir.resolve(hytaleLocale).resolve(LANG_FILE_NAME);
+        if (Files.exists(deployedFile)) {
+            try (BufferedReader reader = Files.newBufferedReader(deployedFile, StandardCharsets.UTF_8)) {
+                Map<String, String> map = parseLangFile(reader);
+                LOGGER.atInfo().log("Loaded %d lang keys from deployed file for %s", map.size(), hytaleLocale);
+                return map;
+            } catch (IOException e) {
+                LOGGER.atWarning().log("Failed to load deployed .lang file %s: %s", deployedFile, e.getMessage());
             }
-            return Collections.emptyMap();
         }
 
-        try (Reader reader = new FileReader(langFile)) {
-            Object root = yaml.load(reader);
-            Map<String, String> flattened = new ConcurrentHashMap<>();
-            flattenNode("", root, flattened);
-            return Collections.unmodifiableMap(flattened);
-        } catch (IOException | RuntimeException ex) {
-            LOGGER.atWarning().log("Failed to load language file %s: %s", langFile.getAbsolutePath(),
-                    ex.getMessage());
+        // Fall back to JAR resources
+        String resourcePath = LANG_RESOURCE_DIR + hytaleLocale + "/" + LANG_FILE_NAME;
+        try (InputStream is = LanguageManager.class.getClassLoader().getResourceAsStream(resourcePath)) {
+            if (is == null) {
+                LOGGER.atWarning().log("Language .lang file not found: %s", resourcePath);
+                return Collections.emptyMap();
+            }
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
+                Map<String, String> map = parseLangFile(reader);
+                LOGGER.atInfo().log("Loaded %d lang keys from JAR resources for %s", map.size(), hytaleLocale);
+                return map;
+            }
+        } catch (IOException e) {
+            LOGGER.atWarning().log("Failed to load .lang file from resources %s: %s", resourcePath, e.getMessage());
             return Collections.emptyMap();
         }
     }
 
-    private void flattenNode(String prefix, Object node, Map<String, String> target) {
-        if (node instanceof Map<?, ?> map) {
-            for (Map.Entry<?, ?> entry : map.entrySet()) {
-                if (entry.getKey() == null) {
-                    continue;
-                }
-                String key = entry.getKey().toString().trim();
-                if (key.isEmpty()) {
-                    continue;
-                }
-                String nextPrefix = prefix.isEmpty() ? key : prefix + "." + key;
-                flattenNode(nextPrefix, entry.getValue(), target);
+    private static Map<String, String> parseLangFile(BufferedReader reader) throws IOException {
+        Map<String, String> map = new ConcurrentHashMap<>();
+        String line;
+        while ((line = reader.readLine()) != null) {
+            line = line.trim();
+            if (line.isEmpty() || line.startsWith("#")) {
+                continue;
             }
-            return;
+            int eq = line.indexOf('=');
+            if (eq < 0) {
+                continue;
+            }
+            String key = line.substring(0, eq).trim();
+            String value = line.substring(eq + 1).trim();
+            if (!key.isEmpty()) {
+                map.put(key, value);
+            }
         }
-
-        if (node == null) {
-            return;
-        }
-
-        if (!prefix.isEmpty()) {
-            target.put(prefix, node.toString());
-        }
+        return Collections.unmodifiableMap(map);
     }
 
     static String normalizeLocale(String value) {
@@ -407,82 +414,4 @@ public class LanguageManager {
         return formatted;
     }
 
-    private void syncBuiltinLanguagesIfNeeded() {
-        if (!forceBuiltinLanguages) {
-            return;
-        }
-
-        File langFolder = filesManager.getLangFolder();
-        if (langFolder == null) {
-            LOGGER.atWarning().log("Language folder is null; cannot sync built-in languages.");
-            return;
-        }
-
-        int storedVersion = readLangVersion(langFolder);
-        if (storedVersion == VersionRegistry.BUILTIN_LANG_VERSION) {
-            return;
-        }
-
-        filesManager.archivePathIfExists(langFolder.toPath(), "lang", "lang.version:" + storedVersion);
-        clearDirectory(langFolder.toPath());
-        filesManager.exportResourceDirectory("lang", langFolder, true);
-        writeLangVersion(langFolder, VersionRegistry.BUILTIN_LANG_VERSION);
-        LOGGER.atInfo().log("Synced built-in language files to version %d (force_builtin_languages=true)",
-                VersionRegistry.BUILTIN_LANG_VERSION);
-    }
-
-    private int readLangVersion(File langFolder) {
-        Path versionPath = langFolder.toPath().resolve(VersionRegistry.LANG_VERSION_FILE);
-        if (!Files.exists(versionPath)) {
-            return -1;
-        }
-        try {
-            String text = Files.readString(versionPath).trim();
-            return Integer.parseInt(text);
-        } catch (Exception e) {
-            LOGGER.atWarning().log("Failed to read language version file: %s", e.getMessage());
-            return -1;
-        }
-    }
-
-    private void writeLangVersion(File langFolder, int version) {
-        Path versionPath = langFolder.toPath().resolve(VersionRegistry.LANG_VERSION_FILE);
-        try {
-            Files.writeString(versionPath, Integer.toString(version));
-        } catch (IOException e) {
-            LOGGER.atWarning().log("Failed to write language version file: %s", e.getMessage());
-        }
-    }
-
-    private void clearDirectory(Path folder) {
-        if (folder == null || !Files.exists(folder)) {
-            return;
-        }
-        try (Stream<Path> stream = Files.walk(folder)) {
-            stream.sorted(Comparator.reverseOrder())
-                    .filter(path -> !path.equals(folder))
-                    .forEach(path -> {
-                        try {
-                            Files.deleteIfExists(path);
-                        } catch (IOException e) {
-                            LOGGER.atWarning().log("Failed to delete %s: %s", path, e.getMessage());
-                        }
-                    });
-        } catch (IOException e) {
-            LOGGER.atWarning().log("Failed to clear language directory: %s", e.getMessage());
-        }
-    }
-
-    private boolean parseBoolean(Object value, boolean defaultValue) {
-        if (value instanceof Boolean bool) {
-            return bool;
-        }
-        if (value instanceof String str) {
-            return Boolean.parseBoolean(str.trim());
-        }
-        if (value instanceof Number number) {
-            return number.intValue() != 0;
-        }
-        return defaultValue;
-    }
 }

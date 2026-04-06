@@ -400,12 +400,8 @@ ui.races.evolution.criteria.forms = - Szükséges formák: {0}
 ui.races.evolution.criteria.augments = - Szükséges fejlesztések: {0}
 ui.races.evolution.criteria.none = Követelmények: nincsenek
 ui.races.evolution.criteria.general.none = Követelmények: csak képességcélok
-ui.races.evolution.criteria.general.prefix = Követelmények:
-
-            {0}
-ui.races.evolution.criteria.skills.prefix = Fejleszthető képességcélok:
-
-            {0}
+ui.races.evolution.criteria.general.prefix = Követelmények: {0}
+ui.races.evolution.criteria.skills.prefix = Fejleszthető képességcélok: {0}
 ui.classes.count = {0} {1}
 ui.classes.count_none = 0 elérhető
 ui.classes.count_word.singular = Kaszt
@@ -536,12 +532,8 @@ ui.classes.evolution.criteria.forms = - Szükséges formák: {0}
 ui.classes.evolution.criteria.augments = - Szükséges fejlesztések: {0}
 ui.classes.evolution.criteria.none = Követelmények: nincsenek
 ui.classes.evolution.criteria.general.none = Követelmények: csak képességcélok
-ui.classes.evolution.criteria.general.prefix = Követelmények:
-
-            {0}
-ui.classes.evolution.criteria.skills.prefix = Fejleszthető képességcélok:
-
-            {0}
+ui.classes.evolution.criteria.general.prefix = Követelmények: {0}
+ui.classes.evolution.criteria.skills.prefix = Fejleszthető képességcélok: {0}
 ui.skills.unknown = Ismeretlen
 ui.skills.points = KÉPESSÉGPONTOK: {0}
 ui.skills.page.title = Képesség-tulajdonságok
@@ -760,3 +752,11 @@ ui.addons.filter.mod_partners = Megjelenítés: Mod Partnerek
 ui.addons.filter.community = Megjelenítés: Közösségi Bővítmények
 ui.addons.filter.partner_extensions = Megjelenítés: Partner Kiegészítők
 ui.addons.filter.all = Megjelenítés: Endless Leveling Bővítmények
+
+
+# ===== Ported from legacy YAML =====
+notify.sync.entry = - {0} [{1}: {2} van neki, de {3} kellene] -> /lvl augments reset {0}
+notify.sync.fixall = Összes javítása egyszerre: /lvl augments resetallplayers
+notify.sync.summary = {0} játékosnál eltérő fejlesztési hely szám található:
+ui.common.toggle.False = KI
+ui.common.toggle.True = BE

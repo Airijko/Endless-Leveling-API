@@ -400,12 +400,8 @@ ui.races.evolution.criteria.forms = - Formes requises : {0}
 ui.races.evolution.criteria.augments = - Augmentations requises : {0}
 ui.races.evolution.criteria.none = Prérequis : aucun
 ui.races.evolution.criteria.general.none = Prérequis : objectifs de comp. uniquement
-ui.races.evolution.criteria.general.prefix = Prérequis :
-
-            {0}
-ui.races.evolution.criteria.skills.prefix = Objectifs de compétences :
-
-            {0}
+ui.races.evolution.criteria.general.prefix = Prérequis : {0}
+ui.races.evolution.criteria.skills.prefix = Objectifs de compétences : {0}
 ui.classes.count = {0} {1}
 ui.classes.count_none = 0 disponible
 ui.classes.count_word.singular = Classe
@@ -536,12 +532,8 @@ ui.classes.evolution.criteria.forms = - Formes requises : {0}
 ui.classes.evolution.criteria.augments = - Augmentations requises : {0}
 ui.classes.evolution.criteria.none = Prérequis : aucun
 ui.classes.evolution.criteria.general.none = Prérequis : objectifs de comp. uniquement
-ui.classes.evolution.criteria.general.prefix = Prérequis :
-
-            {0}
-ui.classes.evolution.criteria.skills.prefix = Objectifs de compétences :
-
-            {0}
+ui.classes.evolution.criteria.general.prefix = Prérequis : {0}
+ui.classes.evolution.criteria.skills.prefix = Objectifs de compétences : {0}
 ui.skills.unknown = Inconnu
 ui.skills.points = POINTS DE COMPÉTENCE : {0}
 ui.skills.page.title = Attributs de Compétence
@@ -760,3 +752,11 @@ ui.addons.filter.mod_partners = Affichage : Partenaires du mod
 ui.addons.filter.community = Affichage : Addons communautaires
 ui.addons.filter.partner_extensions = Affichage : Extensions partenaires
 ui.addons.filter.all = Affichage : Addons Endless Leveling
+
+
+# ===== Ported from legacy YAML =====
+notify.sync.entry = - {0} [{1}: possède {2}, devrait avoir {3}] -> /lvl augments reset {0}
+notify.sync.fixall = Pour tout corriger d'un coup : /lvl augments resetallplayers
+notify.sync.summary = {0} joueurs ont des décalages de slots d'augmentation :
+ui.common.toggle.False = NON
+ui.common.toggle.True = OUI

@@ -5,10 +5,10 @@
 meta.locale_name = Polski (PL)
 notify.skills.unspent.primary = Masz {0} niewydanych punktów umiejętności!
 notify.skills.unspent.secondary.open = Otwórz
-notify.skills.unspent.secondary.close =  aby je przydzielić
+notify.skills.unspent.secondary.close = aby je przydzielić
 notify.skills.chat.have = Wciąż masz
-notify.skills.chat.use =  punktów umiejętności. Użyj
-notify.skills.chat.end =  aby je wydać.
+notify.skills.chat.use = punktów umiejętności. Użyj
+notify.skills.chat.end = aby je wydać.
 notify.augments.available.header = Masz dostępne augmenty do wyboru:
 notify.augments.available.footer = Użyj /lvl augments aby wybrać.
 notify.augments.cooldown.ready = {0} jest ponownie gotowe!
@@ -44,10 +44,10 @@ hud.mob.level.single = Poziom {0}
 hud.mob.level.single_compact = Poziom {0}
 hud.mob.level.range = Poziom {0}-{1}
 hud.mob.prefix = Lokalne moby:
-hud.level.no_data = POZ --   XP: 0 / --
-hud.level.without_leveling = POZ {0}   XP: {1}
-hud.level.max = POZ {0}   MAKSYMALNY POZIOM
-hud.level.progress = POZ {0}   XP: {1} / {2}
+hud.level.no_data = POZ -- XP: 0 / --
+hud.level.without_leveling = POZ {0} XP: {1}
+hud.level.max = POZ {0} MAKSYMALNY POZIOM
+hud.level.progress = POZ {0} XP: {1} / {2}
 ui.common.toggle.true = WŁ.
 ui.common.toggle.false = WYŁ.
 ui.common.toggle.disabled = WYŁĄCZONE
@@ -149,15 +149,15 @@ ui.augments.effect.cooldown = Czas odnowienia: {0}
 ui.augments.effect.duration_per_stack = Czas trwania na stos: {0}
 ui.augments.effect.duration = Czas trwania: {0}
 ui.augments.effect.max_stacks = Maks. stosów: {0}
-ui.augments.effect.note.full_at_health =  (pełne przy <= {0}% zdrowia)
-ui.augments.effect.note.full_at_ratio =  (pełne przy {0}x współczynniku)
-ui.augments.effect.note.range =  (zasięg {0}-{1})
-ui.augments.effect.note.full_at_distance =  (pełne przy {0} odległości)
-ui.augments.effect.note.at_max_stacks =  (przy maks. stosach)
-ui.augments.effect.note.max_value_at_health =  (maks. wartość przy {0}% zdrowia)
-ui.augments.effect.note.missing_health =  (skaluje się z brakującym zdrowiem)
-ui.augments.effect.note.condition.above =  (powyżej {0}% {1})
-ui.augments.effect.note.condition.below =  (poniżej {0}% {1})
+ui.augments.effect.note.full_at_health = (pełne przy <= {0}% zdrowia)
+ui.augments.effect.note.full_at_ratio = (pełne przy {0}x współczynniku)
+ui.augments.effect.note.range = (zasięg {0}-{1})
+ui.augments.effect.note.full_at_distance = (pełne przy {0} odległości)
+ui.augments.effect.note.at_max_stacks = (przy maks. stosach)
+ui.augments.effect.note.max_value_at_health = (maks. wartość przy {0}% zdrowia)
+ui.augments.effect.note.missing_health = (skaluje się z brakującym zdrowiem)
+ui.augments.effect.note.condition.above = (powyżej {0}% {1})
+ui.augments.effect.note.condition.below = (poniżej {0}% {1})
 ui.augments.effect.note.missing_health_line = Skaluje się z brakującym zdrowiem
 ui.augments.effect.label.strength = Siła
 ui.augments.effect.label.sorcery = Czary
@@ -400,10 +400,8 @@ ui.races.evolution.criteria.forms = - Wymagane formy: {0}
 ui.races.evolution.criteria.augments = - Wymagane augmenty: {0}
 ui.races.evolution.criteria.none = Wymagania: brak
 ui.races.evolution.criteria.general.none = Wymagania: tylko cele umiejętności
-ui.races.evolution.criteria.general.prefix = Wymagania:
-{0}
-ui.races.evolution.criteria.skills.prefix = Trenowalne Cele Umiejętności:
-{0}
+ui.races.evolution.criteria.general.prefix = Wymagania: {0}
+ui.races.evolution.criteria.skills.prefix = Trenowalne Cele Umiejętności: {0}
 ui.classes.count = {0} {1}
 ui.classes.count_none = 0 dostępnych
 ui.classes.count_word.singular = klasa
@@ -553,10 +551,8 @@ ui.classes.evolution.criteria.forms = - Wymagane formy: {0}
 ui.classes.evolution.criteria.augments = - Wymagane augmenty: {0}
 ui.classes.evolution.criteria.none = Wymagania: brak
 ui.classes.evolution.criteria.general.none = Wymagania: tylko cele umiejętności
-ui.classes.evolution.criteria.general.prefix = Wymagania:
-{0}
-ui.classes.evolution.criteria.skills.prefix = Trenowalne Cele Umiejętności:
-{0}
+ui.classes.evolution.criteria.general.prefix = Wymagania: {0}
+ui.classes.evolution.criteria.skills.prefix = Trenowalne Cele Umiejętności: {0}
 ui.skills.unknown = Nieznane
 ui.skills.points = PUNKTY UMIEJĘTNOŚCI: {0}
 ui.skills.page.title = Atrybuty Umiejętności
@@ -752,3 +748,8 @@ ui.addons.filter.mod_partners = Wyświetlanie: Partnerzy Modów
 ui.addons.filter.community = Wyświetlanie: Dodatki Społeczności
 ui.addons.filter.partner_extensions = Wyświetlanie: Rozszerzenia Partnerów
 ui.addons.filter.all = Wyświetlanie: Dodatki Endless Leveling
+
+
+# ===== Ported from legacy YAML =====
+ui.common.toggle.False = WYŁ.
+ui.common.toggle.True = WŁ.

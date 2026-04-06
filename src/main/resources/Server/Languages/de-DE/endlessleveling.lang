@@ -400,12 +400,8 @@ ui.races.evolution.criteria.forms = - Erforderliche Formen: {0}
 ui.races.evolution.criteria.augments = - Erforderliche Augmentierungen: {0}
 ui.races.evolution.criteria.none = Anforderungen: keine
 ui.races.evolution.criteria.general.none = Anforderungen: nur Fertigkeitsziele
-ui.races.evolution.criteria.general.prefix = Anforderungen:
-
-            {0}
-ui.races.evolution.criteria.skills.prefix = Trainierbare Fertigkeitsziele:
-
-            {0}
+ui.races.evolution.criteria.general.prefix = Anforderungen: {0}
+ui.races.evolution.criteria.skills.prefix = Trainierbare Fertigkeitsziele: {0}
 ui.classes.count = {0} {1}
 ui.classes.count_none = 0 verfügbar
 ui.classes.count_word.singular = Klasse
@@ -536,12 +532,8 @@ ui.classes.evolution.criteria.forms = - Erforderliche Formen: {0}
 ui.classes.evolution.criteria.augments = - Erforderliche Augmentierungen: {0}
 ui.classes.evolution.criteria.none = Anforderungen: keine
 ui.classes.evolution.criteria.general.none = Anforderungen: nur Fertigkeitsziele
-ui.classes.evolution.criteria.general.prefix = Anforderungen:
-
-            {0}
-ui.classes.evolution.criteria.skills.prefix = Trainierbare Fertigkeitsziele:
-
-            {0}
+ui.classes.evolution.criteria.general.prefix = Anforderungen: {0}
+ui.classes.evolution.criteria.skills.prefix = Trainierbare Fertigkeitsziele: {0}
 ui.skills.unknown = Unbekannt
 ui.skills.points = FERTIGKEITSPUNKTE: {0}
 ui.skills.page.title = Fertigkeitsattribute
@@ -760,3 +752,11 @@ ui.addons.filter.mod_partners = Anzeige: Mod-Partner
 ui.addons.filter.community = Anzeige: Community-Addons
 ui.addons.filter.partner_extensions = Anzeige: Partner-Erweiterungen
 ui.addons.filter.all = Anzeige: Endless Leveling Addons
+
+
+# ===== Ported from legacy YAML =====
+notify.sync.entry = - {0} [{1}: hat {2}, sollte {3} haben] -> /lvl augments reset {0}
+notify.sync.fixall = Um alle gleichzeitig zu korrigieren: /lvl augments resetallplayers
+notify.sync.summary = {0} Spieler haben abweichende Augmentierungs-Slot-Anzahlen:
+ui.common.toggle.False = AUS
+ui.common.toggle.True = AN

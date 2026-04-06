@@ -400,12 +400,8 @@ ui.races.evolution.criteria.forms = - Formas requeridas: {0}
 ui.races.evolution.criteria.augments = - Aumentos requeridos: {0}
 ui.races.evolution.criteria.none = Requisitos: ninguno
 ui.races.evolution.criteria.general.none = Requisitos: solo objetivos de habilidad
-ui.races.evolution.criteria.general.prefix = Requisitos:
-
-            {0}
-ui.races.evolution.criteria.skills.prefix = Objetivos de habilidad entrenable:
-
-            {0}
+ui.races.evolution.criteria.general.prefix = Requisitos: {0}
+ui.races.evolution.criteria.skills.prefix = Objetivos de habilidad entrenable: {0}
 ui.classes.count = {0} {1}
 ui.classes.count_none = 0 disponibles
 ui.classes.count_word.singular = Clase
@@ -536,12 +532,8 @@ ui.classes.evolution.criteria.forms = - Formas requeridas: {0}
 ui.classes.evolution.criteria.augments = - Aumentos requeridos: {0}
 ui.classes.evolution.criteria.none = Requisitos: ninguno
 ui.classes.evolution.criteria.general.none = Requisitos: solo objetivos de habilidad
-ui.classes.evolution.criteria.general.prefix = Requisitos:
-
-            {0}
-ui.classes.evolution.criteria.skills.prefix = Objetivos de habilidad entrenable:
-
-            {0}
+ui.classes.evolution.criteria.general.prefix = Requisitos: {0}
+ui.classes.evolution.criteria.skills.prefix = Objetivos de habilidad entrenable: {0}
 ui.skills.unknown = Desconocido
 ui.skills.points = PUNTOS DE HABILIDAD: {0}
 ui.skills.page.title = Atributos de Habilidad
@@ -760,3 +752,75 @@ ui.addons.filter.mod_partners = Mostrando: Socios del mod
 ui.addons.filter.community = Mostrando: Addons de la comunidad
 ui.addons.filter.partner_extensions = Mostrando: Extensiones de socios
 ui.addons.filter.all = Mostrando: Addons de Endless Leveling
+
+
+# ===== Ported from legacy YAML =====
+ui.addons.page.subtitle = Explora los addons y extensiones compatibles con Endless Leveling.
+ui.addons.page.title = Biblioteca de Addons
+ui.augments.actions.refresh = Actualizar Ofertas
+ui.augments.actions.reroll = Relanzar ({0})
+ui.augments.actions.reroll_infinite = Relanzar (INF)
+ui.augments.all_claimed.next_unlock_preview = Has reclamado todos los aumentos desbloqueados. Próximo desbloqueo {0}
+ui.augments.error.no_rerolls_tier = No hay relanzamientos disponibles para el rango {0}.
+ui.augments.error.refresh_permission = No tienes permiso para actualizar las ofertas de aumentos.
+ui.augments.error.reroll_failed = Relanzamiento fallido. Inténtalo de nuevo.
+ui.augments.error.reroll_not_owned = No posees ese aumento.
+ui.augments.error.reroll_nothing_selected = Selecciona primero un aumento que poseas.
+ui.augments.no_augments_yet.next_unlock_preview = No hay aumentos disponibles aún. Próximo desbloqueo {0}
+ui.augments.page.info.reroll_button = RELANZAR ({0})
+ui.augments.page.info.reroll_button_infinite = RELANZAR (INF)
+ui.augments.page.left.rerolls_available_title = RELANZAMIENTOS DISPONIBLES
+ui.augments.page.rerolls.legendary = Legendario: {0}
+ui.augments.page.rerolls.total = Total: {0}
+ui.augments.page.section.legendary = LEGENDARIO
+ui.augments.page.stats.legendary = Legendario: {0} / {1}
+ui.augments.refresh.success = Ofertas de aumentos actualizadas para tu perfil activo.
+ui.augments.reroll.success = Relanzamiento de {0} realizado. Relanzamientos restantes: {1}
+ui.augments.reroll.success_bypass = Relanzamiento de {0} realizado. Bypass de Operador/Admin activo (sin consumir relanzamiento).
+ui.common.toggle.False = NO
+ui.common.toggle.True = SÍ
+ui.dungeons.category.endgame = ENDGAME Y QOL
+ui.dungeons.category.major = MAZMORRAS PRINCIPALES
+ui.dungeons.instance_prefix = Instancia:
+ui.dungeons.page.subtitle = Explora las integraciones de mazmorras para Endless Leveling y consulta qué paquetes compatibles están instalados en este servidor.
+ui.dungeons.page.title = Biblioteca de Mazmorras
+ui.nav.addons = ADDONS
+ui.nav.dungeons = DUNGEONS
+ui.profile.header.current_xp = EXP ACTUAL
+ui.profile.header.level = NIVEL
+ui.profile.header.prestige = PRESTIGIO
+ui.profile.header.primary_class = CLASE PRIMARIA
+ui.profile.header.race = RAZA
+ui.profile.header.secondary_class = CLASE SECUNDARIA
+ui.profile.list.delete_button = BORRAR
+ui.profile.list.new_profile = NUEVO PERFIL
+ui.profile.section.innate_bonuses = BONOS INNATOS
+ui.skills.error.crit_locked = Esta construcción no puede invertir en {0}.
+ui.skills.error.effective_cap_reached = {0} ya está en su límite efectivo.
+ui.skills.error.overflow_no_refund = {0} está en o por debajo de su límite efectivo; no hay puntos que reembolsar.
+ui.skills.error.overflow_none_available = No hay puntos excedentes de precisión o defensa reembolsables actualmente.
+ui.skills.error.quick_spend_invalid_amount = Introduce una cantidad de gasto rápido mayor que 0 para {0}.
+ui.skills.excess.apply_hint = Esto actualiza tus puntos pendientes. Pulsa APLICAR para confirmar.
+ui.skills.excess.button.has_excess = REEMBOLSAR EXCESO (+{0})
+ui.skills.excess.button.none = REEMBOLSAR EXCESO
+ui.skills.excess.defense = Exceso de Defensa:
+ui.skills.excess.description.has_excess = Precisión/Defensa supera el límite efectivo. Reembolsa los puntos sobrantes aquí.
+ui.skills.excess.description.none = Si Precisión o Defensa excede el límite, los puntos sobrantes se pueden reembolsar aquí.
+ui.skills.excess.precision = Exceso de Precisión:
+ui.skills.excess.status.has_excess = Exceso detectado: {0} punto(s)
+ui.skills.excess.status.none = Sin puntos excedentes actualmente.
+ui.skills.excess.total = Total reembolsable:
+ui.skills.message.auto_allocate_toggled = Auto-asignar {0}: {1}
+ui.skills.message.excess_refunded = Puntos excedentes reembolsados: +{0} puntos de habilidad (Precisión -{1}, Defensa -{2}). Pulsa APLICAR para confirmar.
+ui.skills.message.quick_spend_applied = Aplicados {0} punto(s) a {1} inmediatamente.
+ui.skills.side_panel.title = GESTIÓN DE PUNTOS
+ui.support.official_servers.subtitle = Los servidores asociados autorizados se muestran aquí como tarjetas oficiales.
+ui.support.official_servers.title = Servidores Oficiales
+ui.support.partner.section = Socios Oficiales de Endless
+ui.support.partner.valid.fail = No válido (no autorizado)
+ui.support.partner.valid.label = Validación de Addon
+ui.support.partner.valid.na = N/D (addon no presente)
+ui.support.partner.valid.ok = Válido (autorizado)
+ui.support.patreon.label = APOYAR EN PATREON
+ui.support.patreon.prompt = Apoya el desarrollo de Endless Leveling en Patreon.
+ui.support.thank_you = Gracias por apoyar a Endless Leveling.
