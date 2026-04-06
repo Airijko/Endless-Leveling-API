@@ -1,0 +1,432 @@
+$C = "../../Common.ui";
+$Nav = "../Nav/LeftNavPanel.ui";
+$S = "SettingsStyles.ui";
+$PS = "PlayerSettings.ui";
+$CS = "ConfigSettings.ui";
+
+// ==========================================================================
+// PAGE LAYOUT
+// ==========================================================================
+
+$C.@PageOverlay {
+    Group {
+        LayoutMode: Middle;
+
+        Group {
+            LayoutMode: Left;
+            Anchor: (Width: 1680, Height: 700);
+
+            Group {
+                LayoutMode: Top;
+                Anchor: (Width: 1680, Height: 700);
+
+                Group {
+                    LayoutMode: Middle;
+                    Anchor: (Width: 1680);
+
+                    Group {
+                        LayoutMode: Left;
+
+                        // ===========================================================
+                        // LEFT PANEL (300px) - OVERVIEW
+                        // ===========================================================
+                        $C.@DecoratedContainer {
+                            Anchor: (Width: 300, Height: 700);
+
+                            #Title {
+                                Group {
+                                    $C.@Title #OverviewPanelTitle { @Text = "OVERVIEW"; }
+                                }
+                            }
+
+                            #Content {
+                                LayoutMode: Top;
+                                Padding: (Horizontal: 12, Bottom: 12);
+
+                                // ---- Player Settings Info (visible by default) ----
+                                Group #PlayerSettingsInfoPanel {
+                                    LayoutMode: Top;
+                                    Padding: (Top: 12);
+
+                                    Group {
+                                        LayoutMode: Top;
+                                        Background: #0b141f(0.84);
+                                        Padding: (Full: 10);
+
+                                        Label {
+                                            Text: "PLAYER PREFERENCES";
+                                            Style: (TextColor: #6fe3ff, FontSize: 14, RenderBold: true, RenderUppercase: true, LetterSpacing: 1);
+                                        }
+
+                                        Group { Anchor: (Height: 6); }
+
+                                        Label {
+                                            Text: "Personal display and notification settings for your gameplay experience. These preferences are saved per-player.";
+                                            Style: (TextColor: #c0cee5, FontSize: 12, Wrap: true);
+                                        }
+                                    }
+
+                                    Group { Anchor: (Height: 8); }
+
+                                    Group {
+                                        LayoutMode: Top;
+                                        Background: #0b141f(0.72);
+                                        Padding: (Full: 10);
+
+                                        Label {
+                                            Text: "CURRENT STATUS";
+                                            Style: (TextColor: #d5e4f7, FontSize: 12, RenderBold: true);
+                                        }
+
+                                        Group { Anchor: (Height: 6); }
+
+                                        Group {
+                                            LayoutMode: Left;
+                                            Padding: (Vertical: 2);
+                                            Label { Text: "HUD Display"; Style: (TextColor: #9ab0ca, FontSize: 12); FlexWeight: 1; }
+                                            Label #InfoHudStatus { Text: "ON"; Style: (TextColor: #6fe3ff, FontSize: 12, RenderBold: true); }
+                                        }
+
+                                        Group {
+                                            LayoutMode: Left;
+                                            Padding: (Vertical: 2);
+                                            Label { Text: "Race Visuals"; Style: (TextColor: #9ab0ca, FontSize: 12); FlexWeight: 1; }
+                                            Label #InfoRaceVisualsStatus { Text: "ON"; Style: (TextColor: #6fe3ff, FontSize: 12, RenderBold: true); }
+                                        }
+
+                                        Group {
+                                            LayoutMode: Left;
+                                            Padding: (Vertical: 2);
+                                            Label { Text: "Active Notifications"; Style: (TextColor: #9ab0ca, FontSize: 12); FlexWeight: 1; }
+                                            Label #InfoActiveNotifCount { Text: "6/6"; Style: (TextColor: #6fe3ff, FontSize: 12, RenderBold: true); }
+                                        }
+                                    }
+                                }
+
+                                // ---- Config Settings Info (hidden by default) ----
+                                Group #ConfigSettingsInfoPanel {
+                                    LayoutMode: Top;
+                                    Padding: (Top: 12);
+                                    Visible: false;
+
+                                    Group {
+                                        LayoutMode: Top;
+                                        Background: #0b141f(0.84);
+                                        Padding: (Full: 10);
+
+                                        Label {
+                                            Text: "ADMIN CONFIGURATION";
+                                            Style: (TextColor: #f0cf78, FontSize: 14, RenderBold: true, RenderUppercase: true, LetterSpacing: 1);
+                                        }
+
+                                        Group { Anchor: (Height: 6); }
+
+                                        Label {
+                                            Text: "Server-wide settings that affect all players. Requires operator permissions to modify.";
+                                            Style: (TextColor: #c0cee5, FontSize: 12, Wrap: true);
+                                        }
+                                    }
+
+                                    Group { Anchor: (Height: 8); }
+
+                                    Group {
+                                        LayoutMode: Top;
+                                        Background: #0b141f(0.72);
+                                        Padding: (Full: 10);
+
+                                        Label {
+                                            Text: "EDITING";
+                                            Style: (TextColor: #d5e4f7, FontSize: 12, RenderBold: true);
+                                        }
+
+                                        Group { Anchor: (Height: 6); }
+
+                                        Label #ConfigInfoCurrentFile {
+                                            Text: "config.yml";
+                                            Style: (TextColor: #f0cf78, FontSize: 16, RenderBold: true);
+                                        }
+
+                                        Group { Anchor: (Height: 4); }
+
+                                        Label #ConfigInfoDescription {
+                                            Text: "Core plugin configuration including races, classes, content sync, and debug settings.";
+                                            Style: (TextColor: #9ab0ca, FontSize: 11, Wrap: true);
+                                        }
+                                    }
+
+                                    Group { Anchor: (Height: 8); }
+
+                                    // ---- Content Sync toggles ----
+                                    Group {
+                                        LayoutMode: Top;
+                                        Background: #0b141f(0.72);
+                                        Padding: (Full: 10);
+
+                                        Label {
+                                            Text: "CONTENT SYNC";
+                                            Style: (TextColor: #9b7edb, FontSize: 12, RenderBold: true, LetterSpacing: 1);
+                                        }
+
+                                        Group { Anchor: (Height: 6); }
+
+                                        Group {
+                                            LayoutMode: Left;
+                                            Padding: (Vertical: 2);
+                                            Label { Text: "Builtin Config"; Style: (TextColor: #c0cee5, FontSize: 11); FlexWeight: 1; }
+                                            Label #CfgForceConfigValue { Text: "true"; Style: (TextColor: #6fe3ff, FontSize: 11, RenderBold: true); Anchor: (Width: 34); }
+                                            Group { Anchor: (Width: 4); }
+                                            $C.@TextButton #CfgForceConfigToggle { Anchor: (Height: 20, Width: 52); Padding: (Horizontal: 4, Vertical: 2); Text: "Toggle"; Style: $S.@SidebarToggleStyle; }
+                                        }
+
+                                        Group {
+                                            LayoutMode: Left;
+                                            Padding: (Vertical: 2);
+                                            Label { Text: "Builtin Leveling"; Style: (TextColor: #c0cee5, FontSize: 11); FlexWeight: 1; }
+                                            Label #CfgForceLevelingValue { Text: "true"; Style: (TextColor: #6fe3ff, FontSize: 11, RenderBold: true); Anchor: (Width: 34); }
+                                            Group { Anchor: (Width: 4); }
+                                            $C.@TextButton #CfgForceLevelingToggle { Anchor: (Height: 20, Width: 52); Padding: (Horizontal: 4, Vertical: 2); Text: "Toggle"; Style: $S.@SidebarToggleStyle; }
+                                        }
+
+                                        Group {
+                                            LayoutMode: Left;
+                                            Padding: (Vertical: 2);
+                                            Label { Text: "Builtin Events"; Style: (TextColor: #c0cee5, FontSize: 11); FlexWeight: 1; }
+                                            Label #CfgForceEventsValue { Text: "false"; Style: (TextColor: #6fe3ff, FontSize: 11, RenderBold: true); Anchor: (Width: 34); }
+                                            Group { Anchor: (Width: 4); }
+                                            $C.@TextButton #CfgForceEventsToggle { Anchor: (Height: 20, Width: 52); Padding: (Horizontal: 4, Vertical: 2); Text: "Toggle"; Style: $S.@SidebarToggleStyle; }
+                                        }
+
+                                        Group {
+                                            LayoutMode: Left;
+                                            Padding: (Vertical: 2);
+                                            Label { Text: "Builtin Races"; Style: (TextColor: #c0cee5, FontSize: 11); FlexWeight: 1; }
+                                            Label #CfgForceRacesValue { Text: "true"; Style: (TextColor: #6fe3ff, FontSize: 11, RenderBold: true); Anchor: (Width: 34); }
+                                            Group { Anchor: (Width: 4); }
+                                            $C.@TextButton #CfgForceRacesToggle { Anchor: (Height: 20, Width: 52); Padding: (Horizontal: 4, Vertical: 2); Text: "Toggle"; Style: $S.@SidebarToggleStyle; }
+                                        }
+
+                                        Group {
+                                            LayoutMode: Left;
+                                            Padding: (Vertical: 2);
+                                            Label { Text: "Builtin Classes"; Style: (TextColor: #c0cee5, FontSize: 11); FlexWeight: 1; }
+                                            Label #CfgForceClassesValue { Text: "true"; Style: (TextColor: #6fe3ff, FontSize: 11, RenderBold: true); Anchor: (Width: 34); }
+                                            Group { Anchor: (Width: 4); }
+                                            $C.@TextButton #CfgForceClassesToggle { Anchor: (Height: 20, Width: 52); Padding: (Horizontal: 4, Vertical: 2); Text: "Toggle"; Style: $S.@SidebarToggleStyle; }
+                                        }
+
+                                        Group {
+                                            LayoutMode: Left;
+                                            Padding: (Vertical: 2);
+                                            Label { Text: "Builtin Augments"; Style: (TextColor: #c0cee5, FontSize: 11); FlexWeight: 1; }
+                                            Label #CfgForceAugmentsValue { Text: "true"; Style: (TextColor: #6fe3ff, FontSize: 11, RenderBold: true); Anchor: (Width: 34); }
+                                            Group { Anchor: (Width: 4); }
+                                            $C.@TextButton #CfgForceAugmentsToggle { Anchor: (Height: 20, Width: 52); Padding: (Horizontal: 4, Vertical: 2); Text: "Toggle"; Style: $S.@SidebarToggleStyle; }
+                                        }
+
+                                        Group {
+                                            LayoutMode: Left;
+                                            Padding: (Vertical: 2);
+                                            Label { Text: "Builtin Languages"; Style: (TextColor: #c0cee5, FontSize: 11); FlexWeight: 1; }
+                                            Label #CfgForceLanguagesValue { Text: "true"; Style: (TextColor: #6fe3ff, FontSize: 11, RenderBold: true); Anchor: (Width: 34); }
+                                            Group { Anchor: (Width: 4); }
+                                            $C.@TextButton #CfgForceLanguagesToggle { Anchor: (Height: 20, Width: 52); Padding: (Horizontal: 4, Vertical: 2); Text: "Toggle"; Style: $S.@SidebarToggleStyle; }
+                                        }
+
+                                        Group {
+                                            LayoutMode: Left;
+                                            Padding: (Vertical: 2);
+                                            Label { Text: "Builtin World Settings"; Style: (TextColor: #c0cee5, FontSize: 11); FlexWeight: 1; }
+                                            Label #CfgForceWorldSettingsValue { Text: "true"; Style: (TextColor: #6fe3ff, FontSize: 11, RenderBold: true); Anchor: (Width: 34); }
+                                            Group { Anchor: (Width: 4); }
+                                            $C.@TextButton #CfgForceWorldSettingsToggle { Anchor: (Height: 20, Width: 52); Padding: (Horizontal: 4, Vertical: 2); Text: "Toggle"; Style: $S.@SidebarToggleStyle; }
+                                        }
+                                    }
+
+                                    Group { Anchor: (Height: 8); }
+
+                                    Group {
+                                        LayoutMode: Top;
+                                        Background: #0d1520(0.60);
+                                        Padding: (Full: 10);
+
+                                        Label {
+                                            Text: "Changes take effect after saving. Some settings may require a server restart.";
+                                            Style: (TextColor: #8a6e3c, FontSize: 11, Wrap: true);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        Group { Anchor: (Width: 40); }
+
+                        // ===========================================================
+                        // CENTER PANEL (1000px) - MAIN CONTENT
+                        // ===========================================================
+                        $C.@DecoratedContainer {
+                            Anchor: (Width: 1000, Height: 700);
+
+                            #Title {
+                                Group {
+                                    $C.@Title #SettingsTitle { @Text = "ENDLESS LEVELING"; }
+                                }
+                            }
+
+                            #Content {
+                                LayoutMode: Left;
+                                Padding: (Full: 0);
+
+                                // ================= LEFT NAV =================
+                                $Nav.@LeftNavPanel {}
+
+                                // ================= CONTENT AREA =================
+                                Group #RightPanel {
+                                    FlexWeight: 1;
+                                    LayoutMode: Top;
+                                    Anchor: (Right: 7, Bottom: 7);
+
+                                    // =============================================
+                                    // PLAYER SETTINGS VIEW
+                                    // =============================================
+                                    $PS.@PlayerSettingsPanel #PlayerSettingsPanel {}
+
+                                    // =============================================
+                                    // CONFIG SETTINGS VIEW
+                                    // =============================================
+                                    $CS.@ConfigSettingsPanel #ConfigSettingsPanel {}
+                                }
+                            }
+                        }
+
+                        Group { Anchor: (Width: 40); }
+
+                        // ===========================================================
+                        // RIGHT PANEL (300px) - SETTINGS NAVIGATION
+                        // ===========================================================
+                        $C.@DecoratedContainer {
+                            Anchor: (Width: 300, Height: 700);
+
+                            #Title {
+                                Group {
+                                    $C.@Title #SettingsNavTitle { @Text = "SETTINGS"; }
+                                }
+                            }
+
+                            #Content {
+                                LayoutMode: Top;
+                                Padding: (Horizontal: 12, Bottom: 12);
+
+                                Group {
+                                    LayoutMode: Top;
+                                    Padding: (Top: 12);
+
+                                    Label {
+                                        Text: "SECTIONS";
+                                        Padding: (Left: 8, Bottom: 8);
+                                        Style: (TextColor: #6e7da1, FontSize: 11, RenderBold: true, RenderUppercase: true, LetterSpacing: 1);
+                                    }
+
+                                    $S.@SectionNavButton #NavPlayerSettings {
+                                        Text: "Player Settings";
+                                    }
+
+                                    Group { Anchor: (Height: 4); }
+
+                                    $S.@SectionNavButton #NavConfigSettings {
+                                        Text: "Config Settings";
+                                    }
+
+                                    // ---- Config sub-section nav (shown when Config Settings active) ----
+                                    Group #ConfigSubNav {
+                                        LayoutMode: Top;
+                                        Visible: false;
+                                        Padding: (Top: 4);
+
+                                        $S.@ConfigSectionNavButton #NavCfgConfigYml {
+                                            Text: "config.yml";
+                                        }
+
+                                        Group { Anchor: (Height: 2); }
+
+                                        $S.@ConfigSectionNavButton #NavCfgLevelingYml {
+                                            Text: "leveling.yml";
+                                        }
+
+                                        Group { Anchor: (Height: 2); }
+
+                                        $S.@ConfigSectionNavButton #NavCfgWorldsJson {
+                                            Text: "worlds.json";
+                                        }
+
+                                        Group { Anchor: (Height: 2); }
+
+                                        $S.@ConfigSectionNavButton #NavCfgEventsYml {
+                                            Text: "events.yml";
+                                        }
+
+                                        Group { Anchor: (Height: 2); }
+
+                                        $S.@ConfigSectionNavButton #NavCfgWeaponsJson {
+                                            Text: "weapons.json";
+                                        }
+                                    }
+                                }
+
+                                Group { Anchor: (Height: 16); }
+
+                                Group {
+                                    Anchor: (Height: 1);
+                                    Background: #2b3542;
+                                }
+
+                                Group { Anchor: (Height: 16); }
+
+                                Group #SettingsNavInfoArea {
+                                    LayoutMode: Top;
+                                    Background: #0b141f(0.72);
+                                    Padding: (Full: 10);
+
+                                    Label #SettingsNavInfoTitle {
+                                        Text: "Player Settings";
+                                        Style: (TextColor: #f4f9ff, FontSize: 14, RenderBold: true);
+                                    }
+
+                                    Group { Anchor: (Height: 4); }
+
+                                    Label #SettingsNavInfoDesc {
+                                        Text: "Manage your personal gameplay preferences including HUD display and notification settings.";
+                                        Style: (TextColor: #9ab0ca, FontSize: 11, Wrap: true);
+                                    }
+                                }
+
+                                Group { FlexWeight: 1; }
+
+                                // ---- Action Buttons ----
+                                Group #SettingsActions {
+                                    LayoutMode: Top;
+                                    Padding: (Bottom: 4);
+
+                                    $C.@TextButton #SaveSettings {
+                                        Text: "SAVE";
+                                        Anchor: (Height: 36, Width: 276);
+                                        Padding: (Horizontal: 8);
+                                    }
+
+                                    Group { Anchor: (Height: 8); }
+
+                                    $C.@CancelTextButton #ReloadSettings {
+                                        Text: "RELOAD";
+                                        Anchor: (Height: 36, Width: 276);
+                                        Padding: (Horizontal: 8);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+$C.@BackButton {}

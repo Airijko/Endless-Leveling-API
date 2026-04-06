@@ -48,8 +48,8 @@ public class AugmentUnlockManager {
             "arcanist",
             "marksman",
             "assassin",
-            "oracle",
-            "healer",
+            "magistrate",
+            "priest",
             "necromancer");
 
     private final ConfigManager configManager;

@@ -9,415 +9,2007 @@ $Nav = "Nav/LeftNavPanel.ui";
     Sounds: $C.@ButtonSounds,
 );
 
-@ButtonClusterWidth = 180;
-@SettingValueWidth = 96;
-@ToggleButtonWidth = 118;
+@SettingValueWidth = 80;
+@ToggleButtonWidth = 90;
+@CompactToggleWidth = 76;
+@CompactValueWidth = 110;
+
+// ---- Config tab button styles ----
+@ConfigTabStyle = (
+    Default: (
+        Background: #0d1926,
+        LabelStyle: (FontSize: 12, TextColor: #6e7da1, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center)
+    ),
+    Hovered: (
+        Background: #162540,
+        LabelStyle: (FontSize: 12, TextColor: #c0cee5, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center)
+    )
+);
+
+@ConfigTabStyleSelected = (
+    Default: (
+        Background: #142034,
+        LabelStyle: (FontSize: 12, TextColor: #6fe3ff, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center)
+    ),
+    Hovered: (
+        Background: #1a2d4a,
+        LabelStyle: (FontSize: 12, TextColor: #6fe3ff, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center)
+    )
+);
+
+@ConfigTab = MenuItem {
+    Anchor: (Height: 32);
+    Padding: (Horizontal: 12, Vertical: 4);
+    Style: @ConfigTabStyle;
+    SelectedStyle: @ConfigTabStyleSelected;
+};
+
+// ---- Section navigation button styles (right panel) ----
+@SectionNavStyle = (
+    Default: (
+        Background: #0b141f(0.88),
+        LabelStyle: (FontSize: 15, TextColor: #c0cee5, RenderBold: true, VerticalAlignment: Center)
+    ),
+    Hovered: (
+        Background: #162540,
+        LabelStyle: (FontSize: 15, TextColor: #ffffff, RenderBold: true, VerticalAlignment: Center)
+    )
+);
+
+@SectionNavStyleSelected = (
+    Default: (
+        Background: #142034,
+        LabelStyle: (FontSize: 15, TextColor: #6fe3ff, RenderBold: true, VerticalAlignment: Center)
+    ),
+    Hovered: (
+        Background: #1a2d4a,
+        LabelStyle: (FontSize: 15, TextColor: #6fe3ff, RenderBold: true, VerticalAlignment: Center)
+    )
+);
+
+@SectionNavButton = MenuItem {
+    Anchor: (Height: 44);
+    Padding: (Left: 16, Right: 16);
+    Style: @SectionNavStyle;
+    SelectedStyle: @SectionNavStyleSelected;
+};
+
+// ==========================================================================
+// PAGE LAYOUT
+// ==========================================================================
 
 $C.@PageOverlay {
-    $C.@DecoratedContainer {
-        Anchor: (Width: 1000, Height: 700);
-        #Title {
-            Group {
-                $C.@Title #SettingsTitle {
-                    @Text = "ENDLESS LEVELING";
-                }
-            }
-        }
+    Group {
+        LayoutMode: Middle;
 
-        #Content {
+        Group {
             LayoutMode: Left;
-            Padding: (Full: 0);
+            Anchor: (Width: 1680, Height: 700);
 
-            // ================= LEFT PANEL =================
-            $Nav.@LeftNavPanel {}
-            
-            // ================= RIGHT PANEL =================
-            Group #RightPanel {
-                FlexWeight: 1;
+            Group {
                 LayoutMode: Top;
-                Anchor: (Right: 7, Bottom: 7);
-
-                // -------- Title --------
-                Group #Header {
-                    LayoutMode: Left;
-                    Anchor: (Height: 60);
-                    Padding: (Horizontal: 16, Vertical: 10);
-
-                    Label #SettingsTitleLabel {
-                        Text: "Settings";
-                        Anchor: (Height: 60);
-                        Style: (FontSize: 22, TextColor: #ffffff, RenderBold: true, VerticalAlignment: Center);
-                    }
-
-                    Group { FlexWeight: 1; }
-
-                    Group #SettingsIntro {
-                        LayoutMode: Left;
-                        Background: #0b141f(0.92);
-                        Anchor: (Height: 40);
-                        Padding: (Full: 8);
-
-                        Label #SettingsIntroText {
-                            Style: (TextColor: #aaccff, FontSize: 14, VerticalAlignment: Center);
-                            Text: "Manage personal HUD, notifications, and visual preferences.";
-                        }
-                    }
-                }
+                Anchor: (Width: 1680, Height: 700);
 
                 Group {
-                    Anchor: (Height: 1);
-                    Background: #2b3542;
-                }
+                    LayoutMode: Middle;
+                    Anchor: (Width: 1680);
 
-                // -------- OPTIONS --------
-                Group #Main {
-                    LayoutMode: TopScrolling;
-                    ScrollbarStyle: $C.@DefaultScrollbarStyle;
-                    FlexWeight: 1;
-                    Padding: (Full: 16);
+                    Group {
+                        LayoutMode: Left;
 
-                    Group #SettingsList {
-                        LayoutMode: Top;
+                        // ===========================================================
+                        // LEFT PANEL (300px) - OVERVIEW
+                        // ===========================================================
+                        $C.@DecoratedContainer {
+                            Anchor: (Width: 300, Height: 700);
 
-                        Group #PlayerHudRow {
-                            LayoutMode: Left;
-                            Background: #0b141f(0.84);
-                            Padding: (Full: 12);
-
-                            Group {
-                                LayoutMode: Top;
-                                FlexWeight: 1;
-
+                            #Title {
                                 Group {
-                                    LayoutMode: Left;
-
-                                    Label #PlayerHudLabel { Style: (TextColor: #f4f9ff, FontSize: 16, RenderBold: true); FlexWeight: 1; Text: "Player HUD"; }
-
-                                    Label #PlayerHudValue {
-                                        Text: "ON";
-                                        Anchor: (Width: @SettingValueWidth, Height: 24);
-                                        Padding: (Horizontal: 8, Vertical: 4);
-                                        Style: (TextColor: #6fe3ff, FontSize: 12, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
-                                        Background: #061420;
-                                    }
-                                }
-
-                                Group { Anchor: (Height: 4); }
-
-                                Label #PlayerHudDescription {
-                                    Text: "Show or hide the Endless Leveling HUD overlay.";
-                                    Style: (TextColor: #c0cee5, FontSize: 12);
+                                    $C.@Title #OverviewPanelTitle { @Text = "OVERVIEW"; }
                                 }
                             }
 
-                            Group { Anchor: (Width: 12); }
+                            #Content {
+                                LayoutMode: Top;
+                                Padding: (Horizontal: 12, Bottom: 12);
 
-                            $C.@TextButton #PlayerHudToggle {
-                                Anchor: (Height: 32, Width: @ToggleButtonWidth);
-                                Padding: (Horizontal: 8, Vertical: 4);
-                                Text: "Toggle";
-                                Style: @CustomStyle;
+                                // ---- Player Settings Info (visible by default) ----
+                                Group #PlayerSettingsInfoPanel {
+                                    LayoutMode: Top;
+                                    Padding: (Top: 12);
+
+                                    Group {
+                                        LayoutMode: Top;
+                                        Background: #0b141f(0.84);
+                                        Padding: (Full: 10);
+
+                                        Label {
+                                            Text: "PLAYER PREFERENCES";
+                                            Style: (TextColor: #6fe3ff, FontSize: 14, RenderBold: true, RenderUppercase: true, LetterSpacing: 1);
+                                        }
+
+                                        Group { Anchor: (Height: 6); }
+
+                                        Label {
+                                            Text: "Personal display and notification settings for your gameplay experience. These preferences are saved per-player.";
+                                            Style: (TextColor: #c0cee5, FontSize: 12, Wrap: true);
+                                        }
+                                    }
+
+                                    Group { Anchor: (Height: 8); }
+
+                                    Group {
+                                        LayoutMode: Top;
+                                        Background: #0b141f(0.72);
+                                        Padding: (Full: 10);
+
+                                        Label {
+                                            Text: "CURRENT STATUS";
+                                            Style: (TextColor: #d5e4f7, FontSize: 12, RenderBold: true);
+                                        }
+
+                                        Group { Anchor: (Height: 6); }
+
+                                        Group {
+                                            LayoutMode: Left;
+                                            Padding: (Vertical: 2);
+                                            Label { Text: "HUD Display"; Style: (TextColor: #9ab0ca, FontSize: 12); FlexWeight: 1; }
+                                            Label #InfoHudStatus { Text: "ON"; Style: (TextColor: #6fe3ff, FontSize: 12, RenderBold: true); }
+                                        }
+
+                                        Group {
+                                            LayoutMode: Left;
+                                            Padding: (Vertical: 2);
+                                            Label { Text: "Race Visuals"; Style: (TextColor: #9ab0ca, FontSize: 12); FlexWeight: 1; }
+                                            Label #InfoRaceVisualsStatus { Text: "ON"; Style: (TextColor: #6fe3ff, FontSize: 12, RenderBold: true); }
+                                        }
+
+                                        Group {
+                                            LayoutMode: Left;
+                                            Padding: (Vertical: 2);
+                                            Label { Text: "Active Notifications"; Style: (TextColor: #9ab0ca, FontSize: 12); FlexWeight: 1; }
+                                            Label #InfoActiveNotifCount { Text: "6/6"; Style: (TextColor: #6fe3ff, FontSize: 12, RenderBold: true); }
+                                        }
+                                    }
+                                }
+
+                                // ---- Config Settings Info (hidden by default) ----
+                                Group #ConfigSettingsInfoPanel {
+                                    LayoutMode: Top;
+                                    Padding: (Top: 12);
+                                    Visible: false;
+
+                                    Group {
+                                        LayoutMode: Top;
+                                        Background: #0b141f(0.84);
+                                        Padding: (Full: 10);
+
+                                        Label {
+                                            Text: "ADMIN CONFIGURATION";
+                                            Style: (TextColor: #f0cf78, FontSize: 14, RenderBold: true, RenderUppercase: true, LetterSpacing: 1);
+                                        }
+
+                                        Group { Anchor: (Height: 6); }
+
+                                        Label {
+                                            Text: "Server-wide settings that affect all players. Requires operator permissions to modify.";
+                                            Style: (TextColor: #c0cee5, FontSize: 12, Wrap: true);
+                                        }
+                                    }
+
+                                    Group { Anchor: (Height: 8); }
+
+                                    Group {
+                                        LayoutMode: Top;
+                                        Background: #0b141f(0.72);
+                                        Padding: (Full: 10);
+
+                                        Label {
+                                            Text: "EDITING";
+                                            Style: (TextColor: #d5e4f7, FontSize: 12, RenderBold: true);
+                                        }
+
+                                        Group { Anchor: (Height: 6); }
+
+                                        Label #ConfigInfoCurrentFile {
+                                            Text: "config.yml";
+                                            Style: (TextColor: #f0cf78, FontSize: 16, RenderBold: true);
+                                        }
+
+                                        Group { Anchor: (Height: 4); }
+
+                                        Label #ConfigInfoDescription {
+                                            Text: "Core plugin configuration including races, classes, content sync, and debug settings.";
+                                            Style: (TextColor: #9ab0ca, FontSize: 11, Wrap: true);
+                                        }
+                                    }
+
+                                    Group { Anchor: (Height: 8); }
+
+                                    Group {
+                                        LayoutMode: Top;
+                                        Background: #0d1520(0.60);
+                                        Padding: (Full: 10);
+
+                                        Label {
+                                            Text: "Changes take effect after saving. Some settings may require a server restart.";
+                                            Style: (TextColor: #8a6e3c, FontSize: 11, Wrap: true);
+                                        }
+                                    }
+
+                                    Group { Anchor: (Height: 8); }
+
+                                    // ---- CONTENT SYNC (overview) ----
+                                    Group {
+                                        LayoutMode: Top;
+                                        Background: #0b141f(0.84);
+                                        Padding: (Horizontal: 6, Vertical: 6);
+
+                                        Group {
+                                            LayoutMode: Left;
+                                            Padding: (Bottom: 6, Top: 2);
+                                            Group { Anchor: (Width: 3, Height: 14); Background: #9b7edb; }
+                                            Group { Anchor: (Width: 6); }
+                                            Label { Text: "CONTENT SYNC"; Style: (TextColor: #9b7edb, FontSize: 11, RenderBold: true, RenderUppercase: true, LetterSpacing: 1); }
+                                        }
+
+                                        Group #CfgForceConfigRow {
+                                            LayoutMode: Left;
+                                            Background: #0b141f(0.72);
+                                            Padding: (Horizontal: 8, Vertical: 5);
+                                            Label { Text: "Force Builtin Config"; Style: (TextColor: #d5e4f7, FontSize: 11, Wrap: true); FlexWeight: 1; }
+                                            Label #CfgForceConfigValue { Text: "true"; Anchor: (Width: 46, Height: 20); Padding: (Horizontal: 4, Vertical: 2); Style: (TextColor: #6fe3ff, FontSize: 10, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); Background: #061420; }
+                                            Group { Anchor: (Width: 4); }
+                                            $C.@TextButton #CfgForceConfigToggle { Anchor: (Height: 22, Width: 60); Padding: (Horizontal: 4, Vertical: 2); Text: "Toggle"; Style: @CustomStyle; }
+                                        }
+
+                                        Group { Anchor: (Height: 2); }
+
+                                        Group #CfgForceLevelingRow {
+                                            LayoutMode: Left;
+                                            Background: #0b141f(0.72);
+                                            Padding: (Horizontal: 8, Vertical: 5);
+                                            Label { Text: "Force Builtin Leveling"; Style: (TextColor: #d5e4f7, FontSize: 11, Wrap: true); FlexWeight: 1; }
+                                            Label #CfgForceLevelingValue { Text: "true"; Anchor: (Width: 46, Height: 20); Padding: (Horizontal: 4, Vertical: 2); Style: (TextColor: #6fe3ff, FontSize: 10, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); Background: #061420; }
+                                            Group { Anchor: (Width: 4); }
+                                            $C.@TextButton #CfgForceLevelingToggle { Anchor: (Height: 22, Width: 60); Padding: (Horizontal: 4, Vertical: 2); Text: "Toggle"; Style: @CustomStyle; }
+                                        }
+
+                                        Group { Anchor: (Height: 2); }
+
+                                        Group #CfgForceEventsRow {
+                                            LayoutMode: Left;
+                                            Background: #0b141f(0.72);
+                                            Padding: (Horizontal: 8, Vertical: 5);
+                                            Label { Text: "Force Builtin Events"; Style: (TextColor: #d5e4f7, FontSize: 11, Wrap: true); FlexWeight: 1; }
+                                            Label #CfgForceEventsValue { Text: "false"; Anchor: (Width: 46, Height: 20); Padding: (Horizontal: 4, Vertical: 2); Style: (TextColor: #6fe3ff, FontSize: 10, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); Background: #061420; }
+                                            Group { Anchor: (Width: 4); }
+                                            $C.@TextButton #CfgForceEventsToggle { Anchor: (Height: 22, Width: 60); Padding: (Horizontal: 4, Vertical: 2); Text: "Toggle"; Style: @CustomStyle; }
+                                        }
+
+                                        Group { Anchor: (Height: 2); }
+
+                                        Group #CfgForceRacesRow {
+                                            LayoutMode: Left;
+                                            Background: #0b141f(0.72);
+                                            Padding: (Horizontal: 8, Vertical: 5);
+                                            Label { Text: "Force Builtin Races"; Style: (TextColor: #d5e4f7, FontSize: 11, Wrap: true); FlexWeight: 1; }
+                                            Label #CfgForceRacesValue { Text: "true"; Anchor: (Width: 46, Height: 20); Padding: (Horizontal: 4, Vertical: 2); Style: (TextColor: #6fe3ff, FontSize: 10, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); Background: #061420; }
+                                            Group { Anchor: (Width: 4); }
+                                            $C.@TextButton #CfgForceRacesToggle { Anchor: (Height: 22, Width: 60); Padding: (Horizontal: 4, Vertical: 2); Text: "Toggle"; Style: @CustomStyle; }
+                                        }
+
+                                        Group { Anchor: (Height: 2); }
+
+                                        Group #CfgForceClassesRow {
+                                            LayoutMode: Left;
+                                            Background: #0b141f(0.72);
+                                            Padding: (Horizontal: 8, Vertical: 5);
+                                            Label { Text: "Force Builtin Classes"; Style: (TextColor: #d5e4f7, FontSize: 11, Wrap: true); FlexWeight: 1; }
+                                            Label #CfgForceClassesValue { Text: "true"; Anchor: (Width: 46, Height: 20); Padding: (Horizontal: 4, Vertical: 2); Style: (TextColor: #6fe3ff, FontSize: 10, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); Background: #061420; }
+                                            Group { Anchor: (Width: 4); }
+                                            $C.@TextButton #CfgForceClassesToggle { Anchor: (Height: 22, Width: 60); Padding: (Horizontal: 4, Vertical: 2); Text: "Toggle"; Style: @CustomStyle; }
+                                        }
+
+                                        Group { Anchor: (Height: 2); }
+
+                                        Group #CfgForceAugmentsRow {
+                                            LayoutMode: Left;
+                                            Background: #0b141f(0.72);
+                                            Padding: (Horizontal: 8, Vertical: 5);
+                                            Label { Text: "Force Builtin Augments"; Style: (TextColor: #d5e4f7, FontSize: 11, Wrap: true); FlexWeight: 1; }
+                                            Label #CfgForceAugmentsValue { Text: "true"; Anchor: (Width: 46, Height: 20); Padding: (Horizontal: 4, Vertical: 2); Style: (TextColor: #6fe3ff, FontSize: 10, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); Background: #061420; }
+                                            Group { Anchor: (Width: 4); }
+                                            $C.@TextButton #CfgForceAugmentsToggle { Anchor: (Height: 22, Width: 60); Padding: (Horizontal: 4, Vertical: 2); Text: "Toggle"; Style: @CustomStyle; }
+                                        }
+
+                                        Group { Anchor: (Height: 2); }
+
+                                        Group #CfgForceLanguagesRow {
+                                            LayoutMode: Left;
+                                            Background: #0b141f(0.72);
+                                            Padding: (Horizontal: 8, Vertical: 5);
+                                            Label { Text: "Force Builtin Languages"; Style: (TextColor: #d5e4f7, FontSize: 11, Wrap: true); FlexWeight: 1; }
+                                            Label #CfgForceLanguagesValue { Text: "true"; Anchor: (Width: 46, Height: 20); Padding: (Horizontal: 4, Vertical: 2); Style: (TextColor: #6fe3ff, FontSize: 10, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); Background: #061420; }
+                                            Group { Anchor: (Width: 4); }
+                                            $C.@TextButton #CfgForceLanguagesToggle { Anchor: (Height: 22, Width: 60); Padding: (Horizontal: 4, Vertical: 2); Text: "Toggle"; Style: @CustomStyle; }
+                                        }
+
+                                        Group { Anchor: (Height: 2); }
+
+                                        Group #CfgForceWorldSettingsRow {
+                                            LayoutMode: Left;
+                                            Background: #0b141f(0.72);
+                                            Padding: (Horizontal: 8, Vertical: 5);
+                                            Label { Text: "Force Builtin World Settings"; Style: (TextColor: #d5e4f7, FontSize: 11, Wrap: true); FlexWeight: 1; }
+                                            Label #CfgForceWorldSettingsValue { Text: "true"; Anchor: (Width: 46, Height: 20); Padding: (Horizontal: 4, Vertical: 2); Style: (TextColor: #6fe3ff, FontSize: 10, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); Background: #061420; }
+                                            Group { Anchor: (Width: 4); }
+                                            $C.@TextButton #CfgForceWorldSettingsToggle { Anchor: (Height: 22, Width: 60); Padding: (Horizontal: 4, Vertical: 2); Text: "Toggle"; Style: @CustomStyle; }
+                                        }
+                                    }
+                                }
                             }
                         }
 
-                        Group { Anchor: (Height: 10); }
+                        Group { Anchor: (Width: 40); }
 
-                        Group #CriticalNotifRow {
-                            LayoutMode: Left;
-                            Background: #0b141f(0.84);
-                            Padding: (Full: 12);
+                        // ===========================================================
+                        // CENTER PANEL (1000px) - MAIN CONTENT
+                        // ===========================================================
+                        $C.@DecoratedContainer {
+                            Anchor: (Width: 1000, Height: 700);
 
-                            Group {
-                                LayoutMode: Top;
-                                FlexWeight: 1;
-
+                            #Title {
                                 Group {
-                                    LayoutMode: Left;
-
-                                    Label #CriticalNotifLabel { Style: (TextColor: #f4f9ff, FontSize: 16, RenderBold: true); FlexWeight: 1; Text: "Critical Hit Notifications"; }
-
-                                    Label #CriticalNotifValue {
-                                        Text: "ON";
-                                        Anchor: (Width: @SettingValueWidth, Height: 24);
-                                        Padding: (Horizontal: 8, Vertical: 4);
-                                        Style: (TextColor: #6fe3ff, FontSize: 12, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
-                                        Background: #061420;
-                                    }
-                                }
-
-                                Group { Anchor: (Height: 4); }
-
-                                Label #CriticalNotifDescription {
-                                    Text: "Toggle floating alerts for critical strike events.";
-                                    Style: (TextColor: #c0cee5, FontSize: 12);
+                                    $C.@Title #SettingsTitle { @Text = "ENDLESS LEVELING"; }
                                 }
                             }
 
-                            Group { Anchor: (Width: 12); }
+                            #Content {
+                                LayoutMode: Left;
+                                Padding: (Full: 0);
 
-                            $C.@TextButton #CriticalNotifToggle {
-                                Anchor: (Height: 32, Width: @ToggleButtonWidth);
-                                Padding: (Horizontal: 8, Vertical: 4);
-                                Text: "Toggle";
-                                Style: @CustomStyle;
+                                // ================= LEFT NAV =================
+                                $Nav.@LeftNavPanel {}
+
+                                // ================= CONTENT AREA =================
+                                Group #RightPanel {
+                                    FlexWeight: 1;
+                                    LayoutMode: Top;
+                                    Anchor: (Right: 7, Bottom: 7);
+
+                                    // =============================================
+                                    // PLAYER SETTINGS VIEW
+                                    // =============================================
+                                    Group #PlayerSettingsPanel {
+                                        LayoutMode: Top;
+                                        FlexWeight: 1;
+
+                                        // ---- Header ----
+                                        Group #PlayerSettingsHeader {
+                                            LayoutMode: Left;
+                                            Anchor: (Height: 50);
+                                            Padding: (Horizontal: 16, Vertical: 10);
+
+                                            Label #SettingsTitleLabel {
+                                                Text: "Player Settings";
+                                                Style: (FontSize: 20, TextColor: #ffffff, RenderBold: true, VerticalAlignment: Center);
+                                            }
+
+                                            Group { FlexWeight: 1; }
+
+                                            Group {
+                                                LayoutMode: Left;
+                                                Background: #0b141f(0.92);
+                                                Anchor: (Height: 32);
+                                                Padding: (Horizontal: 10, Vertical: 6);
+
+                                                Label #SettingsIntroText {
+                                                    Style: (TextColor: #aaccff, FontSize: 12, VerticalAlignment: Center);
+                                                    Text: "Personal HUD, notifications, and visual preferences.";
+                                                }
+                                            }
+                                        }
+
+                                        Group { Anchor: (Height: 1); Background: #2b3542; }
+
+                                        // ---- Scrollable Settings ----
+                                        Group #PlayerSettingsMain {
+                                            LayoutMode: TopScrolling;
+                                            ScrollbarStyle: $C.@DefaultScrollbarStyle;
+                                            FlexWeight: 1;
+                                            Padding: (Full: 16);
+
+                                            Group #PlayerSettingsList {
+                                                LayoutMode: Top;
+
+                                                // ======== DISPLAY SECTION ========
+                                                Group {
+                                                    LayoutMode: Left;
+                                                    Padding: (Bottom: 8);
+
+                                                    Group { Anchor: (Width: 3, Height: 18); Background: #6fe3ff; }
+                                                    Group { Anchor: (Width: 8); }
+                                                    Label { Text: "DISPLAY"; Style: (TextColor: #6fe3ff, FontSize: 13, RenderBold: true, RenderUppercase: true, LetterSpacing: 1); }
+                                                }
+
+                                                // -- Player HUD --
+                                                Group #PlayerHudRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.84);
+                                                    Padding: (Full: 0);
+
+                                                    Group { Anchor: (Width: 3); Background: #6fe3ff(0.40); }
+
+                                                    Group {
+                                                        LayoutMode: Left;
+                                                        FlexWeight: 1;
+                                                        Padding: (Full: 12);
+
+                                                        Group {
+                                                            LayoutMode: Top;
+                                                            FlexWeight: 1;
+
+                                                            Group {
+                                                                LayoutMode: Left;
+
+                                                                Label #PlayerHudLabel { Style: (TextColor: #f4f9ff, FontSize: 15, RenderBold: true); FlexWeight: 1; Text: "Player HUD"; }
+
+                                                                Label #PlayerHudValue {
+                                                                    Text: "ON";
+                                                                    Anchor: (Width: @SettingValueWidth, Height: 24);
+                                                                    Padding: (Horizontal: 8, Vertical: 4);
+                                                                    Style: (TextColor: #6fe3ff, FontSize: 12, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
+                                                                    Background: #061420;
+                                                                }
+                                                            }
+
+                                                            Group { Anchor: (Height: 4); }
+
+                                                            Label #PlayerHudDescription {
+                                                                Text: "Show or hide the Endless Leveling HUD overlay.";
+                                                                Style: (TextColor: #c0cee5, FontSize: 12);
+                                                            }
+                                                        }
+
+                                                        Group { Anchor: (Width: 12); }
+
+                                                        $C.@TextButton #PlayerHudToggle {
+                                                            Anchor: (Height: 32, Width: @ToggleButtonWidth);
+                                                            Padding: (Horizontal: 8, Vertical: 4);
+                                                            Text: "Toggle";
+                                                            Style: @CustomStyle;
+                                                        }
+                                                    }
+                                                }
+
+                                                Group { Anchor: (Height: 6); }
+
+                                                // -- Race Model Visuals --
+                                                Group #RaceModelRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.84);
+                                                    Padding: (Full: 0);
+
+                                                    Group { Anchor: (Width: 3); Background: #6fe3ff(0.40); }
+
+                                                    Group {
+                                                        LayoutMode: Left;
+                                                        FlexWeight: 1;
+                                                        Padding: (Full: 12);
+
+                                                        Group {
+                                                            LayoutMode: Top;
+                                                            FlexWeight: 1;
+
+                                                            Group {
+                                                                LayoutMode: Left;
+
+                                                                Label #RaceModelLabel { Style: (TextColor: #f4f9ff, FontSize: 15, RenderBold: true); FlexWeight: 1; Text: "Race Model Visuals"; }
+
+                                                                Label #RaceModelValue {
+                                                                    Text: "ON";
+                                                                    Anchor: (Width: @SettingValueWidth, Height: 24);
+                                                                    Padding: (Horizontal: 8, Vertical: 4);
+                                                                    Style: (TextColor: #6fe3ff, FontSize: 12, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
+                                                                    Background: #061420;
+                                                                }
+                                                            }
+
+                                                            Group { Anchor: (Height: 4); }
+
+                                                            Label #RaceModelDescription {
+                                                                Text: "Enable race-specific character visuals when available.";
+                                                                Style: (TextColor: #c0cee5, FontSize: 12);
+                                                            }
+                                                        }
+
+                                                        Group { Anchor: (Width: 12); }
+
+                                                        $C.@TextButton #RaceModelToggle {
+                                                            Anchor: (Height: 32, Width: @ToggleButtonWidth);
+                                                            Padding: (Horizontal: 8, Vertical: 4);
+                                                            Text: "Toggle";
+                                                            Style: @CustomStyle;
+                                                        }
+                                                    }
+                                                }
+
+                                                Group { Anchor: (Height: 16); }
+
+                                                // ======== NOTIFICATIONS SECTION ========
+                                                Group {
+                                                    LayoutMode: Left;
+                                                    Padding: (Bottom: 8);
+
+                                                    Group { Anchor: (Width: 3, Height: 18); Background: #f0cf78; }
+                                                    Group { Anchor: (Width: 8); }
+                                                    Label { Text: "NOTIFICATIONS"; Style: (TextColor: #f0cf78, FontSize: 13, RenderBold: true, RenderUppercase: true, LetterSpacing: 1); }
+                                                }
+
+                                                // -- Critical Hit Notifications --
+                                                Group #CriticalNotifRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.84);
+                                                    Padding: (Full: 0);
+
+                                                    Group { Anchor: (Width: 3); Background: #f0cf78(0.40); }
+
+                                                    Group {
+                                                        LayoutMode: Left;
+                                                        FlexWeight: 1;
+                                                        Padding: (Full: 12);
+
+                                                        Group {
+                                                            LayoutMode: Top;
+                                                            FlexWeight: 1;
+
+                                                            Group {
+                                                                LayoutMode: Left;
+
+                                                                Label #CriticalNotifLabel { Style: (TextColor: #f4f9ff, FontSize: 15, RenderBold: true); FlexWeight: 1; Text: "Critical Hit Notifications"; }
+
+                                                                Label #CriticalNotifValue {
+                                                                    Text: "ON";
+                                                                    Anchor: (Width: @SettingValueWidth, Height: 24);
+                                                                    Padding: (Horizontal: 8, Vertical: 4);
+                                                                    Style: (TextColor: #6fe3ff, FontSize: 12, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
+                                                                    Background: #061420;
+                                                                }
+                                                            }
+
+                                                            Group { Anchor: (Height: 4); }
+
+                                                            Label #CriticalNotifDescription {
+                                                                Text: "Toggle floating alerts for critical strike events.";
+                                                                Style: (TextColor: #c0cee5, FontSize: 12);
+                                                            }
+                                                        }
+
+                                                        Group { Anchor: (Width: 12); }
+
+                                                        $C.@TextButton #CriticalNotifToggle {
+                                                            Anchor: (Height: 32, Width: @ToggleButtonWidth);
+                                                            Padding: (Horizontal: 8, Vertical: 4);
+                                                            Text: "Toggle";
+                                                            Style: @CustomStyle;
+                                                        }
+                                                    }
+                                                }
+
+                                                Group { Anchor: (Height: 6); }
+
+                                                // -- XP Gain Notifications --
+                                                Group #XpNotifRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.84);
+                                                    Padding: (Full: 0);
+
+                                                    Group { Anchor: (Width: 3); Background: #f0cf78(0.40); }
+
+                                                    Group {
+                                                        LayoutMode: Left;
+                                                        FlexWeight: 1;
+                                                        Padding: (Full: 12);
+
+                                                        Group {
+                                                            LayoutMode: Top;
+                                                            FlexWeight: 1;
+
+                                                            Group {
+                                                                LayoutMode: Left;
+
+                                                                Label #XpNotifLabel { Style: (TextColor: #f4f9ff, FontSize: 15, RenderBold: true); FlexWeight: 1; Text: "XP Gain Notifications"; }
+
+                                                                Label #XpNotifValue {
+                                                                    Text: "ON";
+                                                                    Anchor: (Width: @SettingValueWidth, Height: 24);
+                                                                    Padding: (Horizontal: 8, Vertical: 4);
+                                                                    Style: (TextColor: #6fe3ff, FontSize: 12, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
+                                                                    Background: #061420;
+                                                                }
+                                                            }
+
+                                                            Group { Anchor: (Height: 4); }
+
+                                                            Label #XpNotifDescription {
+                                                                Text: "Show notifications whenever you gain experience.";
+                                                                Style: (TextColor: #c0cee5, FontSize: 12);
+                                                            }
+                                                        }
+
+                                                        Group { Anchor: (Width: 12); }
+
+                                                        $C.@TextButton #XpNotifToggle {
+                                                            Anchor: (Height: 32, Width: @ToggleButtonWidth);
+                                                            Padding: (Horizontal: 8, Vertical: 4);
+                                                            Text: "Toggle";
+                                                            Style: @CustomStyle;
+                                                        }
+                                                    }
+                                                }
+
+                                                Group { Anchor: (Height: 6); }
+
+                                                // -- Passive Level-Up Notifications --
+                                                Group #PassiveLevelUpNotifRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.84);
+                                                    Padding: (Full: 0);
+
+                                                    Group { Anchor: (Width: 3); Background: #f0cf78(0.40); }
+
+                                                    Group {
+                                                        LayoutMode: Left;
+                                                        FlexWeight: 1;
+                                                        Padding: (Full: 12);
+
+                                                        Group {
+                                                            LayoutMode: Top;
+                                                            FlexWeight: 1;
+
+                                                            Group {
+                                                                LayoutMode: Left;
+
+                                                                Label #PassiveLevelUpNotifLabel { Style: (TextColor: #f4f9ff, FontSize: 15, RenderBold: true); FlexWeight: 1; Text: "Passive Level-Up Notifications"; }
+
+                                                                Label #PassiveLevelUpNotifValue {
+                                                                    Text: "ON";
+                                                                    Anchor: (Width: @SettingValueWidth, Height: 24);
+                                                                    Padding: (Horizontal: 8, Vertical: 4);
+                                                                    Style: (TextColor: #6fe3ff, FontSize: 12, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
+                                                                    Background: #061420;
+                                                                }
+                                                            }
+
+                                                            Group { Anchor: (Height: 4); }
+
+                                                            Label #PassiveLevelUpNotifDescription {
+                                                                Text: "Display updates when passives rank up during play.";
+                                                                Style: (TextColor: #c0cee5, FontSize: 12);
+                                                            }
+                                                        }
+
+                                                        Group { Anchor: (Width: 12); }
+
+                                                        $C.@TextButton #PassiveLevelUpNotifToggle {
+                                                            Anchor: (Height: 32, Width: @ToggleButtonWidth);
+                                                            Padding: (Horizontal: 8, Vertical: 4);
+                                                            Text: "Toggle";
+                                                            Style: @CustomStyle;
+                                                        }
+                                                    }
+                                                }
+
+                                                Group { Anchor: (Height: 6); }
+
+                                                // -- Luck Double-Drop Notifications --
+                                                Group #LuckDoubleDropsNotifRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.84);
+                                                    Padding: (Full: 0);
+
+                                                    Group { Anchor: (Width: 3); Background: #f0cf78(0.40); }
+
+                                                    Group {
+                                                        LayoutMode: Left;
+                                                        FlexWeight: 1;
+                                                        Padding: (Full: 12);
+
+                                                        Group {
+                                                            LayoutMode: Top;
+                                                            FlexWeight: 1;
+
+                                                            Group {
+                                                                LayoutMode: Left;
+
+                                                                Label #LuckDoubleDropsNotifLabel { Style: (TextColor: #f4f9ff, FontSize: 15, RenderBold: true); FlexWeight: 1; Text: "Luck Double-Drop Notifications"; }
+
+                                                                Label #LuckDoubleDropsNotifValue {
+                                                                    Text: "ON";
+                                                                    Anchor: (Width: @SettingValueWidth, Height: 24);
+                                                                    Padding: (Horizontal: 8, Vertical: 4);
+                                                                    Style: (TextColor: #6fe3ff, FontSize: 12, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
+                                                                    Background: #061420;
+                                                                }
+                                                            }
+
+                                                            Group { Anchor: (Height: 4); }
+
+                                                            Label #LuckDoubleDropsNotifDescription {
+                                                                Text: "Toggle bonus drop proc notifications from luck effects.";
+                                                                Style: (TextColor: #c0cee5, FontSize: 12);
+                                                            }
+                                                        }
+
+                                                        Group { Anchor: (Width: 12); }
+
+                                                        $C.@TextButton #LuckDoubleDropsNotifToggle {
+                                                            Anchor: (Height: 32, Width: @ToggleButtonWidth);
+                                                            Padding: (Horizontal: 8, Vertical: 4);
+                                                            Text: "Toggle";
+                                                            Style: @CustomStyle;
+                                                        }
+                                                    }
+                                                }
+
+                                                Group { Anchor: (Height: 6); }
+
+                                                // -- Health Regen Notifications --
+                                                Group #HealthRegenNotifRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.84);
+                                                    Padding: (Full: 0);
+
+                                                    Group { Anchor: (Width: 3); Background: #f0cf78(0.40); }
+
+                                                    Group {
+                                                        LayoutMode: Left;
+                                                        FlexWeight: 1;
+                                                        Padding: (Full: 12);
+
+                                                        Group {
+                                                            LayoutMode: Top;
+                                                            FlexWeight: 1;
+
+                                                            Group {
+                                                                LayoutMode: Left;
+
+                                                                Label #HealthRegenNotifLabel { Style: (TextColor: #f4f9ff, FontSize: 15, RenderBold: true); FlexWeight: 1; Text: "Health Regen Notifications"; }
+
+                                                                Label #HealthRegenNotifValue {
+                                                                    Text: "ON";
+                                                                    Anchor: (Width: @SettingValueWidth, Height: 24);
+                                                                    Padding: (Horizontal: 8, Vertical: 4);
+                                                                    Style: (TextColor: #6fe3ff, FontSize: 12, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
+                                                                    Background: #061420;
+                                                                }
+                                                            }
+
+                                                            Group { Anchor: (Height: 4); }
+
+                                                            Label #HealthRegenNotifDescription {
+                                                                Text: "Show notifications when health regeneration triggers.";
+                                                                Style: (TextColor: #c0cee5, FontSize: 12);
+                                                            }
+                                                        }
+
+                                                        Group { Anchor: (Width: 12); }
+
+                                                        $C.@TextButton #HealthRegenNotifToggle {
+                                                            Anchor: (Height: 32, Width: @ToggleButtonWidth);
+                                                            Padding: (Horizontal: 8, Vertical: 4);
+                                                            Text: "Toggle";
+                                                            Style: @CustomStyle;
+                                                        }
+                                                    }
+                                                }
+
+                                                Group { Anchor: (Height: 6); }
+
+                                                // -- Augment Notifications --
+                                                Group #AugmentNotifRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.84);
+                                                    Padding: (Full: 0);
+
+                                                    Group { Anchor: (Width: 3); Background: #f0cf78(0.40); }
+
+                                                    Group {
+                                                        LayoutMode: Left;
+                                                        FlexWeight: 1;
+                                                        Padding: (Full: 12);
+
+                                                        Group {
+                                                            LayoutMode: Top;
+                                                            FlexWeight: 1;
+
+                                                            Group {
+                                                                LayoutMode: Left;
+
+                                                                Label #AugmentNotifLabel { Style: (TextColor: #f4f9ff, FontSize: 15, RenderBold: true); FlexWeight: 1; Text: "Augment Notifications"; }
+
+                                                                Label #AugmentNotifValue {
+                                                                    Text: "ON";
+                                                                    Anchor: (Width: @SettingValueWidth, Height: 24);
+                                                                    Padding: (Horizontal: 8, Vertical: 4);
+                                                                    Style: (TextColor: #6fe3ff, FontSize: 12, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
+                                                                    Background: #061420;
+                                                                }
+                                                            }
+
+                                                            Group { Anchor: (Height: 4); }
+
+                                                            Label #AugmentNotifDescription {
+                                                                Text: "Toggle chat notifications for augment status events.";
+                                                                Style: (TextColor: #c0cee5, FontSize: 12);
+                                                            }
+                                                        }
+
+                                                        Group { Anchor: (Width: 12); }
+
+                                                        $C.@TextButton #AugmentNotifToggle {
+                                                            Anchor: (Height: 32, Width: @ToggleButtonWidth);
+                                                            Padding: (Horizontal: 8, Vertical: 4);
+                                                            Text: "Toggle";
+                                                            Style: @CustomStyle;
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    // =============================================
+                                    // CONFIG SETTINGS VIEW
+                                    // =============================================
+                                    Group #ConfigSettingsPanel {
+                                        LayoutMode: Top;
+                                        FlexWeight: 1;
+                                        Visible: false;
+
+                                        // ---- Header ----
+                                        Group #ConfigSettingsHeader {
+                                            LayoutMode: Left;
+                                            Anchor: (Height: 50);
+                                            Padding: (Horizontal: 16, Vertical: 10);
+
+                                            Label {
+                                                Text: "Config Settings";
+                                                Style: (FontSize: 20, TextColor: #ffffff, RenderBold: true, VerticalAlignment: Center);
+                                            }
+
+                                            Group { FlexWeight: 1; }
+
+                                            Group {
+                                                LayoutMode: Left;
+                                                Background: #0b141f(0.92);
+                                                Anchor: (Height: 32);
+                                                Padding: (Horizontal: 10, Vertical: 6);
+
+                                                Label {
+                                                    Style: (TextColor: #f0cf78, FontSize: 12, VerticalAlignment: Center);
+                                                    Text: "Admin-only server configuration.";
+                                                }
+                                            }
+                                        }
+
+                                        // ---- Tab Bar ----
+                                        Group #ConfigTabBar {
+                                            LayoutMode: Left;
+                                            Background: #070b12;
+                                            Padding: (Horizontal: 12, Vertical: 6);
+
+                                            @ConfigTab #TabConfigYml { Text: "config.yml"; }
+                                            Group { Anchor: (Width: 4); }
+                                            @ConfigTab #TabLevelingYml { Text: "leveling.yml"; }
+                                            Group { Anchor: (Width: 4); }
+                                            @ConfigTab #TabWorldSettings { Text: "world-settings"; }
+                                            Group { Anchor: (Width: 4); }
+                                            @ConfigTab #TabEventsYml { Text: "events.yml"; }
+                                            Group { Anchor: (Width: 4); }
+                                            @ConfigTab #TabWeaponsJson { Text: "weapons.json"; }
+                                        }
+
+                                        Group { Anchor: (Height: 1); Background: #2b3542; }
+
+                                        // ---- Tab Content ----
+                                        Group #ConfigTabContent {
+                                            LayoutMode: TopScrolling;
+                                            ScrollbarStyle: $C.@DefaultScrollbarStyle;
+                                            FlexWeight: 1;
+                                            Padding: (Full: 16);
+
+                                            // ================================================
+                                            // CONFIG.YML TAB
+                                            // ================================================
+                                            Group #ConfigYmlPanel {
+                                                LayoutMode: Top;
+
+                                                // ---- RACE SYSTEM ----
+                                                Group {
+                                                    LayoutMode: Left;
+                                                    Padding: (Bottom: 6, Top: 4);
+                                                    Group { Anchor: (Width: 3, Height: 16); Background: #f0cf78; }
+                                                    Group { Anchor: (Width: 8); }
+                                                    Label { Text: "RACE SYSTEM"; Style: (TextColor: #f0cf78, FontSize: 12, RenderBold: true, RenderUppercase: true, LetterSpacing: 1); }
+                                                }
+
+                                                Group #CfgEnableRacesRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label #CfgEnableRacesLabel { Text: "Enable Races"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    Label #CfgEnableRacesValue { Text: "true"; Anchor: (Width: @CompactValueWidth, Height: 22); Padding: (Horizontal: 6, Vertical: 2); Style: (TextColor: #6fe3ff, FontSize: 11, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); Background: #061420; }
+                                                    Group { Anchor: (Width: 6); }
+                                                    $C.@TextButton #CfgEnableRacesToggle { Anchor: (Height: 26, Width: @CompactToggleWidth); Padding: (Horizontal: 6, Vertical: 3); Text: "Toggle"; Style: @CustomStyle; }
+                                                }
+
+                                                Group { Anchor: (Height: 3); }
+
+                                                Group #CfgDefaultRaceRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label #CfgDefaultRaceLabel { Text: "Default Race"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    Label #CfgDefaultRaceValue { Text: "Human"; Anchor: (Width: @CompactValueWidth, Height: 22); Padding: (Horizontal: 6, Vertical: 2); Style: (TextColor: #f0cf78, FontSize: 12, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); Background: #061420; }
+                                                }
+
+                                                Group { Anchor: (Height: 3); }
+
+                                                Group #CfgRaceCooldownRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label #CfgRaceCooldownLabel { Text: "Race Cooldown (s)"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    NumberField #CfgRaceCooldownInput { Value: 3600; Anchor: (Width: @CompactValueWidth, Height: 22); Style: (FontSize: 12, TextColor: #cddcf0); Padding: (Left: 6); Background: $C.@InputBoxBackground; }
+                                                }
+
+                                                Group { Anchor: (Height: 3); }
+
+                                                Group #CfgRaceMaxSwitchesRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label #CfgRaceMaxSwitchesLabel { Text: "Max Race Switches"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    NumberField #CfgRaceMaxSwitchesInput { Value: 1; Anchor: (Width: @CompactValueWidth, Height: 22); Style: (FontSize: 12, TextColor: #cddcf0); Padding: (Left: 6); Background: $C.@InputBoxBackground; }
+                                                }
+
+                                                Group { Anchor: (Height: 3); }
+
+                                                Group #CfgGlobalRaceVisualsRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label #CfgGlobalRaceVisualsLabel { Text: "Global Race Visuals"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    Label #CfgGlobalRaceVisualsValue { Text: "off"; Anchor: (Width: @CompactValueWidth, Height: 22); Padding: (Horizontal: 6, Vertical: 2); Style: (TextColor: #f0cf78, FontSize: 12, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); Background: #061420; }
+                                                    Group { Anchor: (Width: 6); }
+                                                    $C.@TextButton #CfgGlobalRaceVisualsCycle { Anchor: (Height: 26, Width: @CompactToggleWidth); Padding: (Horizontal: 6, Vertical: 3); Text: "Cycle"; Style: @CustomStyle; }
+                                                }
+
+                                                Group { Anchor: (Height: 12); }
+
+                                                // ---- CLASS SYSTEM ----
+                                                Group {
+                                                    LayoutMode: Left;
+                                                    Padding: (Bottom: 6, Top: 4);
+                                                    Group { Anchor: (Width: 3, Height: 16); Background: #f0cf78; }
+                                                    Group { Anchor: (Width: 8); }
+                                                    Label { Text: "CLASS SYSTEM"; Style: (TextColor: #f0cf78, FontSize: 12, RenderBold: true, RenderUppercase: true, LetterSpacing: 1); }
+                                                }
+
+                                                Group #CfgEnableClassesRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label #CfgEnableClassesLabel { Text: "Enable Classes"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    Label #CfgEnableClassesValue { Text: "true"; Anchor: (Width: @CompactValueWidth, Height: 22); Padding: (Horizontal: 6, Vertical: 2); Style: (TextColor: #6fe3ff, FontSize: 11, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); Background: #061420; }
+                                                    Group { Anchor: (Width: 6); }
+                                                    $C.@TextButton #CfgEnableClassesToggle { Anchor: (Height: 26, Width: @CompactToggleWidth); Padding: (Horizontal: 6, Vertical: 3); Text: "Toggle"; Style: @CustomStyle; }
+                                                }
+
+                                                Group { Anchor: (Height: 3); }
+
+                                                Group #CfgEnableSecondaryClassRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label #CfgEnableSecondaryClassLabel { Text: "Enable Secondary Class"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    Label #CfgEnableSecondaryClassValue { Text: "true"; Anchor: (Width: @CompactValueWidth, Height: 22); Padding: (Horizontal: 6, Vertical: 2); Style: (TextColor: #6fe3ff, FontSize: 11, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); Background: #061420; }
+                                                    Group { Anchor: (Width: 6); }
+                                                    $C.@TextButton #CfgEnableSecondaryClassToggle { Anchor: (Height: 26, Width: @CompactToggleWidth); Padding: (Horizontal: 6, Vertical: 3); Text: "Toggle"; Style: @CustomStyle; }
+                                                }
+
+                                                Group { Anchor: (Height: 3); }
+
+                                                Group #CfgDefaultPrimaryClassRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label #CfgDefaultPrimaryClassLabel { Text: "Default Primary Class"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    Label #CfgDefaultPrimaryClassValue { Text: "Adventurer"; Anchor: (Width: @CompactValueWidth, Height: 22); Padding: (Horizontal: 6, Vertical: 2); Style: (TextColor: #f0cf78, FontSize: 12, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); Background: #061420; }
+                                                }
+
+                                                Group { Anchor: (Height: 3); }
+
+                                                Group #CfgOffClassPenaltyRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label #CfgOffClassPenaltyLabel { Text: "Off-Class Damage Penalty"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    Label #CfgOffClassPenaltyValue { Text: "-40%"; Anchor: (Width: @CompactValueWidth, Height: 22); Padding: (Horizontal: 6, Vertical: 2); Style: (TextColor: #ff7878, FontSize: 12, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); Background: #061420; }
+                                                }
+
+                                                Group { Anchor: (Height: 3); }
+
+                                                Group #CfgClassCooldownRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label #CfgClassCooldownLabel { Text: "Class Cooldown (s)"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    NumberField #CfgClassCooldownInput { Value: 1800; Anchor: (Width: @CompactValueWidth, Height: 22); Style: (FontSize: 12, TextColor: #cddcf0); Padding: (Left: 6); Background: $C.@InputBoxBackground; }
+                                                }
+
+                                                Group { Anchor: (Height: 3); }
+
+                                                Group #CfgClassMaxSwitchesRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label #CfgClassMaxSwitchesLabel { Text: "Max Class Switches"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    NumberField #CfgClassMaxSwitchesInput { Value: 1; Anchor: (Width: @CompactValueWidth, Height: 22); Style: (FontSize: 12, TextColor: #cddcf0); Padding: (Left: 6); Background: $C.@InputBoxBackground; }
+                                                }
+
+                                                Group { Anchor: (Height: 12); }
+
+                                                // ---- SWAP ANTI-EXPLOIT ----
+                                                Group {
+                                                    LayoutMode: Left;
+                                                    Padding: (Bottom: 6, Top: 4);
+                                                    Group { Anchor: (Width: 3, Height: 16); Background: #ff7878; }
+                                                    Group { Anchor: (Width: 8); }
+                                                    Label { Text: "SWAP ANTI-EXPLOIT"; Style: (TextColor: #ff7878, FontSize: 12, RenderBold: true, RenderUppercase: true, LetterSpacing: 1); }
+                                                }
+
+                                                Group #CfgSwapConsumeEnabledRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label #CfgSwapConsumeEnabledLabel { Text: "Auto-Consume at Level"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    Label #CfgSwapConsumeEnabledValue { Text: "true"; Anchor: (Width: @CompactValueWidth, Height: 22); Padding: (Horizontal: 6, Vertical: 2); Style: (TextColor: #6fe3ff, FontSize: 11, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); Background: #061420; }
+                                                    Group { Anchor: (Width: 6); }
+                                                    $C.@TextButton #CfgSwapConsumeEnabledToggle { Anchor: (Height: 26, Width: @CompactToggleWidth); Padding: (Horizontal: 6, Vertical: 3); Text: "Toggle"; Style: @CustomStyle; }
+                                                }
+
+                                                Group { Anchor: (Height: 3); }
+
+                                                Group #CfgSwapConsumeThresholdRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label #CfgSwapConsumeThresholdLabel { Text: "Consume Threshold Level"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    NumberField #CfgSwapConsumeThresholdInput { Value: 20; Anchor: (Width: @CompactValueWidth, Height: 22); Style: (FontSize: 12, TextColor: #cddcf0); Padding: (Left: 6); Background: $C.@InputBoxBackground; }
+                                                }
+
+                                                Group { Anchor: (Height: 12); }
+
+                                                // ---- LANGUAGE ----
+                                                Group {
+                                                    LayoutMode: Left;
+                                                    Padding: (Bottom: 6, Top: 4);
+                                                    Group { Anchor: (Width: 3, Height: 16); Background: #b0c4de; }
+                                                    Group { Anchor: (Width: 8); }
+                                                    Label { Text: "LANGUAGE"; Style: (TextColor: #b0c4de, FontSize: 12, RenderBold: true, RenderUppercase: true, LetterSpacing: 1); }
+                                                }
+
+                                                Group #CfgLocaleRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label #CfgLocaleLabel { Text: "Locale"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    Label #CfgLocaleValue { Text: "en_US"; Anchor: (Width: @CompactValueWidth, Height: 22); Padding: (Horizontal: 6, Vertical: 2); Style: (TextColor: #f0cf78, FontSize: 12, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); Background: #061420; }
+                                                }
+
+                                                Group { Anchor: (Height: 3); }
+
+                                                Group #CfgFallbackLocaleRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label #CfgFallbackLocaleLabel { Text: "Fallback Locale"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    Label #CfgFallbackLocaleValue { Text: "en_US"; Anchor: (Width: @CompactValueWidth, Height: 22); Padding: (Horizontal: 6, Vertical: 2); Style: (TextColor: #f0cf78, FontSize: 12, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); Background: #061420; }
+                                                }
+
+                                                Group { Anchor: (Height: 12); }
+
+                                                // ---- BUILTIN CONTENT ----
+                                                Group {
+                                                    LayoutMode: Left;
+                                                    Padding: (Bottom: 6, Top: 4);
+                                                    Group { Anchor: (Width: 3, Height: 16); Background: #6fe3ff; }
+                                                    Group { Anchor: (Width: 8); }
+                                                    Label { Text: "BUILTIN CONTENT"; Style: (TextColor: #6fe3ff, FontSize: 12, RenderBold: true, RenderUppercase: true, LetterSpacing: 1); }
+                                                }
+
+                                                Group #CfgEnableBuiltinRacesRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label { Text: "Enable Builtin Races"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    Label #CfgEnableBuiltinRacesValue { Text: "true"; Anchor: (Width: @CompactValueWidth, Height: 22); Padding: (Horizontal: 6, Vertical: 2); Style: (TextColor: #6fe3ff, FontSize: 11, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); Background: #061420; }
+                                                    Group { Anchor: (Width: 6); }
+                                                    $C.@TextButton #CfgEnableBuiltinRacesToggle { Anchor: (Height: 26, Width: @CompactToggleWidth); Padding: (Horizontal: 6, Vertical: 3); Text: "Toggle"; Style: @CustomStyle; }
+                                                }
+
+                                                Group { Anchor: (Height: 3); }
+
+                                                Group #CfgEnableBuiltinClassesRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label { Text: "Enable Builtin Classes"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    Label #CfgEnableBuiltinClassesValue { Text: "true"; Anchor: (Width: @CompactValueWidth, Height: 22); Padding: (Horizontal: 6, Vertical: 2); Style: (TextColor: #6fe3ff, FontSize: 11, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); Background: #061420; }
+                                                    Group { Anchor: (Width: 6); }
+                                                    $C.@TextButton #CfgEnableBuiltinClassesToggle { Anchor: (Height: 26, Width: @CompactToggleWidth); Padding: (Horizontal: 6, Vertical: 3); Text: "Toggle"; Style: @CustomStyle; }
+                                                }
+
+                                                Group { Anchor: (Height: 3); }
+
+                                                Group #CfgEnableBuiltinAugmentsRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label { Text: "Enable Builtin Augments"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    Label #CfgEnableBuiltinAugmentsValue { Text: "true"; Anchor: (Width: @CompactValueWidth, Height: 22); Padding: (Horizontal: 6, Vertical: 2); Style: (TextColor: #6fe3ff, FontSize: 11, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); Background: #061420; }
+                                                    Group { Anchor: (Width: 6); }
+                                                    $C.@TextButton #CfgEnableBuiltinAugmentsToggle { Anchor: (Height: 26, Width: @CompactToggleWidth); Padding: (Horizontal: 6, Vertical: 3); Text: "Toggle"; Style: @CustomStyle; }
+                                                }
+
+                                                Group { Anchor: (Height: 12); }
+
+                                                // ---- DEBUG ----
+                                                Group {
+                                                    LayoutMode: Left;
+                                                    Padding: (Bottom: 6, Top: 4);
+                                                    Group { Anchor: (Width: 3, Height: 16); Background: #7a8a9e; }
+                                                    Group { Anchor: (Width: 8); }
+                                                    Label { Text: "DEBUG"; Style: (TextColor: #7a8a9e, FontSize: 12, RenderBold: true, RenderUppercase: true, LetterSpacing: 1); }
+                                                }
+
+                                                Group #CfgEnableLoggingRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label { Text: "Enable Logging"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    Label #CfgEnableLoggingValue { Text: "false"; Anchor: (Width: @CompactValueWidth, Height: 22); Padding: (Horizontal: 6, Vertical: 2); Style: (TextColor: #6fe3ff, FontSize: 11, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); Background: #061420; }
+                                                    Group { Anchor: (Width: 6); }
+                                                    $C.@TextButton #CfgEnableLoggingToggle { Anchor: (Height: 26, Width: @CompactToggleWidth); Padding: (Horizontal: 6, Vertical: 3); Text: "Toggle"; Style: @CustomStyle; }
+                                                }
+                                            }
+
+                                            // ================================================
+                                            // LEVELING.YML TAB
+                                            // ================================================
+                                            Group #LevelingYmlPanel {
+                                                LayoutMode: Top;
+                                                Visible: false;
+
+                                                // ---- LEVELING FORMULA ----
+                                                Group {
+                                                    LayoutMode: Left;
+                                                    Padding: (Bottom: 6, Top: 4);
+                                                    Group { Anchor: (Width: 3, Height: 16); Background: #f0cf78; }
+                                                    Group { Anchor: (Width: 8); }
+                                                    Label { Text: "LEVELING FORMULA"; Style: (TextColor: #f0cf78, FontSize: 12, RenderBold: true, RenderUppercase: true, LetterSpacing: 1); }
+                                                }
+
+                                                Group #LvlExpressionRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label { Text: "XP Expression"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    Label #LvlExpressionValue { Text: "base * ((log(level)+1) * (sqrt(level)))^1.8"; Anchor: (Height: 22); Padding: (Horizontal: 6, Vertical: 2); Style: (TextColor: #9ab0ca, FontSize: 10); Background: #061420; }
+                                                }
+
+                                                Group { Anchor: (Height: 3); }
+
+                                                Group #LvlLogModeRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label { Text: "Log Mode"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    Label #LvlLogModeValue { Text: "LOG10"; Anchor: (Width: @CompactValueWidth, Height: 22); Padding: (Horizontal: 6, Vertical: 2); Style: (TextColor: #f0cf78, FontSize: 12, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); Background: #061420; }
+                                                    Group { Anchor: (Width: 6); }
+                                                    $C.@TextButton #LvlLogModeCycle { Anchor: (Height: 26, Width: @CompactToggleWidth); Padding: (Horizontal: 6, Vertical: 3); Text: "Cycle"; Style: @CustomStyle; }
+                                                }
+
+                                                Group { Anchor: (Height: 3); }
+
+                                                Group #LvlBaseRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label { Text: "Base XP"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    NumberField #LvlBaseInput { Value: 100; Anchor: (Width: @CompactValueWidth, Height: 22); Style: (FontSize: 12, TextColor: #cddcf0); Padding: (Left: 6); Background: $C.@InputBoxBackground; }
+                                                }
+
+                                                Group { Anchor: (Height: 12); }
+
+                                                // ---- SKILL POINTS ----
+                                                Group {
+                                                    LayoutMode: Left;
+                                                    Padding: (Bottom: 6, Top: 4);
+                                                    Group { Anchor: (Width: 3, Height: 16); Background: #6fe3ff; }
+                                                    Group { Anchor: (Width: 8); }
+                                                    Label { Text: "SKILL POINTS"; Style: (TextColor: #6fe3ff, FontSize: 12, RenderBold: true, RenderUppercase: true, LetterSpacing: 1); }
+                                                }
+
+                                                Group #LvlBaseSkillPointsRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label { Text: "Base Skill Points"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    NumberField #LvlBaseSkillPointsInput { Value: 12; Anchor: (Width: @CompactValueWidth, Height: 22); Style: (FontSize: 12, TextColor: #cddcf0); Padding: (Left: 6); Background: $C.@InputBoxBackground; }
+                                                }
+
+                                                Group { Anchor: (Height: 3); }
+
+                                                Group #LvlSkillPointsPerLevelRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label { Text: "Skill Points Per Level"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    NumberField #LvlSkillPointsPerLevelInput { Value: 5; Anchor: (Width: @CompactValueWidth, Height: 22); Style: (FontSize: 12, TextColor: #cddcf0); Padding: (Left: 6); Background: $C.@InputBoxBackground; }
+                                                }
+
+                                                Group { Anchor: (Height: 3); }
+
+                                                Group #LvlPlayerLevelCapRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label { Text: "Player Level Cap"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    NumberField #LvlPlayerLevelCapInput { Value: 100; Anchor: (Width: @CompactValueWidth, Height: 22); Style: (FontSize: 12, TextColor: #cddcf0); Padding: (Left: 6); Background: $C.@InputBoxBackground; }
+                                                }
+
+                                                Group { Anchor: (Height: 12); }
+
+                                                // ---- PARTY XP SHARE ----
+                                                Group {
+                                                    LayoutMode: Left;
+                                                    Padding: (Bottom: 6, Top: 4);
+                                                    Group { Anchor: (Width: 3, Height: 16); Background: #9fe7b3; }
+                                                    Group { Anchor: (Width: 8); }
+                                                    Label { Text: "PARTY XP SHARE"; Style: (TextColor: #9fe7b3, FontSize: 12, RenderBold: true, RenderUppercase: true, LetterSpacing: 1); }
+                                                }
+
+                                                Group #LvlPartyXpEnabledRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label { Text: "Party XP Sharing"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    Label #LvlPartyXpEnabledValue { Text: "true"; Anchor: (Width: @CompactValueWidth, Height: 22); Padding: (Horizontal: 6, Vertical: 2); Style: (TextColor: #6fe3ff, FontSize: 11, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); Background: #061420; }
+                                                    Group { Anchor: (Width: 6); }
+                                                    $C.@TextButton #LvlPartyXpEnabledToggle { Anchor: (Height: 26, Width: @CompactToggleWidth); Padding: (Horizontal: 6, Vertical: 3); Text: "Toggle"; Style: @CustomStyle; }
+                                                }
+
+                                                Group { Anchor: (Height: 3); }
+
+                                                Group #LvlPartyXpRangeRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label { Text: "Share Range (blocks)"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    NumberField #LvlPartyXpRangeInput { Value: 25; Anchor: (Width: @CompactValueWidth, Height: 22); Style: (FontSize: 12, TextColor: #cddcf0); Padding: (Left: 6); Background: $C.@InputBoxBackground; }
+                                                }
+
+                                                Group { Anchor: (Height: 3); }
+
+                                                Group #LvlPartyXpSharePercentRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label { Text: "Member Share %"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    NumberField #LvlPartyXpSharePercentInput { Value: 100; Anchor: (Width: @CompactValueWidth, Height: 22); Style: (FontSize: 12, TextColor: #cddcf0); Padding: (Left: 6); Background: $C.@InputBoxBackground; }
+                                                }
+
+                                                Group { Anchor: (Height: 12); }
+
+                                                // ---- PRESTIGE ----
+                                                Group {
+                                                    LayoutMode: Left;
+                                                    Padding: (Bottom: 6, Top: 4);
+                                                    Group { Anchor: (Width: 3, Height: 16); Background: #d7baff; }
+                                                    Group { Anchor: (Width: 8); }
+                                                    Label { Text: "PRESTIGE"; Style: (TextColor: #d7baff, FontSize: 12, RenderBold: true, RenderUppercase: true, LetterSpacing: 1); }
+                                                }
+
+                                                Group #LvlPrestigeEnabledRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label { Text: "Prestige System"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    Label #LvlPrestigeEnabledValue { Text: "true"; Anchor: (Width: @CompactValueWidth, Height: 22); Padding: (Horizontal: 6, Vertical: 2); Style: (TextColor: #6fe3ff, FontSize: 11, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); Background: #061420; }
+                                                    Group { Anchor: (Width: 6); }
+                                                    $C.@TextButton #LvlPrestigeEnabledToggle { Anchor: (Height: 26, Width: @CompactToggleWidth); Padding: (Horizontal: 6, Vertical: 3); Text: "Toggle"; Style: @CustomStyle; }
+                                                }
+
+                                                Group { Anchor: (Height: 3); }
+
+                                                Group #LvlPrestigeLevelCapRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label { Text: "Prestige Level Cap"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    Label #LvlPrestigeLevelCapValue { Text: "ENDLESS"; Anchor: (Width: @CompactValueWidth, Height: 22); Padding: (Horizontal: 6, Vertical: 2); Style: (TextColor: #f0cf78, FontSize: 11, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); Background: #061420; }
+                                                }
+
+                                                Group { Anchor: (Height: 3); }
+
+                                                Group #LvlPrestigeLevelCapIncRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label { Text: "Level Cap Increase / Prestige"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    NumberField #LvlPrestigeLevelCapIncInput { Value: 10; Anchor: (Width: @CompactValueWidth, Height: 22); Style: (FontSize: 12, TextColor: #cddcf0); Padding: (Left: 6); Background: $C.@InputBoxBackground; }
+                                                }
+
+                                                Group { Anchor: (Height: 3); }
+
+                                                Group #LvlPrestigeXpIncRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label { Text: "Base XP Increase / Prestige"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    NumberField #LvlPrestigeXpIncInput { Value: 20; Anchor: (Width: @CompactValueWidth, Height: 22); Style: (FontSize: 12, TextColor: #cddcf0); Padding: (Left: 6); Background: $C.@InputBoxBackground; }
+                                                }
+
+                                                Group { Anchor: (Height: 12); }
+
+                                                // ---- MOB LEVELING ----
+                                                Group {
+                                                    LayoutMode: Left;
+                                                    Padding: (Bottom: 6, Top: 4);
+                                                    Group { Anchor: (Width: 3, Height: 16); Background: #ff7878; }
+                                                    Group { Anchor: (Width: 8); }
+                                                    Label { Text: "MOB LEVELING"; Style: (TextColor: #ff7878, FontSize: 12, RenderBold: true, RenderUppercase: true, LetterSpacing: 1); }
+                                                }
+
+                                                Group #LvlMobLevelModeRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label { Text: "Level Source Mode"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    Label #LvlMobLevelModeValue { Text: "FIXED"; Anchor: (Width: @CompactValueWidth, Height: 22); Padding: (Horizontal: 6, Vertical: 2); Style: (TextColor: #f0cf78, FontSize: 12, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); Background: #061420; }
+                                                    Group { Anchor: (Width: 6); }
+                                                    $C.@TextButton #LvlMobLevelModeCycle { Anchor: (Height: 26, Width: @CompactToggleWidth); Padding: (Horizontal: 6, Vertical: 3); Text: "Cycle"; Style: @CustomStyle; }
+                                                }
+
+                                                Group { Anchor: (Height: 3); }
+
+                                                Group #LvlMobXpEnabledRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label { Text: "Mob XP Enabled"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    Label #LvlMobXpEnabledValue { Text: "true"; Anchor: (Width: @CompactValueWidth, Height: 22); Padding: (Horizontal: 6, Vertical: 2); Style: (TextColor: #6fe3ff, FontSize: 11, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); Background: #061420; }
+                                                    Group { Anchor: (Width: 6); }
+                                                    $C.@TextButton #LvlMobXpEnabledToggle { Anchor: (Height: 26, Width: @CompactToggleWidth); Padding: (Horizontal: 6, Vertical: 3); Text: "Toggle"; Style: @CustomStyle; }
+                                                }
+
+                                                Group { Anchor: (Height: 3); }
+
+                                                Group #LvlMobXpScalingModeRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label { Text: "XP Scaling Mode"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    Label #LvlMobXpScalingModeValue { Text: "LINEAR"; Anchor: (Width: @CompactValueWidth, Height: 22); Padding: (Horizontal: 6, Vertical: 2); Style: (TextColor: #f0cf78, FontSize: 12, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); Background: #061420; }
+                                                    Group { Anchor: (Width: 6); }
+                                                    $C.@TextButton #LvlMobXpScalingModeCycle { Anchor: (Height: 26, Width: @CompactToggleWidth); Padding: (Horizontal: 6, Vertical: 3); Text: "Cycle"; Style: @CustomStyle; }
+                                                }
+
+                                                Group { Anchor: (Height: 3); }
+
+                                                Group #LvlGlobalXpMultiplierRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label { Text: "Global XP Multiplier"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    NumberField #LvlGlobalXpMultiplierInput { Value: 1; Anchor: (Width: @CompactValueWidth, Height: 22); Style: (FontSize: 12, TextColor: #cddcf0); Padding: (Left: 6); Background: $C.@InputBoxBackground; }
+                                                }
+
+                                                Group { Anchor: (Height: 12); }
+
+                                                // ---- NAMEPLATE ----
+                                                Group {
+                                                    LayoutMode: Left;
+                                                    Padding: (Bottom: 6, Top: 4);
+                                                    Group { Anchor: (Width: 3, Height: 16); Background: #b0c4de; }
+                                                    Group { Anchor: (Width: 8); }
+                                                    Label { Text: "NAMEPLATE"; Style: (TextColor: #b0c4de, FontSize: 12, RenderBold: true, RenderUppercase: true, LetterSpacing: 1); }
+                                                }
+
+                                                Group #LvlNameplateEnabledRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label { Text: "Mob Nameplate Enabled"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    Label #LvlNameplateEnabledValue { Text: "true"; Anchor: (Width: @CompactValueWidth, Height: 22); Padding: (Horizontal: 6, Vertical: 2); Style: (TextColor: #6fe3ff, FontSize: 11, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); Background: #061420; }
+                                                    Group { Anchor: (Width: 6); }
+                                                    $C.@TextButton #LvlNameplateEnabledToggle { Anchor: (Height: 26, Width: @CompactToggleWidth); Padding: (Horizontal: 6, Vertical: 3); Text: "Toggle"; Style: @CustomStyle; }
+                                                }
+
+                                                Group { Anchor: (Height: 3); }
+
+                                                Group #LvlNameplateShowLevelRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label { Text: "Show Level"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    Label #LvlNameplateShowLevelValue { Text: "true"; Anchor: (Width: @CompactValueWidth, Height: 22); Padding: (Horizontal: 6, Vertical: 2); Style: (TextColor: #6fe3ff, FontSize: 11, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); Background: #061420; }
+                                                    Group { Anchor: (Width: 6); }
+                                                    $C.@TextButton #LvlNameplateShowLevelToggle { Anchor: (Height: 26, Width: @CompactToggleWidth); Padding: (Horizontal: 6, Vertical: 3); Text: "Toggle"; Style: @CustomStyle; }
+                                                }
+
+                                                Group { Anchor: (Height: 3); }
+
+                                                Group #LvlNameplateShowNameRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label { Text: "Show Name"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    Label #LvlNameplateShowNameValue { Text: "true"; Anchor: (Width: @CompactValueWidth, Height: 22); Padding: (Horizontal: 6, Vertical: 2); Style: (TextColor: #6fe3ff, FontSize: 11, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); Background: #061420; }
+                                                    Group { Anchor: (Width: 6); }
+                                                    $C.@TextButton #LvlNameplateShowNameToggle { Anchor: (Height: 26, Width: @CompactToggleWidth); Padding: (Horizontal: 6, Vertical: 3); Text: "Toggle"; Style: @CustomStyle; }
+                                                }
+
+                                                Group { Anchor: (Height: 3); }
+
+                                                Group #LvlNameplateShowHealthRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label { Text: "Show Health"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    Label #LvlNameplateShowHealthValue { Text: "true"; Anchor: (Width: @CompactValueWidth, Height: 22); Padding: (Horizontal: 6, Vertical: 2); Style: (TextColor: #6fe3ff, FontSize: 11, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); Background: #061420; }
+                                                    Group { Anchor: (Width: 6); }
+                                                    $C.@TextButton #LvlNameplateShowHealthToggle { Anchor: (Height: 26, Width: @CompactToggleWidth); Padding: (Horizontal: 6, Vertical: 3); Text: "Toggle"; Style: @CustomStyle; }
+                                                }
+
+                                                Group { Anchor: (Height: 3); }
+
+                                                Group #LvlPlayerNameplateEnabledRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label { Text: "Player Nameplate Enabled"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    Label #LvlPlayerNameplateEnabledValue { Text: "true"; Anchor: (Width: @CompactValueWidth, Height: 22); Padding: (Horizontal: 6, Vertical: 2); Style: (TextColor: #6fe3ff, FontSize: 11, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); Background: #061420; }
+                                                    Group { Anchor: (Width: 6); }
+                                                    $C.@TextButton #LvlPlayerNameplateEnabledToggle { Anchor: (Height: 26, Width: @CompactToggleWidth); Padding: (Horizontal: 6, Vertical: 3); Text: "Toggle"; Style: @CustomStyle; }
+                                                }
+                                            }
+
+                                            // ================================================
+                                            // WORLD-SETTINGS TAB
+                                            // ================================================
+                                            Group #WorldSettingsPanel {
+                                                LayoutMode: Top;
+                                                Visible: false;
+
+                                                // ---- BLACKLISTED WORLDS ----
+                                                Group {
+                                                    LayoutMode: Left;
+                                                    Padding: (Bottom: 6, Top: 4);
+                                                    Group { Anchor: (Width: 3, Height: 16); Background: #ff7878; }
+                                                    Group { Anchor: (Width: 8); }
+                                                    Label { Text: "BLACKLISTED WORLDS"; Style: (TextColor: #ff7878, FontSize: 12, RenderBold: true, RenderUppercase: true, LetterSpacing: 1); }
+                                                }
+
+                                                Group #WsBlacklistedWorldsRow {
+                                                    LayoutMode: Top;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Full: 10);
+
+                                                    Label {
+                                                        Text: "Worlds where leveling and XP are completely disabled.";
+                                                        Style: (TextColor: #9ab0ca, FontSize: 11);
+                                                    }
+
+                                                    Group { Anchor: (Height: 6); }
+
+                                                    Label #WsBlacklistedWorldsValue {
+                                                        Text: "creative, lobby, pvp, test";
+                                                        Style: (TextColor: #f4f9ff, FontSize: 13, Wrap: true);
+                                                    }
+                                                }
+
+                                                Group { Anchor: (Height: 12); }
+
+                                                // ---- GLOBAL XP SETTINGS ----
+                                                Group {
+                                                    LayoutMode: Left;
+                                                    Padding: (Bottom: 6, Top: 4);
+                                                    Group { Anchor: (Width: 3, Height: 16); Background: #f0cf78; }
+                                                    Group { Anchor: (Width: 8); }
+                                                    Label { Text: "GLOBAL XP SETTINGS"; Style: (TextColor: #f0cf78, FontSize: 12, RenderBold: true, RenderUppercase: true, LetterSpacing: 1); }
+                                                }
+
+                                                Group #WsEnableXpRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label { Text: "Enable XP (Global)"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    Label #WsEnableXpValue { Text: "true"; Anchor: (Width: @CompactValueWidth, Height: 22); Padding: (Horizontal: 6, Vertical: 2); Style: (TextColor: #6fe3ff, FontSize: 11, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); Background: #061420; }
+                                                    Group { Anchor: (Width: 6); }
+                                                    $C.@TextButton #WsEnableXpToggle { Anchor: (Height: 26, Width: @CompactToggleWidth); Padding: (Horizontal: 6, Vertical: 3); Text: "Toggle"; Style: @CustomStyle; }
+                                                }
+
+                                                Group { Anchor: (Height: 3); }
+
+                                                Group #WsGlobalXpMultiplierRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label { Text: "Global XP Multiplier"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    NumberField #WsGlobalXpMultiplierInput { Value: 1; Anchor: (Width: @CompactValueWidth, Height: 22); Style: (FontSize: 12, TextColor: #cddcf0); Padding: (Left: 6); Background: $C.@InputBoxBackground; }
+                                                }
+
+                                                Group { Anchor: (Height: 3); }
+
+                                                Group #WsXpLevelRangeEnabledRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label { Text: "XP Level Range Enabled"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    Label #WsXpLevelRangeEnabledValue { Text: "true"; Anchor: (Width: @CompactValueWidth, Height: 22); Padding: (Horizontal: 6, Vertical: 2); Style: (TextColor: #6fe3ff, FontSize: 11, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); Background: #061420; }
+                                                    Group { Anchor: (Width: 6); }
+                                                    $C.@TextButton #WsXpLevelRangeEnabledToggle { Anchor: (Height: 26, Width: @CompactToggleWidth); Padding: (Horizontal: 6, Vertical: 3); Text: "Toggle"; Style: @CustomStyle; }
+                                                }
+
+                                                Group { Anchor: (Height: 3); }
+
+                                                Group #WsXpLevelRangeMaxRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label { Text: "Max Level Difference"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    NumberField #WsXpLevelRangeMaxInput { Value: 20; Anchor: (Width: @CompactValueWidth, Height: 22); Style: (FontSize: 12, TextColor: #cddcf0); Padding: (Left: 6); Background: $C.@InputBoxBackground; }
+                                                }
+
+                                                Group { Anchor: (Height: 3); }
+
+                                                Group #WsAdditiveMinimumXpRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label { Text: "Additive Minimum XP"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    NumberField #WsAdditiveMinimumXpInput { Value: 50; Anchor: (Width: @CompactValueWidth, Height: 22); Style: (FontSize: 12, TextColor: #cddcf0); Padding: (Left: 6); Background: $C.@InputBoxBackground; }
+                                                }
+
+                                                Group { Anchor: (Height: 12); }
+
+                                                // ---- MOB SCALING ----
+                                                Group {
+                                                    LayoutMode: Left;
+                                                    Padding: (Bottom: 6, Top: 4);
+                                                    Group { Anchor: (Width: 3, Height: 16); Background: #6fe3ff; }
+                                                    Group { Anchor: (Width: 8); }
+                                                    Label { Text: "MOB SCALING"; Style: (TextColor: #6fe3ff, FontSize: 12, RenderBold: true, RenderUppercase: true, LetterSpacing: 1); }
+                                                }
+
+                                                Group #WsMobScalingRangeRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label { Text: "Mob Level Scaling Range"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    NumberField #WsMobScalingRangeInput { Value: 15; Anchor: (Width: @CompactValueWidth, Height: 22); Style: (FontSize: 12, TextColor: #cddcf0); Padding: (Left: 6); Background: $C.@InputBoxBackground; }
+                                                }
+
+                                                Group { Anchor: (Height: 3); }
+
+                                                Group #WsPlayerScalingRangeRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label { Text: "Player Level Scaling Range"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    NumberField #WsPlayerScalingRangeInput { Value: 20; Anchor: (Width: @CompactValueWidth, Height: 22); Style: (FontSize: 12, TextColor: #cddcf0); Padding: (Left: 6); Background: $C.@InputBoxBackground; }
+                                                }
+
+                                                Group { Anchor: (Height: 12); }
+
+                                                // ---- MOB AUGMENTS ----
+                                                Group {
+                                                    LayoutMode: Left;
+                                                    Padding: (Bottom: 6, Top: 4);
+                                                    Group { Anchor: (Width: 3, Height: 16); Background: #d7baff; }
+                                                    Group { Anchor: (Width: 8); }
+                                                    Label { Text: "MOB AUGMENTS"; Style: (TextColor: #d7baff, FontSize: 12, RenderBold: true, RenderUppercase: true, LetterSpacing: 1); }
+                                                }
+
+                                                Group #WsMobAugmentsEnabledRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label { Text: "Mob Augments Enabled"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    Label #WsMobAugmentsEnabledValue { Text: "true"; Anchor: (Width: @CompactValueWidth, Height: 22); Padding: (Horizontal: 6, Vertical: 2); Style: (TextColor: #6fe3ff, FontSize: 11, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); Background: #061420; }
+                                                    Group { Anchor: (Width: 6); }
+                                                    $C.@TextButton #WsMobAugmentsEnabledToggle { Anchor: (Height: 26, Width: @CompactToggleWidth); Padding: (Horizontal: 6, Vertical: 3); Text: "Toggle"; Style: @CustomStyle; }
+                                                }
+
+                                                Group { Anchor: (Height: 3); }
+
+                                                Group #WsMobAugmentsBlacklistRow {
+                                                    LayoutMode: Top;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Full: 10);
+
+                                                    Label { Text: "Blacklisted Augments"; Style: (TextColor: #d5e4f7, FontSize: 13, RenderBold: true); }
+                                                    Group { Anchor: (Height: 4); }
+                                                    Label #WsMobAugmentsBlacklistValue {
+                                                        Text: "burn, phase_rush, grasp_of_the_undying, haymaker, tank_engine";
+                                                        Style: (TextColor: #9ab0ca, FontSize: 11, Wrap: true);
+                                                    }
+                                                }
+                                            }
+
+                                            // ================================================
+                                            // EVENTS.YML TAB
+                                            // ================================================
+                                            Group #EventsYmlPanel {
+                                                LayoutMode: Top;
+                                                Visible: false;
+
+                                                // ---- PRESTIGE LEVEL UP ----
+                                                Group {
+                                                    LayoutMode: Left;
+                                                    Padding: (Bottom: 6, Top: 4);
+                                                    Group { Anchor: (Width: 3, Height: 16); Background: #d7baff; }
+                                                    Group { Anchor: (Width: 8); }
+                                                    Label { Text: "PRESTIGE LEVEL UP"; Style: (TextColor: #d7baff, FontSize: 12, RenderBold: true, RenderUppercase: true, LetterSpacing: 1); }
+                                                }
+
+                                                Group #EvtPrestigeEnabledRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label { Text: "Prestige Events Enabled"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    Label #EvtPrestigeEnabledValue { Text: "true"; Anchor: (Width: @CompactValueWidth, Height: 22); Padding: (Horizontal: 6, Vertical: 2); Style: (TextColor: #6fe3ff, FontSize: 11, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); Background: #061420; }
+                                                    Group { Anchor: (Width: 6); }
+                                                    $C.@TextButton #EvtPrestigeEnabledToggle { Anchor: (Height: 26, Width: @CompactToggleWidth); Padding: (Horizontal: 6, Vertical: 3); Text: "Toggle"; Style: @CustomStyle; }
+                                                }
+
+                                                Group { Anchor: (Height: 3); }
+
+                                                Group #EvtPrestigeAsPlayerRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label { Text: "Run as Player"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    Label #EvtPrestigeAsPlayerValue { Text: "false"; Anchor: (Width: @CompactValueWidth, Height: 22); Padding: (Horizontal: 6, Vertical: 2); Style: (TextColor: #6fe3ff, FontSize: 11, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); Background: #061420; }
+                                                    Group { Anchor: (Width: 6); }
+                                                    $C.@TextButton #EvtPrestigeAsPlayerToggle { Anchor: (Height: 26, Width: @CompactToggleWidth); Padding: (Horizontal: 6, Vertical: 3); Text: "Toggle"; Style: @CustomStyle; }
+                                                }
+
+                                                Group { Anchor: (Height: 12); }
+
+                                                // ---- PLAYER LEVEL UP ----
+                                                Group {
+                                                    LayoutMode: Left;
+                                                    Padding: (Bottom: 6, Top: 4);
+                                                    Group { Anchor: (Width: 3, Height: 16); Background: #f0cf78; }
+                                                    Group { Anchor: (Width: 8); }
+                                                    Label { Text: "PLAYER LEVEL UP"; Style: (TextColor: #f0cf78, FontSize: 12, RenderBold: true, RenderUppercase: true, LetterSpacing: 1); }
+                                                }
+
+                                                Group #EvtLevelUpEnabledRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label { Text: "Level Up Events Enabled"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    Label #EvtLevelUpEnabledValue { Text: "true"; Anchor: (Width: @CompactValueWidth, Height: 22); Padding: (Horizontal: 6, Vertical: 2); Style: (TextColor: #6fe3ff, FontSize: 11, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); Background: #061420; }
+                                                    Group { Anchor: (Width: 6); }
+                                                    $C.@TextButton #EvtLevelUpEnabledToggle { Anchor: (Height: 26, Width: @CompactToggleWidth); Padding: (Horizontal: 6, Vertical: 3); Text: "Toggle"; Style: @CustomStyle; }
+                                                }
+
+                                                Group { Anchor: (Height: 3); }
+
+                                                Group #EvtLevelUpAsPlayerRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label { Text: "Run as Player"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    Label #EvtLevelUpAsPlayerValue { Text: "false"; Anchor: (Width: @CompactValueWidth, Height: 22); Padding: (Horizontal: 6, Vertical: 2); Style: (TextColor: #6fe3ff, FontSize: 11, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); Background: #061420; }
+                                                    Group { Anchor: (Width: 6); }
+                                                    $C.@TextButton #EvtLevelUpAsPlayerToggle { Anchor: (Height: 26, Width: @CompactToggleWidth); Padding: (Horizontal: 6, Vertical: 3); Text: "Toggle"; Style: @CustomStyle; }
+                                                }
+
+                                                Group { Anchor: (Height: 3); }
+
+                                                Group #EvtLevelUpRepeatPrestigesRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 7);
+                                                    Label { Text: "Repeat Across Prestiges"; Style: (TextColor: #d5e4f7, FontSize: 13); FlexWeight: 1; }
+                                                    Label #EvtLevelUpRepeatPrestigesValue { Text: "true"; Anchor: (Width: @CompactValueWidth, Height: 22); Padding: (Horizontal: 6, Vertical: 2); Style: (TextColor: #6fe3ff, FontSize: 11, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center); Background: #061420; }
+                                                    Group { Anchor: (Width: 6); }
+                                                    $C.@TextButton #EvtLevelUpRepeatPrestigesToggle { Anchor: (Height: 26, Width: @CompactToggleWidth); Padding: (Horizontal: 6, Vertical: 3); Text: "Toggle"; Style: @CustomStyle; }
+                                                }
+
+                                                Group { Anchor: (Height: 12); }
+
+                                                // ---- CONFIGURED COMMANDS ----
+                                                Group {
+                                                    LayoutMode: Left;
+                                                    Padding: (Bottom: 6, Top: 4);
+                                                    Group { Anchor: (Width: 3, Height: 16); Background: #7a8a9e; }
+                                                    Group { Anchor: (Width: 8); }
+                                                    Label { Text: "CONFIGURED COMMANDS"; Style: (TextColor: #7a8a9e, FontSize: 12, RenderBold: true, RenderUppercase: true, LetterSpacing: 1); }
+                                                }
+
+                                                Group {
+                                                    LayoutMode: Top;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Full: 10);
+
+                                                    Label {
+                                                        Text: "Command mappings are loaded from events.yml. To edit command lists, modify the file directly.";
+                                                        Style: (TextColor: #9ab0ca, FontSize: 11, Wrap: true);
+                                                    }
+
+                                                    Group { Anchor: (Height: 6); }
+
+                                                    Label #EvtCommandSummary {
+                                                        Text: "Prestige: 1 rule | Level Up: 2 rules";
+                                                        Style: (TextColor: #d5e4f7, FontSize: 13);
+                                                    }
+                                                }
+                                            }
+
+                                            // ================================================
+                                            // WEAPONS.JSON TAB
+                                            // ================================================
+                                            Group #WeaponsJsonPanel {
+                                                LayoutMode: Top;
+                                                Visible: false;
+
+                                                Group {
+                                                    LayoutMode: Left;
+                                                    Padding: (Bottom: 6, Top: 4);
+                                                    Group { Anchor: (Width: 3, Height: 16); Background: #f0cf78; }
+                                                    Group { Anchor: (Width: 8); }
+                                                    Label { Text: "WEAPON TYPES"; Style: (TextColor: #f0cf78, FontSize: 12, RenderBold: true, RenderUppercase: true, LetterSpacing: 1); }
+                                                }
+
+                                                Group {
+                                                    LayoutMode: Top;
+                                                    Background: #0b141f(0.60);
+                                                    Padding: (Full: 8);
+                                                    Label { Text: "Weapon classifications used for class restrictions and damage calculations."; Style: (TextColor: #9ab0ca, FontSize: 11, Wrap: true); }
+                                                }
+
+                                                Group { Anchor: (Height: 6); }
+
+                                                Group #WpnSwordRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 6);
+                                                    Label { Text: "Sword"; Style: (TextColor: #f4f9ff, FontSize: 13, RenderBold: true); Anchor: (Width: 90); }
+                                                    Label #WpnSwordKeywords { Text: "sword, blade, saber, katana, rapier, cutlass, ..."; Style: (TextColor: #9ab0ca, FontSize: 11); FlexWeight: 1; }
+                                                }
+
+                                                Group { Anchor: (Height: 2); }
+
+                                                Group #WpnAxeRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 6);
+                                                    Label { Text: "Axe"; Style: (TextColor: #f4f9ff, FontSize: 13, RenderBold: true); Anchor: (Width: 90); }
+                                                    Label #WpnAxeKeywords { Text: "axe, hatchet, battleaxe"; Style: (TextColor: #9ab0ca, FontSize: 11); FlexWeight: 1; }
+                                                }
+
+                                                Group { Anchor: (Height: 2); }
+
+                                                Group #WpnGauntletRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 6);
+                                                    Label { Text: "Gauntlet"; Style: (TextColor: #f4f9ff, FontSize: 13, RenderBold: true); Anchor: (Width: 90); }
+                                                    Label #WpnGauntletKeywords { Text: "gauntlet, glove, knuckle, bracer, fist"; Style: (TextColor: #9ab0ca, FontSize: 11); FlexWeight: 1; }
+                                                }
+
+                                                Group { Anchor: (Height: 2); }
+
+                                                Group #WpnBowRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 6);
+                                                    Label { Text: "Bow"; Style: (TextColor: #f4f9ff, FontSize: 13, RenderBold: true); Anchor: (Width: 90); }
+                                                    Label #WpnBowKeywords { Text: "bow, weaver"; Style: (TextColor: #9ab0ca, FontSize: 11); FlexWeight: 1; }
+                                                }
+
+                                                Group { Anchor: (Height: 2); }
+
+                                                Group #WpnStaffRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 6);
+                                                    Label { Text: "Staff"; Style: (TextColor: #f4f9ff, FontSize: 13, RenderBold: true); Anchor: (Width: 90); }
+                                                    Label #WpnStaffKeywords { Text: "staff, rod, spellbook, wand, necronomicon"; Style: (TextColor: #9ab0ca, FontSize: 11); FlexWeight: 1; }
+                                                }
+
+                                                Group { Anchor: (Height: 2); }
+
+                                                Group #WpnDaggerRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 6);
+                                                    Label { Text: "Dagger"; Style: (TextColor: #f4f9ff, FontSize: 13, RenderBold: true); Anchor: (Width: 90); }
+                                                    Label #WpnDaggerKeywords { Text: "dagger, knife, dirk, whirlwinds"; Style: (TextColor: #9ab0ca, FontSize: 11); FlexWeight: 1; }
+                                                }
+
+                                                Group { Anchor: (Height: 2); }
+
+                                                Group #WpnMaceRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 6);
+                                                    Label { Text: "Mace"; Style: (TextColor: #f4f9ff, FontSize: 13, RenderBold: true); Anchor: (Width: 90); }
+                                                    Label #WpnMaceKeywords { Text: "mace, hammer, club, flail, warhammer"; Style: (TextColor: #9ab0ca, FontSize: 11); FlexWeight: 1; }
+                                                }
+
+                                                Group { Anchor: (Height: 2); }
+
+                                                Group #WpnSpearRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 6);
+                                                    Label { Text: "Spear"; Style: (TextColor: #f4f9ff, FontSize: 13, RenderBold: true); Anchor: (Width: 90); }
+                                                    Label #WpnSpearKeywords { Text: "spear, halberd, polearm, trident, glaive"; Style: (TextColor: #9ab0ca, FontSize: 11); FlexWeight: 1; }
+                                                }
+
+                                                Group { Anchor: (Height: 2); }
+
+                                                Group #WpnCrossbowRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 6);
+                                                    Label { Text: "Crossbow"; Style: (TextColor: #f4f9ff, FontSize: 13, RenderBold: true); Anchor: (Width: 90); }
+                                                    Label #WpnCrossbowKeywords { Text: "crossbow"; Style: (TextColor: #9ab0ca, FontSize: 11); FlexWeight: 1; }
+                                                }
+
+                                                Group { Anchor: (Height: 2); }
+
+                                                Group #WpnHammerRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 6);
+                                                    Label { Text: "Hammer"; Style: (TextColor: #f4f9ff, FontSize: 13, RenderBold: true); Anchor: (Width: 90); }
+                                                    Label #WpnHammerKeywords { Text: "hammer"; Style: (TextColor: #9ab0ca, FontSize: 11); FlexWeight: 1; }
+                                                }
+
+                                                Group { Anchor: (Height: 2); }
+
+                                                Group #WpnShieldRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 6);
+                                                    Label { Text: "Shield"; Style: (TextColor: #f4f9ff, FontSize: 13, RenderBold: true); Anchor: (Width: 90); }
+                                                    Label #WpnShieldKeywords { Text: "shield"; Style: (TextColor: #9ab0ca, FontSize: 11); FlexWeight: 1; }
+                                                }
+
+                                                Group { Anchor: (Height: 2); }
+
+                                                Group #WpnGunsRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 6);
+                                                    Label { Text: "Guns"; Style: (TextColor: #f4f9ff, FontSize: 13, RenderBold: true); Anchor: (Width: 90); }
+                                                    Label #WpnGunsKeywords { Text: "gun"; Style: (TextColor: #9ab0ca, FontSize: 11); FlexWeight: 1; }
+                                                }
+
+                                                Group { Anchor: (Height: 2); }
+
+                                                Group #WpnUnarmedRow {
+                                                    LayoutMode: Left;
+                                                    Background: #0b141f(0.72);
+                                                    Padding: (Horizontal: 10, Vertical: 6);
+                                                    Label { Text: "Unarmed"; Style: (TextColor: #f4f9ff, FontSize: 13, RenderBold: true); Anchor: (Width: 90); }
+                                                    Label #WpnUnarmedKeywords { Text: "fist"; Style: (TextColor: #9ab0ca, FontSize: 11); FlexWeight: 1; }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
 
-                        Group { Anchor: (Height: 10); }
+                        Group { Anchor: (Width: 40); }
 
-                        Group #XpNotifRow {
-                            LayoutMode: Left;
-                            Background: #0b141f(0.84);
-                            Padding: (Full: 12);
+                        // ===========================================================
+                        // RIGHT PANEL (300px) - SETTINGS NAVIGATION
+                        // ===========================================================
+                        $C.@DecoratedContainer {
+                            Anchor: (Width: 300, Height: 700);
 
-                            Group {
+                            #Title {
+                                Group {
+                                    $C.@Title #SettingsNavTitle { @Text = "SETTINGS"; }
+                                }
+                            }
+
+                            #Content {
                                 LayoutMode: Top;
-                                FlexWeight: 1;
+                                Padding: (Horizontal: 12, Bottom: 12);
 
                                 Group {
-                                    LayoutMode: Left;
+                                    LayoutMode: Top;
+                                    Padding: (Top: 12);
 
-                                    Label #XpNotifLabel { Style: (TextColor: #f4f9ff, FontSize: 16, RenderBold: true); FlexWeight: 1; Text: "XP Gain Notifications"; }
+                                    Label {
+                                        Text: "SECTIONS";
+                                        Padding: (Left: 8, Bottom: 8);
+                                        Style: (TextColor: #6e7da1, FontSize: 11, RenderBold: true, RenderUppercase: true, LetterSpacing: 1);
+                                    }
 
-                                    Label #XpNotifValue {
-                                        Text: "ON";
-                                        Anchor: (Width: @SettingValueWidth, Height: 24);
-                                        Padding: (Horizontal: 8, Vertical: 4);
-                                        Style: (TextColor: #6fe3ff, FontSize: 12, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
-                                        Background: #061420;
+                                    @SectionNavButton #NavPlayerSettings {
+                                        Text: "Player Settings";
+                                    }
+
+                                    Group { Anchor: (Height: 4); }
+
+                                    @SectionNavButton #NavConfigSettings {
+                                        Text: "Config Settings";
                                     }
                                 }
 
-                                Group { Anchor: (Height: 4); }
-
-                                Label #XpNotifDescription {
-                                    Text: "Show notifications whenever you gain experience.";
-                                    Style: (TextColor: #c0cee5, FontSize: 12);
-                                }
-                            }
-
-                            Group { Anchor: (Width: 12); }
-
-                            $C.@TextButton #XpNotifToggle {
-                                Anchor: (Height: 32, Width: @ToggleButtonWidth);
-                                Padding: (Horizontal: 8, Vertical: 4);
-                                Text: "Toggle";
-                                Style: @CustomStyle;
-                            }
-                        }
-
-                        Group { Anchor: (Height: 10); }
-
-                        Group #PassiveLevelUpNotifRow {
-                            LayoutMode: Left;
-                            Background: #0b141f(0.84);
-                            Padding: (Full: 12);
-
-                            Group {
-                                LayoutMode: Top;
-                                FlexWeight: 1;
+                                Group { Anchor: (Height: 16); }
 
                                 Group {
-                                    LayoutMode: Left;
+                                    Anchor: (Height: 1);
+                                    Background: #2b3542;
+                                }
 
-                                    Label #PassiveLevelUpNotifLabel { Style: (TextColor: #f4f9ff, FontSize: 16, RenderBold: true); FlexWeight: 1; Text: "Passive Level-Up Notifications"; }
+                                Group { Anchor: (Height: 16); }
 
-                                    Label #PassiveLevelUpNotifValue {
-                                        Text: "ON";
-                                        Anchor: (Width: @SettingValueWidth, Height: 24);
-                                        Padding: (Horizontal: 8, Vertical: 4);
-                                        Style: (TextColor: #6fe3ff, FontSize: 12, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
-                                        Background: #061420;
+                                Group #SettingsNavInfoArea {
+                                    LayoutMode: Top;
+                                    Background: #0b141f(0.72);
+                                    Padding: (Full: 10);
+
+                                    Label #SettingsNavInfoTitle {
+                                        Text: "Player Settings";
+                                        Style: (TextColor: #f4f9ff, FontSize: 14, RenderBold: true);
+                                    }
+
+                                    Group { Anchor: (Height: 4); }
+
+                                    Label #SettingsNavInfoDesc {
+                                        Text: "Manage your personal gameplay preferences including HUD display and notification settings.";
+                                        Style: (TextColor: #9ab0ca, FontSize: 11, Wrap: true);
                                     }
                                 }
 
-                                Group { Anchor: (Height: 4); }
+                                Group { FlexWeight: 1; }
 
-                                Label #PassiveLevelUpNotifDescription {
-                                    Text: "Display updates when passives rank up during play.";
-                                    Style: (TextColor: #c0cee5, FontSize: 12);
-                                }
-                            }
+                                // ---- Action Buttons ----
+                                Group #SettingsActions {
+                                    LayoutMode: Top;
+                                    Padding: (Bottom: 4);
 
-                            Group { Anchor: (Width: 12); }
+                                    $C.@TextButton #SaveSettings {
+                                        Text: "SAVE";
+                                        Anchor: (Height: 36, Width: 276);
+                                        Padding: (Horizontal: 8);
+                                    }
 
-                            $C.@TextButton #PassiveLevelUpNotifToggle {
-                                Anchor: (Height: 32, Width: @ToggleButtonWidth);
-                                Padding: (Horizontal: 8, Vertical: 4);
-                                Text: "Toggle";
-                                Style: @CustomStyle;
-                            }
-                        }
+                                    Group { Anchor: (Height: 8); }
 
-                        Group { Anchor: (Height: 10); }
-
-                        Group #LuckDoubleDropsNotifRow {
-                            LayoutMode: Left;
-                            Background: #0b141f(0.84);
-                            Padding: (Full: 12);
-
-                            Group {
-                                LayoutMode: Top;
-                                FlexWeight: 1;
-
-                                Group {
-                                    LayoutMode: Left;
-
-                                    Label #LuckDoubleDropsNotifLabel { Style: (TextColor: #f4f9ff, FontSize: 16, RenderBold: true); FlexWeight: 1; Text: "Luck Double-Drop Notifications"; }
-
-                                    Label #LuckDoubleDropsNotifValue {
-                                        Text: "ON";
-                                        Anchor: (Width: @SettingValueWidth, Height: 24);
-                                        Padding: (Horizontal: 8, Vertical: 4);
-                                        Style: (TextColor: #6fe3ff, FontSize: 12, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
-                                        Background: #061420;
+                                    $C.@CancelTextButton #ReloadSettings {
+                                        Text: "RELOAD";
+                                        Anchor: (Height: 36, Width: 276);
+                                        Padding: (Horizontal: 8);
                                     }
                                 }
-
-                                Group { Anchor: (Height: 4); }
-
-                                Label #LuckDoubleDropsNotifDescription {
-                                    Text: "Toggle bonus drop proc notifications from luck effects.";
-                                    Style: (TextColor: #c0cee5, FontSize: 12);
-                                }
-                            }
-
-                            Group { Anchor: (Width: 12); }
-
-                            $C.@TextButton #LuckDoubleDropsNotifToggle {
-                                Anchor: (Height: 32, Width: @ToggleButtonWidth);
-                                Padding: (Horizontal: 8, Vertical: 4);
-                                Text: "Toggle";
-                                Style: @CustomStyle;
-                            }
-                        }
-
-                        Group { Anchor: (Height: 10); }
-
-                        Group #HealthRegenNotifRow {
-                            LayoutMode: Left;
-                            Background: #0b141f(0.84);
-                            Padding: (Full: 12);
-
-                            Group {
-                                LayoutMode: Top;
-                                FlexWeight: 1;
-
-                                Group {
-                                    LayoutMode: Left;
-
-                                    Label #HealthRegenNotifLabel { Style: (TextColor: #f4f9ff, FontSize: 16, RenderBold: true); FlexWeight: 1; Text: "Health Regen Notifications"; }
-
-                                    Label #HealthRegenNotifValue {
-                                        Text: "ON";
-                                        Anchor: (Width: @SettingValueWidth, Height: 24);
-                                        Padding: (Horizontal: 8, Vertical: 4);
-                                        Style: (TextColor: #6fe3ff, FontSize: 12, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
-                                        Background: #061420;
-                                    }
-                                }
-
-                                Group { Anchor: (Height: 4); }
-
-                                Label #HealthRegenNotifDescription {
-                                    Text: "Show notifications when health regeneration triggers.";
-                                    Style: (TextColor: #c0cee5, FontSize: 12);
-                                }
-                            }
-
-                            Group { Anchor: (Width: 12); }
-
-                            $C.@TextButton #HealthRegenNotifToggle {
-                                Anchor: (Height: 32, Width: @ToggleButtonWidth);
-                                Padding: (Horizontal: 8, Vertical: 4);
-                                Text: "Toggle";
-                                Style: @CustomStyle;
-                            }
-                        }
-
-                        Group { Anchor: (Height: 10); }
-
-                        Group #AugmentNotifRow {
-                            LayoutMode: Left;
-                            Background: #0b141f(0.84);
-                            Padding: (Full: 12);
-
-                            Group {
-                                LayoutMode: Top;
-                                FlexWeight: 1;
-
-                                Group {
-                                    LayoutMode: Left;
-
-                                    Label #AugmentNotifLabel { Style: (TextColor: #f4f9ff, FontSize: 16, RenderBold: true); FlexWeight: 1; Text: "Augment Notifications"; }
-
-                                    Label #AugmentNotifValue {
-                                        Text: "ON";
-                                        Anchor: (Width: @SettingValueWidth, Height: 24);
-                                        Padding: (Horizontal: 8, Vertical: 4);
-                                        Style: (TextColor: #6fe3ff, FontSize: 12, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
-                                        Background: #061420;
-                                    }
-                                }
-
-                                Group { Anchor: (Height: 4); }
-
-                                Label #AugmentNotifDescription {
-                                    Text: "Toggle chat notifications for augment status events.";
-                                    Style: (TextColor: #c0cee5, FontSize: 12);
-                                }
-                            }
-
-                            Group { Anchor: (Width: 12); }
-
-                            $C.@TextButton #AugmentNotifToggle {
-                                Anchor: (Height: 32, Width: @ToggleButtonWidth);
-                                Padding: (Horizontal: 8, Vertical: 4);
-                                Text: "Toggle";
-                                Style: @CustomStyle;
-                            }
-                        }
-
-                        Group { Anchor: (Height: 10); }
-
-                        Group #RaceModelRow {
-                            LayoutMode: Left;
-                            Background: #0b141f(0.84);
-                            Padding: (Full: 12);
-
-                            Group {
-                                LayoutMode: Top;
-                                FlexWeight: 1;
-
-                                Group {
-                                    LayoutMode: Left;
-
-                                    Label #RaceModelLabel { Style: (TextColor: #f4f9ff, FontSize: 16, RenderBold: true); FlexWeight: 1; Text: "Race Model Visuals"; }
-
-                                    Label #RaceModelValue {
-                                        Text: "ON";
-                                        Anchor: (Width: @SettingValueWidth, Height: 24);
-                                        Padding: (Horizontal: 8, Vertical: 4);
-                                        Style: (TextColor: #6fe3ff, FontSize: 12, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
-                                        Background: #061420;
-                                    }
-                                }
-
-                                Group { Anchor: (Height: 4); }
-
-                                Label #RaceModelDescription {
-                                    Text: "Enable race-specific character visuals when available.";
-                                    Style: (TextColor: #c0cee5, FontSize: 12);
-                                }
-                            }
-
-                            Group { Anchor: (Width: 12); }
-
-                            $C.@TextButton #RaceModelToggle {
-                                Anchor: (Height: 32, Width: @ToggleButtonWidth);
-                                Padding: (Horizontal: 8, Vertical: 4);
-                                Text: "Toggle";
-                                Style: @CustomStyle;
                             }
                         }
                     }

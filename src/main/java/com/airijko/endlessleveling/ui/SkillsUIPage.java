@@ -1083,6 +1083,9 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 // invites).
                 public String searchQuery;
 
+                // Generic numeric value for config NumberField inputs (settings page).
+                public Double configValue;
+
                 public Data() {
                         this.action = "";
                         this.autoAllocatePerLevelValue = null;
@@ -1097,6 +1100,7 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                         this.quickSpendFlowValue = null;
                         this.quickSpendSorceryValue = null;
                         this.searchQuery = null;
+                        this.configValue = null;
                 }
 
                 public static final BuilderCodec<Data> CODEC = BuilderCodec.builder(Data.class, Data::new)
@@ -1151,6 +1155,10 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                                 .append(new KeyedCodec<>("@SearchQuery", Codec.STRING),
                                                 (d, v) -> d.searchQuery = v,
                                                 d -> d.searchQuery)
+                                .add()
+                                .append(new KeyedCodec<>("@ConfigValue", Codec.DOUBLE),
+                                                (d, v) -> d.configValue = v,
+                                                d -> d.configValue)
                                 .add()
                                 .build();
         }

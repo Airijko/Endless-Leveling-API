@@ -1,6 +1,6 @@
 {
-  "class_name": "Exalted Oracle",
-  "id": "oracle_exalted",
+  "class_name": "Magistrate",
+  "id": "magistrate",
   "description": "A divine seer who empowers magic through foresight and blessing, excelling in sustained spellcasting.",
   "roles": [
     "Support"
@@ -12,11 +12,11 @@
   "weapons": [
     {
       "type": "STAFF",
-      "damage": 1.56
+      "damage": 1.05
     },
     {
       "type": "DAGGER",
-      "damage": 1.365
+      "damage": 1.05
     }
   ],
   "passives": [
@@ -24,8 +24,8 @@
       "type": "SHIELDING_AURA",
       "value": 1,
       "activation": "on_hit",
-      "flat_shield_value": 1000,
-      "stamina_ratio": 5.0,
+      "flat_shield_value": 100,
+      "stamina_ratio": 1.0,
       "self_shield_effectiveness": 0.25,
       "duration": 10,
       "cooldown": 25,
@@ -37,8 +37,8 @@
     {
       "type": "BUFFING_AURA",
       "value": 1.0,
-      "stamina_ratio": 1.5,
-      "max_buffed_value_per_ally": 10.0,
+      "stamina_ratio": 0.3,
+      "max_buffed_value_per_ally": 2.0,
       "self_buff_effectiveness": 0.25,
       "duration": 4,
       "damage_pause_seconds": 10,
@@ -48,36 +48,30 @@
       }
     },
     {
-      "type": "MANA_REGEN",
-      "value": 0.098
-    },
-    {
-      "type": "HEALING_BONUS",
-      "value": 0.65
-    },
-    {
-      "type": "SPECIAL_CHARGE_BONUS",
-      "value": 0.975
-    },
-    {
       "type": "INNATE_ATTRIBUTE_GAIN",
       "attribute": "flow",
-      "value": 3.25
+      "value": 1.75
     },
     {
       "type": "INNATE_ATTRIBUTE_GAIN",
       "attribute": "stamina",
-      "value": 1.3
+      "value": 0.7
     }
   ],
   "ascension": {
-    "id": "class_oracle_exalted",
-    "stage": "exalted",
-    "path": "oracle",
-    "final_form": true,
-    "single_route_only": true,
+    "id": "class_magistrate_base",
+    "stage": "base",
+    "path": "magistrate",
+    "final_form": false,
+    "single_route_only": false,
     "requirements": {
-      "required_prestige": 8
-    }
+      "required_prestige": 0
+    },
+    "next_paths": [
+      {
+        "id": "class_magistrate_elite",
+        "name": "Elite"
+      }
+    ]
   }
 }

@@ -1,6 +1,6 @@
 {
-  "class_name": "Oracle",
-  "id": "oracle",
+  "class_name": "Priest",
+  "id": "priest",
   "description": "A divine seer who empowers magic through foresight and blessing, excelling in sustained spellcasting.",
   "roles": [
     "Support"
@@ -8,7 +8,7 @@
   "damage_type": "Magic",
   "range_type": "range",
   "enabled": true,
-  "icon": "Weapon_Staff_Adamantite",
+  "icon": "Weapon_Staff_Mithril",
   "weapons": [
     {
       "type": "STAFF",
@@ -21,27 +21,21 @@
   ],
   "passives": [
     {
-      "type": "SHIELDING_AURA",
-      "value": 1,
-      "activation": "on_hit",
-      "flat_shield_value": 100,
-      "stamina_ratio": 1.0,
-      "self_shield_effectiveness": 0.25,
-      "duration": 10,
-      "cooldown": 25,
-      "radius": 5,
-      "radius_mana_scaling": {
-        "mana_per_block": 75
-      }
+      "type": "HEALING_TOUCH",
+      "healing_chance": 0.5,
+      "value": 5.0,
+      "source_attribute": "stamina",
+      "radius": 10,
+      "self_heal_effectiveness": 0.25
     },
     {
-      "type": "BUFFING_AURA",
+      "type": "HEALING_AURA",
       "value": 1.0,
-      "stamina_ratio": 0.3,
-      "max_buffed_value_per_ally": 2.0,
-      "self_buff_effectiveness": 0.25,
-      "duration": 4,
-      "damage_pause_seconds": 10,
+      "flat_heal_value": 25,
+      "mana_ratio": 0.3,
+      "stamina_ratio": 0.6,
+      "self_heal_effectiveness": 0.25,
+      "damage_pause_seconds": 4,
       "radius": 5,
       "radius_mana_scaling": {
         "mana_per_block": 75
@@ -59,9 +53,9 @@
     }
   ],
   "ascension": {
-    "id": "class_oracle_base",
+    "id": "class_priest_base",
     "stage": "base",
-    "path": "oracle",
+    "path": "priest",
     "final_form": false,
     "single_route_only": false,
     "requirements": {
@@ -69,7 +63,7 @@
     },
     "next_paths": [
       {
-        "id": "class_oracle_elite",
+        "id": "class_priest_elite",
         "name": "Elite"
       }
     ]

@@ -1,6 +1,6 @@
 {
-  "class_name": "Legendary Oracle",
-  "id": "oracle_legendary",
+  "class_name": "Exalted Magistrate",
+  "id": "magistrate_exalted",
   "description": "A divine seer who empowers magic through foresight and blessing, excelling in sustained spellcasting.",
   "roles": [
     "Support"
@@ -12,11 +12,11 @@
   "weapons": [
     {
       "type": "STAFF",
-      "damage": 1.38
+      "damage": 1.56
     },
     {
       "type": "DAGGER",
-      "damage": 1.208
+      "damage": 1.365
     }
   ],
   "passives": [
@@ -24,8 +24,8 @@
       "type": "SHIELDING_AURA",
       "value": 1,
       "activation": "on_hit",
-      "flat_shield_value": 750,
-      "stamina_ratio": 4.0,
+      "flat_shield_value": 1000,
+      "stamina_ratio": 5.0,
       "self_shield_effectiveness": 0.25,
       "duration": 10,
       "cooldown": 25,
@@ -37,8 +37,8 @@
     {
       "type": "BUFFING_AURA",
       "value": 1.0,
-      "stamina_ratio": 1.2,
-      "max_buffed_value_per_ally": 8.0,
+      "stamina_ratio": 1.5,
+      "max_buffed_value_per_ally": 10.0,
       "self_buff_effectiveness": 0.25,
       "duration": 4,
       "damage_pause_seconds": 10,
@@ -49,41 +49,35 @@
     },
     {
       "type": "MANA_REGEN",
-      "value": 0.086
+      "value": 0.098
     },
     {
       "type": "HEALING_BONUS",
-      "value": 0.575
+      "value": 0.65
     },
     {
       "type": "SPECIAL_CHARGE_BONUS",
-      "value": 0.862
+      "value": 0.975
     },
     {
       "type": "INNATE_ATTRIBUTE_GAIN",
       "attribute": "flow",
-      "value": 2.875
+      "value": 3.25
     },
     {
       "type": "INNATE_ATTRIBUTE_GAIN",
       "attribute": "stamina",
-      "value": 1.15
+      "value": 1.3
     }
   ],
   "ascension": {
-    "id": "class_oracle_legendary",
-    "stage": "legendary",
-    "path": "oracle",
-    "final_form": false,
+    "id": "class_magistrate_exalted",
+    "stage": "exalted",
+    "path": "magistrate",
+    "final_form": true,
     "single_route_only": true,
     "requirements": {
-      "required_prestige": 6
-    },
-    "next_paths": [
-      {
-        "id": "class_oracle_exalted",
-        "name": "Exalted"
-      }
-    ]
+      "required_prestige": 8
+    }
   }
 }

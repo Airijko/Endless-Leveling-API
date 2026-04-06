@@ -16,6 +16,7 @@ import com.airijko.endlessleveling.commands.subcommands.PrestigeCommand;
 import com.airijko.endlessleveling.commands.subcommands.SetLevelCommand;
 import com.airijko.endlessleveling.commands.subcommands.SetPrestigeCommand;
 import com.airijko.endlessleveling.commands.subcommands.SpendSkillPointsCommand;
+import com.airijko.endlessleveling.commands.subcommands.SyncSkillPointsCommand;
 import com.airijko.endlessleveling.commands.subcommands.DebugCommand;
 import com.airijko.endlessleveling.commands.subcommands.ToggleHudCommand;
 import com.airijko.endlessleveling.ui.SkillsUIPage;
@@ -81,6 +82,7 @@ public class EndlessLevelingCommand extends AbstractCommand {
                 this.addSubCommand(new ResetSkillPointsCommand());
                 this.addSubCommand(new SpendSkillPointsCommand());
                 this.addSubCommand(new ResetCooldownsCommand());
+                this.addSubCommand(new SyncSkillPointsCommand());
                 this.addSubCommand(new PrestigeCommand());
                 this.addSubCommand(new ReloadCommand());
                 this.addSubCommand(new LanguageCommand());

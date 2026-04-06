@@ -1,0 +1,17 @@
+Group #WsSectionRow {
+    LayoutMode: Left;
+    FlexWeight: 1;
+    Padding: (Bottom: 6, Top: 14, Left: 0);
+
+    Group #WsSectionBar {
+        Anchor: (Width: 3, Height: 16);
+        Background: #f0cf78;
+    }
+
+    Group { Anchor: (Width: 8); }
+
+    Label #WsRowKey {
+        Text: "";
+        Style: (TextColor: #f0cf78, FontSize: 12, RenderBold: true, RenderUppercase: true, LetterSpacing: 1);
+    }
+}

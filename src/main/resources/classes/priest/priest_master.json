@@ -1,6 +1,6 @@
 {
-  "class_name": "Elite Healer",
-  "id": "healer_elite",
+  "class_name": "Master Priest",
+  "id": "priest_master",
   "description": "A divine seer who empowers magic through foresight and blessing, excelling in sustained spellcasting.",
   "roles": [
     "Support"
@@ -12,7 +12,7 @@
   "weapons": [
     {
       "type": "STAFF",
-      "damage": 1.05
+      "damage": 1.2
     },
     {
       "type": "DAGGER",
@@ -23,17 +23,17 @@
     {
       "type": "HEALING_TOUCH",
       "healing_chance": 0.5,
-      "value": 7.5,
+      "value": 10.0,
       "source_attribute": "stamina",
-      "radius": 12.5,
+      "radius": 15,
       "self_heal_effectiveness": 0.25
     },
     {
       "type": "HEALING_AURA",
       "value": 1,
-      "flat_heal_value": 30,
-      "mana_ratio": 0.375,
-      "stamina_ratio": 0.675,
+      "flat_heal_value": 35,
+      "mana_ratio": 0.45,
+      "stamina_ratio": 0.75,
       "self_heal_effectiveness": 0.25,
       "damage_pause_seconds": 4,
       "radius": 5,
@@ -44,27 +44,27 @@
     {
       "type": "INNATE_ATTRIBUTE_GAIN",
       "attribute": "flow",
-      "value": 2.125
+      "value": 2.5
     },
     {
       "type": "INNATE_ATTRIBUTE_GAIN",
       "attribute": "stamina",
-      "value": 0.85
+      "value": 1
     }
   ],
   "ascension": {
-    "id": "class_healer_elite",
-    "stage": "elite",
-    "path": "healer",
+    "id": "class_priest_master",
+    "stage": "master",
+    "path": "priest",
     "final_form": false,
     "single_route_only": true,
     "requirements": {
-      "required_prestige": 2
+      "required_prestige": 4
     },
     "next_paths": [
       {
-        "id": "class_healer_master",
-        "name": "Master"
+        "id": "class_priest_legendary",
+        "name": "Legendary"
       }
     ]
   }

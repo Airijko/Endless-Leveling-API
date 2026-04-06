@@ -18,10 +18,10 @@ notify:
     cooldown:
       ready: "¡{0} está listo de nuevo!"
     generic: "{0}"
-  sync:
-    summary: "{0} jugadores tienen recuentos de ranuras de aumento discrepantes:"
-    entry: "- {0} [{1}: tiene {2}, debería tener {3}] -> /lvl augments reset {0}"
-    fixall: "Para arreglar todos a la vez: /lvl augments resetallplayers"
+    sync:
+      summary: "{0} jugadores tienen recuentos de ranuras de aumento discrepantes:"
+      entry: "- {0} [{1}: tiene {2}, debería tener {3}] -> /lvl augments reset {0}"
+      fixall: "Para arreglar todos a la vez: /lvl augments resetallplayers"
   passives:
     swiftness:
       faded: "La rapidez se ha agotado."
@@ -95,6 +95,7 @@ ui:
       passive_levelup_notif: Muestra actualizaciones cuando las pasivas suben de nivel.
       luck_double_notif: Notificaciones por botín extra debido a la suerte.
       health_regen_notif: Notificaciones al regenerar salud.
+      augment_notif: Activa/desactiva notificaciones de eventos de aumentos en el chat.
       race_model: Activa visualizaciones de personaje específicas de cada raza.
     player_hud:
       label: HUD de Jugador
@@ -114,11 +115,41 @@ ui:
     health_regen_notif:
       label: Notificaciones de Regen. de Salud
       toggled: Notificaciones de Regen. de Salud {0}
+    augment_notif:
+      label: Notificaciones de Aumentos
+      toggled: Notificaciones de Aumentos {0}
     race_model:
       label: Visualización de Modelo de Raza
       globally_disabled: Los modelos de raza están desactivados por el servidor.
       enabled: Visualización de modelo de raza activada
       disabled: Visualización de modelo de raza desactivada
+  support:
+    page:
+      title: Soporte
+    mod_name: Endless Leveling
+    developer: "Desarrollador: Airijko"
+    notice1: Algunas versiones redistribuidas alteran la interfaz o eliminan el nombre y los créditos de Endless Leveling.
+    notice2: Estas versiones no son oficiales.
+    notice3: Si disfrutas del mod, apoya el proyecto original y a su desarrollador.
+    discord_title: "¿Necesitas ayuda?"
+    discord_description: Para soporte, problemas y ayuda, únete a nuestra comunidad de Discord.
+    discord_button: UNIRSE A DISCORD
+    discord_chat_prompt: "¿Necesitas ayuda o quieres reportar un problema? Haz clic abajo para unirte a Discord."
+    discord_chat_link_label: Discord de Endless Leveling
+    partner:
+      section: Socios Oficiales de Endless
+      valid:
+        label: Validación de Addon
+        na: "N/D (addon no presente)"
+        ok: "Válido (autorizado)"
+        fail: "No válido (no autorizado)"
+    patreon:
+      prompt: Apoya el desarrollo de Endless Leveling en Patreon.
+      label: APOYAR EN PATREON
+    thank_you: Gracias por apoyar a Endless Leveling.
+    official_servers:
+      title: Servidores Oficiales
+      subtitle: Los servidores asociados autorizados se muestran aquí como tarjetas oficiales.
   leaderboards:
     page:
       title: Clasificaciones
@@ -158,6 +189,9 @@ ui:
       common: COMÚN
     actions:
       choose: Seleccionar
+      reroll: "Relanzar ({0})"
+      reroll_infinite: "Relanzar (INF)"
+      refresh: Actualizar Ofertas
     selected: "Aumento seleccionado: {0} ({1})"
     no_description: Sin descripción disponible.
     no_augment:
@@ -166,12 +200,14 @@ ui:
     no_augments_yet:
       title: SIN AUMENTOS AÚN
       body: No hay aumentos disponibles. Próximo desbloqueo al nivel {0}.
+      next_unlock_preview: "No hay aumentos disponibles aún.\n\nPróximo desbloqueo\n{0}"
     no_augments:
       title: SIN AUMENTOS
       body: No se han configurado hitos de aumentos.
     all_claimed:
       title: TODO RECLAMADO
       next_unlock: Has reclamado todos los aumentos disponibles. Próximo desbloqueo al nivel {0}.
+      next_unlock_preview: "Has reclamado todos los aumentos desbloqueados.\n\nPróximo desbloqueo\n{0}"
       done: Ya has reclamado todos los aumentos configurados.
     remaining:
       header: "Aún tienes más aumentos para elegir:"
@@ -185,6 +221,16 @@ ui:
       definitions_missing: No hay definiciones cargadas (/mods/EndlessLeveling/augments).
       offers_missing: Los aumentos desbloqueados faltan en tus ofertas.
       slot_empty: No hay aumento en esta ranura.
+      reroll_nothing_selected: Selecciona primero un aumento que poseas.
+      no_rerolls_tier: "No hay relanzamientos disponibles para el rango {0}."
+      reroll_failed: Relanzamiento fallido. Inténtalo de nuevo.
+      reroll_not_owned: No posees ese aumento.
+      refresh_permission: No tienes permiso para actualizar las ofertas de aumentos.
+    reroll:
+      success: "Relanzamiento de {0} realizado. Relanzamientos restantes: {1}"
+      success_bypass: "Relanzamiento de {0} realizado. Bypass de Operador/Admin activo (sin consumir relanzamiento)."
+    refresh:
+      success: Ofertas de aumentos actualizadas para tu perfil activo.
     effect:
       cooldown: "Enfriamiento: {0}"
       duration_per_stack: "Duración por acumulación: {0}"
@@ -271,16 +317,21 @@ ui:
       left:
         description: Los aumentos son poderosas mejoras pasivas que fortalecen a tu personaje de forma permanente. Se ganan mediante hitos de nivel y prestigio.
         collection_title: TU COLECCIÓN
-        rerolls_title: REROLLS USADOS
+        rerolls_title: RELANZAMIENTOS USADOS
+        rerolls_available_title: RELANZAMIENTOS DISPONIBLES
         hover_hint: Pasa el cursor sobre un aumento para verlo.
       title: AUMENTOS
       search_placeholder: Buscar aumentos...
       section:
         unlocked: DESBLOQUEADOS
         mythic: MÍTICO
+        legendary: LEGENDARIO
         elite: ÉLITE
         common: COMÚN
       info_title: INFO DEL AUMENTO
+      info:
+        reroll_button: "RELANZAR ({0})"
+        reroll_button_infinite: "RELANZAR (INF)"
       results: "Resultados: {0}"
       choose_unavailable: No hay aumentos disponibles para elegir.
       info_select_prompt: Selecciona un aumento
@@ -288,10 +339,13 @@ ui:
       stats:
         total: "Total: {0} / {1}"
         mythic: "Mítico: {0} / {1}"
+        legendary: "Legendario: {0} / {1}"
         elite: "Élite: {0} / {1}"
         common: "Común: {0}"
       rerolls:
+        total: "Total: {0}"
         mythic: "Mítico: {0}"
+        legendary: "Legendario: {0}"
         elite: "Élite: {0}"
         common: "Común: {0}"
     unlocked:
@@ -404,6 +458,8 @@ ui:
         executioner: Verdugo
         swiftness: Rapidez
         wither: Descomposición
+        army_of_the_dead: Ejército de los Muertos
+        true_edge: Filo Verdadero
         crit_defense: Defensa Crítica
       scope:
         hp: PS
@@ -590,6 +646,29 @@ ui:
     passive:
       detail:
         threshold: <{0}% {1}
+      pretty:
+        na: n/d
+        ravenous_strike:
+          title: Golpes de robo de vida depredador
+          flat: "- Curación por golpe: {0}"
+          strength: "- Escala con Fuerza: {0}"
+          sorcery: "- Escala con Hechicería: {0}"
+          note: "- Se añade a la curación de tus golpes dañinos"
+        true_edge:
+          title: Golpes que penetran defensas
+          flat: "- Daño verdadero fijo: {0} por golpe"
+          ratio: "- Daño verdadero extra: {0} del daño pre-defensa"
+          note: "- Se aplica como pérdida directa de salud tras el golpe"
+        army_of_the_dead:
+          title: Comando de invocación de no-muertos
+          base: "- Invocaciones base: {0}"
+          mana_scaling: "- Escala: +1 invocación por cada {0} maná"
+          cap: "- Límite de invocaciones: {0}"
+          trigger: "- Activación: {0}"
+          trigger_on_hit: Al golpear
+          lifetime: "- Duración: {0}s cada una"
+          cooldown: "- Enfriamiento de reaparición: {0}s por invocación"
+          inheritance: "- Herencia de estadísticas: {0}% de tus estadísticas"
     error:
       disabled: Las clases están desactivadas actualmente.
       playerdata: No se pudo cargar la información de la clase.
@@ -660,6 +739,22 @@ ui:
       footer_hint: Deshacer para descartar, Aplicar para confirmar.
       undo: DESHACER
       apply: APLICAR
+    side_panel:
+      title: GESTIÓN DE PUNTOS
+    excess:
+      precision: "Exceso de Precisión:"
+      defense: "Exceso de Defensa:"
+      total: "Total reembolsable:"
+      apply_hint: Esto actualiza tus puntos pendientes. Pulsa APLICAR para confirmar.
+      button:
+        none: REEMBOLSAR EXCESO
+        has_excess: "REEMBOLSAR EXCESO (+{0})"
+      status:
+        none: Sin puntos excedentes actualmente.
+        has_excess: "Exceso detectado: {0} punto(s)"
+      description:
+        none: "Si Precisión o Defensa excede el límite, los puntos sobrantes se pueden reembolsar aquí."
+        has_excess: "Precisión/Defensa supera el límite efectivo. Reembolsa los puntos sobrantes aquí."
     level_prefix: Nvl
     label:
       life_force: Vitalidad
@@ -699,6 +794,9 @@ ui:
       added: "{0} punto(s) añadidos a {1}"
       removed: "{0} punto(s) quitados de {1}"
       precision_capped: Precisión (Crítico) limitada al 100%; puntos excedentes no aplicados.
+      excess_refunded: "Puntos excedentes reembolsados: +{0} puntos de habilidad (Precisión -{1}, Defensa -{2}). Pulsa APLICAR para confirmar."
+      auto_allocate_toggled: "Auto-asignar {0}: {1}"
+      quick_spend_applied: "Aplicados {0} punto(s) a {1} inmediatamente."
     error:
       precision_at_cap: La precisión ya está al 100%; elimina otros bonos primero.
       not_enough_points: No hay suficientes puntos de habilidad
@@ -706,6 +804,11 @@ ui:
       below_original: No puede bajar del nivel original
       invalid_attribute: "Atributo no válido: {0}"
       action_failed: Error al procesar la acción de habilidad
+      crit_locked: "Esta construcción no puede invertir en {0}."
+      effective_cap_reached: "{0} ya está en su límite efectivo."
+      overflow_none_available: No hay puntos excedentes de precisión o defensa reembolsables actualmente.
+      overflow_no_refund: "{0} está en o por debajo de su límite efectivo; no hay puntos que reembolsar."
+      quick_spend_invalid_amount: "Introduce una cantidad de gasto rápido mayor que 0 para {0}."
     resource:
       health: Salud
       stamina: Resistencia
@@ -722,6 +825,32 @@ ui:
     leaderboards: CLASIF.
     settings: AJUSTES
     augments: AUMENTOS
+    dungeons: DUNGEONS
+    addons: ADDONS
+    support: SOPORTE
+  dungeons:
+    page:
+      title: Biblioteca de Mazmorras
+      subtitle: Explora las integraciones de mazmorras para Endless Leveling y consulta qué paquetes compatibles están instalados en este servidor.
+    category:
+      endgame: ENDGAME Y QOL
+      major: MAZMORRAS PRINCIPALES
+    instance_prefix: "Instancia: "
+  addons:
+    page:
+      title: Biblioteca de Addons
+      subtitle: Explora los addons y extensiones compatibles con Endless Leveling.
+    filter:
+      mod_partners: "Mostrando: Socios del Mod"
+      community: "Mostrando: Addons de la Comunidad"
+      partner_extensions: "Mostrando: Extensiones de Socios"
+      all: "Mostrando: Addons de Endless Leveling"
+    patreon:
+      prompt: Apoya el desarrollo de Endless Leveling en Patreon.
+      label: Apoyar en Patreon
+    starky:
+      prompt: Echa un vistazo al addon Mjolnir de Starky.
+      label: Mjolnir de Starky
   profile:
     playerdata:
       unavailable: Datos del jugador no disponibles.
@@ -729,14 +858,25 @@ ui:
       title: Perfil Seleccionado
       subtitle:
         default: Elige un perfil para ver estadísticas
+    header:
+      prestige: PRESTIGIO
+      level: NIVEL
+      current_xp: EXP ACTUAL
+      race: RAZA
+      primary_class: CLASE PRIMARIA
+      secondary_class: CLASE SECUNDARIA
+    section:
+      innate_bonuses: BONOS INNATOS
     level:
       short: Nvl {0}
     list:
       title: Perfiles {0}/{1}
+      new_profile: NUEVO PERFIL
       slot: Ranura {0}
       level: Nivel {0}
       xp: "{0} EXP"
       select: SELECCIONAR
+      delete_button: BORRAR
       status:
         active: ACTIVO
       delete:

@@ -1,0 +1,481 @@
+$C = "../../Common.ui";
+$S = "SettingsStyles.ui";
+
+@PlayerSettingsPanel = Group {
+    LayoutMode: Top;
+    FlexWeight: 1;
+
+    // ---- Header ----
+    Group #PlayerSettingsHeader {
+        LayoutMode: Left;
+        Anchor: (Height: 50);
+        Padding: (Horizontal: 16, Vertical: 10);
+
+        Label #SettingsTitleLabel {
+            Text: "Player Settings";
+            Style: (FontSize: 20, TextColor: #ffffff, RenderBold: true, VerticalAlignment: Center);
+        }
+
+        Group { FlexWeight: 1; }
+
+        Group {
+            LayoutMode: Left;
+            Background: #0b141f(0.92);
+            Anchor: (Height: 32);
+            Padding: (Horizontal: 10, Vertical: 6);
+
+            Label #SettingsIntroText {
+                Style: (TextColor: #aaccff, FontSize: 12, VerticalAlignment: Center);
+                Text: "Personal HUD, notifications, and visual preferences.";
+            }
+        }
+    }
+
+    Group { Anchor: (Height: 1); Background: #2b3542; }
+
+    // ---- Scrollable Settings ----
+    Group #PlayerSettingsMain {
+        LayoutMode: TopScrolling;
+        ScrollbarStyle: $C.@DefaultScrollbarStyle;
+        FlexWeight: 1;
+        Padding: (Full: 16);
+
+        Group #PlayerSettingsList {
+            LayoutMode: Top;
+
+            // ======== DISPLAY SECTION ========
+            Group {
+                LayoutMode: Left;
+                Padding: (Bottom: 8);
+
+                Group { Anchor: (Width: 3, Height: 18); Background: #6fe3ff; }
+                Group { Anchor: (Width: 8); }
+                Label { Text: "DISPLAY"; Style: (TextColor: #6fe3ff, FontSize: 13, RenderBold: true, RenderUppercase: true, LetterSpacing: 1); }
+            }
+
+            // -- Player HUD --
+            Group #PlayerHudRow {
+                LayoutMode: Left;
+                Background: #0b141f(0.84);
+                Padding: (Full: 0);
+
+                Group { Anchor: (Width: 3); Background: #6fe3ff(0.40); }
+
+                Group {
+                    LayoutMode: Left;
+                    FlexWeight: 1;
+                    Padding: (Full: 12);
+
+                    Group {
+                        LayoutMode: Top;
+                        FlexWeight: 1;
+
+                        Group {
+                            LayoutMode: Left;
+
+                            Label #PlayerHudLabel { Style: (TextColor: #f4f9ff, FontSize: 15, RenderBold: true); FlexWeight: 1; Text: "Player HUD"; }
+
+                            Label #PlayerHudValue {
+                                Text: "ON";
+                                Anchor: (Width: $S.@SettingValueWidth, Height: 24);
+                                Padding: (Horizontal: 8, Vertical: 4);
+                                Style: (TextColor: #6fe3ff, FontSize: 12, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
+                                Background: #061420;
+                            }
+                        }
+
+                        Group { Anchor: (Height: 4); }
+
+                        Label #PlayerHudDescription {
+                            Text: "Show or hide the Endless Leveling HUD overlay.";
+                            Style: (TextColor: #c0cee5, FontSize: 12);
+                        }
+                    }
+
+                    Group { Anchor: (Width: 12); }
+
+                    $C.@TextButton #PlayerHudToggle {
+                        Anchor: (Height: 32, Width: $S.@ToggleButtonWidth);
+                        Padding: (Horizontal: 8, Vertical: 4);
+                        Text: "Toggle";
+                        Style: $S.@CustomStyle;
+                    }
+                }
+            }
+
+            Group { Anchor: (Height: 6); }
+
+            // -- Race Model Visuals --
+            Group #RaceModelRow {
+                LayoutMode: Left;
+                Background: #0b141f(0.84);
+                Padding: (Full: 0);
+
+                Group { Anchor: (Width: 3); Background: #6fe3ff(0.40); }
+
+                Group {
+                    LayoutMode: Left;
+                    FlexWeight: 1;
+                    Padding: (Full: 12);
+
+                    Group {
+                        LayoutMode: Top;
+                        FlexWeight: 1;
+
+                        Group {
+                            LayoutMode: Left;
+
+                            Label #RaceModelLabel { Style: (TextColor: #f4f9ff, FontSize: 15, RenderBold: true); FlexWeight: 1; Text: "Race Model Visuals"; }
+
+                            Label #RaceModelValue {
+                                Text: "ON";
+                                Anchor: (Width: $S.@SettingValueWidth, Height: 24);
+                                Padding: (Horizontal: 8, Vertical: 4);
+                                Style: (TextColor: #6fe3ff, FontSize: 12, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
+                                Background: #061420;
+                            }
+                        }
+
+                        Group { Anchor: (Height: 4); }
+
+                        Label #RaceModelDescription {
+                            Text: "Enable race-specific character visuals when available.";
+                            Style: (TextColor: #c0cee5, FontSize: 12);
+                        }
+                    }
+
+                    Group { Anchor: (Width: 12); }
+
+                    $C.@TextButton #RaceModelToggle {
+                        Anchor: (Height: 32, Width: $S.@ToggleButtonWidth);
+                        Padding: (Horizontal: 8, Vertical: 4);
+                        Text: "Toggle";
+                        Style: $S.@CustomStyle;
+                    }
+                }
+            }
+
+            Group { Anchor: (Height: 16); }
+
+            // ======== NOTIFICATIONS SECTION ========
+            Group {
+                LayoutMode: Left;
+                Padding: (Bottom: 8);
+
+                Group { Anchor: (Width: 3, Height: 18); Background: #f0cf78; }
+                Group { Anchor: (Width: 8); }
+                Label { Text: "NOTIFICATIONS"; Style: (TextColor: #f0cf78, FontSize: 13, RenderBold: true, RenderUppercase: true, LetterSpacing: 1); }
+            }
+
+            // -- Critical Hit Notifications --
+            Group #CriticalNotifRow {
+                LayoutMode: Left;
+                Background: #0b141f(0.84);
+                Padding: (Full: 0);
+
+                Group { Anchor: (Width: 3); Background: #f0cf78(0.40); }
+
+                Group {
+                    LayoutMode: Left;
+                    FlexWeight: 1;
+                    Padding: (Full: 12);
+
+                    Group {
+                        LayoutMode: Top;
+                        FlexWeight: 1;
+
+                        Group {
+                            LayoutMode: Left;
+
+                            Label #CriticalNotifLabel { Style: (TextColor: #f4f9ff, FontSize: 15, RenderBold: true); FlexWeight: 1; Text: "Critical Hit Notifications"; }
+
+                            Label #CriticalNotifValue {
+                                Text: "ON";
+                                Anchor: (Width: $S.@SettingValueWidth, Height: 24);
+                                Padding: (Horizontal: 8, Vertical: 4);
+                                Style: (TextColor: #6fe3ff, FontSize: 12, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
+                                Background: #061420;
+                            }
+                        }
+
+                        Group { Anchor: (Height: 4); }
+
+                        Label #CriticalNotifDescription {
+                            Text: "Toggle floating alerts for critical strike events.";
+                            Style: (TextColor: #c0cee5, FontSize: 12);
+                        }
+                    }
+
+                    Group { Anchor: (Width: 12); }
+
+                    $C.@TextButton #CriticalNotifToggle {
+                        Anchor: (Height: 32, Width: $S.@ToggleButtonWidth);
+                        Padding: (Horizontal: 8, Vertical: 4);
+                        Text: "Toggle";
+                        Style: $S.@CustomStyle;
+                    }
+                }
+            }
+
+            Group { Anchor: (Height: 6); }
+
+            // -- XP Gain Notifications --
+            Group #XpNotifRow {
+                LayoutMode: Left;
+                Background: #0b141f(0.84);
+                Padding: (Full: 0);
+
+                Group { Anchor: (Width: 3); Background: #f0cf78(0.40); }
+
+                Group {
+                    LayoutMode: Left;
+                    FlexWeight: 1;
+                    Padding: (Full: 12);
+
+                    Group {
+                        LayoutMode: Top;
+                        FlexWeight: 1;
+
+                        Group {
+                            LayoutMode: Left;
+
+                            Label #XpNotifLabel { Style: (TextColor: #f4f9ff, FontSize: 15, RenderBold: true); FlexWeight: 1; Text: "XP Gain Notifications"; }
+
+                            Label #XpNotifValue {
+                                Text: "ON";
+                                Anchor: (Width: $S.@SettingValueWidth, Height: 24);
+                                Padding: (Horizontal: 8, Vertical: 4);
+                                Style: (TextColor: #6fe3ff, FontSize: 12, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
+                                Background: #061420;
+                            }
+                        }
+
+                        Group { Anchor: (Height: 4); }
+
+                        Label #XpNotifDescription {
+                            Text: "Show notifications whenever you gain experience.";
+                            Style: (TextColor: #c0cee5, FontSize: 12);
+                        }
+                    }
+
+                    Group { Anchor: (Width: 12); }
+
+                    $C.@TextButton #XpNotifToggle {
+                        Anchor: (Height: 32, Width: $S.@ToggleButtonWidth);
+                        Padding: (Horizontal: 8, Vertical: 4);
+                        Text: "Toggle";
+                        Style: $S.@CustomStyle;
+                    }
+                }
+            }
+
+            Group { Anchor: (Height: 6); }
+
+            // -- Passive Level-Up Notifications --
+            Group #PassiveLevelUpNotifRow {
+                LayoutMode: Left;
+                Background: #0b141f(0.84);
+                Padding: (Full: 0);
+
+                Group { Anchor: (Width: 3); Background: #f0cf78(0.40); }
+
+                Group {
+                    LayoutMode: Left;
+                    FlexWeight: 1;
+                    Padding: (Full: 12);
+
+                    Group {
+                        LayoutMode: Top;
+                        FlexWeight: 1;
+
+                        Group {
+                            LayoutMode: Left;
+
+                            Label #PassiveLevelUpNotifLabel { Style: (TextColor: #f4f9ff, FontSize: 15, RenderBold: true); FlexWeight: 1; Text: "Passive Level-Up Notifications"; }
+
+                            Label #PassiveLevelUpNotifValue {
+                                Text: "ON";
+                                Anchor: (Width: $S.@SettingValueWidth, Height: 24);
+                                Padding: (Horizontal: 8, Vertical: 4);
+                                Style: (TextColor: #6fe3ff, FontSize: 12, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
+                                Background: #061420;
+                            }
+                        }
+
+                        Group { Anchor: (Height: 4); }
+
+                        Label #PassiveLevelUpNotifDescription {
+                            Text: "Display updates when passives rank up during play.";
+                            Style: (TextColor: #c0cee5, FontSize: 12);
+                        }
+                    }
+
+                    Group { Anchor: (Width: 12); }
+
+                    $C.@TextButton #PassiveLevelUpNotifToggle {
+                        Anchor: (Height: 32, Width: $S.@ToggleButtonWidth);
+                        Padding: (Horizontal: 8, Vertical: 4);
+                        Text: "Toggle";
+                        Style: $S.@CustomStyle;
+                    }
+                }
+            }
+
+            Group { Anchor: (Height: 6); }
+
+            // -- Luck Double-Drop Notifications --
+            Group #LuckDoubleDropsNotifRow {
+                LayoutMode: Left;
+                Background: #0b141f(0.84);
+                Padding: (Full: 0);
+
+                Group { Anchor: (Width: 3); Background: #f0cf78(0.40); }
+
+                Group {
+                    LayoutMode: Left;
+                    FlexWeight: 1;
+                    Padding: (Full: 12);
+
+                    Group {
+                        LayoutMode: Top;
+                        FlexWeight: 1;
+
+                        Group {
+                            LayoutMode: Left;
+
+                            Label #LuckDoubleDropsNotifLabel { Style: (TextColor: #f4f9ff, FontSize: 15, RenderBold: true); FlexWeight: 1; Text: "Luck Double-Drop Notifications"; }
+
+                            Label #LuckDoubleDropsNotifValue {
+                                Text: "ON";
+                                Anchor: (Width: $S.@SettingValueWidth, Height: 24);
+                                Padding: (Horizontal: 8, Vertical: 4);
+                                Style: (TextColor: #6fe3ff, FontSize: 12, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
+                                Background: #061420;
+                            }
+                        }
+
+                        Group { Anchor: (Height: 4); }
+
+                        Label #LuckDoubleDropsNotifDescription {
+                            Text: "Toggle bonus drop proc notifications from luck effects.";
+                            Style: (TextColor: #c0cee5, FontSize: 12);
+                        }
+                    }
+
+                    Group { Anchor: (Width: 12); }
+
+                    $C.@TextButton #LuckDoubleDropsNotifToggle {
+                        Anchor: (Height: 32, Width: $S.@ToggleButtonWidth);
+                        Padding: (Horizontal: 8, Vertical: 4);
+                        Text: "Toggle";
+                        Style: $S.@CustomStyle;
+                    }
+                }
+            }
+
+            Group { Anchor: (Height: 6); }
+
+            // -- Health Regen Notifications --
+            Group #HealthRegenNotifRow {
+                LayoutMode: Left;
+                Background: #0b141f(0.84);
+                Padding: (Full: 0);
+
+                Group { Anchor: (Width: 3); Background: #f0cf78(0.40); }
+
+                Group {
+                    LayoutMode: Left;
+                    FlexWeight: 1;
+                    Padding: (Full: 12);
+
+                    Group {
+                        LayoutMode: Top;
+                        FlexWeight: 1;
+
+                        Group {
+                            LayoutMode: Left;
+
+                            Label #HealthRegenNotifLabel { Style: (TextColor: #f4f9ff, FontSize: 15, RenderBold: true); FlexWeight: 1; Text: "Health Regen Notifications"; }
+
+                            Label #HealthRegenNotifValue {
+                                Text: "ON";
+                                Anchor: (Width: $S.@SettingValueWidth, Height: 24);
+                                Padding: (Horizontal: 8, Vertical: 4);
+                                Style: (TextColor: #6fe3ff, FontSize: 12, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
+                                Background: #061420;
+                            }
+                        }
+
+                        Group { Anchor: (Height: 4); }
+
+                        Label #HealthRegenNotifDescription {
+                            Text: "Show notifications when health regeneration triggers.";
+                            Style: (TextColor: #c0cee5, FontSize: 12);
+                        }
+                    }
+
+                    Group { Anchor: (Width: 12); }
+
+                    $C.@TextButton #HealthRegenNotifToggle {
+                        Anchor: (Height: 32, Width: $S.@ToggleButtonWidth);
+                        Padding: (Horizontal: 8, Vertical: 4);
+                        Text: "Toggle";
+                        Style: $S.@CustomStyle;
+                    }
+                }
+            }
+
+            Group { Anchor: (Height: 6); }
+
+            // -- Augment Notifications --
+            Group #AugmentNotifRow {
+                LayoutMode: Left;
+                Background: #0b141f(0.84);
+                Padding: (Full: 0);
+
+                Group { Anchor: (Width: 3); Background: #f0cf78(0.40); }
+
+                Group {
+                    LayoutMode: Left;
+                    FlexWeight: 1;
+                    Padding: (Full: 12);
+
+                    Group {
+                        LayoutMode: Top;
+                        FlexWeight: 1;
+
+                        Group {
+                            LayoutMode: Left;
+
+                            Label #AugmentNotifLabel { Style: (TextColor: #f4f9ff, FontSize: 15, RenderBold: true); FlexWeight: 1; Text: "Augment Notifications"; }
+
+                            Label #AugmentNotifValue {
+                                Text: "ON";
+                                Anchor: (Width: $S.@SettingValueWidth, Height: 24);
+                                Padding: (Horizontal: 8, Vertical: 4);
+                                Style: (TextColor: #6fe3ff, FontSize: 12, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
+                                Background: #061420;
+                            }
+                        }
+
+                        Group { Anchor: (Height: 4); }
+
+                        Label #AugmentNotifDescription {
+                            Text: "Toggle chat notifications for augment status events.";
+                            Style: (TextColor: #c0cee5, FontSize: 12);
+                        }
+                    }
+
+                    Group { Anchor: (Width: 12); }
+
+                    $C.@TextButton #AugmentNotifToggle {
+                        Anchor: (Height: 32, Width: $S.@ToggleButtonWidth);
+                        Padding: (Horizontal: 8, Vertical: 4);
+                        Text: "Toggle";
+                        Style: $S.@CustomStyle;
+                    }
+                }
+            }
+        }
+    }
+};

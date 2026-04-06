@@ -1,6 +1,6 @@
 {
-  "class_name": "Master Oracle",
-  "id": "oracle_master",
+  "class_name": "Legendary Magistrate",
+  "id": "magistrate_legendary",
   "description": "A divine seer who empowers magic through foresight and blessing, excelling in sustained spellcasting.",
   "roles": [
     "Support"
@@ -12,11 +12,11 @@
   "weapons": [
     {
       "type": "STAFF",
-      "damage": 1.2
+      "damage": 1.38
     },
     {
       "type": "DAGGER",
-      "damage": 1.05
+      "damage": 1.208
     }
   ],
   "passives": [
@@ -24,8 +24,8 @@
       "type": "SHIELDING_AURA",
       "value": 1,
       "activation": "on_hit",
-      "flat_shield_value": 500,
-      "stamina_ratio": 3.0,
+      "flat_shield_value": 750,
+      "stamina_ratio": 4.0,
       "self_shield_effectiveness": 0.25,
       "duration": 10,
       "cooldown": 25,
@@ -37,8 +37,8 @@
     {
       "type": "BUFFING_AURA",
       "value": 1.0,
-      "stamina_ratio": 0.9,
-      "max_buffed_value_per_ally": 6.0,
+      "stamina_ratio": 1.2,
+      "max_buffed_value_per_ally": 8.0,
       "self_buff_effectiveness": 0.25,
       "duration": 4,
       "damage_pause_seconds": 10,
@@ -49,40 +49,40 @@
     },
     {
       "type": "MANA_REGEN",
-      "value": 0.075
+      "value": 0.086
     },
     {
       "type": "HEALING_BONUS",
-      "value": 0.5
+      "value": 0.575
     },
     {
       "type": "SPECIAL_CHARGE_BONUS",
-      "value": 0.75
+      "value": 0.862
     },
     {
       "type": "INNATE_ATTRIBUTE_GAIN",
       "attribute": "flow",
-      "value": 2.5
+      "value": 2.875
     },
     {
       "type": "INNATE_ATTRIBUTE_GAIN",
       "attribute": "stamina",
-      "value": 1
+      "value": 1.15
     }
   ],
   "ascension": {
-    "id": "class_oracle_master",
-    "stage": "master",
-    "path": "oracle",
+    "id": "class_magistrate_legendary",
+    "stage": "legendary",
+    "path": "magistrate",
     "final_form": false,
     "single_route_only": true,
     "requirements": {
-      "required_prestige": 4
+      "required_prestige": 6
     },
     "next_paths": [
       {
-        "id": "class_oracle_legendary",
-        "name": "Legendary"
+        "id": "class_magistrate_exalted",
+        "name": "Exalted"
       }
     ]
   }

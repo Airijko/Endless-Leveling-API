@@ -47,6 +47,11 @@ public class EventHookManager {
         eventsConfig.load();
     }
 
+    /** Exposes the underlying events.yml ConfigManager for UI settings editing. */
+    public ConfigManager getEventsConfig() {
+        return eventsConfig;
+    }
+
     public void onPrestigeLevelUp(PlayerData playerData, int oldPrestigeLevel, int newPrestigeLevel) {
         if (playerData == null || newPrestigeLevel <= oldPrestigeLevel) {
             return;

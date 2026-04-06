@@ -1082,7 +1082,7 @@ public class ClassManager {
         }
 
         return switch (baseId) {
-            case "mage", "arcanist", "marksman", "assassin", "oracle", "healer", "necromancer" ->
+            case "mage", "arcanist", "marksman", "assassin", "magistrate", "priest", "necromancer" ->
                 "glass_cannon";
             case "battlemage", "duelist", "brawler", "adventurer", "slayer" -> "fighter";
             case "juggernaut", "vanguard" -> "tank";
@@ -1093,8 +1093,8 @@ public class ClassManager {
     private List<String> inferLegacyClassRoles(String classId) {
         String baseId = normalizeBaseClassId(classId);
         return switch (baseId) {
-            case "mage", "arcanist", "oracle", "necromancer" -> List.of("Mage");
-            case "healer" -> List.of("Support");
+            case "mage", "arcanist", "magistrate", "necromancer" -> List.of("Mage");
+            case "priest" -> List.of("Support");
             case "assassin" -> List.of("Assassin", "Diver");
             case "marksman" -> List.of("Marksman");
             case "battlemage" -> List.of("BattleMage", "Mage");
@@ -1110,7 +1110,7 @@ public class ClassManager {
     private String inferLegacyDamageType(String classId) {
         String baseId = normalizeBaseClassId(classId);
         return switch (baseId) {
-            case "mage", "arcanist", "oracle", "healer", "necromancer" -> "Magic";
+            case "mage", "arcanist", "magistrate", "priest", "necromancer" -> "Magic";
             case "vanguard", "adventurer" -> "Hybrid";
             default -> "Physical";
         };
@@ -1119,7 +1119,7 @@ public class ClassManager {
     private String inferLegacyRangeType(String classId) {
         String baseId = normalizeBaseClassId(classId);
         return switch (baseId) {
-            case "marksman", "mage", "arcanist", "oracle", "healer", "necromancer" -> "range";
+            case "marksman", "mage", "arcanist", "magistrate", "priest", "necromancer" -> "range";
             case "adventurer" -> "melee/range";
             default -> "melee";
         };

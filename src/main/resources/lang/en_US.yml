@@ -136,6 +136,20 @@ ui:
     discord_button: JOIN DISCORD
     discord_chat_prompt: Need help or want to report an issue? Click below to join Discord.
     discord_chat_link_label: Endless Leveling Discord
+    partner:
+      section: Official Endless Partners
+      valid:
+        label: Addon Validation
+        na: "N/A (addon not present)"
+        ok: "Valid (authorized)"
+        fail: "Invalid (not authorized)"
+    patreon:
+      prompt: Support Endless Leveling development on Patreon.
+      label: SUPPORT ON PATREON
+    thank_you: Thank you for supporting Endless Leveling.
+    official_servers:
+      title: Official Servers
+      subtitle: Authorized partner servers are listed here as official cards.
   leaderboards:
     page:
       title: Leaderboards
@@ -175,6 +189,9 @@ ui:
       common: COMMON
     actions:
       choose: Choose
+      reroll: "Reroll ({0})"
+      reroll_infinite: "Reroll (INF)"
+      refresh: Refresh Offers
     selected: "Selected augment: {0} ({1})"
     no_description: No description provided.
     no_augment:
@@ -183,12 +200,14 @@ ui:
     no_augments_yet:
       title: NO AUGMENTS YET
       body: No augments available yet. Next unlock at level {0}.
+      next_unlock_preview: "No augments available yet.\n\nNext unlock\n{0}"
     no_augments:
       title: NO AUGMENTS
       body: No augment unlock milestones are configured.
     all_claimed:
       title: ALL CLAIMED
       next_unlock: You have claimed all currently unlocked augments. Next unlock at level {0}.
+      next_unlock_preview: "You have claimed all currently unlocked augments.\n\nNext unlock\n{0}"
       done: You have already claimed all configured augment unlocks.
     remaining:
       header: "You still have more augments to choose from:"
@@ -202,6 +221,16 @@ ui:
       definitions_missing: No augment definitions are loaded. Check /mods/EndlessLeveling/augments.
       offers_missing: Unlocked augments are missing from your offers. Ask an admin to run /el augment refresh <player>.
       slot_empty: No augment in that slot.
+      reroll_nothing_selected: Select an owned augment first.
+      no_rerolls_tier: "No rerolls available for {0} tier."
+      reroll_failed: Reroll failed. Try again.
+      reroll_not_owned: You do not own that augment.
+      refresh_permission: You do not have permission to refresh augment offers.
+    reroll:
+      success: "Rerolled {0} selection. Remaining rerolls: {1}"
+      success_bypass: "Rerolled {0} selection. Operator/Admin bypass active (no reroll consumed)."
+    refresh:
+      success: Refreshed augment offers for your active profile.
     effect:
       cooldown: "Cooldown: {0}"
       duration_per_stack: "Duration per stack: {0}"
@@ -289,15 +318,20 @@ ui:
         description: Augments are powerful passive enhancements that permanently strengthen your character. Earn them by reaching level milestones and through prestige.
         collection_title: YOUR COLLECTION
         rerolls_title: REROLLS USED
+        rerolls_available_title: REROLLS AVAILABLE
         hover_hint: Hover over an augment to preview it.
       title: AUGMENTS
       search_placeholder: Search augments...
       section:
         unlocked: UNLOCKED
         mythic: MYTHIC
+        legendary: LEGENDARY
         elite: ELITE
         common: COMMON
       info_title: AUGMENT INFO
+      info:
+        reroll_button: "REROLL ({0})"
+        reroll_button_infinite: "REROLL (INF)"
       results: "Results: {0}"
       choose_unavailable: No augments available to choose.
       info_select_prompt: Select an augment
@@ -305,10 +339,13 @@ ui:
       stats:
         total: "Total: {0} / {1}"
         mythic: "Mythic: {0} / {1}"
+        legendary: "Legendary: {0} / {1}"
         elite: "Elite: {0} / {1}"
         common: "Common: {0}"
       rerolls:
+        total: "Total: {0}"
         mythic: "Mythic: {0}"
+        legendary: "Legendary: {0}"
         elite: "Elite: {0}"
         common: "Common: {0}"
     unlocked:
@@ -710,6 +747,22 @@ ui:
       footer_hint: Undo to revert pending tweaks, apply to lock them in.
       undo: UNDO
       apply: APPLY
+    side_panel:
+      title: POINT MANAGEMENT
+    excess:
+      precision: "Precision overflow:"
+      defense: "Defense overflow:"
+      total: "Refundable total:"
+      apply_hint: This updates your pending points. Press APPLY to confirm.
+      button:
+        none: REFUND EXCESS ONLY
+        has_excess: "REFUND EXCESS ONLY (+{0})"
+      status:
+        none: No excess points right now.
+        has_excess: "Excess detected: {0} point(s)"
+      description:
+        none: "If Precision or Defense exceeds cap, overflow points become refundable here."
+        has_excess: "Precision/Defense is past effective cap. Refund the overflow points here."
     level_prefix: Lv.
     label:
       life_force: Life Force
@@ -749,6 +802,9 @@ ui:
       added: Added {0} point(s) to {1}
       removed: Removed {0} point(s) from {1}
       precision_capped: Precision crit chance capped at 100%; excess points not applied.
+      excess_refunded: "Refunded excess points: +{0} skill points (Precision -{1}, Defense -{2}). Press APPLY to confirm."
+      auto_allocate_toggled: "Auto-allocate {0}: {1}"
+      quick_spend_applied: "Applied {0} point(s) to {1} immediately."
     error:
       precision_at_cap: Precision crit chance is already 100%; remove other bonuses first.
       not_enough_points: Not enough skill points
@@ -756,6 +812,11 @@ ui:
       below_original: Cannot go below original level
       invalid_attribute: "Invalid attribute: {0}"
       action_failed: Error handling skill action
+      crit_locked: "This build cannot invest in {0}."
+      effective_cap_reached: "{0} is already at its effective cap."
+      overflow_none_available: No excess precision or defense points are currently refundable.
+      overflow_no_refund: "{0} is at or below its effective cap; no excess points to refund."
+      quick_spend_invalid_amount: "Enter a quick-spend amount greater than 0 for {0}."
     resource:
       health: Health
       stamina: Stamina
@@ -772,7 +833,32 @@ ui:
     leaderboards: LEADERBOARDS
     settings: SETTINGS
     augments: AUGMENTS
+    dungeons: DUNGEONS
+    addons: ADDONS
     support: SUPPORT
+  dungeons:
+    page:
+      title: Dungeon Library
+      subtitle: Browse dungeon integrations for Endless Leveling and see which supported packs are installed on this server.
+    category:
+      endgame: ENDGAME & QOL
+      major: MAJOR DUNGEONS
+    instance_prefix: "Instance: "
+  addons:
+    page:
+      title: Addon Library
+      subtitle: Browse supported addons and extensions for Endless Leveling.
+    filter:
+      mod_partners: "Showing: Mod Partners"
+      community: "Showing: Community Addons"
+      partner_extensions: "Showing: Partner Extensions"
+      all: "Showing: Endless Leveling Addons"
+    patreon:
+      prompt: Support Endless Leveling development on Patreon.
+      label: Support on Patreon
+    starky:
+      prompt: Check out Starky's Mjolnir addon.
+      label: Starky's Mjolnir
   profile:
     playerdata:
       unavailable: Player data unavailable.
@@ -780,14 +866,25 @@ ui:
       title: Selected Profile
       subtitle:
         default: Select a profile to view stats
+    header:
+      prestige: PRESTIGE
+      level: LEVEL
+      current_xp: CURRENT XP
+      race: RACE
+      primary_class: PRIMARY CLASS
+      secondary_class: SECONDARY CLASS
+    section:
+      innate_bonuses: INNATE BONUSES
     level:
       short: Lv {0}
     list:
       title: Profiles {0}/{1}
+      new_profile: NEW PROFILE
       slot: Slot {0}
       level: Level {0}
       xp: "{0} XP"
       select: SELECT
+      delete_button: DELETE
       status:
         active: ACTIVE
       delete:

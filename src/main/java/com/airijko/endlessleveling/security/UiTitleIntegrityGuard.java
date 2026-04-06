@@ -40,7 +40,7 @@ public final class UiTitleIntegrityGuard {
         new SelectorCheck("Common/UI/Custom/Pages/Leaderboards/LeaderboardsPage.ui", "LeaderboardsTitle"),
         new SelectorCheck("Common/UI/Custom/Pages/Profile/ProfilePage.ui", "ProfileTitle"),
         new SelectorCheck("Common/UI/Custom/Pages/Races/RacesPage.ui", "RacesTitle"),
-        new SelectorCheck("Common/UI/Custom/Pages/SettingsPage.ui", "SettingsTitle"),
+        new SelectorCheck("Common/UI/Custom/Pages/Settings/SettingsPage.ui", "SettingsTitle"),
         new SelectorCheck("Common/UI/Custom/Pages/SupportPage.ui", "SupportTitle"));
 
     private static final String NAV_RESOURCE_PATH = "Common/UI/Custom/Pages/Nav/LeftNavPanel.ui";

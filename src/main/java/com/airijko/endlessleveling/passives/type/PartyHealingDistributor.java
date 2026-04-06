@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Shared party healing distribution logic used by healer passives.
+ * Shared party healing distribution logic used by priest passives.
  */
 public final class PartyHealingDistributor {
 

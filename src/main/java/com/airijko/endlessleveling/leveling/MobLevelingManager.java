@@ -75,6 +75,7 @@ public class MobLevelingManager {
     private final File worldSettingsFolder;
     private final PlayerDataManager playerDataManager;
     private final Gson gson = new Gson();
+    private final Gson gsonPretty = new com.google.gson.GsonBuilder().setPrettyPrinting().create();
     private final Map<Long, Long> mobLevelDebugLogTimes = new ConcurrentHashMap<>();
     private final Map<Long, MobHealthCompositionSnapshot> entityHealthCompositionSnapshots = new ConcurrentHashMap<>();
     private final Map<Long, Integer> entityResolvedLevelSnapshots = new ConcurrentHashMap<>();
@@ -171,6 +172,11 @@ public class MobLevelingManager {
         loadWorldSettings();
     }
 
+    /** Exposes the underlying leveling.yml ConfigManager for UI settings editing. */
+    public ConfigManager getLevelingConfig() {
+        return configManager;
+    }
+
     public void reloadConfig() {
         configManager.load();
         loadWorldSettings();
@@ -189,6 +195,98 @@ public class MobLevelingManager {
         worldIdentifierMissRetryAtStore.clear();
         worldOverrideKeyByStore.clear();
         worldXpBlacklistByStore.clear();
+    }
+
+    // ------------------------------------------------------------------
+    //  World-settings public API for UI
+    // ------------------------------------------------------------------
+
+    /** Returns the ordered list of world-settings JSON file names (load order). */
+    public List<String> getWorldSettingsFileNames() {
+        if (worldSettingsFolder == null || !worldSettingsFolder.exists() || !worldSettingsFolder.isDirectory()) {
+            return List.of();
+        }
+        return resolveWorldSettingsFiles(worldSettingsFolder.toPath());
+    }
+
+    /** Parses and returns the raw JSON content of a single world-settings file. */
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> readWorldSettingsFile(String filename) {
+        if (worldSettingsFolder == null || filename == null || filename.isBlank()) {
+            return Map.of();
+        }
+        Path filePath = worldSettingsFolder.toPath().resolve(filename);
+        if (!Files.exists(filePath) || Files.isDirectory(filePath)) {
+            return Map.of();
+        }
+        // Prevent path traversal
+        try {
+            if (!filePath.toRealPath().startsWith(worldSettingsFolder.toPath().toRealPath())) {
+                return Map.of();
+            }
+        } catch (IOException e) {
+            return Map.of();
+        }
+        try (Reader reader = Files.newBufferedReader(filePath)) {
+            Map<String, Object> parsed = gson.fromJson(reader, STRING_OBJECT_MAP_TYPE);
+            return parsed != null ? parsed : Map.of();
+        } catch (IOException | RuntimeException e) {
+            LOGGER.atWarning().log("Failed to read world settings file %s: %s", filename, e.getMessage());
+            return Map.of();
+        }
+    }
+
+    /** Writes the entire JSON content to a single world-settings file and reloads. */
+    public boolean writeWorldSettingsFile(String filename, Map<String, Object> content) {
+        if (worldSettingsFolder == null || filename == null || filename.isBlank() || content == null) {
+            return false;
+        }
+        Path filePath = worldSettingsFolder.toPath().resolve(filename);
+        // Prevent path traversal
+        try {
+            if (!filePath.normalize().startsWith(worldSettingsFolder.toPath().normalize())) {
+                return false;
+            }
+        } catch (RuntimeException e) {
+            return false;
+        }
+        try (java.io.Writer writer = Files.newBufferedWriter(filePath)) {
+            gsonPretty.toJson(content, writer);
+        } catch (IOException | RuntimeException e) {
+            LOGGER.atWarning().log("Failed to write world settings file %s: %s", filename, e.getMessage());
+            return false;
+        }
+        reloadWorldSettingsOnly();
+        return true;
+    }
+
+    /**
+     * Sets a dot-separated path to a value within a single world-settings file and saves it.
+     * Returns true on success.
+     */
+    @SuppressWarnings("unchecked")
+    public boolean setWorldSettingsValue(String filename, String dotPath, Object value) {
+        Map<String, Object> content = new LinkedHashMap<>(readWorldSettingsFile(filename));
+        if (content.isEmpty() && (value != null)) {
+            // File might not exist or be empty; start with fresh map only if we're setting a value
+        }
+        String[] parts = dotPath.split("\\.");
+        Map<String, Object> current = content;
+        for (int i = 0; i < parts.length - 1; i++) {
+            Object child = current.get(parts[i]);
+            if (child instanceof Map<?, ?> childMap) {
+                // Make mutable copy if needed
+                Map<String, Object> mutable = new LinkedHashMap<>((Map<String, Object>) childMap);
+                current.put(parts[i], mutable);
+                current = mutable;
+            } else {
+                Map<String, Object> newMap = new LinkedHashMap<>();
+                current.put(parts[i], newMap);
+                current = newMap;
+            }
+        }
+        current.put(parts[parts.length - 1], value);
+        return writeWorldSettingsFile(filename, content);
     }
 
     public void syncTierLevelOverridesForDungeon(Store<EntityStore> store, UUID sourcePlayerUuid) {

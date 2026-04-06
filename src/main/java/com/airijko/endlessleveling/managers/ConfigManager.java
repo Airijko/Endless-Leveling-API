@@ -124,9 +124,29 @@ public class ConfigManager {
         return value;
     }
 
-    /** Set a value in config */
+    /** Set a value in config using dot-notation path traversal. */
     public void set(String path, Object value) {
-        configMap.put(path, value);
+        if (configMap == null || path == null || path.isEmpty()) {
+            return;
+        }
+        String[] keys = path.split("\\.");
+        if (keys.length == 1) {
+            configMap.put(path, value);
+            return;
+        }
+        Map<String, Object> currentMap = configMap;
+        for (int i = 0; i < keys.length - 1; i++) {
+            Object next = currentMap.get(keys[i]);
+            if (next instanceof Map<?, ?> map) {
+                // noinspection unchecked
+                currentMap = (Map<String, Object>) map;
+            } else {
+                Map<String, Object> child = new LinkedHashMap<>();
+                currentMap.put(keys[i], child);
+                currentMap = child;
+            }
+        }
+        currentMap.put(keys[keys.length - 1], value);
     }
 
     /** Check whether a nested path exists in the loaded config map. */

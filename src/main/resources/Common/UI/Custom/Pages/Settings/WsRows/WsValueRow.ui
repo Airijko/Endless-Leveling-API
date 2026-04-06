@@ -1,0 +1,20 @@
+Group #WsValueRow {
+    LayoutMode: Left;
+    FlexWeight: 1;
+    Background: #0b141f(0.72);
+    Padding: (Horizontal: 10, Vertical: 7);
+
+    Label #WsRowKey {
+        Text: "";
+        FlexWeight: 1;
+        Style: (TextColor: #d5e4f7, FontSize: 13);
+    }
+
+    Label #WsRowVal {
+        Text: "";
+        Padding: (Horizontal: 6, Vertical: 2);
+        Anchor: (Width: 110, Height: 22);
+        Background: #061420;
+        Style: (TextColor: #f0cf78, FontSize: 11, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
+    }
+}

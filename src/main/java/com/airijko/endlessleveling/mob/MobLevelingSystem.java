@@ -65,7 +65,6 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
     private static final long PASSIVE_STAT_TICK_INTERVAL_MILLIS = 1000L;
     private static final long FLOW_HEALTH_RETRY_INTERVAL_MILLIS = 500L;
     private static final long FLOW_HEALTH_LOG_COOLDOWN_MILLIS = 5000L;
-    private static final long LEVEL_REVALIDATION_INTERVAL_MILLIS = 5000L;
     private static final long BLACKLIST_RECHECK_INTERVAL_MILLIS = 5000L;
     private static final int CHUNK_BIT_SHIFT = 5;
     private static final int MIN_PLAYER_VIEW_RADIUS_CHUNKS = 1;

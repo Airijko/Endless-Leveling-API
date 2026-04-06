@@ -1,0 +1,112 @@
+$C = "../../Common.ui";
+
+@CustomStyle = TextButtonStyle(
+    Default: (Background: $C.@DefaultSquareButtonDefaultBackground, LabelStyle: $C.@DefaultButtonLabelStyle),
+    Hovered: (Background: $C.@DefaultSquareButtonHoveredBackground, LabelStyle: $C.@DefaultButtonLabelStyle),
+    Pressed: (Background: $C.@DefaultSquareButtonPressedBackground, LabelStyle: $C.@DefaultButtonLabelStyle),
+    Disabled: (Background: $C.@DefaultSquareButtonDisabledBackground, LabelStyle: $C.@DefaultButtonDisabledLabelStyle),
+    Sounds: $C.@ButtonSounds,
+);
+
+@SettingValueWidth = 80;
+@ToggleButtonWidth = 90;
+@CompactToggleWidth = 76;
+@CompactValueWidth = 70;
+
+@SidebarToggleStyle = TextButtonStyle(
+    Default:  (Background: $C.@DefaultSquareButtonDefaultBackground,  LabelStyle: (FontSize: 10, TextColor: #d5e4f7, HorizontalAlignment: Center, VerticalAlignment: Center)),
+    Hovered:  (Background: $C.@DefaultSquareButtonHoveredBackground,  LabelStyle: (FontSize: 10, TextColor: #ffffff, HorizontalAlignment: Center, VerticalAlignment: Center)),
+    Pressed:  (Background: $C.@DefaultSquareButtonPressedBackground,  LabelStyle: (FontSize: 10, TextColor: #d5e4f7, HorizontalAlignment: Center, VerticalAlignment: Center)),
+    Disabled: (Background: $C.@DefaultSquareButtonDisabledBackground, LabelStyle: $C.@DefaultButtonDisabledLabelStyle),
+    Sounds: $C.@ButtonSounds,
+);
+
+// ---- Config tab button styles ----
+@ConfigTabStyle = (
+    Default: (
+        Background: #0d1926,
+        LabelStyle: (FontSize: 12, TextColor: #6e7da1, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center)
+    ),
+    Hovered: (
+        Background: #162540,
+        LabelStyle: (FontSize: 12, TextColor: #c0cee5, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center)
+    )
+);
+
+@ConfigTabStyleSelected = (
+    Default: (
+        Background: #142034,
+        LabelStyle: (FontSize: 12, TextColor: #6fe3ff, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center)
+    ),
+    Hovered: (
+        Background: #1a2d4a,
+        LabelStyle: (FontSize: 12, TextColor: #6fe3ff, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center)
+    )
+);
+
+@ConfigTab = MenuItem {
+    Anchor: (Height: 32);
+    Padding: (Horizontal: 12, Vertical: 4);
+    Style: @ConfigTabStyle;
+    SelectedStyle: @ConfigTabStyleSelected;
+};
+
+// ---- Section navigation button styles (right panel) ----
+@SectionNavStyle = (
+    Default: (
+        Background: #0b141f(0.88),
+        LabelStyle: (FontSize: 15, TextColor: #c0cee5, RenderBold: true, VerticalAlignment: Center)
+    ),
+    Hovered: (
+        Background: #162540,
+        LabelStyle: (FontSize: 15, TextColor: #ffffff, RenderBold: true, VerticalAlignment: Center)
+    )
+);
+
+@SectionNavStyleSelected = (
+    Default: (
+        Background: #142034,
+        LabelStyle: (FontSize: 15, TextColor: #6fe3ff, RenderBold: true, VerticalAlignment: Center)
+    ),
+    Hovered: (
+        Background: #1a2d4a,
+        LabelStyle: (FontSize: 15, TextColor: #6fe3ff, RenderBold: true, VerticalAlignment: Center)
+    )
+);
+
+@SectionNavButton = MenuItem {
+    Anchor: (Height: 44);
+    Padding: (Left: 16, Right: 16);
+    Style: @SectionNavStyle;
+    SelectedStyle: @SectionNavStyleSelected;
+};
+
+// ---- Config section nav button styles (right panel, under Config Settings) ----
+@ConfigSectionNavStyle = (
+    Default: (
+        Background: #0b141f(0.60),
+        LabelStyle: (FontSize: 13, TextColor: #9ab0ca, RenderBold: false, VerticalAlignment: Center)
+    ),
+    Hovered: (
+        Background: #162540,
+        LabelStyle: (FontSize: 13, TextColor: #c0cee5, RenderBold: false, VerticalAlignment: Center)
+    )
+);
+
+@ConfigSectionNavStyleSelected = (
+    Default: (
+        Background: #142034,
+        LabelStyle: (FontSize: 13, TextColor: #f0cf78, RenderBold: true, VerticalAlignment: Center)
+    ),
+    Hovered: (
+        Background: #1a2d4a,
+        LabelStyle: (FontSize: 13, TextColor: #f0cf78, RenderBold: true, VerticalAlignment: Center)
+    )
+);
+
+@ConfigSectionNavButton = MenuItem {
+    Anchor: (Height: 36);
+    Padding: (Left: 24, Right: 16);
+    Style: @ConfigSectionNavStyle;
+    SelectedStyle: @ConfigSectionNavStyleSelected;
+};
