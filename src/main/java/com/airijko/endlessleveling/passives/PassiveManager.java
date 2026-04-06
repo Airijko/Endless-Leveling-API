@@ -1,6 +1,8 @@
 package com.airijko.endlessleveling.passives;
 
 import com.airijko.endlessleveling.EndlessLeveling;
+import com.airijko.endlessleveling.api.ELNotificationType;
+import com.airijko.endlessleveling.api.EndlessLevelingAPI;
 import com.airijko.endlessleveling.augments.AugmentDefinition;
 import com.airijko.endlessleveling.augments.AugmentValueReader;
 import com.airijko.endlessleveling.player.PlayerData;
@@ -188,7 +190,8 @@ public class PassiveManager {
         if (result.leveledUp().isEmpty()) {
             return;
         }
-        if (!playerData.isPassiveLevelUpNotifEnabled()) {
+        if (!playerData.isPassiveLevelUpNotifEnabled()
+                || EndlessLevelingAPI.get().isNotificationSuppressed(ELNotificationType.PASSIVE_LEVEL_UP)) {
             return;
         }
 
@@ -216,7 +219,8 @@ public class PassiveManager {
             @Nonnull String dropDisplayName,
             int baseAmount,
             int bonusAmount) {
-        if (!playerData.isLuckDoubleDropsNotifEnabled() || bonusAmount <= 0) {
+        if (!playerData.isLuckDoubleDropsNotifEnabled() || bonusAmount <= 0
+                || EndlessLevelingAPI.get().isNotificationSuppressed(ELNotificationType.LUCK_DOUBLE_DROP)) {
             return;
         }
 

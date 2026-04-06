@@ -1,6 +1,8 @@
 package com.airijko.endlessleveling.listeners;
 
 import com.airijko.endlessleveling.EndlessLeveling;
+import com.airijko.endlessleveling.api.ELNotificationType;
+import com.airijko.endlessleveling.api.EndlessLevelingAPI;
 import com.airijko.endlessleveling.augments.AugmentUnlockManager;
 import com.airijko.endlessleveling.player.PlayerData;
 import com.airijko.endlessleveling.enums.PassiveTier;
@@ -334,7 +336,8 @@ public class PlayerDataListener {
     }
 
         private void notifyAvailableSkillPoints(@Nonnull PlayerRef playerRef, int skillPoints) {
-        if (skillPoints <= 0) {
+        if (skillPoints <= 0
+                || EndlessLevelingAPI.get().isNotificationSuppressed(ELNotificationType.UNSPENT_SKILL_POINTS)) {
             return;
         }
 
@@ -375,7 +378,8 @@ public class PlayerDataListener {
         if (playerRef == null || playerData == null || augmentUnlockManager == null) {
             return;
         }
-        if (!playerData.isAugmentNotifEnabled()) {
+        if (!playerData.isAugmentNotifEnabled()
+                || EndlessLevelingAPI.get().isNotificationSuppressed(ELNotificationType.AUGMENT_AVAILABILITY)) {
             return;
         }
         List<PassiveTier> tiers = augmentUnlockManager.getPendingOfferTiers(playerData);

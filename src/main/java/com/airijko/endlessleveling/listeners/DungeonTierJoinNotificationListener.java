@@ -1,6 +1,8 @@
 package com.airijko.endlessleveling.listeners;
 
 import com.airijko.endlessleveling.EndlessLeveling;
+import com.airijko.endlessleveling.api.ELNotificationType;
+import com.airijko.endlessleveling.api.EndlessLevelingAPI;
 import com.airijko.endlessleveling.leveling.MobLevelingManager;
 import com.airijko.endlessleveling.util.PlayerChatNotifier;
 import com.hypixel.hytale.component.Ref;
@@ -80,6 +82,9 @@ public class DungeonTierJoinNotificationListener {
                 return;
             }
 
+            if (EndlessLevelingAPI.get().isNotificationSuppressed(ELNotificationType.DUNGEON_TIER_JOIN)) {
+                return;
+            }
             MobLevelingManager.TieredWorldSummary delayedSummary = finalMobLevelingManager.resolveTieredWorldSummary(finalStore, finalPlayerRef);
             if (delayedSummary == null) {
                 return;

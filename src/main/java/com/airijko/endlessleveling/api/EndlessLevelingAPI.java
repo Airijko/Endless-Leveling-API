@@ -31,7 +31,6 @@ import com.airijko.endlessleveling.api.gates.WaveGateSessionBridge;
 import com.airijko.endlessleveling.api.gates.WaveGateSessionExecutorBridge;
 
 import com.airijko.endlessleveling.compatibility.NameplateBuilderCompatibility;
-import com.airijko.endlessleveling.enums.PassiveTier;
 import com.airijko.endlessleveling.util.FixedValue;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
@@ -108,6 +107,9 @@ public final class EndlessLevelingAPI {
     // the file-based XP_Blacklisted_Worlds. Supports wildcards (*) and substring matching.
     private final Set<String> runtimeXpBlacklistedWorlds = ConcurrentHashMap.newKeySet();
     private final Set<String> runtimeXpBlacklistedWorldsView = Collections.unmodifiableSet(runtimeXpBlacklistedWorlds);
+
+    // Notification suppression — suppressed types are silently skipped by EL's notification code.
+    private final Set<ELNotificationType> suppressedNotifications = EnumSet.noneOf(ELNotificationType.class);
 
     private EndlessLevelingAPI() {
     }
@@ -438,10 +440,11 @@ public final class EndlessLevelingAPI {
      * do not stack — only a single value per entity is stored. Set to 1.0 to clear.
      */
     public void setEntityXpMultiplier(int entityIndex, double multiplier) {
-        if (multiplier == 1.0D) {
+        double effective = Double.isFinite(multiplier) && multiplier >= 0.0D ? multiplier : 1.0D;
+        if (effective == 1.0D) {
             entityXpMultipliers.remove(entityIndex);
         } else {
-            entityXpMultipliers.put(entityIndex, multiplier);
+            entityXpMultipliers.put(entityIndex, effective);
         }
     }
 
@@ -755,10 +758,24 @@ public final class EndlessLevelingAPI {
         Map<String, Object> result = new LinkedHashMap<>();
         Map<String, Object> worldOverrides = new LinkedHashMap<>();
         for (Map.Entry<String, Map<String, Object>> entry : runtimeWorldOverrides.entrySet()) {
-            worldOverrides.put(entry.getKey(), new LinkedHashMap<>(entry.getValue()));
+            worldOverrides.put(entry.getKey(), deepCopyMap(entry.getValue()));
         }
         result.put("World_Overrides", worldOverrides);
         return result;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> deepCopyMap(Map<String, Object> source) {
+        Map<String, Object> copy = new LinkedHashMap<>(source.size());
+        for (Map.Entry<String, Object> e : source.entrySet()) {
+            Object v = e.getValue();
+            if (v instanceof Map<?, ?> nested) {
+                copy.put(e.getKey(), deepCopyMap((Map<String, Object>) nested));
+            } else {
+                copy.put(e.getKey(), v);
+            }
+        }
+        return copy;
     }
 
     // -------------------------------------------------------
@@ -792,6 +809,34 @@ public final class EndlessLevelingAPI {
     /** Returns an unmodifiable view of the runtime XP blacklist patterns. */
     public Set<String> getRuntimeXpBlacklistedWorlds() {
         return runtimeXpBlacklistedWorldsView;
+    }
+
+    // -------------------------------------------------------
+    // Notification suppression
+    // -------------------------------------------------------
+
+    /**
+     * Suppress a specific EL notification type. While suppressed, EL will not
+     * send that notification to any player. External mods can send their own
+     * replacement messages instead.
+     */
+    public void suppressNotification(ELNotificationType type) {
+        if (type != null) suppressedNotifications.add(type);
+    }
+
+    /** Re-enable a previously suppressed notification type. */
+    public void unsuppressNotification(ELNotificationType type) {
+        if (type != null) suppressedNotifications.remove(type);
+    }
+
+    /** Check whether a notification type is currently suppressed. */
+    public boolean isNotificationSuppressed(ELNotificationType type) {
+        return type != null && suppressedNotifications.contains(type);
+    }
+
+    /** Clear all notification suppressions. */
+    public void clearNotificationSuppressions() {
+        suppressedNotifications.clear();
     }
 
     // -------------------------------------------------------

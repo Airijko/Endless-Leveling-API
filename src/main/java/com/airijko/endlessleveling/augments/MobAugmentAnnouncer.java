@@ -1,6 +1,8 @@
 package com.airijko.endlessleveling.augments;
 
 import com.airijko.endlessleveling.EndlessLeveling;
+import com.airijko.endlessleveling.api.ELNotificationType;
+import com.airijko.endlessleveling.api.EndlessLevelingAPI;
 import com.airijko.endlessleveling.leveling.MobLevelingManager;
 import com.airijko.endlessleveling.util.ChatMessageStrings;
 import com.airijko.endlessleveling.util.EntityRefUtil;
@@ -28,7 +30,8 @@ public final class MobAugmentAnnouncer {
             Ref<EntityStore> mobRef,
             String augmentName,
             String detail) {
-        if (commandBuffer == null || !EntityRefUtil.isUsable(mobRef) || augmentName == null || augmentName.isBlank()) {
+        if (commandBuffer == null || !EntityRefUtil.isUsable(mobRef) || augmentName == null || augmentName.isBlank()
+                || EndlessLevelingAPI.get().isNotificationSuppressed(ELNotificationType.MOB_AUGMENT_ANNOUNCE)) {
             return;
         }
 

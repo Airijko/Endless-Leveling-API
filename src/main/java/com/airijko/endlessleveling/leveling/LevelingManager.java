@@ -1,6 +1,8 @@
 package com.airijko.endlessleveling.leveling;
 
 import com.airijko.endlessleveling.EndlessLeveling;
+import com.airijko.endlessleveling.api.ELNotificationType;
+import com.airijko.endlessleveling.api.EndlessLevelingAPI;
 import com.airijko.endlessleveling.player.PlayerData;
 import com.airijko.endlessleveling.util.Lang;
 import com.airijko.endlessleveling.enums.ArchetypePassiveType;
@@ -361,7 +363,8 @@ public class LevelingManager {
         if (player == null || augmentUnlockManager == null) {
             return;
         }
-        if (!player.isAugmentNotifEnabled()) {
+        if (!player.isAugmentNotifEnabled()
+                || EndlessLevelingAPI.get().isNotificationSuppressed(ELNotificationType.AUGMENT_AVAILABILITY)) {
             return;
         }
         List<PassiveTier> tiers = augmentUnlockManager.getPendingOfferTiers(player);
@@ -378,7 +381,8 @@ public class LevelingManager {
     }
 
     private void notifyXpGain(PlayerData player, double xpAmount) {
-        if (!player.isXpNotifEnabled()) {
+        if (!player.isXpNotifEnabled()
+                || EndlessLevelingAPI.get().isNotificationSuppressed(ELNotificationType.XP_GAIN)) {
             return;
         }
 
@@ -401,20 +405,26 @@ public class LevelingManager {
         if (playerRef == null)
             return;
 
+        EndlessLevelingAPI api = EndlessLevelingAPI.get();
+
         // Level-Up Title
-        Message primaryMessage = Lang.message("notify.levelup.title").color("#FFD700");
-        Message secondaryMessage = Message.raw(Lang.tr("notify.levelup.subtitle", "You are now level {0}", player.getLevel())).color("#FFFFFF");
-        EventTitleUtil.showEventTitleToPlayer(playerRef, primaryMessage, secondaryMessage, true, null, 5, 1, 1);
+        if (!api.isNotificationSuppressed(ELNotificationType.LEVEL_UP_TITLE)) {
+            Message primaryMessage = Lang.message("notify.levelup.title").color("#FFD700");
+            Message secondaryMessage = Message.raw(Lang.tr("notify.levelup.subtitle", "You are now level {0}", player.getLevel())).color("#FFFFFF");
+            EventTitleUtil.showEventTitleToPlayer(playerRef, primaryMessage, secondaryMessage, true, null, 5, 1, 1);
+        }
 
         // Skill point notification
-        var notifPrimary = Message.raw(Lang.tr("notify.levelup.skill_points", "You gained {0} skill points!", skillManager.getSkillPointsPerLevel()))
-                .color("#ffc300");
-        var notifSecondary = Message.join(
-                Lang.message("notify.levelup.use_prefix").color("#ff9d00"),
-                Message.raw(rootCommand()).color("#4fd7f7"),
-                Lang.message("notify.levelup.allocate_suffix").color("#ff9d00"));
-        var icon = new ItemStack("Ingredient_Ice_Essence", 1).toPacket();
-        NotificationUtil.sendNotification(playerRef.getPacketHandler(), notifPrimary, notifSecondary, icon);
+        if (!api.isNotificationSuppressed(ELNotificationType.LEVEL_UP_SKILL_POINTS)) {
+            var notifPrimary = Message.raw(Lang.tr("notify.levelup.skill_points", "You gained {0} skill points!", skillManager.getSkillPointsPerLevel()))
+                    .color("#ffc300");
+            var notifSecondary = Message.join(
+                    Lang.message("notify.levelup.use_prefix").color("#ff9d00"),
+                    Message.raw(rootCommand()).color("#4fd7f7"),
+                    Lang.message("notify.levelup.allocate_suffix").color("#ff9d00"));
+            var icon = new ItemStack("Ingredient_Ice_Essence", 1).toPacket();
+            NotificationUtil.sendNotification(playerRef.getPacketHandler(), notifPrimary, notifSecondary, icon);
+        }
     }
 
     private boolean canNotifyPrestigeAvailable(PlayerData player) {
@@ -431,6 +441,7 @@ public class LevelingManager {
     }
 
     private void notifyPrestigeAvailable(PlayerData player) {
+        if (EndlessLevelingAPI.get().isNotificationSuppressed(ELNotificationType.PRESTIGE_AVAILABLE)) return;
         PlayerRef playerRef = Universe.get().getPlayer(player.getUuid());
         if (playerRef == null) {
             return;
