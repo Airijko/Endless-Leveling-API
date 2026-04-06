@@ -402,16 +402,13 @@ public class ClassManager {
         if (data == null) {
             return null;
         }
-        String currentPrimaryId = data.getPrimaryClassId();
-        if (isMissingAssignedClass(currentPrimaryId)) {
-            clearMissingClassAssignment(data, ClassAssignmentSlot.PRIMARY, currentPrimaryId);
-            return null;
-        }
         String resolvedId = resolvePrimaryClassIdentifier(data.getPrimaryClassId());
         CharacterClassDefinition resolved = getClass(resolvedId);
         if (resolved != null && !resolved.getId().equals(data.getPrimaryClassId())) {
             data.setPrimaryClassId(resolved.getId());
         }
+        // Return null when the class is not in the registry (e.g. addon not loaded yet)
+        // but do NOT clear the saved ID — it may become valid once addons register.
         return resolved;
     }
 
@@ -423,11 +420,6 @@ public class ClassManager {
             if (data.getSecondaryClassId() != null) {
                 data.setSecondaryClassId(null);
             }
-            return null;
-        }
-        String currentSecondaryId = data.getSecondaryClassId();
-        if (isMissingAssignedClass(currentSecondaryId)) {
-            clearMissingClassAssignment(data, ClassAssignmentSlot.SECONDARY, currentSecondaryId);
             return null;
         }
         String resolvedId = resolveSecondaryClassIdentifier(data.getSecondaryClassId());
@@ -446,6 +438,7 @@ public class ClassManager {
             data.setSecondaryClassId(null);
             return null;
         }
+        // Return null when the class is not in the registry but preserve the saved ID.
         return resolved;
     }
 
@@ -455,15 +448,23 @@ public class ClassManager {
         }
         String resolvedId = resolvePrimaryClassIdentifier(requestedValue);
         CharacterClassDefinition resolved = getClass(resolvedId);
-        if (resolved == null) {
-            resolved = getDefaultPrimaryClass();
-        }
         if (resolved != null) {
             data.setPrimaryClassId(resolved.getId());
+            return resolved;
+        }
+        // The resolved ID may belong to an addon that has not registered yet.
+        // Preserve it so addon class IDs survive across restarts.
+        if (resolvedId != null && !resolvedId.isBlank()) {
+            data.setPrimaryClassId(resolvedId);
+            return getDefaultPrimaryClass();
+        }
+        CharacterClassDefinition fallback = getDefaultPrimaryClass();
+        if (fallback != null) {
+            data.setPrimaryClassId(fallback.getId());
         } else {
             data.setPrimaryClassId(null);
         }
-        return resolved;
+        return fallback;
     }
 
     public CharacterClassDefinition setPlayerSecondaryClass(PlayerData data, String requestedValue) {
@@ -481,7 +482,8 @@ public class ClassManager {
         }
         CharacterClassDefinition resolved = getClass(resolvedId);
         if (resolved == null) {
-            data.setSecondaryClassId(null);
+            // Preserve addon class IDs that may not be registered yet.
+            data.setSecondaryClassId(resolvedId);
             return null;
         }
         if (resolved.getId().equalsIgnoreCase(data.getPrimaryClassId())) {
@@ -780,8 +782,11 @@ public class ClassManager {
         if (byId != null) {
             return byId.getId();
         }
-        CharacterClassDefinition fallback = getDefaultPrimaryClass();
-        return fallback != null ? fallback.getId() : null;
+        // Preserve the saved value when it is not found in the registry.
+        // External addons may register classes after core initialization,
+        // so falling back to the default here would silently erase addon class IDs
+        // from player data before those addons have had a chance to register.
+        return normalizeKey(requestedValue);
     }
 
     public boolean hasConfiguredDefaultPrimaryClass() {
@@ -797,7 +802,7 @@ public class ClassManager {
             return fallback != null ? fallback.getId() : null;
         }
         CharacterClassDefinition byId = findClassByUserInput(requestedValue);
-        return byId != null ? byId.getId() : null;
+        return byId != null ? byId.getId() : normalizeKey(requestedValue);
     }
 
     public CharacterClassDefinition findClassByUserInput(String userInput) {
@@ -819,32 +824,6 @@ public class ClassManager {
             }
         }
         return null;
-    }
-
-    private boolean isMissingAssignedClass(String classId) {
-        if (classId == null || classId.isBlank()) {
-            return false;
-        }
-        if ("none".equalsIgnoreCase(classId.trim())) {
-            return false;
-        }
-        return getClass(classId) == null;
-    }
-
-    private void clearMissingClassAssignment(PlayerData data, ClassAssignmentSlot slot, String missingClassId) {
-        if (data == null || slot == null) {
-            return;
-        }
-
-        if (slot == ClassAssignmentSlot.PRIMARY) {
-            data.setPrimaryClassId(null);
-        } else {
-            data.setSecondaryClassId(null);
-        }
-
-        LOGGER.atInfo().log("Cleared missing class assignment '%s' for %s slot.",
-                missingClassId,
-                slot.name().toLowerCase(Locale.ROOT));
     }
 
     private void grantEmergencySwapIfNoneAndExhausted(PlayerData data, ClassAssignmentSlot slot) {

@@ -349,8 +349,11 @@ public class RaceManager {
             return requested.getId();
         }
 
-        RaceDefinition fallback = getDefaultRace();
-        return fallback != null ? fallback.getId() : null;
+        // Preserve the saved value when it is not found in the registry.
+        // External addons may register races after core initialization,
+        // so falling back to the default here would silently erase addon race IDs
+        // from player data before those addons have had a chance to register.
+        return normalizeKey(requestedValue);
     }
 
     public RaceDefinition getPlayerRace(PlayerData data) {
@@ -366,16 +369,11 @@ public class RaceManager {
             return resolved;
         }
 
+        // The saved race ID may belong to an addon that has not registered yet.
+        // Return the default race for gameplay purposes but do NOT overwrite the
+        // saved ID so addon races are preserved across restarts.
         RaceDefinition fallback = getDefaultRace();
-        if (fallback != null) {
-            if (!fallback.getId().equals(data.getRaceId())) {
-                data.setRaceId(fallback.getId());
-            }
-            return fallback;
-        }
-
-        data.setRaceId(null);
-        return null;
+        return fallback != null ? fallback : null;
     }
 
     public RaceDefinition setPlayerRace(PlayerData data, String requestedValue) {
@@ -392,18 +390,32 @@ public class RaceManager {
         }
         String resolvedId = resolveRaceIdentifier(requestedValue);
         RaceDefinition resolved = getRace(resolvedId);
-        if (resolved == null && hasConfiguredDefaultRace) {
-            resolved = getDefaultRace();
-        }
         if (resolved != null) {
             data.setRaceId(resolved.getId());
             if (applyModel) {
                 applyRaceModelIfEnabled(data);
             }
-        } else {
-            data.setRaceId(null);
+            return resolved;
         }
-        return resolved;
+        // The resolved ID may belong to an addon that has not registered yet.
+        // Preserve it so addon race IDs survive across restarts.
+        if (resolvedId != null && !resolvedId.isBlank()) {
+            data.setRaceId(resolvedId);
+            RaceDefinition fallback = hasConfiguredDefaultRace ? getDefaultRace() : null;
+            return fallback;
+        }
+        if (hasConfiguredDefaultRace) {
+            RaceDefinition fallback = getDefaultRace();
+            if (fallback != null) {
+                data.setRaceId(fallback.getId());
+                if (applyModel) {
+                    applyRaceModelIfEnabled(data);
+                }
+            }
+            return fallback;
+        }
+        data.setRaceId(null);
+        return null;
     }
 
     public void markRaceChange(PlayerData data) {
