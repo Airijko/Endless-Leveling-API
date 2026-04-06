@@ -1,5 +1,6 @@
 package com.airijko.endlessleveling.player;
 
+import com.airijko.endlessleveling.api.ELNotificationType;
 import com.airijko.endlessleveling.api.EndlessLevelingAPI;
 import com.airijko.endlessleveling.augments.AugmentRuntimeManager;
 import com.airijko.endlessleveling.classes.CharacterClassDefinition;
@@ -1425,7 +1426,8 @@ public class SkillManager {
                     baseDamage, ferocity, multiplier, finalDamage, playerData.getPlayerName());
 
             // Notify player of critical hit using Hytale's notification system
-            if (playerData.isCriticalNotifEnabled()) {
+            if (playerData.isCriticalNotifEnabled()
+                    && !EndlessLevelingAPI.get().isNotificationSuppressed(ELNotificationType.CRITICAL_HIT)) {
                 try {
                     PlayerRef playerRef = Universe.get()
                             .getPlayer(playerData.getUuid());

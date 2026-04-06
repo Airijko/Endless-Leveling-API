@@ -1,5 +1,7 @@
 package com.airijko.endlessleveling.passives.type;
 
+import com.airijko.endlessleveling.api.ELNotificationType;
+import com.airijko.endlessleveling.api.EndlessLevelingAPI;
 import com.airijko.endlessleveling.player.PlayerData;
 import com.airijko.endlessleveling.enums.ArchetypePassiveType;
 import com.airijko.endlessleveling.passives.PassiveManager.PassiveRuntimeState;
@@ -183,7 +185,8 @@ public final class HealingAuraPassive {
     }
 
     private static void notifyPassive(PlayerRef playerRef, String message) {
-        if (playerRef == null || !playerRef.isValid() || message == null || message.isBlank()) {
+        if (playerRef == null || !playerRef.isValid() || message == null || message.isBlank()
+                || EndlessLevelingAPI.get().isNotificationSuppressed(ELNotificationType.PASSIVE_TRIGGERED)) {
             return;
         }
         PlayerChatNotifier.send(playerRef, ChatMessageTemplate.PASSIVE_GENERIC, message);

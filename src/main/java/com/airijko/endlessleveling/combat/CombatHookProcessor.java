@@ -1,6 +1,8 @@
 package com.airijko.endlessleveling.combat;
 
 import com.airijko.endlessleveling.EndlessLeveling;
+import com.airijko.endlessleveling.api.ELNotificationType;
+import com.airijko.endlessleveling.api.EndlessLevelingAPI;
 import com.airijko.endlessleveling.augments.AugmentDispatch;
 import com.airijko.endlessleveling.augments.AugmentExecutor;
 import com.airijko.endlessleveling.classes.ClassWeaponResolver;
@@ -797,7 +799,8 @@ public final class CombatHookProcessor {
     }
 
     private void sendPassiveMessage(PlayerRef playerRef, String text) {
-        if (playerRef == null || !playerRef.isValid() || text == null || text.isBlank()) {
+        if (playerRef == null || !playerRef.isValid() || text == null || text.isBlank()
+                || EndlessLevelingAPI.get().isNotificationSuppressed(ELNotificationType.PASSIVE_TRIGGERED)) {
             return;
         }
         PlayerChatNotifier.send(playerRef, ChatMessageTemplate.PASSIVE_GENERIC, text);
