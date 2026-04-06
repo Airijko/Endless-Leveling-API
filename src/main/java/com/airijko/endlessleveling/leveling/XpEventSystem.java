@@ -1,6 +1,7 @@
 package com.airijko.endlessleveling.leveling;
 
 import com.airijko.endlessleveling.EndlessLeveling;
+import com.airijko.endlessleveling.api.EndlessLevelingAPI;
 import com.airijko.endlessleveling.leveling.LevelingManager;
 import com.airijko.endlessleveling.leveling.PartyManager;
 import com.airijko.endlessleveling.passives.PassiveManager;
@@ -33,10 +34,15 @@ import java.util.UUID;
 
 import javax.annotation.Nonnull;
 import com.airijko.endlessleveling.drops.LuckDoubleDropSystem;
+import com.airijko.endlessleveling.managers.LoggingManager;
+import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue;
+import com.hypixel.hytale.server.core.modules.entitystats.modifier.Modifier;
+import java.util.Map;
 
 public class XpEventSystem extends DeathSystems.OnDeathSystem {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
+    private static final String XP_DIAG_SECTION = "xp_death_diag";
 
     private final PlayerDataManager playerDataManager;
     private final LevelingManager levelingManager;
@@ -144,7 +150,8 @@ public class XpEventSystem extends DeathSystems.OnDeathSystem {
                 && mobLevelingManager.isEntityBlacklisted(ref, store, commandBuffer);
 
         boolean worldXpBlacklisted = mobLevelingManager != null
-            && mobLevelingManager.isWorldXpBlacklisted(store);
+            && (mobLevelingManager.isWorldXpBlacklisted(store)
+                || mobLevelingManager.isWorldRuntimeXpBlacklisted(store));
 
         if (worldXpBlacklisted) {
             String worldId = mobLevelingManager != null ? mobLevelingManager.resolveWorldIdentifier(store) : "unknown";
@@ -181,6 +188,40 @@ public class XpEventSystem extends DeathSystems.OnDeathSystem {
             ? Math.max(cachedMaxHealth, liveMaxHealth)
             : (hasFiniteCached ? cachedMaxHealth : (hasFiniteLive ? liveMaxHealth : 1.0f));
         double baseXp = Math.max(1.0, maxHealthForXp);
+
+        // XP Death Diagnostic (enable via logging.debug_sections: [xp_death_diag])
+        if (LoggingManager.isDebugSectionEnabled(XP_DIAG_SECTION)) {
+            boolean healthScalingOn = mobLevelingManager != null
+                    && mobLevelingManager.isMobHealthScalingEnabled(store);
+            float liveCurrent = healthStat.get();
+            float liveMin = healthStat.getMin();
+            Map<String, Modifier> mods = healthStat.getModifiers();
+            boolean hasELModifier = mods != null && mods.containsKey("EL_MOB_HEALTH_SCALE");
+            boolean hasLifeForce = mods != null && mods.containsKey("EL_MOB_AUGMENT_LIFE_FORCE");
+            int modCount = mods != null ? mods.size() : 0;
+            String modKeys = mods != null ? String.join(",", mods.keySet()) : "none";
+            MobLevelingManager.MobHealthCompositionSnapshot hcSnap = mobLevelingManager != null
+                    ? mobLevelingManager.getEntityHealthCompositionSnapshot(ref, store, commandBuffer)
+                    : null;
+            LOGGER.atInfo().log(
+                "[XP_DEATH_DIAG] entity=%d playerLvl=%d mobLvl=%d(%s) healthScalingEnabled=%s "
+                + "liveHP=%.1f/%.1f(min=%.1f) cachedMax=%.1f hasELHealthMod=%s hasLifeForceMod=%s modCount=%d modKeys=[%s] "
+                + "composition={base=%.1f scaled=%.1f lifeForce=%.1f combined=%.1f} maxHealthForXp=%.1f baseXp=%.1f",
+                ref.getIndex(),
+                playerData.getLevel(),
+                mobLevel, mobLevelSource,
+                healthScalingOn,
+                liveCurrent, liveMaxHealth, liveMin,
+                cachedMaxHealth,
+                hasELModifier, hasLifeForce,
+                modCount, modKeys,
+                hcSnap != null ? hcSnap.baseMax() : -1f,
+                hcSnap != null ? hcSnap.scaledMax() : -1f,
+                hcSnap != null ? hcSnap.lifeForceBonus() : -1f,
+                hcSnap != null ? hcSnap.combinedMax() : -1f,
+                maxHealthForXp, baseXp);
+        }
+
         double xpAfterKillRules = levelingManager.applyMobKillXpRules(
             playerData,
             mobLevel,
@@ -194,6 +235,12 @@ public class XpEventSystem extends DeathSystems.OnDeathSystem {
                     playerUuid, playerData.getLevel(), mobLevelText);
             XpKillCreditTracker.clearTarget(ref, store, commandBuffer);
             return;
+        }
+
+        // Apply external per-entity XP multiplier (e.g. elite mobs, events, quests).
+        double entityXpMult = EndlessLevelingAPI.get().getEntityXpMultiplier(ref.getIndex());
+        if (entityXpMult != 1.0D) {
+            xpAfterKillRules *= entityXpMult;
         }
 
         ArchetypePassiveSnapshot snapshot = archetypePassiveManager != null
@@ -269,6 +316,7 @@ public class XpEventSystem extends DeathSystems.OnDeathSystem {
             }
         }
 
+        EndlessLevelingAPI.get().clearEntityXpMultiplier(ref.getIndex());
         XpKillCreditTracker.clearTarget(ref, store, commandBuffer);
     }
 

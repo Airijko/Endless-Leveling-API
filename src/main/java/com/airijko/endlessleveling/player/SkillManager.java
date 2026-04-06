@@ -462,17 +462,15 @@ public class SkillManager {
     }
 
     private double getEffectiveCapMetric(PlayerData playerData, SkillAttributeType attributeType, int previewLevel) {
-        return switch (attributeType) {
-            case PRECISION -> {
-                PrecisionBreakdown breakdown = getPrecisionBreakdown(playerData, previewLevel);
-                yield breakdown != null ? breakdown.totalPercent() : 0.0D;
-            }
-            case DEFENSE -> {
-                DefenseBreakdown breakdown = getDefenseBreakdown(playerData, previewLevel);
-                yield breakdown != null ? (breakdown.resistance() * 100.0D) : 0.0D;
-            }
-            default -> 0.0D;
-        };
+        // If-else instead of switch expression — see getOverflowRefundablePoints for rationale.
+        if (attributeType == SkillAttributeType.PRECISION) {
+            PrecisionBreakdown breakdown = getPrecisionBreakdown(playerData, previewLevel);
+            return breakdown != null ? breakdown.totalPercent() : 0.0D;
+        } else if (attributeType == SkillAttributeType.DEFENSE) {
+            DefenseBreakdown breakdown = getDefenseBreakdown(playerData, previewLevel);
+            return breakdown != null ? (breakdown.resistance() * 100.0D) : 0.0D;
+        }
+        return 0.0D;
     }
 
     public int getSkillPointsPerLevel() {
@@ -774,11 +772,16 @@ public class SkillManager {
             return 0;
         }
 
-        return switch (attributeType) {
-            case PRECISION -> computeOverflowRefund(currentLevel, findFirstPrecisionCapLevel(playerData, currentLevel));
-            case DEFENSE -> computeOverflowRefund(currentLevel, findFirstDefenseCapLevel(playerData, currentLevel));
-            default -> 0;
-        };
+        // If-else instead of switch expression to avoid the synthetic switch-map inner class
+        // the compiler generates for enum switches. Under rapid concurrent access (e.g. an
+        // auto-clicker on the +5 skill button), the classloader can race on that synthetic
+        // class and throw NoClassDefFoundError, crashing the world.
+        if (attributeType == SkillAttributeType.PRECISION) {
+            return computeOverflowRefund(currentLevel, findFirstPrecisionCapLevel(playerData, currentLevel));
+        } else if (attributeType == SkillAttributeType.DEFENSE) {
+            return computeOverflowRefund(currentLevel, findFirstDefenseCapLevel(playerData, currentLevel));
+        }
+        return 0;
     }
 
     private int computeOverflowRefund(int currentLevel, int capLevel) {
