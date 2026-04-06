@@ -169,6 +169,21 @@ public final class CommonAugment extends Augment implements AugmentHooks.Passive
         }
     }
 
+    /**
+     * Fast mob-only passive path — uses pre-computed sourcePrefix and parsed
+     * offer from registration, skipping extractMobAugmentIdFromSelectionKey,
+     * parseStatOfferId, and buildSourcePrefix string work every tick.
+     */
+    public void applyMobPassiveFast(AugmentHooks.PassiveStatContext context,
+            String sourcePrefix,
+            CommonStatOffer offer) {
+        if (context == null || context.getRuntimeState() == null
+                || sourcePrefix == null || offer == null) {
+            return;
+        }
+        applySelectedMobOffer(context, sourcePrefix, offer);
+    }
+
     private void applySelectedMobOffer(AugmentHooks.PassiveStatContext context,
             String sourcePrefix,
             CommonStatOffer selectedOffer) {
@@ -240,6 +255,14 @@ public final class CommonAugment extends Augment implements AugmentHooks.Passive
     }
 
     private String buildSourcePrefix(String selectionKey) {
+        return buildSourcePrefixStatic(selectionKey);
+    }
+
+    /**
+     * Static variant exposed for pre-computation at registration time so the
+     * per-tick hot path can skip the string work entirely.
+     */
+    public static String buildSourcePrefixStatic(String selectionKey) {
         if (selectionKey == null || selectionKey.isBlank()) {
             return ID;
         }

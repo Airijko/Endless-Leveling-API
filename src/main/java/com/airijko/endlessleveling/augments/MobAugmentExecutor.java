@@ -1,6 +1,10 @@
 package com.airijko.endlessleveling.augments;
 
 import com.airijko.endlessleveling.augments.types.CommonAugment;
+import com.airijko.endlessleveling.augments.types.GoliathAugment;
+import com.airijko.endlessleveling.augments.types.GraspOfTheUndyingAugment;
+import com.airijko.endlessleveling.augments.types.RaidBossAugment;
+import com.airijko.endlessleveling.augments.types.TankEngineAugment;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.airijko.endlessleveling.managers.LoggingManager;
 import com.hypixel.hytale.component.CommandBuffer;
@@ -586,7 +590,7 @@ public final class MobAugmentExecutor {
             return;
         }
         MobAugmentInstance instance = mobAugments.get(entityId);
-        if (instance == null || instance.augments.isEmpty()) {
+        if (instance == null || instance.passiveAugmentCount == 0) {
             return;
         }
         applyPassiveHooks(entityId, instance, mobRef, commandBuffer, statMap);
@@ -597,44 +601,62 @@ public final class MobAugmentExecutor {
             Ref<EntityStore> mobRef,
             CommandBuffer<EntityStore> commandBuffer,
             EntityStatMap statMap) {
-        if (instance == null || instance.augments.isEmpty() || statMap == null) {
+        if (instance == null || instance.passiveAugmentCount == 0 || statMap == null) {
             return;
         }
 
         double deltaSeconds = resolvePassiveDeltaSeconds(entityId);
-        for (int augmentIndex = 0; augmentIndex < instance.augments.size(); augmentIndex++) {
+
+        // Iterate only over pre-filtered passive augment indices (skips player-only
+        // augments without per-tick instanceof + requiresPlayer checks).
+        for (int p = 0; p < instance.passiveAugmentCount; p++) {
+            int augmentIndex = instance.passiveAugmentIndices[p];
             Augment augment = instance.augments.get(augmentIndex);
-            if (augment instanceof AugmentHooks.PassiveStatAugment passive) {
-                // Skip augments whose entire passive effect is player-facing (HUD, movement
-                // packets, chat) — no-op for mobs and wastes context allocation overhead.
-                if (passive.requiresPlayer()) {
-                    continue;
-                }
-                try {
-                String originalAugmentId = (instance.appliedAugmentIds != null
-                    && augmentIndex >= 0
-                    && augmentIndex < instance.appliedAugmentIds.size())
-                        ? instance.appliedAugmentIds.get(augmentIndex)
-                        : augment.getId();
+            try {
+                // Fast path for CommonAugment with a pre-parsed stat offer: skip
+                // extractMobAugmentIdFromSelectionKey, parseStatOfferId, and
+                // buildSourcePrefix string work entirely.
+                if (augment instanceof CommonAugment common
+                        && instance.cachedOffers[augmentIndex] != null) {
                     AugmentHooks.PassiveStatContext context = new AugmentHooks.PassiveStatContext(
                             null,
                             instance.runtimeState,
                             null,
-                    "mob::" + originalAugmentId + "::" + augmentIndex,
+                            instance.cachedSelectionKeys[augmentIndex],
                             mobRef,
                             commandBuffer,
                             statMap,
                             deltaSeconds);
-                    passive.applyPassive(context);
-                } catch (Exception e) {
-                    LOGGER.atSevere().withCause(e)
-                            .log("[AUGMENT] Error executing Passive %s for mob %s: %s", augment.getId(),
-                                    entityId, e.getMessage());
+                    common.applyMobPassiveFast(context,
+                            instance.cachedSourcePrefixes[augmentIndex],
+                            instance.cachedOffers[augmentIndex]);
+                } else {
+                    // Generic path for non-Common augments — still uses pre-computed
+                    // selection key to avoid string concatenation.
+                    AugmentHooks.PassiveStatContext context = new AugmentHooks.PassiveStatContext(
+                            null,
+                            instance.runtimeState,
+                            null,
+                            instance.cachedSelectionKeys[augmentIndex],
+                            mobRef,
+                            commandBuffer,
+                            statMap,
+                            deltaSeconds);
+                    ((AugmentHooks.PassiveStatAugment) augment).applyPassive(context);
                 }
+            } catch (Exception e) {
+                LOGGER.atSevere().withCause(e)
+                        .log("[AUGMENT] Error executing Passive %s for mob %s: %s", augment.getId(),
+                                entityId, e.getMessage());
             }
         }
 
-        AugmentPassiveHealthReconciler.reconcile(statMap, instance.augments, instance.runtimeState);
+        // Skip the reconciler entirely when the mob has no health-modifying augments
+        // (Goliath, RaidBoss, TankEngine, Grasp) — avoids iterating augments + stat
+        // map modifier clear/update cycles every tick for the majority of mobs.
+        if (instance.hasHealthAugments) {
+            AugmentPassiveHealthReconciler.reconcile(statMap, instance.augments, instance.runtimeState);
+        }
     }
 
     private String summarizeCategories(List<Augment> augments) {
@@ -691,26 +713,49 @@ public final class MobAugmentExecutor {
         return firstCategory ? "none" : builder.toString();
     }
 
-    private double resolvePassiveDeltaSeconds(UUID entityId) {
-        long now = System.currentTimeMillis();
-        Long previous = mobPassiveAppliedAtMillis.put(entityId, now);
+    /**
+     * Accepts a pre-resolved timestamp so the hot path avoids a
+     * System.currentTimeMillis() call per mob entity.
+     */
+    private double resolvePassiveDeltaSeconds(UUID entityId, long nowMillis) {
+        Long previous = mobPassiveAppliedAtMillis.put(entityId, nowMillis);
         if (previous == null || previous <= 0L) {
             return 0.1D;
         }
-        double deltaSeconds = (now - previous) / 1000.0D;
+        double deltaSeconds = (nowMillis - previous) / 1000.0D;
         if (!Double.isFinite(deltaSeconds) || deltaSeconds <= 0.0D) {
             return 0.1D;
         }
         return Math.min(1.0D, deltaSeconds);
     }
 
+    private double resolvePassiveDeltaSeconds(UUID entityId) {
+        return resolvePassiveDeltaSeconds(entityId, System.currentTimeMillis());
+    }
+
     /**
      * Represents a mob's active augments and runtime state.
+     * Pre-computes per-augment selection keys, source prefixes and parsed
+     * stat offers at registration time so the passive-tick hot path avoids
+     * repeated string parsing/allocation every second.
      */
     private static class MobAugmentInstance {
         final List<Augment> augments;
         final List<String> appliedAugmentIds;
         final AugmentRuntimeManager.AugmentRuntimeState runtimeState;
+
+        // --- Pre-computed hot-path caches (built once at registration) ---
+        /** "mob::<augmentId>::<index>" per augment slot. */
+        final String[] cachedSelectionKeys;
+        /** CommonAugment.buildSourcePrefix(selectionKey) per slot (null for non-Common). */
+        final String[] cachedSourcePrefixes;
+        /** CommonAugment.parseStatOfferId(augmentId) per slot (null for non-Common). */
+        final CommonAugment.CommonStatOffer[] cachedOffers;
+        /** Indices of PassiveStatAugment slots that are NOT player-only. */
+        final int[] passiveAugmentIndices;
+        final int passiveAugmentCount;
+        /** True when at least one augment is a health-modifying type (Goliath/RaidBoss/TankEngine/Grasp). */
+        final boolean hasHealthAugments;
 
         MobAugmentInstance(List<Augment> augments,
                 List<String> appliedAugmentIds,
@@ -718,6 +763,44 @@ public final class MobAugmentExecutor {
             this.augments = augments;
             this.appliedAugmentIds = appliedAugmentIds;
             this.runtimeState = runtimeState;
+
+            int size = augments.size();
+            this.cachedSelectionKeys = new String[size];
+            this.cachedSourcePrefixes = new String[size];
+            this.cachedOffers = new CommonAugment.CommonStatOffer[size];
+
+            boolean foundHealthAugment = false;
+            int[] tempPassiveIndices = new int[size];
+            int passiveCount = 0;
+
+            for (int i = 0; i < size; i++) {
+                Augment augment = augments.get(i);
+                String originalAugmentId = (appliedAugmentIds != null && i < appliedAugmentIds.size())
+                        ? appliedAugmentIds.get(i)
+                        : augment.getId();
+
+                String selectionKey = "mob::" + originalAugmentId + "::" + i;
+                cachedSelectionKeys[i] = selectionKey;
+
+                if (augment instanceof CommonAugment) {
+                    cachedOffers[i] = CommonAugment.parseStatOfferId(originalAugmentId);
+                    cachedSourcePrefixes[i] = CommonAugment.buildSourcePrefixStatic(selectionKey);
+                }
+
+                if (augment instanceof GoliathAugment || augment instanceof RaidBossAugment
+                        || augment instanceof TankEngineAugment || augment instanceof GraspOfTheUndyingAugment) {
+                    foundHealthAugment = true;
+                }
+
+                if (augment instanceof AugmentHooks.PassiveStatAugment passive && !passive.requiresPlayer()) {
+                    tempPassiveIndices[passiveCount++] = i;
+                }
+            }
+
+            this.hasHealthAugments = foundHealthAugment;
+            this.passiveAugmentIndices = new int[passiveCount];
+            System.arraycopy(tempPassiveIndices, 0, this.passiveAugmentIndices, 0, passiveCount);
+            this.passiveAugmentCount = passiveCount;
         }
     }
 }

@@ -34,6 +34,7 @@ import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.Message;
+import com.hypixel.hytale.server.core.modules.i18n.I18nModule;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -1372,28 +1373,13 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
     }
 
     private void tickMobPassiveAugmentStats(Ref<EntityStore> ref,
-            Store<EntityStore> store,
-            CommandBuffer<EntityStore> commandBuffer) {
-        if (ref == null || store == null || commandBuffer == null) {
+            CommandBuffer<EntityStore> commandBuffer,
+            UUID entityUuid,
+            MobAugmentExecutor executor) {
+        if (ref == null || commandBuffer == null || entityUuid == null || executor == null) {
             return;
         }
 
-        EndlessLeveling plugin = EndlessLeveling.getInstance();
-        if (plugin == null) {
-            return;
-        }
-
-        MobAugmentExecutor executor = plugin.getMobAugmentExecutor();
-        if (executor == null) {
-            return;
-        }
-
-        UUIDComponent uuidComponent = commandBuffer.getComponent(ref, UUIDComponent.getComponentType());
-        if (uuidComponent == null || uuidComponent.getUuid() == null) {
-            return;
-        }
-
-        UUID entityUuid = uuidComponent.getUuid();
         if (!executor.hasMobAugments(entityUuid)) {
             return;
         }
@@ -1408,8 +1394,13 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
 
     private boolean ensureMobAugmentsRegistered(Ref<EntityStore> ref,
             Store<EntityStore> store,
-            CommandBuffer<EntityStore> commandBuffer) {
+            CommandBuffer<EntityStore> commandBuffer,
+            UUID mobUuid) {
         if (ref == null || store == null || commandBuffer == null || mobLevelingManager == null) {
+            return false;
+        }
+
+        if (mobUuid == null) {
             return false;
         }
 
@@ -1423,12 +1414,6 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
             return false;
         }
 
-        UUIDComponent uuidComponent = commandBuffer.getComponent(ref, UUIDComponent.getComponentType());
-        if (uuidComponent == null || uuidComponent.getUuid() == null) {
-            return false;
-        }
-
-        UUID mobUuid = uuidComponent.getUuid();
         if (executor.hasMobAugments(mobUuid)) {
             return false;
         }
@@ -1462,7 +1447,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         if (state.nextMobAugmentRegistrationCheckMillis <= 0L
                 || currentTimeMillis >= state.nextMobAugmentRegistrationCheckMillis) {
             boolean alreadyInitialized = state.mobAugmentsInitialized;
-            boolean registeredNow = ensureMobAugmentsRegistered(ref, store, commandBuffer);
+            boolean registeredNow = ensureMobAugmentsRegistered(ref, store, commandBuffer, trackingIdentity.uuid());
             if (registeredNow) {
                 state.mobAugmentsInitialized = true;
                 state.mobHasAugments = true;
@@ -1514,7 +1499,9 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
             return;
         }
 
-        UUID mobUuid = trackingIdentity.uuidBacked() ? resolveUuid(ref, commandBuffer) : null;
+        // Use the UUID already resolved by resolveTrackingIdentity at the top
+        // of processEntity — avoids a redundant UUIDComponent lookup per tick.
+        UUID mobUuid = trackingIdentity.uuid();
         if (mobUuid == null) {
             return; // Skip passive ticking if we can't resolve UUID
         }
@@ -1524,7 +1511,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
             return;
         }
 
-        tickMobPassiveAugmentStats(ref, store, commandBuffer);
+        tickMobPassiveAugmentStats(ref, commandBuffer, mobUuid, plugin.getMobAugmentExecutor());
         state.lastPassiveStatTickMillis = currentTimeMillis;
         state.augmentPassiveDeferActive = false;
         // Passive just fired for the first time (or is re-ticking). Force an immediate
@@ -1563,8 +1550,8 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         DisplayNameComponent display = commandBuffer.getComponent(ref, DisplayNameComponent.getComponentType());
         if (display != null) {
             Message displayNameMsg = display.getDisplayName();
-            if (displayNameMsg != null && displayNameMsg.getAnsiMessage() != null && !displayNameMsg.getAnsiMessage().isBlank()) {
-                baseName = displayNameMsg.getAnsiMessage();
+            if (displayNameMsg != null) {
+                baseName = resolveEntityDisplayName(displayNameMsg);
             }
         }
 
@@ -1751,6 +1738,43 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         }
     }
 
+    /**
+     * Resolves a translated display name from a Message, falling back to extracting
+     * a readable name from the translation key when I18nModule cannot resolve it.
+     */
+    private static String resolveEntityDisplayName(Message msg) {
+        String messageId = msg.getMessageId();
+        if (messageId != null) {
+            String translated = I18nModule.get().getMessage("en-US", messageId);
+            if (translated != null && !translated.isBlank()) {
+                return translated;
+            }
+            return extractNameFromTranslationKey(messageId);
+        }
+        String rawText = msg.getRawText();
+        if (rawText != null && !rawText.isBlank()) {
+            return rawText;
+        }
+        return "Mob";
+    }
+
+    /**
+     * Extracts a human-readable name from a translation key.
+     * e.g. "server.npcRoles.Skrythe_Role.name" -> "Skrythe"
+     */
+    private static String extractNameFromTranslationKey(String key) {
+        String[] parts = key.split("\\.");
+        if (parts.length >= 3) {
+            // Take the segment before ".name" (typically the role identifier)
+            String segment = parts[parts.length - 2];
+            if (segment.endsWith("_Role")) {
+                segment = segment.substring(0, segment.length() - "_Role".length());
+            }
+            return segment.replace("_", " ");
+        }
+        return "Mob";
+    }
+
     private void resetNameplateState(EntityRuntimeState state) {
         if (state == null) {
             return;
@@ -1811,7 +1835,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
     private TrackingIdentity resolveTrackingIdentity(Ref<EntityStore> ref,
             CommandBuffer<EntityStore> commandBuffer) {
         if (ref == null) {
-            return new TrackingIdentity(-1L, false);
+            return new TrackingIdentity(-1L, false, null);
         }
 
         Store<EntityStore> store = ref.getStore();
@@ -1833,16 +1857,16 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
                     // include storePart because ref.getStore() may be a different
                     // Java object than the store parameter in other callbacks.
                     long uuidPart = uuid.getMostSignificantBits() ^ Long.rotateLeft(uuid.getLeastSignificantBits(), 1);
-                    return new TrackingIdentity(uuidPart, true);
+                    return new TrackingIdentity(uuidPart, true, uuid);
                 }
             } catch (Throwable ignored) {
             }
         }
 
-        return new TrackingIdentity(toEntityKey(store, entityId), false);
+        return new TrackingIdentity(toEntityKey(store, entityId), false, null);
     }
 
-    private record TrackingIdentity(long key, boolean uuidBacked) {
+    private record TrackingIdentity(long key, boolean uuidBacked, UUID uuid) {
     }
 
     private boolean isDebugSectionEnabled(String sectionKey) {

@@ -107,7 +107,8 @@ public class XpEventSystem extends DeathSystems.OnDeathSystem {
             if (deadPlayerRef == null || !deadPlayerRef.isValid()) {
                 Object source = deathInfo.getSource();
                 String sourceName = source == null ? "unknown" : source.getClass().getSimpleName();
-                LOGGER.atWarning().log(
+                // Non-player kill (environment, mob-on-mob, etc.) — expected; debug only
+                LOGGER.atFine().log(
                         "[MOB_LUCK] onDeath: no killer resolved for mob target=%d (source=%s); skipping XP and mob-drop registration",
                         ref.getIndex(), sourceName);
             }
