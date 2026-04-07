@@ -235,12 +235,22 @@ public final class ChurchManager {
             );
 
             // Capture the block snapshot for undo using adjusted position
-            int worldMinX = adjustedPosition.x + minX;
-            int worldMinY = adjustedPosition.y + minY;
-            int worldMinZ = adjustedPosition.z + minZ;
-            int worldMaxX = adjustedPosition.x + maxX;
-            int worldMaxY = adjustedPosition.y + maxY;
-            int worldMaxZ = adjustedPosition.z + maxZ;
+            // Expand by 1 block in every direction to catch edge blocks the prefab paste may affect
+            int worldMinX = adjustedPosition.x + minX - 1;
+            int worldMinY = adjustedPosition.y + minY - 1;
+            int worldMinZ = adjustedPosition.z + minZ - 1;
+            int worldMaxX = adjustedPosition.x + maxX + 1;
+            int worldMaxY = adjustedPosition.y + maxY + 1;
+            int worldMaxZ = adjustedPosition.z + maxZ + 1;
+
+            // Check for protection zone overlap before placing
+            String protectionConflict = checkProtectionOverlap(
+                    world.getName(), playerUuid,
+                    worldMinX, worldMinY, worldMinZ,
+                    worldMaxX, worldMaxY, worldMaxZ);
+            if (protectionConflict != null) {
+                return protectionConflict;
+            }
 
             int[] blockSnapshot = captureBlockSnapshot(world, worldMinX, worldMinY, worldMinZ,
                     worldMaxX, worldMaxY, worldMaxZ);
@@ -301,15 +311,109 @@ public final class ChurchManager {
             return "Please wait " + getRemainingCooldownSeconds(playerUuid) + "s before modifying your church.";
         }
 
+        // Load snapshot eagerly before scheduling async world task
+        int[] snapshot = loadSnapshot(playerUuid);
+        if (snapshot == null) {
+            snapshot = placement.blockSnapshot;
+        }
+        if (snapshot == null) {
+            placements.remove(playerUuid);
+            deleteSnapshot(playerUuid);
+            save();
+            return "No block snapshot found — church record removed.";
+        }
+
+        final int[] snapshotData = snapshot;
         world.execute(() -> {
-            restoreBlockSnapshot(world, placement);
+            restoreBlockSnapshotDirect(world, placement, snapshotData);
+            deleteSnapshot(playerUuid);
         });
 
         placements.remove(playerUuid);
         cooldowns.put(playerUuid, System.currentTimeMillis());
-        deleteSnapshot(playerUuid);
         save();
 
+        return null;
+    }
+
+    // ── Protection zone checks (soft dependencies) ─────────────────────
+
+    /**
+     * Checks if the bounding box overlaps any OrbisGuard region or SimpleClaims chunk.
+     * Returns an error message if blocked, or null if placement is allowed.
+     */
+    private String checkProtectionOverlap(String worldName, UUID playerUuid,
+                                          int minX, int minY, int minZ,
+                                          int maxX, int maxY, int maxZ) {
+        String orbis = checkOrbisGuard(worldName, playerUuid, minX, minY, minZ, maxX, maxY, maxZ);
+        if (orbis != null) return orbis;
+
+        String claims = checkSimpleClaims(worldName, playerUuid, minX, minZ, maxX, maxZ);
+        if (claims != null) return claims;
+
+        return null;
+    }
+
+    private String checkOrbisGuard(String worldName, UUID playerUuid,
+                                   int minX, int minY, int minZ,
+                                   int maxX, int maxY, int maxZ) {
+        try {
+            com.orbisguard.api.OrbisGuardAPI api = com.orbisguard.api.OrbisGuardAPI.getInstance();
+            if (api == null) return null;
+            com.orbisguard.api.region.IRegionContainer container = api.getRegionContainer();
+            if (container == null) return null;
+
+            // Sample corners and center of the bounding box at each Y layer
+            int[][] xzSamples = {
+                    {minX, minZ}, {maxX - 1, minZ}, {minX, maxZ - 1}, {maxX - 1, maxZ - 1},
+                    {(minX + maxX) / 2, (minZ + maxZ) / 2}
+            };
+
+            for (int y = minY; y < maxY; y += Math.max(1, (maxY - minY) / 4)) {
+                for (int[] xz : xzSamples) {
+                    java.util.Set<?> regions = container.getRegionsAt(worldName, xz[0], y, xz[1]);
+                    if (regions != null && !regions.isEmpty()) {
+                        return "Cannot place church here — it overlaps with a protected region (OrbisGuard).";
+                    }
+                }
+            }
+            // Also check the very top Y
+            for (int[] xz : xzSamples) {
+                java.util.Set<?> regions = container.getRegionsAt(worldName, xz[0], maxY - 1, xz[1]);
+                if (regions != null && !regions.isEmpty()) {
+                    return "Cannot place church here — it overlaps with a protected region (OrbisGuard).";
+                }
+            }
+        } catch (NoClassDefFoundError | Exception ignored) {
+            // OrbisGuard not installed — skip check
+        }
+        return null;
+    }
+
+    private String checkSimpleClaims(String worldName, UUID playerUuid,
+                                     int minX, int minZ, int maxX, int maxZ) {
+        try {
+            com.buuz135.simpleclaims.claim.ClaimManager cm =
+                    com.buuz135.simpleclaims.claim.ClaimManager.getInstance();
+            if (cm == null) return null;
+
+            // Check every unique chunk that the bounding box touches
+            int chunkMinX = minX >> 5;  // Hytale chunks are 32 blocks wide
+            int chunkMaxX = (maxX - 1) >> 5;
+            int chunkMinZ = minZ >> 5;
+            int chunkMaxZ = (maxZ - 1) >> 5;
+
+            for (int cx = chunkMinX; cx <= chunkMaxX; cx++) {
+                for (int cz = chunkMinZ; cz <= chunkMaxZ; cz++) {
+                    Object chunk = cm.getChunk(worldName, cx, cz);
+                    if (chunk != null) {
+                        return "Cannot place church here — it overlaps with a claimed chunk (SimpleClaims).";
+                    }
+                }
+            }
+        } catch (NoClassDefFoundError | Exception ignored) {
+            // SimpleClaims not installed — skip check
+        }
         return null;
     }
 
@@ -352,23 +456,12 @@ public final class ChurchManager {
         }
     }
 
-    private void restoreBlockSnapshot(World world, ChurchPlacement placement) {
+    private void restoreBlockSnapshotDirect(World world, ChurchPlacement placement, int[] snapshot) {
         try {
             int sizeX = placement.maxX - placement.minX;
             int sizeY = placement.maxY - placement.minY;
             int sizeZ = placement.maxZ - placement.minZ;
             int blockCount = sizeX * sizeY * sizeZ;
-
-            int[] snapshot = loadSnapshot(placement.ownerUuid);
-            if (snapshot == null) {
-                // Fallback to legacy inline snapshot
-                snapshot = placement.blockSnapshot;
-            }
-
-            if (snapshot == null) {
-                LOGGER.atWarning().log("No block snapshot found for church undo (player=%s)", placement.ownerUuid);
-                return;
-            }
 
             boolean hasExtraData = (snapshot.length == blockCount * 3);
             if (!hasExtraData && snapshot.length != blockCount) {
@@ -516,10 +609,23 @@ public final class ChurchManager {
             return "That player has no church placed.";
         }
         if (world != null && placement.worldName.equals(world.getName())) {
-            world.execute(() -> restoreBlockSnapshot(world, placement));
+            int[] snapshot = loadSnapshot(targetUuid);
+            if (snapshot == null) {
+                snapshot = placement.blockSnapshot;
+            }
+            if (snapshot != null) {
+                final int[] snapshotData = snapshot;
+                world.execute(() -> {
+                    restoreBlockSnapshotDirect(world, placement, snapshotData);
+                    deleteSnapshot(targetUuid);
+                });
+            } else {
+                deleteSnapshot(targetUuid);
+            }
+        } else {
+            deleteSnapshot(targetUuid);
         }
         placements.remove(targetUuid);
-        deleteSnapshot(targetUuid);
         save();
         return null;
     }

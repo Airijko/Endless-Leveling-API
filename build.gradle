@@ -54,6 +54,9 @@ dependencies {
     implementation 'org.yaml:snakeyaml:2.2'
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
     implementation 'com.google.code.gson:gson:2.10.1'
+    // Soft dependencies for protection zone checks (classes available at runtime via server mods)
+    compileOnly files("${rootProject.projectDir}/../WorldProtections/OrbisGuard-0.8.8")
+    compileOnly files("${rootProject.projectDir}/../WorldProtections/SimpleClaims-1.0.34")
 }
 
 tasks.withType(JavaCompile).configureEach {
