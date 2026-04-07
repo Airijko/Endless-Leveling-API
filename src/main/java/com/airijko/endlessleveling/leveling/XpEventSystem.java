@@ -35,7 +35,6 @@ import java.util.UUID;
 import javax.annotation.Nonnull;
 import com.airijko.endlessleveling.drops.LuckDoubleDropSystem;
 import com.airijko.endlessleveling.managers.LoggingManager;
-import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue;
 import com.hypixel.hytale.server.core.modules.entitystats.modifier.Modifier;
 import java.util.Map;
 
@@ -233,6 +232,7 @@ public class XpEventSystem extends DeathSystems.OnDeathSystem {
             String mobLevelText = mobIsBlacklisted ? "N/A" : Integer.toString(Math.max(1, mobLevel));
             LOGGER.atFine().log("XP gain blocked for player %s due to level gap (player=%d, mob=%s)",
                     playerUuid, playerData.getLevel(), mobLevelText);
+            EndlessLevelingAPI.get().clearEntityXpMultiplier(ref.getIndex());
             XpKillCreditTracker.clearTarget(ref, store, commandBuffer);
             return;
         }

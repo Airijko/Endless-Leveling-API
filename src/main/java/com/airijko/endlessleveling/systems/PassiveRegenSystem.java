@@ -1,5 +1,7 @@
 package com.airijko.endlessleveling.systems;
 
+import com.airijko.endlessleveling.api.ELNotificationType;
+import com.airijko.endlessleveling.api.EndlessLevelingAPI;
 import com.airijko.endlessleveling.augments.AugmentExecutor;
 import com.airijko.endlessleveling.augments.AugmentRuntimeManager;
 import com.airijko.endlessleveling.augments.AugmentRuntimeManager.AugmentRuntimeState;
@@ -255,7 +257,8 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
     }
 
     private void sendSwiftnessExpiredMessage(PlayerRef playerRef) {
-        if (playerRef == null || !playerRef.isValid()) {
+        if (playerRef == null || !playerRef.isValid()
+                || EndlessLevelingAPI.get().isNotificationSuppressed(ELNotificationType.PASSIVE_TRIGGERED)) {
             return;
         }
         PlayerChatNotifier.send(playerRef, ChatMessageTemplate.SWIFTNESS_FADED);
@@ -785,7 +788,8 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
     }
 
     private void sendPassiveRegenNotification(@Nonnull PlayerRef playerRef) {
-        if (playerRef == null || !playerRef.isValid()) {
+        if (playerRef == null || !playerRef.isValid()
+                || EndlessLevelingAPI.get().isNotificationSuppressed(ELNotificationType.PASSIVE_REGEN)) {
             return;
         }
         var packetHandler = playerRef.getPacketHandler();
@@ -974,7 +978,8 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
     }
 
     private void sendCooldownNotification(PlayerRef playerRef, String text) {
-        if (playerRef == null || !playerRef.isValid() || text == null || text.isBlank()) {
+        if (playerRef == null || !playerRef.isValid() || text == null || text.isBlank()
+                || EndlessLevelingAPI.get().isNotificationSuppressed(ELNotificationType.PASSIVE_TRIGGERED)) {
             return;
         }
 
@@ -997,7 +1002,8 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
     private void sendAdrenalineMessage(PlayerRef playerRef,
             double restorePercent,
             double durationSeconds) {
-        if (playerRef == null || !playerRef.isValid()) {
+        if (playerRef == null || !playerRef.isValid()
+                || EndlessLevelingAPI.get().isNotificationSuppressed(ELNotificationType.PASSIVE_TRIGGERED)) {
             return;
         }
         double percentDisplay = Math.max(0.0D, restorePercent) * 100.0D;

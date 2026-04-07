@@ -1,5 +1,7 @@
 package com.airijko.endlessleveling.augments;
 
+import com.airijko.endlessleveling.api.ELNotificationType;
+import com.airijko.endlessleveling.api.EndlessLevelingAPI;
 import com.airijko.endlessleveling.augments.AugmentHooks.DamageTakenContext;
 import com.airijko.endlessleveling.augments.AugmentHooks.HitContext;
 import com.airijko.endlessleveling.augments.AugmentHooks.KillContext;
@@ -478,7 +480,8 @@ public final class AugmentExecutor {
     }
 
     private void sendAugmentMessage(PlayerRef playerRef, String text) {
-        if (playerRef == null || !playerRef.isValid() || text == null || text.isBlank()) {
+        if (playerRef == null || !playerRef.isValid() || text == null || text.isBlank()
+                || EndlessLevelingAPI.get().isNotificationSuppressed(ELNotificationType.AUGMENT_TRIGGERED)) {
             return;
         }
         PlayerChatNotifier.send(playerRef, ChatMessageTemplate.AUGMENT_GENERIC, text);
