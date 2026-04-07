@@ -1,7 +1,6 @@
 package com.airijko.endlessleveling.systems;
 
 import com.airijko.endlessleveling.EndlessLeveling;
-import com.airijko.endlessleveling.compatibility.NameplateBuilderCompatibility;
 import com.airijko.endlessleveling.leveling.MobLevelingManager;
 import com.airijko.endlessleveling.player.PlayerData;
 import com.airijko.endlessleveling.player.PlayerDataManager;
@@ -24,7 +23,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nonnull;
 
-/** Keeps player nameplates in sync with EndlessLeveling NameplateBuilder segments. */
+/** Keeps player nameplates in sync with the native Hytale Nameplate component. */
 public class PlayerNameplateSystem extends TickingSystem<EntityStore> {
 
     private static final Query<EntityStore> PLAYER_QUERY = Query.any();
@@ -115,15 +114,6 @@ public class PlayerNameplateSystem extends TickingSystem<EntityStore> {
     public void removeNameplateForPlayerRef(@Nonnull Ref<EntityStore> ref,
             @Nonnull ComponentAccessor<EntityStore> componentAccessor,
             @Nonnull PlayerRef playerRef) {
-        if (NameplateBuilderCompatibility.isAvailable()) {
-            NameplateBuilderCompatibility.removePlayerLevel(ref.getStore(), ref);
-            NameplateBuilderCompatibility.removeELPlayerPrestigeLevel(ref.getStore(), ref);
-            NameplateBuilderCompatibility.removeELPlayerRace(ref.getStore(), ref);
-            NameplateBuilderCompatibility.removeELPlayerClassPrimary(ref.getStore(), ref);
-            NameplateBuilderCompatibility.removeELPlayerClassSecondary(ref.getStore(), ref);
-            NameplateBuilderCompatibility.removeELPlayerName(ref.getStore(), ref);
-        }
-
         Nameplate nameplate = componentAccessor.getComponent(ref, Nameplate.getComponentType());
         if (nameplate != null) {
             String baseName = playerRef.getUsername() != null ? playerRef.getUsername() : "Player";
@@ -149,17 +139,6 @@ public class PlayerNameplateSystem extends TickingSystem<EntityStore> {
 
         if (firstStoreTick && enabled) {
             requestRefreshForPlayers(playersByEntityIndex.values());
-        }
-
-        if (NameplateBuilderCompatibility.isAvailable()) {
-            if (!enabled) {
-                removeAllNameplatesForStore(store);
-            }
-            dirtyPlayers.clear();
-            if (!lastLabels.isEmpty()) {
-                lastLabels.clear();
-            }
-            return;
         }
 
         if (!enabled) {

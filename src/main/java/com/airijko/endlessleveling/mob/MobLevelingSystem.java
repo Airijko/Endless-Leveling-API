@@ -3,7 +3,6 @@ package com.airijko.endlessleveling.mob;
 import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.api.EndlessLevelingAPI;
 import com.airijko.endlessleveling.augments.MobAugmentExecutor;
-import com.airijko.endlessleveling.compatibility.NameplateBuilderCompatibility;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.airijko.endlessleveling.leveling.MobLevelingManager;
 import com.airijko.endlessleveling.managers.LoggingManager;
@@ -1589,33 +1588,6 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
             state.lastAppliedNameplateText = label;
         }
 
-        if (NameplateBuilderCompatibility.isAvailable()) {
-            if (showLevelInNameplate) {
-                NameplateBuilderCompatibility.registerELShowLevel(ref.getStore(), ref, mobLevel);
-            } else {
-                NameplateBuilderCompatibility.removeELShowLevel(ref.getStore(), ref);
-            }
-
-            if (showNameInNameplate) {
-                NameplateBuilderCompatibility.registerELShowName(ref.getStore(), ref, baseName);
-            } else {
-                NameplateBuilderCompatibility.removeELShowName(ref.getStore(), ref);
-            }
-
-            if (showHealthInNameplate && statMap != null) {
-                EntityStatValue hp = statMap.get(DefaultEntityStatTypes.getHealth());
-                float hpValue = hp != null ? hp.get() : Float.NaN;
-                float hpMax = hp != null ? hp.getMax() : Float.NaN;
-                if (Float.isFinite(hpValue) && Float.isFinite(hpMax) && hpMax > 0.0f) {
-                    NameplateBuilderCompatibility.registerELShowHealth(ref.getStore(), ref, hpValue, hpMax);
-                } else {
-                    NameplateBuilderCompatibility.removeELShowHealth(ref.getStore(), ref);
-                }
-            } else {
-                NameplateBuilderCompatibility.removeELShowHealth(ref.getStore(), ref);
-            }
-        }
-
         Nameplate nameplate = commandBuffer.getComponent(ref, Nameplate.getComponentType());
         if (nameplate != null) {
             nameplate.setText(label);
@@ -1643,13 +1615,6 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
             CommandBuffer<EntityStore> commandBuffer) {
         if (ref == null || commandBuffer == null) {
             return;
-        }
-
-        if (NameplateBuilderCompatibility.isAvailable()) {
-            NameplateBuilderCompatibility.removeELShowLevel(ref.getStore(), ref);
-            NameplateBuilderCompatibility.removeELShowName(ref.getStore(), ref);
-            NameplateBuilderCompatibility.removeELShowHealth(ref.getStore(), ref);
-            NameplateBuilderCompatibility.removeSummonText(ref.getStore(), ref);
         }
 
         Nameplate nameplate = commandBuffer.getComponent(ref, Nameplate.getComponentType());

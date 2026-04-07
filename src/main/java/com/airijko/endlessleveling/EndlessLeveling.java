@@ -18,7 +18,6 @@ import com.airijko.endlessleveling.augments.AugmentSyncValidator;
 import com.airijko.endlessleveling.augments.MobAugmentExecutor;
 import com.airijko.endlessleveling.augments.AugmentRuntimeManager;
 import com.airijko.endlessleveling.augments.AugmentUnlockManager;
-import com.airijko.endlessleveling.compatibility.NameplateBuilderCompatibility;
 import com.airijko.endlessleveling.commands.CommandRegistrar;
 import com.airijko.endlessleveling.commands.classes.ChurchManager;
 import com.airijko.endlessleveling.listeners.OpenPlayerHudListener;
@@ -455,90 +454,6 @@ public class EndlessLeveling extends JavaPlugin {
         partyManager = new PartyManager(playerDataManager, levelingManager);
         if (!partyManager.isAvailable()) {
             LOGGER.atWarning().log("PartyPro not detected; party features will stay disabled.");
-        }
-
-        NameplateBuilderCompatibility.setPlayerDataManager(playerDataManager);
-
-        if (NameplateBuilderCompatibility.isAvailable()) {
-            boolean elLevelDescribed = NameplateBuilderCompatibility.describeELShowLevelSegment(this);
-            if (elLevelDescribed) {
-                LOGGER.atInfo().log("NameplateBuilder detected; registered EL_Mob_Level segment.");
-            } else {
-                LOGGER.atWarning().log("NameplateBuilder detected but EL_Mob_Level segment registration failed.");
-            }
-
-            boolean elNameDescribed = NameplateBuilderCompatibility.describeELShowNameSegment(this);
-            if (elNameDescribed) {
-                LOGGER.atInfo().log("NameplateBuilder detected; registered EL_Mob_Name segment.");
-            } else {
-                LOGGER.atWarning().log("NameplateBuilder detected but EL_Mob_Name segment registration failed.");
-            }
-
-            boolean elHealthDescribed = NameplateBuilderCompatibility.describeELShowHealthSegment(this);
-            if (elHealthDescribed) {
-                LOGGER.atInfo().log("NameplateBuilder detected; registered EL_Mob_Health segment.");
-            } else {
-                LOGGER.atWarning().log("NameplateBuilder detected but EL_Mob_Health segment registration failed.");
-            }
-
-            boolean playerLevelDescribed = NameplateBuilderCompatibility.describePlayerLevelSegment(this);
-            if (playerLevelDescribed) {
-                LOGGER.atInfo().log("NameplateBuilder detected; registered EL_Player_Level segment.");
-            } else {
-                LOGGER.atWarning().log("NameplateBuilder detected but EL_Player_Level segment registration failed.");
-            }
-
-            boolean playerPrestigeDescribed = NameplateBuilderCompatibility.describeELPlayerPrestigeLevelSegment(this);
-            if (playerPrestigeDescribed) {
-                LOGGER.atInfo().log("NameplateBuilder detected; registered EL_Player_Prestige_Level segment.");
-            } else {
-                LOGGER.atWarning().log(
-                        "NameplateBuilder detected but EL_Player_Prestige_Level segment registration failed.");
-            }
-
-            boolean playerRaceDescribed = NameplateBuilderCompatibility.describeELPlayerRaceSegment(this);
-            if (playerRaceDescribed) {
-                LOGGER.atInfo().log("NameplateBuilder detected; registered EL_Player_Race segment.");
-            } else {
-                LOGGER.atWarning().log("NameplateBuilder detected but EL_Player_Race segment registration failed.");
-            }
-
-            boolean playerPrimaryClassDescribed = NameplateBuilderCompatibility
-                    .describeELPlayerClassPrimarySegment(this);
-            if (playerPrimaryClassDescribed) {
-                LOGGER.atInfo().log("NameplateBuilder detected; registered EL_Player_Class_Primary segment.");
-            } else {
-                LOGGER.atWarning().log(
-                        "NameplateBuilder detected but EL_Player_Class_Primary segment registration failed.");
-            }
-
-            boolean playerSecondaryClassDescribed = NameplateBuilderCompatibility
-                    .describeELPlayerClassSecondarySegment(this);
-            if (playerSecondaryClassDescribed) {
-                LOGGER.atInfo().log("NameplateBuilder detected; registered EL_Player_Class_Secondary segment.");
-            } else {
-                LOGGER.atWarning().log(
-                        "NameplateBuilder detected but EL_Player_Class_Secondary segment registration failed.");
-            }
-
-            boolean playerNameDescribed = NameplateBuilderCompatibility.describeELPlayerNameSegment(this);
-            if (playerNameDescribed) {
-                LOGGER.atInfo().log("NameplateBuilder detected; registered EL_Player_Name segment.");
-            } else {
-                LOGGER.atWarning().log("NameplateBuilder detected but EL_Player_Name segment registration failed.");
-            }
-
-            boolean summonDescribed = NameplateBuilderCompatibility.describeSummonLabelSegment(this);
-            if (summonDescribed) {
-                LOGGER.atInfo().log("NameplateBuilder detected; registered EL_Summon_Label segment.");
-            } else {
-                LOGGER.atWarning().log(
-                        "NameplateBuilder detected but EL_Summon_Label segment registration failed (falling back to native summon nameplate text).");
-            }
-
-            NameplateBuilderCompatibility.initAndLockNpcAdminChain(this, "EL_Mob_Level", "EL_Mob_Health");
-            NameplateBuilderCompatibility.addNpcSegmentToAdminChainIfRegistered("ELITE_TIER_PREFIX");
-            NameplateBuilderCompatibility.initAndLockPlayerAdminChain(this, "EL_Player_Level", "EL_Player_Name");
         }
 
         // Register event listeners

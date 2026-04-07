@@ -13,7 +13,6 @@
   "Dependencies": {},
   "OptionalDependencies": {
     "Buuz135:MultipleHUD": ">=1.0.1",
-    "Frotty27:NameplateBuilder": ">=4.260326.2",
     "tsumori:PartyPro": ">=0.8.0"
   },
   "DisabledByDefault": false,

@@ -30,7 +30,6 @@ import com.airijko.endlessleveling.api.gates.WaveGateRuntimeBridge;
 import com.airijko.endlessleveling.api.gates.WaveGateSessionBridge;
 import com.airijko.endlessleveling.api.gates.WaveGateSessionExecutorBridge;
 
-import com.airijko.endlessleveling.compatibility.NameplateBuilderCompatibility;
 import com.airijko.endlessleveling.util.FixedValue;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
@@ -539,15 +538,6 @@ public final class EndlessLevelingAPI {
         }
         Modifier removed = statMap.removeModifier(DefaultEntityStatTypes.getHealth(), modifierKey);
         return removed != null;
-    }
-
-    /**
-     * Write arbitrary text to any registered NPC nameplate segment by ID.
-     * Convenience wrapper around {@link NameplateBuilderCompatibility#setNpcSegmentText}.
-     */
-    public boolean setNpcNameplateSegment(Store<EntityStore> store, Ref<EntityStore> ref,
-            String segmentId, String text) {
-        return NameplateBuilderCompatibility.setNpcSegmentText(store, ref, segmentId, text);
     }
 
     // ------------

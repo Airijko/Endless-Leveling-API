@@ -1,7 +1,6 @@
 package com.airijko.endlessleveling.passives.type;
 
 import com.airijko.endlessleveling.EndlessLeveling;
-import com.airijko.endlessleveling.compatibility.NameplateBuilderCompatibility;
 import com.airijko.endlessleveling.player.PlayerData;
 import com.airijko.endlessleveling.enums.ArchetypePassiveType;
 import com.airijko.endlessleveling.augments.MobAugmentExecutor;
@@ -1796,16 +1795,6 @@ public final class ArmyOfTheDeadPassive {
                 ? ownerName + "'s Undead Summon"
                 : "Undead Summon";
 
-        boolean builderAvailable = NameplateBuilderCompatibility.isAvailable();
-        boolean summonSegmentApplied = false;
-        boolean mobFallbackApplied = false;
-        if (builderAvailable) {
-            summonSegmentApplied = NameplateBuilderCompatibility.registerSummonText(store, summonRef, label);
-            if (!summonSegmentApplied) {
-                mobFallbackApplied = NameplateBuilderCompatibility.registerMobText(store, summonRef, label);
-            }
-        }
-
         boolean entitySupportApplied = false;
         try {
             EntitySupport.setDisplayName(summonRef, label, store);
@@ -1827,7 +1816,7 @@ public final class ArmyOfTheDeadPassive {
         }
 
         UUID summonUuid = resolveEntityUuid(summonRef, store, null);
-        if (summonSegmentApplied || mobFallbackApplied || vanillaApplied || entitySupportApplied) {
+        if (vanillaApplied || entitySupportApplied) {
             if (summonUuid != null) {
                 NAMEPLATE_FAILURE_LAST_LOG.remove(summonUuid);
             }
