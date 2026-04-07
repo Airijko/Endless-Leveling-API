@@ -672,6 +672,14 @@ public class ClassManager {
         if (data == null || maxClassSwitches < 0) {
             return;
         }
+
+        // Always grant an emergency swap when a slot is None and fully exhausted,
+        // regardless of anti-exploit settings or level threshold.
+        grantEmergencySwapIfNoneAndExhausted(data, ClassAssignmentSlot.PRIMARY);
+        if (isSecondaryClassEnabled()) {
+            grantEmergencySwapIfNoneAndExhausted(data, ClassAssignmentSlot.SECONDARY);
+        }
+
         if (!isSwapAntiExploitEnabled()) {
             return;
         }
@@ -697,13 +705,6 @@ public class ClassManager {
                 data.setRemainingSecondaryClassSwitches(Math.max(0, remaining - SWAP_CONSUME_COUNT));
             }
             data.setSecondaryClassSwapAntiExploitConsumedAtLevel(true);
-        }
-
-        // If a slot is unassigned (None) and fully exhausted, grant exactly one
-        // emergency swap so players can recover from a None state.
-        grantEmergencySwapIfNoneAndExhausted(data, ClassAssignmentSlot.PRIMARY);
-        if (isSecondaryClassEnabled()) {
-            grantEmergencySwapIfNoneAndExhausted(data, ClassAssignmentSlot.SECONDARY);
         }
     }
 

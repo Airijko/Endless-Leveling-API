@@ -253,6 +253,11 @@ public class RaceManager {
         if (data == null || maxRaceSwitches < 0) {
             return;
         }
+
+        // Always grant an emergency swap when race is None and fully exhausted,
+        // regardless of anti-exploit settings or level threshold.
+        grantEmergencyRaceSwapIfNoneAndExhausted(data);
+
         if (!isSwapAntiExploitEnabled()) {
             return;
         }
@@ -268,10 +273,6 @@ public class RaceManager {
             }
             data.setRaceSwapAntiExploitConsumedAtLevel(true);
         }
-
-        // If race is unassigned (None) and swaps are exhausted, grant exactly one
-        // emergency swap to recover from the None state.
-        grantEmergencyRaceSwapIfNoneAndExhausted(data);
     }
 
     private boolean hasAssignedRace(PlayerData data) {
