@@ -96,10 +96,11 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
     @Override
     public void build(@Nonnull Ref<EntityStore> ref,
-            @Nonnull UICommandBuilder ui,
+            @Nonnull UICommandBuilder rawUi,
             @Nonnull UIEventBuilder events,
             @Nonnull Store<EntityStore> store) {
 
+        SafeUICommandBuilder ui = new SafeUICommandBuilder(rawUi);
         boolean partnerAuthorized = EndlessLeveling.getInstance() != null
             && EndlessLeveling.getInstance().isPartnerAddonAuthorized();
         ui.append(partnerAuthorized

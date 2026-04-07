@@ -47,10 +47,11 @@ public class LeaderboardsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Dat
 
     @Override
     public void build(@Nonnull Ref<EntityStore> ref,
-            @Nonnull UICommandBuilder ui,
+            @Nonnull UICommandBuilder rawUi,
             @Nonnull UIEventBuilder events,
             @Nonnull Store<EntityStore> store) {
 
+        SafeUICommandBuilder ui = new SafeUICommandBuilder(rawUi);
         ui.append("Pages/Leaderboards/LeaderboardsPage.ui");
         NavUIHelper.applyNavVersion(ui, playerRef, "leaderboards",
             "Common/UI/Custom/Pages/Leaderboards/LeaderboardsPage.ui",

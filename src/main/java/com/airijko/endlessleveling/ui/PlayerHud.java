@@ -143,7 +143,7 @@ public class PlayerHud extends CustomUIHud {
         // the UI, while dynamic values are pushed on the next refresh tick.
     }
 
-    private void pushHudState(@Nonnull UICommandBuilder uiCommandBuilder) {
+    private void pushHudState(@Nonnull UICommandBuilder rawUi) {
         if (!built.get()) {
             return; // HUD has not finished building, so skip pushing state to avoid missing element
                     // errors.
@@ -156,6 +156,18 @@ public class PlayerHud extends CustomUIHud {
         if (data == null) {
             return; // Do not push updates when the HUD is disabled or data is unavailable.
         }
+
+        // Wrap the raw builder so any "set" targeting a selector that no longer
+        // lives in the client's HUD tree (e.g. due to a stale HUD pipeline) is
+        // dropped instead of crashing the client. The HUD .ui resources are
+        // pre-tracked because pushHudState may be invoked with a fresh builder
+        // outside the original build() call.
+        SafeUICommandBuilder uiCommandBuilder = new SafeUICommandBuilder(rawUi)
+                .trackResources(
+                        "Hud/EndlessPlayerHud.ui",
+                        "Hud/EndlessPlayerHudPartner.ui",
+                        "Hud/EndlessStackingAugments.ui",
+                        "Hud/InfoPanel.ui");
 
         boolean changed = false;
         changed |= setTextIfChanged(uiCommandBuilder,

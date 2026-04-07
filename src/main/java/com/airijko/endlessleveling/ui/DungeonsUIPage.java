@@ -39,10 +39,11 @@ public class DungeonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
     @Override
     public void build(@Nonnull Ref<EntityStore> ref,
-            @Nonnull UICommandBuilder ui,
+            @Nonnull UICommandBuilder rawUi,
             @Nonnull UIEventBuilder events,
             @Nonnull Store<EntityStore> store) {
 
+        SafeUICommandBuilder ui = new SafeUICommandBuilder(rawUi);
         ui.append("Pages/Dungeons/DungeonsPage.ui");
         ui.set("#DungeonsOverviewText.Text", OVERVIEW_DESCRIPTION);
         ModularCardUiAppender.appendFolder(ui,

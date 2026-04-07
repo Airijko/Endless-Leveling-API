@@ -34,10 +34,11 @@ public class SupportUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
     @Override
     public void build(@Nonnull Ref<EntityStore> ref,
-            @Nonnull UICommandBuilder ui,
+            @Nonnull UICommandBuilder rawUi,
             @Nonnull UIEventBuilder events,
             @Nonnull Store<EntityStore> store) {
 
+        SafeUICommandBuilder ui = new SafeUICommandBuilder(rawUi);
         ui.append("Pages/SupportPage.ui");
         NavUIHelper.applyNavVersion(ui, playerRef, "support",
                 "Common/UI/Custom/Pages/SupportPage.ui",

@@ -80,9 +80,10 @@ public class AugmentsChoosePage extends InteractiveCustomUIPage<SkillsUIPage.Dat
 
     @Override
     public void build(@Nonnull Ref<EntityStore> ref,
-            @Nonnull UICommandBuilder ui,
+            @Nonnull UICommandBuilder rawUi,
             @Nonnull UIEventBuilder events,
             @Nonnull Store<EntityStore> store) {
+        SafeUICommandBuilder ui = new SafeUICommandBuilder(rawUi);
         ui.append("Pages/Augments/AugmentsCards.ui");
 
         PlayerData playerData = playerDataManager != null ? playerDataManager.get(playerRef.getUuid()) : null;
