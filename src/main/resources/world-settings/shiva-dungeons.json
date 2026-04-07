@@ -88,12 +88,12 @@
       },
       "Scaling": {
         "Health": {
-          "Base_Multiplier": 3.0,
+          "Base_Multiplier": 1.0,
           "Per_Level": 0.075
         },
         "Damage": {
-          "Base_Multiplier": 1.25,
-          "Per_Level": 0.045
+          "Base_Multiplier": 1.0,
+          "Per_Level": 0.03
         },
         "Defense": {
           "At_Negative_Max_Difference": 0.20,
@@ -110,12 +110,12 @@
           "Allow_Random_Mob_Augments": true,
           "Scaling": {
             "Health": {
-              "Base_Multiplier": 2.0,
+              "Base_Multiplier": 1.0,
               "Per_Level": 0.1
             },
             "Damage": {
               "Base_Multiplier": 1.0,
-              "Per_Level": 0.05
+              "Per_Level": 0.04
             },
             "Defense": {
               "At_Negative_Max_Difference": 0.30,
@@ -137,7 +137,7 @@
             },
             "Damage": {
               "Base_Multiplier": 1.0,
-              "Per_Level": 0.05
+              "Per_Level": 0.04
             },
             "Defense": {
               "At_Negative_Max_Difference": 0.30,

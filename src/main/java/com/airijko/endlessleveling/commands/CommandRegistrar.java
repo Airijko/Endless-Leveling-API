@@ -8,6 +8,7 @@ import com.airijko.endlessleveling.augments.AugmentManager;
 import com.airijko.endlessleveling.commands.profile.ProfileCommand;
 import com.airijko.endlessleveling.commands.classes.ClassCommand;
 import com.airijko.endlessleveling.commands.classes.BardCommand;
+import com.airijko.endlessleveling.commands.classes.PriestCommand;
 import com.airijko.endlessleveling.commands.augments.AugmentCommand;
 import com.airijko.endlessleveling.util.FixedValue;
 import com.hypixel.hytale.logger.HytaleLogger;
@@ -57,6 +58,7 @@ public final class CommandRegistrar {
         RaceCommand raceCommand = new RaceCommand(raceManager, playerDataManager);
         ClassCommand classCommand = new ClassCommand(classManager, playerDataManager);
         BardCommand bardCommand = new BardCommand(classManager, playerDataManager);
+        PriestCommand priestCommand = new PriestCommand(classManager, playerDataManager);
         AugmentCommand augmentCommand = new AugmentCommand();
 
         registerCommand(commandRegistry, rootCommand);
@@ -73,6 +75,8 @@ public final class CommandRegistrar {
         ensureShortcutCommandRegistered(commandRegistry, classCommand, "/classes");
         registerCommand(commandRegistry, bardCommand);
         ensureShortcutCommandRegistered(commandRegistry, bardCommand, "/bard");
+        registerCommand(commandRegistry, priestCommand);
+        ensureShortcutCommandRegistered(commandRegistry, priestCommand, "/priest");
         registerCommand(commandRegistry, augmentCommand);
         ensureShortcutCommandRegistered(commandRegistry, augmentCommand, "/augments");
 

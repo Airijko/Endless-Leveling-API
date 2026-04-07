@@ -20,6 +20,7 @@ import com.airijko.endlessleveling.augments.AugmentRuntimeManager;
 import com.airijko.endlessleveling.augments.AugmentUnlockManager;
 import com.airijko.endlessleveling.compatibility.NameplateBuilderCompatibility;
 import com.airijko.endlessleveling.commands.CommandRegistrar;
+import com.airijko.endlessleveling.commands.classes.ChurchManager;
 import com.airijko.endlessleveling.listeners.OpenPlayerHudListener;
 import com.airijko.endlessleveling.listeners.PartyListener;
 import com.airijko.endlessleveling.listeners.PlayerDataListener;
@@ -615,6 +616,7 @@ public class EndlessLeveling extends JavaPlugin {
                 "No supported shutdown event class found; relying on plugin shutdown() cleanup path."));
 
         // Register commands via helper class to keep main class clean.
+        ChurchManager.init(filesManager.getPluginFolder().toPath());
         String commandRoot = CommandRegistrar.registerCommands(
                 this.getCommandRegistry(),
                 this.getEventRegistry(),
