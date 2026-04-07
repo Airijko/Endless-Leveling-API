@@ -1061,7 +1061,7 @@ public class ClassManager {
         }
 
         return switch (baseId) {
-            case "mage", "arcanist", "marksman", "assassin", "magistrate", "priest", "necromancer" ->
+            case "mage", "arcanist", "marksman", "assassin", "magistrate", "priest", "necromancer", "bard" ->
                 "glass_cannon";
             case "battlemage", "duelist", "brawler", "adventurer", "slayer" -> "fighter";
             case "juggernaut", "vanguard" -> "tank";
@@ -1073,7 +1073,7 @@ public class ClassManager {
         String baseId = normalizeBaseClassId(classId);
         return switch (baseId) {
             case "mage", "arcanist", "magistrate", "necromancer" -> List.of("Mage");
-            case "priest" -> List.of("Support");
+            case "priest", "bard" -> List.of("Support");
             case "assassin" -> List.of("Assassin", "Diver");
             case "marksman" -> List.of("Marksman");
             case "battlemage" -> List.of("BattleMage", "Mage");
@@ -1089,7 +1089,7 @@ public class ClassManager {
     private String inferLegacyDamageType(String classId) {
         String baseId = normalizeBaseClassId(classId);
         return switch (baseId) {
-            case "mage", "arcanist", "magistrate", "priest", "necromancer" -> "Magic";
+            case "mage", "arcanist", "magistrate", "priest", "necromancer", "bard" -> "Magic";
             case "vanguard", "adventurer" -> "Hybrid";
             default -> "Physical";
         };

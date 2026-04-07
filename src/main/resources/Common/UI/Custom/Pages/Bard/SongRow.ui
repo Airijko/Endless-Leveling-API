@@ -1,0 +1,34 @@
+$C = "../../Common.ui";
+
+@SongRowButton = TextButtonStyle(
+    Default: (Background: $C.@DefaultSquareButtonDefaultBackground, LabelStyle: $C.@DefaultButtonLabelStyle),
+    Hovered: (Background: $C.@DefaultSquareButtonHoveredBackground, LabelStyle: $C.@DefaultButtonLabelStyle),
+    Pressed: (Background: $C.@DefaultSquareButtonPressedBackground, LabelStyle: $C.@DefaultButtonLabelStyle),
+    Disabled: (Background: $C.@DefaultSquareButtonDisabledBackground, LabelStyle: $C.@DefaultButtonDisabledLabelStyle),
+    Sounds: $C.@ButtonSounds,
+);
+
+Group {
+    LayoutMode: Left;
+    Anchor: (Height: 38);
+    Padding: (Full: 4);
+    Background: #0d1a2a(0.70);
+
+    // Song name
+    Label #SongName {
+        Text: "Unknown Song";
+        Style: (FontSize: 13, TextColor: #c0cee5, RenderBold: true, VerticalAlignment: Center);
+        FlexWeight: 1;
+        Padding: (Left: 8);
+    }
+
+    Group { Anchor: (Width: 8); }
+
+    // Play button for this song
+    $C.@TextButton #SongPlayButton {
+        Text: "PLAY";
+        Anchor: (Height: 30, Width: 70);
+        Padding: (Horizontal: 6);
+        Style: @SongRowButton;
+    }
+}

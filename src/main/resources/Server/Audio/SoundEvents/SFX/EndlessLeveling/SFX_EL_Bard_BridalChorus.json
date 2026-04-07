@@ -1,0 +1,17 @@
+{
+  "Layers": [
+    {
+      "Files": [
+        "Sounds/Bard/bridal_chorus.ogg"
+      ],
+      "RandomSettings": {
+        "MinPitch": 0,
+        "MaxPitch": 0,
+        "MinVolume": 0
+      }
+    }
+  ],
+  "Parent": "SFX_Attn_Loud",
+  "MaxDistance": 50,
+  "StartAttenuationDistance": 10
+}

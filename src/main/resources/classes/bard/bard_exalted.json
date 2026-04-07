@@ -1,0 +1,71 @@
+{
+  "class_name": "Exalted Bard",
+  "id": "bard_exalted",
+  "description": "A wandering performer who weaves songs of healing and inspiration, bolstering allies through music.",
+  "roles": [
+    "Support"
+  ],
+  "damage_type": "Magic",
+  "range_type": "melee",
+  "category": "glass_cannon",
+  "enabled": true,
+  "icon": "Weapon_Dagger_Mithril",
+  "weapons": [
+    {
+      "type": "DAGGER",
+      "damage": 1.56
+    },
+    {
+      "type": "STAFF",
+      "damage": 1.365
+    }
+  ],
+  "passives": [
+    {
+      "type": "HEALING_AURA",
+      "value": 1,
+      "flat_heal_value": 45,
+      "mana_ratio": 0.6,
+      "stamina_ratio": 0.9,
+      "self_heal_effectiveness": 0.25,
+      "damage_pause_seconds": 4,
+      "radius": 5,
+      "radius_mana_scaling": {
+        "mana_per_block": 75
+      }
+    },
+    {
+      "type": "BUFFING_AURA",
+      "value": 1.0,
+      "stamina_ratio": 1.5,
+      "max_buffed_value_per_ally": 10.0,
+      "self_buff_effectiveness": 0.25,
+      "duration": 4,
+      "damage_pause_seconds": 10,
+      "radius": 5,
+      "radius_mana_scaling": {
+        "mana_per_block": 75
+      }
+    },
+    {
+      "type": "INNATE_ATTRIBUTE_GAIN",
+      "attribute": "stamina",
+      "value": 3.25
+    },
+    {
+      "type": "INNATE_ATTRIBUTE_GAIN",
+      "attribute": "sorcery",
+      "value": 1.3
+    }
+  ],
+  "ascension": {
+    "id": "class_bard_exalted",
+    "stage": "exalted",
+    "path": "bard",
+    "final_form": true,
+    "single_route_only": true,
+    "requirements": {
+      "required_prestige": 8
+    }
+  }
+}
