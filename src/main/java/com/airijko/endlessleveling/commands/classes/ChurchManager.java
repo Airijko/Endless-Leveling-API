@@ -371,23 +371,47 @@ public final class ChurchManager {
 
             for (int y = minY; y < maxY; y += Math.max(1, (maxY - minY) / 4)) {
                 for (int[] xz : xzSamples) {
-                    java.util.Set<?> regions = container.getRegionsAt(worldName, xz[0], y, xz[1]);
-                    if (regions != null && !regions.isEmpty()) {
-                        return "Cannot place church here — it overlaps with a protected region (OrbisGuard).";
+                    com.orbisguard.api.region.IRegion blocker =
+                            findBlockingRegion(container.getRegionsAt(worldName, xz[0], y, xz[1]), playerUuid);
+                    if (blocker != null) {
+                        return formatBlockedMessage(blocker);
                     }
                 }
             }
             // Also check the very top Y
             for (int[] xz : xzSamples) {
-                java.util.Set<?> regions = container.getRegionsAt(worldName, xz[0], maxY - 1, xz[1]);
-                if (regions != null && !regions.isEmpty()) {
-                    return "Cannot place church here — it overlaps with a protected region (OrbisGuard).";
+                com.orbisguard.api.region.IRegion blocker =
+                        findBlockingRegion(container.getRegionsAt(worldName, xz[0], maxY - 1, xz[1]), playerUuid);
+                if (blocker != null) {
+                    return formatBlockedMessage(blocker);
                 }
             }
         } catch (NoClassDefFoundError | Exception ignored) {
             // OrbisGuard not installed — skip check
         }
         return null;
+    }
+
+    /**
+     * Returns the first non-global region at this point that the player is not
+     * an owner or member of, or null if the point is unprotected (or only
+     * covered by regions the player has rights to).
+     */
+    private com.orbisguard.api.region.IRegion findBlockingRegion(java.util.Set<?> regions, UUID playerUuid) {
+        if (regions == null || regions.isEmpty()) return null;
+        for (Object r : regions) {
+            if (!(r instanceof com.orbisguard.api.region.IRegion region)) continue;
+            if (region.getType() == com.orbisguard.api.region.RegionType.GLOBAL) continue;
+            if (playerUuid != null && (region.isOwner(playerUuid) || region.isMember(playerUuid))) continue;
+            return region;
+        }
+        return null;
+    }
+
+    private String formatBlockedMessage(com.orbisguard.api.region.IRegion region) {
+        String id = region.getId();
+        return "Cannot place church here — it overlaps with OrbisGuard region '"
+                + (id != null ? id : "?") + "' that you don't own.";
     }
 
     private String checkSimpleClaims(String worldName, UUID playerUuid,
