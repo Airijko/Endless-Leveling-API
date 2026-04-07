@@ -374,7 +374,7 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                                                                                                                 playerRef.getUuid(),
                                                                                                                 type.name());
                                                                                         } else {
-                                                                                                LOGGER.atSevere().log(
+                                                                                                LOGGER.atFine().log(
                                                                                                                 "Not enough skill points for add: %s",
                                                                                                                 playerRef.getUuid());
                                                                                         }
