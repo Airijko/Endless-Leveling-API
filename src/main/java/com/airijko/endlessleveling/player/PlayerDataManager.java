@@ -1284,6 +1284,8 @@ public class PlayerDataManager {
         options.put("healthRegenNotif", data.isHealthRegenNotifEnabled());
         options.put("augmentNotif", data.isAugmentNotifEnabled());
         options.put("useRaceModel", data.isUseRaceModel());
+        options.put("supportPveMode", data.isSupportPveMode());
+        options.put("necromancerPveMode", data.isNecromancerPveMode());
         options.put("language", data.getLanguage());
         map.put("options", options);
 
@@ -1653,6 +1655,8 @@ public class PlayerDataManager {
                 : map.get("healthRegenNotif");
         Object augmentNotif = options != null ? options.get("augmentNotif") : map.get("augmentNotif");
         Object useRaceModel = options != null ? options.get("useRaceModel") : map.get("useRaceModel");
+        Object supportPveMode = options != null ? options.get("supportPveMode") : map.get("supportPveMode");
+        Object necromancerPveMode = options != null ? options.get("necromancerPveMode") : map.get("necromancerPveMode");
         Object language = options != null ? options.get("language") : map.get("language");
         data.setPlayerHudEnabled(parseBoolean(playerHud, true));
         data.setCriticalNotifEnabled(parseBoolean(criticalNotif, true));
@@ -1661,6 +1665,8 @@ public class PlayerDataManager {
         data.setLuckDoubleDropsNotifEnabled(parseBoolean(luckDoubleDropsNotif, true));
         data.setHealthRegenNotifEnabled(parseBoolean(healthRegenNotif, true));
         data.setAugmentNotifEnabled(parseBoolean(augmentNotif, true));
+        data.setSupportPveMode(parseBoolean(supportPveMode, true));
+        data.setNecromancerPveMode(parseBoolean(necromancerPveMode, true));
         String configuredLanguage = parseString(language);
         if (configuredLanguage == null || configuredLanguage.isBlank()) {
             data.setLanguage(resolveConfiguredDefaultLanguage());

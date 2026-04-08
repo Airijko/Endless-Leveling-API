@@ -315,6 +315,7 @@ public final class BuffingAuraPassive {
 
         PartyManager partyManager = resolvePartyManager();
         UUID sourcePartyLeader = resolvePartyLeader(partyManager, sourceUuid);
+        boolean pveMode = sourcePlayerData.isSupportPveMode();
 
         List<PartyBuffTarget> targets = new ArrayList<>();
         HashSet<Integer> visitedEntityIds = new HashSet<>();
@@ -348,7 +349,7 @@ public final class BuffingAuraPassive {
             }
 
             UUID targetUuid = targetPlayer.getUuid();
-            if (!isSamePartyTarget(sourceUuid, sourcePartyLeader, targetUuid, partyManager)) {
+            if (!pveMode && !isSamePartyTarget(sourceUuid, sourcePartyLeader, targetUuid, partyManager)) {
                 continue;
             }
 

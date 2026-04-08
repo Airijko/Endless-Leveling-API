@@ -5,6 +5,7 @@ import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.airijko.endlessleveling.player.PlayerData;
 import com.airijko.endlessleveling.player.PlayerDataManager;
 import com.airijko.endlessleveling.player.SkillManager;
+import com.airijko.endlessleveling.util.EntityRefUtil;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
@@ -175,6 +176,14 @@ public class MovementHasteSystem extends TickingSystem<EntityStore> {
             return false;
         }
 
+        // Pre-flight: the ref may have been invalidated since the last tick
+        // (player disconnect, cross-world teleport, raid/dungeon swap, /rtp).
+        // Drop stale entries before touching the store to avoid racing the
+        // entity teardown that nulls the backing archetype chunk.
+        if (!EntityRefUtil.isUsable(ref)) {
+            return false;
+        }
+
         MovementState state = states.computeIfAbsent(playerId, ignored -> new MovementState());
 
         PlayerRef playerRef;
@@ -190,6 +199,17 @@ public class MovementHasteSystem extends TickingSystem<EntityStore> {
             }
             // Keep this ref tracked; it may be valid in the player's active world store.
             return true;
+        } catch (NullPointerException tornDown) {
+            // Race window: the entity backing this ref was torn down between
+            // the isUsable() pre-check above and the component access. The ref
+            // still reported valid because the chunk was nulled concurrently
+            // by another thread (Store.__internal_getComponent dereferences
+            // archetypeChunk without a null guard). Drop the entry; the next
+            // discovery pass will re-register the player if they reappear.
+            LOGGER.atInfo().log(
+                    "MovementHasteSystem: dropping torn-down player ref for %s (entity destroyed mid-tick)",
+                    playerId);
+            return false;
         }
 
         if (playerRef == null || !playerRef.isValid()) {
@@ -201,13 +221,22 @@ public class MovementHasteSystem extends TickingSystem<EntityStore> {
             return true;
         }
 
-        EntityStatMap statMap = store.getComponent(ref, EntityStatMap.getComponentType());
+        EntityStatMap statMap;
+        TransformComponent transform;
+        try {
+            statMap = store.getComponent(ref, EntityStatMap.getComponentType());
+            transform = store.getComponent(ref, TransformComponent.getComponentType());
+        } catch (NullPointerException | IllegalStateException tornDown) {
+            // Same teardown race as above, but caught between the PlayerRef
+            // fetch and the follow-up component reads. Drop the entry.
+            return false;
+        }
+
         EntityStatValue hp = statMap == null ? null : statMap.get(DefaultEntityStatTypes.getHealth());
         if (hp != null && hp.get() <= 1.0f) {
             return true;
         }
 
-        TransformComponent transform = store.getComponent(ref, TransformComponent.getComponentType());
         if (transform == null || transform.getPosition() == null) {
             return true;
         }

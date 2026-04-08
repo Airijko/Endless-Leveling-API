@@ -7,6 +7,8 @@ import com.airijko.endlessleveling.augments.types.RaidBossAugment;
 import com.airijko.endlessleveling.augments.types.TankEngineAugment;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.airijko.endlessleveling.managers.LoggingManager;
+import com.airijko.endlessleveling.player.PlayerData;
+import com.airijko.endlessleveling.player.SkillManager;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.logger.HytaleLogger;
@@ -79,6 +81,32 @@ public final class MobAugmentExecutor {
             List<String> augmentIds,
             AugmentManager augmentManager,
             AugmentRuntimeManager runtimeManager) {
+        registerAugments(entityId, augmentIds, augmentManager, runtimeManager, false);
+    }
+
+    /**
+     * Register augments for a necromancer summon, mirroring its summoner's
+     * full augment loadout 1:1. Unlike {@link #registerMobAugments}, this
+     * bypasses the {@link MobAugmentDiagnostics#isAllowedMobCommonStatKey}
+     * filter so common-stat offers for stats not used by world-configured
+     * mobs (haste, discipline, flow, stamina) still pass through. The
+     * underlying augment instance is replaced atomically, preserving the
+     * runtime state keyed by entity UUID.
+     */
+    public void registerSummonAugments(
+            UUID entityId,
+            List<String> augmentIds,
+            AugmentManager augmentManager,
+            AugmentRuntimeManager runtimeManager) {
+        registerAugments(entityId, augmentIds, augmentManager, runtimeManager, true);
+    }
+
+    private void registerAugments(
+            UUID entityId,
+            List<String> augmentIds,
+            AugmentManager augmentManager,
+            AugmentRuntimeManager runtimeManager,
+            boolean bypassCommonStatFilter) {
         if (entityId == null || augmentIds == null || augmentIds.isEmpty()) {
             return;
         }
@@ -91,11 +119,13 @@ public final class MobAugmentExecutor {
                 continue;
             }
 
-            CommonAugment.CommonStatOffer commonOffer = CommonAugment.parseStatOfferId(augmentId);
-            if (commonOffer != null
-                    && !MobAugmentDiagnostics.isAllowedMobCommonStatKey(commonOffer.attributeKey())) {
-                skippedDisallowedCommonOffers++;
-                continue;
+            if (!bypassCommonStatFilter) {
+                CommonAugment.CommonStatOffer commonOffer = CommonAugment.parseStatOfferId(augmentId);
+                if (commonOffer != null
+                        && !MobAugmentDiagnostics.isAllowedMobCommonStatKey(commonOffer.attributeKey())) {
+                    skippedDisallowedCommonOffers++;
+                    continue;
+                }
             }
 
             try {
@@ -117,17 +147,19 @@ public final class MobAugmentExecutor {
             var runtimeState = runtimeManager.getRuntimeState(entityId);
             mobAugments.put(entityId, new MobAugmentInstance(augments, appliedAugmentIds, runtimeState));
             if (isDebugEnabled()) {
-                LOGGER.atInfo().log("[MOB_OVERRIDE_AUGMENTS] Bound %d augments to mob %s: %s",
-                        augments.size(), entityId, formatAugmentBindSummary(appliedAugmentIds));
+                String tag = bypassCommonStatFilter ? "[SUMMON_MIRRORED_AUGMENTS]" : "[MOB_OVERRIDE_AUGMENTS]";
+                LOGGER.atInfo().log("%s Bound %d augments to mob %s: %s",
+                        tag, augments.size(), entityId, formatAugmentBindSummary(appliedAugmentIds));
                 if (skippedDisallowedCommonOffers > 0) {
                     LOGGER.atInfo().log(
-                        "[MOB_OVERRIDE_AUGMENTS] Skipped %d disallowed COMMON stat offers for mob %s (allowed=%s)",
+                        "%s Skipped %d disallowed COMMON stat offers for mob %s (allowed=%s)",
+                        tag,
                         skippedDisallowedCommonOffers,
                         entityId,
                         MobAugmentDiagnostics.getAllowedMobCommonStatKeys());
                 }
-                LOGGER.atInfo().log("[MOB_OVERRIDE_AUGMENTS][RAW] mob=%s ids=%s",
-                        entityId, appliedAugmentIds);
+                LOGGER.atInfo().log("%s[RAW] mob=%s ids=%s",
+                        tag, entityId, appliedAugmentIds);
                 LOGGER.atInfo().log("[MOB_AUGMENT_CATEGORIES] mob=%s categories=%s",
                         entityId, summarizeCategories(augments));
             }
@@ -301,6 +333,29 @@ public final class MobAugmentExecutor {
             CommandBuffer<EntityStore> commandBuffer,
             EntityStatMap statMap,
             float incomingDamage) {
+        return applyOnLowHp(entityId,
+                mobRef,
+                attackerRef,
+                commandBuffer,
+                statMap,
+                incomingDamage,
+                null,
+                null);
+    }
+
+    /**
+     * onLowHp dispatch with optional owner PlayerData/SkillManager for summon
+     * mirroring. See {@link #applyOnHitSummon} for the rationale.
+     */
+    public float applyOnLowHp(
+            UUID entityId,
+            Ref<EntityStore> mobRef,
+            Ref<EntityStore> attackerRef,
+            CommandBuffer<EntityStore> commandBuffer,
+            EntityStatMap statMap,
+            float incomingDamage,
+            PlayerData ownerPlayerData,
+            SkillManager ownerSkillManager) {
 
         MobAugmentInstance instance = mobAugments.get(entityId);
         if (instance == null || instance.augments.isEmpty()) {
@@ -310,9 +365,9 @@ public final class MobAugmentExecutor {
         applyPassiveHooks(entityId, instance, mobRef, commandBuffer, statMap);
 
         AugmentHooks.DamageTakenContext context = new AugmentHooks.DamageTakenContext(
-                null, // No PlayerData for mobs
+                ownerPlayerData,
                 instance.runtimeState,
-                null, // No SkillManager context
+                ownerSkillManager,
                 mobRef,
                 attackerRef,
                 commandBuffer,
@@ -350,8 +405,8 @@ public final class MobAugmentExecutor {
     }
 
     /**
-     * Apply on-hit effects for a summon attacker.
-     * All augments are executed; they have defensive null-checks for player-context operations.
+     * Apply on-hit effects for a summon attacker (no crit context).
+     * Backward-compatible overload that defaults isCritical=false.
      */
     public AugmentDispatch.OnHitResult applyOnHitSummon(
             UUID entityId,
@@ -361,25 +416,105 @@ public final class MobAugmentExecutor {
             EntityStatMap attackerStats,
             EntityStatMap targetStats,
             float startingDamage) {
-        MobAugmentInstance instance = mobAugments.get(entityId);
-        if (instance == null || instance.augments.isEmpty()) {
-            return new AugmentDispatch.OnHitResult(startingDamage, 0.0D);
-        }
-
-        AugmentHooks.HitContext context = new AugmentHooks.HitContext(
-                null,
-                instance.runtimeState,
-                null,
+        return applyOnHitSummon(entityId,
                 attackerRef,
                 targetRef,
                 commandBuffer,
                 attackerStats,
                 targetStats,
                 startingDamage,
-                false,
+                false);
+    }
+
+    /**
+     * Apply on-hit effects for a summon attacker.
+     * Mirrors the player on-hit dispatch (OnMiss / OnHit / OnCrit / OnTargetCondition)
+     * so necromancer summons proc the augments mirrored from their owner.
+     * All augments are executed with PlayerData/SkillManager set to null;
+     * augment implementations use defensive null-checks for player-context operations.
+     */
+    public AugmentDispatch.OnHitResult applyOnHitSummon(
+            UUID entityId,
+            Ref<EntityStore> attackerRef,
+            Ref<EntityStore> targetRef,
+            CommandBuffer<EntityStore> commandBuffer,
+            EntityStatMap attackerStats,
+            EntityStatMap targetStats,
+            float startingDamage,
+            boolean isCritical) {
+        return applyOnHitSummon(entityId,
+                attackerRef,
+                targetRef,
+                commandBuffer,
+                attackerStats,
+                targetStats,
+                startingDamage,
+                isCritical,
+                null,
+                null);
+    }
+
+    /**
+     * Summon on-hit dispatch that receives the owner's PlayerData and
+     * SkillManager. Passing them causes {@link MobSkillAttributeResolver} to
+     * resolve strength / sorcery / precision / ferocity from the owner's
+     * player stats instead of the summon's empty stat map, so mirrored
+     * augments (MagicMissile, BloodEcho, etc.) scale with the summoner's full
+     * power. The runtime state is still keyed by the summon's UUID, so
+     * cooldowns and stacks remain isolated from the owner's own augment state.
+     */
+    public AugmentDispatch.OnHitResult applyOnHitSummon(
+            UUID entityId,
+            Ref<EntityStore> attackerRef,
+            Ref<EntityStore> targetRef,
+            CommandBuffer<EntityStore> commandBuffer,
+            EntityStatMap attackerStats,
+            EntityStatMap targetStats,
+            float startingDamage,
+            boolean isCritical,
+            PlayerData ownerPlayerData,
+            SkillManager ownerSkillManager) {
+        MobAugmentInstance instance = mobAugments.get(entityId);
+        if (instance == null || instance.augments.isEmpty()) {
+            return new AugmentDispatch.OnHitResult(startingDamage, 0.0D);
+        }
+
+        // Apply passive-stat augment hooks so summons benefit from common-stat
+        // offers (strength, precision, ferocity, sorcery, defense, life_force)
+        // mirrored from the owner.
+        applyPassiveHooks(entityId, instance, attackerRef, commandBuffer, attackerStats);
+
+        AugmentHooks.HitContext context = new AugmentHooks.HitContext(
+                ownerPlayerData,
+                instance.runtimeState,
+                ownerSkillManager,
+                attackerRef,
+                targetRef,
+                commandBuffer,
+                attackerStats,
+                targetStats,
+                startingDamage,
+                isCritical,
                 false,
                 null,
                 1.0f);
+
+        if (AugmentDispatch.isMiss(context)) {
+            for (Augment augment : instance.augments) {
+                if (augment instanceof AugmentHooks.OnMissAugment onMiss) {
+                    try {
+                        onMiss.onMiss(context);
+                    } catch (Exception e) {
+                        LOGGER.atSevere().withCause(e)
+                                .log("[AUGMENT] Error executing OnMiss %s for summon %s: %s",
+                                        augment.getId(), entityId, e.getMessage());
+                    }
+                }
+            }
+            return new AugmentDispatch.OnHitResult(
+                    Math.max(0.0f, context.getDamage()),
+                    Math.max(0.0D, context.getTrueDamageBonus()));
+        }
 
         for (Augment augment : instance.augments) {
             if (augment instanceof AugmentHooks.OnHitAugment onHit) {
@@ -389,6 +524,25 @@ public final class MobAugmentExecutor {
                 } catch (Exception e) {
                     LOGGER.atSevere().withCause(e)
                             .log("[AUGMENT] Error executing OnHit %s for summon %s: %s",
+                                    augment.getId(), entityId, e.getMessage());
+                }
+            }
+            if (isCritical && augment instanceof AugmentHooks.OnCritAugment onCrit) {
+                try {
+                    onCrit.onCrit(context);
+                } catch (Exception e) {
+                    LOGGER.atSevere().withCause(e)
+                            .log("[AUGMENT] Error executing OnCrit %s for summon %s: %s",
+                                    augment.getId(), entityId, e.getMessage());
+                }
+            }
+            if (augment instanceof AugmentHooks.OnTargetConditionAugment onTargetCondition) {
+                try {
+                    float updated = onTargetCondition.onTargetCondition(context);
+                    context.setDamage(updated);
+                } catch (Exception e) {
+                    LOGGER.atSevere().withCause(e)
+                            .log("[AUGMENT] Error executing OnTargetCondition %s for summon %s: %s",
                                     augment.getId(), entityId, e.getMessage());
                 }
             }
@@ -407,15 +561,30 @@ public final class MobAugmentExecutor {
             Ref<EntityStore> victimRef,
             CommandBuffer<EntityStore> commandBuffer,
             EntityStatMap victimStats) {
+        handleKill(entityId, killerRef, victimRef, commandBuffer, victimStats, null, null);
+    }
+
+    /**
+     * Kill dispatch with optional owner PlayerData/SkillManager for summon
+     * mirroring. See {@link #applyOnHitSummon} for the rationale.
+     */
+    public void handleKill(
+            UUID entityId,
+            Ref<EntityStore> killerRef,
+            Ref<EntityStore> victimRef,
+            CommandBuffer<EntityStore> commandBuffer,
+            EntityStatMap victimStats,
+            PlayerData ownerPlayerData,
+            SkillManager ownerSkillManager) {
         MobAugmentInstance instance = mobAugments.get(entityId);
         if (instance == null || instance.augments.isEmpty()) {
             return;
         }
 
         AugmentHooks.KillContext context = new AugmentHooks.KillContext(
-                null,
+                ownerPlayerData,
                 instance.runtimeState,
-                null,
+                ownerSkillManager,
                 killerRef,
                 victimRef,
                 commandBuffer,
@@ -444,6 +613,29 @@ public final class MobAugmentExecutor {
             CommandBuffer<EntityStore> commandBuffer,
             EntityStatMap statMap,
             float incomingDamage) {
+        return applyOnDamageTaken(entityId,
+                mobRef,
+                attackerRef,
+                commandBuffer,
+                statMap,
+                incomingDamage,
+                null,
+                null);
+    }
+
+    /**
+     * onDamageTaken dispatch with optional owner PlayerData/SkillManager for
+     * summon mirroring. See {@link #applyOnHitSummon} for the rationale.
+     */
+    public float applyOnDamageTaken(
+            UUID entityId,
+            Ref<EntityStore> mobRef,
+            Ref<EntityStore> attackerRef,
+            CommandBuffer<EntityStore> commandBuffer,
+            EntityStatMap statMap,
+            float incomingDamage,
+            PlayerData ownerPlayerData,
+            SkillManager ownerSkillManager) {
 
         // Tick pending death bombs for this world even if this mob has no augments.
         DeathBombAugment.tickPendingBombs(commandBuffer, mobRef);
@@ -454,9 +646,9 @@ public final class MobAugmentExecutor {
         }
 
         AugmentHooks.DamageTakenContext context = new AugmentHooks.DamageTakenContext(
-                null, // No PlayerData for mobs
+                ownerPlayerData,
                 instance.runtimeState,
-                null, // No SkillManager context
+                ownerSkillManager,
                 mobRef,
                 attackerRef,
                 commandBuffer,

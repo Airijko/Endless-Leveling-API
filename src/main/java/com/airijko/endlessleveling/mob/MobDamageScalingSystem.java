@@ -6,6 +6,9 @@ import com.airijko.endlessleveling.leveling.MobLevelingManager;
 import com.airijko.endlessleveling.leveling.XpKillCreditTracker;
 import com.airijko.endlessleveling.passives.type.ArmyOfTheDeadPassive.SummonInheritedStats;
 import com.airijko.endlessleveling.passives.type.ArmyOfTheDeadPassive;
+import com.airijko.endlessleveling.player.PlayerData;
+import com.airijko.endlessleveling.player.PlayerDataManager;
+import com.airijko.endlessleveling.player.SkillManager;
 import com.airijko.endlessleveling.util.EntityRefUtil;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
@@ -80,8 +83,8 @@ public class MobDamageScalingSystem extends DamageEventSystem {
 
             boolean managedSummonAttacker = ArmyOfTheDeadPassive.isManagedSummon(attackerRef, store, commandBuffer);
             if (managedSummonAttacker) {
-                applySummonOutgoingScaling(damage, attackerRef, store, commandBuffer);
-                applySummonAttackerAugments(damage, attackerRef, targetRef, store, commandBuffer);
+                boolean summonCrit = applySummonOutgoingScaling(damage, attackerRef, store, commandBuffer);
+                applySummonAttackerAugments(damage, attackerRef, targetRef, store, commandBuffer, summonCrit);
             }
 
             PlayerRef attackerPlayer = EntityRefUtil.tryGetComponent(commandBuffer, attackerRef,
@@ -128,7 +131,8 @@ public class MobDamageScalingSystem extends DamageEventSystem {
             @Nonnull Ref<EntityStore> attackerRef,
             @Nonnull Ref<EntityStore> targetRef,
             @Nonnull Store<EntityStore> store,
-            @Nonnull CommandBuffer<EntityStore> commandBuffer) {
+            @Nonnull CommandBuffer<EntityStore> commandBuffer,
+            boolean isCritical) {
         EndlessLeveling plugin = EndlessLeveling.getInstance();
         if (plugin == null) {
             return;
@@ -140,7 +144,15 @@ public class MobDamageScalingSystem extends DamageEventSystem {
         }
 
         UUID attackerUuid = resolveEntityUuid(attackerRef, store, commandBuffer);
-        if (attackerUuid == null || !executor.hasMobAugments(attackerUuid)) {
+        if (attackerUuid == null) {
+            return;
+        }
+        // Lazy re-mirror: if the owner's augment selection has drifted from
+        // what's currently bound to this summon (or the owner had no augments
+        // selected at spawn), re-register here before the on-hit dispatch so
+        // necromancer summons stay 1:1 with their summoner's loadout in combat.
+        ArmyOfTheDeadPassive.ensureSummonAugmentsInSync(attackerUuid, store);
+        if (!executor.hasMobAugments(attackerUuid)) {
             return;
         }
 
@@ -151,14 +163,25 @@ public class MobDamageScalingSystem extends DamageEventSystem {
 
         float before = Math.max(0.0f, damage.getAmount());
 
-        // Only execute augments marked mob_compatible — player-only augments must not run in summon context
+        // Resolve the summoner's PlayerData + SkillManager so MobSkillAttributeResolver
+        // can return the owner's real strength/sorcery/precision/ferocity to
+        // augment hooks. Without this, AugmentUtils.resolveSorcery(context) and
+        // friends fall back to the summon's empty stat map, leaving abilities
+        // like MagicMissile doing flat-only damage on summons.
+        PlayerData ownerPlayerData = resolveSummonOwnerPlayerData(attackerRef, store, commandBuffer, plugin);
+        SkillManager ownerSkillManager = plugin.getSkillManager();
+
+        // Mirrors player on-hit dispatch (OnMiss/OnHit/OnCrit/OnTargetCondition) for summons.
         var onHit = executor.applyOnHitSummon(attackerUuid,
             attackerRef,
             targetRef,
             commandBuffer,
             attackerStats,
             targetStats,
-            before);
+            before,
+            isCritical,
+            ownerPlayerData,
+            ownerSkillManager);
 
         // Preserve legacy behavior where true damage is represented as a flat add-on.
         double trueDamage = Math.max(0.0D, onHit.trueDamageBonus());
@@ -182,7 +205,14 @@ public class MobDamageScalingSystem extends DamageEventSystem {
         }
 
         UUID targetUuid = resolveEntityUuid(targetRef, store, commandBuffer);
-        if (targetUuid == null || !executor.hasMobAugments(targetUuid)) {
+        if (targetUuid == null) {
+            return;
+        }
+        // Lazy re-mirror so onDamageTaken / onLowHp augments fired against the
+        // summon also reflect the owner's current loadout, not just whatever was
+        // selected at the moment the summon spawned.
+        ArmyOfTheDeadPassive.ensureSummonAugmentsInSync(targetUuid, store);
+        if (!executor.hasMobAugments(targetUuid)) {
             return;
         }
 
@@ -192,6 +222,12 @@ public class MobDamageScalingSystem extends DamageEventSystem {
             return;
         }
 
+        // Resolve owner context for defender-side augments (e.g. Fortress,
+        // Overheal, Bailout) so shield/heal values scale with the summoner's
+        // stats rather than the summon's empty stat map.
+        PlayerData ownerPlayerData = resolveSummonOwnerPlayerData(targetRef, store, commandBuffer, plugin);
+        SkillManager ownerSkillManager = plugin.getSkillManager();
+
         float before = Math.max(0.0f, damage.getAmount());
         float afterDamageTaken = executor.applyOnDamageTaken(
                 targetUuid,
@@ -199,19 +235,43 @@ public class MobDamageScalingSystem extends DamageEventSystem {
                 attackerRef,
                 commandBuffer,
                 targetStats,
-                before);
+                before,
+                ownerPlayerData,
+                ownerSkillManager);
         float afterLowHp = executor.applyOnLowHp(
                 targetUuid,
                 targetRef,
                 attackerRef,
                 commandBuffer,
                 targetStats,
-                afterDamageTaken);
+                afterDamageTaken,
+                ownerPlayerData,
+                ownerSkillManager);
 
         damage.setAmount(Math.max(0.0f, afterLowHp));
     }
 
-    private void applySummonOutgoingScaling(@Nonnull Damage damage,
+    /**
+     * Looks up the PlayerData of the summoner that owns the given summon ref.
+     * Returns null if the ref isn't a managed summon or the owner isn't
+     * tracked (e.g. player offline).
+     */
+    private PlayerData resolveSummonOwnerPlayerData(@Nonnull Ref<EntityStore> summonRef,
+            @Nonnull Store<EntityStore> store,
+            @Nonnull CommandBuffer<EntityStore> commandBuffer,
+            @Nonnull EndlessLeveling plugin) {
+        UUID ownerUuid = ArmyOfTheDeadPassive.getManagedSummonOwnerUuid(summonRef, store, commandBuffer);
+        if (ownerUuid == null) {
+            return null;
+        }
+        PlayerDataManager playerDataManager = plugin.getPlayerDataManager();
+        if (playerDataManager == null) {
+            return null;
+        }
+        return playerDataManager.get(ownerUuid);
+    }
+
+    private boolean applySummonOutgoingScaling(@Nonnull Damage damage,
             @Nonnull Ref<EntityStore> summonRef,
             @Nonnull Store<EntityStore> store,
             @Nonnull CommandBuffer<EntityStore> commandBuffer) {
@@ -259,6 +319,8 @@ public class MobDamageScalingSystem extends DamageEventSystem {
                     inherited.critDamageMultiplier(),
                     critApplied);
         }
+
+        return critApplied;
     }
 
     private void applySummonIncomingDefenseScaling(@Nonnull Damage damage,

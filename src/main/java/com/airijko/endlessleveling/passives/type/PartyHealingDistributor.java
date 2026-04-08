@@ -69,6 +69,7 @@ public final class PartyHealingDistributor {
         UUID sourceUuid = sourcePlayerData.getUuid();
         PartyManager partyManager = resolvePartyManager();
         UUID sourcePartyLeader = resolvePartyLeader(partyManager, sourceUuid);
+        boolean pveMode = sourcePlayerData.isSupportPveMode();
 
         List<PartyHealTarget> woundedTargets = new ArrayList<>();
         HashSet<Integer> visitedEntityIds = new HashSet<>();
@@ -93,7 +94,7 @@ public final class PartyHealingDistributor {
             UUID targetUuid = targetPlayer.getUuid();
             boolean selfTarget = sourceUuid != null && sourceUuid.equals(targetUuid);
 
-            if (!isSamePartyTarget(sourceUuid, sourcePartyLeader, targetUuid, partyManager)) {
+            if (!pveMode && !isSamePartyTarget(sourceUuid, sourcePartyLeader, targetUuid, partyManager)) {
                 continue;
             }
 

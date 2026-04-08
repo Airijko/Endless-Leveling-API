@@ -197,15 +197,15 @@ public final class CombatHookProcessor {
                     ctx.attackerPlayerRef(),
                     this::sendPassiveMessage);
             if (retaliationBonus > 0f) {
-            FinalIncantationTriggerEffects.play(ctx.targetRef(), ctx.commandBuffer());
-                registerLayerBonus(layerBuffer,
-                        resolveBlueprint(archetypeSnapshot, ArchetypePassiveType.RETALIATION),
-                        retaliationBonus,
-                        critDamage);
-                prospectiveDamage += retaliationBonus;
+                FinalIncantationTriggerEffects.play(ctx.targetRef(), ctx.commandBuffer());
+                // Retaliation is independent standalone damage: it must NOT be amplified
+                // by strength, crit, weapon multiplier, swiftness, blade dance, augments,
+                // or buffing aura. Apply as flat true damage so it bypasses the layer
+                // pipeline and lands at exactly the stored * reflect_percent value.
+                passiveTrueDamageBonus += retaliationBonus;
                 logPassiveTrigger(playerData,
                         ArchetypePassiveType.RETALIATION,
-                        "consumed_bonus=%.2f",
+                        "consumed_bonus=%.2f (flat true damage)",
                         retaliationBonus);
             }
         }

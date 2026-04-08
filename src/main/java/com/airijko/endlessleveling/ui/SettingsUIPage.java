@@ -117,6 +117,10 @@ public class SettingsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                                 false);
                 events.addEventBinding(Activating, "#AugmentNotifToggle", of("Action", "toggle:augmentNotif"), false);
                 events.addEventBinding(Activating, "#RaceModelToggle", of("Action", "toggle:raceModel"), false);
+                events.addEventBinding(Activating, "#SupportPveModeToggle",
+                                of("Action", "toggle:supportPveMode"), false);
+                events.addEventBinding(Activating, "#NecromancerPveModeToggle",
+                                of("Action", "toggle:necromancerPveMode"), false);
 
                 // Section navigation
                 events.addEventBinding(Activating, "#NavPlayerSettings", of("Action", "nav:playerSettings"), false);
@@ -302,6 +306,20 @@ public class SettingsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                                 : data.isUseRaceModel() ? Lang.tr(playerRef.getUuid(), "ui.common.toggle.on", "ON")
                                                 : Lang.tr(playerRef.getUuid(), "ui.common.toggle.off", "OFF"));
 
+                ui.set("#SupportPveModeLabel.Text",
+                                Lang.tr(playerRef.getUuid(), "ui.settings.support_pve_mode.label",
+                                                "Bard / Priest / Magistrate PVE Mode"));
+                ui.set("#SupportPveModeValue.Text", data.isSupportPveMode()
+                                ? Lang.tr(playerRef.getUuid(), "ui.common.toggle.on", "ON")
+                                : Lang.tr(playerRef.getUuid(), "ui.common.toggle.off", "OFF"));
+
+                ui.set("#NecromancerPveModeLabel.Text",
+                                Lang.tr(playerRef.getUuid(), "ui.settings.necromancer_pve_mode.label",
+                                                "Necromancer PVE Mode"));
+                ui.set("#NecromancerPveModeValue.Text", data.isNecromancerPveMode()
+                                ? Lang.tr(playerRef.getUuid(), "ui.common.toggle.on", "ON")
+                                : Lang.tr(playerRef.getUuid(), "ui.common.toggle.off", "OFF"));
+
                 ui.set("#SettingsTitleLabel.Text",
                                 Lang.tr(playerRef.getUuid(), "ui.settings.page.title", "Settings"));
                 ui.set("#SettingsIntroText.Text",
@@ -317,6 +335,8 @@ public class SettingsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 ui.set("#HealthRegenNotifToggle.Text", toggleText);
                 ui.set("#AugmentNotifToggle.Text", toggleText);
                 ui.set("#RaceModelToggle.Text", toggleText);
+                ui.set("#SupportPveModeToggle.Text", toggleText);
+                ui.set("#NecromancerPveModeToggle.Text", toggleText);
 
                 ui.set("#PlayerHudDescription.Text",
                                 Lang.tr(playerRef.getUuid(), "ui.settings.description.player_hud",
@@ -342,6 +362,12 @@ public class SettingsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 ui.set("#RaceModelDescription.Text",
                                 Lang.tr(playerRef.getUuid(), "ui.settings.description.race_model",
                                                 "Enable race-specific character visuals when available."));
+                ui.set("#SupportPveModeDescription.Text",
+                                Lang.tr(playerRef.getUuid(), "ui.settings.description.support_pve_mode",
+                                                "Supporting passives/abilities apply to all nearby players, instead of just party members."));
+                ui.set("#NecromancerPveModeDescription.Text",
+                                Lang.tr(playerRef.getUuid(), "ui.settings.description.necromancer_pve_mode",
+                                                "Summons focus on mobs only, never target players, and are immune to all player damage."));
 
                 // Populate config settings values from server config files
                 populateConfigSettings(ui);
@@ -558,6 +584,32 @@ public class SettingsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                                                                                         "ui.common.state.disabled",
                                                                                         "disabled")))
                                         .color("#ffc300"));
+                } else if ("toggle:supportPveMode".equalsIgnoreCase(action)) {
+                        boolean newValue = !playerData.isSupportPveMode();
+                        playerData.setSupportPveMode(newValue);
+                        changed = true;
+                        player.sendMessage(Message
+                                        .raw(Lang.tr(playerRef.getUuid(), "ui.settings.support_pve_mode.toggled",
+                                                        "Bard / Priest / Magistrate PVE Mode {0}",
+                                                        newValue ? Lang.tr(playerRef.getUuid(),
+                                                                        "ui.common.state.enabled", "enabled")
+                                                                        : Lang.tr(playerRef.getUuid(),
+                                                                                        "ui.common.state.disabled",
+                                                                                        "disabled")))
+                                        .color("#d7baff"));
+                } else if ("toggle:necromancerPveMode".equalsIgnoreCase(action)) {
+                        boolean newValue = !playerData.isNecromancerPveMode();
+                        playerData.setNecromancerPveMode(newValue);
+                        changed = true;
+                        player.sendMessage(Message
+                                        .raw(Lang.tr(playerRef.getUuid(), "ui.settings.necromancer_pve_mode.toggled",
+                                                        "Necromancer PVE Mode {0}",
+                                                        newValue ? Lang.tr(playerRef.getUuid(),
+                                                                        "ui.common.state.enabled", "enabled")
+                                                                        : Lang.tr(playerRef.getUuid(),
+                                                                                        "ui.common.state.disabled",
+                                                                                        "disabled")))
+                                        .color("#d7baff"));
                 } else if ("toggle:raceModel".equalsIgnoreCase(action)) {
                         if (raceManager != null && raceManager.isRaceModelGloballyDisabled()) {
                                 player.sendMessage(Message

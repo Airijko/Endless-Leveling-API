@@ -44,6 +44,8 @@ public class PlayerData {
     private boolean healthRegenNotifEnabled;
     private boolean augmentNotifEnabled;
     private boolean useRaceModel;
+    private boolean supportPveMode;
+    private boolean necromancerPveMode;
     private String language;
 
     public PlayerData(UUID uuid, String playerName) {
@@ -64,6 +66,8 @@ public class PlayerData {
         this.luckDoubleDropsNotifEnabled = true;
         this.healthRegenNotifEnabled = true;
         this.useRaceModel = false;
+        this.supportPveMode = true;
+        this.necromancerPveMode = true;
         this.language = DEFAULT_LANGUAGE;
         LOGGER.atInfo().log("PlayerData created for player: %s (UUID: %s) with profile slot 1", playerName, uuid);
     }
@@ -401,6 +405,22 @@ public class PlayerData {
 
     public void setUseRaceModel(boolean useRaceModel) {
         this.useRaceModel = useRaceModel;
+    }
+
+    public boolean isSupportPveMode() {
+        return supportPveMode;
+    }
+
+    public void setSupportPveMode(boolean supportPveMode) {
+        this.supportPveMode = supportPveMode;
+    }
+
+    public boolean isNecromancerPveMode() {
+        return necromancerPveMode;
+    }
+
+    public void setNecromancerPveMode(boolean necromancerPveMode) {
+        this.necromancerPveMode = necromancerPveMode;
     }
 
     public String getLanguage() {

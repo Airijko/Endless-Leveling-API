@@ -476,6 +476,120 @@ $S = "SettingsStyles.ui";
                     }
                 }
             }
+
+            Group { Anchor: (Height: 16); }
+
+            // ======== CLASS PVE MODE SECTION ========
+            Group {
+                LayoutMode: Left;
+                Padding: (Bottom: 8);
+
+                Group { Anchor: (Width: 3, Height: 18); Background: #d7baff; }
+                Group { Anchor: (Width: 8); }
+                Label { Text: "CLASS PVE MODE"; Style: (TextColor: #d7baff, FontSize: 13, RenderBold: true, RenderUppercase: true, LetterSpacing: 1); }
+            }
+
+            // -- Bard / Priest / Magistrate PVE Mode --
+            Group #SupportPveModeRow {
+                LayoutMode: Left;
+                Background: #0b141f(0.84);
+                Padding: (Full: 0);
+
+                Group { Anchor: (Width: 3); Background: #d7baff(0.40); }
+
+                Group {
+                    LayoutMode: Left;
+                    FlexWeight: 1;
+                    Padding: (Full: 12);
+
+                    Group {
+                        LayoutMode: Top;
+                        FlexWeight: 1;
+
+                        Group {
+                            LayoutMode: Left;
+
+                            Label #SupportPveModeLabel { Style: (TextColor: #f4f9ff, FontSize: 15, RenderBold: true); FlexWeight: 1; Text: "Bard / Priest / Magistrate PVE Mode"; }
+
+                            Label #SupportPveModeValue {
+                                Text: "ON";
+                                Anchor: (Width: $S.@SettingValueWidth, Height: 24);
+                                Padding: (Horizontal: 8, Vertical: 4);
+                                Style: (TextColor: #6fe3ff, FontSize: 12, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
+                                Background: #061420;
+                            }
+                        }
+
+                        Group { Anchor: (Height: 4); }
+
+                        Label #SupportPveModeDescription {
+                            Text: "Supporting passives/abilities apply to all nearby players, instead of just party members.";
+                            Style: (TextColor: #c0cee5, FontSize: 12);
+                        }
+                    }
+
+                    Group { Anchor: (Width: 12); }
+
+                    $C.@TextButton #SupportPveModeToggle {
+                        Anchor: (Height: 32, Width: $S.@ToggleButtonWidth);
+                        Padding: (Horizontal: 8, Vertical: 4);
+                        Text: "Toggle";
+                        Style: $S.@CustomStyle;
+                    }
+                }
+            }
+
+            Group { Anchor: (Height: 6); }
+
+            // -- Necromancer PVE Mode --
+            Group #NecromancerPveModeRow {
+                LayoutMode: Left;
+                Background: #0b141f(0.84);
+                Padding: (Full: 0);
+
+                Group { Anchor: (Width: 3); Background: #d7baff(0.40); }
+
+                Group {
+                    LayoutMode: Left;
+                    FlexWeight: 1;
+                    Padding: (Full: 12);
+
+                    Group {
+                        LayoutMode: Top;
+                        FlexWeight: 1;
+
+                        Group {
+                            LayoutMode: Left;
+
+                            Label #NecromancerPveModeLabel { Style: (TextColor: #f4f9ff, FontSize: 15, RenderBold: true); FlexWeight: 1; Text: "Necromancer PVE Mode"; }
+
+                            Label #NecromancerPveModeValue {
+                                Text: "ON";
+                                Anchor: (Width: $S.@SettingValueWidth, Height: 24);
+                                Padding: (Horizontal: 8, Vertical: 4);
+                                Style: (TextColor: #6fe3ff, FontSize: 12, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
+                                Background: #061420;
+                            }
+                        }
+
+                        Group { Anchor: (Height: 4); }
+
+                        Label #NecromancerPveModeDescription {
+                            Text: "Summons focus on mobs only, never target players, and are immune to all player damage.";
+                            Style: (TextColor: #c0cee5, FontSize: 12);
+                        }
+                    }
+
+                    Group { Anchor: (Width: 12); }
+
+                    $C.@TextButton #NecromancerPveModeToggle {
+                        Anchor: (Height: 32, Width: $S.@ToggleButtonWidth);
+                        Padding: (Horizontal: 8, Vertical: 4);
+                        Text: "Toggle";
+                        Style: $S.@CustomStyle;
+                    }
+                }
+            }
         }
     }
 };

@@ -17,6 +17,7 @@ import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3f;
+import com.hypixel.hytale.server.core.asset.type.attitude.Attitude;
 import com.hypixel.hytale.server.core.entity.UUIDComponent;
 import com.hypixel.hytale.server.core.entity.nameplate.Nameplate;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
@@ -74,8 +75,25 @@ public final class ArmyOfTheDeadPassive {
     private static final long MOVEMENT_REFRESH_INTERVAL_MS = 1000L;
     private static final double AUTO_AGGRO_SCAN_RANGE = 24.0D;
     private static final double SPAWN_AGGRO_SCAN_RANGE = 36.0D;
-    private static final long SPAWN_AGGRO_RETRY_INTERVAL_MS = 100L;
-    private static final int MAX_SPAWN_AGGRO_RETRIES = 8;
+    private static final long SPAWN_AGGRO_RETRY_INTERVAL_MS = 250L;
+    private static final int MAX_SPAWN_AGGRO_RETRIES = 16;
+    /**
+     * Delay before a freshly spawned summon picks its first target. Gives the
+     * spawn animation time to play out and lets the surrounding mob density
+     * settle so the initial pick reflects the actual battlefield state.
+     */
+    private static final long INITIAL_AGGRO_DELAY_MS = 2000L;
+    /**
+     * Period at which active summons re-assert taunt on their current target so
+     * the mob keeps attacking the summon instead of drifting back to the owner.
+     */
+    private static final long TAUNT_REASSERT_INTERVAL_MS = 5000L;
+    /**
+     * Duration of the WorldSupport.overrideAttitude(HOSTILE) call applied during
+     * a taunt sweep. Slightly longer than the reassert interval so the override
+     * never lapses between sweeps.
+     */
+    private static final double TAUNT_ATTITUDE_DURATION_SECONDS = 6.0D;
     private static final double SUMMON_SPAWN_HALF_WIDTH = 0.35D;
     private static final double SUMMON_SPAWN_RING_STEP = 0.85D;
     private static final int[] SUMMON_SPAWN_VERTICAL_OFFSETS = new int[] { 0, 1, -1, 2, -2, 3, -3 };
@@ -233,8 +251,14 @@ public final class ArmyOfTheDeadPassive {
 
         Store<EntityStore> effectiveStore = store != null ? store : EntityRefUtil.getStore(targetRef);
         UUID targetPlayerUuid = resolvePlayerUuid(targetRef, effectiveStore, commandBuffer);
-        if (targetPlayerUuid != null && isAlliedWithOwner(ownerUuid, targetPlayerUuid)) {
-            return false;
+        if (targetPlayerUuid != null) {
+            // Necromancer PVE Mode: summons never aggro players, period.
+            if (ownerHasNecromancerPveMode(ownerUuid)) {
+                return false;
+            }
+            if (isAlliedWithOwner(ownerUuid, targetPlayerUuid)) {
+                return false;
+            }
         }
 
         UUID targetOwner = resolveSummonOwnerUuid(targetRef, effectiveStore, commandBuffer);
@@ -484,8 +508,15 @@ public final class ArmyOfTheDeadPassive {
         }
 
         UUID targetPlayerUuid = resolvePlayerUuid(targetRef, store, commandBuffer);
-        if (targetPlayerUuid != null && isAlliedWithOwner(ownerUuid, targetPlayerUuid)) {
-            return true;
+        if (targetPlayerUuid != null) {
+            if (isAlliedWithOwner(ownerUuid, targetPlayerUuid)) {
+                return true;
+            }
+            // Necromancer PVE Mode: any other player counts as "friendly" so
+            // they cannot damage the summon and the summon cannot hit them.
+            if (!ownerUuid.equals(targetPlayerUuid) && ownerHasNecromancerPveMode(ownerUuid)) {
+                return true;
+            }
         }
 
         UUID targetOwner = resolveSummonOwnerUuid(targetRef, store, commandBuffer);
@@ -600,6 +631,9 @@ public final class ArmyOfTheDeadPassive {
                 return;
             }
 
+            // Release the mirrored player augments registered against this summon UUID.
+            unregisterSummonAugments(summonUuid);
+
             OwnerSummonState ownerState = OWNER_STATES.get(binding.ownerUuid());
             if (ownerState == null) {
                 return;
@@ -619,7 +653,6 @@ public final class ArmyOfTheDeadPassive {
                     slot.summonExpiresAt = 0L;
                     slot.postSpawnHealthNormalizePending = false;
                     slot.spawnAggroRetriesRemaining = 0;
-                    slot.nextSpawnAggroRetryAt = 0L;
                     slot.nextTeleportCheckAt = 0L;
                     slot.nextMovementRefreshAt = 0L;
                     slot.cooldownExpiresAt = cooldownUntil;
@@ -783,8 +816,14 @@ public final class ArmyOfTheDeadPassive {
             return false;
         }
 
+        Vector3d summonPosition = transform.getPosition();
+        Ref<EntityStore> ownerRef = resolveOwnerEntityRef(ownerUuid, store);
+
+        Ref<EntityStore> bestCandidate = null;
+        double bestScore = Double.POSITIVE_INFINITY;
+
         for (Ref<EntityStore> candidate : TargetUtil.getAllEntitiesInSphere(
-                transform.getPosition(), scanRange, store)) {
+                summonPosition, scanRange, store)) {
             if (!EntityRefUtil.isUsable(candidate)) {
                 continue;
             }
@@ -794,18 +833,128 @@ public final class ArmyOfTheDeadPassive {
             if (!isValidAggroTargetForOwner(ownerUuid, candidate, store, null)) {
                 continue;
             }
+            if (!isEntityAlive(candidate, store)) {
+                continue;
+            }
 
+            TransformComponent candidateTransform = EntityRefUtil.tryGetComponent(store,
+                    candidate,
+                    TransformComponent.getComponentType());
+            if (candidateTransform == null || candidateTransform.getPosition() == null) {
+                continue;
+            }
+
+            double score = candidateTransform.getPosition().distanceSquaredTo(summonPosition);
+            // Strongly prefer mobs that are currently focused on the owner —
+            // reclaim aggro from the player without waiting for the next
+            // damage event to feed OWNER_LAST_THREAT_TARGETS.
+            if (ownerRef != null && isCandidateTargetingOwner(candidate, ownerRef, store)) {
+                score *= 0.25D;
+            }
+
+            if (score < bestScore) {
+                bestScore = score;
+                bestCandidate = candidate;
+            }
+        }
+
+        if (bestCandidate != null) {
             try {
-                summonNpc.getRole().setMarkedTarget("LockedTarget", candidate);
+                summonNpc.getRole().setMarkedTarget("LockedTarget", bestCandidate);
                 return true;
             } catch (Throwable throwable) {
                 LOGGER.atFiner().withCause(throwable)
                         .log("[ARMY_OF_THE_DEAD] Failed immediate aggro target assignment for owner %s.", ownerUuid);
-                return false;
             }
         }
 
         return false;
+    }
+
+    /**
+     * Resolves the owner player's entity reference in the given store, or null
+     * if the owner is offline or in a different world.
+     */
+    private static Ref<EntityStore> resolveOwnerEntityRef(UUID ownerUuid, Store<EntityStore> store) {
+        if (ownerUuid == null || store == null) {
+            return null;
+        }
+        try {
+            Universe universe = Universe.get();
+            if (universe == null) {
+                return null;
+            }
+            PlayerRef playerRef = universe.getPlayer(ownerUuid);
+            if (playerRef == null || !playerRef.isValid()) {
+                return null;
+            }
+            Ref<EntityStore> ref = playerRef.getReference();
+            if (!EntityRefUtil.isUsable(ref) || EntityRefUtil.getStore(ref) != store) {
+                return null;
+            }
+            return ref;
+        } catch (Throwable throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * Returns true when the candidate NPC is currently locked onto the owner.
+     * Used to prioritise stealing aggro from mobs already attacking the player.
+     */
+    private static boolean isCandidateTargetingOwner(Ref<EntityStore> candidate,
+            Ref<EntityStore> ownerRef,
+            Store<EntityStore> store) {
+        if (!EntityRefUtil.isUsable(candidate) || !EntityRefUtil.isUsable(ownerRef) || store == null) {
+            return false;
+        }
+        NPCEntity candidateNpc = EntityRefUtil.tryGetComponent(store, candidate, NPCEntity.getComponentType());
+        if (candidateNpc == null || candidateNpc.getRole() == null) {
+            return false;
+        }
+        try {
+            Ref<EntityStore> currentTarget = candidateNpc.getRole()
+                    .getMarkedEntitySupport()
+                    .getMarkedEntityRef("LockedTarget");
+            return EntityRefUtil.isUsable(currentTarget) && currentTarget.equals(ownerRef);
+        } catch (Throwable throwable) {
+            return false;
+        }
+    }
+
+    /**
+     * Forces a hostile mob to focus on this summon (taunt). Sets the mob's
+     * LockedTarget to the summon and overrides its attitude to HOSTILE for
+     * slightly longer than the taunt-reassert interval so the override never
+     * lapses between sweeps. Re-asserted periodically because the mob's own
+     * sensors can overwrite LockedTarget.
+     */
+    private static void applyTauntToTarget(Ref<EntityStore> summonRef,
+            Ref<EntityStore> targetRef,
+            Store<EntityStore> store) {
+        if (!EntityRefUtil.isUsable(summonRef) || !EntityRefUtil.isUsable(targetRef) || store == null) {
+            return;
+        }
+        if (targetRef.equals(summonRef)) {
+            return;
+        }
+        NPCEntity targetNpc = EntityRefUtil.tryGetComponent(store, targetRef, NPCEntity.getComponentType());
+        if (targetNpc == null || targetNpc.getRole() == null) {
+            return;
+        }
+        try {
+            targetNpc.getRole().getWorldSupport()
+                    .overrideAttitude(summonRef, Attitude.HOSTILE, TAUNT_ATTITUDE_DURATION_SECONDS);
+        } catch (Throwable throwable) {
+            LOGGER.atFiner().withCause(throwable)
+                    .log("[ARMY_OF_THE_DEAD] Failed to override attitude on taunt target.");
+        }
+        try {
+            targetNpc.getRole().setMarkedTarget("LockedTarget", summonRef);
+        } catch (Throwable throwable) {
+            LOGGER.atFiner().withCause(throwable)
+                    .log("[ARMY_OF_THE_DEAD] Failed to redirect taunt target's LockedTarget.");
+        }
     }
 
     private static Ref<EntityStore> resolvePreferredThreatTarget(UUID ownerUuid,
@@ -996,6 +1145,10 @@ public final class ArmyOfTheDeadPassive {
                 slot.baseDamage = Math.max(0.0D, request.config().baseDamage());
                 slot.spawnPending = false;
                 slot.postSpawnHealthNormalizePending = true;
+                // Reset the cached owner-augment signature so a fresh summon
+                // taking over this slot doesn't inherit the previous summon's
+                // signature and skip the initial mirror sync.
+                slot.ownerAugmentSignature = null;
                 slot.nextTargetValidationAt = now;
                 slot.nextTargetAcquireAt = now;
                 slot.nextTeleportCheckAt = now;
@@ -1013,15 +1166,13 @@ public final class ArmyOfTheDeadPassive {
                     summonRef,
                     NPCEntity.getComponentType());
                 if (summonNpc != null) {
-                    Ref<EntityStore> preferredTarget = resolvePreferredThreatTarget(request.ownerUuid(), store);
-                    boolean aggroAssigned = assignImmediateSummonTarget(request.ownerUuid(),
-                            summonRef,
-                            summonNpc,
-                            store,
-                            preferredTarget,
-                            SPAWN_AGGRO_SCAN_RANGE);
-                    slot.spawnAggroRetriesRemaining = aggroAssigned ? 0 : MAX_SPAWN_AGGRO_RETRIES;
-                    slot.nextSpawnAggroRetryAt = aggroAssigned ? 0L : (now + SPAWN_AGGRO_RETRY_INTERVAL_MS);
+                    // Defer the first target acquisition by INITIAL_AGGRO_DELAY_MS
+                    // so the spawn animation plays out and the surrounding mob
+                    // density has time to settle. The per-tick loop in
+                    // updateSummonLeashPositions performs the actual acquire.
+                    slot.initialAggroAt = now + INITIAL_AGGRO_DELAY_MS;
+                    slot.spawnAggroRetriesRemaining = 0;
+                    slot.nextTauntReassertAt = 0L;
                 }
 
                 forceCurrentHealthToMax(summonRef, store);
@@ -1128,6 +1279,31 @@ public final class ArmyOfTheDeadPassive {
         }
     }
 
+    /**
+     * Releases the augment instance mirrored against this summon UUID so its
+     * runtime state and per-mob caches don't outlive the summon entity.
+     */
+    private static void unregisterSummonAugments(UUID summonUuid) {
+        if (summonUuid == null) {
+            return;
+        }
+        EndlessLeveling plugin = EndlessLeveling.getInstance();
+        if (plugin == null) {
+            return;
+        }
+        MobAugmentExecutor executor = plugin.getMobAugmentExecutor();
+        if (executor == null) {
+            return;
+        }
+        try {
+            executor.unregisterMob(summonUuid);
+        } catch (Throwable throwable) {
+            LOGGER.atWarning().withCause(throwable)
+                    .log("[ARMY_OF_THE_DEAD][AUGMENTS] Failed to unregister mirrored augments for summon=%s",
+                            summonUuid);
+        }
+    }
+
     private static void applyPlayerAugmentsToSummon(Ref<EntityStore> summonRef,
             Store<EntityStore> store,
             UUID ownerUuid,
@@ -1169,6 +1345,10 @@ public final class ArmyOfTheDeadPassive {
                     ownerUuid,
                     slotIndex,
                     summonUuid);
+            // Stamp the empty signature so ensureSummonAugmentsInSync correctly
+            // detects when the owner adds augments after spawn and triggers a
+            // mirror sync at the next combat event.
+            updateSummonOwnerAugmentSignature(ownerUuid, summonUuid, "");
             return;
         }
 
@@ -1198,14 +1378,25 @@ public final class ArmyOfTheDeadPassive {
         }
 
         try {
-            mobAugmentExecutor.registerMobAugments(summonUuid, augmentIds, augmentManager, augmentRuntimeManager);
+            // registerSummonAugments mirrors the player's full loadout 1:1 —
+            // unlike registerMobAugments it does not drop common-stat offers for
+            // haste/discipline/flow/stamina, since this is a player-mirrored
+            // summon rather than a world-configured mob.
+            mobAugmentExecutor.registerSummonAugments(summonUuid, augmentIds, augmentManager, augmentRuntimeManager);
+
+            // Cache the signature of the augment list we just applied so the
+            // combat hot path can detect when the owner's selection drifts and
+            // re-mirror without re-iterating the augment map every hit.
+            String signature = buildAugmentSignature(augmentIds);
+            updateSummonOwnerAugmentSignature(ownerUuid, summonUuid, signature);
 
             LOGGER.atInfo().log(
-                    "[ARMY_OF_THE_DEAD][AUGMENTS] ✓ Successfully registered %d augments to summon at slot %d owner=%s summon=%s",
+                    "[ARMY_OF_THE_DEAD][AUGMENTS] ✓ Mirrored %d augments to summon at slot %d owner=%s summon=%s ids=%s",
                     augmentIds.size(),
                     slotIndex,
                     ownerUuid,
-                    summonUuid);
+                    summonUuid,
+                    augmentIds);
         } catch (Exception e) {
             LOGGER.atSevere().withCause(e).log(
                     "[ARMY_OF_THE_DEAD][AUGMENTS] Failed to register augments for slot %d owner=%s summon=%s: %s",
@@ -1214,6 +1405,147 @@ public final class ArmyOfTheDeadPassive {
                     summonUuid,
                     e.getMessage());
         }
+    }
+
+    /**
+     * Builds a stable signature of an augment-id list. Used by the combat hot
+     * path to compare a summon's currently-bound augment list against the
+     * owner's live selection without re-iterating the augment map every hit.
+     */
+    private static String buildAugmentSignature(List<String> augmentIds) {
+        if (augmentIds == null || augmentIds.isEmpty()) {
+            return "";
+        }
+        List<String> sorted = new ArrayList<>(augmentIds.size());
+        for (String id : augmentIds) {
+            if (id != null && !id.isBlank()) {
+                sorted.add(id.trim());
+            }
+        }
+        if (sorted.isEmpty()) {
+            return "";
+        }
+        sorted.sort(String::compareTo);
+        return String.join("|", sorted);
+    }
+
+    /**
+     * Stores the augment-list signature most recently applied to a summon on
+     * its owning slot. Reads/writes happen under the OwnerSummonState monitor.
+     */
+    private static void updateSummonOwnerAugmentSignature(UUID ownerUuid,
+            UUID summonUuid,
+            String signature) {
+        if (ownerUuid == null || summonUuid == null) {
+            return;
+        }
+        OwnerSummonState ownerState = OWNER_STATES.get(ownerUuid);
+        if (ownerState == null) {
+            return;
+        }
+        synchronized (ownerState) {
+            for (SummonSlot slot : ownerState.slots) {
+                if (slot != null && summonUuid.equals(slot.activeSummonUuid)) {
+                    slot.ownerAugmentSignature = signature;
+                    return;
+                }
+            }
+        }
+    }
+
+    /**
+     * Re-mirrors the owner's currently selected augments onto the given summon
+     * if the owner's selection has changed since the last sync (or the summon
+     * has never received augments because the owner had none selected at spawn
+     * time). Cheap fast-path: a single owner-state lookup + signature compare.
+     *
+     * Called from the combat hot path before dispatching summon augment hooks
+     * so player loadout changes propagate to live summons without waiting for
+     * the next spawn.
+     */
+    public static void ensureSummonAugmentsInSync(UUID summonUuid, Store<EntityStore> store) {
+        if (summonUuid == null) {
+            return;
+        }
+        SummonBinding binding = SUMMON_BINDINGS.get(summonUuid);
+        if (binding == null) {
+            return;
+        }
+        UUID ownerUuid = binding.ownerUuid();
+        if (ownerUuid == null) {
+            return;
+        }
+
+        EndlessLeveling plugin = EndlessLeveling.getInstance();
+        if (plugin == null) {
+            return;
+        }
+        PlayerDataManager playerDataManager = plugin.getPlayerDataManager();
+        if (playerDataManager == null) {
+            return;
+        }
+        PlayerData playerData = playerDataManager.get(ownerUuid);
+        if (playerData == null) {
+            return;
+        }
+
+        Map<String, String> selectedAugmentsMap = playerData.getSelectedAugmentsSnapshot();
+        List<String> currentAugmentIds = selectedAugmentsMap == null
+                ? new ArrayList<>()
+                : new ArrayList<>(selectedAugmentsMap.values());
+        String currentSignature = buildAugmentSignature(currentAugmentIds);
+
+        OwnerSummonState ownerState = OWNER_STATES.get(ownerUuid);
+        if (ownerState == null) {
+            return;
+        }
+
+        SummonSlot targetSlot = null;
+        Ref<EntityStore> summonRef = null;
+        synchronized (ownerState) {
+            for (SummonSlot slot : ownerState.slots) {
+                if (slot != null && summonUuid.equals(slot.activeSummonUuid)) {
+                    targetSlot = slot;
+                    summonRef = slot.activeRef;
+                    break;
+                }
+            }
+            if (targetSlot == null) {
+                return;
+            }
+            // Already in sync — fast path returns without touching the executor.
+            if (currentSignature.equals(targetSlot.ownerAugmentSignature)) {
+                return;
+            }
+        }
+
+        if (!EntityRefUtil.isUsable(summonRef)) {
+            return;
+        }
+
+        Store<EntityStore> effectiveStore = store != null ? store : EntityRefUtil.getStore(summonRef);
+        if (effectiveStore == null) {
+            return;
+        }
+
+        if (currentAugmentIds.isEmpty()) {
+            // Owner cleared all augments after spawn — drop the summon's mirrored
+            // bindings so its on-hit dispatch returns immediately.
+            MobAugmentExecutor executor = plugin.getMobAugmentExecutor();
+            if (executor != null) {
+                try {
+                    executor.unregisterMob(summonUuid);
+                } catch (Throwable throwable) {
+                    LOGGER.atWarning().withCause(throwable).log(
+                            "[ARMY_OF_THE_DEAD][AUGMENTS] Failed to clear stale augments for summon=%s owner=%s",
+                            summonUuid, ownerUuid);
+                }
+            }
+            updateSummonOwnerAugmentSignature(ownerUuid, summonUuid, currentSignature);
+            return;
+        }
+
+        applyPlayerAugmentsToSummon(summonRef, effectiveStore, ownerUuid, summonUuid, binding.slotIndex());
     }
 
     private static void applySummonMovementSpeedBonus(Ref<EntityStore> summonRef,
@@ -1356,7 +1688,6 @@ public final class ArmyOfTheDeadPassive {
             slot.spawnPending = false;
             slot.postSpawnHealthNormalizePending = false;
             slot.spawnAggroRetriesRemaining = 0;
-            slot.nextSpawnAggroRetryAt = 0L;
             slot.nextTeleportCheckAt = 0L;
             slot.nextMovementRefreshAt = 0L;
             return;
@@ -1367,7 +1698,9 @@ public final class ArmyOfTheDeadPassive {
         }
 
         if (slot.activeRef == null || !EntityRefUtil.isUsable(slot.activeRef)) {
-            SUMMON_BINDINGS.remove(slot.activeSummonUuid);
+            UUID staleUuid = slot.activeSummonUuid;
+            SUMMON_BINDINGS.remove(staleUuid);
+            unregisterSummonAugments(staleUuid);
             slot.activeRef = null;
             slot.activeSummonUuid = null;
             slot.summonExpiresAt = 0L;
@@ -1375,7 +1708,6 @@ public final class ArmyOfTheDeadPassive {
             slot.spawnPending = false;
             slot.postSpawnHealthNormalizePending = false;
             slot.spawnAggroRetriesRemaining = 0;
-            slot.nextSpawnAggroRetryAt = 0L;
             slot.nextTeleportCheckAt = 0L;
             slot.nextMovementRefreshAt = 0L;
             return;
@@ -1403,7 +1735,9 @@ public final class ArmyOfTheDeadPassive {
             }
 
             forceKillSummon(slot.activeRef, commandBuffer, sourceRef);
-            SUMMON_BINDINGS.remove(slot.activeSummonUuid);
+            UUID expiredUuid = slot.activeSummonUuid;
+            SUMMON_BINDINGS.remove(expiredUuid);
+            unregisterSummonAugments(expiredUuid);
             slot.activeRef = null;
             slot.activeSummonUuid = null;
             slot.summonExpiresAt = 0L;
@@ -1411,7 +1745,6 @@ public final class ArmyOfTheDeadPassive {
             slot.spawnPending = false;
             slot.postSpawnHealthNormalizePending = false;
             slot.spawnAggroRetriesRemaining = 0;
-            slot.nextSpawnAggroRetryAt = 0L;
             slot.nextTeleportCheckAt = 0L;
             slot.nextMovementRefreshAt = 0L;
             LOGGER.atFiner().log("[ARMY_OF_THE_DEAD] Expired summon for owner %s; cooldown until %d.",
@@ -1464,7 +1797,9 @@ public final class ArmyOfTheDeadPassive {
                     forceKillSummon(summonRef, summonStore);
                 }
 
-                SUMMON_BINDINGS.remove(slot.activeSummonUuid);
+                UUID despawnedUuid = slot.activeSummonUuid;
+                SUMMON_BINDINGS.remove(despawnedUuid);
+                unregisterSummonAugments(despawnedUuid);
                 slot.activeRef = null;
                 slot.activeSummonUuid = null;
                 slot.summonExpiresAt = 0L;
@@ -1472,7 +1807,6 @@ public final class ArmyOfTheDeadPassive {
                 slot.spawnPending = false;
                 slot.postSpawnHealthNormalizePending = false;
                 slot.spawnAggroRetriesRemaining = 0;
-                slot.nextSpawnAggroRetryAt = 0L;
                 slot.nextTeleportCheckAt = 0L;
                 slot.nextMovementRefreshAt = 0L;
 
@@ -1899,6 +2233,22 @@ public final class ArmyOfTheDeadPassive {
         return plugin != null ? plugin.getPartyManager() : null;
     }
 
+    private static boolean ownerHasNecromancerPveMode(UUID ownerUuid) {
+        if (ownerUuid == null) {
+            return false;
+        }
+        EndlessLeveling plugin = EndlessLeveling.getInstance();
+        if (plugin == null) {
+            return false;
+        }
+        PlayerDataManager playerDataManager = plugin.getPlayerDataManager();
+        if (playerDataManager == null) {
+            return false;
+        }
+        PlayerData ownerData = playerDataManager.get(ownerUuid);
+        return ownerData != null && ownerData.isNecromancerPveMode();
+    }
+
     public static void updateSummonLeashPositions(PlayerData playerData,
             Ref<EntityStore> ownerRef,
             CommandBuffer<EntityStore> commandBuffer) {
@@ -1935,13 +2285,14 @@ public final class ArmyOfTheDeadPassive {
                 // despawn at 30 s regardless of whether a new summon is triggered.
                 if (slot.summonExpiresAt > 0L && now >= slot.summonExpiresAt) {
                     forceKillSummon(slot.activeRef, commandBuffer, ownerRef);
-                    SUMMON_BINDINGS.remove(slot.activeSummonUuid);
+                    UUID expiredTickUuid = slot.activeSummonUuid;
+                    SUMMON_BINDINGS.remove(expiredTickUuid);
+                    unregisterSummonAugments(expiredTickUuid);
                     slot.activeRef = null;
                     slot.activeSummonUuid = null;
                     slot.summonExpiresAt = 0L;
                     slot.postSpawnHealthNormalizePending = false;
                     slot.spawnAggroRetriesRemaining = 0;
-                    slot.nextSpawnAggroRetryAt = 0L;
                     slot.nextTeleportCheckAt = 0L;
                     slot.nextMovementRefreshAt = 0L;
                     slot.cooldownExpiresAt = now + Math.max(0L, slot.cooldownDurationMillis);
@@ -1968,8 +2319,9 @@ public final class ArmyOfTheDeadPassive {
                     continue;
                 }
 
-                if (slot.spawnAggroRetriesRemaining > 0
-                        && now >= slot.nextSpawnAggroRetryAt
+                // --- Initial aggro acquisition (2-second post-spawn delay) ---
+                if (slot.initialAggroAt > 0L
+                        && now >= slot.initialAggroAt
                         && summonNpc.getRole() != null) {
                     Ref<EntityStore> preferredTarget = resolvePreferredThreatTarget(ownerUuid, store);
                     boolean aggroAssigned = assignImmediateSummonTarget(ownerUuid,
@@ -1979,11 +2331,26 @@ public final class ArmyOfTheDeadPassive {
                             preferredTarget,
                             SPAWN_AGGRO_SCAN_RANGE);
                     if (aggroAssigned) {
+                        slot.initialAggroAt = 0L;
                         slot.spawnAggroRetriesRemaining = 0;
-                        slot.nextSpawnAggroRetryAt = 0L;
+                        // Apply taunt to the freshly acquired target so the mob
+                        // immediately turns on the summon, and arm the periodic
+                        // 5s reassert loop.
+                        Ref<EntityStore> acquiredTarget = summonNpc.getRole()
+                                .getMarkedEntitySupport()
+                                .getMarkedEntityRef("LockedTarget");
+                        applyTauntToTarget(slot.activeRef, acquiredTarget, store);
+                        slot.nextTauntReassertAt = now + TAUNT_REASSERT_INTERVAL_MS;
                     } else {
+                        // No valid candidates yet — short retry loop using the
+                        // existing spawn-retry budget so we don't spin forever.
+                        if (slot.spawnAggroRetriesRemaining <= 0) {
+                            slot.spawnAggroRetriesRemaining = MAX_SPAWN_AGGRO_RETRIES;
+                        }
                         slot.spawnAggroRetriesRemaining--;
-                        slot.nextSpawnAggroRetryAt = now + SPAWN_AGGRO_RETRY_INTERVAL_MS;
+                        slot.initialAggroAt = slot.spawnAggroRetriesRemaining > 0
+                                ? now + SPAWN_AGGRO_RETRY_INTERVAL_MS
+                                : 0L;
                     }
                 }
 
@@ -1994,11 +2361,40 @@ public final class ArmyOfTheDeadPassive {
                                 .getMarkedEntitySupport()
                                 .getMarkedEntityRef("LockedTarget");
                         if (!isSummonTargetStillValid(ownerUuid, slot.activeRef, currentTarget, store)
-                                && now >= slot.nextTargetAcquireAt) {
-                            assignImmediateSummonTarget(ownerUuid, slot.activeRef, summonNpc, store);
+                                && now >= slot.nextTargetAcquireAt
+                                && slot.initialAggroAt == 0L) {
+                            boolean reacquired = assignImmediateSummonTarget(ownerUuid,
+                                    slot.activeRef,
+                                    summonNpc,
+                                    store);
                             slot.nextTargetAcquireAt = now + TARGET_REACQUIRE_INTERVAL_MS;
+                            if (reacquired) {
+                                // Re-arm the taunt sweep on the new target so the
+                                // mob can't ignore the summon for the next 5 s.
+                                Ref<EntityStore> newTarget = summonNpc.getRole()
+                                        .getMarkedEntitySupport()
+                                        .getMarkedEntityRef("LockedTarget");
+                                applyTauntToTarget(slot.activeRef, newTarget, store);
+                                slot.nextTauntReassertAt = now + TAUNT_REASSERT_INTERVAL_MS;
+                            }
                         }
                     }
+                }
+
+                // --- Periodic 5-second taunt reassert ---
+                // Re-tells the current target "you're attacking the summon, not
+                // the player". Defeats sensor-driven LockedTarget overwrites
+                // and refreshes the HOSTILE attitude override before it lapses.
+                if (slot.nextTauntReassertAt > 0L
+                        && now >= slot.nextTauntReassertAt
+                        && summonNpc.getRole() != null) {
+                    Ref<EntityStore> currentTarget = summonNpc.getRole()
+                            .getMarkedEntitySupport()
+                            .getMarkedEntityRef("LockedTarget");
+                    if (isSummonTargetStillValid(ownerUuid, slot.activeRef, currentTarget, store)) {
+                        applyTauntToTarget(slot.activeRef, currentTarget, store);
+                    }
+                    slot.nextTauntReassertAt = now + TAUNT_REASSERT_INTERVAL_MS;
                 }
 
                 Vector3d leashPoint = ownerPosition;
@@ -2341,10 +2737,20 @@ public final class ArmyOfTheDeadPassive {
         private boolean spawnPending;
         private boolean postSpawnHealthNormalizePending;
         private int spawnAggroRetriesRemaining;
-        private long nextSpawnAggroRetryAt;
+        /** Timestamp at which this freshly spawned summon should pick its first target (0 = none pending). */
+        private long initialAggroAt;
+        /** Timestamp at which this slot should re-assert taunt on its current target (0 = none scheduled). */
+        private long nextTauntReassertAt;
         private long nextTargetValidationAt;
         private long nextTargetAcquireAt;
         private long nextTeleportCheckAt;
         private long nextMovementRefreshAt;
+        /**
+         * Signature of the owner's augment selection most recently mirrored to
+         * this summon. Used by the combat hot path to detect when the owner's
+         * loadout drifts from what's currently bound on the summon and trigger
+         * a re-mirror via {@link #ensureSummonAugmentsInSync}.
+         */
+        private String ownerAugmentSignature;
     }
 }
