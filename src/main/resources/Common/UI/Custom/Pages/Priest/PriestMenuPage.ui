@@ -1,0 +1,234 @@
+$C = "../../Common.ui";
+
+@PriestMenuButton = TextButtonStyle(
+    Default: (Background: $C.@DefaultSquareButtonDefaultBackground, LabelStyle: $C.@DefaultButtonLabelStyle),
+    Hovered: (Background: $C.@DefaultSquareButtonHoveredBackground, LabelStyle: $C.@DefaultButtonLabelStyle),
+    Pressed: (Background: $C.@DefaultSquareButtonPressedBackground, LabelStyle: $C.@DefaultButtonLabelStyle),
+    Disabled: (Background: $C.@DefaultSquareButtonDisabledBackground, LabelStyle: $C.@DefaultButtonDisabledLabelStyle),
+    Sounds: $C.@ButtonSounds,
+);
+
+$C.@PageOverlay {
+    Group {
+        LayoutMode: Middle;
+
+        Group {
+            Anchor: (Width: 720, Height: 540);
+            Background: (TexturePath: "Images/ObjectivePanelContainer.png", Border: 15);
+            LayoutMode: Top;
+            Padding: (Full: 16);
+
+            // ---- Title ----
+            Label {
+                Text: "PRIEST CHURCH";
+                Anchor: (Height: 26);
+                Style: (FontSize: 16, TextColor: #ffd700, RenderBold: true, RenderUppercase: true, LetterSpacing: 2, HorizontalAlignment: Center, VerticalAlignment: Center);
+            }
+
+            Group { Anchor: (Height: 1); Background: #7a5a10; }
+            Group { Anchor: (Height: 4); }
+
+            Label {
+                Text: "Sanctify the land with your sacred ground.";
+                Anchor: (Height: 16);
+                Style: (FontSize: 11, TextColor: #e8e8b0, HorizontalAlignment: Center, VerticalAlignment: Center);
+            }
+
+            Group { Anchor: (Height: 12); }
+
+            // ===== STATUS CARD =====
+            Group {
+                LayoutMode: Top;
+                Background: #0b141f(0.88);
+                Padding: (Full: 14);
+
+                Group {
+                    Anchor: (Width: 3, Top: 0, Left: 0, Bottom: 0);
+                    Background: #ffd700;
+                }
+
+                Group {
+                    LayoutMode: Top;
+                    Padding: (Left: 12);
+
+                    Label {
+                        Text: "CHURCH STATUS";
+                        Style: (FontSize: 10, TextColor: #ffd700, RenderBold: true, LetterSpacing: 2);
+                        Anchor: (Height: 14);
+                    }
+
+                    Group { Anchor: (Height: 1); Background: #ffffff(0.07); }
+                    Group { Anchor: (Height: 6); }
+
+                    Label #PriestStatusLabel {
+                        Text: "No church placed";
+                        Style: (FontSize: 16, TextColor: #ffffff, RenderBold: true);
+                        Anchor: (Height: 22);
+                    }
+
+                    Group { Anchor: (Height: 4); }
+
+                    Label #PriestStatusLine1 {
+                        Text: "";
+                        Style: (FontSize: 11, TextColor: #9fb6d3);
+                        Anchor: (Height: 16);
+                    }
+
+                    Label #PriestStatusLine2 {
+                        Text: "";
+                        Style: (FontSize: 11, TextColor: #9fb6d3);
+                        Anchor: (Height: 16);
+                    }
+
+                    Label #PriestStatusLine3 {
+                        Text: "";
+                        Style: (FontSize: 11, TextColor: #9fb6d3);
+                        Anchor: (Height: 16);
+                    }
+
+                    Label #PriestCooldownLabel {
+                        Text: "";
+                        Style: (FontSize: 11, TextColor: #ff6666, RenderBold: true);
+                        Anchor: (Height: 16);
+                    }
+                }
+            }
+
+            Group { Anchor: (Height: 10); }
+
+            // ===== ACTIONS CARD =====
+            Group {
+                LayoutMode: Top;
+                Background: #0b141f(0.88);
+                Padding: (Full: 14);
+                FlexWeight: 1;
+
+                Group {
+                    Anchor: (Width: 3, Top: 0, Left: 0, Bottom: 0);
+                    Background: #4fd7f7;
+                }
+
+                Group {
+                    LayoutMode: Top;
+                    Padding: (Left: 12);
+                    FlexWeight: 1;
+
+                    Label {
+                        Text: "ACTIONS";
+                        Style: (FontSize: 10, TextColor: #4fd7f7, RenderBold: true, LetterSpacing: 2);
+                        Anchor: (Height: 14);
+                    }
+
+                    Group { Anchor: (Height: 1); Background: #ffffff(0.07); }
+                    Group { Anchor: (Height: 8); }
+
+                    // Place Church row
+                    Group {
+                        LayoutMode: Left;
+                        Anchor: (Height: 44);
+                        Padding: (Full: 4);
+                        Background: #0d1a2a(0.70);
+
+                        Group {
+                            FlexWeight: 1;
+                            LayoutMode: Top;
+                            Padding: (Left: 8);
+
+                            Label {
+                                Text: "Place Church";
+                                Style: (FontSize: 13, TextColor: #ffc300, RenderBold: true, VerticalAlignment: Center);
+                                Anchor: (Height: 16);
+                            }
+                            Label {
+                                Text: "Builds a church at your current location.";
+                                Style: (FontSize: 10, TextColor: #9fb6d3, VerticalAlignment: Center);
+                                Anchor: (Height: 14);
+                            }
+                        }
+
+                        Group { Anchor: (Width: 8); }
+
+                        $C.@TextButton #PriestPlaceButton {
+                            Text: "PLACE";
+                            Anchor: (Height: 32, Width: 90);
+                            Padding: (Horizontal: 6);
+                            Style: @PriestMenuButton;
+                        }
+                    }
+
+                    Group { Anchor: (Height: 6); }
+
+                    // Remove Church row
+                    Group {
+                        LayoutMode: Left;
+                        Anchor: (Height: 44);
+                        Padding: (Full: 4);
+                        Background: #0d1a2a(0.70);
+
+                        Group {
+                            FlexWeight: 1;
+                            LayoutMode: Top;
+                            Padding: (Left: 8);
+
+                            Label {
+                                Text: "Remove Church";
+                                Style: (FontSize: 13, TextColor: #ffc300, RenderBold: true, VerticalAlignment: Center);
+                                Anchor: (Height: 16);
+                            }
+                            Label {
+                                Text: "Removes your church and restores terrain.";
+                                Style: (FontSize: 10, TextColor: #9fb6d3, VerticalAlignment: Center);
+                                Anchor: (Height: 14);
+                            }
+                        }
+
+                        Group { Anchor: (Width: 8); }
+
+                        $C.@TextButton #PriestRemoveButton {
+                            Text: "REMOVE";
+                            Anchor: (Height: 32, Width: 90);
+                            Padding: (Horizontal: 6);
+                            Style: @PriestMenuButton;
+                        }
+                    }
+
+                    Group { Anchor: (Height: 6); }
+
+                    // Refresh row
+                    Group {
+                        LayoutMode: Left;
+                        Anchor: (Height: 44);
+                        Padding: (Full: 4);
+                        Background: #0d1a2a(0.70);
+
+                        Group {
+                            FlexWeight: 1;
+                            LayoutMode: Top;
+                            Padding: (Left: 8);
+
+                            Label {
+                                Text: "Refresh Status";
+                                Style: (FontSize: 13, TextColor: #ffc300, RenderBold: true, VerticalAlignment: Center);
+                                Anchor: (Height: 16);
+                            }
+                            Label {
+                                Text: "Reload the church status display.";
+                                Style: (FontSize: 10, TextColor: #9fb6d3, VerticalAlignment: Center);
+                                Anchor: (Height: 14);
+                            }
+                        }
+
+                        Group { Anchor: (Width: 8); }
+
+                        $C.@TextButton #PriestRefreshButton {
+                            Text: "REFRESH";
+                            Anchor: (Height: 32, Width: 90);
+                            Padding: (Horizontal: 6);
+                            Style: @PriestMenuButton;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

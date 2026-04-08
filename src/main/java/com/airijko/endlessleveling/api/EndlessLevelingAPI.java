@@ -92,6 +92,14 @@ public final class EndlessLevelingAPI {
     // Parameters: (playerUuid, adjustedXpAmount).
     private final List<BiConsumer<UUID, Double>> xpGrantListeners = new CopyOnWriteArrayList<>();
 
+    // Pre-teleport listeners — notified just before a player is teleported to
+    // another world. Allows mods to clean up transient ECS state (e.g. mounts).
+    // Parameter: playerUuid.
+    private final List<java.util.function.Consumer<UUID>> preTeleportListeners = new CopyOnWriteArrayList<>();
+
+    // Combat tags — tracks last time each player dealt or received entity damage.
+    private final ConcurrentHashMap<UUID, Long> combatTags = new ConcurrentHashMap<>();
+
     // Per-entity XP multiplier — external mods can register a multiplier for specific entities.
     private final ConcurrentHashMap<Integer, Double> entityXpMultipliers = new ConcurrentHashMap<>();
 
@@ -1257,6 +1265,81 @@ public final class EndlessLevelingAPI {
     public void removeXpGrantListener(BiConsumer<UUID, Double> listener) {
         if (listener != null) {
             xpGrantListeners.remove(listener);
+        }
+    }
+
+    // ----------------------
+    // Pre-teleport listeners
+    // ----------------------
+
+    /**
+     * Register a listener that is called just before a player is teleported to a
+     * different world. Mods can use this to clean up transient entity state such
+     * as mount components or visual effects that would become invalid after the
+     * world transfer.
+     *
+     * <p>The callback receives the UUID of the player about to be teleported.</p>
+     */
+    public void addPreTeleportListener(java.util.function.Consumer<UUID> listener) {
+        if (listener != null) {
+            preTeleportListeners.add(listener);
+        }
+    }
+
+    /** Remove a previously registered pre-teleport listener. */
+    public void removePreTeleportListener(java.util.function.Consumer<UUID> listener) {
+        if (listener != null) {
+            preTeleportListeners.remove(listener);
+        }
+    }
+
+    // ----------------------
+    // Combat tags
+    // ----------------------
+
+    /**
+     * Mark a player as being in combat right now. Called by damage systems
+     * whenever a player deals or receives entity-sourced damage.
+     */
+    public void markInCombat(UUID uuid) {
+        if (uuid != null) {
+            combatTags.put(uuid, System.currentTimeMillis());
+        }
+    }
+
+    /**
+     * Returns {@code true} if the player was in combat within the given window.
+     *
+     * @param uuid     the player UUID
+     * @param windowMs combat window in milliseconds (e.g. 10 000 for 10 s)
+     */
+    public boolean isInCombat(UUID uuid, long windowMs) {
+        if (uuid == null) return false;
+        Long last = combatTags.get(uuid);
+        return last != null && (System.currentTimeMillis() - last) < windowMs;
+    }
+
+    /** Clear the combat tag for a player (e.g. on disconnect). */
+    public void clearCombatTag(UUID uuid) {
+        if (uuid != null) {
+            combatTags.remove(uuid);
+        }
+    }
+
+    /**
+     * Called by teleport code before sending a player to another world.
+     * External mods should not call this directly.
+     */
+    public void notifyPreTeleportListeners(UUID uuid) {
+        if (uuid == null || preTeleportListeners.isEmpty()) {
+            return;
+        }
+        for (java.util.function.Consumer<UUID> listener : preTeleportListeners) {
+            try {
+                listener.accept(uuid);
+            } catch (Exception ignored) {
+                // Don't let a broken listener crash teleport processing.
+            }
         }
     }
 

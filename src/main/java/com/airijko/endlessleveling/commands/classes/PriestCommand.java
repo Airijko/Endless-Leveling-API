@@ -18,6 +18,7 @@ import javax.annotation.Nonnull;
  * <p>
  * Subcommands:
  * <ul>
+ *   <li>/priest menu — open the priest church menu GUI</li>
  *   <li>/priest setup church — place your church at your location</li>
  *   <li>/priest undo church — remove your church and restore terrain</li>
  *   <li>/priest info — view your church placement status</li>
@@ -28,6 +29,7 @@ public class PriestCommand extends AbstractPlayerCommand {
 
     public PriestCommand(ClassManager classManager, PlayerDataManager playerDataManager) {
         super("priest", "Priest class commands");
+        this.addSubCommand(new PriestMenuCommand(classManager, playerDataManager));
         this.addSubCommand(new PriestSetupCommand(classManager, playerDataManager));
         this.addSubCommand(new PriestUndoCommand(classManager, playerDataManager));
         this.addSubCommand(new PriestInfoCommand(classManager, playerDataManager));
@@ -46,6 +48,9 @@ public class PriestCommand extends AbstractPlayerCommand {
                            @Nonnull PlayerRef senderRef,
                            @Nonnull World world) {
         senderRef.sendMessage(Message.raw("=== Priest Commands ===").color("#ffd700"));
+        senderRef.sendMessage(Message.join(
+                Message.raw("  /priest menu").color("#ffc300"),
+                Message.raw(" — Open the church menu").color("#9fb6d3")));
         senderRef.sendMessage(Message.join(
                 Message.raw("  /priest setup church").color("#ffc300"),
                 Message.raw(" — Place your church").color("#9fb6d3")));

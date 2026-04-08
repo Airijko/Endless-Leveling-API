@@ -1,0 +1,36 @@
+Button #MermaidsAddonCard {
+    Anchor: (Width: 250, Height: 312, Right: 12);
+    LayoutMode: Top;
+    Background: #0b141f(0.92);
+    Padding: (Full: 14);
+
+    Group {
+        Anchor: (Height: 118, Bottom: 14);
+        Background: #163a4a;
+        Padding: (Left: 12, Right: 12, Top: 10, Bottom: 10);
+
+        Label {
+            Text: "COMMUNITY ADDON";
+            Anchor: (Height: 16);
+            Style: (FontSize: 10, TextColor: #e6eff9, RenderBold: true, LetterSpacing: 1);
+        }
+
+        Label {
+            Text: "Mermaids";
+            Anchor: (Bottom: 4, Height: 40);
+            Style: (FontSize: 20, TextColor: #ffffff, RenderBold: true, Wrap: true);
+        }
+    }
+
+    Label {
+        Text: "By Siren";
+        Anchor: (Height: 18, Bottom: 8);
+        Style: (FontSize: 11, TextColor: #6bd3ff, RenderBold: true, VerticalAlignment: Center);
+    }
+
+    Label {
+        Text: "Adds aquatic mermaid content as a community-built addon for Endless Leveling worlds.";
+        FlexWeight: 1;
+        Style: (FontSize: 12, TextColor: #bdd0e8, Wrap: true);
+    }
+}

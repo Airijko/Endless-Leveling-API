@@ -23,6 +23,8 @@ public class AddonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
     private static final String PATREON_URL = "https://www.patreon.com/cw/airijko";
     private static final String STARKY_MJOLNIR_URL = "https://www.curseforge.com/hytale/mods/starky-mjolnir";
+    private static final String ROGUETALE_URL = "https://www.curseforge.com/hytale/mods/roguetale";
+    private static final String MERMAIDS_URL = "https://www.curseforge.com/hytale/mods/mermaids";
     private static final String FILTER_ALL = "all";
     private static final String FILTER_MOD_PARTNERS = "mod_partners";
     private static final String FILTER_COMMUNITY = "community";
@@ -57,12 +59,19 @@ public class AddonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             "Common/UI/Custom/Pages/Addons/Cards/ModPartners",
             "Pages/Addons/Cards/ModPartners",
             3);
+        ModularCardUiAppender.appendFolder(ui,
+            "#CommunityAddonCards",
+            "Common/UI/Custom/Pages/Addons/Cards/Community",
+            "Pages/Addons/Cards/Community",
+            3);
         events.addEventBinding(Activating, "#AddonsPatreonButton", of("Action", "addons:patreon"), false);
         events.addEventBinding(Activating, "#ShowAllAddonsButton", of("Action", "addons:filter:all"), false);
         events.addEventBinding(Activating, "#ShowModPartnersButton", of("Action", "addons:filter:mod_partners"), false);
         events.addEventBinding(Activating, "#ShowCommunityAddonsButton", of("Action", "addons:filter:community"), false);
         events.addEventBinding(Activating, "#ShowPartnerExtensionsButton", of("Action", "addons:filter:partner_extensions"), false);
         events.addEventBinding(Activating, "#StarkysMjolnirCard", of("Action", "addons:partner:starky_mjolnir"), false);
+        events.addEventBinding(Activating, "#RoguetaleAddonCard", of("Action", "addons:community:roguetale"), false);
+        events.addEventBinding(Activating, "#MermaidsAddonCard", of("Action", "addons:community:mermaids"), false);
 
         applySectionFilter(ui, getCurrentFilter());
 
@@ -91,6 +100,18 @@ public class AddonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         if ("addons:partner:starky_mjolnir".equalsIgnoreCase(data.action)) {
             playerRef.sendMessage(Lang.message("ui.addons.starky.prompt").color("#89c4ff"));
             playerRef.sendMessage(Lang.message("ui.addons.starky.label").link(STARKY_MJOLNIR_URL).color("#ffd08a"));
+            return;
+        }
+
+        if ("addons:community:roguetale".equalsIgnoreCase(data.action)) {
+            playerRef.sendMessage(Lang.message("ui.addons.roguetale.prompt").color("#c79bff"));
+            playerRef.sendMessage(Lang.message("ui.addons.roguetale.label").link(ROGUETALE_URL).color("#ffd08a"));
+            return;
+        }
+
+        if ("addons:community:mermaids".equalsIgnoreCase(data.action)) {
+            playerRef.sendMessage(Lang.message("ui.addons.mermaids.prompt").color("#6bd3ff"));
+            playerRef.sendMessage(Lang.message("ui.addons.mermaids.label").link(MERMAIDS_URL).color("#ffd08a"));
             return;
         }
 
@@ -127,6 +148,7 @@ public class AddonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
     private static void applySectionFilter(UICommandBuilder ui, String filter) {
         boolean showCore = FILTER_ALL.equals(filter);
+        boolean showCommunity = FILTER_ALL.equals(filter) || FILTER_COMMUNITY.equals(filter);
         boolean showPartners = FILTER_ALL.equals(filter)
                 || FILTER_MOD_PARTNERS.equals(filter)
                 || FILTER_PARTNER_EXTENSIONS.equals(filter);
@@ -134,11 +156,13 @@ public class AddonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         boolean showPartnerExtensions = FILTER_ALL.equals(filter) || FILTER_PARTNER_EXTENSIONS.equals(filter);
 
         ui.set("#CoreAddonsSection.Visible", showCore);
-        ui.set("#PartnerAddonsSection.Visible", showPartners);
-        ui.set("#CoreToPartnersSpacer.Visible", showCore && showPartners);
+        ui.set("#PartnerAddonsSection.Visible", showPartners || showCommunity);
+        ui.set("#CoreToPartnersSpacer.Visible", showCore && (showPartners || showCommunity));
         ui.set("#ModPartnersSection.Visible", showModPartners);
         ui.set("#ModPartnersToExtensionsSpacer.Visible", showModPartners && showPartnerExtensions);
         ui.set("#PartnerExtensionsSection.Visible", showPartnerExtensions);
+        ui.set("#PartnersToCommunitySpacer.Visible", (showModPartners || showPartnerExtensions) && showCommunity);
+        ui.set("#CommunityAddonsSection.Visible", showCommunity);
 
         if (FILTER_MOD_PARTNERS.equals(filter)) {
             ui.set("#AddonSectionStatus.Text", Lang.tr("ui.addons.filter.mod_partners", "Showing: Mod Partners"));

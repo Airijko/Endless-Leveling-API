@@ -1,5 +1,70 @@
 # Endless Leveling - Update Log
 
+## 2026-04-08 — 7.4 (compared to 7.3.4)
+
+### Highlights
+
+- New **Bard** class with playable in-world music and a Bard Music UI page.
+- **Priest** rework: church setup/management commands and a full church-building flow.
+- Major UI memory leak fixes via a new `SafeUICommandBuilder` wrapper.
+- Necromancer "Army of the Dead" passive overhaul plus haste system fixes.
+- Removed the NameplateBuilder compatibility layer (no longer maintained).
+- External-mod API additions: `ELNotificationType`, pre-teleport listeners, combat tags.
+- New community addon entries (Roguetale, Mermaids) added to the in-game Addons UI.
+
+### New Class — Bard
+
+- New `bard` class tier set: `bard`, `bard_elite`, `bard_exalted`, `bard_legendary`, `bard_master`.
+- New commands: `/bard`, `/bard play`, `/bard song`, `/bard music`, `/bard stop` and a `BardClassCheck` gate so only Bards can use them.
+- New `BardSongRegistry` and `BardMusicPage` UI for browsing and triggering songs.
+- Bundled assets: `Common/Sounds/Bard/bridal_chorus.ogg`, `BardMusicPage.ui`, `SongRow.ui`, `ObjectivePanelContainer.png`, and `SFX_EL_Bard_BridalChorus.json`.
+- Bard reworked again in a follow-up commit alongside the Priest rework (`Bard and Priest Rework`).
+
+### Priest / Church System
+
+- New `ChurchManager` (~600 LOC) plus admin and player-facing commands:
+  - `/priest`, `/priest setup`, `/priest info`, `/priest undo`, `/priest admin`, `/priest admin remove`.
+  - `PriestClassCheck` restricts the commands to Priests.
+- Follow-up commit "Allow Churches to be setup" enables players to actually configure their churches end-to-end.
+- Updated `shiva-dungeons.json` world settings to support the new flow.
+
+### Necromancer & Combat Fixes
+
+- `ArmyOfTheDeadPassive` rewritten (~480 LOC of changes) and `ArmyOfTheDeadDeathSystem` updated to fix lingering ghoul / death issues.
+- `MobAugmentExecutor` and `MobDamageScalingSystem` hardened (~234 / ~82 LOC) to fix augment-driven crashes and bad damage scaling.
+- `MovementHasteSystem` fix for haste stacking issues introduced after 7.3.4.
+- `BuffingAuraPassive`, `PartyBuffingAuraPassive`, `PartyHealingDistributor`, `PartyShieldingAuraPassive`, `ShieldingAuraPassive` all touched as part of the buffing/aura cleanup.
+- New player-side toggles in `SettingsUIPage` and `PlayerSettings.ui` for the related effects.
+
+### Race & Class Stability
+
+- "Race Swap Fix" — `ClassManager` and `RaceManager` cleaned up to fix race swap edge cases.
+- Class/race definitions and `VersionRegistry` synced after the Bard/Priest work.
+
+### UI Memory-Leak Sweep (`Fixed UI Memory Leaks`)
+
+- Introduced `SafeUICommandBuilder` (~440 LOC) and routed every page through it:
+  - `AddonsUIPage`, `AugmentsChoosePage`, `AugmentsUIPage`, `ClassPathsUIPage`, `ClassesUIPage`, `DungeonsUIPage`, `LeaderboardsUIPage`, `PlayerHud`, `ProfileUIPage`, `RacePathsUIPage`, `RacesUIPage`, `SettingsUIPage`, `SkillsUIPage`, `SupportUIPage`.
+- Fixed severe `SkillsUIPage` warnings around skill points (unintended log spam).
+
+### NameplateBuilder Removed (`removed nameplatebuilder compat`)
+
+- Deleted `NameplateBuilderCompatibility.java` (~1,050 LOC) and all wiring in `EndlessLeveling`, `EndlessLevelingAPI`, `MobLevelingSystem`, `ArmyOfTheDeadPassive`, and `PlayerNameplateSystem`.
+- Removed the dependency from `manifest.json`.
+
+### External Mod API (7.3.5 + 7.3.6)
+
+- New [`ELNotificationType`](../src/main/java/com/airijko/endlessleveling/api/ELNotificationType.java) for notification routing across mods.
+- `EndlessLevelingAPI` additions:
+  - **Pre-teleport listeners** — `addPreTeleportListener` / `removePreTeleportListener` / `notifyPreTeleportListeners`. Lets external mods clean up transient ECS state (mounts, particles) right before a player is moved between worlds.
+  - **Combat tags** — `markInCombat`, `isInCombat(uuid, windowMs)`, `clearCombatTag` for shared combat-state tracking.
+  - Additional null guards and defensive copies across `AugmentExecutor`, `MobAugmentAnnouncer`, `CombatHookProcessor`, `LevelingManager`, `XpEventSystem`, `DungeonTierJoinNotificationListener`, `PlayerDataListener`, `PassiveManager`, `HealingAuraPassive`, `PartyMendingAuraPassive`, `SkillManager`, `PassiveRegenSystem`.
+
+### Addons UI
+
+- New community addon cards: **Roguetale** (Zbeve) and **Mermaids** (Siren), with their own filter section in the Addons page.
+- New community addon section/spacer in `AddonsPage.ui`, plus localization keys (`ui.addons.roguetale.*`, `ui.addons.mermaids.*`) translated across all 9 supported languages.
+
 ## 2026-03-11
 
 ### Augment Balance Pass

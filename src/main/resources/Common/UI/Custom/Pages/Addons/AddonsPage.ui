@@ -236,6 +236,37 @@ $C.@PageOverlay {
                                                 }
                                             }
                                         }
+
+                                        Group #PartnersToCommunitySpacer { Anchor: (Height: 24); }
+
+                                        Group #CommunityAddonsSection {
+                                            LayoutMode: Top;
+
+                                            Group #CommunityHeader {
+                                                LayoutMode: Top;
+                                                Background: #0b141f(0.88);
+                                                Padding: (Full: 18);
+
+                                                Label {
+                                                    Text: "Community Addons";
+                                                    Anchor: (Height: 24);
+                                                    Style: (FontSize: 18, TextColor: #ffffff, RenderBold: true);
+                                                }
+
+                                                Group { Anchor: (Height: 6); }
+
+                                                Label {
+                                                    Text: "Community-built addons that integrate with or complement Endless Leveling.";
+                                                    Style: (FontSize: 13, TextColor: #bfd0e4, Wrap: true);
+                                                }
+                                            }
+
+                                            Group { Anchor: (Height: 18); }
+
+                                            Group #CommunityAddonCards {
+                                                LayoutMode: Top;
+                                            }
+                                        }
                                     }
                                 }
                             }
