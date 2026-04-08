@@ -1,20 +1,26 @@
 package com.airijko.endlessleveling.commands.classes;
 
 import com.airijko.endlessleveling.classes.ClassManager;
+import com.airijko.endlessleveling.player.PlayerData;
 import com.airijko.endlessleveling.player.PlayerDataManager;
+import com.airijko.endlessleveling.ui.PriestMenuPage;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
 import com.hypixel.hytale.server.core.command.system.basecommands.AbstractPlayerCommand;
+import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import javax.annotation.Nonnull;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * /priest root command. Priest-class players use this to manage their church.
+ * Running /priest with no subcommand opens the church menu GUI.
  * <p>
  * Subcommands:
  * <ul>
@@ -27,8 +33,13 @@ import javax.annotation.Nonnull;
  */
 public class PriestCommand extends AbstractPlayerCommand {
 
+    private final ClassManager classManager;
+    private final PlayerDataManager playerDataManager;
+
     public PriestCommand(ClassManager classManager, PlayerDataManager playerDataManager) {
         super("priest", "Priest class commands");
+        this.classManager = classManager;
+        this.playerDataManager = playerDataManager;
         this.addSubCommand(new PriestMenuCommand(classManager, playerDataManager));
         this.addSubCommand(new PriestSetupCommand(classManager, playerDataManager));
         this.addSubCommand(new PriestUndoCommand(classManager, playerDataManager));
@@ -47,18 +58,34 @@ public class PriestCommand extends AbstractPlayerCommand {
                            @Nonnull Ref<EntityStore> ref,
                            @Nonnull PlayerRef senderRef,
                            @Nonnull World world) {
-        senderRef.sendMessage(Message.raw("=== Priest Commands ===").color("#ffd700"));
-        senderRef.sendMessage(Message.join(
-                Message.raw("  /priest menu").color("#ffc300"),
-                Message.raw(" — Open the church menu").color("#9fb6d3")));
-        senderRef.sendMessage(Message.join(
-                Message.raw("  /priest setup church").color("#ffc300"),
-                Message.raw(" — Place your church").color("#9fb6d3")));
-        senderRef.sendMessage(Message.join(
-                Message.raw("  /priest undo church").color("#ffc300"),
-                Message.raw(" — Remove your church").color("#9fb6d3")));
-        senderRef.sendMessage(Message.join(
-                Message.raw("  /priest info").color("#ffc300"),
-                Message.raw(" — Check church status").color("#9fb6d3")));
+        if (classManager == null || !classManager.isEnabled()) {
+            senderRef.sendMessage(Message.raw("Classes are currently disabled.").color("#ff6666"));
+            return;
+        }
+        if (playerDataManager == null) {
+            senderRef.sendMessage(Message.raw("Player data is unavailable right now.").color("#ff6666"));
+            return;
+        }
+
+        PlayerData data = playerDataManager.get(senderRef.getUuid());
+        if (data == null) {
+            data = playerDataManager.loadOrCreate(senderRef.getUuid(), senderRef.getUsername());
+        }
+        if (data == null) {
+            senderRef.sendMessage(Message.raw("Unable to load your player data.").color("#ff6666"));
+            return;
+        }
+
+        if (!PriestClassCheck.isPriest(classManager, data)) {
+            senderRef.sendMessage(Message.raw("Only Priests may use the church menu.").color("#ff6666"));
+            return;
+        }
+
+        Player player = context.senderAs(Player.class);
+
+        CompletableFuture.runAsync(() -> {
+            PriestMenuPage page = new PriestMenuPage(senderRef, CustomPageLifetime.CanDismiss);
+            player.getPageManager().openCustomPage(ref, store, page);
+        }, world);
     }
 }
