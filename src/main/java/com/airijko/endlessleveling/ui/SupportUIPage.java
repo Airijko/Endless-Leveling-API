@@ -43,7 +43,7 @@ public class SupportUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         NavUIHelper.applyNavVersion(ui, playerRef, "support",
                 "Common/UI/Custom/Pages/SupportPage.ui",
                 "#SupportTitle");
-        NavUIHelper.bindNavEvents(events);
+        NavUIHelper.bindNavEvents(events, "Common/UI/Custom/Pages/SupportPage.ui");
         events.addEventBinding(Activating, "#SupportDiscordButton", of("Action", "support:discord"), false);
 
         ui.set("#SupportTitleLabel.Text",

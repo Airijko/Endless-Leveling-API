@@ -94,7 +94,7 @@ public class SettingsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                                 "#SettingsTitle");
 
                 // Bind navigation on the left side
-                NavUIHelper.bindNavEvents(events);
+                NavUIHelper.bindNavEvents(events, "Common/UI/Custom/Pages/Settings/SettingsPage.ui");
 
                 // Determine admin status and hide config section for non-admins
                 isAdmin = OperatorHelper.hasAdministrativeAccess(playerRef);

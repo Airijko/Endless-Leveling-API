@@ -1,5 +1,5 @@
 $C = "../../Common.ui";
-$Nav = "../Nav/LeftNavPanel.ui";
+$Nav = "../Nav/TopNavBar.ui";
 
 @DownloadButtonStyle = TextButtonStyle(
     Default:  (Background: $C.@DefaultSquareButtonDefaultBackground,  LabelStyle: $C.@DefaultButtonLabelStyle),
@@ -10,21 +10,42 @@ $Nav = "../Nav/LeftNavPanel.ui";
 );
 
 $C.@PageOverlay {
-    $C.@DecoratedContainer {
+    Group {
+        // Middle stacks children top-to-bottom but centers the GROUP vertically,
+        // so the top navbar / main panels / footer navbar all sit centered on
+        // screen instead of pinned to the top.
+        LayoutMode: Middle;
+        Padding: (Vertical: 12);
+
+        // ====================== TOP NAVBAR (root, disconnected) ======================
+        Group {
+            LayoutMode: Middle;
+            Anchor: (Height: 92);
+
+            Group {
+                Anchor: (Width: 1280, Height: 92);
+                $Nav.@TopNavBar {}
+            }
+        }
+
+        Group { Anchor: (Height: 14); }
+
+        // ====================== MAIN CONTENT ROW ======================
+        Group {
+            LayoutMode: Middle;
+
+    $Nav.@ObjectiveContainer {
         Anchor: (Width: 1000, Height: 700);
         #Title {
-            Group {
-                $C.@Title #DungeonsTitle {
-                    @Text = "ENDLESS LEVELING";
-                }
+            Label #DungeonsTitle {
+                Text: "ENDLESS LEVELING";
+                Style: $Nav.@PanelTitleStyle;
             }
         }
 
         #Content {
             LayoutMode: Left;
             Padding: (Full: 0);
-
-            $Nav.@LeftNavPanel {}
 
             Group #RightPanel {
                 FlexWeight: 1;
@@ -144,6 +165,21 @@ $C.@PageOverlay {
                         }
                     }
                 }
+            }
+        }
+    }
+        }
+
+        Group { Anchor: (Height: 14); }
+
+        // ====================== FOOTER NAVBAR (root, disconnected) ======================
+        Group {
+            LayoutMode: Middle;
+            Anchor: (Height: 92);
+
+            Group {
+                Anchor: (Width: 480, Height: 92);
+                $Nav.@BottomNavBar {}
             }
         }
     }

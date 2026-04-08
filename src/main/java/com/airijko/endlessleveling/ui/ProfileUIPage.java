@@ -106,9 +106,13 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         ui.append(partnerAuthorized
             ? "Pages/Profile/ProfilePagePartner.ui"
             : "Pages/Profile/ProfilePage.ui");
-        NavUIHelper.bindNavEvents(events);
+        NavUIHelper.bindNavEvents(events, partnerAuthorized
+            ? "Common/UI/Custom/Pages/Profile/ProfilePagePartner.ui"
+            : "Common/UI/Custom/Pages/Profile/ProfilePage.ui");
         NavUIHelper.applyNavVersion(ui, playerRef, "profile",
-            "Common/UI/Custom/Pages/Profile/ProfilePage.ui",
+            partnerAuthorized
+                ? "Common/UI/Custom/Pages/Profile/ProfilePagePartner.ui"
+                : "Common/UI/Custom/Pages/Profile/ProfilePage.ui",
             "#ProfileTitle");
 
         PlayerData playerData = resolvePlayerData();

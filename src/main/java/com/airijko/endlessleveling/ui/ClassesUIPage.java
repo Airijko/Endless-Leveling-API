@@ -98,7 +98,7 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             "Common/UI/Custom/Pages/Classes/ClassesPage.ui",
             "#ClassTitle");
         applyStaticLabels(ui);
-        NavUIHelper.bindNavEvents(events);
+        NavUIHelper.bindNavEvents(events, "Common/UI/Custom/Pages/Classes/ClassesPage.ui");
 
         events.addEventBinding(Activating, "#ConfirmPrimaryButton", of("Action", "class:confirm_primary"), false);
         events.addEventBinding(Activating, "#ConfirmSecondaryButton", of("Action", "class:confirm_secondary"), false);

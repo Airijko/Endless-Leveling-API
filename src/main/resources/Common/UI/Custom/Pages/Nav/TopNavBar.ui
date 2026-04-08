@@ -1,0 +1,472 @@
+$C = "../../Common.ui";
+
+@TopNavLabelDefault = LabelStyle(
+    FontSize: 16,
+    RenderBold: true,
+    RenderUppercase: true,
+    LetterSpacing: 1,
+    TextColor: #d6e4f7,
+    VerticalAlignment: Center,
+    HorizontalAlignment: Center,
+);
+
+@TopNavButtonStyle = ButtonStyle(
+    Default: (Background: PatchStyle(TexturePath: "../../Tiles/TileDefault2x.png", Border: 16, Color: #ffffff(0.95))),
+    Hovered: (Background: PatchStyle(TexturePath: "../../Tiles/TileDefault2x.png", Border: 16, Color: #ffffff)),
+    Pressed: (Background: PatchStyle(TexturePath: "../../Tiles/TileDefault2x.png", Border: 16, Color: #c8d3e6)),
+    Disabled: (Background: PatchStyle(TexturePath: "../../Tiles/TileDefault2x.png", Border: 16, Color: #ffffff(0.35))),
+    Sounds: $C.@ButtonSounds,
+);
+
+@TopNavButtonStyleSelected = ButtonStyle(
+    Default: (Background: PatchStyle(TexturePath: "../../Tiles/TileDefault2x.png", Border: 16, Color: #ffe27a)),
+    Hovered: (Background: PatchStyle(TexturePath: "../../Tiles/TileDefault2x.png", Border: 16, Color: #ffefa0)),
+    Pressed: (Background: PatchStyle(TexturePath: "../../Tiles/TileDefault2x.png", Border: 16, Color: #e8cc60)),
+    Disabled: (Background: PatchStyle(TexturePath: "../../Tiles/TileDefault2x.png", Border: 16, Color: #ffffff(0.35))),
+    Sounds: $C.@ButtonSounds,
+);
+
+@NavButtonFillColor = #1c283e(0.92);
+@NavButtonBorderColor = #34352f;
+@NavButtonBorderInset = 2;
+
+// ---- Sizing ----
+@TopNavBarHeight = 92;
+@TopNavButtonWidth = 188;
+@TopNavButtonHeight = 76;
+@TopNavButtonGap = 10;
+@TopNavIconSize = 44;
+
+// =============================================================
+// Shared title label style. Matches the EndlessMarriage panel
+// headings ("WITNESSES" / "ENDLESS MARRIAGE" / "AFFECTION") so
+// every side / main panel in the mod has identical themed
+// gold typography.
+// =============================================================
+@PanelTitleStyle = LabelStyle(
+    FontSize: 16,
+    RenderBold: true,
+    RenderUppercase: true,
+    LetterSpacing: 2,
+    TextColor: #f0c040,
+    HorizontalAlignment: Center,
+    VerticalAlignment: Center,
+);
+
+// Color of the 1px separator drawn under each panel title.
+@PanelTitleSeparatorColor = #7a5a10;
+
+// =============================================================
+// Drop-in replacement for $C.@DecoratedContainer that uses the
+// ObjectivePanelContainer asset. Same #Title / #Content slots so
+// existing pages can swap by replacing the symbol name only.
+// Path is relative to THIS file (Pages/Nav/), so it resolves
+// correctly regardless of where the page using it lives.
+//
+// Spacing matches the EndlessMarriage panels:
+//   Padding: 4 horizontal, 16 vertical around the panel
+//   Title row: 26px tall
+//   1px separator (inset 4px horizontally) + 4px gap before #Content
+// =============================================================
+@ObjectiveContainer = Group {
+    LayoutMode: Top;
+    Background: (TexturePath: "../../Hud/ObjectivePanelContainer.png", Border: 15);
+    Padding: (Horizontal: 4, Vertical: 16);
+
+    Group #Title {
+        Anchor: (Height: 26);
+        LayoutMode: Middle;
+    }
+
+    Group {
+        Anchor: (Height: 1);
+        Padding: (Horizontal: 4);
+        Group { Background: @PanelTitleSeparatorColor; }
+    }
+    Group { Anchor: (Height: 4); }
+
+    Group #Content {
+        FlexWeight: 1;
+    }
+};
+
+// =============================================================
+// Top primary navbar (Profile / Skills / Augments / Gates / Dungeons / Addons)
+// Per button, layered back-to-front:
+//   1. Outer Group  → tile-patch tinted with @NavButtonBorderColor
+//                     (this gives the rounded-corner colored border)
+//   2. Inner Group  → solid @NavButtonFillColor, inset by @NavButtonBorderInset
+//                     so the colored border shows around its edges
+//   3. Button       → fills the inner Group, holds tile-patch click-state outline
+//   4. Icon + Label → drawn last as Button children
+// =============================================================
+@TopNavBar = Group {
+    LayoutMode: Top;
+    Anchor: (Height: @TopNavBarHeight);
+    Padding: (Vertical: 8);
+
+    Group {
+        LayoutMode: Center;
+
+        Group {
+            LayoutMode: Left;
+
+            // ---- PROFILE ----
+            Group {
+                Anchor: (MinWidth: @TopNavButtonWidth, Height: @TopNavButtonHeight);
+                Background: PatchStyle(TexturePath: "../../Common/ColorPickerButton.png", Border: 14, Color: @NavButtonBorderColor);
+
+                Group {
+                    Anchor: (Left: @NavButtonBorderInset, Right: @NavButtonBorderInset, Top: @NavButtonBorderInset, Bottom: @NavButtonBorderInset);
+                    Background: PatchStyle(TexturePath: "../../Common/ColorPickerFill.png", Border: 14, Color: @NavButtonFillColor);
+
+                    Button #NavProfile {
+                        Anchor: (Top: 0, Bottom: 0);
+                        Style: @TopNavButtonStyle;
+
+                        Group {
+                            LayoutMode: Left;
+                            Padding: (Horizontal: 14);
+
+                            Group {
+                                Anchor: (Width: 52, Height: 52);
+                                LayoutMode: Middle;
+                                Group #NavProfileIcon {
+                                    Anchor: (Width: @TopNavIconSize, Height: @TopNavIconSize);
+                                    Background: (TexturePath: "Icons/NavProfileIcon.png");
+                                }
+                            }
+
+                            Group { Anchor: (Width: 8); }
+
+                            Group {
+                                LayoutMode: Middle;
+                                Padding: (Right: 6);
+                                Label #NavProfileLabel {
+                                    Text: "PROFILE";
+                                    Style: @TopNavLabelDefault;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            Group { Anchor: (Width: @TopNavButtonGap); }
+
+            // ---- SKILLS ----
+            Group {
+                Anchor: (MinWidth: @TopNavButtonWidth, Height: @TopNavButtonHeight);
+                Background: PatchStyle(TexturePath: "../../Common/ColorPickerButton.png", Border: 14, Color: @NavButtonBorderColor);
+
+                Group {
+                    Anchor: (Left: @NavButtonBorderInset, Right: @NavButtonBorderInset, Top: @NavButtonBorderInset, Bottom: @NavButtonBorderInset);
+                    Background: PatchStyle(TexturePath: "../../Common/ColorPickerFill.png", Border: 14, Color: @NavButtonFillColor);
+
+                    Button #NavSkills {
+                        Anchor: (Top: 0, Bottom: 0);
+                        Style: @TopNavButtonStyle;
+
+                        Group {
+                            LayoutMode: Left;
+                            Padding: (Horizontal: 14);
+
+                            Group {
+                                Anchor: (Width: 52, Height: 52);
+                                LayoutMode: Middle;
+                                Group #NavSkillsIcon {
+                                    Anchor: (Width: @TopNavIconSize, Height: @TopNavIconSize);
+                                    Background: (TexturePath: "Icons/NavSkillsIcon.png");
+                                }
+                            }
+
+                            Group { Anchor: (Width: 8); }
+
+                            Group {
+                                LayoutMode: Middle;
+                                Padding: (Right: 6);
+                                Label #NavSkillsLabel {
+                                    Text: "SKILLS";
+                                    Style: @TopNavLabelDefault;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            Group { Anchor: (Width: @TopNavButtonGap); }
+
+            // ---- AUGMENTS ----
+            Group {
+                Anchor: (MinWidth: @TopNavButtonWidth, Height: @TopNavButtonHeight);
+                Background: PatchStyle(TexturePath: "../../Common/ColorPickerButton.png", Border: 14, Color: @NavButtonBorderColor);
+
+                Group {
+                    Anchor: (Left: @NavButtonBorderInset, Right: @NavButtonBorderInset, Top: @NavButtonBorderInset, Bottom: @NavButtonBorderInset);
+                    Background: PatchStyle(TexturePath: "../../Common/ColorPickerFill.png", Border: 14, Color: @NavButtonFillColor);
+
+                    Button #NavAugments {
+                        Anchor: (Top: 0, Bottom: 0);
+                        Style: @TopNavButtonStyle;
+
+                        Group {
+                            LayoutMode: Left;
+                            Padding: (Horizontal: 14);
+
+                            Group {
+                                Anchor: (Width: 52, Height: 52);
+                                LayoutMode: Middle;
+                                Group #NavAugmentsIcon {
+                                    Anchor: (Width: @TopNavIconSize, Height: @TopNavIconSize);
+                                    Background: (TexturePath: "Icons/NavAugmentsIcon.png");
+                                }
+                            }
+
+                            Group { Anchor: (Width: 8); }
+
+                            Group {
+                                LayoutMode: Middle;
+                                Padding: (Right: 6);
+                                Label #NavAugmentsLabel {
+                                    Text: "AUGMENTS";
+                                    Style: @TopNavLabelDefault;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            Group { Anchor: (Width: @TopNavButtonGap); }
+
+            // ---- GATES ----
+            Group {
+                Anchor: (MinWidth: @TopNavButtonWidth, Height: @TopNavButtonHeight);
+                Background: PatchStyle(TexturePath: "../../Common/ColorPickerButton.png", Border: 14, Color: @NavButtonBorderColor);
+
+                Group {
+                    Anchor: (Left: @NavButtonBorderInset, Right: @NavButtonBorderInset, Top: @NavButtonBorderInset, Bottom: @NavButtonBorderInset);
+                    Background: PatchStyle(TexturePath: "../../Common/ColorPickerFill.png", Border: 14, Color: @NavButtonFillColor);
+
+                    Button #NavGates {
+                        Anchor: (Top: 0, Bottom: 0);
+                        Style: @TopNavButtonStyle;
+
+                        Group {
+                            LayoutMode: Left;
+                            Padding: (Horizontal: 14);
+
+                            Group {
+                                Anchor: (Width: 52, Height: 52);
+                                LayoutMode: Middle;
+                                Group #NavGatesIcon {
+                                    Anchor: (Width: @TopNavIconSize, Height: @TopNavIconSize);
+                                    Background: (TexturePath: "Icons/NavGatesIcon.png");
+                                }
+                            }
+
+                            Group { Anchor: (Width: 8); }
+
+                            Group {
+                                LayoutMode: Middle;
+                                Padding: (Right: 6);
+                                Label #NavGatesLabel {
+                                    Text: "GATES";
+                                    Style: @TopNavLabelDefault;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            Group { Anchor: (Width: @TopNavButtonGap); }
+
+            // ---- DUNGEONS ----
+            Group {
+                Anchor: (MinWidth: @TopNavButtonWidth, Height: @TopNavButtonHeight);
+                Background: PatchStyle(TexturePath: "../../Common/ColorPickerButton.png", Border: 14, Color: @NavButtonBorderColor);
+
+                Group {
+                    Anchor: (Left: @NavButtonBorderInset, Right: @NavButtonBorderInset, Top: @NavButtonBorderInset, Bottom: @NavButtonBorderInset);
+                    Background: PatchStyle(TexturePath: "../../Common/ColorPickerFill.png", Border: 14, Color: @NavButtonFillColor);
+
+                    Button #NavDungeons {
+                        Anchor: (Top: 0, Bottom: 0);
+                        Style: @TopNavButtonStyle;
+
+                        Group {
+                            LayoutMode: Left;
+                            Padding: (Horizontal: 14);
+
+                            Group {
+                                Anchor: (Width: 52, Height: 52);
+                                LayoutMode: Middle;
+                                Group #NavDungeonsIcon {
+                                    Anchor: (Width: @TopNavIconSize, Height: @TopNavIconSize);
+                                    Background: (TexturePath: "Icons/NavDungeonsIcon.png");
+                                }
+                            }
+
+                            Group { Anchor: (Width: 8); }
+
+                            Group {
+                                LayoutMode: Middle;
+                                Padding: (Right: 6);
+                                Label #NavDungeonsLabel {
+                                    Text: "DUNGEONS";
+                                    Style: @TopNavLabelDefault;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            Group { Anchor: (Width: @TopNavButtonGap); }
+
+            // ---- ADDONS ----
+            Group {
+                Anchor: (MinWidth: @TopNavButtonWidth, Height: @TopNavButtonHeight);
+                Background: PatchStyle(TexturePath: "../../Common/ColorPickerButton.png", Border: 14, Color: @NavButtonBorderColor);
+
+                Group {
+                    Anchor: (Left: @NavButtonBorderInset, Right: @NavButtonBorderInset, Top: @NavButtonBorderInset, Bottom: @NavButtonBorderInset);
+                    Background: PatchStyle(TexturePath: "../../Common/ColorPickerFill.png", Border: 14, Color: @NavButtonFillColor);
+
+                    Button #NavAddons {
+                        Anchor: (Top: 0, Bottom: 0);
+                        Style: @TopNavButtonStyle;
+
+                        Group {
+                            LayoutMode: Left;
+                            Padding: (Horizontal: 14);
+
+                            Group {
+                                Anchor: (Width: 52, Height: 52);
+                                LayoutMode: Middle;
+                                Group #NavAddonsIcon {
+                                    Anchor: (Width: @TopNavIconSize, Height: @TopNavIconSize);
+                                    Background: (TexturePath: "Icons/NavAddonsIcon.png");
+                                }
+                            }
+
+                            Group { Anchor: (Width: 8); }
+
+                            Group {
+                                LayoutMode: Middle;
+                                Padding: (Right: 6);
+                                Label #NavAddonsLabel {
+                                    Text: "ADDONS";
+                                    Style: @TopNavLabelDefault;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+};
+
+// =============================================================
+// Footer secondary navbar (Support / Settings)
+// =============================================================
+@BottomNavBar = Group {
+    LayoutMode: Top;
+    Anchor: (Height: @TopNavBarHeight);
+    Padding: (Vertical: 8);
+
+    Group {
+        LayoutMode: Center;
+
+        Group {
+            LayoutMode: Left;
+
+            // ---- SUPPORT ----
+            Group {
+                Anchor: (MinWidth: @TopNavButtonWidth, Height: @TopNavButtonHeight);
+                Background: PatchStyle(TexturePath: "../../Common/ColorPickerButton.png", Border: 14, Color: @NavButtonBorderColor);
+
+                Group {
+                    Anchor: (Left: @NavButtonBorderInset, Right: @NavButtonBorderInset, Top: @NavButtonBorderInset, Bottom: @NavButtonBorderInset);
+                    Background: PatchStyle(TexturePath: "../../Common/ColorPickerFill.png", Border: 14, Color: @NavButtonFillColor);
+
+                    Button #NavSupport {
+                        Anchor: (Top: 0, Bottom: 0);
+                        Style: @TopNavButtonStyle;
+
+                        Group {
+                            LayoutMode: Left;
+                            Padding: (Horizontal: 14);
+
+                            Group {
+                                Anchor: (Width: 52, Height: 52);
+                                LayoutMode: Middle;
+                                Group #NavSupportIcon {
+                                    Anchor: (Width: @TopNavIconSize, Height: @TopNavIconSize);
+                                    Background: (TexturePath: "Icons/NavSupportIcon.png");
+                                }
+                            }
+
+                            Group { Anchor: (Width: 8); }
+
+                            Group {
+                                LayoutMode: Middle;
+                                Padding: (Right: 6);
+                                Label #NavSupportLabel {
+                                    Text: "SUPPORT";
+                                    Style: @TopNavLabelDefault;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            Group { Anchor: (Width: @TopNavButtonGap); }
+
+            // ---- SETTINGS ----
+            Group {
+                Anchor: (MinWidth: @TopNavButtonWidth, Height: @TopNavButtonHeight);
+                Background: PatchStyle(TexturePath: "../../Common/ColorPickerButton.png", Border: 14, Color: @NavButtonBorderColor);
+
+                Group {
+                    Anchor: (Left: @NavButtonBorderInset, Right: @NavButtonBorderInset, Top: @NavButtonBorderInset, Bottom: @NavButtonBorderInset);
+                    Background: PatchStyle(TexturePath: "../../Common/ColorPickerFill.png", Border: 14, Color: @NavButtonFillColor);
+
+                    Button #NavSettings {
+                        Anchor: (Top: 0, Bottom: 0);
+                        Style: @TopNavButtonStyle;
+
+                        Group {
+                            LayoutMode: Left;
+                            Padding: (Horizontal: 14);
+
+                            Group {
+                                Anchor: (Width: 52, Height: 52);
+                                LayoutMode: Middle;
+                                Group #NavSettingsIcon {
+                                    Anchor: (Width: @TopNavIconSize, Height: @TopNavIconSize);
+                                    Background: (TexturePath: "Icons/NavSettingsIcon.png");
+                                }
+                            }
+
+                            Group { Anchor: (Width: 8); }
+
+                            Group {
+                                LayoutMode: Middle;
+                                Padding: (Right: 6);
+                                Label #NavSettingsLabel {
+                                    Text: "SETTINGS";
+                                    Style: @TopNavLabelDefault;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+};

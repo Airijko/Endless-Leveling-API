@@ -56,7 +56,7 @@ public class LeaderboardsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Dat
         NavUIHelper.applyNavVersion(ui, playerRef, "leaderboards",
             "Common/UI/Custom/Pages/Leaderboards/LeaderboardsPage.ui",
             "#LeaderboardsTitle");
-        NavUIHelper.bindNavEvents(events);
+        NavUIHelper.bindNavEvents(events, "Common/UI/Custom/Pages/Leaderboards/LeaderboardsPage.ui");
 
         events.addEventBinding(Activating, "#SortByButton", of("Action", "lb:sort:field"), false);
         events.addEventBinding(Activating, "#SortOrderButton", of("Action", "lb:sort:order"), false);

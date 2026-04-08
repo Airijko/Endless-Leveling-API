@@ -1,0 +1,17 @@
+// Slot shim required by Buuz135:MultipleHUD (optional dependency).
+//
+// EndlessLeveling integrates with MultipleHUD via reflection in
+// MultipleHudCompatibility.java. When MultipleHUD is installed and we call
+// setCustomHud, the MultipleHUD runtime appends THIS document at the
+// case-sensitive jar path "Common/UI/Custom/HUD/MultipleHUD.ui" to register
+// the slot it renders custom HUDs into. Every mod that participates in the
+// MultipleHUD ecosystem ships an identical empty container at this exact
+// path.
+//
+// IMPORTANT: this file is staged outside of src/main/resources because the
+// existing mod folder lives at "Common/UI/Custom/Hud/" (capital H, lowercase
+// 'ud'). Windows NTFS cannot represent both "Hud/" and "HUD/" as separate
+// directories on disk, so we keep the source file here and let shadowJar
+// inject it into the jar at the uppercase HUD/ path. See build.gradle.
+
+Group #MultipleHUD {}

@@ -103,7 +103,7 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             "#AugmentsPageTitle");
         applyStaticLabels(ui);
         ui.set("#SearchInput.Value", this.searchQuery);
-        NavUIHelper.bindNavEvents(events);
+        NavUIHelper.bindNavEvents(events, "Common/UI/Custom/Pages/Augments/AugmentsPage.ui");
         events.addEventBinding(ValueChanged, "#SearchInput", of("@SearchQuery", "#SearchInput.Value"), false);
         events.addEventBinding(Activating, "#OpenAugmentsChooseButton", of("Action", "augment:open_choose"),
                 false);

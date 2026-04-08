@@ -75,8 +75,10 @@ public class RacePathsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> 
             @Nonnull Store<EntityStore> store) {
         SafeUICommandBuilder ui = new SafeUICommandBuilder(rawUi);
         ui.append("Pages/Races/RacePathsPage.ui");
-        NavUIHelper.applyNavVersion(ui, playerRef, "races");
-        NavUIHelper.bindNavEvents(events);
+        NavUIHelper.applyNavVersion(ui, playerRef, "races",
+            "Common/UI/Custom/Pages/Races/RacePathsPage.ui",
+            null);
+        NavUIHelper.bindNavEvents(events, "Common/UI/Custom/Pages/Races/RacePathsPage.ui");
 
         PlayerData data = loadPlayerData();
         RaceDefinition currentRace = data != null && raceManager != null ? raceManager.getPlayerRace(data) : null;

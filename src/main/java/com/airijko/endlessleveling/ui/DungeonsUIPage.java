@@ -79,7 +79,7 @@ public class DungeonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         NavUIHelper.applyNavVersion(ui, playerRef, "dungeons",
             "Common/UI/Custom/Pages/Dungeons/DungeonsPage.ui",
                 "#DungeonsTitle");
-        NavUIHelper.bindNavEvents(events);
+        NavUIHelper.bindNavEvents(events, "Common/UI/Custom/Pages/Dungeons/DungeonsPage.ui");
     }
 
     private void setBannerImage(@Nonnull UICommandBuilder ui,

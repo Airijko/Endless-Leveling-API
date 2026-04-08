@@ -48,6 +48,10 @@ public final class NavUIHelper {
                         "LeftNavButtonStyle");
         private static final Value<String> NAV_BUTTON_STYLE_SELECTED = Value.ref("Pages/Nav/LeftNavPanel.ui",
                         "LeftNavButtonStyleSelected");
+        private static final Value<String> TOP_NAV_BUTTON_STYLE = Value.ref("Pages/Nav/TopNavBar.ui",
+                        "TopNavButtonStyle");
+        private static final Value<String> TOP_NAV_BUTTON_STYLE_SELECTED = Value.ref("Pages/Nav/TopNavBar.ui",
+                        "TopNavButtonStyleSelected");
 
         private NavUIHelper() {
         }
@@ -76,28 +80,56 @@ public final class NavUIHelper {
                         @Nonnull String activeNav,
                         String pageResourcePath,
                         String pageTitleSelector) {
-                ui.set("#NavProfile.Text", Lang.tr(playerRef.getUuid(), "ui.nav.profile", "PROFILE"));
-                ui.set("#NavSkills.Text", Lang.tr(playerRef.getUuid(), "ui.nav.skills", "SKILLS"));
-                ui.set("#NavRaces.Text", Lang.tr(playerRef.getUuid(), "ui.nav.races", "RACES"));
-                ui.set("#NavClasses.Text", Lang.tr(playerRef.getUuid(), "ui.nav.classes", "CLASSES"));
-                ui.set("#NavAugments.Text", Lang.tr(playerRef.getUuid(), "ui.nav.augments", "AUGMENTS"));
-                ui.set("#NavDungeons.Text", Lang.tr(playerRef.getUuid(), "ui.nav.dungeons", "DUNGEONS"));
-                ui.set("#NavAddons.Text", Lang.tr(playerRef.getUuid(), "ui.nav.addons", "ADDONS"));
-                ui.set("#NavLeaderboards.Text", Lang.tr(playerRef.getUuid(), "ui.nav.leaderboards", "LEADERBOARDS"));
-                ui.set("#NavParty.Text", Lang.tr(playerRef.getUuid(), "ui.nav.party", "PARTY"));
+                boolean topNav = pageUsesTopNavBar(pageResourcePath);
 
-                boolean partyAvailable = false;
-                EndlessLeveling plugin = EndlessLeveling.getInstance();
-                if (plugin != null && plugin.getPartyManager() != null && plugin.getPartyManager().isAvailable()) {
-                        partyAvailable = true;
+                if (topNav) {
+                        // New top navbar layout: text labels live in dedicated #Nav<Name>Label widgets.
+                        ui.set("#NavProfileLabel.Text", Lang.tr(playerRef.getUuid(), "ui.nav.profile", "PROFILE"));
+                        ui.set("#NavSkillsLabel.Text", Lang.tr(playerRef.getUuid(), "ui.nav.skills", "SKILLS"));
+                        ui.set("#NavAugmentsLabel.Text", Lang.tr(playerRef.getUuid(), "ui.nav.augments", "AUGMENTS"));
+                        ui.set("#NavGatesLabel.Text", Lang.tr(playerRef.getUuid(), "ui.nav.gates", "GATES"));
+                        ui.set("#NavDungeonsLabel.Text", Lang.tr(playerRef.getUuid(), "ui.nav.dungeons", "DUNGEONS"));
+                        ui.set("#NavAddonsLabel.Text", Lang.tr(playerRef.getUuid(), "ui.nav.addons", "ADDONS"));
+                        ui.set("#NavSupportLabel.Text", Lang.tr(playerRef.getUuid(), "ui.nav.support", "SUPPORT"));
+                        ui.set("#NavSettingsLabel.Text", Lang.tr(playerRef.getUuid(), "ui.nav.settings", "SETTINGS"));
+                } else {
+                        // Legacy left navbar layout: each MenuItem renders its own Text directly.
+                        ui.set("#NavProfile.Text", Lang.tr(playerRef.getUuid(), "ui.nav.profile", "PROFILE"));
+                        ui.set("#NavSkills.Text", Lang.tr(playerRef.getUuid(), "ui.nav.skills", "SKILLS"));
+                        ui.set("#NavRaces.Text", Lang.tr(playerRef.getUuid(), "ui.nav.races", "RACES"));
+                        ui.set("#NavClasses.Text", Lang.tr(playerRef.getUuid(), "ui.nav.classes", "CLASSES"));
+                        ui.set("#NavAugments.Text", Lang.tr(playerRef.getUuid(), "ui.nav.augments", "AUGMENTS"));
+                        ui.set("#NavDungeons.Text", Lang.tr(playerRef.getUuid(), "ui.nav.dungeons", "DUNGEONS"));
+                        ui.set("#NavAddons.Text", Lang.tr(playerRef.getUuid(), "ui.nav.addons", "ADDONS"));
+                        ui.set("#NavLeaderboards.Text", Lang.tr(playerRef.getUuid(), "ui.nav.leaderboards", "LEADERBOARDS"));
+                        ui.set("#NavParty.Text", Lang.tr(playerRef.getUuid(), "ui.nav.party", "PARTY"));
+
+                        boolean partyAvailable = false;
+                        EndlessLeveling plugin = EndlessLeveling.getInstance();
+                        if (plugin != null && plugin.getPartyManager() != null && plugin.getPartyManager().isAvailable()) {
+                                partyAvailable = true;
+                        }
+                        ui.set("#NavParty.Visible", partyAvailable);
+
+                        ui.set("#NavSupport.Text", Lang.tr(playerRef.getUuid(), "ui.nav.support", "SUPPORT"));
+                        ui.set("#NavSettings.Text", Lang.tr(playerRef.getUuid(), "ui.nav.settings", "SETTINGS"));
+                        ui.set("#NavVersion.Text", NAV_VERSION);
                 }
-                ui.set("#NavParty.Visible", partyAvailable);
 
-                ui.set("#NavSupport.Text", Lang.tr(playerRef.getUuid(), "ui.nav.support", "SUPPORT"));
-                ui.set("#NavSettings.Text", Lang.tr(playerRef.getUuid(), "ui.nav.settings", "SETTINGS"));
-                ui.set("#NavVersion.Text", NAV_VERSION);
                 applyBrandingEnforcement(ui, pageResourcePath, pageTitleSelector);
-                applySelectedNavStyle(ui, activeNav);
+                applySelectedNavStyle(ui, activeNav, topNav);
+        }
+
+        /**
+         * Returns true if the supplied page resource imports the new TopNavBar layout.
+         * Falls back to {@code false} (legacy LeftNavPanel) when the file is not readable.
+         */
+        private static boolean pageUsesTopNavBar(String pageResourcePath) {
+                if (pageResourcePath == null || pageResourcePath.isBlank()) {
+                        return false;
+                }
+                String content = RESOURCE_TEXT_CACHE.computeIfAbsent(pageResourcePath, NavUIHelper::readResourceText);
+                return content != null && content.contains("TopNavBar.ui");
         }
 
         private static void applyBrandingEnforcement(
@@ -206,7 +238,20 @@ public final class NavUIHelper {
                 }
         }
 
-        private static void applySelectedNavStyle(@Nonnull UICommandBuilder ui, @Nonnull String activeNav) {
+        private static void applySelectedNavStyle(@Nonnull UICommandBuilder ui, @Nonnull String activeNav,
+                        boolean topNav) {
+                if (topNav) {
+                        setTopNavButtonSelected(ui, "#NavProfile", "profile".equalsIgnoreCase(activeNav));
+                        setTopNavButtonSelected(ui, "#NavSkills", "skills".equalsIgnoreCase(activeNav));
+                        setTopNavButtonSelected(ui, "#NavAugments", "augments".equalsIgnoreCase(activeNav));
+                        setTopNavButtonSelected(ui, "#NavGates", "gates".equalsIgnoreCase(activeNav));
+                        setTopNavButtonSelected(ui, "#NavDungeons", "dungeons".equalsIgnoreCase(activeNav));
+                        setTopNavButtonSelected(ui, "#NavAddons", "addons".equalsIgnoreCase(activeNav));
+                        setTopNavButtonSelected(ui, "#NavSupport", "support".equalsIgnoreCase(activeNav));
+                        setTopNavButtonSelected(ui, "#NavSettings", "settings".equalsIgnoreCase(activeNav));
+                        return;
+                }
+
                 setNavButtonSelected(ui, "#NavProfile", "profile".equalsIgnoreCase(activeNav));
                 setNavButtonSelected(ui, "#NavSkills", "skills".equalsIgnoreCase(activeNav));
                 setNavButtonSelected(ui, "#NavAugments", "augments".equalsIgnoreCase(activeNav));
@@ -225,10 +270,39 @@ public final class NavUIHelper {
                 ui.set(selector + ".Style", selected ? NAV_BUTTON_STYLE_SELECTED : NAV_BUTTON_STYLE);
         }
 
+        private static void setTopNavButtonSelected(@Nonnull UICommandBuilder ui, @Nonnull String selector,
+                        boolean selected) {
+                ui.set(selector + ".Style", selected ? TOP_NAV_BUTTON_STYLE_SELECTED : TOP_NAV_BUTTON_STYLE);
+        }
+
         /**
          * Bind nav button click events for the common left nav panel.
          */
         public static void bindNavEvents(@Nonnull UIEventBuilder events) {
+                bindNavEvents(events, null);
+        }
+
+        /**
+         * Bind nav button click events for either the legacy LeftNavPanel or the new
+         * TopNavBar layout. When {@code pageResourcePath} points at a page that imports
+         * TopNavBar.ui only the selectors that exist in that layout get bound, so the
+         * client doesn't fail with "target element not found" for missing legacy buttons.
+         */
+        public static void bindNavEvents(@Nonnull UIEventBuilder events, String pageResourcePath) {
+                boolean topNav = pageUsesTopNavBar(pageResourcePath);
+
+                if (topNav) {
+                        events.addEventBinding(Activating, "#NavProfile", of("Action", "nav:profile"), false);
+                        events.addEventBinding(Activating, "#NavSkills", of("Action", "nav:skills"), false);
+                        events.addEventBinding(Activating, "#NavAugments", of("Action", "nav:augments"), false);
+                        events.addEventBinding(Activating, "#NavGates", of("Action", "nav:gates"), false);
+                        events.addEventBinding(Activating, "#NavDungeons", of("Action", "nav:dungeons"), false);
+                        events.addEventBinding(Activating, "#NavAddons", of("Action", "nav:addons"), false);
+                        events.addEventBinding(Activating, "#NavSupport", of("Action", "nav:support"), false);
+                        events.addEventBinding(Activating, "#NavSettings", of("Action", "nav:settings"), false);
+                        return;
+                }
+
                 events.addEventBinding(Activating, "#NavProfile", of("Action", "nav:profile"), false);
                 events.addEventBinding(Activating, "#NavRaces", of("Action", "nav:races"), false);
                 events.addEventBinding(Activating, "#NavClasses", of("Action", "nav:classes"), false);
@@ -291,6 +365,8 @@ public final class NavUIHelper {
                         case "addons" -> player.getPageManager()
                                         .openCustomPage(ref, store,
                                                         new AddonsUIPage(playerRef, CustomPageLifetime.CanDismiss));
+                        case "gates" -> playerRef.sendMessage(
+                                        Message.raw("Gates UI is coming soon.").color("#f0cf78"));
                         case "leaderboards" -> player.getPageManager()
                                         .openCustomPage(ref, store, new LeaderboardsUIPage(playerRef,
                                                         CustomPageLifetime.CanDismiss));

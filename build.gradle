@@ -70,6 +70,15 @@ shadowJar {
     dependencies {
         exclude(dependency { it.moduleGroup == 'com.hypixel' })
     }
+
+    // Inject the Buuz135:MultipleHUD slot shim at the case-sensitive jar path
+    // "Common/UI/Custom/HUD/MultipleHUD.ui" (uppercase HUD). The existing mod
+    // folder is "Common/UI/Custom/Hud/" (mixed case) which Windows NTFS cannot
+    // distinguish from the uppercase variant on disk, so the source file is
+    // staged outside src/main/resources and added directly to the jar entry.
+    from(file('src/main/extra-resources/multiplehud-shim/MultipleHUD.ui')) {
+        into 'Common/UI/Custom/HUD'
+    }
 }
 
 // Disable the default jar task to avoid conflicts with shadowJar

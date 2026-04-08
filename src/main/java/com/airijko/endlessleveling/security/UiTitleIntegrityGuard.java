@@ -31,7 +31,7 @@ public final class UiTitleIntegrityGuard {
     private static final Pattern TEXT_PATTERN = Pattern.compile("@?Text\\s*[:=]\\s*\"([^\"]*)\"");
 
     private static final List<SelectorCheck> SELECTOR_CHECKS = List.of(
-        new SelectorCheck("Common/UI/Custom/Pages/SkillsPage.ui", "SkillsPageTitle"),
+        new SelectorCheck("Common/UI/Custom/Pages/Skills/SkillsPage.ui", "SkillsPageTitle"),
         new SelectorCheck("Common/UI/Custom/Pages/Addons/AddonsPage.ui", "AddonsTitle"),
         new SelectorCheck("Common/UI/Custom/Pages/Augments/AugmentsPage.ui", "AugmentsPageTitle"),
         new SelectorCheck("Common/UI/Custom/Pages/Classes/ClassesPage.ui", "ClassTitle"),

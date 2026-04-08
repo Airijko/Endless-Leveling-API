@@ -78,7 +78,7 @@ public class AddonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         NavUIHelper.applyNavVersion(ui, playerRef, "addons",
             "Common/UI/Custom/Pages/Addons/AddonsPage.ui",
                 "#AddonsTitle");
-        NavUIHelper.bindNavEvents(events);
+        NavUIHelper.bindNavEvents(events, "Common/UI/Custom/Pages/Addons/AddonsPage.ui");
     }
 
     @Override

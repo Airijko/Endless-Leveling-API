@@ -76,7 +76,7 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         NavUIHelper.applyNavVersion(ui, playerRef, "races",
             "Common/UI/Custom/Pages/Races/RacesPage.ui",
             "#RacesTitle");
-        NavUIHelper.bindNavEvents(events);
+        NavUIHelper.bindNavEvents(events, "Common/UI/Custom/Pages/Races/RacesPage.ui");
         applyStaticLabels(ui);
         events.addEventBinding(Activating,
                 "#ConfirmRaceButton",

@@ -63,14 +63,15 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
                 SafeUICommandBuilder ui = new SafeUICommandBuilder(rawUi);
                 // Load UI
-                ui.append("Pages/SkillsPage.ui");
+                ui.append("Pages/Skills/SkillsPage.ui");
                 NavUIHelper.applyNavVersion(ui, playerRef, "skills",
-                                "Common/UI/Custom/Pages/SkillsPage.ui",
+                                "Common/UI/Custom/Pages/Skills/SkillsPage.ui",
                                 "#SkillsPageTitle");
 
-                // Bind left navigation events (Profile / Skills / Party / Leaderboards /
-                // Settings)
-                NavUIHelper.bindNavEvents(events);
+                // Bind top navbar events (Profile / Skills / Augments / Gates / Dungeons /
+                // Addons / Support / Settings) — passing the page path so legacy
+                // LeftNavPanel-only selectors aren't bound on this overhauled page.
+                NavUIHelper.bindNavEvents(events, "Common/UI/Custom/Pages/Skills/SkillsPage.ui");
 
                 // -----------------------------
                 // UI EVENT BINDINGS (CRITICAL)

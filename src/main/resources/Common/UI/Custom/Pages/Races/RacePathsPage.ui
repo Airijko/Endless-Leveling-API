@@ -1,9 +1,30 @@
 $C = "../../Common.ui";
-$Nav = "../Nav/LeftNavPanel.ui";
+$Nav = "../Nav/TopNavBar.ui";
 
 $C.@PageOverlay {
     Group {
-    LayoutMode: Middle;
+        // Middle stacks children top-to-bottom but centers the GROUP vertically,
+        // so the top navbar / main panels / footer navbar all sit centered on
+        // screen instead of pinned to the top.
+        LayoutMode: Middle;
+        Padding: (Vertical: 12);
+
+        // ====================== TOP NAVBAR (root, disconnected) ======================
+        Group {
+            LayoutMode: Middle;
+            Anchor: (Height: 92);
+
+            Group {
+                Anchor: (Width: 1280, Height: 92);
+                $Nav.@TopNavBar {}
+            }
+        }
+
+        Group { Anchor: (Height: 14); }
+
+        // ====================== MAIN CONTENT ROW ======================
+        Group {
+            LayoutMode: Middle;
 
         Group {
             LayoutMode: Top;
@@ -19,23 +40,18 @@ $C.@PageOverlay {
                     Group { Anchor: (Width: 240); }
 
                     // Main Content Container
-                    $C.@DecoratedContainer {
+                    $Nav.@ObjectiveContainer {
                         Anchor: (Width: 1000, Height: 700);
                         #Title {
-                            Group {
-                                Padding: (Horizontal: 6, Vertical: 8);
-
-                                $C.@Title {
-                                    @Text = "ENDLESS LEVELING";
-                                }
+                            Label {
+                                Text: "ENDLESS LEVELING";
+                                Style: $Nav.@PanelTitleStyle;
                             }
                         }
 
                         #Content {
                             LayoutMode: Left;
                             Padding: (Full: 0);
-
-                            $Nav.@LeftNavPanel {}
 
                             Group #RightPanel {
                                 FlexWeight: 1;
@@ -165,14 +181,13 @@ $C.@PageOverlay {
 
                     Group { Anchor: (Width: 40); }
 
-                    $C.@DecoratedContainer {
+                    $Nav.@ObjectiveContainer {
                         Anchor: (Width: 240, Height: 700);
 
                         #Title {
-                            Group {
-                                $C.@Title {
-                                    @Text = "PATH INFO";
-                                }
+                            Label {
+                                Text: "PATH INFO";
+                                Style: $Nav.@PanelTitleStyle;
                             }
                         }
 
@@ -306,6 +321,20 @@ $C.@PageOverlay {
                         }
                     }
                 }
+            }
+        }
+        }
+
+        Group { Anchor: (Height: 14); }
+
+        // ====================== FOOTER NAVBAR (root, disconnected) ======================
+        Group {
+            LayoutMode: Middle;
+            Anchor: (Height: 92);
+
+            Group {
+                Anchor: (Width: 480, Height: 92);
+                $Nav.@BottomNavBar {}
             }
         }
     }

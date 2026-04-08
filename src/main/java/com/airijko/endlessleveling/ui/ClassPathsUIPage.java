@@ -79,7 +79,7 @@ public class ClassPathsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data>
         NavUIHelper.applyNavVersion(ui, playerRef, "classes",
             "Common/UI/Custom/Pages/Classes/ClassPathsPage.ui",
             "#ClassPathsTitle");
-        NavUIHelper.bindNavEvents(events);
+        NavUIHelper.bindNavEvents(events, "Common/UI/Custom/Pages/Classes/ClassPathsPage.ui");
 
         PlayerData data = loadPlayerData();
         CharacterClassDefinition currentClass = data != null && classManager != null
