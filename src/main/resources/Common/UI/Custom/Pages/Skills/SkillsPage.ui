@@ -95,6 +95,7 @@ $C.@PageOverlay {
 
                                 Group #SkillsQoLPanel {
                                     LayoutMode: Top;
+                                    Padding: (Top: 12, Bottom: 8);
 
                                     Group #SkillsInfoBlock {
                                         LayoutMode: Top;
@@ -262,43 +263,36 @@ $C.@PageOverlay {
 
                         Group { Anchor: (Width: 40); }
 
-                        Group {
+                        $Nav.@ObjectiveContainer {
                             Anchor: (Width: 1000, Height: 700);
-                            Background: (TexturePath: "../../Hud/ObjectivePanelContainer.png", Border: 15);
-                            LayoutMode: Top;
-                            Padding: (Horizontal: 4, Top: 16);
 
-                            // ---- Title (replaces @DecoratedContainer #Title slot) ----
-                            Label #SkillsPageTitle {
-                                Text: "ENDLESS LEVELING";
-                                Anchor: (Height: 26);
-                                Style: $Nav.@PanelTitleStyle;
+                            #Title {
+                                Label #SkillsPageTitle {
+                                    Text: "ENDLESS LEVELING";
+                                    Style: $Nav.@PanelTitleStyle;
+                                }
                             }
 
-                            Group {
-                                Anchor: (Height: 1);
-                                Padding: (Horizontal: 4);
-                                Group { Background: $Nav.@PanelTitleSeparatorColor; }
-                            }
-                            Group { Anchor: (Height: 4); }
-
-                            Group #Content {
-                                FlexWeight: 1;
-                                LayoutMode: Left;
+                            #Content {
+                                LayoutMode: Top;
                                 Padding: (Full: 0);
 
                                 // ================= RIGHT PANEL =================
                                 Group #RightPanel {
                                     FlexWeight: 1;
                                     LayoutMode: Top;
-                                    Anchor: (Right: 7, Bottom: 7);
 
                                     // -------- SKILLS --------
+                                    Group #SkillsContent {
+                                        LayoutMode: Left;
+                                        FlexWeight: 1;
+                                        Padding: (Full: 12);
+
                                     Group #Main {
                                         FlexWeight: 1;
                                         LayoutMode: Top;
                                         Background: #050910(0.85);
-                                        Padding: (Horizontal: 16, Top: 16);
+                                        Padding: (Full: 12);
 
                                         Group { Anchor: (Height: 2); }
 
@@ -1241,11 +1235,13 @@ $C.@PageOverlay {
                                             }
                                         }
                                     }
+                                    }
 
                                     // -------- FOOTER --------
                                     Group #Footer {
                                         LayoutMode: Top;
                                         Background: #070b12;
+                                        Anchor: (Bottom: -12);
 
                                         Group {
                                             Anchor: (Height: 2);

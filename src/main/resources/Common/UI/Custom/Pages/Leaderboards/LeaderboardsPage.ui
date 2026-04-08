@@ -68,7 +68,6 @@ $C.@PageOverlay {
             Group #RightPanel {
                 FlexWeight: 1;
                 LayoutMode: Top;
-                Anchor: (Right: 7, Bottom: 7);
 
                 // -------- Title --------
                 Group #Header {

@@ -56,7 +56,6 @@ $C.@PageOverlay {
                             Group #RightPanel {
                                 FlexWeight: 1;
                                 LayoutMode: Left;
-                                Anchor: (Right: 7, Bottom: 7);
 
                                 Group #ClassPathMainPanel {
                                     FlexWeight: 1;

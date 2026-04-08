@@ -120,7 +120,6 @@ $C.@PageOverlay {
                                 Group #LeftContent {
                                     FlexWeight: 1;
                                     LayoutMode: Top;
-                                    Anchor: (Right: 7, Bottom: 7);
 
                                     Group #RaceContent {
                                         LayoutMode: Left;
