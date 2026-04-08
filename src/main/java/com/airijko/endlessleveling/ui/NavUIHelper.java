@@ -87,6 +87,8 @@ public final class NavUIHelper {
                         ui.set("#NavProfileLabel.Text", Lang.tr(playerRef.getUuid(), "ui.nav.profile", "PROFILE"));
                         ui.set("#NavSkillsLabel.Text", Lang.tr(playerRef.getUuid(), "ui.nav.skills", "SKILLS"));
                         ui.set("#NavAugmentsLabel.Text", Lang.tr(playerRef.getUuid(), "ui.nav.augments", "AUGMENTS"));
+                        ui.set("#NavRacesLabel.Text", Lang.tr(playerRef.getUuid(), "ui.nav.races", "RACES"));
+                        ui.set("#NavClassesLabel.Text", Lang.tr(playerRef.getUuid(), "ui.nav.classes", "CLASSES"));
                         ui.set("#NavGatesLabel.Text", Lang.tr(playerRef.getUuid(), "ui.nav.gates", "GATES"));
                         ui.set("#NavDungeonsLabel.Text", Lang.tr(playerRef.getUuid(), "ui.nav.dungeons", "DUNGEONS"));
                         ui.set("#NavAddonsLabel.Text", Lang.tr(playerRef.getUuid(), "ui.nav.addons", "ADDONS"));
@@ -116,7 +118,7 @@ public final class NavUIHelper {
                         ui.set("#NavVersion.Text", NAV_VERSION);
                 }
 
-                applyBrandingEnforcement(ui, pageResourcePath, pageTitleSelector);
+                applyBrandingEnforcement(ui, pageResourcePath, pageTitleSelector, topNav);
                 applySelectedNavStyle(ui, activeNav, topNav);
         }
 
@@ -135,13 +137,17 @@ public final class NavUIHelper {
         private static void applyBrandingEnforcement(
                         @Nonnull UICommandBuilder ui,
                         String pageResourcePath,
-                        String pageTitleSelector) {
+                        String pageTitleSelector,
+                        boolean topNav) {
                 RuntimeBranding branding = resolveRuntimeBranding();
                 safeSetText(ui, pageResourcePath, pageTitleSelector, branding.pageTitle());
 
                 // Nav header is split into two labels in LeftNavPanel.ui.
-                safeSetText(ui, NAV_RESOURCE_PATH, "#NavHeader", branding.navHeader());
-                safeSetText(ui, NAV_RESOURCE_PATH, "#NavSubHeader", branding.navSubHeader());
+                // TopNavBar pages don't embed LeftNavPanel, so skip these assignments.
+                if (!topNav) {
+                        safeSetText(ui, NAV_RESOURCE_PATH, "#NavHeader", branding.navHeader());
+                        safeSetText(ui, NAV_RESOURCE_PATH, "#NavSubHeader", branding.navSubHeader());
+                }
         }
 
         private static RuntimeBranding resolveRuntimeBranding() {
@@ -244,6 +250,8 @@ public final class NavUIHelper {
                         setTopNavButtonSelected(ui, "#NavProfile", "profile".equalsIgnoreCase(activeNav));
                         setTopNavButtonSelected(ui, "#NavSkills", "skills".equalsIgnoreCase(activeNav));
                         setTopNavButtonSelected(ui, "#NavAugments", "augments".equalsIgnoreCase(activeNav));
+                        setTopNavButtonSelected(ui, "#NavRaces", "races".equalsIgnoreCase(activeNav));
+                        setTopNavButtonSelected(ui, "#NavClasses", "classes".equalsIgnoreCase(activeNav));
                         setTopNavButtonSelected(ui, "#NavGates", "gates".equalsIgnoreCase(activeNav));
                         setTopNavButtonSelected(ui, "#NavDungeons", "dungeons".equalsIgnoreCase(activeNav));
                         setTopNavButtonSelected(ui, "#NavAddons", "addons".equalsIgnoreCase(activeNav));
@@ -295,6 +303,8 @@ public final class NavUIHelper {
                         events.addEventBinding(Activating, "#NavProfile", of("Action", "nav:profile"), false);
                         events.addEventBinding(Activating, "#NavSkills", of("Action", "nav:skills"), false);
                         events.addEventBinding(Activating, "#NavAugments", of("Action", "nav:augments"), false);
+                        events.addEventBinding(Activating, "#NavRaces", of("Action", "nav:races"), false);
+                        events.addEventBinding(Activating, "#NavClasses", of("Action", "nav:classes"), false);
                         events.addEventBinding(Activating, "#NavGates", of("Action", "nav:gates"), false);
                         events.addEventBinding(Activating, "#NavDungeons", of("Action", "nav:dungeons"), false);
                         events.addEventBinding(Activating, "#NavAddons", of("Action", "nav:addons"), false);
@@ -365,8 +375,14 @@ public final class NavUIHelper {
                         case "addons" -> player.getPageManager()
                                         .openCustomPage(ref, store,
                                                         new AddonsUIPage(playerRef, CustomPageLifetime.CanDismiss));
-                        case "gates" -> playerRef.sendMessage(
-                                        Message.raw("Gates UI is coming soon.").color("#f0cf78"));
+                        case "gates" -> {
+                                // Gates UI lives in the EndlessDungeons addon and is exposed via /gate.
+                                // Dispatch the command as the player so the addon can handle it the same
+                                // way it would for a manual chat invocation.
+                                if (!openGatesGui(playerRef)) {
+                                        playerRef.sendMessage(Message.raw("Gates UI is not available right now.").color("#ff6666"));
+                                }
+                        }
                         case "leaderboards" -> player.getPageManager()
                                         .openCustomPage(ref, store, new LeaderboardsUIPage(playerRef,
                                                         CustomPageLifetime.CanDismiss));
@@ -388,6 +404,23 @@ public final class NavUIHelper {
                 }
 
                 return true;
+        }
+
+        private static boolean openGatesGui(@Nonnull PlayerRef playerRef) {
+                if (playerRef == null) {
+                        return false;
+                }
+
+                try {
+                        // Primary path: dispatch /gate as the player through the server command manager.
+                        // The EndlessDungeons addon registers this command and opens GateListUIPage when
+                        // the sender is a player.
+                        CommandManager.get().handleCommand(playerRef, "gate");
+                        return true;
+                } catch (Exception ignored) {
+                }
+
+                return runCommandAsPlayer(playerRef, "gate");
         }
 
         private static boolean openPartyGui(@Nonnull PlayerRef playerRef) {

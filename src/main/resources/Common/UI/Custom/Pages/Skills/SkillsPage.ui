@@ -306,7 +306,7 @@ $C.@PageOverlay {
                                                 // ---------------- LIFE FORCE ----------------
                                                 Group #LifeForce {
                                                     LayoutMode: Top;
-                                                    Anchor: (Height: 100);
+                                                    Anchor: (Height: 95);
                                                     Background: (TexturePath: "../../Tiles/TileDefault2x.png");
                                                     Padding: (Full: 12);
 
@@ -399,7 +399,7 @@ $C.@PageOverlay {
                                                 // ---------------- STRENGTH ----------------
                                                 Group #Strength {
                                                     LayoutMode: Top;
-                                                    Anchor: (Height: 100);
+                                                    Anchor: (Height: 95);
                                                     Background: (TexturePath: "../../Tiles/TileDefault2x.png");
                                                     Padding: (Full: 12);
 
@@ -491,7 +491,7 @@ $C.@PageOverlay {
                                                 // ---------------- PRECISION ----------------
                                                 Group #Precision {
                                                     LayoutMode: Top;
-                                                    Anchor: (Height: 100);
+                                                    Anchor: (Height: 95);
                                                     Background: (TexturePath: "../../Tiles/TileDefault2x.png");
                                                     Padding: (Full: 12);
 
@@ -584,7 +584,7 @@ $C.@PageOverlay {
                                                 // ---------------- HASTE ----------------
                                                 Group #Haste {
                                                     LayoutMode: Top;
-                                                    Anchor: (Height: 100);
+                                                    Anchor: (Height: 95);
                                                     Background: (TexturePath: "../../Tiles/TileDefault2x.png");
                                                     Padding: (Full: 12);
 
@@ -677,7 +677,7 @@ $C.@PageOverlay {
                                                 // ---------------- FLOW ----------------
                                                 Group #Flow {
                                                     LayoutMode: Top;
-                                                    Anchor: (Height: 100);
+                                                    Anchor: (Height: 95);
                                                     Background: (TexturePath: "../../Tiles/TileDefault2x.png");
                                                     Padding: (Full: 12);
 
@@ -775,7 +775,7 @@ $C.@PageOverlay {
                                                 // ---------------- DEFENSE ----------------
                                                 Group #Defense {
                                                     LayoutMode: Top;
-                                                    Anchor: (Height: 100);
+                                                    Anchor: (Height: 95);
                                                     Background: (TexturePath: "../../Tiles/TileDefault2x.png");
                                                     Padding: (Full: 12);
 
@@ -867,7 +867,7 @@ $C.@PageOverlay {
                                                 // ---------------- SORCERY ----------------
                                                 Group #Sorcery {
                                                     LayoutMode: Top;
-                                                    Anchor: (Height: 100);
+                                                    Anchor: (Height: 95);
                                                     Background: (TexturePath: "../../Tiles/TileDefault2x.png");
                                                     Padding: (Full: 12);
 
@@ -959,7 +959,7 @@ $C.@PageOverlay {
                                                 // ---------------- FEROCITY ----------------
                                                 Group #Ferocity {
                                                     LayoutMode: Top;
-                                                    Anchor: (Height: 100);
+                                                    Anchor: (Height: 95);
                                                     Background: (TexturePath: "../../Tiles/TileDefault2x.png");
                                                     Padding: (Full: 12);
 
@@ -1052,7 +1052,7 @@ $C.@PageOverlay {
                                                 // ---------------- STAMINA ----------------
                                                 Group #Stamina {
                                                     LayoutMode: Top;
-                                                    Anchor: (Height: 100);
+                                                    Anchor: (Height: 95);
                                                     Background: (TexturePath: "../../Tiles/TileDefault2x.png");
                                                     Padding: (Full: 12);
 
@@ -1145,7 +1145,7 @@ $C.@PageOverlay {
                                                 // ---------------- DISCIPLINE ----------------
                                                 Group #Discipline {
                                                     LayoutMode: Top;
-                                                    Anchor: (Height: 100);
+                                                    Anchor: (Height: 95);
                                                     Background: (TexturePath: "../../Tiles/TileDefault2x.png");
                                                     Padding: (Full: 12);
 

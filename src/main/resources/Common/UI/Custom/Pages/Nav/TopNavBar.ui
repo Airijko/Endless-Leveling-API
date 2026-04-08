@@ -240,6 +240,92 @@ $C = "../../Common.ui";
 
             Group { Anchor: (Width: @TopNavButtonGap); }
 
+            // ---- RACES ----
+            Group {
+                Anchor: (MinWidth: @TopNavButtonWidth, Height: @TopNavButtonHeight);
+                Background: PatchStyle(TexturePath: "../../Common/ColorPickerButton.png", Border: 14, Color: @NavButtonBorderColor);
+
+                Group {
+                    Anchor: (Left: @NavButtonBorderInset, Right: @NavButtonBorderInset, Top: @NavButtonBorderInset, Bottom: @NavButtonBorderInset);
+                    Background: PatchStyle(TexturePath: "../../Common/ColorPickerFill.png", Border: 14, Color: @NavButtonFillColor);
+
+                    Button #NavRaces {
+                        Anchor: (Top: 0, Bottom: 0);
+                        Style: @TopNavButtonStyle;
+
+                        Group {
+                            LayoutMode: Left;
+                            Padding: (Horizontal: 14);
+
+                            Group {
+                                Anchor: (Width: 52, Height: 52);
+                                LayoutMode: Middle;
+                                Group #NavRacesIcon {
+                                    Anchor: (Width: @TopNavIconSize, Height: @TopNavIconSize);
+                                    Background: (TexturePath: "Icons/NavRacesIcon.png");
+                                }
+                            }
+
+                            Group { Anchor: (Width: 8); }
+
+                            Group {
+                                LayoutMode: Middle;
+                                Padding: (Right: 6);
+                                Label #NavRacesLabel {
+                                    Text: "RACES";
+                                    Style: @TopNavLabelDefault;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            Group { Anchor: (Width: @TopNavButtonGap); }
+
+            // ---- CLASSES ----
+            Group {
+                Anchor: (MinWidth: @TopNavButtonWidth, Height: @TopNavButtonHeight);
+                Background: PatchStyle(TexturePath: "../../Common/ColorPickerButton.png", Border: 14, Color: @NavButtonBorderColor);
+
+                Group {
+                    Anchor: (Left: @NavButtonBorderInset, Right: @NavButtonBorderInset, Top: @NavButtonBorderInset, Bottom: @NavButtonBorderInset);
+                    Background: PatchStyle(TexturePath: "../../Common/ColorPickerFill.png", Border: 14, Color: @NavButtonFillColor);
+
+                    Button #NavClasses {
+                        Anchor: (Top: 0, Bottom: 0);
+                        Style: @TopNavButtonStyle;
+
+                        Group {
+                            LayoutMode: Left;
+                            Padding: (Horizontal: 14);
+
+                            Group {
+                                Anchor: (Width: 52, Height: 52);
+                                LayoutMode: Middle;
+                                Group #NavClassesIcon {
+                                    Anchor: (Width: @TopNavIconSize, Height: @TopNavIconSize);
+                                    Background: (TexturePath: "Icons/NavClassesIcon.png");
+                                }
+                            }
+
+                            Group { Anchor: (Width: 8); }
+
+                            Group {
+                                LayoutMode: Middle;
+                                Padding: (Right: 6);
+                                Label #NavClassesLabel {
+                                    Text: "CLASSES";
+                                    Style: @TopNavLabelDefault;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            Group { Anchor: (Width: @TopNavButtonGap); }
+
             // ---- GATES ----
             Group {
                 Anchor: (MinWidth: @TopNavButtonWidth, Height: @TopNavButtonHeight);
