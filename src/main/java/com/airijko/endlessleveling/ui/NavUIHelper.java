@@ -387,12 +387,18 @@ public final class NavUIHelper {
                                 // Dispatch the command as the player so the addon can handle it the same
                                 // way it would for a manual chat invocation.
                                 if (!openGatesGui(playerRef)) {
-                                        PlayerChatNotifier.send(playerRef, Message.join(
-                                                Message.raw("Gates is a Patreon exclusive feature. ").color("#ff6666"),
-                                                Message.raw("[CLICK HERE]")
-                                                        .link("https://www.patreon.com/cw/airijko")
-                                                        .color("#ffd08a")
-                                        ));
+                                        if (com.airijko.endlessleveling.util.PartnerConsoleGuard.isPartnerAddonPresent()) {
+                                                // ARank / Partner servers don't ship EndlessDungeons; gates are simply off.
+                                                PlayerChatNotifier.send(playerRef,
+                                                        Message.raw("Gates are Disabled.").color("#ff6666"));
+                                        } else {
+                                                PlayerChatNotifier.send(playerRef, Message.join(
+                                                        Message.raw("Gates is a Patreon exclusive feature. ").color("#ff6666"),
+                                                        Message.raw("[CLICK HERE]")
+                                                                .link("https://www.patreon.com/cw/airijko")
+                                                                .color("#ffd08a")
+                                                ));
+                                        }
                                 }
                         }
                         case "leaderboards" -> player.getPageManager()
@@ -427,8 +433,29 @@ public final class NavUIHelper {
                 return true;
         }
 
+        private static final String ENDLESS_DUNGEONS_CLASS =
+                        "com.airijko.endlessleveling.EndlessDungeonsAndGates";
+
+        /** Returns true only when the EndlessDungeons addon is present on the classpath. */
+        private static boolean isEndlessDungeonsPresent() {
+                try {
+                        Class.forName(ENDLESS_DUNGEONS_CLASS, false, NavUIHelper.class.getClassLoader());
+                        return true;
+                } catch (ClassNotFoundException ignored) {
+                        return false;
+                }
+        }
+
         private static boolean openGatesGui(@Nonnull PlayerRef playerRef) {
                 if (playerRef == null) {
+                        return false;
+                }
+
+                // CommandManager.handleCommand() does not throw when a command is missing —
+                // it sends "Command not found!" to the player and returns normally, which
+                // would make this method always return true. Guard with a classpath check
+                // so we only dispatch when EndlessDungeons is actually loaded.
+                if (!isEndlessDungeonsPresent()) {
                         return false;
                 }
 
