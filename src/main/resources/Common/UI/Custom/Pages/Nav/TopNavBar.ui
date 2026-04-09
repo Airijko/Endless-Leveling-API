@@ -410,7 +410,23 @@ $C = "../../Common.ui";
                 }
             }
 
-            Group { Anchor: (Width: @TopNavButtonGap); }
+        }
+    }
+};
+
+// =============================================================
+// Footer secondary navbar (Addons / Support / Settings)
+// =============================================================
+@BottomNavBar = Group {
+    LayoutMode: Top;
+    Anchor: (Height: @TopNavBarHeight);
+    Padding: (Vertical: 8);
+
+    Group {
+        LayoutMode: Center;
+
+        Group {
+            LayoutMode: Left;
 
             // ---- LEADERBOARDS ----
             Group {
@@ -452,23 +468,51 @@ $C = "../../Common.ui";
                     }
                 }
             }
-        }
-    }
-};
 
-// =============================================================
-// Footer secondary navbar (Addons / Support / Settings)
-// =============================================================
-@BottomNavBar = Group {
-    LayoutMode: Top;
-    Anchor: (Height: @TopNavBarHeight);
-    Padding: (Vertical: 8);
+            Group { Anchor: (Width: @TopNavButtonGap); }
 
-    Group {
-        LayoutMode: Center;
+            // ---- XP STATS ----
+            Group {
+                Anchor: (MinWidth: @TopNavButtonWidth, Height: @TopNavButtonHeight);
+                Background: PatchStyle(TexturePath: "../../Common/ColorPickerButton.png", Border: 14, Color: @NavButtonBorderColor);
 
-        Group {
-            LayoutMode: Left;
+                Group {
+                    Anchor: (Left: @NavButtonBorderInset, Right: @NavButtonBorderInset, Top: @NavButtonBorderInset, Bottom: @NavButtonBorderInset);
+                    Background: PatchStyle(TexturePath: "../../Common/ColorPickerFill.png", Border: 14, Color: @NavButtonFillColor);
+
+                    Button #NavXpStats {
+                        Anchor: (Top: 0, Bottom: 0);
+                        Style: @TopNavButtonStyle;
+
+                        Group {
+                            LayoutMode: Left;
+                            Padding: (Horizontal: 14);
+
+                            Group {
+                                Anchor: (Width: 52, Height: 52);
+                                LayoutMode: Middle;
+                                Group #NavXpStatsIcon {
+                                    Anchor: (Width: @TopNavIconSize, Height: @TopNavIconSize);
+                                    Background: (TexturePath: "Icons/NavSkillsIcon.png");
+                                }
+                            }
+
+                            Group { Anchor: (Width: 8); }
+
+                            Group {
+                                LayoutMode: Middle;
+                                Padding: (Right: 6);
+                                Label #NavXpStatsLabel {
+                                    Text: "XP STATS";
+                                    Style: @TopNavLabelDefault;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            Group { Anchor: (Width: @TopNavButtonGap); }
 
             // ---- ADDONS ----
             Group {

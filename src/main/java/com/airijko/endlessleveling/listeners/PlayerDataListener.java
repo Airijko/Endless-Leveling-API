@@ -189,6 +189,12 @@ public class PlayerDataListener {
             partyManager.updatePartyHudCustomText(playerData);
         }
 
+        // Pre-load XP stats for the active profile
+        var xpStats = EndlessLeveling.getInstance().getXpStatsManager();
+        if (xpStats != null) {
+            xpStats.getOrLoad(uuid, playerData.getActiveProfileIndex());
+        }
+
         LOGGER.atInfo().log("Loaded PlayerData for player: %s", playerRef.getUsername());
 
         if (playerData.getSkillPoints() > 0) {
@@ -275,6 +281,13 @@ public class PlayerDataListener {
             PlayerHudHide.unregister(uuid);
         } catch (LinkageError | RuntimeException ex) {
             LOGGER.atWarning().withCause(ex).log("Failed to clean up HUD state for %s on disconnect.", uuid);
+        }
+
+        // Save and evict XP stats before removing core player data from cache
+        var xpStats = EndlessLeveling.getInstance().getXpStatsManager();
+        if (xpStats != null) {
+            xpStats.saveAllForPlayer(uuid);
+            xpStats.evict(uuid);
         }
 
         PlayerData data = playerDataManager.get(uuid);

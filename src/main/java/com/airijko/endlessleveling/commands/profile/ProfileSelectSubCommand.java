@@ -77,6 +77,12 @@ public class ProfileSelectSubCommand extends AbstractPlayerCommand {
             return;
         }
 
+        // Save current profile's XP stats before switching
+        var xpStats = EndlessLeveling.getInstance().getXpStatsManager();
+        if (xpStats != null) {
+            xpStats.saveAllForPlayer(playerRef.getUuid());
+        }
+
         ProfileSwitchResult result = playerData.switchProfile(requestedIndex);
         if (result == ProfileSwitchResult.ALREADY_ACTIVE) {
             playerRef.sendMessage(Message.raw("Profile " + requestedIndex + " is already active.")
@@ -99,6 +105,11 @@ public class ProfileSelectSubCommand extends AbstractPlayerCommand {
 
         resyncPassives(playerData);
         playerDataManager.save(playerData);
+
+        // Load new profile's XP stats
+        if (xpStats != null) {
+            xpStats.getOrLoad(playerRef.getUuid(), requestedIndex);
+        }
 
         skillManager.clearAugmentAttributeBonuses(playerData);
         boolean applied = skillManager.applyAllSkillModifiers(ref, store, playerData);

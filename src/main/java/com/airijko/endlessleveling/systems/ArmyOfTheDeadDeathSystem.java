@@ -3,6 +3,9 @@ package com.airijko.endlessleveling.systems;
 import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.augments.MobAugmentExecutor;
 import com.airijko.endlessleveling.passives.type.ArmyOfTheDeadPassive;
+import com.airijko.endlessleveling.player.PlayerData;
+import com.airijko.endlessleveling.player.PlayerDataManager;
+import com.airijko.endlessleveling.player.SkillManager;
 import com.airijko.endlessleveling.util.EntityRefUtil;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
@@ -70,7 +73,16 @@ public class ArmyOfTheDeadDeathSystem extends DeathSystems.OnDeathSystem {
         }
 
         UUID killerUuid = resolveUuid(killerRef, store, commandBuffer);
-        if (killerUuid == null || !executor.hasMobAugments(killerUuid)) {
+        if (killerUuid == null) {
+            return;
+        }
+
+        // Ensure the summon's mirrored augment set is current before dispatching
+        // the kill hook. A summon that spawned before the owner selected augments
+        // would otherwise miss OnKill effects until its next combat hit.
+        ArmyOfTheDeadPassive.ensureSummonAugmentsInSync(killerUuid, store);
+
+        if (!executor.hasMobAugments(killerUuid)) {
             return;
         }
 
@@ -80,7 +92,21 @@ public class ArmyOfTheDeadDeathSystem extends DeathSystems.OnDeathSystem {
             victimStats = EntityRefUtil.tryGetComponent(store, victimRef, EntityStatMap.getComponentType());
         }
 
-        executor.handleKill(killerUuid, killerRef, victimRef, commandBuffer, victimStats);
+        // Resolve the summoner's player data and skill manager so OnKill augments
+        // (e.g. SoulReaver, BloodFrenzy) can scale from the owner's stats rather
+        // than their default null fallbacks.
+        PlayerData ownerPlayerData = null;
+        SkillManager ownerSkillManager = plugin.getSkillManager();
+        UUID ownerUuid = ArmyOfTheDeadPassive.getManagedSummonOwnerUuid(killerRef, store, commandBuffer);
+        if (ownerUuid != null) {
+            PlayerDataManager playerDataManager = plugin.getPlayerDataManager();
+            if (playerDataManager != null) {
+                ownerPlayerData = playerDataManager.get(ownerUuid);
+            }
+        }
+
+        executor.handleKill(killerUuid, killerRef, victimRef, commandBuffer, victimStats,
+                ownerPlayerData, ownerSkillManager);
     }
 
     private UUID resolveUuid(@Nonnull Ref<EntityStore> ref,

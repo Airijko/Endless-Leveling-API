@@ -21,18 +21,16 @@ import com.airijko.endlessleveling.ui.PlayerHud;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.AbstractCommand;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
-import com.hypixel.hytale.server.core.command.system.CommandUtil;
-import com.hypixel.hytale.server.core.command.system.exceptions.NoPermissionException;
 import com.hypixel.hytale.server.core.entity.entities.Player;
-import com.hypixel.hytale.server.core.permissions.HytalePermissions;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
+import com.hypixel.hytale.server.core.universe.Universe;
+import com.airijko.endlessleveling.util.OperatorHelper;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.concurrent.CompletableFuture;
 
 public class ReloadCommand extends AbstractCommand {
-
-    private static final String PERMISSION_NODE = HytalePermissions.fromCommand("endlessleveling.reload");
 
     private final ConfigManager configManager;
     private final LanguageManager languageManager;
@@ -69,14 +67,9 @@ public class ReloadCommand extends AbstractCommand {
     @Nullable
     @Override
     protected CompletableFuture<Void> execute(@Nonnull CommandContext commandContext) {
-        if (commandContext.sender() instanceof Player) {
-            try {
-                CommandUtil.requirePermission(commandContext.sender(), PERMISSION_NODE);
-            } catch (NoPermissionException ignored) {
-                commandContext.sendMessage(
-                        Message.raw("You do not have permission to use this command.").color("#ff6666"));
-                return CompletableFuture.completedFuture(null);
-            }
+        if (commandContext.sender() instanceof Player player) {
+            PlayerRef senderRef = Universe.get().getPlayer(player.getUuid());
+            if (OperatorHelper.denyNonAdmin(senderRef)) return CompletableFuture.completedFuture(null);
         }
 
         if (configManager != null) {

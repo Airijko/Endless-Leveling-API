@@ -83,8 +83,19 @@ public class MobDamageScalingSystem extends DamageEventSystem {
 
             boolean managedSummonAttacker = ArmyOfTheDeadPassive.isManagedSummon(attackerRef, store, commandBuffer);
             if (managedSummonAttacker) {
-                boolean summonCrit = applySummonOutgoingScaling(damage, attackerRef, store, commandBuffer);
-                applySummonAttackerAugments(damage, attackerRef, targetRef, store, commandBuffer, summonCrit);
+                // Skip re-scaling and re-augmenting damage that was already
+                // produced by a summon augment (MagicMissile, GraspOfTheUndying,
+                // Burn DoT, etc.). Proc and DoT damage have already been computed
+                // from the owner's stats inside the augment; running
+                // applySummonOutgoingScaling on them again would multiply them a
+                // second time, and applySummonAttackerAugments would cascade
+                // (augment-on-augment proc loops).
+                boolean isSummonProc = com.airijko.endlessleveling.systems.PlayerCombatSystem.isAugmentProcDamage(damage)
+                        || com.airijko.endlessleveling.systems.PlayerCombatSystem.isAugmentDotDamage(damage);
+                if (!isSummonProc) {
+                    boolean summonCrit = applySummonOutgoingScaling(damage, attackerRef, store, commandBuffer);
+                    applySummonAttackerAugments(damage, attackerRef, targetRef, store, commandBuffer, summonCrit);
+                }
             }
 
             PlayerRef attackerPlayer = EntityRefUtil.tryGetComponent(commandBuffer, attackerRef,

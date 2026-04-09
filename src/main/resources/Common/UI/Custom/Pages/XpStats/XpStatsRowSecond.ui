@@ -1,0 +1,20 @@
+$C = "../../Common.ui";
+
+Group {
+    LayoutMode: Top;
+
+    Group {
+        LayoutMode: Left;
+        Background: #1a212b(0.65);
+        Padding: (Horizontal: 12, Vertical: 8);
+
+        Label #Rank { Style: (FontSize: 13, TextColor: #d7dbe3, RenderBold: true); Anchor: (Width: 60); Text: "-"; }
+        Label #Name { Style: (FontSize: 13, TextColor: #d7dbe3, RenderBold: true); FlexWeight: 1; Text: "-"; }
+        Label #Profile { Style: (FontSize: 13, TextColor: #c7d2df); Anchor: (Width: 120); Text: "-"; }
+        Label #Prestige { Style: (FontSize: 13, TextColor: #dce2eb, RenderBold: true); Anchor: (Width: 80); Text: "-"; }
+        Label #Level { Style: (FontSize: 13, TextColor: #cce8ff, RenderBold: true); Anchor: (Width: 70); Text: "-"; }
+        Label #Value { Style: (FontSize: 13, TextColor: #c7d2df); Anchor: (Width: 140); Text: "-"; }
+    }
+
+    Group { Anchor: (Height: 6); }
+}

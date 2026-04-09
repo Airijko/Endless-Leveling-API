@@ -32,7 +32,9 @@ public final class CommandRegistrar {
             RaceManager raceManager,
             ClassManager classManager,
             PlayerDataManager playerDataManager,
-            AugmentManager augmentManager) {
+            AugmentManager augmentManager,
+            com.airijko.endlessleveling.xpstats.XpStatsManager xpStatsManager,
+            com.airijko.endlessleveling.xpstats.XpStatsLeaderboardService xpStatsLeaderboardService) {
 
         LOGGER.atWarning().log("CommandRegistrar.registerCommands invoked (commandRegistry=%s)",
                 commandRegistry != null ? "present" : "null");
@@ -79,6 +81,13 @@ public final class CommandRegistrar {
         ensureShortcutCommandRegistered(commandRegistry, priestCommand, "/priest");
         registerCommand(commandRegistry, augmentCommand);
         ensureShortcutCommandRegistered(commandRegistry, augmentCommand, "/augments");
+
+        if (xpStatsManager != null && xpStatsLeaderboardService != null) {
+            com.airijko.endlessleveling.commands.xpstats.XpStatsCommand xpStatsCommand =
+                    new com.airijko.endlessleveling.commands.xpstats.XpStatsCommand(xpStatsManager, xpStatsLeaderboardService);
+            registerCommand(commandRegistry, xpStatsCommand);
+            ensureShortcutCommandRegistered(commandRegistry, xpStatsCommand, "/xpstats");
+        }
 
         // Run a single final ownership check right before server boot completes.
         scheduleFinalRootCheckOnBootEvent(eventRegistry, commandRegistry, commandRoot, rootCommand);

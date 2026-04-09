@@ -35,8 +35,10 @@
         },
         "Damage_Max_Difference": {
           "Enabled": true,
-          "At_Positive_Max_Difference": 3.0,
-          "Above_Positive_Max_Difference": 5.0
+          "At_Negative_Max_Difference": 0.5,
+          "Below_Negative_Max_Difference": 0.25,
+          "At_Positive_Max_Difference": 1.5,
+          "Above_Positive_Max_Difference": 3.0
         }
       },
       "Player_Combat_Scaling": {

@@ -53,7 +53,7 @@ public class AddClassSwapCommand extends AbstractCommand {
         Player senderPlayer = context.sender() instanceof Player p ? p : null;
         boolean senderIsPlayer = senderPlayer != null;
 
-        if (!PartnerConsoleGuard.isConsoleAllowed("el classes addswap")) {
+        if (!senderIsPlayer && !PartnerConsoleGuard.isConsoleAllowed("el classes addswap")) {
             context.sendMessage(Message.raw(
                     "This command requires an authorized EndlessLevelingPartnerAddon.")
                     .color("#ff6666"));

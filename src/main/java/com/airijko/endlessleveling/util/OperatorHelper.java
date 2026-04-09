@@ -1,5 +1,6 @@
 package com.airijko.endlessleveling.util;
 
+import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.permissions.PermissionsModule;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 
@@ -97,6 +98,21 @@ public final class OperatorHelper {
             return true;
         }
         return hasAdministrativePermissionNode(playerRef);
+    }
+
+    /**
+     * Returns {@code true} (denied) if the player does not have administrative
+     * access, sending them a denial message. Returns {@code false} if they are
+     * an admin/operator and may proceed.
+     */
+    public static boolean denyNonAdmin(PlayerRef playerRef) {
+        if (hasAdministrativeAccess(playerRef)) {
+            return false;
+        }
+        if (playerRef != null) {
+            playerRef.sendMessage(Message.raw("AW HELL NAW").color("#ff6666"));
+        }
+        return true;
     }
 
     private static boolean hasOperatorGroup(PlayerRef playerRef) {

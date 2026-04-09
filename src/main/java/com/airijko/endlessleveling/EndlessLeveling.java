@@ -118,6 +118,8 @@ public class EndlessLeveling extends JavaPlugin {
     private UiTitleIntegrityGuard uiTitleIntegrityGuard;
     private UiIntegrityAlertSystem uiIntegrityAlertSystem;
     private EndlessLevelingShutdownCoordinator shutdownCoordinator;
+    private com.airijko.endlessleveling.xpstats.XpStatsManager xpStatsManager;
+    private com.airijko.endlessleveling.xpstats.XpStatsLeaderboardService xpStatsLeaderboardService;
     private volatile String brandName = DEFAULT_BRAND_NAME;
     private volatile String commandPrefix = DEFAULT_COMMAND_PREFIX;
     private volatile String messagePrefix = DEFAULT_MESSAGE_PREFIX;
@@ -222,6 +224,14 @@ public class EndlessLeveling extends JavaPlugin {
 
     public AugmentSyncValidator getAugmentSyncValidator() {
         return augmentSyncValidator;
+    }
+
+    public com.airijko.endlessleveling.xpstats.XpStatsManager getXpStatsManager() {
+        return xpStatsManager;
+    }
+
+    public com.airijko.endlessleveling.xpstats.XpStatsLeaderboardService getXpStatsLeaderboardService() {
+        return xpStatsLeaderboardService;
     }
 
     public String getBrandName() {
@@ -449,6 +459,7 @@ public class EndlessLeveling extends JavaPlugin {
                 skillManager,
                 archetypePassiveManager);
         augmentSyncValidator = new AugmentSyncValidator(playerDataManager, augmentUnlockManager);
+        xpStatsManager = new com.airijko.endlessleveling.xpstats.XpStatsManager(filesManager);
         levelingManager = new LevelingManager(playerDataManager, filesManager, skillManager, archetypePassiveManager,
                 passiveManager, augmentUnlockManager, eventHookManager);
         mobLevelingManager = new MobLevelingManager(filesManager, playerDataManager);
@@ -517,6 +528,8 @@ public class EndlessLeveling extends JavaPlugin {
         uiIntegrityAlertSystem = new UiIntegrityAlertSystem(uiTitleIntegrityGuard);
         this.getEntityStoreRegistry().registerSystem(uiIntegrityAlertSystem);
         this.getEntityStoreRegistry().registerSystem(new WitherEffectSystem());
+        this.getEntityStoreRegistry()
+                .registerSystem(new com.airijko.endlessleveling.systems.XpStatsAutosaveSystem(xpStatsManager));
         shutdownCoordinator = new EndlessLevelingShutdownCoordinator(this);
         resolveRemoveWorldEventClass().ifPresentOrElse(eventClass -> {
             this.getEventRegistry().registerGlobal((Class) eventClass,
@@ -534,6 +547,8 @@ public class EndlessLeveling extends JavaPlugin {
 
         // Register commands via helper class to keep main class clean.
         ChurchManager.init(filesManager.getPluginFolder().toPath());
+        xpStatsLeaderboardService = new com.airijko.endlessleveling.xpstats.XpStatsLeaderboardService(
+                xpStatsManager, playerDataManager);
         String commandRoot = CommandRegistrar.registerCommands(
                 this.getCommandRegistry(),
                 this.getEventRegistry(),
@@ -541,7 +556,9 @@ public class EndlessLeveling extends JavaPlugin {
                 raceManager,
                 classManager,
                 playerDataManager,
-                augmentManager);
+                augmentManager,
+                xpStatsManager,
+                xpStatsLeaderboardService);
 
         if (augmentSyncValidator != null) {
             augmentSyncValidator.auditAndNotify();

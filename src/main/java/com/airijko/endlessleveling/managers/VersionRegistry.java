@@ -24,7 +24,7 @@ public final class VersionRegistry {
     public static final int BUILTIN_CLASSES_VERSION = 40;
     public static final int BUILTIN_RACES_VERSION = 40;
     public static final int BUILTIN_LANG_VERSION = 5;
-    public static final int BUILTIN_WORLD_SETTINGS_VERSION = 8;
+    public static final int BUILTIN_WORLD_SETTINGS_VERSION = 9;
 
     public static final String AUGMENTS_VERSION_FILE = "augments.version";
     public static final String CLASSES_VERSION_FILE = "classes.version";

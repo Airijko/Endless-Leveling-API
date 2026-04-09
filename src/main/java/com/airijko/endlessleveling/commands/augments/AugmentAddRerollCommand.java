@@ -5,12 +5,14 @@ import com.airijko.endlessleveling.augments.AugmentUnlockManager;
 import com.airijko.endlessleveling.enums.PassiveTier;
 import com.airijko.endlessleveling.player.PlayerData;
 import com.airijko.endlessleveling.player.PlayerDataManager;
+import com.airijko.endlessleveling.util.OperatorHelper;
 import com.airijko.endlessleveling.util.PartnerConsoleGuard;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.AbstractCommand;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
 import com.hypixel.hytale.server.core.command.system.arguments.system.RequiredArg;
 import com.hypixel.hytale.server.core.command.system.arguments.types.ArgTypes;
+import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
 
@@ -47,11 +49,16 @@ public class AugmentAddRerollCommand extends AbstractCommand {
     @Nullable
     @Override
     protected CompletableFuture<Void> execute(@Nonnull CommandContext context) {
-        if (!PartnerConsoleGuard.isConsoleAllowed("el augments addreroll")) {
-            context.sendMessage(Message.raw(
-                    "This command requires an authorized EndlessLevelingPartnerAddon.")
-                    .color("#ff6666"));
-            return CompletableFuture.completedFuture(null);
+        if (context.sender() instanceof Player player) {
+            PlayerRef senderRef = Universe.get().getPlayer(player.getUuid());
+            if (OperatorHelper.denyNonAdmin(senderRef)) return CompletableFuture.completedFuture(null);
+        } else {
+            if (!PartnerConsoleGuard.isConsoleAllowed("el augments addreroll")) {
+                context.sendMessage(Message.raw(
+                        "This command requires an authorized EndlessLevelingPartnerAddon.")
+                        .color("#ff6666"));
+                return CompletableFuture.completedFuture(null);
+            }
         }
 
         if (playerDataManager == null) {

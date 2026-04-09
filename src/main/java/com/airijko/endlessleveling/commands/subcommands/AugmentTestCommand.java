@@ -9,12 +9,12 @@ import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
-import com.hypixel.hytale.server.core.command.system.CommandUtil;
+
 import com.hypixel.hytale.server.core.command.system.arguments.system.OptionalArg;
 import com.hypixel.hytale.server.core.command.system.arguments.system.RequiredArg;
 import com.hypixel.hytale.server.core.command.system.arguments.types.ArgTypes;
 import com.hypixel.hytale.server.core.command.system.basecommands.AbstractPlayerCommand;
-import com.hypixel.hytale.server.core.permissions.HytalePermissions;
+import com.airijko.endlessleveling.util.OperatorHelper;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
@@ -35,8 +35,6 @@ import java.util.Set;
  * Replaces all existing selections with the chosen augments on their tiers.
  */
 public class AugmentTestCommand extends AbstractPlayerCommand {
-
-    private static final String PERMISSION_NODE = HytalePermissions.fromCommand("endlessleveling.augments.test");
 
     private final AugmentManager augmentManager;
     private final PlayerDataManager playerDataManager;
@@ -59,7 +57,7 @@ public class AugmentTestCommand extends AbstractPlayerCommand {
             @Nonnull Ref<EntityStore> ref,
             @Nonnull PlayerRef senderRef,
             @Nonnull World world) {
-        CommandUtil.requirePermission(commandContext.sender(), PERMISSION_NODE);
+        if (OperatorHelper.denyNonAdmin(senderRef)) return;
 
         if (augmentManager == null || playerDataManager == null) {
             senderRef.sendMessage(Message.raw("Augment system not initialised.").color("#ff6666"));

@@ -1,0 +1,25 @@
+$C = "../../Common.ui";
+
+Group {
+    LayoutMode: Left;
+    Anchor: (Height: 20);
+    Padding: (Horizontal: 4, Vertical: 2);
+
+    Label #HourLabel {
+        Style: (TextColor: #4fd7f7, FontSize: 12, RenderBold: true);
+        Anchor: (Width: 50);
+        Text: "00:00";
+    }
+
+    Group {
+        FlexWeight: 1;
+        Background: #0b141f(0.5);
+        Anchor: (Height: 14);
+    }
+
+    Label #ValueLabel {
+        Style: (TextColor: #c0cee5, FontSize: 12, HorizontalAlignment: End);
+        Anchor: (Width: 100);
+        Text: "0";
+    }
+}

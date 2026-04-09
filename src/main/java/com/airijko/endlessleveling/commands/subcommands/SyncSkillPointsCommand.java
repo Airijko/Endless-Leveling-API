@@ -10,9 +10,8 @@ import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.AbstractCommand;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
-import com.hypixel.hytale.server.core.command.system.CommandUtil;
 import com.hypixel.hytale.server.core.entity.entities.Player;
-import com.hypixel.hytale.server.core.permissions.HytalePermissions;
+import com.airijko.endlessleveling.util.OperatorHelper;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
@@ -32,8 +31,6 @@ import java.util.concurrent.CompletableFuture;
  */
 public class SyncSkillPointsCommand extends AbstractCommand {
 
-    private static final String PERMISSION_NODE = HytalePermissions.fromCommand("endlessleveling.skillpointssync");
-
     private final PlayerDataManager playerDataManager;
     private final SkillManager skillManager;
 
@@ -47,8 +44,9 @@ public class SyncSkillPointsCommand extends AbstractCommand {
     @Nullable
     @Override
     protected CompletableFuture<Void> execute(@Nonnull CommandContext commandContext) {
-        if (commandContext.sender() instanceof Player) {
-            CommandUtil.requirePermission(commandContext.sender(), PERMISSION_NODE);
+        if (commandContext.sender() instanceof Player player) {
+            PlayerRef senderRef = Universe.get().getPlayer(player.getUuid());
+            if (OperatorHelper.denyNonAdmin(senderRef)) return CompletableFuture.completedFuture(null);
         } else if (!PartnerConsoleGuard.isConsoleAllowed("el skillpointssync")) {
             commandContext.sendMessage(Message.raw(
                     "Console admin access requires an authorized EndlessLevelingPartnerAddon.")

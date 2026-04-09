@@ -8,9 +8,9 @@ import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
-import com.hypixel.hytale.server.core.command.system.CommandUtil;
+
 import com.hypixel.hytale.server.core.command.system.basecommands.AbstractPlayerCommand;
-import com.hypixel.hytale.server.core.permissions.HytalePermissions;
+import com.airijko.endlessleveling.util.OperatorHelper;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
@@ -28,9 +28,6 @@ import java.util.Collection;
  */
 public class ResetAugmentsAllPlayersCommand extends AbstractPlayerCommand {
 
-    private static final String PERMISSION_NODE = HytalePermissions
-            .fromCommand("endlessleveling.augments.resetallplayers");
-
     private final PlayerDataManager playerDataManager;
     private final AugmentUnlockManager augmentUnlockManager;
 
@@ -47,7 +44,7 @@ public class ResetAugmentsAllPlayersCommand extends AbstractPlayerCommand {
             @Nonnull Ref<EntityStore> ref,
             @Nonnull PlayerRef senderRef,
             @Nonnull World world) {
-        CommandUtil.requirePermission(commandContext.sender(), PERMISSION_NODE);
+        if (OperatorHelper.denyNonAdmin(senderRef)) return;
 
         if (playerDataManager == null || augmentUnlockManager == null) {
             senderRef.sendMessage(Message.raw("Augment system is not initialised.").color("#ff6666"));

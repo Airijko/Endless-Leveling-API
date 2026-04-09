@@ -1,5 +1,187 @@
 # Endless Leveling - Update Log
 
+## 2026-04-09 — 7.6.1 (compared to 7.6.0)
+
+An analytics and stability patch on top of 7.6.0. The headline is a full **XP Stats** tracking system with per-player hourly/daily analytics, a global leaderboard, exploit-detection flagging, and an admin panel — all accessible from a new nav button and `/xpstats` command. Also fixes stale race/class ID resolution on login, the `addswap` console guard, Shiva dungeon over-tuning, footer navbar sizing, and compresses branding images by ~90 %.
+
+### Highlights
+
+- New **XP Stats** system — rolling 24-hour and 7-day XP tracking per profile with momentum scoring and prestige history.
+- New **XP Stats Leaderboard** — top-100 rankings by XP/24h, XP/7d, Total XP, and Momentum, with gold/silver/bronze podium rows.
+- New **XP Stats Admin** panel — operator-only view with a flagged-players exploit-detection tab (momentum > 3.0 or XP/24h > 500k).
+- New **XP Stats** nav button in the footer navbar; all footer `@BottomNavBar` containers made auto-width.
+- Stale race/class IDs are now nullified on login when the ID no longer exists in the server registry.
+- `addswap` console guard fixed — players could not run the command because the console-only check blocked everyone.
+- Shiva dungeon mob scaling reduced (HP per level `0.1` → `0.075`, damage per level `0.4` → `0.3`).
+- Global mob damage scaling now penalises under-leveled mobs; same-level mobs deal exactly `1.0×` damage; positive-side caps reduced (`3.0×` → `1.5×` at cap, `5.0×` → `3.0×` beyond).
+- Branding PNGs compressed from ~3.2 MB total to ~226 KB.
+
+### XP Stats System (`New System`)
+
+#### Data Model
+
+- New [`XpStatsData`](src/main/java/com/airijko/endlessleveling/xpstats/XpStatsData.java) — per-profile analytics container. Tracks `totalXp` (lifetime), a rolling `hourly[24]` array (UTC hour buckets), a rolling `daily[7]` array (UTC day buckets), cursor indices, and a `prestigeHistory` list.
+- `recordXpGain(amount)` rotates stale buckets via `rotateBuckets()`, then adds to totalXp, current hourly, and current daily slots. Negative/zero amounts are ignored.
+- `getMomentum()` = `xp24h / avg(other 6 daily slots)`. Returns `0.0` when xp24h is zero; capped at `999.0` when the weekly baseline is zero.
+- `recordPrestige(level)` appends a timestamped `PrestigeEvent` record.
+- Composite cache key: [`XpStatsKey`](src/main/java/com/airijko/endlessleveling/xpstats/XpStatsKey.java) `record(UUID, int profileIndex)`.
+
+#### Manager
+
+- New [`XpStatsManager`](src/main/java/com/airijko/endlessleveling/xpstats/XpStatsManager.java) — ConcurrentHashMap cache with per-UUID `ReentrantLock` double-checked locking.
+- Persisted as JSON at `playerdata/<uuid>/xpstats/<profileIndex>_stats.json`. Atomic write via `.tmp` + `Files.move(ATOMIC_MOVE)`.
+- `saveAll()` flushes all dirty entries; `saveAllForPlayer(uuid)` and `evict(uuid)` for disconnect cleanup.
+- `loadAllEntries()` merges in-memory cache with a disk scan of offline player files (used by leaderboard).
+
+#### Leaderboard Service
+
+- New [`XpStatsLeaderboardService`](src/main/java/com/airijko/endlessleveling/xpstats/XpStatsLeaderboardService.java) — enriches entries with player name, profile name, prestige, and level from `PlayerDataManager`. Sorts by `LeaderboardType` enum: `XP_24H`, `XP_7D`, `TOTAL_XP`, `MOMENTUM`.
+- `getFlaggedPlayers(momentumThreshold, xp24hThreshold)` returns entries where momentum > threshold **or** xp24h > threshold.
+
+#### Autosave
+
+- New [`XpStatsAutosaveSystem`](src/main/java/com/airijko/endlessleveling/systems/XpStatsAutosaveSystem.java) — ticking system that flushes all dirty stats to disk every **300 seconds** (5 minutes).
+
+#### Integration Hooks
+
+- [`LevelingManager`](src/main/java/com/airijko/endlessleveling/leveling/LevelingManager.java): `grantXp` and `adjustRawXp` call `XpStatsManager.recordXpGain`; `prestige` calls `recordPrestige`.
+- [`PlayerDataListener`](src/main/java/com/airijko/endlessleveling/listeners/PlayerDataListener.java): pre-loads active profile stats on connect; saves and evicts on disconnect.
+- [`ProfileSelectSubCommand`](src/main/java/com/airijko/endlessleveling/commands/profile/ProfileSelectSubCommand.java): saves current profile stats and loads new profile stats on profile switch.
+- [`EndlessLevelingShutdownCoordinator`](src/main/java/com/airijko/endlessleveling/shutdown/EndlessLevelingShutdownCoordinator.java): `saveAll()` during shutdown, `clearRuntimeState()` during cleanup.
+
+### XP Stats Commands (`New Commands`)
+
+- New [`/xpstats`](src/main/java/com/airijko/endlessleveling/commands/xpstats/XpStatsCommand.java) (alias `/xps`) — opens the XP Stats UI page. Player-only.
+- `/xpstats top` — opens the global leaderboard UI with tab buttons for each sort type.
+- `/xpstats profiles` — chat output listing all of the sender's profiles ranked by xp24h.
+- `/xpstats profile <slot>` — chat output with detailed per-profile stats: totalXp, xp24h, xp7d, momentum, non-zero hourly buckets, and full prestige history.
+- `/xpstats admin` — operator-only, opens the admin UI panel with leaderboard and flagged-players tabs.
+
+### XP Stats UI (`New UI`)
+
+- New [`XpStatsUIPage`](src/main/java/com/airijko/endlessleveling/ui/XpStatsUIPage.java) — tabbed page with My Stats / Leaderboard / Admin LB / Admin Flagged tabs (admin tabs gated by operator access).
+  - **My Stats**: summary row (totalXp, xp24h, xp7d, momentum), hourly XP bars (non-zero hours only), daily breakdown (all 7 days), prestige history.
+  - **Leaderboard**: top 100 entries; clicking the tab again cycles sort through XP_24H → XP_7D → TOTAL_XP → MOMENTUM.
+  - **Admin Flagged**: entries with momentum > 3.0 or xp24h > 500,000.
+- New [`XpStatsLeaderboardUIPage`](src/main/java/com/airijko/endlessleveling/ui/XpStatsLeaderboardUIPage.java) — standalone leaderboard page with dedicated sort-type tab buttons.
+- New [`XpStatsAdminUIPage`](src/main/java/com/airijko/endlessleveling/ui/XpStatsAdminUIPage.java) — standalone admin panel with Refresh button.
+- UI templates: [`XpStatsPage.ui`](src/main/resources/Common/UI/Custom/Pages/XpStats/XpStatsPage.ui), `XpStatsLeaderboardPage.ui`, `XpStatsAdminPage.ui`, `XpStatsRow.ui`, `XpStatsRowFirst.ui` (gold), `XpStatsRowSecond.ui` (silver), `XpStatsRowThird.ui` (bronze), `XpStatsHourlyBar.ui`, `XpStatsDailyBar.ui`, `XpStatsPrestigeEntry.ui`.
+
+### TopNavBar — XP Stats Button (`UI`)
+
+- [`TopNavBar.ui`](src/main/resources/Common/UI/Custom/Pages/Nav/TopNavBar.ui): Leaderboards and the new **XP Stats** button moved from the top primary row into the `@BottomNavBar` footer row. Footer is now: Leaderboards / XP Stats / Addons / Support / Settings.
+- [`NavUIHelper`](src/main/java/com/airijko/endlessleveling/ui/NavUIHelper.java): new `#NavXpStats` / `#NavXpStatsLabel` bindings, selected-style logic, and `nav:xpstats` action wiring that opens `XpStatsUIPage`.
+
+### Footer NavBar Auto-Width (`UI Fix`)
+
+- All 15 pages' `@BottomNavBar` container changed from `Anchor: (Width: 480, Height: 92)` → `Anchor: (Height: 92)` so the footer auto-sizes to fit the additional XP Stats button.
+
+### Stale Race/Class ID Resolution (`Fixed Login`)
+
+- [`PlayerDataManager`](src/main/java/com/airijko/endlessleveling/player/PlayerDataManager.java): after resolving a race or class ID on login, the resolved ID is now checked against the live registry (`raceManager.getRace()` / `classManager.getClass()`). If the entry no longer exists — e.g. a removed race/class mod — the ID is nullified so the player can re-select via the emergency-swap mechanism instead of being stuck on a phantom selection.
+
+### AddClassSwap Console Guard Fix (`Fixed Command`)
+
+- [`AddClassSwapCommand`](src/main/java/com/airijko/endlessleveling/commands/classes/AddClassSwapCommand.java): the `PartnerConsoleGuard` check was missing a `!senderIsPlayer` gate, so it rejected **all** senders (including players) when no partner addon was loaded. Now only console senders are checked.
+
+### Mob Damage Level-Difference Scaling — Below-Level Penalty (`Balance`)
+
+`global.json` / `Mob_Scaling.Damage_Max_Difference` now penalises under-leveled mobs and reins in over-leveled mobs.
+
+**Why it was a problem:** Before 7.6.1, the `Damage_Max_Difference` block only had the two positive-side keys. The negative side (mob below the player) was simply absent, so the engine defaulted `At_Negative_Max_Difference` to `1.0×` and the lerp ran from `1.0×` up to `3.0×` across the full range. This meant a same-level mob dealt **200%** of its raw base damage, and a mob anywhere in the negative range still dealt 100–200% — even a mob far below the player dealt full unscaled damage.
+
+**The scaling system (unchanged):** `Mob_Level_Scaling_Difference.Range = 15` defines the cap. When `mob level − player level` is within `[−15, +15]` the damage multiplier is linearly interpolated between `At_Negative_Max_Difference` and `At_Positive_Max_Difference`. Beyond either end of the range, the flat `Below_*` / `Above_*` clamp is used.
+
+**Full damage % at every 5-level step:**
+
+| Level difference (mob − player) | Before (7.6.0) | After (7.6.1) | Reduction |
+|---|---|---|---|
+| **< −15** (far under-leveled, flat clamp) | **100%** *(defaulted)* | **25%** | −75% |
+| **−15** (at negative cap) | **100%** | **50%** | −50% |
+| **−10** | **133%** | **67%** | −50% |
+| **−5** | **167%** | **83%** | −50% |
+| **0** (same level) | **200%** | **100%** | −50% |
+| **+5** | **233%** | **117%** | −50% |
+| **+10** | **267%** | **133%** | −50% |
+| **+15** (at positive cap) | **300%** | **150%** | −50% |
+| **> +15** (far over-leveled, flat clamp) | **500%** | **300%** | −40% |
+
+> Lerp formula: `multiplier = atNeg + (diff + range) / (range × 2) × (atPos − atNeg)`  
+> Before: `lerp(1.0, 3.0)` — After: `lerp(0.5, 1.5)`
+
+**Key takeaways:**
+- **Same-level mobs** previously dealt **200%** damage — double their raw stat value — because the lerp midpoint between the default `1.0` and `3.0` landed there. They now deal **100%**, i.e. exactly what their stats say.
+- **Under-leveled mobs** drop to **50%** at −15 levels and **25%** beyond that. A level 1 mob hitting a level 100 player goes from full-parity damage to trivially weak, as intended.
+- **Over-leveled mobs** are also much less spikey: 300% at the cap instead of 500% beyond it, removing the main source of single-hit kills from high-level elites.
+- The **50% reduction is consistent across the entire lerp range** (−15 to +15), which means the curve shape is the same — only the scale changed.
+
+### Shiva Dungeon Scaling Reduction (`Balance`)
+
+- `shiva-dungeons.json`: Tier ≤3 and Tier >3 entries both adjusted:
+  - HP per level: `0.1` → `0.075`
+  - Damage per level: `0.4` → `0.3`
+
+### Branding Image Compression (`Assets`)
+
+- `EndlessBanner.png`: 1,053 KB → 98 KB
+- `EndlessBanner2.png`: 709 KB → 70 KB
+- `EndlessLeveling.png`: 1,506 KB → 59 KB
+- Copies under `Pages/Images/` synced to match.
+
+### Version
+
+- `gradle.properties`: `7.6.0` → `7.6.1`.
+- `manifest.json`: synced to match.
+
+### Files Changed
+
+```
+gradle.properties                                                  |  2 +-
+manifest.json                                                      |  2 +-
+EndlessLeveling.java                                               | +19
+commands/CommandRegistrar.java                                     | +11 / -2
+commands/classes/AddClassSwapCommand.java                          |  1 fix
+commands/profile/ProfileSelectSubCommand.java                      | +11
+commands/xpstats/XpStatsCommand.java                               | new
+commands/xpstats/XpStatsAdminSubCommand.java                       | new
+commands/xpstats/XpStatsProfileSubCommand.java                     | new
+commands/xpstats/XpStatsProfilesSubCommand.java                    | new
+commands/xpstats/XpStatsTopSubCommand.java                         | new
+leveling/LevelingManager.java                                      | +19
+listeners/PlayerDataListener.java                                  | +13
+player/PlayerDataManager.java                                      | +12
+shutdown/EndlessLevelingShutdownCoordinator.java                   | +14
+systems/XpStatsAutosaveSystem.java                                 | new
+ui/NavUIHelper.java                                                | +12
+ui/XpStatsAdminUIPage.java                                         | new
+ui/XpStatsLeaderboardUIPage.java                                   | new
+ui/XpStatsUIPage.java                                              | new
+xpstats/XpStatsData.java                                          | new
+xpstats/XpStatsKey.java                                           | new
+xpstats/XpStatsLeaderboardService.java                            | new
+xpstats/XpStatsManager.java                                       | new
+Nav/TopNavBar.ui                                                   | +74 / -15
+XpStats/XpStatsPage.ui                                             | new
+XpStats/XpStatsLeaderboardPage.ui                                  | new
+XpStats/XpStatsAdminPage.ui                                        | new
+XpStats/XpStatsRow.ui                                              | new
+XpStats/XpStatsRowFirst.ui                                         | new
+XpStats/XpStatsRowSecond.ui                                        | new
+XpStats/XpStatsRowThird.ui                                         | new
+XpStats/XpStatsHourlyBar.ui                                        | new
+XpStats/XpStatsDailyBar.ui                                         | new
+XpStats/XpStatsPrestigeEntry.ui                                    | new
+Profile/ProfilePage.ui                                             |  1 fix
+Profile/ProfilePagePartner.ui                                      |  1 fix
++ 13 more .ui pages (BottomNavBar auto-width fix)                  |  1 fix each
+Common/Images/Branding/EndlessBanner.png                           | compressed
+Common/Images/Branding/EndlessBanner2.png                          | compressed
+Common/Images/Branding/EndlessLeveling.png                         | compressed
+Pages/Images/EndlessBanner.png                                     | compressed
+Pages/Images/EndlessBanner2.png                                    | compressed
+world-settings/shiva-dungeons.json                                 | +4 / -4
+```
+
 ## 2026-04-09 — 7.6.0 (compared to 7.5.0)
 
 A balance, safety, and QoL pass on top of 7.5.0. The headlines are a new death XP penalty system, a per-kill XP gain cap, automatic friendly-mob blacklisting via the Attitude API, clearer attribute labels in the Skills UI, and a teleport-safety rewrite for the login safe-spawn path.

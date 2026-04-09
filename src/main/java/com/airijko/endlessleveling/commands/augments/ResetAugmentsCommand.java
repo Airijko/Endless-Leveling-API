@@ -8,11 +8,11 @@ import com.airijko.endlessleveling.util.PartnerConsoleGuard;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.AbstractCommand;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
-import com.hypixel.hytale.server.core.command.system.CommandUtil;
+
 import com.hypixel.hytale.server.core.command.system.arguments.system.RequiredArg;
 import com.hypixel.hytale.server.core.command.system.arguments.types.ArgTypes;
 import com.hypixel.hytale.server.core.entity.entities.Player;
-import com.hypixel.hytale.server.core.permissions.HytalePermissions;
+import com.airijko.endlessleveling.util.OperatorHelper;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
 
@@ -21,8 +21,6 @@ import javax.annotation.Nullable;
 import java.util.concurrent.CompletableFuture;
 
 public class ResetAugmentsCommand extends AbstractCommand {
-
-    private static final String PERMISSION_NODE = HytalePermissions.fromCommand("endlessleveling.augments.reset");
 
     private final PlayerDataManager playerDataManager;
     private final AugmentUnlockManager augmentUnlockManager;
@@ -58,7 +56,8 @@ public class ResetAugmentsCommand extends AbstractCommand {
         boolean senderIsPlayer = senderPlayer != null;
 
         if (senderIsPlayer) {
-            CommandUtil.requirePermission(context.sender(), PERMISSION_NODE);
+            PlayerRef senderRef = Universe.get().getPlayer(senderPlayer.getUuid());
+            if (OperatorHelper.denyNonAdmin(senderRef)) return CompletableFuture.completedFuture(null);
         } else {
             if (!PartnerConsoleGuard.isConsoleAllowed("el augments reset")) {
                 context.sendMessage(Message.raw(

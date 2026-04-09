@@ -595,7 +595,7 @@ $C.@PageOverlay {
             Anchor: (Height: 92);
 
             Group {
-                Anchor: (Width: 480, Height: 92);
+                Anchor: (Height: 92);
                 $Nav.@BottomNavBar {}
             }
         }

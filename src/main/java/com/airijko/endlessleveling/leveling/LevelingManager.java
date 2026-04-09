@@ -272,6 +272,13 @@ public class LevelingManager {
         }
 
         playerDataManager.save(player);
+
+        // Record XP gain for analytics tracking
+        var xpStats = EndlessLeveling.getInstance().getXpStatsManager();
+        if (xpStats != null) {
+            xpStats.recordXpGain(uuid, player.getActiveProfileIndex(), adjustedXp);
+        }
+
         refreshHud(player);
     }
 
@@ -313,6 +320,12 @@ public class LevelingManager {
             }
             if (player.getLevel() >= effectiveCap && player.getXp() != 0) {
                 player.setXp(0);
+            }
+
+            // Record raw XP adjustment for analytics tracking
+            var xpStats = EndlessLeveling.getInstance().getXpStatsManager();
+            if (xpStats != null) {
+                xpStats.recordXpGain(uuid, player.getActiveProfileIndex(), delta);
             }
         }
 
@@ -671,6 +684,12 @@ public class LevelingManager {
         }
 
         playerDataManager.save(player);
+
+        // Record prestige event for analytics tracking
+        var xpStats = EndlessLeveling.getInstance().getXpStatsManager();
+        if (xpStats != null) {
+            xpStats.recordPrestige(player.getUuid(), player.getActiveProfileIndex(), nextPrestigeLevel);
+        }
 
         if (eventHookManager != null) {
             eventHookManager.onPrestigeLevelUp(player, oldPrestigeLevel, nextPrestigeLevel);

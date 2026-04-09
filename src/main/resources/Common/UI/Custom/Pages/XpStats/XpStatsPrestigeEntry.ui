@@ -1,0 +1,19 @@
+$C = "../../Common.ui";
+
+Group {
+    LayoutMode: Left;
+    Anchor: (Height: 20);
+    Padding: (Horizontal: 4, Vertical: 2);
+
+    Label #PrestigeLevel {
+        Style: (TextColor: #ffd79a, FontSize: 12, RenderBold: true);
+        Anchor: (Width: 60);
+        Text: "P1";
+    }
+
+    Label #PrestigeDate {
+        Style: (TextColor: #c0cee5, FontSize: 12);
+        FlexWeight: 1;
+        Text: "---";
+    }
+}

@@ -111,11 +111,11 @@
           "Scaling": {
             "Health": {
               "Base_Multiplier": 1.0,
-              "Per_Level": 0.1
+              "Per_Level": 0.075
             },
             "Damage": {
               "Base_Multiplier": 1.0,
-              "Per_Level": 0.4
+              "Per_Level": 0.3
             },
             "Defense": {
               "At_Negative_Max_Difference": 0.30,
@@ -133,11 +133,11 @@
           "Scaling": {
             "Health": {
               "Base_Multiplier": 1.0,
-              "Per_Level": 0.1
+              "Per_Level": 0.075
             },
             "Damage": {
               "Base_Multiplier": 1.0,
-              "Per_Level": 0.4
+              "Per_Level": 0.3
             },
             "Defense": {
               "At_Negative_Max_Difference": 0.30,

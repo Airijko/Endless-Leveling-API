@@ -12,11 +12,10 @@ import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.AbstractCommand;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
-import com.hypixel.hytale.server.core.command.system.CommandUtil;
 import com.hypixel.hytale.server.core.command.system.arguments.system.RequiredArg;
 import com.hypixel.hytale.server.core.command.system.arguments.types.ArgTypes;
 import com.hypixel.hytale.server.core.entity.entities.Player;
-import com.hypixel.hytale.server.core.permissions.HytalePermissions;
+import com.airijko.endlessleveling.util.OperatorHelper;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -26,8 +25,6 @@ import javax.annotation.Nullable;
 import java.util.concurrent.CompletableFuture;
 
 public class SetPrestigeCommand extends AbstractCommand {
-
-    private static final String PERMISSION_NODE = HytalePermissions.fromCommand("endlessleveling.setprestige");
 
     private final PlayerDataManager playerDataManager;
     private final LevelingManager levelingManager;
@@ -56,8 +53,9 @@ public class SetPrestigeCommand extends AbstractCommand {
     private CompletableFuture<Void> executeInternal(@Nonnull CommandContext commandContext,
             @Nullable String explicitTargetName,
             int requestedPrestige) {
-        if (commandContext.sender() instanceof Player) {
-            CommandUtil.requirePermission(commandContext.sender(), PERMISSION_NODE);
+        if (commandContext.sender() instanceof Player player) {
+            PlayerRef senderRef = Universe.get().getPlayer(player.getUuid());
+            if (OperatorHelper.denyNonAdmin(senderRef)) return CompletableFuture.completedFuture(null);
         } else if (!PartnerConsoleGuard.isConsoleAllowed("el setprestige")) {
             commandContext.sendMessage(Message.raw(
                     "Console admin access requires an authorized EndlessLevelingPartnerAddon.")

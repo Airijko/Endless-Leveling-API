@@ -1151,6 +1151,10 @@ public class PlayerDataManager {
 
         data.getProfiles().values().forEach(profile -> {
             String resolved = raceManager.resolveRaceIdentifier(profile.getRaceId());
+            // Nullify stale race IDs that no longer exist in the server's race registry.
+            if (resolved != null && raceManager.getRace(resolved) == null) {
+                resolved = null;
+            }
             profile.setRaceId(resolved);
         });
 
@@ -1173,8 +1177,16 @@ public class PlayerDataManager {
 
         data.getProfiles().values().forEach(profile -> {
             String resolvedPrimary = classManager.resolvePrimaryClassIdentifier(profile.getPrimaryClassId());
+            // Nullify stale class IDs that no longer exist in the server's class registry
+            // so the emergency-swap mechanism can grant a swap for re-selection.
+            if (resolvedPrimary != null && classManager.getClass(resolvedPrimary) == null) {
+                resolvedPrimary = null;
+            }
             profile.setPrimaryClassId(resolvedPrimary);
             String resolvedSecondary = classManager.resolveSecondaryClassIdentifier(profile.getSecondaryClassId());
+            if (resolvedSecondary != null && classManager.getClass(resolvedSecondary) == null) {
+                resolvedSecondary = null;
+            }
             if (resolvedSecondary != null && resolvedSecondary.equalsIgnoreCase(resolvedPrimary)) {
                 resolvedSecondary = null;
             }

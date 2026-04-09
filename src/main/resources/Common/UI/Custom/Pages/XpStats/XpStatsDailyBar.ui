@@ -1,0 +1,25 @@
+$C = "../../Common.ui";
+
+Group {
+    LayoutMode: Left;
+    Anchor: (Height: 24);
+    Padding: (Horizontal: 4, Vertical: 2);
+
+    Label #DayLabel {
+        Style: (TextColor: #87dfff, FontSize: 13, RenderBold: true);
+        Anchor: (Width: 50);
+        Text: "Mon";
+    }
+
+    Group {
+        FlexWeight: 1;
+        Background: #0b141f(0.5);
+        Anchor: (Height: 16);
+    }
+
+    Label #ValueLabel {
+        Style: (TextColor: #c0cee5, FontSize: 13, HorizontalAlignment: End);
+        Anchor: (Width: 100);
+        Text: "0";
+    }
+}

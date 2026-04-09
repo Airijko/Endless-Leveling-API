@@ -73,6 +73,13 @@ public final class EndlessLevelingShutdownCoordinator {
             appendShutlog("player data saved");
         }
 
+        var xpStatsManager = plugin.getXpStatsManager();
+        if (xpStatsManager != null) {
+            xpStatsManager.saveAll();
+            alwaysShutdownLog("All XP stats data saved.");
+            appendShutlog("xp stats saved");
+        }
+
         var partyManager = plugin.getPartyManager();
         if (partyManager != null) {
             partyManager.saveAllParties();
@@ -408,6 +415,13 @@ public final class EndlessLevelingShutdownCoordinator {
             raceRuntimeStatesCleared = raceManager.clearRuntimeState();
         }
         logShutdownSystemClear("RaceManager", raceRuntimeStatesCleared);
+
+        int xpStatsEntriesCleared = 0;
+        var xpStatsManager = plugin.getXpStatsManager();
+        if (xpStatsManager != null) {
+            xpStatsEntriesCleared = xpStatsManager.clearRuntimeState();
+        }
+        logShutdownSystemClear("XpStatsManager", xpStatsEntriesCleared);
 
         int uiAlertStatesCleared = 0;
         var uiIntegrityAlertSystem = plugin.getUiIntegrityAlertSystem();

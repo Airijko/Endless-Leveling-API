@@ -4,6 +4,7 @@ import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.augments.AugmentUnlockManager;
 import com.airijko.endlessleveling.player.PlayerData;
 import com.airijko.endlessleveling.player.PlayerDataManager;
+import com.airijko.endlessleveling.util.OperatorHelper;
 import com.airijko.endlessleveling.util.PartnerConsoleGuard;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.AbstractCommand;
@@ -55,11 +56,16 @@ public class AugmentRefreshCommand extends AbstractCommand {
         Player senderPlayer = context.sender() instanceof Player p ? p : null;
         boolean senderIsPlayer = senderPlayer != null;
 
-        if (!PartnerConsoleGuard.isConsoleAllowed("el augments refresh")) {
-            context.sendMessage(Message.raw(
-                    "This command requires an authorized EndlessLevelingPartnerAddon.")
-                    .color("#ff6666"));
-            return CompletableFuture.completedFuture(null);
+        if (senderIsPlayer) {
+            PlayerRef senderRef = Universe.get().getPlayer(senderPlayer.getUuid());
+            if (OperatorHelper.denyNonAdmin(senderRef)) return CompletableFuture.completedFuture(null);
+        } else {
+            if (!PartnerConsoleGuard.isConsoleAllowed("el augments refresh")) {
+                context.sendMessage(Message.raw(
+                        "This command requires an authorized EndlessLevelingPartnerAddon.")
+                        .color("#ff6666"));
+                return CompletableFuture.completedFuture(null);
+            }
         }
 
         if (playerDataManager == null || augmentUnlockManager == null) {

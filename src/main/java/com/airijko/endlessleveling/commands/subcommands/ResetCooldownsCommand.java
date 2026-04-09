@@ -7,9 +7,9 @@ import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
-import com.hypixel.hytale.server.core.command.system.CommandUtil;
+
 import com.hypixel.hytale.server.core.command.system.basecommands.AbstractPlayerCommand;
-import com.hypixel.hytale.server.core.permissions.HytalePermissions;
+import com.airijko.endlessleveling.util.OperatorHelper;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -23,8 +23,6 @@ import javax.annotation.Nonnull;
  * runtime state for cached players.
  */
 public class ResetCooldownsCommand extends AbstractPlayerCommand {
-
-    private static final String PERMISSION_NODE = HytalePermissions.fromCommand("endlessleveling.resetcooldowns");
 
     private final PassiveManager passiveManager;
     private final AugmentRuntimeManager augmentRuntimeManager;
@@ -42,7 +40,7 @@ public class ResetCooldownsCommand extends AbstractPlayerCommand {
             @Nonnull Ref<EntityStore> ref,
             @Nonnull PlayerRef senderRef,
             @Nonnull World world) {
-        CommandUtil.requirePermission(commandContext.sender(), PERMISSION_NODE);
+        if (OperatorHelper.denyNonAdmin(senderRef)) return;
 
         if (passiveManager == null && augmentRuntimeManager == null) {
             senderRef.sendMessage(Lang.message("command.reset_cooldowns.unavailable")

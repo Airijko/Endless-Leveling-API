@@ -1,0 +1,154 @@
+$C = "../../Common.ui";
+$Nav = "../Nav/TopNavBar.ui";
+
+@TabLabelStyle = LabelStyle(
+    FontSize: 14,
+    TextColor: #bfcdd5,
+    RenderBold: true,
+    RenderUppercase: true,
+    HorizontalAlignment: Center,
+    VerticalAlignment: Center
+);
+
+@TabStyle = TextButtonStyle(
+    Default: (Background: $C.@DefaultSquareButtonDefaultBackground, LabelStyle: @TabLabelStyle),
+    Hovered: (Background: $C.@DefaultSquareButtonHoveredBackground, LabelStyle: @TabLabelStyle),
+    Pressed: (Background: $C.@DefaultSquareButtonPressedBackground, LabelStyle: @TabLabelStyle),
+    Disabled: (Background: $C.@DefaultSquareButtonDisabledBackground, LabelStyle: @TabLabelStyle),
+    Sounds: $C.@ButtonSounds,
+);
+
+$C.@PageOverlay {
+    Group {
+        LayoutMode: Middle;
+        Padding: (Vertical: 12);
+
+        Group {
+            LayoutMode: Middle;
+            Anchor: (Height: 92);
+            Group {
+                Anchor: (Height: 92);
+                $Nav.@TopNavBar {}
+            }
+        }
+
+        Group { Anchor: (Height: 14); }
+
+        Group {
+            LayoutMode: Middle;
+
+    $Nav.@ObjectiveContainer {
+        Anchor: (Width: 1000, Height: 700);
+        #Title {
+            Label #AdminTitle {
+                Text: "ENDLESS LEVELING";
+                Style: $Nav.@PanelTitleStyle;
+            }
+        }
+
+        #Content {
+            LayoutMode: Left;
+            Padding: (Full: 0);
+
+            Group #RightPanel {
+                FlexWeight: 1;
+                LayoutMode: Top;
+
+                Group #Header {
+                    LayoutMode: Left;
+                    Anchor: (Height: 60);
+                    Padding: (Horizontal: 16, Vertical: 10);
+
+                    Label #PageTitleLabel {
+                        Text: "XP Stats Admin";
+                        Anchor: (Height: 60);
+                        Style: (FontSize: 22, TextColor: #ffffff, RenderBold: true, VerticalAlignment: Center);
+                    }
+
+                    Group { FlexWeight: 1; }
+
+                    Label #StatusLabel {
+                        Style: (TextColor: #aaccff, FontSize: 14, VerticalAlignment: Center);
+                        Text: "";
+                    }
+                }
+
+                Group { Anchor: (Height: 1); Background: #2b3542; }
+
+                Group #Main {
+                    LayoutMode: Top;
+                    FlexWeight: 1;
+                    Padding: (Full: 16);
+
+                    Group #TabBar {
+                        LayoutMode: Left;
+                        Anchor: (Height: 36);
+
+                        $C.@TextButton #TabLeaderboard {
+                            Text: "LEADERBOARD";
+                            Anchor: (Width: 130, Height: 30);
+                            Style: @TabStyle;
+                        }
+
+                        Group { Anchor: (Width: 6); }
+
+                        $C.@TextButton #TabFlagged {
+                            Text: "FLAGGED";
+                            Anchor: (Width: 100, Height: 30);
+                            Style: @TabStyle;
+                        }
+
+                        Group { Anchor: (Width: 6); }
+
+                        $C.@TextButton #TabRefresh {
+                            Text: "REFRESH";
+                            Anchor: (Width: 100, Height: 30);
+                            Style: @TabStyle;
+                        }
+
+                        Group { FlexWeight: 1; }
+
+                        Label #ActiveTabLabel {
+                            Style: (TextColor: #9ab6d4, FontSize: 12, VerticalAlignment: Center);
+                            Text: "";
+                        }
+                    }
+
+                    Group { Anchor: (Height: 8); }
+
+                    Group #ContentArea {
+                        LayoutMode: Top;
+                        FlexWeight: 1;
+                        Background: #070b12(0.9);
+                        Padding: (Full: 8);
+
+                        Group #ContentRows {
+                            FlexWeight: 1;
+                            LayoutMode: TopScrolling;
+                            ScrollbarStyle: $C.@DefaultScrollbarStyle;
+
+                            Group #RowCards {
+                                LayoutMode: Top;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+        }
+
+        Group { Anchor: (Height: 14); }
+
+        Group {
+            LayoutMode: Middle;
+            Anchor: (Height: 92);
+            Group {
+                Anchor: (Height: 92);
+                $Nav.@BottomNavBar {}
+            }
+        }
+    }
+}
+
+$C.@BackButton {}

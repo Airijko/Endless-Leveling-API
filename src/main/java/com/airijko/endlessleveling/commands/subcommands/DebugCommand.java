@@ -7,9 +7,9 @@ import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
-import com.hypixel.hytale.server.core.command.system.CommandUtil;
+
 import com.hypixel.hytale.server.core.command.system.basecommands.AbstractPlayerCommand;
-import com.hypixel.hytale.server.core.permissions.HytalePermissions;
+import com.airijko.endlessleveling.util.OperatorHelper;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -21,7 +21,6 @@ import java.net.URL;
 
 public class DebugCommand extends AbstractPlayerCommand {
 
-    private static final String MOB_CLEANUP_PERMISSION = HytalePermissions.fromCommand("endlessleveling.debug.mobcleanup");
     private final MobLevelingManager mobLevelingManager;
     private final MobLevelingSystem mobLevelingSystem;
 
@@ -142,7 +141,7 @@ public class DebugCommand extends AbstractPlayerCommand {
                 @Nonnull Ref<EntityStore> ref,
                 @Nonnull PlayerRef senderRef,
                 @Nonnull World world) {
-            CommandUtil.requirePermission(commandContext.sender(), MOB_CLEANUP_PERMISSION);
+            if (OperatorHelper.denyNonAdmin(senderRef)) return;
 
             if (mobLevelingSystem == null) {
                 senderRef.sendMessage(Message.raw("MobLevelingSystem is unavailable.").color("#ff6666"));
