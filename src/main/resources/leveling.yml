@@ -1,9 +1,10 @@
-# Leveling formula used to calculate XP required for the next level.
+# XP required for the next level (linear, infinite scaling).
+# xpCap = xp_cap_base + xp_cap_per_level * max(0, level - xp_cap_threshold)
+# Prestige is not factored in directly; it raises the level cap, which naturally raises XP requirements.
 default:
-  expression: "base * ((log(level)+1) * (sqrt(level)))^1.8"
-  # LOG10 (default) or LN
-  log_mode: LOG10
-  base: 100
+  xp_cap_base: 20000
+  xp_cap_per_level: 600
+  xp_cap_threshold: 100
 
 # If you change these values, resync player skill points with "/el resetskillpointsall".
 baseSkillPoints: 12
@@ -52,7 +53,6 @@ prestige:
   enabled: true
   prestige_level_cap: ENDLESS # ENDLESS = no prestige cap; set an integer to cap prestige levels
   level_cap_increase_per_prestige: 10
-  base_xp_increase_per_prestige: 20
   # Prestige augment milestone slots by tier.
   # Each entry requires both a prestige condition and an optional player level gate (required_player_level).
   # - Use prestige_levels: [1, 2, ...] for explicit milestones.

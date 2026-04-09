@@ -419,6 +419,31 @@ public final class EndlessLevelingAPI {
     }
 
     /**
+     * Directly adjusts a player's XP pool without applying personal bonuses
+     * (discipline, luck, archetype) and without triggering XP grant listeners.
+     * Positive values add XP (with level-up checks), negative values subtract
+     * (clamped at 0). Used by the marriage even-split system.
+     */
+    public void adjustRawXp(UUID playerUuid, double delta) {
+        LevelingManager levelingManager = levelingManager();
+        if (playerUuid == null || levelingManager == null || delta == 0) {
+            return;
+        }
+        levelingManager.adjustRawXp(playerUuid, delta);
+    }
+
+    /**
+     * Check whether a player is currently in a party.
+     */
+    public boolean isInParty(UUID playerUuid) {
+        if (playerUuid == null) {
+            return false;
+        }
+        PartyManager partyManager = partyManager();
+        return partyManager != null && partyManager.isInParty(playerUuid);
+    }
+
+    /**
      * Grant XP and share it with the source's party members within maxDistance
      * (same world). If no party or no one in range, only the source receives XP.
      */

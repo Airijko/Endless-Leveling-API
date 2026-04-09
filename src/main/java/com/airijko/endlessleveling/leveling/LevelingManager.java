@@ -51,8 +51,9 @@ public class LevelingManager {
     private final AugmentUnlockManager augmentUnlockManager;
     private final EventHookManager eventHookManager;
 
-    private double baseXp;
-    private double multiplier;
+    private double xpCapBase;
+    private double xpCapPerLevel;
+    private int xpCapThreshold;
     private int levelCap;
     private boolean experienceRulesEnabled;
     private boolean xpLevelRangeEnabled;
@@ -72,8 +73,6 @@ public class LevelingManager {
     private boolean prestigeEnabled;
     private Integer prestigeCap;
     private int prestigeLevelCapIncrease;
-    private double prestigeBaseXpIncrease;
-    private LogMode logMode;
 
     public LevelingManager(PlayerDataManager playerDataManager, PluginFilesManager filesManager,
             SkillManager skillManager, ArchetypePassiveManager archetypePassiveManager,
@@ -98,16 +97,14 @@ public class LevelingManager {
 
     /** Load numeric values from leveling.yml via ConfigManager */
     public void loadConfigValues() {
-        baseXp = getDouble("default.base", 50.0D);
-        multiplier = parseMultiplier((String) configManager.get("default.expression",
-                "base * ((log(level)+1) * sqrt(level))^1.5"), 1.5);
-        logMode = LogMode.fromString(getString("default.log_mode", "LOG10"));
+        xpCapBase = Math.max(1.0D, getDouble("default.xp_cap_base", 20000.0D));
+        xpCapPerLevel = Math.max(0.0D, getDouble("default.xp_cap_per_level", 600.0D));
+        xpCapThreshold = Math.max(1, getInt("default.xp_cap_threshold", 100));
         int configuredCap = getInt("player_level_cap", 100);
         levelCap = Math.max(1, configuredCap);
         prestigeEnabled = getBoolean("prestige.enabled", true);
         prestigeCap = parsePrestigeCap(configManager.get("prestige.prestige_level_cap", "ENDLESS", false));
         prestigeLevelCapIncrease = Math.max(0, getInt("prestige.level_cap_increase_per_prestige", 10));
-        prestigeBaseXpIncrease = Math.max(0.0D, getDouble("prestige.base_xp_increase_per_prestige", 10.0D));
 
         String levelSourceMode = getString("Mob_Leveling.Level_Source.Mode", "FIXED").toUpperCase(Locale.ROOT);
         playerBasedMode = "PLAYER".equals(levelSourceMode);
@@ -134,26 +131,14 @@ public class LevelingManager {
         xpScalingMinMultiplier = clampMultiplier(getDouble("Mob_Leveling.Experience.Scaling.MinMultiplier", 0.1));
 
         LOGGER.atInfo().log(
-                "Leveling config loaded: base=%f, multiplier=%f, logMode=%s, cap=%d, prestigeEnabled=%s, prestigeCap=%s, cap+%d/base+%.2f",
-                baseXp,
-                multiplier,
-                logMode,
+                "Leveling config loaded: xpCapBase=%.0f, xpCapPerLevel=%.0f, xpCapThreshold=%d, cap=%d, prestigeEnabled=%s, prestigeCap=%s, cap+%d",
+                xpCapBase,
+                xpCapPerLevel,
+                xpCapThreshold,
                 levelCap,
                 prestigeEnabled,
                 prestigeCap == null ? "ENDLESS" : prestigeCap,
-                prestigeLevelCapIncrease,
-                prestigeBaseXpIncrease);
-    }
-
-    private double parseMultiplier(String expr, double fallback) {
-        try {
-            int powIndex = expr.indexOf('^');
-            if (powIndex >= 0 && powIndex + 1 < expr.length()) {
-                return Double.parseDouble(expr.substring(powIndex + 1).trim());
-            }
-        } catch (Exception ignored) {
-        }
-        return fallback;
+                prestigeLevelCapIncrease);
     }
 
     @Nonnull
@@ -264,6 +249,51 @@ public class LevelingManager {
         refreshHud(player);
     }
 
+    /**
+     * Directly adjusts a player's XP pool without applying personal bonuses
+     * (discipline, luck, archetype) and without triggering XP grant listeners.
+     * Positive values add XP (with level-up checks), negative values subtract
+     * (clamped at 0). Used by the marriage even-split system to redistribute
+     * XP between spouses after the normal pipeline has run.
+     */
+    public void adjustRawXp(UUID uuid, double delta) {
+        if (delta == 0.0D) {
+            return;
+        }
+
+        PlayerData player = playerDataManager.get(uuid);
+        if (player == null) {
+            return;
+        }
+
+        int effectiveCap = getLevelCap(player);
+        if (player.getLevel() >= effectiveCap) {
+            return;
+        }
+
+        double newXp = player.getXp() + delta;
+        player.setXp(Math.max(0.0D, newXp));
+
+        if (delta > 0.0D) {
+            boolean leveledUp = false;
+            while (player.getLevel() < effectiveCap
+                    && player.getXp() >= getXpForNextLevel(player, player.getLevel())) {
+                levelUp(player);
+                leveledUp = true;
+            }
+            if (leveledUp && augmentUnlockManager != null) {
+                augmentUnlockManager.ensureUnlocks(player);
+                notifyAvailableAugments(player);
+            }
+            if (player.getLevel() >= effectiveCap && player.getXp() != 0) {
+                player.setXp(0);
+            }
+        }
+
+        playerDataManager.save(player);
+        refreshHud(player);
+    }
+
     public double getLuckXpBonusPercent(double totalLuckPercent) {
         double clampedLuck = Math.max(0.0D, totalLuckPercent);
         if (clampedLuck <= 100.0D) {
@@ -277,7 +307,7 @@ public class LevelingManager {
         if (level >= getLevelCap()) {
             return Double.POSITIVE_INFINITY;
         }
-        return baseXp * computeLevelCurve(level);
+        return xpCapBase + xpCapPerLevel * Math.max(0, level - xpCapThreshold);
     }
 
     public double getXpForNextLevel(PlayerData player, int level) {
@@ -285,18 +315,7 @@ public class LevelingManager {
         if (level >= effectiveCap) {
             return Double.POSITIVE_INFINITY;
         }
-        int prestigeLevel = player != null ? Math.max(0, player.getPrestigeLevel()) : 0;
-        double effectiveBaseXp = getBaseXpForPrestige(prestigeLevel);
-        return effectiveBaseXp * computeLevelCurve(level);
-    }
-
-    private double computeLevelCurve(int level) {
-        int safeLevel = Math.max(1, level);
-        double logValue = switch (logMode) {
-            case LN -> Math.log(safeLevel);
-            case LOG10 -> Math.log10(safeLevel);
-        };
-        return Math.pow((logValue + 1.0D) * Math.sqrt(safeLevel), multiplier);
+        return xpCapBase + xpCapPerLevel * Math.max(0, level - xpCapThreshold);
     }
 
     private void levelUp(PlayerData player) {
@@ -521,10 +540,6 @@ public class LevelingManager {
         return Math.max(1, levelCap + (prestigeLevelCapIncrease * safePrestige));
     }
 
-    public double getBaseXpForPrestige(int prestigeLevel) {
-        int safePrestige = Math.max(0, prestigeLevel);
-        return Math.max(1.0D, baseXp + (prestigeBaseXpIncrease * safePrestige));
-    }
 
     public boolean isPrestigeEnabled() {
         return prestigeEnabled;
@@ -580,11 +595,10 @@ public class LevelingManager {
         pushPartyProHudText(player);
         requestAttributeResync(player);
 
-        LOGGER.atInfo().log("Player %s gained prestige %d (new cap=%d, baseXP=%.2f)",
+        LOGGER.atInfo().log("Player %s gained prestige %d (new cap=%d)",
                 player.getPlayerName(),
                 nextPrestigeLevel,
-                getLevelCap(player),
-                getBaseXpForPrestige(nextPrestigeLevel));
+                getLevelCap(player));
 
         return PrestigeResult.SUCCESS;
     }
@@ -925,21 +939,6 @@ public class LevelingManager {
         PLAYER_TOO_LOW
     }
 
-    private enum LogMode {
-        LOG10,
-        LN;
-
-        static LogMode fromString(String value) {
-            if (value == null) {
-                return LOG10;
-            }
-            return switch (value.trim().toUpperCase(Locale.ROOT)) {
-                case "LN", "NATURAL", "NATURAL_LOG", "LOG_E" -> LN;
-                case "LOG10", "LOG_10", "BASE10", "10" -> LOG10;
-                default -> LOG10;
-            };
-        }
-    }
 
     public enum PrestigeResult {
         SUCCESS,
