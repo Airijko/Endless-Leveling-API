@@ -713,7 +713,7 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                         SkillManager.StrengthBreakdown strengthPreview = skillManager.getStrengthBreakdown(playerData,
                                         strLevel);
                         ui.set("#StrengthLevel.Text", String.valueOf(strLevel));
-                        ui.set("#StrengthValue.Text", withUnit("+" + formatNumber(strengthPreview.totalValue()) + "%", "PHYS DMG"));
+                        ui.set("#StrengthValue.Text", withUnit("+" + formatNumber(strengthPreview.totalValue()) + "%", "PHYSICAL DMG"));
                 }
 
                 if (!isAttributeHidden(SkillAttributeType.SORCERY)) {
@@ -722,7 +722,7 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                                         SkillAttributeType.SORCERY,
                                         sorcLevel);
                         ui.set("#SorceryLevel.Text", String.valueOf(sorcLevel));
-                        ui.set("#SorceryValue.Text", withUnit("+" + formatNumber(sorceryTotal) + "%", "MAG DMG"));
+                        ui.set("#SorceryValue.Text", withUnit("+" + formatNumber(sorceryTotal) + "%", "MAGICAL DMG"));
                 }
 
                 if (!isAttributeHidden(SkillAttributeType.DEFENSE)) {
@@ -737,7 +737,7 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                         SkillManager.HasteBreakdown hastePreview = skillManager.getHasteBreakdown(playerData, hasteLevel);
                         double hastePercent = (hastePreview.totalMultiplier() - 1.0f) * 100.0f;
                         ui.set("#HasteLevel.Text", String.valueOf(hasteLevel));
-                        ui.set("#HasteValue.Text", withUnit("+" + formatNumber(hastePercent) + "%", "SPEED"));
+                        ui.set("#HasteValue.Text", withUnit("+" + formatNumber(hastePercent) + "%", "MOVEMENT SPEED"));
                 }
 
                 if (!isAttributeHidden(SkillAttributeType.PRECISION)) {
@@ -749,7 +749,7 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                         double precisionTotal = precisionPreview != null
                                         ? precisionPreview.totalPercent()
                                         : Math.min(100.0D, getPrecisionPreviewPercent(playerData, precLevel));
-                        ui.set("#PrecisionValue.Text", withUnit(formatNumber(precisionTotal) + "%", "CRIT RATE"));
+                        ui.set("#PrecisionValue.Text", withUnit(formatNumber(precisionTotal) + "%", "CRITICAL RATE"));
                 }
 
                 if (!isAttributeHidden(SkillAttributeType.FEROCITY)) {
@@ -757,7 +757,7 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                         SkillManager.FerocityBreakdown ferocityPreview = skillManager.getFerocityBreakdown(playerData,
                                         ferLevel);
                         ui.set("#FerocityLevel.Text", String.valueOf(ferLevel));
-                        ui.set("#FerocityValue.Text", withUnit("+" + formatNumber(ferocityPreview.totalValue()) + "%", "CRIT DMG"));
+                        ui.set("#FerocityValue.Text", withUnit("+" + formatNumber(ferocityPreview.totalValue()) + "%", "CRITICAL DMG"));
                 }
 
                 if (!isAttributeHidden(SkillAttributeType.STAMINA)) {
@@ -781,7 +781,7 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                                         SkillAttributeType.DISCIPLINE,
                                         discLevel);
                         ui.set("#DisciplineLevel.Text", String.valueOf(discLevel));
-                        ui.set("#DisciplineValue.Text", withUnit("+" + formatNumber(discBonus) + "%", "XP"));
+                        ui.set("#DisciplineValue.Text", withUnit("+" + formatNumber(discBonus) + "%", "XP BONUS"));
                 }
 
                 applyExcessPanelValues(ui, playerData);

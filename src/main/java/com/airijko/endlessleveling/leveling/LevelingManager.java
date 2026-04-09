@@ -51,9 +51,13 @@ public class LevelingManager {
     private final AugmentUnlockManager augmentUnlockManager;
     private final EventHookManager eventHookManager;
 
-    private double xpCapBase;
-    private double xpCapPerLevel;
-    private int xpCapThreshold;
+    private double baseXp;
+    private double multiplier;
+    private LogMode logMode;
+    private double prestigeBaseXpIncrease;
+    private double xpGainCapBase;
+    private double xpGainCapPerLevel;
+    private int xpGainCapThreshold;
     private int levelCap;
     private boolean experienceRulesEnabled;
     private boolean xpLevelRangeEnabled;
@@ -73,6 +77,9 @@ public class LevelingManager {
     private boolean prestigeEnabled;
     private Integer prestigeCap;
     private int prestigeLevelCapIncrease;
+    private boolean deathXpPenaltyEnabled;
+    private double deathXpCurrentPercent;
+    private double deathXpMaxPercent;
 
     public LevelingManager(PlayerDataManager playerDataManager, PluginFilesManager filesManager,
             SkillManager skillManager, ArchetypePassiveManager archetypePassiveManager,
@@ -97,14 +104,19 @@ public class LevelingManager {
 
     /** Load numeric values from leveling.yml via ConfigManager */
     public void loadConfigValues() {
-        xpCapBase = Math.max(1.0D, getDouble("default.xp_cap_base", 20000.0D));
-        xpCapPerLevel = Math.max(0.0D, getDouble("default.xp_cap_per_level", 600.0D));
-        xpCapThreshold = Math.max(1, getInt("default.xp_cap_threshold", 100));
+        baseXp = getDouble("default.base", 100.0D);
+        multiplier = parseMultiplier((String) configManager.get("default.expression",
+                "base * ((log(level)+1) * sqrt(level))^1.75"), 1.75);
+        logMode = LogMode.fromString(getString("default.log_mode", "LOG10"));
+        xpGainCapBase = Math.max(1.0D, getDouble("default.xp_gain_cap_base", 40000.0D));
+        xpGainCapPerLevel = Math.max(0.0D, getDouble("default.xp_gain_cap_per_level", 520.0D));
+        xpGainCapThreshold = Math.max(1, getInt("default.xp_gain_cap_threshold", 100));
         int configuredCap = getInt("player_level_cap", 100);
         levelCap = Math.max(1, configuredCap);
         prestigeEnabled = getBoolean("prestige.enabled", true);
         prestigeCap = parsePrestigeCap(configManager.get("prestige.prestige_level_cap", "ENDLESS", false));
         prestigeLevelCapIncrease = Math.max(0, getInt("prestige.level_cap_increase_per_prestige", 10));
+        prestigeBaseXpIncrease = Math.max(0.0D, getDouble("prestige.base_xp_increase_per_prestige", 20.0D));
 
         String levelSourceMode = getString("Mob_Leveling.Level_Source.Mode", "FIXED").toUpperCase(Locale.ROOT);
         playerBasedMode = "PLAYER".equals(levelSourceMode);
@@ -130,15 +142,23 @@ public class LevelingManager {
         xpScalingBonusAtMax = Math.max(0.0, getDouble("Mob_Leveling.Experience.Scaling.BonusAtMax", 0.0));
         xpScalingMinMultiplier = clampMultiplier(getDouble("Mob_Leveling.Experience.Scaling.MinMultiplier", 0.1));
 
+        deathXpPenaltyEnabled = getBoolean("death_xp_penalty.enabled", true);
+        deathXpCurrentPercent = Math.max(0.0D, getDouble("death_xp_penalty.current_xp_percent", 15.0D));
+        deathXpMaxPercent = Math.max(0.0D, getDouble("death_xp_penalty.max_xp_percent", 5.0D));
+
         LOGGER.atInfo().log(
-                "Leveling config loaded: xpCapBase=%.0f, xpCapPerLevel=%.0f, xpCapThreshold=%d, cap=%d, prestigeEnabled=%s, prestigeCap=%s, cap+%d",
-                xpCapBase,
-                xpCapPerLevel,
-                xpCapThreshold,
+                "Leveling config loaded: base=%.0f, multiplier=%.2f, logMode=%s, xpGainCap=%.0f+%.0f/lvl@%d, cap=%d, prestigeEnabled=%s, prestigeCap=%s, cap+%d/base+%.2f",
+                baseXp,
+                multiplier,
+                logMode,
+                xpGainCapBase,
+                xpGainCapPerLevel,
+                xpGainCapThreshold,
                 levelCap,
                 prestigeEnabled,
                 prestigeCap == null ? "ENDLESS" : prestigeCap,
-                prestigeLevelCapIncrease);
+                prestigeLevelCapIncrease,
+                prestigeBaseXpIncrease);
     }
 
     @Nonnull
@@ -186,6 +206,12 @@ public class LevelingManager {
 
         if (adjustedXp <= 0) {
             return;
+        }
+
+        // Enforce per-kill XP gain cap.
+        double gainCap = getXpGainCap(player.getLevel());
+        if (adjustedXp > gainCap) {
+            adjustedXp = gainCap;
         }
 
         int effectiveCap = getLevelCap(player);
@@ -294,6 +320,45 @@ public class LevelingManager {
         refreshHud(player);
     }
 
+    /**
+     * Applies the death XP penalty: subtracts a percentage of current XP plus
+     * a percentage of max XP for the current level.  The player cannot lose a
+     * level or prestige from this — XP is clamped at 0.
+     */
+    public void applyDeathXpPenalty(UUID uuid) {
+        if (!deathXpPenaltyEnabled) {
+            return;
+        }
+
+        PlayerData player = playerDataManager.get(uuid);
+        if (player == null) {
+            return;
+        }
+
+        double currentXp = player.getXp();
+        if (currentXp <= 0.0D) {
+            return;
+        }
+
+        double maxXp = getXpForNextLevel(player, player.getLevel());
+        if (!Double.isFinite(maxXp) || maxXp <= 0.0D) {
+            return;
+        }
+
+        double penalty = (deathXpCurrentPercent / 100.0D) * currentXp
+                + (deathXpMaxPercent / 100.0D) * maxXp;
+
+        double newXp = Math.max(0.0D, currentXp - penalty);
+        player.setXp(newXp);
+
+        LOGGER.atInfo().log(
+                "[DEATH_XP_PENALTY] player=%s level=%d currentXp=%.1f maxXp=%.1f penalty=%.1f newXp=%.1f",
+                uuid, player.getLevel(), currentXp, maxXp, penalty, newXp);
+
+        playerDataManager.save(player);
+        refreshHud(player);
+    }
+
     public double getLuckXpBonusPercent(double totalLuckPercent) {
         double clampedLuck = Math.max(0.0D, totalLuckPercent);
         if (clampedLuck <= 100.0D) {
@@ -307,7 +372,7 @@ public class LevelingManager {
         if (level >= getLevelCap()) {
             return Double.POSITIVE_INFINITY;
         }
-        return xpCapBase + xpCapPerLevel * Math.max(0, level - xpCapThreshold);
+        return baseXp * computeLevelCurve(level);
     }
 
     public double getXpForNextLevel(PlayerData player, int level) {
@@ -315,7 +380,27 @@ public class LevelingManager {
         if (level >= effectiveCap) {
             return Double.POSITIVE_INFINITY;
         }
-        return xpCapBase + xpCapPerLevel * Math.max(0, level - xpCapThreshold);
+        int prestigeLevel = player != null ? Math.max(0, player.getPrestigeLevel()) : 0;
+        double effectiveBaseXp = getBaseXpForPrestige(prestigeLevel);
+        return effectiveBaseXp * computeLevelCurve(level);
+    }
+
+    private double computeLevelCurve(int level) {
+        int safeLevel = Math.max(1, level);
+        double logValue = switch (logMode) {
+            case LN -> Math.log(safeLevel);
+            case LOG10 -> Math.log10(safeLevel);
+        };
+        return Math.pow((logValue + 1.0D) * Math.sqrt(safeLevel), multiplier);
+    }
+
+    public double getBaseXpForPrestige(int prestigeLevel) {
+        int safePrestige = Math.max(0, prestigeLevel);
+        return Math.max(1.0D, baseXp + (prestigeBaseXpIncrease * safePrestige));
+    }
+
+    public double getXpGainCap(int playerLevel) {
+        return xpGainCapBase + xpGainCapPerLevel * Math.max(0, playerLevel - xpGainCapThreshold);
     }
 
     private void levelUp(PlayerData player) {
@@ -937,6 +1022,32 @@ public class LevelingManager {
     private enum XpSuppressionReason {
         PLAYER_TOO_HIGH,
         PLAYER_TOO_LOW
+    }
+
+    private enum LogMode {
+        LOG10,
+        LN;
+
+        static LogMode fromString(String value) {
+            if (value == null) {
+                return LOG10;
+            }
+            return switch (value.trim().toUpperCase(Locale.ROOT)) {
+                case "LN", "NATURAL", "NATURAL_LOG", "LOG_E" -> LN;
+                default -> LOG10;
+            };
+        }
+    }
+
+    private double parseMultiplier(String expr, double fallback) {
+        try {
+            int powIndex = expr.indexOf('^');
+            if (powIndex >= 0 && powIndex + 1 < expr.length()) {
+                return Double.parseDouble(expr.substring(powIndex + 1).trim());
+            }
+        } catch (Exception ignored) {
+        }
+        return fallback;
     }
 
 

@@ -28,6 +28,7 @@ import com.hypixel.hytale.server.core.modules.entity.damage.DeathComponent;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.hypixel.hytale.server.core.asset.type.attitude.Attitude;
 import com.hypixel.hytale.server.npc.entities.NPCEntity;
 
 import java.io.File;
@@ -1226,6 +1227,27 @@ public class MobLevelingManager {
         return getConfigBoolean("Mob_Leveling.allow_passive_mob_leveling", false, null);
     }
 
+    public boolean isBlacklistFriendlyMobsEnabled(Store<EntityStore> store) {
+        return getConfigBoolean("Mob_Leveling.Blacklist_Friendly_Mobs", false, store);
+    }
+
+    public boolean isGainXpFromBlacklistedMobEnabled(Store<EntityStore> store) {
+        return getConfigBoolean("Mob_Leveling.Gain_XP_From_Blacklisted_Mob", true, store);
+    }
+
+    private boolean isEntityFriendlyMob(NPCEntity npc) {
+        try {
+            var role = npc.getRole();
+            if (role == null) {
+                return false;
+            }
+            Attitude attitude = role.getWorldSupport().getDefaultPlayerAttitude();
+            return attitude != null && attitude != Attitude.HOSTILE;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
     public boolean isWorldXpBlacklisted(Store<EntityStore> store) {
         String resolvedWorldId = resolveWorldIdentifier(store);
         if (resolvedWorldId == null || resolvedWorldId.isBlank()) {
@@ -1413,7 +1435,13 @@ public class MobLevelingManager {
 
         try {
             String mobType = npc.getNPCTypeId();
-            return mobType != null && isMobTypeBlacklisted(mobType, store);
+            if (mobType != null && isMobTypeBlacklisted(mobType, store)) {
+                return true;
+            }
+            if (isBlacklistFriendlyMobsEnabled(store) && isEntityFriendlyMob(npc)) {
+                return true;
+            }
+            return false;
         } catch (Throwable ignored) {
             return false;
         }
@@ -3791,6 +3819,10 @@ public class MobLevelingManager {
             candidates.add("Experience." + trimmedPath.substring("Mob_Leveling.Experience.".length()));
         } else if ("Mob_Leveling.Blacklist_Mob_Types".equals(trimmedPath)) {
             candidates.add("Blacklist_Mob_Types");
+        } else if ("Mob_Leveling.Blacklist_Friendly_Mobs".equals(trimmedPath)) {
+            candidates.add("Blacklist_Friendly_Mobs");
+        } else if ("Mob_Leveling.Gain_XP_From_Blacklisted_Mob".equals(trimmedPath)) {
+            candidates.add("Gain_XP_From_Blacklisted_Mob");
         } else if (trimmedPath.startsWith("Mob_Leveling.Level_Range.")) {
             candidates.add("Level_Range." + trimmedPath.substring("Mob_Leveling.Level_Range.".length()));
         } else if (trimmedPath.startsWith("Mob_Leveling.Level_Source.")) {
@@ -3814,6 +3846,8 @@ public class MobLevelingManager {
         }
 
         return "Enable_XP".equals(path)
+                || "Blacklist_Friendly_Mobs".equals(path)
+                || "Gain_XP_From_Blacklisted_Mob".equals(path)
                 || "Blacklist_Mob_Types".equals(path)
                 || "Level_Range".equals(path)
                 || "Level_Source".equals(path)

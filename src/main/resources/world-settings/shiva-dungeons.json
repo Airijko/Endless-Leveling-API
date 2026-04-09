@@ -51,7 +51,7 @@
             },
             "Damage": {
               "Base_Multiplier": 1.0,
-              "Per_Level": 0.035
+              "Per_Level": 0.4
             },
             "Defense": {
               "At_Negative_Max_Difference": 0.30,
@@ -115,7 +115,7 @@
             },
             "Damage": {
               "Base_Multiplier": 1.0,
-              "Per_Level": 0.035
+              "Per_Level": 0.4
             },
             "Defense": {
               "At_Negative_Max_Difference": 0.30,
@@ -137,7 +137,7 @@
             },
             "Damage": {
               "Base_Multiplier": 1.0,
-              "Per_Level": 0.035
+              "Per_Level": 0.4
             },
             "Defense": {
               "At_Negative_Max_Difference": 0.30,

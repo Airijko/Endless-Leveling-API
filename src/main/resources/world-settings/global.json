@@ -2,6 +2,14 @@
   "World_Overrides": {
     "Global": {
       "Enable_XP": true,
+      "Blacklist_Friendly_Mobs": true,
+      "Gain_XP_From_Blacklisted_Mob": false,
+      "Blacklist_Mob_Types": {
+        "ids": [],
+        "keywords": [
+          "Totem"
+        ]
+      },
       "Experience": {
         "Global_XP_Multiplier": 1.0,
         "XP_Level_Range": {

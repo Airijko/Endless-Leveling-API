@@ -1,16 +1,35 @@
-# XP required for the next level (linear, infinite scaling).
-# xpCap = xp_cap_base + xp_cap_per_level * max(0, level - xp_cap_threshold)
-# Prestige is not factored in directly; it raises the level cap, which naturally raises XP requirements.
+# Leveling formula used to calculate XP required for the next level.
+# xpForNextLevel = base * ((log(level) + 1) * sqrt(level)) ^ exponent
+# Prestige increases the effective base by base_xp_increase_per_prestige per prestige level.
 default:
-  xp_cap_base: 20000
-  xp_cap_per_level: 600
-  xp_cap_threshold: 100
+  expression: "base * ((log(level)+1) * sqrt(level))^1.8"
+  # LOG10 (default) or LN
+  log_mode: LOG10
+  base: 100
+  # Max XP a player can gain from a single kill.
+  # xpGainCap = xp_gain_cap_base + xp_gain_cap_per_level * max(0, level - xp_gain_cap_threshold)
+  xp_gain_cap_base: 40000
+  xp_gain_cap_per_level: 520
+  xp_gain_cap_threshold: 100
+  # Level 100 - 40,000 MAX XP GAIN
+  # Level 150 - 66,000 MAX XP GAIN
+  # Level 200 - 92,000 MAX XP GAIN
+  # Level 300 - 144,000 MAX XP GAIN
+  # Level 600 - 300,000 MAX XP GAIN
 
 # If you change these values, resync player skill points with "/el resetskillpointsall".
 baseSkillPoints: 12
 skillPointsPerLevel: 5
 
 player_level_cap: 100
+
+# Death XP penalty: on player death, subtract a percentage of current XP + a percentage of max XP for the level.
+# penalty = (current_xp_percent / 100) * currentXp + (max_xp_percent / 100) * xpForNextLevel
+# Player cannot lose a level or prestige from this — XP is clamped at 0.
+death_xp_penalty:
+  enabled: true
+  current_xp_percent: 15
+  max_xp_percent: 5
 
 # Party XP sharing (simple shared model).
 # - Killer always receives 100% of kill XP (solo logic/bonuses still apply).
@@ -53,6 +72,7 @@ prestige:
   enabled: true
   prestige_level_cap: ENDLESS # ENDLESS = no prestige cap; set an integer to cap prestige levels
   level_cap_increase_per_prestige: 10
+  base_xp_increase_per_prestige: 20
   # Prestige augment milestone slots by tier.
   # Each entry requires both a prestige condition and an optional player level gate (required_player_level).
   # - Use prestige_levels: [1, 2, ...] for explicit milestones.
