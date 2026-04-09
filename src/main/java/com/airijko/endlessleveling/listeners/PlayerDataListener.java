@@ -28,7 +28,9 @@ import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.event.events.player.PlayerDisconnectEvent;
 import com.hypixel.hytale.server.core.event.events.player.PlayerReadyEvent;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
+import com.hypixel.hytale.server.core.modules.entity.teleport.PendingTeleport;
 import com.hypixel.hytale.server.core.modules.entity.teleport.Teleport;
+import com.hypixel.hytale.component.Archetype;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
@@ -215,6 +217,27 @@ public class PlayerDataListener {
             return;
         }
 
+        // Skip if a teleport is already in-flight (e.g. death-eject from a gate instance).
+        // Adding a second Teleport component triggers a duplicate JoinWorld cycle that
+        // desynchronises the teleportId counter and disconnects the player on the next
+        // teleport-bearing command.
+        try {
+            Archetype<EntityStore> archetype = store.getArchetype(entityRef);
+            if (archetype != null
+                    && (archetype.contains(Teleport.getComponentType())
+                            || archetype.contains(PendingTeleport.getComponentType()))) {
+                LOGGER.atFine().log(
+                        "Skipping safe-login teleport for %s: teleport already in-flight in world %s",
+                        playerRef.getUsername(), world.getName());
+                return;
+            }
+        } catch (Exception ex) {
+            LOGGER.atFine().withCause(ex).log(
+                    "Teleport guard check failed for %s; skipping safe-login teleport to be safe.",
+                    playerRef.getUsername());
+            return;
+        }
+
         Transform spawnTransform = world.getWorldConfig() != null && world.getWorldConfig().getSpawnProvider() != null
                 ? world.getWorldConfig().getSpawnProvider().getSpawnPoint(world, playerRef.getUuid())
                 : null;
@@ -222,7 +245,10 @@ public class PlayerDataListener {
             return;
         }
 
-        store.addComponent(entityRef, Teleport.getComponentType(), Teleport.createForPlayer(world, spawnTransform));
+        // Use the in-place variant (no world arg) since this is a same-world reposition.
+        // The world-bearing variant triggers a full JoinWorld cycle (drain -> add ->
+        // ClientReady) even for same-world teleports, which desynchronises teleportId.
+        store.addComponent(entityRef, Teleport.getComponentType(), Teleport.createForPlayer(spawnTransform));
         LOGGER.atWarning().log(
                 "Queued safe login teleport for %s: current chunk (%d,%d) not loaded in world %s; moving to spawn.",
                 playerRef.getUsername(),
