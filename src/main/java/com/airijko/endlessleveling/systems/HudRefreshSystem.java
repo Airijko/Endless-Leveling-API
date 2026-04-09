@@ -1,6 +1,7 @@
 package com.airijko.endlessleveling.systems;
 
 import com.airijko.endlessleveling.ui.PlayerHud;
+import com.airijko.endlessleveling.util.EntityRefUtil;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.system.tick.TickingSystem;
@@ -122,11 +123,15 @@ public class HudRefreshSystem extends TickingSystem<EntityStore> {
 
     private boolean shouldRefreshForMovement(UUID uuid, Store<EntityStore> store) {
         Ref<EntityStore> entityRef = PlayerHud.getHudEntityRef(uuid);
-        if (entityRef == null || entityRef.getStore() != store) {
+        if (entityRef == null || EntityRefUtil.getStore(entityRef) != store) {
             return false;
         }
 
-        TransformComponent transform = store.getComponent(entityRef, TransformComponent.getComponentType());
+        // Use EntityRefUtil to swallow IllegalStateException / IndexOutOfBoundsException
+        // raised when the entity slot has been recycled mid-tick (e.g. world transition,
+        // death respawn). Direct store.getComponent throws and crashes the world thread.
+        TransformComponent transform = EntityRefUtil.tryGetComponent(
+                store, entityRef, TransformComponent.getComponentType());
         if (transform == null || transform.getPosition() == null) {
             return false;
         }

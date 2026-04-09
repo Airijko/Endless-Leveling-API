@@ -91,6 +91,7 @@ public final class NavUIHelper {
                         ui.set("#NavClassesLabel.Text", Lang.tr(playerRef.getUuid(), "ui.nav.classes", "CLASSES"));
                         ui.set("#NavGatesLabel.Text", Lang.tr(playerRef.getUuid(), "ui.nav.gates", "GATES"));
                         ui.set("#NavDungeonsLabel.Text", Lang.tr(playerRef.getUuid(), "ui.nav.dungeons", "DUNGEONS"));
+                        ui.set("#NavLeaderboardsLabel.Text", Lang.tr(playerRef.getUuid(), "ui.nav.leaderboards", "LEADERBOARDS"));
                         ui.set("#NavAddonsLabel.Text", Lang.tr(playerRef.getUuid(), "ui.nav.addons", "ADDONS"));
                         ui.set("#NavSupportLabel.Text", Lang.tr(playerRef.getUuid(), "ui.nav.support", "SUPPORT"));
                         ui.set("#NavSettingsLabel.Text", Lang.tr(playerRef.getUuid(), "ui.nav.settings", "SETTINGS"));
@@ -254,6 +255,7 @@ public final class NavUIHelper {
                         setTopNavButtonSelected(ui, "#NavClasses", "classes".equalsIgnoreCase(activeNav));
                         setTopNavButtonSelected(ui, "#NavGates", "gates".equalsIgnoreCase(activeNav));
                         setTopNavButtonSelected(ui, "#NavDungeons", "dungeons".equalsIgnoreCase(activeNav));
+                        setTopNavButtonSelected(ui, "#NavLeaderboards", "leaderboards".equalsIgnoreCase(activeNav));
                         setTopNavButtonSelected(ui, "#NavAddons", "addons".equalsIgnoreCase(activeNav));
                         setTopNavButtonSelected(ui, "#NavSupport", "support".equalsIgnoreCase(activeNav));
                         setTopNavButtonSelected(ui, "#NavSettings", "settings".equalsIgnoreCase(activeNav));
@@ -307,6 +309,7 @@ public final class NavUIHelper {
                         events.addEventBinding(Activating, "#NavClasses", of("Action", "nav:classes"), false);
                         events.addEventBinding(Activating, "#NavGates", of("Action", "nav:gates"), false);
                         events.addEventBinding(Activating, "#NavDungeons", of("Action", "nav:dungeons"), false);
+                        events.addEventBinding(Activating, "#NavLeaderboards", of("Action", "nav:leaderboards"), false);
                         events.addEventBinding(Activating, "#NavAddons", of("Action", "nav:addons"), false);
                         events.addEventBinding(Activating, "#NavSupport", of("Action", "nav:support"), false);
                         events.addEventBinding(Activating, "#NavSettings", of("Action", "nav:settings"), false);

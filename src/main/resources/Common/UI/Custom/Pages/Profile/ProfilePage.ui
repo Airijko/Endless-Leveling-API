@@ -162,7 +162,7 @@ $C.@PageOverlay {
 
                                                 Group {
                                                     LayoutMode: Top;
-                                                    Anchor: (Width: 100);
+                                                    FlexWeight: 1;
 
                                                     Label {
                                                         Text: "RACE";
@@ -181,7 +181,7 @@ $C.@PageOverlay {
 
                                                 Group {
                                                     LayoutMode: Top;
-                                                    Anchor: (Width: 120);
+                                                    FlexWeight: 1;
 
                                                     Label {
                                                         Text: "PRIMARY CLASS";
