@@ -21,7 +21,7 @@ Group {
         }
 
         Label {
-            Text: "D03";
+            Text: "Major Dungeons";
             Anchor: (Height: 16);
             Style: (FontSize: 10, TextColor: #d9e7f6, RenderBold: true, LetterSpacing: 1);
         }
@@ -34,13 +34,7 @@ Group {
     }
 
     Label {
-        Text: "Baron";
-        Anchor: (Height: 24, Bottom: 6);
-        Style: (FontSize: 17, TextColor: #ffffff, RenderBold: true, VerticalAlignment: Center);
-    }
-
-    Label {
-        Text: "Major Dungeons 0.4.5";
+        Text: "Major Dungeons by MAJOR76";
         Anchor: (Height: 18, Bottom: 10);
         Style: (FontSize: 11, TextColor: #7fb7ff, RenderBold: true, VerticalAlignment: Center);
     }

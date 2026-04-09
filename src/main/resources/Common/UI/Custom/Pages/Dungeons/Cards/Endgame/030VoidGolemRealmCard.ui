@@ -34,13 +34,7 @@ Group {
     }
 
     Label {
-        Text: "Void Golem Realm";
-        Anchor: (Height: 24, Bottom: 6);
-        Style: (FontSize: 17, TextColor: #ffffff, RenderBold: true, VerticalAlignment: Center);
-    }
-
-    Label {
-        Text: "Instance: endgame_golem_void";
+        Text: "Void Golem Realm By Lewaii";
         Anchor: (Height: 18, Bottom: 10);
         Style: (FontSize: 11, TextColor: #7fb7ff, RenderBold: true, VerticalAlignment: Center);
     }
