@@ -1,5 +1,129 @@
 # Endless Leveling - Update Log
 
+## 2026-04-09 — 7.6.0 (compared to 7.5.0)
+
+A balance, safety, and QoL pass on top of 7.5.0. The headlines are a new death XP penalty system, a per-kill XP gain cap, automatic friendly-mob blacklisting via the Attitude API, clearer attribute labels in the Skills UI, and a teleport-safety rewrite for the login safe-spawn path.
+
+### Highlights
+
+- New **death XP penalty** — players lose a percentage of current XP and max XP on death. Cannot lose a level or prestige.
+- New **per-kill XP gain cap** — prevents exploitatively large single-kill payouts. Scales with level.
+- New **Blacklist_Friendly_Mobs** world setting — automatically prevents leveling/XP from any mob whose `Role.defaultPlayerAttitude` is not `HOSTILE`, replacing the old 90+ keyword blacklist.
+- New **Gain_XP_From_Blacklisted_Mob** toggle — when `false`, killing a blacklisted mob gives zero XP.
+- Skills UI attribute labels made more descriptive (e.g. `PHYS DMG` → `PHYSICAL DMG`, `CRIT RATE` → `CRITICAL RATE`).
+- TopNavBar reworked: Addons moved to footer, Leaderboards promoted to primary nav row.
+- Dungeon cards cleaned up: removed redundant title labels, added author attribution.
+- Safe-login teleport hardened against in-flight teleport collisions and same-world reposition bugs.
+- Mob stat scaling rebalanced across default, endgame, major, and shiva dungeon world settings.
+
+### Death XP Penalty (`New System`)
+
+- New [`PlayerDeathXpPenaltySystem`](src/main/java/com/airijko/endlessleveling/systems/PlayerDeathXpPenaltySystem.java) — a `DeathSystems.OnDeathSystem` that fires `LevelingManager.applyDeathXpPenalty` on any player death.
+- Penalty formula: `(current_xp_percent / 100) * currentXp + (max_xp_percent / 100) * xpForNextLevel`. XP is clamped at 0 — the player cannot lose a level or prestige from this.
+- Configurable in `leveling.yml` under `death_xp_penalty`:
+  - `enabled: true`
+  - `current_xp_percent: 15` (% of current XP lost)
+  - `max_xp_percent: 5` (% of max XP for the level lost)
+- Wired into `EndlessLeveling.onEnable` alongside `XpEventSystem`.
+
+### Per-Kill XP Gain Cap (`New Feature`)
+
+- `LevelingManager.grantXp` now enforces `getXpGainCap(level)` before level-up checks. Formula: `xp_gain_cap_base + xp_gain_cap_per_level * max(0, level - xp_gain_cap_threshold)`.
+- Defaults: base 40,000 XP, +520/level above level 100. At level 100 the cap is 40k, at level 200 it's 92k, at level 600 it's 300k.
+- Configurable in `leveling.yml` under `default`: `xp_gain_cap_base`, `xp_gain_cap_per_level`, `xp_gain_cap_threshold`.
+
+### Friendly Mob Blacklist (`Mob Leveling`)
+
+- New `Blacklist_Friendly_Mobs` world setting (default: `true` in `global.json`). When enabled, any NPC whose `Role.getWorldSupport().getDefaultPlayerAttitude()` is not `HOSTILE` is treated as blacklisted — no level tag, no scaled stats.
+- New `Gain_XP_From_Blacklisted_Mob` world setting (default: `false` in `global.json`). When `false`, `XpEventSystem` skips XP grant entirely for blacklisted mobs.
+- The old 90+ keyword `Blacklist_Mob_Types.keywords` list in `default.json` has been removed — `Blacklist_Friendly_Mobs` replaces it with a single engine-backed check. Only `Totem` remains in the global keyword blacklist for edge cases.
+- `MobLevelingManager`: new `isBlacklistFriendlyMobsEnabled`, `isGainXpFromBlacklistedMobEnabled`, and `isEntityFriendlyMob` methods. `isEntityBlacklisted` now checks friendly-mob status after the type blacklist.
+- `XpEventSystem.onComponentAdded` now early-returns with zero XP when the mob is blacklisted and `Gain_XP_From_Blacklisted_Mob` is false.
+
+### Skills UI — Clearer Attribute Labels (`Made attributes more clear`)
+
+- [`SkillsUIPage`](src/main/java/com/airijko/endlessleveling/ui/SkillsUIPage.java) attribute display units updated:
+  - Strength: `PHYS DMG` → `PHYSICAL DMG`
+  - Sorcery: `MAG DMG` → `MAGICAL DMG`
+  - Haste: `SPEED` → `MOVEMENT SPEED`
+  - Precision: `CRIT RATE` → `CRITICAL RATE`
+  - Ferocity: `CRIT DMG` → `CRITICAL DMG`
+  - Discipline: `XP` → `XP BONUS`
+
+### TopNavBar — Leaderboards Promoted (`UI`)
+
+- [`TopNavBar.ui`](src/main/resources/Common/UI/Custom/Pages/Nav/TopNavBar.ui): the primary nav row is now Profile / Skills / Augments / Races / Classes / Gates / Dungeons / **Leaderboards**. Addons moved to the footer secondary navbar alongside Support and Settings.
+- `NavAddons` button/icon/label renamed to `NavLeaderboards` throughout.
+
+### Dungeon Cards — Author Attribution (`UI`)
+
+- Endgame dungeon cards (Frozen Dungeon, Swamp Dungeon, Void Golem Realm) now show `By Lewaii` instead of a duplicate title + instance name.
+- Major dungeon cards (Azaroth, Katherina, Baron) now show `Major Dungeons by MAJOR76` instead of a duplicate title + version string.
+- All cards simplified from a two-label (title + subtitle) layout to a single attribution label.
+
+### Safe-Login Teleport Hardening (`Fixed Player Teleport`)
+
+- [`PlayerDataListener`](src/main/java/com/airijko/endlessleveling/listeners/PlayerDataListener.java): the safe-spawn teleport (for players logged in to unloaded chunks) now:
+  1. Checks the entity's `Archetype` for an existing `Teleport` or `PendingTeleport` component. If one is present (e.g. death-eject from a gate instance), the safe-login teleport is skipped entirely — adding a second `Teleport` triggered a duplicate `JoinWorld` cycle that desynchronised the `teleportId` counter and disconnected the player.
+  2. Uses the in-place `Teleport.createForPlayer(spawnTransform)` variant (no world arg) for same-world repositions, avoiding the full drain → add → ClientReady cycle that the world-bearing variant triggers even for same-world teleports.
+
+### HUD Crash Fix (`Fixed Leaderboards`)
+
+- [`HudRefreshSystem`](src/main/java/com/airijko/endlessleveling/systems/HudRefreshSystem.java): movement-based HUD refresh now uses `EntityRefUtil.tryGetComponent` instead of a direct `store.getComponent` call. The direct call throws `IllegalStateException` / `IndexOutOfBoundsException` when the entity slot has been recycled mid-tick (world transition, death respawn), crashing the world thread.
+
+### API Additions
+
+- [`EndlessLevelingAPI.adjustRawXp(uuid, delta)`](src/main/java/com/airijko/endlessleveling/api/EndlessLevelingAPI.java) — directly adjusts a player's XP pool without applying personal bonuses or triggering XP grant listeners. Used by the Endless Marriage even-split system.
+- [`EndlessLevelingAPI.isInParty(uuid)`](src/main/java/com/airijko/endlessleveling/api/EndlessLevelingAPI.java) — checks whether a player is currently in a party.
+- `LevelingManager.getBaseXpForPrestige(prestigeLevel)` — returns the effective base XP for a given prestige level.
+
+### World Settings — Mob Stat Rebalance
+
+- `default.json`: mob HP per level `0.075` → `0.05`, mob damage per level `0.035` → `0.015`.
+- `major-dungeons.json`: damage per level `0.035` → `0.04` across all tier entries (Tier ≤3 boss `0.025` → `0.03`).
+- `shiva-dungeons.json`: damage per level `0.035` → `0.4` across all tier entries.
+- `endgame-dungeons.json`: minor scaling adjustments to match the new baseline.
+- `global.json`: new `Blacklist_Friendly_Mobs: true`, `Gain_XP_From_Blacklisted_Mob: false`, and `Blacklist_Mob_Types: { keywords: ["Totem"] }`.
+
+### Config Defaults
+
+- `leveling.yml` base XP default: `50` → `100`.
+- Prestige base XP increase: `10` → `20`.
+- Multiplier exponent default: `1.5` → `1.75` (parsed from formula fallback only; actual expression still `^1.8`).
+
+### Version
+
+- `gradle.properties`: `7.5.0` → `7.6.0`.
+- `manifest.json`: synced to match.
+
+### Files Changed
+
+```
+gradle.properties                                                  |  2 +-
+manifest.json                                                      |  2 +-
+leveling.yml                                                       | +22 / -2
+world-settings/default.json                                        | +6 / -100
+world-settings/global.json                                         | +8
+world-settings/endgame-dungeons.json                               | +6 / -6
+world-settings/major-dungeons.json                                 | +10 / -10
+world-settings/shiva-dungeons.json                                 | +6 / -6
+api/EndlessLevelingAPI.java                                        | +25
+leveling/LevelingManager.java                                      | +160 / -17
+leveling/MobLevelingManager.java                                   | +36 / -4
+leveling/XpEventSystem.java                                        | +8
+listeners/PlayerDataListener.java                                  | +28 / -3
+systems/HudRefreshSystem.java                                      | +9 / -3
+systems/PlayerDeathXpPenaltySystem.java                            | +47 (new)
+ui/NavUIHelper.java                                                | +3
+ui/SkillsUIPage.java                                               | +12 / -12
+Nav/TopNavBar.ui                                                   | +59 / -59
+Profile/ProfilePage.ui                                             | +10 / -10
+Profile/ProfilePagePartner.ui                                      | +10 / -10
+Skills/SkillsPage.ui (new copy)                                    | +1516
+Dungeons/Cards/Endgame/*.ui                                        | +8 / -24
+Dungeons/Cards/Major/*.ui                                          | +10 / -30
+```
+
 ## 2026-04-08 — 7.5.0 (compared to 7.4.0)
 
 A UI-focused follow-up to 7.4 that introduces a new top navbar layout, ports every Endless Leveling page over to it, and fixes the `/priest` command so it actually opens the church menu instead of dumping help text.

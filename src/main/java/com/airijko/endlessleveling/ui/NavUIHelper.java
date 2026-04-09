@@ -25,6 +25,7 @@ import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.airijko.endlessleveling.util.Lang;
+import com.airijko.endlessleveling.util.PlayerChatNotifier;
 import com.hypixel.hytale.server.core.universe.Universe;
 
 import static com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType.Activating;
@@ -383,7 +384,12 @@ public final class NavUIHelper {
                                 // Dispatch the command as the player so the addon can handle it the same
                                 // way it would for a manual chat invocation.
                                 if (!openGatesGui(playerRef)) {
-                                        playerRef.sendMessage(Message.raw("Gates UI is not available right now.").color("#ff6666"));
+                                        PlayerChatNotifier.send(playerRef, Message.join(
+                                                Message.raw("Gates is a Patreon exclusive feature. ").color("#ff6666"),
+                                                Message.raw("[CLICK HERE]")
+                                                        .link("https://www.patreon.com/cw/airijko")
+                                                        .color("#ffd08a")
+                                        ));
                                 }
                         }
                         case "leaderboards" -> player.getPageManager()

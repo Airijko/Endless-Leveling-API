@@ -3084,7 +3084,14 @@ public class MobLevelingManager {
             transform = commandBuffer.getComponent(ref, TransformComponent.getComponentType());
         }
         if (transform == null && ref.getStore() != null) {
-            transform = ref.getStore().getComponent(ref, TransformComponent.getComponentType());
+            try {
+                transform = ref.getStore().getComponent(ref, TransformComponent.getComponentType());
+            } catch (IllegalStateException e) {
+                // Race condition: the entity's store (world) changed between the isSameWorld
+                // check and this getComponent call (e.g. player transferred worlds mid-tick).
+                // Return null to skip this entity gracefully.
+                return null;
+            }
         }
         return transform != null ? transform.getPosition() : null;
     }

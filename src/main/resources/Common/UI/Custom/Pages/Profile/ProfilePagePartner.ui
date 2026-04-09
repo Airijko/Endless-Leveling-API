@@ -105,7 +105,7 @@ $C.@PageOverlay {
 
                                                 Group {
                                                     LayoutMode: Top;
-                                                    FlexWeight: 1;
+                                                    FlexWeight: 0.5;
 
                                                     Label {
                                                         Text: "PRESTIGE";
@@ -124,7 +124,7 @@ $C.@PageOverlay {
 
                                                 Group {
                                                     LayoutMode: Top;
-                                                    FlexWeight: 1;
+                                                    FlexWeight: 0.5;
 
                                                     Label {
                                                         Text: "LEVEL";
@@ -162,7 +162,7 @@ $C.@PageOverlay {
 
                                                 Group {
                                                     LayoutMode: Top;
-                                                    FlexWeight: 1;
+                                                    FlexWeight: 1.5;
 
                                                     Label {
                                                         Text: "RACE";
@@ -181,7 +181,7 @@ $C.@PageOverlay {
 
                                                 Group {
                                                     LayoutMode: Top;
-                                                    FlexWeight: 1;
+                                                    FlexWeight: 1.5;
 
                                                     Label {
                                                         Text: "PRIMARY CLASS";
@@ -200,7 +200,7 @@ $C.@PageOverlay {
 
                                                 Group {
                                                     LayoutMode: Top;
-                                                    FlexWeight: 1;
+                                                    FlexWeight: 1.5;
 
                                                     Label {
                                                         Text: "SECONDARY CLASS";
