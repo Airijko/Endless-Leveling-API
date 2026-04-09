@@ -46,7 +46,7 @@ import static com.hypixel.hytale.server.core.ui.builder.EventData.of;
  */
 public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
-    private static final int GRID_ITEMS_PER_ROW = 5;
+    private static final int GRID_ITEMS_PER_ROW = 6;
     private static final int INFO_SECTION_LIMIT = 5;
     private static final String[] INFO_SECTION_CONTAINERS = {
         "#AugmentInfoSection1",

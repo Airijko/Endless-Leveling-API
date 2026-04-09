@@ -44,7 +44,7 @@ public final class EntityRefUtil {
         }
         try {
             return accessor.getComponent(ref, componentType);
-        } catch (IllegalStateException ignored) {
+        } catch (IllegalStateException | IndexOutOfBoundsException ignored) {
             return null;
         }
     }

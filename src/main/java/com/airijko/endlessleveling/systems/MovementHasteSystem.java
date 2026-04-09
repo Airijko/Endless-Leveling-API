@@ -199,13 +199,14 @@ public class MovementHasteSystem extends TickingSystem<EntityStore> {
             }
             // Keep this ref tracked; it may be valid in the player's active world store.
             return true;
-        } catch (NullPointerException tornDown) {
+        } catch (NullPointerException | IndexOutOfBoundsException tornDown) {
             // Race window: the entity backing this ref was torn down between
             // the isUsable() pre-check above and the component access. The ref
             // still reported valid because the chunk was nulled concurrently
             // by another thread (Store.__internal_getComponent dereferences
-            // archetypeChunk without a null guard). Drop the entry; the next
-            // discovery pass will re-register the player if they reappear.
+            // archetypeChunk without a null guard), or an archetype transition
+            // left the chunk slot index stale (IOOBE). Drop the entry; the
+            // next discovery pass will re-register the player if they reappear.
             LOGGER.atInfo().log(
                     "MovementHasteSystem: dropping torn-down player ref for %s (entity destroyed mid-tick)",
                     playerId);
@@ -226,7 +227,7 @@ public class MovementHasteSystem extends TickingSystem<EntityStore> {
         try {
             statMap = store.getComponent(ref, EntityStatMap.getComponentType());
             transform = store.getComponent(ref, TransformComponent.getComponentType());
-        } catch (NullPointerException | IllegalStateException tornDown) {
+        } catch (NullPointerException | IllegalStateException | IndexOutOfBoundsException tornDown) {
             // Same teardown race as above, but caught between the PlayerRef
             // fetch and the follow-up component reads. Drop the entry.
             return false;

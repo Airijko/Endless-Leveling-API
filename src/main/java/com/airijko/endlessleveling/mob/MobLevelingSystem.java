@@ -1872,9 +1872,14 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
                 continue;
             }
 
-            TransformComponent transform = playerStore != null
-                    ? playerStore.getComponent(playerEntityRef, TransformComponent.getComponentType())
-                    : null;
+            TransformComponent transform;
+            try {
+                transform = playerStore != null
+                        ? playerStore.getComponent(playerEntityRef, TransformComponent.getComponentType())
+                        : null;
+            } catch (NullPointerException | IllegalStateException | IndexOutOfBoundsException staleRef) {
+                continue;
+            }
             Vector3d playerPosition = transform != null ? transform.getPosition() : null;
             if (playerPosition == null) {
                 continue;
@@ -1899,7 +1904,12 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
             return MIN_PLAYER_VIEW_RADIUS_CHUNKS;
         }
 
-        Player player = playerStore.getComponent(playerRef, Player.getComponentType());
+        Player player;
+        try {
+            player = playerStore.getComponent(playerRef, Player.getComponentType());
+        } catch (NullPointerException | IllegalStateException | IndexOutOfBoundsException staleRef) {
+            return MIN_PLAYER_VIEW_RADIUS_CHUNKS;
+        }
         int configuredRadius = player != null ? player.getViewRadius() : 0;
         return Math.max(MIN_PLAYER_VIEW_RADIUS_CHUNKS, configuredRadius);
     }

@@ -1,5 +1,54 @@
 # Endless Leveling - Update Log
 
+## 2026-04-08 — 7.5.0 (compared to 7.4.0)
+
+A UI-focused follow-up to 7.4 that introduces a new top navbar layout, ports every Endless Leveling page over to it, and fixes the `/priest` command so it actually opens the church menu instead of dumping help text.
+
+> Note: the version-bump commit ([`3578d7c`](../) "7.6.0 Update") is mislabeled — both `gradle.properties` and `manifest.json` actually move from **7.4.0 → 7.5.0**.
+
+### Highlights
+
+- New **TopNavBar** UI layout (Profile / Skills / Augments / Races / Classes / Gates / Dungeons / Addons + Support / Settings footer).
+- Every main page (Profile, Skills, Augments, Races, Classes, Class Paths, Race Paths, Dungeons, Addons, Leaderboards, Settings, Support, Augments) ported from `LeftNavPanel` to `TopNavBar`.
+- `/priest` with no subcommand now opens the church menu GUI directly (previously printed plain-text help).
+- New "Gates" nav button — clicking it dispatches `/gate` as the player so the EndlessDungeons addon's `GateListUIPage` opens inline.
+- New `MultipleHUD.ui` shim for [Buuz135/MultipleHUD](https://hytale.com/) compatibility, injected into the jar at the case-sensitive `Common/UI/Custom/HUD/` path.
+
+### TopNavBar Rework (`UI Rework` x2)
+
+- New [`TopNavBar.ui`](../src/main/resources/Common/UI/Custom/Pages/Nav/TopNavBar.ui) (~559 lines) — defines `@TopNavBar`, `@BottomNavBar`, `@ObjectiveContainer`, and `@PanelTitleStyle` symbols. Each nav button is a tile-patch border + solid fill + click-state outline + icon + label.
+- New nav icons under [`Pages/Nav/Icons/`](../src/main/resources/Common/UI/Custom/Pages/Nav/Icons/): `NavProfileIcon.png`, `NavSkillsIcon.png`, `NavAugmentsIcon@2x.png`, `NavRacesIcon.png`, `NavClassesIcon.png`, `NavGatesIcon@2x.png`, `NavDungeonsIcon@2x.png`, `NavAddonsIcon.png`, `NavSettingsIcon.png`, `NavSupportIcon@2x.png`.
+- [`NavUIHelper`](../src/main/java/com/airijko/endlessleveling/ui/NavUIHelper.java) reworked:
+  - New `pageUsesTopNavBar(pageResourcePath)` autodetects which layout a page uses by scanning its resource text for `TopNavBar.ui`.
+  - `applyNavVersion` now branches: top-nav pages set `#Nav<Name>Label.Text` widgets, legacy pages set `#Nav<Name>.Text` widgets directly.
+  - `applySelectedNavStyle` and `bindNavEvents` both gained a `topNav` mode that only touches the selectors that actually exist in `TopNavBar.ui` — eliminates "target element not found" errors when a top-nav page tries to bind legacy buttons.
+  - `applyBrandingEnforcement` skips the `#NavHeader` / `#NavSubHeader` writes on top-nav pages (those widgets only live in `LeftNavPanel`).
+- Pages converted to `TopNavBar` + `@ObjectiveContainer` (centered 1000x700 layout matching the EndlessMarriage panel sizing): `ProfilePage.ui`, `ProfilePagePartner.ui`, `SkillsPage.ui` (moved from `Pages/` to `Pages/Skills/`), `AugmentsPage.ui`, `RacesPage.ui`, `RacePathsPage.ui`, `ClassesPage.ui`, `ClassPathsPage.ui`, `DungeonsPage.ui`, `LeaderboardsPage.ui`, `AddonsPage.ui`, `SettingsPage.ui` (both copies), `SupportPage.ui`.
+- `SkillsPage.ui` stat row heights tightened from `100` → `95` for all 11 stat panels (Life Force, Strength, Precision, Haste, Flow, Defense, Sorcery, Ferocity, Stamina, Discipline).
+
+### `/priest` GUI Fix (`Fixed Background for Priest`)
+
+- [`PriestCommand.execute`](../src/main/java/com/airijko/endlessleveling/commands/classes/PriestCommand.java) no longer dumps a plain-text command list. It now:
+  1. Verifies the class system is enabled and player data is loadable.
+  2. Confirms the sender is a Priest via `PriestClassCheck.isPriest`.
+  3. Opens [`PriestMenuPage`](../src/main/java/com/airijko/endlessleveling/ui/PriestMenuPage.java) on the world thread.
+- Added `Common/Priest/Images/ObjectivePanelContainer.png` so the priest menu uses the same panel background as the rest of the mod.
+
+### Gates Button Wiring
+
+- New `openGatesGui(playerRef)` in `NavUIHelper`. Clicking the Gates nav button dispatches `/gate` through `CommandManager.get().handleCommand(playerRef, "gate")` so the EndlessDungeons addon (which registers that command) opens its `GateListUIPage` for the player. Falls back to a friendly "Gates UI is not available right now." message if the addon isn't loaded.
+- The 7.4 placeholder ("Gates UI is coming soon.") is gone.
+
+### MultipleHUD Compatibility Shim
+
+- New file `src/main/extra-resources/multiplehud-shim/MultipleHUD.ui` injected into the jar at `Common/UI/Custom/HUD/MultipleHUD.ui` via a custom `shadowJar { from(...) into 'Common/UI/Custom/HUD' }` block in [`build.gradle`](../build.gradle).
+- The shim is staged outside `src/main/resources` because the existing `Common/UI/Custom/Hud/` (mixed-case) folder is indistinguishable from `HUD/` on Windows NTFS — the gradle injection adds the entry directly to the jar so the case-sensitive runtime path is preserved on Linux servers.
+
+### Version
+
+- `gradle.properties`: `7.4.0` → `7.5.0`.
+- `manifest.json`: `7.4.0` → `7.5.0`.
+
 ## 2026-04-08 — 7.4 (compared to 7.3.4)
 
 ### Highlights
