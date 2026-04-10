@@ -390,7 +390,7 @@ public final class NavUIHelper {
                                         if (com.airijko.endlessleveling.util.PartnerConsoleGuard.isPartnerAddonPresent()) {
                                                 // ARank / Partner servers don't ship EndlessDungeons; gates are simply off.
                                                 PlayerChatNotifier.send(playerRef,
-                                                        Message.raw("Gates are Disabled.").color("#ff6666"));
+                                                        Message.raw("Gates are disabled.").color("#ff6666"));
                                         } else {
                                                 PlayerChatNotifier.send(playerRef, Message.join(
                                                         Message.raw("Gates is a Patreon exclusive feature. ").color("#ff6666"),
