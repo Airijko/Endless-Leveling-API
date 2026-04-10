@@ -1,5 +1,66 @@
 # Endless Leveling - Update Log
 
+## 2026-04-09 — 7.7.0 (compared to 7.6.1)
+
+A security and navigation patch on top of 7.6.1. The headline is a **secondary class exploit fix** that prevents players from equipping upgraded or same-path classes as their secondary — enforced at the command, UI, and data-resolution layers. Also fixes the Gates nav button crashing on servers without the EndlessDungeons addon.
+
+### Highlights
+
+- **Secondary class exploit fix** — upgraded (non-base-stage) classes can no longer be set as a secondary. Existing upgraded secondaries are automatically reverted to their base form on login.
+- **Same-path secondary block** — a secondary class can no longer share the same ascension path as the player's primary (e.g. picking `brawler_exalted` as secondary when `brawler` is primary).
+- **Gates nav button fix** — the button now performs a classpath check for `EndlessDungeons` before dispatching `/gate`, preventing a silent "Command not found!" message. Partner servers see "Gates are disabled." instead of the Patreon link.
+
+### Secondary Class Exploit Fix (`Security`)
+
+Players could previously equip an upgraded class form (e.g. exalted, elite) as their secondary class, or pick a secondary from the same ascension path as their primary, gaining passive bonuses they should not have access to.
+
+#### New ClassManager Methods
+
+- [`ClassManager`](src/main/java/com/airijko/endlessleveling/classes/ClassManager.java):
+  - `isBaseStageClass(definition)` — returns `true` when the class's ascension stage is `"base"`.
+  - `sharesClassPath(a, b)` — returns `true` when both classes share the same non-null ascension path.
+  - `resolveBaseClassForPath(definition)` — finds the base-stage class registered on the same ascension path. Returns `null` when no base-stage class exists.
+
+#### Data Resolution (Login / Profile Load)
+
+- `ClassManager.resolveSecondaryClass()`:
+  - If the stored secondary is an upgraded class, it is automatically **reverted** to the base form for that path (logged at INFO). If no base form exists, the secondary is cleared.
+  - If the stored secondary shares the same ascension path as the primary, it is **cleared** (logged at INFO).
+
+#### Assignment Guard (Runtime)
+
+- `ClassManager.setSecondaryClass()`: rejects upgraded classes and same-path classes at assignment time, returning `null` without persisting.
+
+#### Command Validation
+
+- [`ClassChooseCommand`](src/main/java/com/airijko/endlessleveling/commands/classes/ClassChooseCommand.java): `/class choose secondary <class>` now returns an error message when the target class is not base-stage or shares a path with the primary.
+
+#### UI Validation
+
+- [`ClassesUIPage`](src/main/java/com/airijko/endlessleveling/ui/ClassesUIPage.java):
+  - The `canSecondary` flag now additionally requires `isBaseStageClass(selection)` and `!sharesClassPath(selection, primary)` — the button is disabled in the UI when either condition fails.
+  - The server-side secondary selection handler rejects upgraded and same-path classes with a localised error message.
+
+### Gates Nav Button — Classpath Guard (`Fixed`)
+
+- [`NavUIHelper`](src/main/java/com/airijko/endlessleveling/ui/NavUIHelper.java):
+  - New `isEndlessDungeonsPresent()` method performs a `Class.forName` classpath check for `com.airijko.endlessleveling.EndlessDungeonsAndGates`.
+  - `openGatesGui()` now returns `false` early when `EndlessDungeons` is not loaded, instead of dispatching `/gate` and letting `CommandManager` send "Command not found!" to the player.
+  - When the gate button is clicked and the addon is absent, partner servers show `"Gates are disabled."` (via `PartnerConsoleGuard` check); non-partner servers show the existing Patreon upsell link.
+
+### Version
+
+- `gradle.properties`: `7.6.1` → `7.7.0`.
+
+### Files Changed
+
+```
+classes/ClassManager.java                                          | +92 (3 new methods, 2 resolution guards)
+commands/classes/ClassChooseCommand.java                           | +18 (2 validation blocks)
+ui/ClassesUIPage.java                                              | +24 (canSecondary guard, UI handler guard)
+ui/NavUIHelper.java                                                | +33 / -6 (classpath check, partner message)
+```
+
 ## 2026-04-09 — 7.6.1 (compared to 7.6.0)
 
 An analytics and stability patch on top of 7.6.0. The headline is a full **XP Stats** tracking system with per-player hourly/daily analytics, a global leaderboard, exploit-detection flagging, and an admin panel — all accessible from a new nav button and `/xpstats` command. Also fixes stale race/class ID resolution on login, the `addswap` console guard, Shiva dungeon over-tuning, footer navbar sizing, and compresses branding images by ~90 %.

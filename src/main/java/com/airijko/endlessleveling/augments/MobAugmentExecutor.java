@@ -50,9 +50,12 @@ public final class MobAugmentExecutor {
 
     // Debug-section name recognized by config.yml logging.debug_sections
     private static final String DEBUG_SECTION = "mob_augments";
+    private static final String SUMMON_DEBUG_SECTION = "necromancer_summons";
     private static final long DEBUG_CACHE_TTL_MS = 5000L;
     private volatile boolean debugEnabled = false;
     private volatile long debugCacheExpiresAt = 0L;
+    private volatile boolean summonDebugEnabled = false;
+    private volatile long summonDebugCacheExpiresAt = 0L;
 
     public MobAugmentExecutor() {
     }
@@ -69,6 +72,22 @@ public final class MobAugmentExecutor {
         debugEnabled = LoggingManager.isDebugSectionEnabled(DEBUG_SECTION);
         debugCacheExpiresAt = now + DEBUG_CACHE_TTL_MS;
         return debugEnabled;
+    }
+
+    /**
+     * Returns true when the 'necromancer_summons' OR 'mob_augments' debug section is enabled.
+     */
+    private boolean isSummonDebugEnabled() {
+        if (isDebugEnabled()) {
+            return true;
+        }
+        long now = System.currentTimeMillis();
+        if (now < summonDebugCacheExpiresAt) {
+            return summonDebugEnabled;
+        }
+        summonDebugEnabled = LoggingManager.isDebugSectionEnabled(SUMMON_DEBUG_SECTION);
+        summonDebugCacheExpiresAt = now + DEBUG_CACHE_TTL_MS;
+        return summonDebugEnabled;
     }
 
 
@@ -476,7 +495,20 @@ public final class MobAugmentExecutor {
             SkillManager ownerSkillManager) {
         MobAugmentInstance instance = mobAugments.get(entityId);
         if (instance == null || instance.augments.isEmpty()) {
+            if (isSummonDebugEnabled()) {
+                LOGGER.atInfo().log(
+                        "[SUMMON_MIRRORED_AUGMENTS][ON_HIT] No augment instance for summon=%s (instance=%s)",
+                        entityId, instance == null ? "null" : "empty");
+            }
             return new AugmentDispatch.OnHitResult(startingDamage, 0.0D);
+        }
+
+        if (isSummonDebugEnabled()) {
+            LOGGER.atInfo().log(
+                    "[SUMMON_MIRRORED_AUGMENTS][ON_HIT] Dispatching %d augments for summon=%s startDmg=%.2f crit=%s ownerData=%s ids=%s",
+                    instance.augments.size(), entityId, startingDamage, isCritical,
+                    ownerPlayerData != null ? ownerPlayerData.getPlayerName() : "null",
+                    instance.appliedAugmentIds);
         }
 
         // Apply passive-stat augment hooks so summons benefit from common-stat
@@ -500,6 +532,13 @@ public final class MobAugmentExecutor {
                 1.0f);
 
         if (AugmentDispatch.isMiss(context)) {
+            if (isSummonDebugEnabled()) {
+                LOGGER.atInfo().log(
+                        "[SUMMON_MIRRORED_AUGMENTS][ON_HIT] isMiss=true for summon=%s damage=%.2f targetRef=%s targetStats=%s",
+                        entityId, context.getDamage(),
+                        targetRef != null && targetRef.isValid() ? "valid" : "invalid",
+                        targetStats != null ? "present" : "null");
+            }
             for (Augment augment : instance.augments) {
                 if (augment instanceof AugmentHooks.OnMissAugment onMiss) {
                     try {
@@ -519,8 +558,14 @@ public final class MobAugmentExecutor {
         for (Augment augment : instance.augments) {
             if (augment instanceof AugmentHooks.OnHitAugment onHit) {
                 try {
+                    float before = context.getDamage();
                     float updated = onHit.onHit(context);
                     context.setDamage(updated);
+                    if (isSummonDebugEnabled()) {
+                        LOGGER.atInfo().log(
+                                "[SUMMON_MIRRORED_AUGMENTS][ON_HIT] %s fired for summon=%s before=%.2f after=%.2f",
+                                augment.getId(), entityId, before, updated);
+                    }
                 } catch (Exception e) {
                     LOGGER.atSevere().withCause(e)
                             .log("[AUGMENT] Error executing OnHit %s for summon %s: %s",
@@ -546,6 +591,11 @@ public final class MobAugmentExecutor {
                                     augment.getId(), entityId, e.getMessage());
                 }
             }
+        }
+        if (isSummonDebugEnabled()) {
+            LOGGER.atInfo().log(
+                    "[SUMMON_MIRRORED_AUGMENTS][ON_HIT] Final result for summon=%s: damage=%.2f trueDmg=%.2f (started=%.2f)",
+                    entityId, context.getDamage(), context.getTrueDamageBonus(), startingDamage);
         }
         return new AugmentDispatch.OnHitResult(
                 Math.max(0.0f, context.getDamage()),

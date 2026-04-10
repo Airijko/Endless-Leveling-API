@@ -7,6 +7,7 @@ import com.airijko.endlessleveling.leveling.XpKillCreditTracker;
 import com.airijko.endlessleveling.passives.type.ArmyOfTheDeadPassive.SummonInheritedStats;
 import com.airijko.endlessleveling.passives.type.ArmyOfTheDeadPassive;
 import com.airijko.endlessleveling.player.PlayerData;
+import com.airijko.endlessleveling.managers.LoggingManager;
 import com.airijko.endlessleveling.player.PlayerDataManager;
 import com.airijko.endlessleveling.player.SkillManager;
 import com.airijko.endlessleveling.util.EntityRefUtil;
@@ -93,8 +94,18 @@ public class MobDamageScalingSystem extends DamageEventSystem {
                 boolean isSummonProc = com.airijko.endlessleveling.systems.PlayerCombatSystem.isAugmentProcDamage(damage)
                         || com.airijko.endlessleveling.systems.PlayerCombatSystem.isAugmentDotDamage(damage);
                 if (!isSummonProc) {
+                    float beforeAugments = damage.getAmount();
                     boolean summonCrit = applySummonOutgoingScaling(damage, attackerRef, store, commandBuffer);
                     applySummonAttackerAugments(damage, attackerRef, targetRef, store, commandBuffer, summonCrit);
+                    if (LoggingManager.isDebugSectionEnabled("necromancer_summons")) {
+                        LOGGER.atInfo().log(
+                                "[NECROMANCER_SUMMONS][COMBAT] Summon hit: before=%.2f after=%.2f crit=%s proc=%s",
+                                beforeAugments, damage.getAmount(), summonCrit, false);
+                    }
+                } else if (LoggingManager.isDebugSectionEnabled("necromancer_summons")) {
+                    LOGGER.atInfo().log(
+                            "[NECROMANCER_SUMMONS][COMBAT] Skipped summon augments — proc/dot damage=%.2f",
+                            damage.getAmount());
                 }
             }
 
@@ -156,6 +167,9 @@ public class MobDamageScalingSystem extends DamageEventSystem {
 
         UUID attackerUuid = resolveEntityUuid(attackerRef, store, commandBuffer);
         if (attackerUuid == null) {
+            if (LoggingManager.isDebugSectionEnabled("necromancer_summons")) {
+                LOGGER.atInfo().log("[NECROMANCER_SUMMONS][AUGMENTS] applySummonAttackerAugments: attackerUuid is null");
+            }
             return;
         }
         // Lazy re-mirror: if the owner's augment selection has drifted from
@@ -164,6 +178,11 @@ public class MobDamageScalingSystem extends DamageEventSystem {
         // necromancer summons stay 1:1 with their summoner's loadout in combat.
         ArmyOfTheDeadPassive.ensureSummonAugmentsInSync(attackerUuid, store);
         if (!executor.hasMobAugments(attackerUuid)) {
+            if (LoggingManager.isDebugSectionEnabled("necromancer_summons")) {
+                LOGGER.atInfo().log(
+                        "[NECROMANCER_SUMMONS][AUGMENTS] No mob augments bound for summon=%s (hasMobAugments=false)",
+                        attackerUuid);
+            }
             return;
         }
 

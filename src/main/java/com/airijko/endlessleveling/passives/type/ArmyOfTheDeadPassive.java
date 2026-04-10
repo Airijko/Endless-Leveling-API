@@ -4,7 +4,9 @@ import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.player.PlayerData;
 import com.airijko.endlessleveling.enums.ArchetypePassiveType;
 import com.airijko.endlessleveling.augments.MobAugmentExecutor;
+import com.airijko.endlessleveling.enums.PassiveTier;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
+import com.airijko.endlessleveling.managers.LoggingManager;
 import com.airijko.endlessleveling.player.PlayerDataManager;
 import com.airijko.endlessleveling.leveling.PartyManager;
 import com.airijko.endlessleveling.player.SkillManager;
@@ -53,6 +55,12 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class ArmyOfTheDeadPassive {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
+
+    // Debug-section name recognized by config.yml logging.debug_sections
+    private static final String DEBUG_SECTION = "necromancer_summons";
+    private static final long DEBUG_CACHE_TTL_MS = 5_000L;
+    private static volatile boolean debugEnabled;
+    private static volatile long debugCacheExpiresAt;
 
     private static final String DEFAULT_SKELETON_TYPE = "EndlessLeveling_ArmyOfTheDead_Pet_Copper";
     private static final int DEFAULT_BASE_SUMMON_AMOUNT = 2;
@@ -273,6 +281,14 @@ public final class ArmyOfTheDeadPassive {
             Store<EntityStore> store,
             CommandBuffer<EntityStore> commandBuffer) {
         return resolveSummonOwnerUuid(ref, store, commandBuffer) != null;
+    }
+
+    /**
+     * Lightweight UUID-only check for whether an entity is a managed summon.
+     * Does not require ECS component resolution — pure map lookup.
+     */
+    public static boolean isManagedSummonByUuid(UUID summonUuid) {
+        return summonUuid != null && SUMMON_BINDINGS.containsKey(summonUuid);
     }
 
     public static UUID getManagedSummonOwnerUuid(Ref<EntityStore> ref,
@@ -1337,22 +1353,24 @@ public final class ArmyOfTheDeadPassive {
             return;
         }
 
-        // Get selected augments
+        // Get selected augments — only mirror non-common tiers (ELITE, LEGENDARY, MYTHIC).
         Map<String, String> selectedAugmentsMap = playerData.getSelectedAugmentsSnapshot();
-        if (selectedAugmentsMap == null || selectedAugmentsMap.isEmpty()) {
-            LOGGER.atFine().log(
-                    "[ARMY_OF_THE_DEAD][AUGMENTS] No augments selected for owner=%s slot=%d summon=%s",
-                    ownerUuid,
-                    slotIndex,
-                    summonUuid);
+        List<String> augmentIds = filterNonCommonAugments(selectedAugmentsMap);
+        if (augmentIds.isEmpty()) {
+            if (isSummonDebugEnabled()) {
+                LOGGER.atInfo().log(
+                        "[NECROMANCER_SUMMONS] No non-common augments selected for owner=%s slot=%d summon=%s (full_map=%s)",
+                        ownerUuid,
+                        slotIndex,
+                        summonUuid,
+                        selectedAugmentsMap);
+            }
             // Stamp the empty signature so ensureSummonAugmentsInSync correctly
             // detects when the owner adds augments after spawn and triggers a
             // mirror sync at the next combat event.
             updateSummonOwnerAugmentSignature(ownerUuid, summonUuid, "");
             return;
         }
-
-        List<String> augmentIds = new ArrayList<>(selectedAugmentsMap.values());
 
         // Get augment managers
         EndlessLeveling plugin = EndlessLeveling.getInstance();
@@ -1378,10 +1396,19 @@ public final class ArmyOfTheDeadPassive {
         }
 
         try {
-            // registerSummonAugments mirrors the player's full loadout 1:1 —
-            // unlike registerMobAugments it does not drop common-stat offers for
-            // haste/discipline/flow/stamina, since this is a player-mirrored
-            // summon rather than a world-configured mob.
+            if (isSummonDebugEnabled()) {
+                LOGGER.atInfo().log(
+                        "[NECROMANCER_SUMMONS] Registering %d non-common augments for slot=%d owner=%s summon=%s ids=%s",
+                        augmentIds.size(),
+                        slotIndex,
+                        ownerUuid,
+                        summonUuid,
+                        augmentIds);
+            }
+
+            // registerSummonAugments mirrors the player's non-common loadout —
+            // COMMON tier augments are excluded since summons should only
+            // inherit ELITE, LEGENDARY, and MYTHIC augments from the owner.
             mobAugmentExecutor.registerSummonAugments(summonUuid, augmentIds, augmentManager, augmentRuntimeManager);
 
             // Cache the signature of the augment list we just applied so the
@@ -1390,21 +1417,63 @@ public final class ArmyOfTheDeadPassive {
             String signature = buildAugmentSignature(augmentIds);
             updateSummonOwnerAugmentSignature(ownerUuid, summonUuid, signature);
 
-            LOGGER.atInfo().log(
-                    "[ARMY_OF_THE_DEAD][AUGMENTS] ✓ Mirrored %d augments to summon at slot %d owner=%s summon=%s ids=%s",
-                    augmentIds.size(),
-                    slotIndex,
-                    ownerUuid,
-                    summonUuid,
-                    augmentIds);
+            if (isSummonDebugEnabled()) {
+                LOGGER.atInfo().log(
+                        "[NECROMANCER_SUMMONS] ✓ Mirrored %d non-common augments to summon at slot %d owner=%s summon=%s ids=%s",
+                        augmentIds.size(),
+                        slotIndex,
+                        ownerUuid,
+                        summonUuid,
+                        augmentIds);
+            }
         } catch (Exception e) {
             LOGGER.atSevere().withCause(e).log(
-                    "[ARMY_OF_THE_DEAD][AUGMENTS] Failed to register augments for slot %d owner=%s summon=%s: %s",
+                    "[NECROMANCER_SUMMONS] Failed to register augments for slot %d owner=%s summon=%s: %s",
                     slotIndex,
                     ownerUuid,
                     summonUuid,
                     e.getMessage());
         }
+    }
+
+    /**
+     * Filters a tier→augmentId map to only include non-common augments
+     * (ELITE, LEGENDARY, MYTHIC). COMMON augments are excluded from
+     * necromancer summon mirroring.
+     */
+    private static List<String> filterNonCommonAugments(Map<String, String> selectedAugmentsMap) {
+        if (selectedAugmentsMap == null || selectedAugmentsMap.isEmpty()) {
+            return new ArrayList<>();
+        }
+        List<String> result = new ArrayList<>(selectedAugmentsMap.size());
+        for (Map.Entry<String, String> entry : selectedAugmentsMap.entrySet()) {
+            String tierKey = entry.getKey();
+            String augmentId = entry.getValue();
+            if (tierKey == null || augmentId == null || augmentId.isBlank()) {
+                continue;
+            }
+            // Skip COMMON tier — summons only inherit elite/legendary/mythic
+            PassiveTier tier = PassiveTier.fromConfig(tierKey, null);
+            if (tier == PassiveTier.COMMON) {
+                continue;
+            }
+            result.add(augmentId);
+        }
+        return result;
+    }
+
+    /**
+     * Returns true when the 'necromancer_summons' debug section is enabled in config.yml.
+     * Result is cached to keep per-hit overhead negligible.
+     */
+    private static boolean isSummonDebugEnabled() {
+        long now = System.currentTimeMillis();
+        if (now < debugCacheExpiresAt) {
+            return debugEnabled;
+        }
+        debugEnabled = LoggingManager.isDebugSectionEnabled(DEBUG_SECTION);
+        debugCacheExpiresAt = now + DEBUG_CACHE_TTL_MS;
+        return debugEnabled;
     }
 
     /**
@@ -1490,9 +1559,7 @@ public final class ArmyOfTheDeadPassive {
         }
 
         Map<String, String> selectedAugmentsMap = playerData.getSelectedAugmentsSnapshot();
-        List<String> currentAugmentIds = selectedAugmentsMap == null
-                ? new ArrayList<>()
-                : new ArrayList<>(selectedAugmentsMap.values());
+        List<String> currentAugmentIds = filterNonCommonAugments(selectedAugmentsMap);
         String currentSignature = buildAugmentSignature(currentAugmentIds);
 
         OwnerSummonState ownerState = OWNER_STATES.get(ownerUuid);

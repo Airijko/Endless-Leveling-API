@@ -6,6 +6,7 @@ import com.hypixel.hytale.logger.backend.HytaleLoggerBackend;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.logging.Level;
@@ -159,12 +160,35 @@ public final class LoggingManager {
         }
         Set<String> normalized = new LinkedHashSet<>();
         for (String raw : rawSections) {
-            String normalizedSection = normalizeSection(raw);
-            if (normalizedSection != null) {
-                normalized.add(normalizedSection);
+            Collection<String> expanded = expandSection(raw);
+            if (expanded != null) {
+                normalized.addAll(expanded);
+            } else {
+                String normalizedSection = normalizeSection(raw);
+                if (normalizedSection != null) {
+                    normalized.add(normalizedSection);
+                }
             }
         }
         return normalized;
+    }
+
+    /**
+     * Sections that map to multiple logger prefixes. Returns null for
+     * single-prefix sections handled by {@link #normalizeSection}.
+     */
+    private static Collection<String> expandSection(String rawSection) {
+        if (rawSection == null) {
+            return null;
+        }
+        String lowered = rawSection.trim().toLowerCase();
+        if ("necromancer_summons".equals(lowered)) {
+            return List.of(
+                    LOGGER_PREFIX + ".passives.type.ArmyOfTheDeadPassive",
+                    LOGGER_PREFIX + ".mob.MobDamageScalingSystem",
+                    LOGGER_PREFIX + ".augments.MobAugmentExecutor");
+        }
+        return null;
     }
 
     private static String normalizeSection(String rawSection) {
@@ -199,6 +223,9 @@ public final class LoggingManager {
         }
         if ("mob_augments".equals(lowered)) {
             return LOGGER_PREFIX + ".augments.MobAugmentExecutor";
+        }
+        if ("necromancer_summons".equals(lowered)) {
+            return LOGGER_PREFIX + ".passives.type.ArmyOfTheDeadPassive";
         }
         if ("xp_death_diag".equals(lowered)) {
             return LOGGER_PREFIX + ".leveling.XpEventSystem.diag";

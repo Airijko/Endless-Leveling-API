@@ -394,7 +394,8 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         EndlessLeveling plugin = EndlessLeveling.getInstance();
         if (plugin != null) {
             MobAugmentExecutor mobAugmentExecutor = plugin.getMobAugmentExecutor();
-            if (mobAugmentExecutor != null && entityUuid != null) {
+            if (mobAugmentExecutor != null && entityUuid != null
+                    && !ArmyOfTheDeadPassive.isManagedSummonByUuid(entityUuid)) {
                 hadMobAugments = mobAugmentExecutor.hasMobAugments(entityUuid);
                 clearedAugmentModifierKeys = mobAugmentExecutor.clearPersistentHealthModifiers(entityUuid, statMap);
                 if (hadMobAugments) {
