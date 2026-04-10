@@ -10,5 +10,6 @@ public record TrackedDungeonGateSnapshot(
         String rankTierId,
         Integer x,
         Integer y,
-        Integer z) {
+        Integer z,
+        long expiresAtEpochMillis) {
 }

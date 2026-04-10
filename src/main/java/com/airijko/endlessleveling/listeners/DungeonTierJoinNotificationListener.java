@@ -62,14 +62,7 @@ public class DungeonTierJoinNotificationListener {
             return;
         }
 
-        String worldId = mobLevelingManager.resolveWorldIdentifier(store);
-        String effectiveWorldId = worldId != null && !worldId.isBlank() ? worldId : universeWorld;
-        if (!isInstanceWorld(effectiveWorldId)) {
-            return;
-        }
-
-        MobLevelingManager.TieredWorldSummary summary = mobLevelingManager.resolveTieredWorldSummary(store, playerRef);
-        if (summary == null) {
+        if (!isInstanceWorld(universeWorld)) {
             return;
         }
 

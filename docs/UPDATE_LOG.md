@@ -1,16 +1,26 @@
 # Endless Leveling - Update Log
 
-## 2026-04-09 — 7.7.0 (compared to 7.6.1)
+## 2026-04-10 — 7.7.0 (compared to 7.6.1)
 
-A security and navigation patch on top of 7.6.1. The headline is a **secondary class exploit fix** that prevents players from equipping upgraded or same-path classes as their secondary — enforced at the command, UI, and data-resolution layers. Also fixes the Gates nav button crashing on servers without the EndlessDungeons addon.
+A security, necromancer, and balance patch on top of 7.6.1. The headlines are a **secondary class exploit fix**, a **necromancer augment overhaul** that filters COMMON-tier augments from summon mirroring and wires up owner-stat resolution on summon kills, **operator-only permission guards** on all admin commands, and a broad **dungeon damage scaling rebalance** that normalises per-level damage across all world settings.
 
 ### Highlights
 
 - **Secondary class exploit fix** — upgraded (non-base-stage) classes can no longer be set as a secondary. Existing upgraded secondaries are automatically reverted to their base form on login.
 - **Same-path secondary block** — a secondary class can no longer share the same ascension path as the player's primary (e.g. picking `brawler_exalted` as secondary when `brawler` is primary).
-- **Gates nav button fix** — the button now performs a classpath check for `EndlessDungeons` before dispatching `/gate`, preventing a silent "Command not found!" message. Partner servers see "Gates are disabled." instead of the Patreon link.
+- **Necromancer augment tier filter** — summons now only inherit ELITE, LEGENDARY, and MYTHIC augments from the owner; COMMON-tier augments are excluded from mirroring.
+- **Summon kill augment resolution** — `ArmyOfTheDeadDeathSystem` now resolves the summoner's `PlayerData` and `SkillManager` so OnKill augments (e.g. SoulReaver, BloodFrenzy) scale from the owner's stats instead of null fallbacks.
+- **Summon death-system guard** — `MobLevelingSystem` no longer clears augments for managed summons on death, preventing the summon's mirrored loadout from being wiped before OnKill hooks fire.
+- **Admin permission guards** — all admin/operator commands now use `OperatorHelper.denyNonAdmin()` instead of ad-hoc checks, with a unified denial message.
+- **XP gain cap toggle** — new `xp_gain_cap_enabled` config key; when `false`, the per-kill XP cap is bypassed entirely.
+- **Death XP penalty reduction** — `current_xp_percent` reduced from 15 → 12.5, `max_xp_percent` from 5 → 2.5.
+- **Dungeon damage scaling normalised** — `Damage.Per_Level` set to `0.05` across shiva, major, and endgame dungeon world settings (was 0.3–0.4); default world `Per_Level` increased from `0.015` → `0.03`.
+- **Global mob damage scaling softened** — `At_Negative_Max_Difference` raised from `0.5` → `0.75`, `Below_Negative_Max_Difference` from `0.25` → `0.5` (under-leveled mobs hit harder than 7.6.1 but still weaker than 7.6.0).
+- **Gates nav button fix** — classpath check for `EndlessDungeons` before dispatching `/gate`; partner servers show "Gates are disabled." instead of the Patreon link.
+- **Tracked gate snapshot** — `TrackedWaveGateSnapshot` now carries `expiryAtEpochMillis` for downstream consumers.
+- New `necromancer_summons` debug section for detailed summon augment logging.
 
-### Secondary Class Exploit Fix (`Security`)
+### Secondary Class Exploit Fix (`secondary class exploit fix`)
 
 Players could previously equip an upgraded class form (e.g. exalted, elite) as their secondary class, or pick a secondary from the same ascension path as their primary, gaining passive bonuses they should not have access to.
 
@@ -41,12 +51,75 @@ Players could previously equip an upgraded class form (e.g. exalted, elite) as t
   - The `canSecondary` flag now additionally requires `isBaseStageClass(selection)` and `!sharesClassPath(selection, primary)` — the button is disabled in the UI when either condition fails.
   - The server-side secondary selection handler rejects upgraded and same-path classes with a localised error message.
 
-### Gates Nav Button — Classpath Guard (`Fixed`)
+### Necromancer Augment Fixes (`Fixed Necromancer Augments`)
+
+#### COMMON-Tier Filter
+
+- [`ArmyOfTheDeadPassive.filterNonCommonAugments`](src/main/java/com/airijko/endlessleveling/passives/type/ArmyOfTheDeadPassive.java) — new method that filters the owner's `selectedAugmentsMap` by `PassiveTier`, excluding `COMMON`-tier entries. Both `mirrorPlayerAugmentsToSummon` and `ensureSummonAugmentsInSync` now use this filter so summons only inherit ELITE, LEGENDARY, and MYTHIC augments.
+
+#### Summon Kill — Owner Stat Resolution
+
+- [`ArmyOfTheDeadDeathSystem`](src/main/java/com/airijko/endlessleveling/systems/ArmyOfTheDeadDeathSystem.java):
+  - Now calls `ArmyOfTheDeadPassive.ensureSummonAugmentsInSync` before dispatching the kill hook — a summon that spawned before the owner selected augments would otherwise miss OnKill effects.
+  - Resolves the summoner's `PlayerData` and `SkillManager` via `getManagedSummonOwnerUuid`, so OnKill augments can scale from the owner's stats instead of null fallbacks.
+
+#### Summon Death Guard
+
+- [`MobLevelingSystem`](src/main/java/com/airijko/endlessleveling/mob/MobLevelingSystem.java): the augment-clear path on mob death now checks `ArmyOfTheDeadPassive.isManagedSummonByUuid(entityUuid)` and skips managed summons, preventing the mirrored augment set from being wiped before OnKill hooks fire.
+
+#### Debug Section
+
+- [`MobAugmentExecutor`](src/main/java/com/airijko/endlessleveling/augments/MobAugmentExecutor.java): new `necromancer_summons` debug section with detailed logging across `dispatchSummonOnHit` (miss detection, per-augment before/after damage, final result).
+- [`MobDamageScalingSystem`](src/main/java/com/airijko/endlessleveling/mob/MobDamageScalingSystem.java): summon combat path logs before/after damage and proc-skip events when `necromancer_summons` is enabled.
+- [`LoggingManager`](src/main/java/com/airijko/endlessleveling/managers/LoggingManager.java): `necromancer_summons` debug section expands to three logger prefixes (`ArmyOfTheDeadPassive`, `MobDamageScalingSystem`, `MobAugmentExecutor`).
+
+### Admin Permission Guards (`permission nodes`)
+
+- New [`OperatorHelper.denyNonAdmin`](src/main/java/com/airijko/endlessleveling/util/OperatorHelper.java) — checks `hasAdministrativeAccess` and sends a denial message to non-admins, returning `true` (denied) so the caller can early-return.
+- All 17 admin commands (`ReloadCommand`, `ResetAllCommand`, `SetLevelCommand`, `SetPrestigeCommand`, `DebugCommand`, `AugmentTestCommand`, `ApplyModifiersCommand`, `ResetLevelCommand`, `ResetPrestigeCommand`, `ResetSkillPointsCommand`, `ResetCooldownsCommand`, `SyncSkillPointsCommand`, `ResetAllPlayersCommand`, `ResetAugmentsCommand`, `ResetAugmentsAllPlayersCommand`, `AugmentAddRerollCommand`, `AugmentRefreshCommand`) now use `OperatorHelper.denyNonAdmin(senderRef)` as their first check.
+- `XpStatsAdminSubCommand` gated to operators.
+
+### XP Gain Cap Toggle (`Tracked Gates Improvements`)
+
+- [`LevelingManager`](src/main/java/com/airijko/endlessleveling/leveling/LevelingManager.java): new `xpGainCapEnabled` field loaded from `default.xp_gain_cap_enabled` (defaults to `true`). When `false`, the per-kill XP gain cap in `grantXp` is bypassed entirely.
+- [`leveling.yml`](src/main/resources/leveling.yml): new `xp_gain_cap_enabled: true` key.
+
+### Death XP Penalty Reduction (`Balance`)
+
+- [`leveling.yml`](src/main/resources/leveling.yml): `death_xp_penalty.current_xp_percent` reduced from `15` → `12.5`; `death_xp_penalty.max_xp_percent` from `5` → `2.5`.
+
+### Dungeon Damage Scaling Normalisation (`Balance`)
+
+All dungeon world settings now use a uniform `Damage.Per_Level` of `0.05`, down from the previous per-file values:
+
+| World setting | Before | After |
+|---|---|---|
+| `shiva-dungeons.json` (both tiers) | `0.3` | `0.05` |
+| `endgame-dungeons.json` (all 3 entries) | `0.4` | `0.05` |
+| `major-dungeons.json` (all 4 entries) | `0.04` | `0.05` |
+| `default.json` | `0.015` | `0.03` |
+
+Default world defense scaling also retuned: `At_Positive_Max_Difference` `0.8` → `0.5`, `Above_Positive_Max_Difference` `0.9` → `0.8`.
+
+### Global Mob Damage Scaling Adjustment (`Balance`)
+
+- `global.json` `Damage_Max_Difference`: `At_Negative_Max_Difference` raised from `0.5` → `0.75`, `Below_Negative_Max_Difference` from `0.25` → `0.5`. Under-leveled mobs now deal 75% at the cap instead of 50%, and 50% beyond instead of 25%.
+
+### Gates Nav Button — Classpath Guard (`Fixed Gate Nav Notif`)
 
 - [`NavUIHelper`](src/main/java/com/airijko/endlessleveling/ui/NavUIHelper.java):
   - New `isEndlessDungeonsPresent()` method performs a `Class.forName` classpath check for `com.airijko.endlessleveling.EndlessDungeonsAndGates`.
   - `openGatesGui()` now returns `false` early when `EndlessDungeons` is not loaded, instead of dispatching `/gate` and letting `CommandManager` send "Command not found!" to the player.
   - When the gate button is clicked and the addon is absent, partner servers show `"Gates are disabled."` (via `PartnerConsoleGuard` check); non-partner servers show the existing Patreon upsell link.
+  - Casing fix: `"Gates are Disabled."` → `"Gates are disabled."`.
+
+### Tracked Wave Gate Snapshot (`Tracked Gates Improvements`)
+
+- [`TrackedWaveGateSnapshot`](src/main/java/com/airijko/endlessleveling/api/gates/TrackedWaveGateSnapshot.java): new `expiryAtEpochMillis` field added to the record, exposing the gate's absolute expiry time to downstream consumers (e.g. gate tracker UI, addon APIs).
+
+### Config Restructuring (`permission nodes`)
+
+- [`config.yml`](src/main/resources/config.yml): `force_builtin_*` and `enable_builtin_*` blocks moved from bottom to top of file for visibility. New `necromancer_summons` entry added to `debug_sections` documentation comment.
 
 ### Version
 
@@ -55,10 +128,30 @@ Players could previously equip an upgraded class form (e.g. exalted, elite) as t
 ### Files Changed
 
 ```
+gradle.properties                                                  |  2 +-
+manifest.json                                                      |  2 +-
+api/gates/TrackedWaveGateSnapshot.java                             |  +1
+augments/MobAugmentExecutor.java                                   | +50
 classes/ClassManager.java                                          | +92 (3 new methods, 2 resolution guards)
+commands/ (17 admin commands)                                      | +8 / -5 each (OperatorHelper guard)
 commands/classes/ClassChooseCommand.java                           | +18 (2 validation blocks)
+commands/xpstats/ (5 files)                                        | new (carried from 7.6.1 permission rebase)
+leveling/LevelingManager.java                                      | +10 / -3
+managers/LoggingManager.java                                       | +33 / -3
+mob/MobDamageScalingSystem.java                                    | +19
+mob/MobLevelingSystem.java                                         | +2 / -1
+passives/type/ArmyOfTheDeadPassive.java                            | +115 / -28
+systems/ArmyOfTheDeadDeathSystem.java                              | +30 / -3
 ui/ClassesUIPage.java                                              | +24 (canSecondary guard, UI handler guard)
-ui/NavUIHelper.java                                                | +33 / -6 (classpath check, partner message)
+ui/NavUIHelper.java                                                | +34 / -7
+util/OperatorHelper.java                                           | +16
+config.yml                                                         | +24 / -20 (restructured + necromancer_summons doc)
+leveling.yml                                                       | +3 / -2
+world-settings/default.json                                        | +3 / -3
+world-settings/endgame-dungeons.json                               | +3 / -3
+world-settings/global.json                                         | +2 / -2
+world-settings/major-dungeons.json                                 | +4 / -4
+world-settings/shiva-dungeons.json                                 | +2 / -2
 ```
 
 ## 2026-04-09 — 7.6.1 (compared to 7.6.0)
