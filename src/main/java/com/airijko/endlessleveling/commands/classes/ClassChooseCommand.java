@@ -152,9 +152,27 @@ public class ClassChooseCommand extends AbstractPlayerCommand {
             return;
         }
 
+        // Secondary must be a base-stage class — no upgrades allowed.
+        if (!classManager.isBaseStageClass(desired)) {
+            senderRef.sendMessage(Message.join(
+                    Message.raw("[Classes] ").color("#ff6666"),
+                    Message.raw("Secondary class must be a base class. ").color("#ffffff"),
+                    Message.raw(desired.getDisplayName()).color("#ffc300"),
+                    Message.raw(" is an upgraded form.").color("#ffffff")));
+            return;
+        }
+
         CharacterClassDefinition primary = classManager.getPlayerPrimaryClass(data);
         if (primary != null && primary.getId().equalsIgnoreCase(desired.getId())) {
             senderRef.sendMessage(Message.raw("Your secondary class cannot match your primary.").color("#ff9900"));
+            return;
+        }
+
+        // Secondary cannot share the same ascension path as primary.
+        if (primary != null && classManager.sharesClassPath(desired, primary)) {
+            senderRef.sendMessage(Message.join(
+                    Message.raw("[Classes] ").color("#ff6666"),
+                    Message.raw("Your secondary class cannot be from the same class family as your primary.").color("#ffffff")));
             return;
         }
 

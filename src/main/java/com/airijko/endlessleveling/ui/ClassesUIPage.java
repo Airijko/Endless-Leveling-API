@@ -522,7 +522,9 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
         boolean canPrimary = primary == null || !primary.getId().equalsIgnoreCase(selection.getId());
         boolean canSecondary = (secondary == null || !secondary.getId().equalsIgnoreCase(selection.getId()))
-                && (primary == null || !primary.getId().equalsIgnoreCase(selection.getId()));
+                && (primary == null || !primary.getId().equalsIgnoreCase(selection.getId()))
+                && classManager.isBaseStageClass(selection)
+                && (primary == null || !classManager.sharesClassPath(selection, primary));
 
         boolean canModifyPrimary = operatorBypass || (primaryChangesRemaining && primaryCooldownRemaining <= 0L);
         boolean canModifySecondary = operatorBypass
@@ -934,6 +936,16 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                     Message.raw(tr("ui.classes.error.unknown", "Unknown class: {0}", targetId)).color("#ff6666"));
             return;
         }
+        // Secondary must be a base-stage class — no upgrades allowed.
+        if (!classManager.isBaseStageClass(desired)) {
+            playerRef.sendMessage(Message.raw(
+                    tr("ui.classes.error.secondary_not_base",
+                       "Secondary class must be a base class. {0} is an upgraded form.",
+                       desired.getDisplayName()))
+                    .color("#ff6666"));
+            return;
+        }
+
         CharacterClassDefinition primary = classManager.getPlayerPrimaryClass(data);
         if (primary != null && primary.getId().equalsIgnoreCase(desired.getId())) {
             playerRef.sendMessage(Message.raw(
@@ -941,6 +953,16 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                     .color("#ff9900"));
             return;
         }
+
+        // Secondary cannot share the same ascension path as primary.
+        if (primary != null && classManager.sharesClassPath(desired, primary)) {
+            playerRef.sendMessage(Message.raw(
+                    tr("ui.classes.error.secondary_same_path",
+                       "Your secondary class cannot be from the same class family as your primary."))
+                    .color("#ff6666"));
+            return;
+        }
+
         CharacterClassDefinition currentSecondary = classManager.getPlayerSecondaryClass(data);
         if (currentSecondary != null && currentSecondary.getId().equalsIgnoreCase(desired.getId())) {
             playerRef.sendMessage(

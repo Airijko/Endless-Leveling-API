@@ -236,6 +236,61 @@ public class ClassManager {
         return definition != null ? definition.getAscension() : null;
     }
 
+    /**
+     * Returns {@code true} when the given class definition sits at the "base"
+     * ascension stage (i.e. it is NOT an upgraded / elite / exalted / etc. form).
+     */
+    public boolean isBaseStageClass(CharacterClassDefinition definition) {
+        if (definition == null) {
+            return false;
+        }
+        RaceAscensionDefinition ascension = definition.getAscension();
+        return ascension != null && "base".equalsIgnoreCase(ascension.getStage());
+    }
+
+    /**
+     * Returns {@code true} when both classes belong to the same ascension path
+     * (e.g. brawler &amp; brawler_exalted both have path "brawler").
+     * Returns {@code false} when either class is {@code null} or a path value is
+     * missing / "none".
+     */
+    public boolean sharesClassPath(CharacterClassDefinition a, CharacterClassDefinition b) {
+        if (a == null || b == null) {
+            return false;
+        }
+        String pathA = a.getAscension() != null ? a.getAscension().getPath() : null;
+        String pathB = b.getAscension() != null ? b.getAscension().getPath() : null;
+        if (pathA == null || pathB == null || "none".equalsIgnoreCase(pathA) || "none".equalsIgnoreCase(pathB)) {
+            return false;
+        }
+        return pathA.equalsIgnoreCase(pathB);
+    }
+
+    /**
+     * Finds the base-stage class that belongs to the same ascension path as the
+     * supplied class.  Returns {@code null} when no base-stage class is registered
+     * for the path.
+     */
+    public CharacterClassDefinition resolveBaseClassForPath(CharacterClassDefinition definition) {
+        if (definition == null) {
+            return null;
+        }
+        if (isBaseStageClass(definition)) {
+            return definition;
+        }
+        String path = definition.getAscension() != null ? definition.getAscension().getPath() : null;
+        if (path == null || "none".equalsIgnoreCase(path)) {
+            return null;
+        }
+        for (CharacterClassDefinition candidate : classesByKey.values()) {
+            if (isBaseStageClass(candidate) && candidate.getAscension() != null
+                    && path.equalsIgnoreCase(candidate.getAscension().getPath())) {
+                return candidate;
+            }
+        }
+        return null;
+    }
+
     public List<CharacterClassDefinition> getNextAscensionClasses(String classInput) {
         CharacterClassDefinition sourceClass = findClassByUserInput(classInput);
         if (sourceClass == null) {
@@ -438,6 +493,32 @@ public class ClassManager {
             data.setSecondaryClassId(null);
             return null;
         }
+        // Anti-exploit: secondary must be a base-stage class.
+        // If an upgraded class slipped in, revert it back to the base form.
+        if (resolved != null && !isBaseStageClass(resolved)) {
+            CharacterClassDefinition base = resolveBaseClassForPath(resolved);
+            if (base != null) {
+                LOGGER.atInfo().log("Reverting upgraded secondary class '%s' to base '%s' for player %s",
+                        resolved.getId(), base.getId(), data.getUuid());
+                data.setSecondaryClassId(base.getId());
+                resolved = base;
+            } else {
+                LOGGER.atInfo().log("No base class found for upgraded secondary '%s', clearing for player %s",
+                        resolved.getId(), data.getUuid());
+                data.setSecondaryClassId(null);
+                return null;
+            }
+        }
+        // Anti-exploit: secondary cannot share the same ascension path as primary.
+        if (resolved != null) {
+            CharacterClassDefinition primary = getPlayerPrimaryClass(data);
+            if (primary != null && sharesClassPath(resolved, primary)) {
+                LOGGER.atInfo().log("Clearing secondary class '%s' -- shares path with primary '%s' for player %s",
+                        resolved.getId(), primary.getId(), data.getUuid());
+                data.setSecondaryClassId(null);
+                return null;
+            }
+        }
         // Return null when the class is not in the registry but preserve the saved ID.
         return resolved;
     }
@@ -487,6 +568,17 @@ public class ClassManager {
             return null;
         }
         if (resolved.getId().equalsIgnoreCase(data.getPrimaryClassId())) {
+            data.setSecondaryClassId(null);
+            return null;
+        }
+        // Reject upgraded classes — secondary must be a base-stage class.
+        if (!isBaseStageClass(resolved)) {
+            data.setSecondaryClassId(null);
+            return null;
+        }
+        // Reject classes that share the same ascension path as the primary.
+        CharacterClassDefinition primary = getPlayerPrimaryClass(data);
+        if (primary != null && sharesClassPath(resolved, primary)) {
             data.setSecondaryClassId(null);
             return null;
         }
