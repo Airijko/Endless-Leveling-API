@@ -8,6 +8,7 @@ default:
   base: 100
   # Max XP a player can gain from a single kill.
   # xpGainCap = xp_gain_cap_base + xp_gain_cap_per_level * max(0, level - xp_gain_cap_threshold)
+  xp_gain_cap_enabled: true
   xp_gain_cap_base: 40000
   xp_gain_cap_per_level: 520
   xp_gain_cap_threshold: 100
@@ -28,8 +29,8 @@ player_level_cap: 100
 # Player cannot lose a level or prestige from this — XP is clamped at 0.
 death_xp_penalty:
   enabled: true
-  current_xp_percent: 15
-  max_xp_percent: 5
+  current_xp_percent: 12.5
+  max_xp_percent: 2.5
 
 # Party XP sharing (simple shared model).
 # - Killer always receives 100% of kill XP (solo logic/bonuses still apply).

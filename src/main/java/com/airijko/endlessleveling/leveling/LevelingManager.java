@@ -55,6 +55,7 @@ public class LevelingManager {
     private double multiplier;
     private LogMode logMode;
     private double prestigeBaseXpIncrease;
+    private boolean xpGainCapEnabled;
     private double xpGainCapBase;
     private double xpGainCapPerLevel;
     private int xpGainCapThreshold;
@@ -108,6 +109,7 @@ public class LevelingManager {
         multiplier = parseMultiplier((String) configManager.get("default.expression",
                 "base * ((log(level)+1) * sqrt(level))^1.75"), 1.75);
         logMode = LogMode.fromString(getString("default.log_mode", "LOG10"));
+        xpGainCapEnabled = getBoolean("default.xp_gain_cap_enabled", true);
         xpGainCapBase = Math.max(1.0D, getDouble("default.xp_gain_cap_base", 40000.0D));
         xpGainCapPerLevel = Math.max(0.0D, getDouble("default.xp_gain_cap_per_level", 520.0D));
         xpGainCapThreshold = Math.max(1, getInt("default.xp_gain_cap_threshold", 100));
@@ -209,9 +211,11 @@ public class LevelingManager {
         }
 
         // Enforce per-kill XP gain cap.
-        double gainCap = getXpGainCap(player.getLevel());
-        if (adjustedXp > gainCap) {
-            adjustedXp = gainCap;
+        if (xpGainCapEnabled) {
+            double gainCap = getXpGainCap(player.getLevel());
+            if (adjustedXp > gainCap) {
+                adjustedXp = gainCap;
+            }
         }
 
         int effectiveCap = getLevelCap(player);

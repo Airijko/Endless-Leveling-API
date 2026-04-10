@@ -31,14 +31,14 @@
         "Damage": {
           "Enabled": true,
           "Base_Multiplier": 1.0,
-          "Per_Level": 0.015
+          "Per_Level": 0.03
         },
         "Defense": {
           "Enabled": true,
           "At_Negative_Max_Difference": -0.3,
-          "At_Positive_Max_Difference": 0.8,
+          "At_Positive_Max_Difference": 0.5,
           "Below_Negative_Max_Difference": -0.6,
-          "Above_Positive_Max_Difference": 0.9
+          "Above_Positive_Max_Difference": 0.8
         }
       },
       "Mob_Scaling": {

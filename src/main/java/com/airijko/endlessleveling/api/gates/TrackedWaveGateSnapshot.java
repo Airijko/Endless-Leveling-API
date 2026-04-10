@@ -13,5 +13,6 @@ public record TrackedWaveGateSnapshot(
         String linkedGateId,
         Integer x,
         Integer y,
-        Integer z) {
+        Integer z,
+        long expiryAtEpochMillis) {
 }
