@@ -182,6 +182,7 @@ public class MobLevelingManager {
         configManager.load();
         loadWorldSettings();
         clearAllEntityLevelOverrides();
+        mobTypeBlacklistCache.clear();
         cachedMobAugmentTierPools = null;
         debugSuppressedStores.clear();
         worldIdentifierCandidatesByStore.clear();
@@ -192,6 +193,7 @@ public class MobLevelingManager {
 
     public void reloadWorldSettingsOnly() {
         loadWorldSettings();
+        mobTypeBlacklistCache.clear();
         worldIdentifierCandidatesByStore.clear();
         worldIdentifierMissRetryAtStore.clear();
         worldOverrideKeyByStore.clear();
@@ -1242,7 +1244,9 @@ public class MobLevelingManager {
                 return false;
             }
             Attitude attitude = role.getWorldSupport().getDefaultPlayerAttitude();
-            return attitude != null && attitude != Attitude.HOSTILE;
+            // null attitude means the role never declared hostility (e.g. passive birds)
+            // — treat as non-hostile so it gets blacklisted alongside explicit friendlies
+            return attitude == null || attitude != Attitude.HOSTILE;
         } catch (Throwable ignored) {
             return false;
         }
@@ -1391,26 +1395,66 @@ public class MobLevelingManager {
             return false;
         }
 
-        List<String> rules = new ArrayList<>();
-        appendStringRules(rules, raw);
-        if (rules.isEmpty()) {
+        // Explicitly handle the structured {ids: [...], keywords: [...]} map format.
+        if (raw instanceof Map<?, ?> map) {
+            Object idsRaw = map.get("ids");
+            Object keywordsRaw = map.get("keywords");
+
+            // ids: exact match (normalized mob type must equal the normalized id)
+            if (idsRaw != null) {
+                List<String> ids = new ArrayList<>();
+                appendStringRules(ids, idsRaw);
+                for (String id : ids) {
+                    if (id == null || id.isBlank()) continue;
+                    String normalizedId = normalizeMobType(id);
+                    if (normalizedId.contains("*")) {
+                        if (matchesWildcard(normalizedType, normalizedId)) return true;
+                    } else if (normalizedType.equals(normalizedId)) {
+                        return true;
+                    }
+                }
+            }
+
+            // keywords: substring/contains match
+            if (keywordsRaw != null) {
+                List<String> keywords = new ArrayList<>();
+                appendStringRules(keywords, keywordsRaw);
+                for (String keyword : keywords) {
+                    if (keyword == null || keyword.isBlank()) continue;
+                    String normalizedKeyword = normalizeMobType(keyword);
+                    if (normalizedKeyword.contains("*")) {
+                        if (matchesWildcard(normalizedType, normalizedKeyword)) return true;
+                    } else if (normalizedType.contains(normalizedKeyword)) {
+                        return true;
+                    }
+                }
+            }
+
+            // If the map had neither "ids" nor "keywords" keys, treat all values
+            // as legacy flat rules (fallback for non-standard map shapes).
+            if (idsRaw == null && keywordsRaw == null) {
+                return matchesFlatBlacklistRules(normalizedType, raw);
+            }
+
             return false;
         }
 
+        // Flat list / comma-separated string fallback.
+        return matchesFlatBlacklistRules(normalizedType, raw);
+    }
+
+    private boolean matchesFlatBlacklistRules(String normalizedType, Object raw) {
+        List<String> rules = new ArrayList<>();
+        appendStringRules(rules, raw);
         for (String rule : rules) {
-            if (rule == null || rule.isBlank()) {
-                continue;
-            }
+            if (rule == null || rule.isBlank()) continue;
             String normalizedRule = normalizeMobType(rule);
             if (normalizedRule.contains("*")) {
-                if (matchesWildcard(normalizedType, normalizedRule)) {
-                    return true;
-                }
+                if (matchesWildcard(normalizedType, normalizedRule)) return true;
             } else if (normalizedType.contains(normalizedRule)) {
                 return true;
             }
         }
-
         return false;
     }
 
@@ -1442,7 +1486,10 @@ public class MobLevelingManager {
                 return true;
             }
             return false;
-        } catch (Throwable ignored) {
+        } catch (Throwable ex) {
+            LOGGER.atWarning().log(
+                    "[MOB_BLACKLIST] entity=%d exception during blacklist check: %s %s",
+                    ref.getIndex(), ex.getClass().getSimpleName(), ex.getMessage());
             return false;
         }
     }

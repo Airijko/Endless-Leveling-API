@@ -1559,6 +1559,11 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         }
 
         StringBuilder labelBuilder = new StringBuilder();
+        // Prepend external nameplate prefix if registered (e.g. elite rank "[S] ")
+        String externalPrefix = EndlessLevelingAPI.get().getEntityNameplatePrefix(ref.getIndex());
+        if (externalPrefix != null) {
+            labelBuilder.append(externalPrefix);
+        }
         if (showLevelInNameplate) {
             labelBuilder.append("[Lv.").append(mobLevel).append("] ");
         }

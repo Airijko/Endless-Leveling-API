@@ -106,6 +106,15 @@ public final class EndlessLevelingAPI {
     // Mob post-process listeners — fired after MobLevelingSystem assigns a level for the first time.
     private final List<MobPostProcessListener> mobPostProcessListeners = new CopyOnWriteArrayList<>();
 
+    // World → mob rank tier registry. Gate mods register the rank when an instance world is
+    // created/restored and unregister on teardown. Other mods (e.g. elite mobs) read this to
+    // match mob rarity to the gate's difficulty tier.
+    private final ConcurrentHashMap<String, MobRankTier> worldMobRankTiers = new ConcurrentHashMap<>();
+
+    // Per-entity mob nameplate prefix — external mods (e.g. elite mobs) can register a short
+    // text prefix that MobLevelingSystem prepends before the [Lv.X] tag.
+    private final ConcurrentHashMap<Integer, String> entityNameplatePrefixes = new ConcurrentHashMap<>();
+
     // Runtime world overrides — merged on top of file-based world-settings during load.
     // Outer key = world key (e.g. "instance-frozen_dungeon"), inner map mirrors the JSON structure.
     private final ConcurrentHashMap<String, Map<String, Object>> runtimeWorldOverrides = new ConcurrentHashMap<>();
@@ -525,6 +534,70 @@ public final class EndlessLevelingAPI {
     }
 
     // ------------
+    // World mob rank tier registry
+    // ------------
+
+    /**
+     * Register the mob rank tier for an instance world. Called by gate mods when
+     * a gate instance world is created or restored from persistence.
+     *
+     * @param worldName the instance world name (same key used by level overrides)
+     * @param tier      the rank tier assigned to this gate/world
+     */
+    public void registerWorldMobRankTier(@javax.annotation.Nonnull String worldName,
+                                         @javax.annotation.Nonnull MobRankTier tier) {
+        worldMobRankTiers.put(worldName, tier);
+    }
+
+    /**
+     * Remove the mob rank tier for an instance world. Called by gate mods when
+     * the gate instance world is torn down.
+     */
+    public void unregisterWorldMobRankTier(@javax.annotation.Nonnull String worldName) {
+        worldMobRankTiers.remove(worldName);
+    }
+
+    /**
+     * Look up the mob rank tier for a world. Returns {@code null} if no gate tier
+     * has been registered for this world (e.g. overworld, non-gate instances).
+     */
+    @javax.annotation.Nullable
+    public MobRankTier getWorldMobRankTier(@javax.annotation.Nonnull String worldName) {
+        return worldMobRankTiers.get(worldName);
+    }
+
+    // ------------
+    // Entity nameplate prefix
+    // ------------
+
+    /**
+     * Set a prefix that MobLevelingSystem will prepend to the mob's nameplate label.
+     * For example, "[S] " will produce "[S] [Lv.42] Trork Warrior [500/500]".
+     *
+     * @param entityIndex the entity store index
+     * @param prefix      the prefix text (e.g. "[S] "); must include trailing space if desired
+     */
+    public void setEntityNameplatePrefix(int entityIndex, @javax.annotation.Nonnull String prefix) {
+        entityNameplatePrefixes.put(entityIndex, prefix);
+    }
+
+    /**
+     * Remove the nameplate prefix for an entity. The next nameplate refresh will
+     * no longer include the prefix.
+     */
+    public void removeEntityNameplatePrefix(int entityIndex) {
+        entityNameplatePrefixes.remove(entityIndex);
+    }
+
+    /**
+     * Get the registered nameplate prefix for an entity, or {@code null} if none.
+     */
+    @javax.annotation.Nullable
+    public String getEntityNameplatePrefix(int entityIndex) {
+        return entityNameplatePrefixes.get(entityIndex);
+    }
+
+    // ------------
     // Entity stat modifier helpers
     // ------------
 
@@ -571,6 +644,28 @@ public final class EndlessLevelingAPI {
         }
         Modifier removed = statMap.removeModifier(DefaultEntityStatTypes.getHealth(), modifierKey);
         return removed != null;
+    }
+
+    // ------------
+    // Mob level queries
+    // ------------
+
+    /**
+     * Query the resolved mob level for an entity. Returns {@code null} if EL has
+     * not assigned a level to this mob (or the entity is not tracked).
+     *
+     * <p>This is the primary API for external mods that need to know whether a mob
+     * has been leveled by EL and what level it was assigned. The level is available
+     * as soon as EL's {@code MobLevelingSystem} has processed the entity.
+     *
+     * @return the assigned mob level, or {@code null} if not leveled
+     */
+    @javax.annotation.Nullable
+    public Integer getEntityMobLevel(Ref<EntityStore> ref, Store<EntityStore> store,
+            CommandBuffer<EntityStore> commandBuffer) {
+        MobLevelingManager mgr = mobLevelingManager();
+        if (mgr == null || ref == null) return null;
+        return mgr.getEntityResolvedLevelSnapshot(ref, store, commandBuffer);
     }
 
     // ------------
