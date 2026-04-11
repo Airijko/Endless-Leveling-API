@@ -42,6 +42,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -926,11 +927,17 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
                     hcs != null ? String.format("%.3f", hcs.combinedMax()) : "null");
             }
 
-            if (state.lastAppliedNameplateLevel != mobLevel
+                String externalPrefix = EndlessLevelingAPI.get().getEntityNameplatePrefix(ref.getIndex());
+                boolean externalPrefixChanged = !Objects.equals(
+                    state.lastAppliedExternalNameplatePrefix,
+                    externalPrefix);
+
+                if (state.lastAppliedNameplateLevel != mobLevel
                     || state.lastAppliedShowLevelInNameplate != showLevelInNameplate
                     || state.lastAppliedShowNameInNameplate != showNameInNameplate
                     || state.lastAppliedShowHealthInNameplate != showHealthInNameplate
                     || state.lastAppliedNameplateText == null
+                    || externalPrefixChanged
                 || healthChangedForNameplate) {
                 if (cachedDebugMobLevelNameplate && state.lastAppliedNameplateLevel != mobLevel) {
                     int prevLevel = state.lastAppliedNameplateLevel == Integer.MIN_VALUE ? -1 : state.lastAppliedNameplateLevel;
@@ -948,12 +955,14 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
                         showLevelInNameplate,
                         showNameInNameplate,
                         showHealthInNameplate,
-                    mobLevel,
-                    state);
+                        mobLevel,
+                        state,
+                        externalPrefix);
                 state.lastAppliedNameplateLevel = mobLevel;
                 state.lastAppliedShowLevelInNameplate = showLevelInNameplate;
                 state.lastAppliedShowNameInNameplate = showNameInNameplate;
                 state.lastAppliedShowHealthInNameplate = showHealthInNameplate;
+                state.lastAppliedExternalNameplatePrefix = externalPrefix;
                 state.lastNameplateHealthValue = hasFiniteHealthForNameplate ? currentHpForNameplate : Float.NaN;
                 state.lastNameplateMaxHealthValue = hasFiniteHealthForNameplate ? currentMaxHpForNameplate : Float.NaN;
                 // Only stamp the health-clock when health drove this update.
@@ -1533,7 +1542,8 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
             boolean showNameInNameplate,
             boolean showHealthInNameplate,
             int mobLevel,
-            EntityRuntimeState state) {
+            EntityRuntimeState state,
+            String externalPrefix) {
         if (ref == null || commandBuffer == null) {
             return false;
         }
@@ -1560,7 +1570,6 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
 
         StringBuilder labelBuilder = new StringBuilder();
         // Prepend external nameplate prefix if registered (e.g. elite rank "[S] ")
-        String externalPrefix = EndlessLevelingAPI.get().getEntityNameplatePrefix(ref.getIndex());
         if (externalPrefix != null) {
             labelBuilder.append(externalPrefix);
         }
@@ -1757,6 +1766,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         state.lastAppliedShowLevelInNameplate = false;
         state.lastAppliedShowNameInNameplate = false;
         state.lastAppliedShowHealthInNameplate = false;
+        state.lastAppliedExternalNameplatePrefix = null;
         state.lastAppliedNameplateText = null;
         state.lastNameplateHealthValue = Float.NaN;
         state.lastNameplateMaxHealthValue = Float.NaN;
@@ -2026,6 +2036,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         private boolean lastAppliedShowLevelInNameplate;
         private boolean lastAppliedShowNameInNameplate;
         private boolean lastAppliedShowHealthInNameplate;
+        private String lastAppliedExternalNameplatePrefix;
         private String lastAppliedNameplateText;
         private boolean augmentHealthReconcilePending;
         private boolean augmentPassiveDeferActive;
@@ -2058,6 +2069,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
             this.lastAppliedShowLevelInNameplate = other.lastAppliedShowLevelInNameplate;
             this.lastAppliedShowNameInNameplate = other.lastAppliedShowNameInNameplate;
             this.lastAppliedShowHealthInNameplate = other.lastAppliedShowHealthInNameplate;
+            this.lastAppliedExternalNameplatePrefix = other.lastAppliedExternalNameplatePrefix;
             this.lastNameplateHealthValue = other.lastNameplateHealthValue;
             this.lastNameplateMaxHealthValue = other.lastNameplateMaxHealthValue;
             this.lastHealthUpdateTick = other.lastHealthUpdateTick;
@@ -2075,6 +2087,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
                     || lastAppliedShowLevelInNameplate
                     || lastAppliedShowNameInNameplate
                     || lastAppliedShowHealthInNameplate
+                    || lastAppliedExternalNameplatePrefix != null
                     || Float.isFinite(lastNameplateHealthValue)
                     || Float.isFinite(lastNameplateMaxHealthValue);
         }
