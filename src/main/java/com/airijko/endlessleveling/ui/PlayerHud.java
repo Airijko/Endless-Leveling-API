@@ -96,6 +96,7 @@ public class PlayerHud extends CustomUIHud {
     private final Map<String, Object> lastUiState = new HashMap<>();
     private final java.util.concurrent.atomic.AtomicBoolean built = new java.util.concurrent.atomic.AtomicBoolean(
             false);
+    private volatile boolean showInProgress = false;
 
     static Object getHudLock(UUID uuid) {
         return HUD_LOCKS.computeIfAbsent(uuid, ignored -> new Object());
@@ -117,19 +118,39 @@ public class PlayerHud extends CustomUIHud {
         this.targetPlayerRef = playerRef;
     }
 
+    /**
+     * {@code show()} sends {@code clear=true} which wipes the client's UI
+     * tree, so we must re-append documents every time — not just on the
+     * first call. {@code showInProgress} blocks {@code pushHudState()} from
+     * sending {@code set()} commands while the clear+append packet is still
+     * being written, closing the race window with HudRefreshSystem.
+     */
+    @Override
+    public void show() {
+        showInProgress = true;
+        try {
+            built.set(false);
+            lastUiState.clear();
+            lastRaceIconItemId = null;
+            lastPrimaryIconItemId = null;
+            lastSecondaryIconItemId = null;
+            super.show();
+        } finally {
+            showInProgress = false;
+        }
+    }
+
     @Override
     protected void build(@Nonnull UICommandBuilder uiCommandBuilder) {
         UUID uuid = targetPlayerRef.getUuid();
         // Build can run asynchronously after a newer HUD replaced this one. Ignore
-        // stale
-        // builds so old overlays cannot re-append.
+        // stale builds so old overlays cannot re-append.
         if (uuid == null || ACTIVE_HUDS.get(uuid) != this) {
             LOGGER.atFine().log("Ignoring stale PlayerHud build for %s", uuid);
             return;
         }
 
-        // Build may be invoked more than once by the UI pipeline; append exactly once
-        // per HUD instance to prevent stacked duplicate overlays.
+        // Guard against concurrent/duplicate builds within the same show() cycle.
         if (!built.compareAndSet(false, true)) {
             LOGGER.atFine().log("Skipping duplicate PlayerHud build for %s", uuid);
             return;
@@ -138,15 +159,11 @@ public class PlayerHud extends CustomUIHud {
         boolean partnerAuthorized = EndlessLeveling.getInstance().isPartnerAddonAuthorized();
         uiCommandBuilder.append(partnerAuthorized ? "Hud/EndlessPlayerHudPartner.ui" : "Hud/EndlessPlayerHud.ui");
         uiCommandBuilder.append("Hud/EndlessStackingAugments.ui");
-        // Avoid calling update() during build. The initial build packet should only
-        // append
-        // the UI, while dynamic values are pushed on the next refresh tick.
     }
 
     private void pushHudState(@Nonnull UICommandBuilder rawUi) {
-        if (!built.get()) {
-            return; // HUD has not finished building, so skip pushing state to avoid missing element
-                    // errors.
+        if (!built.get() || showInProgress) {
+            return; // HUD not ready or show() still writing the clear+append packet.
         }
         if (!targetPlayerRef.isValid()) {
             unregister(targetPlayerRef.getUuid());

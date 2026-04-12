@@ -248,7 +248,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
                     }
 
                     stripMobHealthModifiers(ref, commandBuffer);
-                    clearOrRemoveNameplate(ref, commandBuffer);
+                    clearOrRemoveNameplate(ref, commandBuffer, store);
                     levelStateCleared[0] += clearMobLevelRuntimeStateForEntity(ref, commandBuffer);
                     if (markEntityChunkDirty(ref, commandBuffer)) {
                         dirtyMarked[0]++;
@@ -744,7 +744,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         }
         if (!mobLevelingEnabled || worldBlacklisted || entityBlacklisted) {
             if (!state.blockedStateCleared) {
-                clearMobLevelingStateForBlockedEntity(ref, commandBuffer, state);
+                clearMobLevelingStateForBlockedEntity(ref, commandBuffer, store, state);
                 state.blockedStateCleared = true;
             }
             return;
@@ -753,13 +753,13 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         state.blockedStateCleared = false;
 
         if (!isWithinActivePlayerChunk(ref, commandBuffer, playerChunkViewports)) {
-            clearTrackedNameplateIfNeeded(ref, commandBuffer, state);
+            clearTrackedNameplateIfNeeded(ref, commandBuffer, store, state);
             return;
         }
 
         ensureDeadComponentWhenZeroHp(ref, commandBuffer);
         if (commandBuffer.getComponent(ref, DeathComponent.getComponentType()) != null) {
-            clearTrackedNameplateIfNeeded(ref, commandBuffer, state);
+            clearTrackedNameplateIfNeeded(ref, commandBuffer, store, state);
             return;
         }
 
@@ -773,7 +773,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         }
 
         if (mobLevel == null || mobLevel <= 0) {
-            clearTrackedNameplateIfNeeded(ref, commandBuffer, state);
+            clearTrackedNameplateIfNeeded(ref, commandBuffer, store, state);
             return;
         }
 
@@ -952,6 +952,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
                 boolean applied = applyNameplate(
                         ref,
                         commandBuffer,
+                        store,
                         showLevelInNameplate,
                         showNameInNameplate,
                         showHealthInNameplate,
@@ -985,7 +986,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
                 }
             }
         } else {
-            clearTrackedNameplateIfNeeded(ref, commandBuffer, state);
+            clearTrackedNameplateIfNeeded(ref, commandBuffer, store, state);
         }
 
         if (cachedDebugMobLevelFlow && !state.flowInitializedLogged) {
@@ -1538,6 +1539,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
 
         private boolean applyNameplate(Ref<EntityStore> ref,
             CommandBuffer<EntityStore> commandBuffer,
+            Store<EntityStore> store,
             boolean showLevelInNameplate,
             boolean showNameInNameplate,
             boolean showHealthInNameplate,
@@ -1550,12 +1552,12 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
 
         NPCEntity npcEntity = commandBuffer.getComponent(ref, NPCEntity.getComponentType());
         if (npcEntity == null) {
-            clearOrRemoveNameplate(ref, commandBuffer);
+            clearOrRemoveNameplate(ref, commandBuffer, store);
             return false;
         }
 
         if (commandBuffer.getComponent(ref, DeathComponent.getComponentType()) != null) {
-            clearOrRemoveNameplate(ref, commandBuffer);
+            clearOrRemoveNameplate(ref, commandBuffer, store);
             return false;
         }
 
@@ -1595,7 +1597,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
 
         String label = labelBuilder.toString();
         if (label.isBlank()) {
-            clearOrRemoveNameplate(ref, commandBuffer);
+            clearOrRemoveNameplate(ref, commandBuffer, store);
             return false;
         }
 
@@ -1607,11 +1609,17 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
         if (nameplate != null) {
             nameplate.setText(label);
         } else {
-            commandBuffer.run(store -> {
+            commandBuffer.run(s -> {
                 if (ref.isValid()) {
-                    store.ensureAndGetComponent(ref, Nameplate.getComponentType()).setText(label);
+                    s.ensureAndGetComponent(ref, Nameplate.getComponentType()).setText(label);
                 }
             });
+        }
+
+        // Push level + prefix as NameplateBuilder segments so they survive queueUpdate override
+        if (store != null) {
+            com.airijko.endlessleveling.compatibility.NameplateBridgeSupport.setMobSegments(
+                    store, ref, mobLevel, showLevelInNameplate, externalPrefix);
         }
         return true;
     }
@@ -1627,7 +1635,8 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
     }
 
     private void clearOrRemoveNameplate(Ref<EntityStore> ref,
-            CommandBuffer<EntityStore> commandBuffer) {
+            CommandBuffer<EntityStore> commandBuffer,
+            Store<EntityStore> store) {
         if (ref == null || commandBuffer == null) {
             return;
         }
@@ -1639,27 +1648,32 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
                     ref.getIndex(),
                     resolveUuid(ref, commandBuffer));
         }
+        if (store != null) {
+            com.airijko.endlessleveling.compatibility.NameplateBridgeSupport.clearMobSegments(store, ref);
+        }
     }
 
     private void clearTrackedNameplateIfNeeded(Ref<EntityStore> ref,
             CommandBuffer<EntityStore> commandBuffer,
+            Store<EntityStore> store,
             EntityRuntimeState state) {
         if (state == null || !state.hasNameplateState()) {
             return;
         }
-        clearOrRemoveNameplate(ref, commandBuffer);
+        clearOrRemoveNameplate(ref, commandBuffer, store);
         resetNameplateState(state);
     }
 
     private void clearMobLevelingStateForBlockedEntity(Ref<EntityStore> ref,
             CommandBuffer<EntityStore> commandBuffer,
+            Store<EntityStore> store,
             EntityRuntimeState state) {
         if (ref == null) {
             return;
         }
 
         stripMobHealthModifiers(ref, commandBuffer);
-        clearTrackedNameplateIfNeeded(ref, commandBuffer, state);
+        clearTrackedNameplateIfNeeded(ref, commandBuffer, store, state);
         // Do NOT call clearMobLevelRuntimeStateForEntity here — that would wipe the
         // UUID-keyed level snapshot that XpEventSystem needs at death time.  A mob can
         // die in the same tick it becomes "blocked" (world unidentifiable for one tick,

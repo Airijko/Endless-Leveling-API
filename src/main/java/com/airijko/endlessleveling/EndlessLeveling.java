@@ -564,6 +564,9 @@ public class EndlessLeveling extends JavaPlugin {
             augmentSyncValidator.auditAndNotify();
         }
 
+        // Soft-dep: register mob-level / mob-prefix segments with NameplateBuilder if present
+        com.airijko.endlessleveling.compatibility.NameplateBridgeSupport.tryInit(this);
+
         LOGGER.atInfo().log("Plugin initialized! Plugin folder: %s",
                 filesManager.getPluginFolder().getAbsolutePath());
     }

@@ -57,6 +57,8 @@ dependencies {
     // Soft dependencies for protection zone checks (classes available at runtime via server mods)
     compileOnly files("${rootProject.projectDir}/../WorldProtections/OrbisGuard-0.8.8")
     compileOnly files("${rootProject.projectDir}/../WorldProtections/SimpleClaims-1.0.34")
+    // Soft dependency: NameplateBuilder API for segment-based nameplate integration
+    compileOnly files("${rootProject.projectDir}/../NameplateBuilder/nameplate-builder-overhaul/build/libs/NameplateBuilder-4.260326.3.jar")
 }
 
 tasks.withType(JavaCompile).configureEach {
