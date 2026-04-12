@@ -38,6 +38,7 @@ public class PlayerHud extends CustomUIHud {
 
     public static final String ID = "EndlessLeveling:PlayerHud";
     public static final String MULTI_HUD_SLOT = "EndlessLevelingHud";
+    private static final long HUD_UPDATE_GRACE_PERIOD_MS = 400L;
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
     private static final String[] STACKING_ICON_VARIANT_SUFFIXES = {
             "CommonStat",
@@ -97,6 +98,7 @@ public class PlayerHud extends CustomUIHud {
     private final java.util.concurrent.atomic.AtomicBoolean built = new java.util.concurrent.atomic.AtomicBoolean(
             false);
     private volatile boolean showInProgress = false;
+    private volatile long suppressUpdatesUntilMs = 0L;
 
     static Object getHudLock(UUID uuid) {
         return HUD_LOCKS.computeIfAbsent(uuid, ignored -> new Object());
@@ -130,6 +132,7 @@ public class PlayerHud extends CustomUIHud {
         showInProgress = true;
         try {
             built.set(false);
+            suppressUpdatesUntilMs = System.currentTimeMillis() + HUD_UPDATE_GRACE_PERIOD_MS;
             lastUiState.clear();
             lastRaceIconItemId = null;
             lastPrimaryIconItemId = null;
@@ -159,11 +162,15 @@ public class PlayerHud extends CustomUIHud {
         boolean partnerAuthorized = EndlessLeveling.getInstance().isPartnerAddonAuthorized();
         uiCommandBuilder.append(partnerAuthorized ? "Hud/EndlessPlayerHudPartner.ui" : "Hud/EndlessPlayerHud.ui");
         uiCommandBuilder.append("Hud/EndlessStackingAugments.ui");
+        applyHudState(uiCommandBuilder);
     }
 
     private void pushHudState(@Nonnull UICommandBuilder rawUi) {
         if (!built.get() || showInProgress) {
             return; // HUD not ready or show() still writing the clear+append packet.
+        }
+        if (System.currentTimeMillis() < suppressUpdatesUntilMs) {
+            return; // Give the client a short window to apply the clear+append packet first.
         }
         if (!targetPlayerRef.isValid()) {
             unregister(targetPlayerRef.getUuid());
@@ -186,6 +193,12 @@ public class PlayerHud extends CustomUIHud {
                         "Hud/EndlessStackingAugments.ui",
                         "Hud/InfoPanel.ui");
 
+        if (applyHudState(uiCommandBuilder)) {
+            update(false, uiCommandBuilder);
+        }
+    }
+
+    private boolean applyHudState(@Nonnull UICommandBuilder uiCommandBuilder) {
         boolean changed = false;
         changed |= setTextIfChanged(uiCommandBuilder,
                 "#InfoMobLevelPrefix.Text",
@@ -213,10 +226,7 @@ public class PlayerHud extends CustomUIHud {
         }
 
         changed |= applyAugmentOverlay(uiCommandBuilder);
-
-        if (changed) {
-            update(false, uiCommandBuilder);
-        }
+        return changed;
     }
 
     private boolean applyAugmentOverlay(@Nonnull UICommandBuilder uiCommandBuilder) {
