@@ -17,6 +17,7 @@ import com.airijko.endlessleveling.player.PlayerData;
 import com.airijko.endlessleveling.player.PlayerDataManager;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Component;
+import com.hypixel.hytale.component.ComponentAccessor;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.logger.HytaleLogger;
@@ -28,7 +29,6 @@ import com.hypixel.hytale.server.core.modules.entity.damage.DeathComponent;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-import com.hypixel.hytale.server.core.asset.type.attitude.Attitude;
 import com.hypixel.hytale.server.npc.entities.NPCEntity;
 
 import java.io.File;
@@ -1229,27 +1229,20 @@ public class MobLevelingManager {
         return getConfigBoolean("Mob_Leveling.allow_passive_mob_leveling", false, null);
     }
 
-    public boolean isBlacklistFriendlyMobsEnabled(Store<EntityStore> store) {
-        return getConfigBoolean("Mob_Leveling.Blacklist_Friendly_Mobs", false, store);
-    }
-
     public boolean isGainXpFromBlacklistedMobEnabled(Store<EntityStore> store) {
         return getConfigBoolean("Mob_Leveling.Gain_XP_From_Blacklisted_Mob", true, store);
     }
 
-    private boolean isEntityFriendlyMob(NPCEntity npc) {
-        try {
-            var role = npc.getRole();
-            if (role == null) {
-                return false;
-            }
-            Attitude attitude = role.getWorldSupport().getDefaultPlayerAttitude();
-            // null attitude means the role never declared hostility (e.g. passive birds)
-            // — treat as non-hostile so it gets blacklisted alongside explicit friendlies
-            return attitude == null || attitude != Attitude.HOSTILE;
-        } catch (Throwable ignored) {
-            return false;
+    @SuppressWarnings("unchecked")
+    private ComponentAccessor<EntityStore> resolveComponentAccessor(Store<EntityStore> store,
+            CommandBuffer<EntityStore> commandBuffer) {
+        if (commandBuffer instanceof ComponentAccessor<?> accessor) {
+            return (ComponentAccessor<EntityStore>) accessor;
         }
+        if (store instanceof ComponentAccessor<?> accessor) {
+            return (ComponentAccessor<EntityStore>) accessor;
+        }
+        return null;
     }
 
     public boolean isWorldXpBlacklisted(Store<EntityStore> store) {
@@ -1480,9 +1473,6 @@ public class MobLevelingManager {
         try {
             String mobType = npc.getNPCTypeId();
             if (mobType != null && isMobTypeBlacklisted(mobType, store)) {
-                return true;
-            }
-            if (isBlacklistFriendlyMobsEnabled(store) && isEntityFriendlyMob(npc)) {
                 return true;
             }
             return false;
