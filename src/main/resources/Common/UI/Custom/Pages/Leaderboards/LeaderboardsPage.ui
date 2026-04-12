@@ -145,6 +145,15 @@ $C.@PageOverlay {
                         Style: @FilterCompactStyle;
                     }
 
+                    Group { Anchor: (Width: 12); }
+
+                    $C.@TextButton #ViewToggleButton {
+                        Text: "VIEW: PODIUM";
+                        Anchor: (Height: 30);
+                        Padding: (Horizontal: 12, Vertical: 1);
+                        Style: @FilterCompactStyle;
+                    }
+
                     Group { FlexWeight: 1; }
 
                     $C.@CancelTextButton #ResetFiltersButton {

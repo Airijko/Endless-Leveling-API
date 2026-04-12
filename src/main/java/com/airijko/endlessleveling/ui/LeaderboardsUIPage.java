@@ -39,6 +39,7 @@ public class LeaderboardsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Dat
     private boolean sortAscending = false;
     private String raceFilter = FILTER_ALL;
     private String classFilter = FILTER_ALL;
+    private boolean podiumView = true;
 
     public LeaderboardsUIPage(@Nonnull com.hypixel.hytale.server.core.universe.PlayerRef playerRef,
             @Nonnull CustomPageLifetime lifetime) {
@@ -63,6 +64,7 @@ public class LeaderboardsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Dat
         events.addEventBinding(Activating, "#RaceFilterButton", of("Action", "lb:filter:race"), false);
         events.addEventBinding(Activating, "#ClassFilterButton", of("Action", "lb:filter:class"), false);
         events.addEventBinding(Activating, "#ResetFiltersButton", of("Action", "lb:reset"), false);
+        events.addEventBinding(Activating, "#ViewToggleButton", of("Action", "lb:view:toggle"), false);
 
         EndlessLeveling plugin = EndlessLeveling.getInstance();
         if (plugin == null) {
@@ -129,72 +131,101 @@ public class LeaderboardsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Dat
         ui.set("#HeaderLevel.Text", tr("ui.leaderboards.column.level", "Level"));
         ui.set("#HeaderXp.Text", tr("ui.leaderboards.column.xp", "XP"));
 
+        String viewLabel = podiumView
+                ? tr("ui.leaderboards.view.podium", "VIEW: PODIUM")
+                : tr("ui.leaderboards.view.table", "VIEW: TABLE");
+        ui.set("#ViewToggleButton.Text", viewLabel);
+
         ui.clear("#PodiumCards");
         ui.clear("#RowCards");
 
-        int podiumCount = Math.min(visible.size(), 3);
-        ui.set("#PodiumSection.Visible", podiumCount > 0);
-        ui.set("#TableSection.Visible", visible.size() > 3);
-        ui.set("#PodiumTitle.Text", tr("ui.leaderboards.podium.title", "TOP CHAMPIONS"));
+        if (podiumView) {
+            int podiumCount = Math.min(visible.size(), 3);
+            ui.set("#PodiumSection.Visible", podiumCount > 0);
+            ui.set("#TableSection.Visible", visible.size() > 3);
+            ui.set("#PodiumTitle.Text", tr("ui.leaderboards.podium.title", "TOP CHAMPIONS"));
 
-        // Podium: visual order 2nd | 1st | 3rd (classic podium arrangement)
-        String[] podiumTemplates = {
-            "Pages/Leaderboards/LeaderboardsPodiumFirst.ui",
-            "Pages/Leaderboards/LeaderboardsPodiumSecond.ui",
-            "Pages/Leaderboards/LeaderboardsPodiumThird.ui"
-        };
-        String[] podiumIcons = {
-            "Ingredient_Ice_Essence",
-            "Ingredient_Lightning_Essence",
-            "Ingredient_Life_Essence"
-        };
-        int[] visualOrder;
-        if (podiumCount == 1) {
-            visualOrder = new int[]{0};
-        } else if (podiumCount == 2) {
-            visualOrder = new int[]{1, 0};
+            // Podium: visual order 2nd | 1st | 3rd (classic podium arrangement)
+            String[] podiumTemplates = {
+                "Pages/Leaderboards/LeaderboardsPodiumFirst.ui",
+                "Pages/Leaderboards/LeaderboardsPodiumSecond.ui",
+                "Pages/Leaderboards/LeaderboardsPodiumThird.ui"
+            };
+            String[] podiumIcons = {
+                "Ingredient_Ice_Essence",
+                "Ingredient_Lightning_Essence",
+                "Ingredient_Life_Essence"
+            };
+            int[] visualOrder;
+            if (podiumCount == 1) {
+                visualOrder = new int[]{0};
+            } else if (podiumCount == 2) {
+                visualOrder = new int[]{1, 0};
+            } else {
+                visualOrder = new int[]{1, 0, 2};
+            }
+
+            for (int podiumIdx = 0; podiumIdx < visualOrder.length; podiumIdx++) {
+                int rankIdx = visualOrder[podiumIdx];
+                ui.append("#PodiumCards", podiumTemplates[rankIdx]);
+
+                PlayerData pd = visible.get(rankIdx);
+                String base = "#PodiumCards[" + podiumIdx + "]";
+                String rankLabel;
+                if (rankIdx == 0) rankLabel = "1ST";
+                else if (rankIdx == 1) rankLabel = "2ND";
+                else rankLabel = "3RD";
+
+                ui.set(base + " #Rank.Text", rankLabel);
+                ui.set(base + " #Name.Text", pd.getPlayerName());
+                ui.set(base + " #PodiumIcon.ItemId", podiumIcons[rankIdx]);
+                ui.set(base + " #Race.Text", resolveRaceLabel(raceManager, pd));
+                ui.set(base + " #Class.Text", resolvePrimaryClassLabel(classManager, pd));
+                ui.set(base + " #Prestige.Text", String.valueOf(pd.getPrestigeLevel()));
+                ui.set(base + " #Level.Text", String.valueOf(pd.getLevel()));
+                ui.set(base + " #Exp.Text", formatXp(pd.getXp()));
+            }
+
+            // Table: 4th place onward
+            for (int i = 3; i < visible.size(); i++) {
+                PlayerData pd = visible.get(i);
+                ui.append("#RowCards", "Pages/Leaderboards/LeaderboardsRow.ui");
+
+                int rowIdx = i - 3;
+                String base = "#RowCards[" + rowIdx + "]";
+                ui.set(base + " #Rank.Text", (i + 1) + ".");
+                ui.set(base + " #Name.Text", pd.getPlayerName());
+                ui.set(base + " #Race.Text", resolveRaceLabel(raceManager, pd));
+                ui.set(base + " #Class.Text", resolvePrimaryClassLabel(classManager, pd));
+                ui.set(base + " #Prestige.Text", String.valueOf(pd.getPrestigeLevel()));
+                ui.set(base + " #Level.Text", String.valueOf(pd.getLevel()));
+                ui.set(base + " #Exp.Text", formatXp(pd.getXp()));
+
+                if (rowIdx % 2 == 1) {
+                    ui.set(base + " #RowBgAlt.Visible", true);
+                }
+            }
         } else {
-            visualOrder = new int[]{1, 0, 2};
-        }
+            // Table-only view: all players in rows, no podium
+            ui.set("#PodiumSection.Visible", false);
+            ui.set("#TableSection.Visible", !visible.isEmpty());
 
-        for (int podiumIdx = 0; podiumIdx < visualOrder.length; podiumIdx++) {
-            int rankIdx = visualOrder[podiumIdx];
-            ui.append("#PodiumCards", podiumTemplates[rankIdx]);
+            for (int i = 0; i < visible.size(); i++) {
+                PlayerData pd = visible.get(i);
+                ui.append("#RowCards", "Pages/Leaderboards/LeaderboardsRow.ui");
 
-            PlayerData pd = visible.get(rankIdx);
-            String base = "#PodiumCards[" + podiumIdx + "]";
-            String rankLabel;
-            if (rankIdx == 0) rankLabel = "1ST";
-            else if (rankIdx == 1) rankLabel = "2ND";
-            else rankLabel = "3RD";
+                String base = "#RowCards[" + i + "]";
+                ui.set(base + " #Rank.Text", (i + 1) + ".");
+                ui.set(base + " #Name.Text", pd.getPlayerName());
+                ui.set(base + " #Race.Text", resolveRaceLabel(raceManager, pd));
+                ui.set(base + " #Class.Text", resolvePrimaryClassLabel(classManager, pd));
+                ui.set(base + " #Prestige.Text", String.valueOf(pd.getPrestigeLevel()));
+                ui.set(base + " #Level.Text", String.valueOf(pd.getLevel()));
+                ui.set(base + " #Exp.Text", formatXp(pd.getXp()));
 
-            ui.set(base + " #Rank.Text", rankLabel);
-            ui.set(base + " #Name.Text", pd.getPlayerName());
-            ui.set(base + " #PodiumIcon.ItemId", podiumIcons[rankIdx]);
-            ui.set(base + " #Race.Text", resolveRaceLabel(raceManager, pd));
-            ui.set(base + " #Class.Text", resolvePrimaryClassLabel(classManager, pd));
-            ui.set(base + " #Prestige.Text", String.valueOf(pd.getPrestigeLevel()));
-            ui.set(base + " #Level.Text", String.valueOf(pd.getLevel()));
-            ui.set(base + " #Exp.Text", formatXp(pd.getXp()));
-        }
-
-        // Table: 4th place onward
-        for (int i = 3; i < visible.size(); i++) {
-            PlayerData pd = visible.get(i);
-            ui.append("#RowCards", "Pages/Leaderboards/LeaderboardsRow.ui");
-
-            int rowIdx = i - 3;
-            String base = "#RowCards[" + rowIdx + "]";
-            ui.set(base + " #Rank.Text", (i + 1) + ".");
-            ui.set(base + " #Name.Text", pd.getPlayerName());
-            ui.set(base + " #Race.Text", resolveRaceLabel(raceManager, pd));
-            ui.set(base + " #Class.Text", resolvePrimaryClassLabel(classManager, pd));
-            ui.set(base + " #Prestige.Text", String.valueOf(pd.getPrestigeLevel()));
-            ui.set(base + " #Level.Text", String.valueOf(pd.getLevel()));
-            ui.set(base + " #Exp.Text", formatXp(pd.getXp()));
-
-            if (rowIdx % 2 == 1) {
-                ui.set(base + " #RowBgAlt.Visible", true);
+                if (i % 2 == 1) {
+                    ui.set(base + " #RowBgAlt.Visible", true);
+                }
             }
         }
     }
@@ -423,6 +454,10 @@ public class LeaderboardsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Dat
                 }
                 case "lb:filter:class" -> {
                     classFilter = cycleFilterValue(classFilter, buildClassFilterOptions(allPlayers, classManager));
+                    changed = true;
+                }
+                case "lb:view:toggle" -> {
+                    podiumView = !podiumView;
                     changed = true;
                 }
                 case "lb:reset", "reset", "filters:reset", "lb:filters:reset" -> {

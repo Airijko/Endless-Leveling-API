@@ -1,55 +1,55 @@
 $C = "../../Common.ui";
 
 Group {
-    Anchor: (Width: 320, Height: 270);
+    Anchor: (Width: 250, Height: 225);
     LayoutMode: Top;
-    Padding: (Right: 12, Top: 30);
+    Padding: (Right: 8, Top: 25);
 
     Group {
-        Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 12);
+        Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 8);
         Background: (TexturePath: "../../Tiles/TileElite.png");
     }
 
     Group {
-        Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 12);
+        Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 8);
         LayoutMode: Top;
-        Padding: (Left: 18, Right: 18, Top: 16, Bottom: 14);
+        Padding: (Left: 14, Right: 14, Top: 12, Bottom: 10);
 
         Group { Anchor: (Height: 4); }
 
         Label #Rank {
-            Style: (FontSize: 22, TextColor: #d7dbe3, RenderBold: true, HorizontalAlignment: Center);
-            Anchor: (Height: 28);
+            Style: (FontSize: 18, TextColor: #d7dbe3, RenderBold: true, HorizontalAlignment: Center);
+            Anchor: (Height: 24);
             Text: "2ND";
         }
 
-        Group { Anchor: (Height: 6); }
+        Group { Anchor: (Height: 5); }
 
         Group {
             LayoutMode: Middle;
-            Anchor: (Height: 48);
+            Anchor: (Height: 40);
 
             Group {
-                Anchor: (Width: 48, Height: 48);
+                Anchor: (Width: 40, Height: 40);
                 Background: (TexturePath: "../../Tiles/TileBorderElite.png");
                 LayoutMode: Middle;
-                Padding: (Full: 5);
+                Padding: (Full: 4);
 
                 ItemIcon #PodiumIcon {
-                    Anchor: (Width: 34, Height: 34);
+                    Anchor: (Width: 28, Height: 28);
                 }
             }
         }
 
-        Group { Anchor: (Height: 6); }
+        Group { Anchor: (Height: 5); }
 
         Label #Name {
-            Style: (FontSize: 14, TextColor: #d7dbe3, RenderBold: true, HorizontalAlignment: Center);
-            Anchor: (Height: 20);
+            Style: (FontSize: 12, TextColor: #d7dbe3, RenderBold: true, HorizontalAlignment: Center);
+            Anchor: (Height: 18);
             Text: "-";
         }
 
-        Group { Anchor: (Height: 6); }
+        Group { Anchor: (Height: 5); }
 
         Group {
             Anchor: (Height: 1);
