@@ -55,7 +55,7 @@ public class AddRaceSwapCommand extends AbstractCommand {
         Player senderPlayer = context.sender() instanceof Player p ? p : null;
         boolean senderIsPlayer = senderPlayer != null;
 
-        if (!PartnerConsoleGuard.isConsoleAllowed("el races addswap")) {
+        if (!senderIsPlayer && !PartnerConsoleGuard.isConsoleAllowed("el races addswap")) {
             context.sendMessage(Message.raw(
                     "This command requires an authorized EndlessLevelingPartnerAddon.")
                     .color("#ff6666"));
