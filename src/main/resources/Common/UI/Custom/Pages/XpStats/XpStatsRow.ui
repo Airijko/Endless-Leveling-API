@@ -8,13 +8,19 @@ Group {
         Background: #0b141f(0.82);
         Padding: (Horizontal: 12, Vertical: 8);
 
-        Label #Rank { Style: (TextColor: #c0cee5, FontSize: 13, RenderBold: true); Anchor: (Width: 60); Text: "-"; }
+        Group #RowBgAlt {
+            Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 0);
+            Background: (TexturePath: "../../Tiles/TileRowBackground.png");
+            Visible: false;
+        }
+
+        Label #Rank { Style: (TextColor: #c0cee5, FontSize: 13, RenderBold: true); Anchor: (Width: 80); Text: "-"; }
         Label #Name { Style: (TextColor: #f4f9ff, FontSize: 13, RenderBold: true); FlexWeight: 1; Text: "-"; }
-        Label #Profile { Style: (TextColor: #aaccff, FontSize: 13); Anchor: (Width: 120); Text: "-"; }
-        Label #Prestige { Style: (TextColor: #ffd79a, FontSize: 13, RenderBold: true); Anchor: (Width: 80); Text: "-"; }
-        Label #Level { Style: (TextColor: #87dfff, FontSize: 13, RenderBold: true); Anchor: (Width: 70); Text: "-"; }
-        Label #Value { Style: (TextColor: #9fe0ff, FontSize: 13); Anchor: (Width: 140); Text: "-"; }
+        Label #Profile { Style: (TextColor: #aaccff, FontSize: 13); Anchor: (Width: 170); Text: "-"; }
+        Label #Prestige { Style: (TextColor: #ffd79a, FontSize: 13, RenderBold: true); Anchor: (Width: 110); Text: "-"; }
+        Label #Level { Style: (TextColor: #87dfff, FontSize: 13, RenderBold: true); Anchor: (Width: 100); Text: "-"; }
+        Label #Value { Style: (TextColor: #9fe0ff, FontSize: 13); Anchor: (Width: 200); Text: "-"; }
     }
 
-    Group { Anchor: (Height: 6); }
+    Group { Anchor: (Height: 4); }
 }

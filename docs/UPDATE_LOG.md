@@ -1,5 +1,136 @@
 # Endless Leveling - Update Log
 
+## 2026-04-12 — 7.8.0 (compared to 7.7.4 and 7.7.5)
+
+A **UI overhaul** release. The headlines are a **carousel card layout** replacing the row-based class and race browsers, a **leaderboard podium** for the top 3 players, **weapon and augment icons** on the profile page, and a broad **layout and visual polish pass** across all five main UI pages.
+
+### Highlights
+
+- **Classes page — carousel cards** — the old left-panel row list is replaced by a horizontally-scrolling carousel of tall cards. Each card shows the class icon, name, role tag, truncated description, weapon multipliers, passives, and evolution-path count. Clicking a card transitions to the existing detail view; a new BACK button returns to the carousel.
+- **Races page — carousel cards** — same carousel pattern as classes. Race cards additionally show all 10 skill-attribute stat previews (Life Force, Strength, Sorcery, Defense, Haste, Precision, Ferocity, Stamina, Flow, Discipline) with colour-coded values. Carousel header now displays active race name and cooldown inline.
+- **Leaderboards page — podium layout** — top 3 players render in a dedicated podium section with 2nd | 1st | 3rd visual arrangement, themed tile backgrounds (Legendary/Lightning/Life), and unique essence icons per rank. 4th place onward renders in a standard table with alternating row backgrounds. Container widened from 1000 → 1400 px.
+- **Profile page — weapon & augment icons** — weapon bonuses now display item icons resolved via the new `WeaponIconTheme` enum. Augment entries show category-based icons resolved from `PassiveCategory.getIconItemId()`. Layout widened (sidebar removed, main panel 1320 px), XP bar and identity stats promoted to header.
+- **XP Stats page — layout widened** — container widened from 1000 → 1400 px, content switched from left-split to top-stacked layout, tab bar added, header restyled with `ObjectivePanelContainer` background.
+- **Skills page — visual polish** — removed opaque dark backgrounds from info block, auto-allocate, and quick-spend sections; adjusted divider and footer colours.
+- **New `WeaponIconTheme` enum** — maps 12 weapon category keys (sword, longsword, dagger, daggers, bow, shortbow, staff, spear, mace, battleaxe, spellbook, grimoire) to representative Hytale item icon IDs with a fallback.
+- **11 new `.ui` templates** added; 14 existing `.ui` templates restyled.
+
+### Classes Page — Carousel Card Layout (`UI Overhaul`)
+
+The classes browser is restructured around a two-state view: a **carousel** for browsing and a **detail panel** for inspecting/selecting.
+
+#### New Templates
+
+- [`ClassCarouselCard.ui`](src/main/resources/Common/UI/Custom/Pages/Classes/ClassCarouselCard.ui) — 340×580 px card with bordered surface, item icon, class name, role tag, description (truncated to 120 chars), weapon rows, passive rows, evolution-path hint, and a status badge overlay (PRIMARY / SECONDARY). Active-class cards get a highlighted background and cyan top-accent.
+- [`ClassCardWeaponRow.ui`](src/main/resources/Common/UI/Custom/Pages/Classes/ClassCardWeaponRow.ui) — compact row displaying a weapon type name and its damage multiplier.
+- [`ClassCardPassiveRow.ui`](src/main/resources/Common/UI/Custom/Pages/Classes/ClassCardPassiveRow.ui) — compact row displaying a passive name label.
+
+#### Layout Changes
+
+- [`ClassesPage.ui`](src/main/resources/Common/UI/Custom/Pages/Classes/ClassesPage.ui): the 300 px `ObjectiveContainer` left sidebar and `#ClassRows` list are removed. Replaced by a `#CarouselView` (full-width carousel header + horizontally-scrolling card strip) and a `#DetailView` (existing detail panel). Only one view is visible at a time.
+- Carousel header shows class count, primary class name, secondary class name, and a subheading — all inside an `ObjectivePanelContainer` background.
+- Cooldown labels shortened: `"Class Swap Cooldown"` → `"Cooldown"`, `"Primary"` → `"Pri:"`, `"Secondary"` → `"Sec:"`.
+
+#### Java Changes
+
+- [`ClassesUIPage`](src/main/java/com/airijko/endlessleveling/ui/ClassesUIPage.java):
+  - New `detailViewActive` boolean controls which view group is visible via `applyViewState()`.
+  - `buildClassList` / `refreshClassList` renamed to `buildCarousel` / `refreshCarousel`. Card population delegated to `applyCarouselCard()` which sets icon, role tag, description, status badge, background state, weapon rows, passive rows (non-innate), and evolution-path hint.
+  - Event bindings changed: the entire card is the click target (not a nested `#ViewClassButton`).
+  - New `class:back` action sets `detailViewActive = false` and refreshes the UI.
+  - `class:view:<id>` now sets `detailViewActive = true`.
+  - Detail view now sets `#DetailClassIcon.ItemId` when an icon is available.
+
+### Races Page — Carousel Card Layout (`UI Overhaul`)
+
+Mirror of the classes carousel pattern, adapted for race data.
+
+#### New Templates
+
+- [`RaceCarouselCard.ui`](src/main/resources/Common/UI/Custom/Pages/Races/RaceCarouselCard.ui) — 340×580 px card identical in structure to `ClassCarouselCard.ui`, but with a 10-row stat preview section instead of weapon rows. Each attribute has its own colour-coded label/value pair.
+- [`RaceCardPassiveRow.ui`](src/main/resources/Common/UI/Custom/Pages/Races/RaceCardPassiveRow.ui) — compact passive name row.
+
+#### Layout Changes
+
+- [`RacesPage.ui`](src/main/resources/Common/UI/Custom/Pages/Races/RacesPage.ui): same `#CarouselView` / `#DetailView` split as classes. Carousel header shows active race name, cooldown status, race count, and subheading.
+
+#### Java Changes
+
+- [`RacesUIPage`](src/main/java/com/airijko/endlessleveling/ui/RacesUIPage.java):
+  - New `detailViewActive` boolean and `applyViewState()`, same pattern as `ClassesUIPage`.
+  - `buildRaceList` / `refreshRaceList` renamed to `buildCarousel` / `refreshCarousel`.
+  - `applyCarouselCard()` sets icon, description (abbreviated to 120 chars), status badge, background state, all 10 stat values via `applyCardStat()` (respects `isSkillAttributeHidden`), passive rows, and evolution-path hint.
+  - `updateCarouselHeader()` displays active race name and pre-computes cooldown status inline (ready / bypassed / exhausted / formatted duration).
+  - New `race:back` action; `race:view:<id>` now sets `detailViewActive = true`.
+  - Detail view now sets `#DetailRaceIcon.ItemId` when an icon is available.
+  - Confirm button text changed: `"SWAP"` → `"SWAP RACE"`.
+
+### Leaderboards Page — Podium Layout (`UI Overhaul`)
+
+Top 3 players graduate from coloured rows into a visual podium; 4th place onward stays tabular.
+
+#### New Templates
+
+- [`LeaderboardsPodiumFirst.ui`](src/main/resources/Common/UI/Custom/Pages/Leaderboards/LeaderboardsPodiumFirst.ui) — 320×300 px card with `TileLegendary.png` background, `TileBorderLegendary.png` icon frame, gold text colours, and stat breakdown (Race, Class, Prestige, Level, XP) with alternating row backgrounds.
+- [`LeaderboardsPodiumSecond.ui`](src/main/resources/Common/UI/Custom/Pages/Leaderboards/LeaderboardsPodiumSecond.ui) — same structure, silver/blue theme.
+- [`LeaderboardsPodiumThird.ui`](src/main/resources/Common/UI/Custom/Pages/Leaderboards/LeaderboardsPodiumThird.ui) — same structure, bronze/green theme.
+
+#### Layout Changes
+
+- [`LeaderboardsPage.ui`](src/main/resources/Common/UI/Custom/Pages/Leaderboards/LeaderboardsPage.ui): container widened 1000 → 1400 px. Content layout changed from `Left` to `Top`. New `#PodiumSection` with `#PodiumCards` container and `#PodiumTitle` label. Separate `#TableSection` for `#RowCards`. Header and controls restyled with `ObjectivePanelContainer` pill backgrounds. Filter controls restructured into a dedicated `#ControlSection`.
+
+#### Java Changes
+
+- [`LeaderboardsUIPage`](src/main/java/com/airijko/endlessleveling/ui/LeaderboardsUIPage.java):
+  - Podium population uses a `visualOrder` array to render cards in 2nd | 1st | 3rd order (classic podium arrangement). Each podium card gets a rank label (`1ST` / `2ND` / `3RD`), a unique essence icon (`Ingredient_Ice_Essence`, `Ingredient_Lightning_Essence`, `Ingredient_Life_Essence`), and the full stat set.
+  - `#PodiumSection.Visible` and `#TableSection.Visible` toggled based on entry count.
+  - Table rows (4th+) now use zero-based indexing into `#RowCards` and apply `#RowBgAlt.Visible` on odd rows for alternating striping.
+  - Filter label truncation widened from 14 → 24 characters (substring 11 → 21).
+
+### Profile Page — Weapon & Augment Icons (`UI Overhaul`)
+
+Weapon bonuses and augments now render with item icons instead of plain text entries.
+
+#### New Templates
+
+- [`ProfileWeaponEntry.ui`](src/main/resources/Common/UI/Custom/Pages/Profile/ProfileWeaponEntry.ui) — row with a 34×34 `ItemIcon #WeaponIcon` (framed by `TileDefault.png`), weapon name, and multiplier value.
+- [`ProfileAugmentEntry.ui`](src/main/resources/Common/UI/Custom/Pages/Profile/ProfileAugmentEntry.ui) — row with a 34×34 `ItemIcon #AugmentIcon` (framed by `TileBorderCommon.png`), augment name, and tier label.
+
+#### Java Changes
+
+- [`ProfileUIPage`](src/main/java/com/airijko/endlessleveling/ui/ProfileUIPage.java):
+  - New `WeaponEntry(weaponKey, label, value)` record replaces `PassiveEntry` for weapon data, carrying the raw weapon key so the icon can be resolved.
+  - `renderWeaponSection()` replaces the generic `renderPassiveSection()` call for weapons. Each row uses the `WEAPON_ENTRY_TEMPLATE` and sets `#WeaponIcon.ItemId` via `WeaponIconTheme.resolveIcon(entry.weaponKey())`.
+  - `AugmentEntry` and `AugmentGroupMeta` records gain an `iconItemId` field.
+  - New `resolveAugmentIcon(AugmentDefinition)` method resolves the icon from the augment's `PassiveCategory`, falling back to `Ingredient_Ice_Essence`.
+  - `renderAugmentSection()` now uses the `AUGMENT_ENTRY_TEMPLATE` and sets `#AugmentIcon.ItemId`.
+- [`ProfilePage.ui`](src/main/resources/Common/UI/Custom/Pages/Profile/ProfilePage.ui): sidebar removed, main panel widened to 1320 px. XP bar (`#DetailXpBar`) and identity stats (`#DetailSummary` — Prestige, Level, Race, Class) promoted to an `ObjectivePanelContainer` header. Title changed from `$Nav.@PanelTitleStyle` to inline styled `"ENDLESS LEVELING"`.
+
+### WeaponIconTheme Enum (`UI Overhaul`)
+
+- [`WeaponIconTheme`](src/main/java/com/airijko/endlessleveling/enums/themes/WeaponIconTheme.java): new enum mapping 12 weapon category keys to representative Hytale item icon IDs. Case-insensitive lookup via `resolveIcon(String)` with `Weapon_Sword_Onyxium` as fallback. Covers: `sword`, `longsword`, `dagger`/`daggers`, `bow`/`shortbow`, `staff`, `spear`, `mace`, `battleaxe`, `spellbook`/`grimoire`.
+
+### XP Stats Page (`UI Overhaul`)
+
+- [`XpStatsPage.ui`](src/main/resources/Common/UI/Custom/Pages/XpStats/XpStatsPage.ui): container widened 1000 → 1400 px. Content layout switched from `Left` (side-by-side) to `Top` (stacked). Tab bar added (`#TabMyStats`). Header restyled: title left-aligned, subtitle moved into an `ObjectivePanelContainer` pill on the right.
+- `XpStatsRow.ui`, `XpStatsRowFirst.ui`, `XpStatsRowSecond.ui`, `XpStatsRowThird.ui` — minor styling adjustments.
+
+### Skills Page — Visual Polish (`UI Overhaul`)
+
+- [`SkillsPage.ui`](src/main/resources/Common/UI/Custom/Pages/Skills/SkillsPage.ui): removed opaque `#0b141f` backgrounds from `#SkillsInfoBlock`, `#AutoAllocateRow`, and `#QuickSpendSection`. Divider colours lightened (`#243142` → `#2b3f58`). Main content background adjusted (`#050910(0.85)` → `#0d1a28(0.80)`). Footer restyled with lighter tones.
+
+### Detail Template Restyling (`UI Overhaul`)
+
+Several existing entry templates received tile-background upgrades and padding adjustments:
+
+- `ClassEvolutionEntry.ui`, `RaceEvolutionEntry.ui` — switched from flat `#0f1824` background to `TileDefault2x.png` tile with `#1a2538` tint. Internal layout restructured with explicit padding group.
+- `ClassPassiveEntry.ui`, `RacePassiveEntry.ui` — restyled with tile backgrounds.
+- `LeaderboardsRow.ui` — added `#RowBgAlt` group for alternating row striping.
+- `ProfileRacePassiveEntry.ui`, `ProfileSkillPassiveEntry.ui` — restyled.
+- `ProfilePagePartner.ui` — minor adjustment.
+
+---
+
 ## 2026-04-10 — 7.7.0 (compared to 7.6.1)
 
 A security, necromancer, and balance patch on top of 7.6.1. The headlines are a **secondary class exploit fix**, a **necromancer augment overhaul** that filters COMMON-tier augments from summon mirroring and wires up owner-stat resolution on summon kills, **operator-only permission guards** on all admin commands, and a broad **dungeon damage scaling rebalance** that normalises per-level damage across all world settings.

@@ -1,0 +1,50 @@
+Group {
+    LayoutMode: Top;
+    Anchor: (Bottom: 4);
+
+    Group {
+        Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 0);
+        Background: (TexturePath: "../../Tiles/TileDefault2x.png", Border: 16, Color: #1a2538);
+    }
+
+    Group {
+        LayoutMode: Left;
+        Padding: (Left: 8, Right: 12, Top: 6, Bottom: 6);
+
+        // Icon with border frame
+        Group {
+            Anchor: (Width: 34, Height: 34);
+
+            Group {
+                Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 0);
+                Background: (TexturePath: "../../Tiles/TileDefault.png");
+            }
+
+            Group {
+                Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 0);
+                LayoutMode: Middle;
+
+                ItemIcon #WeaponIcon {
+                    Anchor: (Width: 24, Height: 24);
+                }
+            }
+        }
+
+        Group { Anchor: (Width: 8); }
+
+        Group {
+            LayoutMode: Top;
+            FlexWeight: 1;
+
+            Label #PassiveName {
+                Style: (FontSize: 12, TextColor: #e5c68a, RenderBold: true);
+                Text: "Sword";
+            }
+
+            Label #PassiveValue {
+                Style: (FontSize: 10, TextColor: #ffc300, RenderBold: true);
+                Text: "+5% dmg";
+            }
+        }
+    }
+}

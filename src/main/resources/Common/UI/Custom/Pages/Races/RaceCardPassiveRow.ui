@@ -1,0 +1,9 @@
+Group {
+    LayoutMode: Top;
+
+    Label #CardPassiveName {
+        Text: "Passive";
+        Style: (FontSize: 10, TextColor: #9fb6d3);
+        Anchor: (Height: 14);
+    }
+}

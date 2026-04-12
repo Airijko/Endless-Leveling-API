@@ -1,0 +1,16 @@
+Group {
+    LayoutMode: Left;
+    Anchor: (Height: 15);
+
+    Label #CardWeaponName {
+        Text: "Sword";
+        Style: (FontSize: 10, TextColor: #9fb6d3);
+    }
+
+    Group { FlexWeight: 1; }
+
+    Label #CardWeaponDmg {
+        Text: "+5%";
+        Style: (FontSize: 10, TextColor: #ffc300, RenderBold: true);
+    }
+}

@@ -1,0 +1,104 @@
+$C = "../../Common.ui";
+
+Group {
+    Anchor: (Width: 320, Height: 300);
+    LayoutMode: Top;
+    Padding: (Right: 12);
+
+    Group {
+        Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 12);
+        Background: (TexturePath: "../../Tiles/TileLegendary.png");
+    }
+
+    Group {
+        Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 12);
+        LayoutMode: Top;
+        Padding: (Left: 18, Right: 18, Top: 16, Bottom: 14);
+
+        Group { Anchor: (Height: 6); }
+
+        Label #Rank {
+            Style: (FontSize: 26, TextColor: #ffd700, RenderBold: true, HorizontalAlignment: Center);
+            Anchor: (Height: 32);
+            Text: "1ST";
+        }
+
+        Group { Anchor: (Height: 8); }
+
+        Group {
+            LayoutMode: Middle;
+            Anchor: (Height: 56);
+
+            Group {
+                Anchor: (Width: 56, Height: 56);
+                Background: (TexturePath: "../../Tiles/TileBorderLegendary.png");
+                LayoutMode: Middle;
+                Padding: (Full: 6);
+
+                ItemIcon #PodiumIcon {
+                    Anchor: (Width: 40, Height: 40);
+                }
+            }
+        }
+
+        Group { Anchor: (Height: 8); }
+
+        Label #Name {
+            Style: (FontSize: 16, TextColor: #ffd700, RenderBold: true, HorizontalAlignment: Center);
+            Anchor: (Height: 22);
+            Text: "-";
+        }
+
+        Group { Anchor: (Height: 8); }
+
+        Group {
+            Anchor: (Height: 1);
+            Padding: (Horizontal: 8);
+            Group { Background: #ffd700(0.30); }
+        }
+
+        Group { Anchor: (Height: 10); }
+
+        Group {
+            LayoutMode: Top;
+
+            Group {
+                LayoutMode: Left;
+                Padding: (Vertical: 3);
+                Background: (TexturePath: "../../Tiles/TileRowBackground.png");
+                Label { Style: (FontSize: 11, TextColor: #ffe6a8); Text: "Race"; FlexWeight: 1; Padding: (Left: 8); }
+                Label #Race { Style: (FontSize: 11, TextColor: #ffd700, RenderBold: true); Text: "-"; Padding: (Right: 8); }
+            }
+
+            Group {
+                LayoutMode: Left;
+                Padding: (Vertical: 3);
+                Label { Style: (FontSize: 11, TextColor: #f5e4bc); Text: "Class"; FlexWeight: 1; Padding: (Left: 8); }
+                Label #Class { Style: (FontSize: 11, TextColor: #ffd700, RenderBold: true); Text: "-"; Padding: (Right: 8); }
+            }
+
+            Group {
+                LayoutMode: Left;
+                Padding: (Vertical: 3);
+                Background: (TexturePath: "../../Tiles/TileRowBackground.png");
+                Label { Style: (FontSize: 11, TextColor: #ffe6a8); Text: "Prestige"; FlexWeight: 1; Padding: (Left: 8); }
+                Label #Prestige { Style: (FontSize: 11, TextColor: #ffcc66, RenderBold: true); Text: "-"; Padding: (Right: 8); }
+            }
+
+            Group {
+                LayoutMode: Left;
+                Padding: (Vertical: 3);
+                Label { Style: (FontSize: 11, TextColor: #f5e4bc); Text: "Level"; FlexWeight: 1; Padding: (Left: 8); }
+                Label #Level { Style: (FontSize: 11, TextColor: #ffd700, RenderBold: true); Text: "-"; Padding: (Right: 8); }
+            }
+
+            Group {
+                LayoutMode: Left;
+                Padding: (Vertical: 3);
+                Background: (TexturePath: "../../Tiles/TileRowBackground.png");
+                Label { Style: (FontSize: 11, TextColor: #ffe6a8); Text: "XP"; FlexWeight: 1; Padding: (Left: 8); }
+                Label #Exp { Style: (FontSize: 11, TextColor: #ffd98c, RenderBold: true); Text: "-"; Padding: (Right: 8); }
+            }
+        }
+    }
+}

@@ -1,0 +1,277 @@
+$C = "../../Common.ui";
+
+Button {
+    Anchor: (Width: 340, Height: 580, Right: 24, Top: 10, Bottom: 10);
+    Padding: (Full: 0);
+    Background: #0c121a(0);
+    LayoutMode: Top;
+    Style: (
+        Hovered: (
+            Background: #1c2b40(0.18)
+        ),
+        Pressed: (
+            Background: #263852(0.24)
+        )
+    );
+
+    // ---- Border (top) ----
+    Group #CardOutlineTop {
+        Anchor: (Height: 2);
+        Background: #25384b;
+    }
+
+    Group {
+        FlexWeight: 1;
+        LayoutMode: Left;
+
+        // ---- Border (left) ----
+        Group #CardOutlineLeft {
+            Anchor: (Width: 2);
+            Background: #25384b;
+        }
+
+        // ---- Card surface ----
+        Group #CardSurface {
+            FlexWeight: 1;
+
+            Group #CardBackgroundDefault {
+                Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 0);
+                Background: #0e1826(0.92);
+                Visible: true;
+            }
+
+            Group #CardBackgroundActive {
+                Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 0);
+                Background: #142840(0.92);
+                Visible: false;
+            }
+
+            // Content overlay
+            Group {
+                Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 0);
+                LayoutMode: Top;
+                Padding: (Left: 18, Right: 18, Top: 20, Bottom: 14);
+
+                // ---- Race icon ----
+                Group {
+                    LayoutMode: Middle;
+                    Anchor: (Height: 56);
+
+                    ItemIcon #CardIcon {
+                        Anchor: (Width: 48, Height: 48);
+                    }
+                }
+
+                Group { Anchor: (Height: 6); }
+
+                // ---- Race name ----
+                Label #CardRaceName {
+                    Text: "Race Name";
+                    Style: (FontSize: 18, TextColor: #f2f7ff, RenderBold: true, HorizontalAlignment: Center);
+                    Anchor: (Height: 22);
+                }
+
+                Group { Anchor: (Height: 4); }
+
+                // ---- Description (3 lines) ----
+                Label #CardDescription {
+                    Text: "Race description preview.";
+                    Style: (FontSize: 10, TextColor: #8aa1bf, Wrap: true, HorizontalAlignment: Center);
+                    Anchor: (Height: 42);
+                }
+
+                Group { Anchor: (Height: 6); }
+
+                // ---- Divider ----
+                Group {
+                    Anchor: (Height: 1);
+                    Group { Background: #ffffff(0.06); }
+                }
+
+                Group { Anchor: (Height: 6); }
+
+                // ======== RACE STATS SECTION ========
+                Label #CardStatsHeading {
+                    Text: "Race Stats";
+                    Style: (FontSize: 11, TextColor: #ffffff, RenderBold: true, LetterSpacing: 1);
+                    Anchor: (Height: 14);
+                }
+
+                Group { Anchor: (Height: 4); }
+
+                Group #CardStatsPreview {
+                    LayoutMode: Top;
+                    Background: #0b141f(0.5);
+                    Padding: (Left: 10, Right: 10, Top: 5, Bottom: 5);
+
+                    Group {
+                        LayoutMode: Left;
+                        Anchor: (Height: 16);
+                        Label #CardStatLifeForceLabel { Text: "Life Force"; Style: (FontSize: 10, TextColor: #7be0ff); }
+                        Group { FlexWeight: 1; }
+                        Label #CardStatLifeForce { Text: "--"; Style: (FontSize: 10, TextColor: #4fd7f7, RenderBold: true); }
+                    }
+                    Group {
+                        LayoutMode: Left;
+                        Anchor: (Height: 16);
+                        Label #CardStatStrengthLabel { Text: "Strength"; Style: (FontSize: 10, TextColor: #ffb347); }
+                        Group { FlexWeight: 1; }
+                        Label #CardStatStrength { Text: "--"; Style: (FontSize: 10, TextColor: #ffdf8f, RenderBold: true); }
+                    }
+                    Group {
+                        LayoutMode: Left;
+                        Anchor: (Height: 16);
+                        Label #CardStatSorceryLabel { Text: "Sorcery"; Style: (FontSize: 10, TextColor: #d7baff); }
+                        Group { FlexWeight: 1; }
+                        Label #CardStatSorcery { Text: "--"; Style: (FontSize: 10, TextColor: #e8d5ff, RenderBold: true); }
+                    }
+                    Group {
+                        LayoutMode: Left;
+                        Anchor: (Height: 16);
+                        Label #CardStatDefenseLabel { Text: "Defense"; Style: (FontSize: 10, TextColor: #8be0b2); }
+                        Group { FlexWeight: 1; }
+                        Label #CardStatDefense { Text: "--"; Style: (FontSize: 10, TextColor: #6ee7b7, RenderBold: true); }
+                    }
+                    Group {
+                        LayoutMode: Left;
+                        Anchor: (Height: 16);
+                        Label #CardStatHasteLabel { Text: "Haste"; Style: (FontSize: 10, TextColor: #f2a2e8); }
+                        Group { FlexWeight: 1; }
+                        Label #CardStatHaste { Text: "--"; Style: (FontSize: 10, TextColor: #f78bd9, RenderBold: true); }
+                    }
+                    Group {
+                        LayoutMode: Left;
+                        Anchor: (Height: 16);
+                        Label #CardStatPrecisionLabel { Text: "Precision"; Style: (FontSize: 10, TextColor: #9ad4ff); }
+                        Group { FlexWeight: 1; }
+                        Label #CardStatPrecision { Text: "--"; Style: (FontSize: 10, TextColor: #7cb8ff, RenderBold: true); }
+                    }
+                    Group {
+                        LayoutMode: Left;
+                        Anchor: (Height: 16);
+                        Label #CardStatFerocityLabel { Text: "Ferocity"; Style: (FontSize: 10, TextColor: #ff7b7b); }
+                        Group { FlexWeight: 1; }
+                        Label #CardStatFerocity { Text: "--"; Style: (FontSize: 10, TextColor: #ff5555, RenderBold: true); }
+                    }
+                    Group {
+                        LayoutMode: Left;
+                        Anchor: (Height: 16);
+                        Label #CardStatStaminaLabel { Text: "Stamina"; Style: (FontSize: 10, TextColor: #ffc56f); }
+                        Group { FlexWeight: 1; }
+                        Label #CardStatStamina { Text: "--"; Style: (FontSize: 10, TextColor: #ffad42, RenderBold: true); }
+                    }
+                    Group {
+                        LayoutMode: Left;
+                        Anchor: (Height: 16);
+                        Label #CardStatFlowLabel { Text: "Flow"; Style: (FontSize: 10, TextColor: #9be3ff); }
+                        Group { FlexWeight: 1; }
+                        Label #CardStatFlow { Text: "--"; Style: (FontSize: 10, TextColor: #7dd6ff, RenderBold: true); }
+                    }
+                    Group {
+                        LayoutMode: Left;
+                        Anchor: (Height: 16);
+                        Label #CardStatDisciplineLabel { Text: "Discipline"; Style: (FontSize: 10, TextColor: #d5dfff); }
+                        Group { FlexWeight: 1; }
+                        Label #CardStatDiscipline { Text: "--"; Style: (FontSize: 10, TextColor: #9fe0ff, RenderBold: true); }
+                    }
+                }
+
+                Group { Anchor: (Height: 6); }
+
+                // ======== PASSIVES SECTION ========
+                Label #CardPassivesHeading {
+                    Text: "Passives";
+                    Style: (FontSize: 11, TextColor: #ffffff, RenderBold: true, LetterSpacing: 1);
+                    Anchor: (Height: 14);
+                }
+
+                Group { Anchor: (Height: 4); }
+
+                Group {
+                    LayoutMode: Top;
+                    Background: #0b141f(0.5);
+                    Padding: (Left: 10, Right: 10, Top: 5, Bottom: 5);
+
+                    Group #CardPassiveNames {
+                        LayoutMode: Top;
+                    }
+
+                    // Shown when no passives
+                    Label #CardNoPassives {
+                        Text: "None";
+                        Style: (FontSize: 10, TextColor: #5a7a8f);
+                        Anchor: (Height: 14);
+                        Visible: false;
+                    }
+                }
+
+                Group { FlexWeight: 1; }
+
+                // ---- Evolution paths hint ----
+                Label #CardEvolutionHint {
+                    Text: "2 evolution paths";
+                    Style: (FontSize: 10, TextColor: #5a7a8f, HorizontalAlignment: Center);
+                    Anchor: (Height: 14);
+                }
+            }
+
+            // ---- Status badge (CURRENT) — absolute, no layout push ----
+            Group #CardStatusRow {
+                Anchor: (Top: 6, Left: 6, Right: 6, Height: 20);
+                LayoutMode: Left;
+                Visible: false;
+
+                Group {
+                    Background: #4fd7f7(0.18);
+                    Padding: (Horizontal: 8, Vertical: 2);
+                    Label #CardStatusBadge {
+                        Text: "CURRENT";
+                        Style: (FontSize: 9, TextColor: #4fd7f7, RenderBold: true, LetterSpacing: 1);
+                    }
+                }
+            }
+        }
+
+        // ---- Border (right) ----
+        Group #CardOutlineRight {
+            Anchor: (Width: 2);
+            Background: #25384b;
+        }
+    }
+
+    // ---- Border (bottom) ----
+    Group #CardOutlineBottom {
+        Anchor: (Height: 2);
+        Background: #25384b;
+    }
+
+    // ---- Selected overlay (golden border) ----
+    Group #CardSelectedOverlay {
+        Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 0);
+        Visible: false;
+
+        Group {
+            Anchor: (Top: 0, Left: 0, Right: 0, Height: 2);
+            Background: #f0cf78;
+        }
+        Group {
+            Anchor: (Top: 0, Bottom: 0, Left: 0, Width: 2);
+            Background: #f0cf78;
+        }
+        Group {
+            Anchor: (Top: 0, Bottom: 0, Right: 0, Width: 2);
+            Background: #f0cf78;
+        }
+        Group {
+            Anchor: (Bottom: 0, Left: 0, Right: 0, Height: 2);
+            Background: #f0cf78;
+        }
+    }
+
+    // ---- Active race glow accent (top border accent) ----
+    Group #CardActiveAccent {
+        Anchor: (Top: 0, Left: 0, Right: 0, Height: 3);
+        Background: #4fd7f7;
+        Visible: false;
+    }
+}

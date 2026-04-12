@@ -129,25 +129,63 @@ public class LeaderboardsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Dat
         ui.set("#HeaderLevel.Text", tr("ui.leaderboards.column.level", "Level"));
         ui.set("#HeaderXp.Text", tr("ui.leaderboards.column.xp", "XP"));
 
+        ui.clear("#PodiumCards");
         ui.clear("#RowCards");
 
-        int index = 0;
-        for (PlayerData pd : visible) {
-            String rowUi;
-            if (index == 0) {
-                rowUi = "Pages/Leaderboards/LeaderboardsRowFirst.ui";
-            } else if (index == 1) {
-                rowUi = "Pages/Leaderboards/LeaderboardsRowSecond.ui";
-            } else if (index == 2) {
-                rowUi = "Pages/Leaderboards/LeaderboardsRowThird.ui";
-            } else {
-                rowUi = "Pages/Leaderboards/LeaderboardsRow.ui";
-            }
+        int podiumCount = Math.min(visible.size(), 3);
+        ui.set("#PodiumSection.Visible", podiumCount > 0);
+        ui.set("#TableSection.Visible", visible.size() > 3);
+        ui.set("#PodiumTitle.Text", tr("ui.leaderboards.podium.title", "TOP CHAMPIONS"));
 
-            ui.append("#RowCards", rowUi);
+        // Podium: visual order 2nd | 1st | 3rd (classic podium arrangement)
+        String[] podiumTemplates = {
+            "Pages/Leaderboards/LeaderboardsPodiumFirst.ui",
+            "Pages/Leaderboards/LeaderboardsPodiumSecond.ui",
+            "Pages/Leaderboards/LeaderboardsPodiumThird.ui"
+        };
+        String[] podiumIcons = {
+            "Ingredient_Ice_Essence",
+            "Ingredient_Lightning_Essence",
+            "Ingredient_Life_Essence"
+        };
+        int[] visualOrder;
+        if (podiumCount == 1) {
+            visualOrder = new int[]{0};
+        } else if (podiumCount == 2) {
+            visualOrder = new int[]{1, 0};
+        } else {
+            visualOrder = new int[]{1, 0, 2};
+        }
 
-            String base = "#RowCards[" + index + "]";
-            ui.set(base + " #Rank.Text", (index + 1) + ".");
+        for (int podiumIdx = 0; podiumIdx < visualOrder.length; podiumIdx++) {
+            int rankIdx = visualOrder[podiumIdx];
+            ui.append("#PodiumCards", podiumTemplates[rankIdx]);
+
+            PlayerData pd = visible.get(rankIdx);
+            String base = "#PodiumCards[" + podiumIdx + "]";
+            String rankLabel;
+            if (rankIdx == 0) rankLabel = "1ST";
+            else if (rankIdx == 1) rankLabel = "2ND";
+            else rankLabel = "3RD";
+
+            ui.set(base + " #Rank.Text", rankLabel);
+            ui.set(base + " #Name.Text", pd.getPlayerName());
+            ui.set(base + " #PodiumIcon.ItemId", podiumIcons[rankIdx]);
+            ui.set(base + " #Race.Text", resolveRaceLabel(raceManager, pd));
+            ui.set(base + " #Class.Text", resolvePrimaryClassLabel(classManager, pd));
+            ui.set(base + " #Prestige.Text", String.valueOf(pd.getPrestigeLevel()));
+            ui.set(base + " #Level.Text", String.valueOf(pd.getLevel()));
+            ui.set(base + " #Exp.Text", formatXp(pd.getXp()));
+        }
+
+        // Table: 4th place onward
+        for (int i = 3; i < visible.size(); i++) {
+            PlayerData pd = visible.get(i);
+            ui.append("#RowCards", "Pages/Leaderboards/LeaderboardsRow.ui");
+
+            int rowIdx = i - 3;
+            String base = "#RowCards[" + rowIdx + "]";
+            ui.set(base + " #Rank.Text", (i + 1) + ".");
             ui.set(base + " #Name.Text", pd.getPlayerName());
             ui.set(base + " #Race.Text", resolveRaceLabel(raceManager, pd));
             ui.set(base + " #Class.Text", resolvePrimaryClassLabel(classManager, pd));
@@ -155,7 +193,9 @@ public class LeaderboardsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Dat
             ui.set(base + " #Level.Text", String.valueOf(pd.getLevel()));
             ui.set(base + " #Exp.Text", formatXp(pd.getXp()));
 
-            index++;
+            if (rowIdx % 2 == 1) {
+                ui.set(base + " #RowBgAlt.Visible", true);
+            }
         }
     }
 
@@ -283,10 +323,10 @@ public class LeaderboardsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Dat
         if (value == null || value.isBlank()) {
             return tr("ui.leaderboards.filter.all", "ALL");
         }
-        if (value.length() <= 14) {
+        if (value.length() <= 24) {
             return value;
         }
-        return value.substring(0, 11) + "...";
+        return value.substring(0, 21) + "...";
     }
 
     private String displayFilterValue(String value) {

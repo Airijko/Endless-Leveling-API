@@ -52,10 +52,13 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
     private static final String EVOLUTION_ENTRY_TEMPLATE = "Pages/Races/RaceEvolutionEntry.ui";
+    private static final String CAROUSEL_CARD_TEMPLATE = "Pages/Races/RaceCarouselCard.ui";
+    private static final String CARD_PASSIVE_ROW_TEMPLATE = "Pages/Races/RaceCardPassiveRow.ui";
 
     private final RaceManager raceManager;
     private final PlayerDataManager playerDataManager;
     private String selectedRaceId;
+    private boolean detailViewActive;
 
     public RacesUIPage(@Nonnull PlayerRef playerRef, @Nonnull CustomPageLifetime lifetime) {
         super(playerRef, lifetime, SkillsUIPage.Data.CODEC);
@@ -63,6 +66,7 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         this.raceManager = plugin != null ? plugin.getRaceManager() : null;
         this.playerDataManager = plugin != null ? plugin.getPlayerDataManager() : null;
         this.selectedRaceId = null;
+        this.detailViewActive = false;
     }
 
     @Override
@@ -86,16 +90,21 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 "#ViewRacePathsButton",
                 of("Action", "race:open_paths"),
                 false);
+        events.addEventBinding(Activating,
+                "#BackToCarouselButton",
+                of("Action", "race:back"),
+                false);
 
         if (raceManager == null || !raceManager.isEnabled()) {
-            ui.set("#SelectedRaceLabel.Text", tr("ui.races.offline.title", "Races Offline"));
-            ui.set("#SelectedRaceSubtitle.Text",
+            ui.set("#CarouselSubheading.Text", tr("ui.races.offline.title", "Races Offline"));
+            ui.set("#CarouselSubheading.Text",
                     tr("ui.races.offline.subtitle", "Races are currently disabled in config.yml."));
-            ui.set("#RaceSwapCooldownValue.Text", tr("ui.races.cooldown.disabled", "Disabled"));
-            ui.set("#RaceSwapCooldownHint.Text", tr("ui.races.offline.hint", "Enable races to manage identities."));
-            ui.set("#RaceCountLabel.Text", tr("ui.races.count_none", "0 available"));
+            ui.set("#CarouselCooldownValue.Text", tr("ui.races.cooldown.disabled", "Disabled"));
+            ui.set("#CarouselCurrentRace.Text", tr("hud.common.unavailable", "--"));
+            ui.set("#CarouselRaceCount.Text", tr("ui.races.count_none", "0 available"));
             ui.set("#CurrentRaceValue.Text", tr("hud.common.unavailable", "--"));
-            ui.clear("#RaceRows");
+            ui.set("#RaceSwapCooldownValue.Text", tr("ui.races.cooldown.disabled", "Disabled"));
+            ui.clear("#CarouselCards");
             ui.clear("#RacePassiveEntries");
             ui.clear("#RaceEvolutionEntries");
             return;
@@ -103,14 +112,15 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
         PlayerData playerData = resolvePlayerData();
         if (playerData == null) {
-            ui.set("#SelectedRaceLabel.Text", tr("ui.races.playerdata.title", "Player data unavailable"));
-            ui.set("#SelectedRaceSubtitle.Text",
+            ui.set("#CarouselSubheading.Text", tr("ui.races.playerdata.title", "Player data unavailable"));
+            ui.set("#CarouselSubheading.Text",
                     tr("ui.races.playerdata.subtitle", "Unable to load your race information right now."));
-            ui.set("#RaceSwapCooldownValue.Text", tr("hud.common.unavailable", "--"));
-            ui.set("#RaceSwapCooldownHint.Text",
-                    tr("ui.races.playerdata.hint", "Try reopening this page in a few moments."));
+            ui.set("#CarouselCooldownValue.Text", tr("hud.common.unavailable", "--"));
+            ui.set("#CarouselCurrentRace.Text", tr("hud.common.unavailable", "--"));
+            ui.set("#CarouselRaceCount.Text", tr("ui.races.count_none", "0 available"));
             ui.set("#CurrentRaceValue.Text", tr("hud.common.unavailable", "--"));
-            ui.clear("#RaceRows");
+            ui.set("#RaceSwapCooldownValue.Text", tr("hud.common.unavailable", "--"));
+            ui.clear("#CarouselCards");
             ui.clear("#RacePassiveEntries");
             ui.clear("#RaceEvolutionEntries");
             return;
@@ -124,8 +134,12 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
         updateStatusCard(ui, activeRace);
         updateCooldownCard(ui, playerData, operatorBypass);
-        buildRaceList(ui, events, playerData, activeRace);
-        updateRaceDetailPanel(ui, playerData, activeRace, operatorBypass);
+        updateCarouselHeader(ui, activeRace, playerData, operatorBypass);
+        buildCarousel(ui, events, activeRace);
+        applyViewState(ui);
+        if (detailViewActive) {
+            updateRaceDetailPanel(ui, playerData, activeRace, operatorBypass);
+        }
     }
 
     private void refreshRaceUi(@Nonnull PlayerData playerData, boolean operatorBypass) {
@@ -141,8 +155,12 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         UICommandBuilder ui = new UICommandBuilder();
         updateStatusCard(ui, activeRace);
         updateCooldownCard(ui, playerData, operatorBypass);
-        refreshRaceList(ui, activeRace);
-        updateRaceDetailPanel(ui, playerData, activeRace, operatorBypass);
+        updateCarouselHeader(ui, activeRace, playerData, operatorBypass);
+        refreshCarousel(ui, activeRace);
+        applyViewState(ui);
+        if (detailViewActive) {
+            updateRaceDetailPanel(ui, playerData, activeRace, operatorBypass);
+        }
         sendUpdate(ui, false);
     }
 
@@ -185,79 +203,180 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         }
     }
 
-    private void buildRaceList(@Nonnull UICommandBuilder ui,
-            @Nonnull UIEventBuilder events,
+    private void applyViewState(@Nonnull UICommandBuilder ui) {
+        ui.set("#CarouselView.Visible", !detailViewActive);
+        ui.set("#DetailView.Visible", detailViewActive);
+    }
+
+    private void updateCarouselHeader(@Nonnull UICommandBuilder ui,
+            RaceDefinition activeRace,
             @Nonnull PlayerData data,
+            boolean operatorBypass) {
+        String currentName = activeRace != null ? activeRace.getDisplayName()
+                : tr("ui.races.current.none", "None");
+        ui.set("#CarouselCurrentRace.Text", currentName);
+
+        if (operatorBypass) {
+            ui.set("#CarouselCooldownValue.Text", tr("ui.races.cooldown.bypassed", "Bypassed"));
+        } else if (raceManager != null && !raceManager.hasRaceSwitchesRemaining(data)) {
+            ui.set("#CarouselCooldownValue.Text", tr("ui.races.cooldown.exhausted", "No changes left"));
+        } else {
+            long cooldownSeconds = raceManager != null ? raceManager.getChooseRaceCooldownSeconds() : 0;
+            long remaining = computeCooldownRemaining(data, cooldownSeconds);
+            if (remaining > 0) {
+                ui.set("#CarouselCooldownValue.Text", formatDuration(remaining));
+            } else {
+                ui.set("#CarouselCooldownValue.Text", tr("ui.races.cooldown.ready", "Ready"));
+            }
+        }
+    }
+
+    private void buildCarousel(@Nonnull UICommandBuilder ui,
+            @Nonnull UIEventBuilder events,
             RaceDefinition activeRace) {
-        ui.clear("#RaceRows");
+        ui.clear("#CarouselCards");
 
         List<RaceDefinition> races = getSortedRaces();
-        ui.set("#RaceCountLabel.Text",
+        ui.set("#CarouselRaceCount.Text",
                 tr("ui.races.count", "{0} {1}", races.size(), races.size() == 1
                         ? tr("ui.races.count_word.singular", "race")
                         : tr("ui.races.count_word.plural", "races")));
 
         for (int index = 0; index < races.size(); index++) {
             RaceDefinition definition = races.get(index);
-            ui.append("#RaceRows", "Pages/Races/RaceRow.ui");
-            String baseSelector = "#RaceRows[" + index + "]";
+            ui.append("#CarouselCards", CAROUSEL_CARD_TEMPLATE);
+            String base = "#CarouselCards[" + index + "]";
 
-            String displayName = definition.getDisplayName();
             boolean isCurrent = activeRace != null && sameRacePath(activeRace.getId(), definition.getId());
-            boolean isSelected = selectedRaceMatches(definition.getId());
-
-            ui.set(baseSelector + " #RaceName.Text", displayName);
-
-            String selectionStatus = isCurrent ? tr("ui.races.status.current", "CURRENT")
-                    : (isSelected ? tr("ui.races.status.viewing", "VIEWING") : "");
-            boolean hasStatus = !selectionStatus.isEmpty();
-            ui.set(baseSelector + " #RaceSelectionStatus.Visible", hasStatus);
-            ui.set(baseSelector + " #RaceSelectionStatus.Text", selectionStatus);
-            ui.set(baseSelector + " #ViewRaceButton.Text", tr("ui.races.actions.view", "VIEW"));
+            applyCarouselCard(ui, base, definition, isCurrent);
 
             events.addEventBinding(Activating,
-                    baseSelector + " #ViewRaceButton",
+                    base,
                     of("Action", "race:view:" + definition.getId()),
                     false);
         }
     }
 
-    private void refreshRaceList(@Nonnull UICommandBuilder ui,
-            RaceDefinition activeRace) {
+    private void refreshCarousel(@Nonnull UICommandBuilder ui, RaceDefinition activeRace) {
         List<RaceDefinition> races = getSortedRaces();
-        ui.set("#RaceCountLabel.Text",
+        ui.set("#CarouselRaceCount.Text",
                 tr("ui.races.count", "{0} {1}", races.size(), races.size() == 1
                         ? tr("ui.races.count_word.singular", "race")
                         : tr("ui.races.count_word.plural", "races")));
 
         for (int index = 0; index < races.size(); index++) {
             RaceDefinition definition = races.get(index);
-            String baseSelector = "#RaceRows[" + index + "]";
-
-            String displayName = definition.getDisplayName();
+            String base = "#CarouselCards[" + index + "]";
             boolean isCurrent = activeRace != null && sameRacePath(activeRace.getId(), definition.getId());
-            boolean isSelected = selectedRaceMatches(definition.getId());
-
-            ui.set(baseSelector + " #RaceName.Text", displayName);
-
-            String selectionStatus = isCurrent ? tr("ui.races.status.current", "CURRENT")
-                    : (isSelected ? tr("ui.races.status.viewing", "VIEWING") : "");
-            boolean hasStatus = !selectionStatus.isEmpty();
-            ui.set(baseSelector + " #RaceSelectionStatus.Visible", hasStatus);
-            ui.set(baseSelector + " #RaceSelectionStatus.Text", selectionStatus);
-            ui.set(baseSelector + " #ViewRaceButton.Text", tr("ui.races.actions.view", "VIEW"));
+            applyCarouselCard(ui, base, definition, isCurrent);
         }
     }
 
+    private void applyCarouselCard(@Nonnull UICommandBuilder ui,
+            @Nonnull String base,
+            @Nonnull RaceDefinition definition,
+            boolean isCurrent) {
+        String displayName = definition.getDisplayName();
+        ui.set(base + " #CardRaceName.Text", displayName);
+
+        String icon = definition.getIcon();
+        if (icon != null && !icon.isBlank()) {
+            ui.set(base + " #CardIcon.ItemId", icon);
+        }
+
+        String desc = definition.getDescription();
+        if (desc != null && !desc.isBlank()) {
+            ui.set(base + " #CardDescription.Text", abbreviate(desc, 120));
+        } else {
+            ui.set(base + " #CardDescription.Text", "");
+        }
+
+        // Status badge (absolute positioned, no layout push)
+        ui.set(base + " #CardStatusRow.Visible", isCurrent);
+        if (isCurrent) {
+            ui.set(base + " #CardStatusBadge.Text", tr("ui.races.status.current", "CURRENT"));
+        }
+
+        // Background state
+        ui.set(base + " #CardBackgroundDefault.Visible", !isCurrent);
+        ui.set(base + " #CardBackgroundActive.Visible", isCurrent);
+        ui.set(base + " #CardActiveAccent.Visible", isCurrent);
+
+        // All stats preview
+        applyCardStat(ui, base + " #CardStatLifeForce", definition, SkillAttributeType.LIFE_FORCE);
+        applyCardStat(ui, base + " #CardStatStrength", definition, SkillAttributeType.STRENGTH);
+        applyCardStat(ui, base + " #CardStatSorcery", definition, SkillAttributeType.SORCERY);
+        applyCardStat(ui, base + " #CardStatDefense", definition, SkillAttributeType.DEFENSE);
+        applyCardStat(ui, base + " #CardStatHaste", definition, SkillAttributeType.HASTE);
+        applyCardStat(ui, base + " #CardStatPrecision", definition, SkillAttributeType.PRECISION);
+        applyCardStat(ui, base + " #CardStatFerocity", definition, SkillAttributeType.FEROCITY);
+        applyCardStat(ui, base + " #CardStatStamina", definition, SkillAttributeType.STAMINA);
+        applyCardStat(ui, base + " #CardStatFlow", definition, SkillAttributeType.FLOW);
+        applyCardStat(ui, base + " #CardStatDiscipline", definition, SkillAttributeType.DISCIPLINE);
+
+        // Passive names (non-innate only)
+        ui.clear(base + " #CardPassiveNames");
+        List<RacePassiveDefinition> passives = definition.getPassiveDefinitions();
+        int passiveIndex = 0;
+        if (passives != null) {
+            for (RacePassiveDefinition passive : passives) {
+                if (passive.type() == ArchetypePassiveType.INNATE_ATTRIBUTE_GAIN) {
+                    continue;
+                }
+                ui.append(base + " #CardPassiveNames", CARD_PASSIVE_ROW_TEMPLATE);
+                String passiveSelector = base + " #CardPassiveNames[" + passiveIndex + "]";
+                ui.set(passiveSelector + " #CardPassiveName.Text", buildPassiveLabel(passive));
+                passiveIndex++;
+            }
+        }
+        ui.set(base + " #CardNoPassives.Visible", passiveIndex == 0);
+
+        // Evolution paths hint
+        int pathCount = 0;
+        if (raceManager != null) {
+            Collection<RaceDefinition> nextPaths = raceManager.getNextAscensionRaces(definition.getId());
+            pathCount = nextPaths != null ? nextPaths.size() : 0;
+        }
+        if (pathCount > 0) {
+            ui.set(base + " #CardEvolutionHint.Text",
+                    tr("ui.races.card.evolution", "{0} evolution {1}", pathCount,
+                            pathCount == 1 ? tr("ui.races.card.path_word.singular", "path")
+                                    : tr("ui.races.card.path_word.plural", "paths")));
+        } else {
+            ui.set(base + " #CardEvolutionHint.Text", "");
+        }
+    }
+
+    private void applyCardStat(@Nonnull UICommandBuilder ui,
+            @Nonnull String selector,
+            @Nonnull RaceDefinition definition,
+            @Nonnull SkillAttributeType type) {
+        if (EndlessLevelingAPI.get().isSkillAttributeHidden(type)) {
+            ui.set(selector + ".Text", "");
+            return;
+        }
+        boolean has = definition.getBaseAttributes().containsKey(type);
+        double value = definition.getBaseAttribute(type, 0.0D);
+        ui.set(selector + ".Text", has ? formatRaceAttributeValue(type, value) : tr("hud.common.unavailable", "--"));
+    }
+
     private void applyStaticLabels(@Nonnull UICommandBuilder ui) {
-        ui.set("#RaceSwapCooldownCardTitle.Text", tr("ui.races.cooldown.card_title", "Race Swap Cooldown"));
+        // Carousel view labels
+        ui.set("#CarouselSubheading.Text",
+                tr("ui.races.carousel.subheading", "Select a race to view details."));
+        ui.set("#CarouselCurrentBadge.Text", tr("ui.races.page.current_badge_label", "Active:"));
+        ui.set("#CarouselCooldownLabel.Text", tr("ui.races.cooldown.label", "Cooldown:"));
+
+        // Detail view info panel labels
+        ui.set("#RaceSwapCooldownCardTitle.Text", tr("ui.races.cooldown.card_title", "Cooldown"));
         ui.set("#RaceSwapCooldownHint.Text",
                 tr("ui.races.cooldown.card_hint", "Swapping again becomes available once the timer hits zero."));
-        ui.set("#RaceListTitle.Text", tr("ui.races.page.available", "Available Races"));
         ui.set("#RaceCurrentTitle.Text", tr("ui.races.page.current_title", "Current Race"));
         ui.set("#RaceCurrentBadge.Text", tr("ui.races.page.current_badge", "Active"));
         ui.set("#RaceCurrentHint.Text",
                 tr("ui.races.page.current_hint", "Your active race sets identity and innate bonuses."));
+
+        // Detail view content labels
         ui.set("#RaceLoreTitle.Text", tr("ui.races.page.lore_title", "Lore Preview"));
         ui.set("#RaceStatsTitle.Text", tr("ui.races.page.stats_title", "Race Stats"));
         ui.set("#RacePassivesTitle.Text", tr("ui.races.page.passives_title", "Passives"));
@@ -267,8 +386,9 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         ui.set("#RaceDetailCooldownWarning.Text",
                 tr("ui.races.cooldown.default_warning",
                         "You will be locked for the remaining cooldown after swapping."));
+        ui.set("#BackToCarouselButton.Text", tr("ui.races.actions.back", "BACK"));
         ui.set("#ViewRacePathsButton.Text", tr("ui.races.actions.view_paths", "VIEW PATHS"));
-        ui.set("#ConfirmRaceButton.Text", tr("ui.races.actions.swap", "SWAP"));
+        ui.set("#ConfirmRaceButton.Text", tr("ui.races.actions.swap", "SWAP RACE"));
 
         for (AttributeTheme theme : AttributeTheme.values()) {
             if (EndlessLevelingAPI.get().isSkillAttributeHidden(theme.type())) {
@@ -305,6 +425,10 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         }
 
         ui.set("#SelectedRaceLabel.Text", selection.getDisplayName());
+        String detailIcon = selection.getIcon();
+        if (detailIcon != null && !detailIcon.isBlank()) {
+            ui.set("#DetailRaceIcon.ItemId", detailIcon);
+        }
         ui.set("#ViewRacePathsButton.Visible", true);
         ui.set("#SelectedRaceSubtitle.Text",
                 selection == activeRace ? tr("ui.races.subtitle.current", "Currently active")
@@ -1595,10 +1719,17 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
         boolean operatorBypass = OperatorHelper.isOperator(playerRef);
 
+        if (data.action.equals("race:back")) {
+            this.detailViewActive = false;
+            refreshRaceUi(playerData, operatorBypass);
+            return;
+        }
+
         if (data.action.startsWith("race:view:")) {
             String targetId = data.action.substring("race:view:".length());
             if (targetId != null && !targetId.isBlank()) {
                 this.selectedRaceId = targetId.trim();
+                this.detailViewActive = true;
                 refreshRaceUi(playerData, operatorBypass);
             }
             return;

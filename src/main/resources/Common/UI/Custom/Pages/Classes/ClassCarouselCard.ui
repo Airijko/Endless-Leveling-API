@@ -1,0 +1,216 @@
+$C = "../../Common.ui";
+
+Button {
+    Anchor: (Width: 340, Height: 580, Right: 24, Top: 10, Bottom: 10);
+    Padding: (Full: 0);
+    Background: #0c121a(0);
+    LayoutMode: Top;
+    Style: (
+        Hovered: (
+            Background: #1c2b40(0.18)
+        ),
+        Pressed: (
+            Background: #263852(0.24)
+        )
+    );
+
+    // ---- Border (top) ----
+    Group #CardOutlineTop {
+        Anchor: (Height: 2);
+        Background: #25384b;
+    }
+
+    Group {
+        FlexWeight: 1;
+        LayoutMode: Left;
+
+        // ---- Border (left) ----
+        Group #CardOutlineLeft {
+            Anchor: (Width: 2);
+            Background: #25384b;
+        }
+
+        // ---- Card surface ----
+        Group #CardSurface {
+            FlexWeight: 1;
+
+            Group #CardBackgroundDefault {
+                Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 0);
+                Background: #0e1826(0.92);
+                Visible: true;
+            }
+
+            Group #CardBackgroundActive {
+                Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 0);
+                Background: #142840(0.92);
+                Visible: false;
+            }
+
+            // Content overlay
+            Group {
+                Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 0);
+                LayoutMode: Top;
+                Padding: (Left: 18, Right: 18, Top: 20, Bottom: 14);
+
+                // ---- Class icon ----
+                Group {
+                    LayoutMode: Middle;
+                    Anchor: (Height: 56);
+
+                    ItemIcon #CardIcon {
+                        Anchor: (Width: 48, Height: 48);
+                    }
+                }
+
+                Group { Anchor: (Height: 6); }
+
+                // ---- Class name ----
+                Label #CardClassName {
+                    Text: "Class Name";
+                    Style: (FontSize: 18, TextColor: #f2f7ff, RenderBold: true, HorizontalAlignment: Center);
+                    Anchor: (Height: 22);
+                }
+
+                // ---- Role tag ----
+                Label #CardRoleTag {
+                    Text: "Role";
+                    Style: (FontSize: 10, TextColor: #f0c040, HorizontalAlignment: Center, LetterSpacing: 1);
+                    Anchor: (Height: 14);
+                }
+
+                Group { Anchor: (Height: 4); }
+
+                // ---- Description (3 lines) ----
+                Label #CardDescription {
+                    Text: "Class description preview.";
+                    Style: (FontSize: 10, TextColor: #8aa1bf, Wrap: true, HorizontalAlignment: Center);
+                    Anchor: (Height: 42);
+                }
+
+                Group { Anchor: (Height: 6); }
+
+                // ---- Divider ----
+                Group {
+                    Anchor: (Height: 1);
+                    Group { Background: #ffffff(0.06); }
+                }
+
+                Group { Anchor: (Height: 6); }
+
+                // ======== WEAPONS SECTION ========
+                Label #CardWeaponsHeading {
+                    Text: "Weapons";
+                    Style: (FontSize: 11, TextColor: #ffffff, RenderBold: true, LetterSpacing: 1);
+                    Anchor: (Height: 14);
+                }
+
+                Group { Anchor: (Height: 4); }
+
+                Group #CardWeaponList {
+                    LayoutMode: Top;
+                    Background: #0b141f(0.5);
+                    Padding: (Left: 10, Right: 10, Top: 4, Bottom: 4);
+
+                    Group #CardWeaponRows {
+                        LayoutMode: Top;
+                    }
+                }
+
+                Group { Anchor: (Height: 6); }
+
+                // ======== PASSIVES SECTION ========
+                Label #CardPassivesHeading {
+                    Text: "Passives";
+                    Style: (FontSize: 11, TextColor: #ffffff, RenderBold: true, LetterSpacing: 1);
+                    Anchor: (Height: 14);
+                }
+
+                Group { Anchor: (Height: 4); }
+
+                Group {
+                    LayoutMode: Top;
+                    Background: #0b141f(0.5);
+                    Padding: (Left: 10, Right: 10, Top: 4, Bottom: 4);
+
+                    Group #CardPassiveNames {
+                        LayoutMode: Top;
+                    }
+
+                    Label #CardNoPassives {
+                        Text: "None";
+                        Style: (FontSize: 10, TextColor: #5a7a8f);
+                        Anchor: (Height: 14);
+                        Visible: false;
+                    }
+                }
+
+                Group { FlexWeight: 1; }
+
+                // ---- Evolution paths hint ----
+                Label #CardEvolutionHint {
+                    Text: "1 evolution path";
+                    Style: (FontSize: 10, TextColor: #5a7a8f, HorizontalAlignment: Center);
+                    Anchor: (Height: 14);
+                }
+            }
+
+            // ---- Status badge (PRIMARY/SECONDARY) — absolute, no layout push ----
+            Group #CardStatusRow {
+                Anchor: (Top: 6, Left: 6, Right: 6, Height: 20);
+                LayoutMode: Left;
+                Visible: false;
+
+                Group {
+                    Background: #4fd7f7(0.18);
+                    Padding: (Horizontal: 8, Vertical: 2);
+                    Label #CardStatusBadge {
+                        Text: "PRIMARY";
+                        Style: (FontSize: 9, TextColor: #4fd7f7, RenderBold: true, LetterSpacing: 1);
+                    }
+                }
+            }
+        }
+
+        // ---- Border (right) ----
+        Group #CardOutlineRight {
+            Anchor: (Width: 2);
+            Background: #25384b;
+        }
+    }
+
+    // ---- Border (bottom) ----
+    Group #CardOutlineBottom {
+        Anchor: (Height: 2);
+        Background: #25384b;
+    }
+
+    // ---- Selected overlay (golden border) ----
+    Group #CardSelectedOverlay {
+        Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 0);
+        Visible: false;
+
+        Group {
+            Anchor: (Top: 0, Left: 0, Right: 0, Height: 2);
+            Background: #f0cf78;
+        }
+        Group {
+            Anchor: (Top: 0, Bottom: 0, Left: 0, Width: 2);
+            Background: #f0cf78;
+        }
+        Group {
+            Anchor: (Top: 0, Bottom: 0, Right: 0, Width: 2);
+            Background: #f0cf78;
+        }
+        Group {
+            Anchor: (Bottom: 0, Left: 0, Right: 0, Height: 2);
+            Background: #f0cf78;
+        }
+    }
+
+    // ---- Active class accent (top border) ----
+    Group #CardActiveAccent {
+        Anchor: (Top: 0, Left: 0, Right: 0, Height: 3);
+        Background: #4fd7f7;
+        Visible: false;
+    }
+}

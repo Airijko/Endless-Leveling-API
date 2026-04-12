@@ -99,7 +99,6 @@ $C.@PageOverlay {
 
                                     Group #SkillsInfoBlock {
                                         LayoutMode: Top;
-                                        Background: #0b141f(0.84);
                                         Padding: (Full: 10);
 
                                         Label #SkillsInfoTitle {
@@ -117,7 +116,6 @@ $C.@PageOverlay {
 
                                     Group #AutoAllocateRow {
                                         LayoutMode: Top;
-                                        Background: #0b141f(0.78);
                                         Padding: (Full: 8);
 
                                         Label #AutoAllocateLabel {
@@ -181,7 +179,7 @@ $C.@PageOverlay {
 
                                         Group {
                                             Anchor: (Height: 1);
-                                            Background: #243142;
+                                            Background: #2b3f58;
                                         }
 
                                         Group { Anchor: (Height: 8); }
@@ -291,7 +289,7 @@ $C.@PageOverlay {
                                     Group #Main {
                                         FlexWeight: 1;
                                         LayoutMode: Top;
-                                        Background: #050910(0.85);
+                                        Background: #0d1a28(0.80);
                                         Padding: (Full: 12);
 
                                         Group { Anchor: (Height: 2); }
@@ -1240,18 +1238,18 @@ $C.@PageOverlay {
                                     // -------- FOOTER --------
                                     Group #Footer {
                                         LayoutMode: Top;
-                                        Background: #070b12;
+                                        Background: #0b1520;
                                         Anchor: (Bottom: -12);
 
                                         Group {
                                             Anchor: (Height: 2);
-                                            Background: #142034;
+                                            Background: #1a2d44;
                                         }
 
                                         Group {
                                             LayoutMode: Left;
                                             Padding: (Full: 20);
-                                            Background: #0b141f(0.95);
+                                            Background: #0f1c2c(0.90);
                                             Anchor: (Height: 70);
 
                                             Group {
@@ -1320,7 +1318,6 @@ $C.@PageOverlay {
 
                                     Group #QuickSpendSection {
                                         LayoutMode: Top;
-                                        Background: #0b141f(0.78);
                                         Padding: (Full: 8);
 
                                         Label #QuickSpendTitle {
@@ -1448,7 +1445,7 @@ $C.@PageOverlay {
 
                                     Group {
                                         Anchor: (Height: 1);
-                                        Background: #2b3542;
+                                        Background: #2b3f58;
                                     }
 
                                     Group { Anchor: (Height: 10); }

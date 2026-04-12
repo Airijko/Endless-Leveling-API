@@ -38,7 +38,7 @@ $C.@PageOverlay {
             LayoutMode: Middle;
 
     $Nav.@ObjectiveContainer {
-        Anchor: (Width: 1000, Height: 700);
+        Anchor: (Width: 1400, Height: 700);
         #Title {
             Label #XpStatsTitle {
                 Text: "ENDLESS LEVELING";
@@ -47,94 +47,101 @@ $C.@PageOverlay {
         }
 
         #Content {
-            LayoutMode: Left;
+            LayoutMode: Top;
             Padding: (Full: 0);
 
-            Group #RightPanel {
-                FlexWeight: 1;
+            // ================= HEADER =================
+            Group #Header {
                 LayoutMode: Top;
+                Padding: (Horizontal: 16, Top: 10, Bottom: 6);
 
-                Group #Header {
+                Group {
                     LayoutMode: Left;
-                    Anchor: (Height: 60);
-                    Padding: (Horizontal: 16, Vertical: 10);
 
                     Label #PageTitleLabel {
                         Text: "XP Statistics";
-                        Anchor: (Height: 60);
                         Style: (FontSize: 22, TextColor: #ffffff, RenderBold: true, VerticalAlignment: Center);
+                        Anchor: (Height: 40);
                     }
 
                     Group { FlexWeight: 1; }
 
-                    Label #SubtitleText {
-                        Style: (TextColor: #aaccff, FontSize: 14, VerticalAlignment: Center);
-                        Text: "";
-                    }
-                }
-
-                Group { Anchor: (Height: 1); Background: #2b3542; }
-
-                Group #Main {
-                    LayoutMode: Top;
-                    FlexWeight: 1;
-                    Padding: (Full: 16);
-
-                    // Tab bar
-                    Group #TabBar {
+                    Group {
                         LayoutMode: Left;
+                        Background: (TexturePath: "../../Hud/ObjectivePanelContainer.png", Border: 15);
                         Anchor: (Height: 36);
+                        Padding: (Horizontal: 14, Vertical: 6);
 
-                        $C.@TextButton #TabMyStats {
-                            Text: "MY STATS";
-                            FlexWeight: 1;
-                            Anchor: (Height: 30);
-                            Style: @TabStyle;
-                        }
-
-                        Group { Anchor: (Width: 6); }
-
-                        $C.@TextButton #TabLeaderboard {
-                            Text: "LEADERBOARD";
-                            FlexWeight: 1;
-                            Anchor: (Height: 30);
-                            Style: @TabStyle;
-                        }
-
-                        Group { Anchor: (Width: 6); }
-
-                        $C.@TextButton #TabAdmin {
-                            Text: "ADMIN";
-                            FlexWeight: 1;
-                            Anchor: (Height: 30);
-                            Style: @TabStyle;
-                        }
-
-                        Group { Anchor: (Width: 6); }
-
-                        Label #ActiveTabLabel {
-                            Style: (TextColor: #9ab6d4, FontSize: 12, VerticalAlignment: Center);
+                        Label #SubtitleText {
+                            Style: (TextColor: #f0c040, FontSize: 12, RenderBold: true, VerticalAlignment: Center);
                             Text: "";
                         }
                     }
+                }
+            }
 
-                    Group { Anchor: (Height: 8); }
+            // ================= TAB BAR =================
+            Group #TabBar {
+                LayoutMode: Left;
+                Anchor: (Height: 36);
+                Padding: (Horizontal: 16);
 
-                    // Shared scrollable content area
-                    Group #ContentArea {
-                        LayoutMode: Top;
+                $C.@TextButton #TabMyStats {
+                    Text: "MY STATS";
+                    Anchor: (Height: 30);
+                    Padding: (Horizontal: 16, Vertical: 1);
+                    Style: @TabStyle;
+                }
+
+                Group { Anchor: (Width: 6); }
+
+                $C.@TextButton #TabLeaderboard {
+                    Text: "LEADERBOARD";
+                    Anchor: (Height: 30);
+                    Padding: (Horizontal: 16, Vertical: 1);
+                    Style: @TabStyle;
+                }
+
+                Group { Anchor: (Width: 6); }
+
+                $C.@TextButton #TabAdmin {
+                    Text: "ADMIN";
+                    Anchor: (Height: 30);
+                    Padding: (Horizontal: 16, Vertical: 1);
+                    Style: @TabStyle;
+                }
+
+                Group { Anchor: (Width: 12); }
+
+                Label #ActiveTabLabel {
+                    Style: (TextColor: #9ab6d4, FontSize: 12, VerticalAlignment: Center);
+                    Text: "";
+                }
+            }
+
+            Group { Anchor: (Height: 1); Padding: (Horizontal: 16); Group { Background: #2b3f58; } }
+
+            Group { Anchor: (Height: 6); }
+
+            // ================= CONTENT AREA =================
+            Group #Main {
+                LayoutMode: Top;
+                FlexWeight: 1;
+                Padding: (Horizontal: 16, Bottom: 8);
+
+                Group #ContentArea {
+                    LayoutMode: Top;
+                    FlexWeight: 1;
+                    Background: #0b1520(0.85);
+                    Padding: (Full: 8);
+
+                    Group #ContentScroll {
                         FlexWeight: 1;
-                        Background: #070b12(0.9);
-                        Padding: (Full: 8);
+                        LayoutMode: TopScrolling;
+                        ScrollbarStyle: $C.@DefaultScrollbarStyle;
 
-                        Group #ContentScroll {
-                            FlexWeight: 1;
-                            LayoutMode: TopScrolling;
-                            ScrollbarStyle: $C.@DefaultScrollbarStyle;
-
-                            Group #ContentRows {
-                                LayoutMode: Top;
-                            }
+                        Group #ContentRows {
+                            LayoutMode: Top;
                         }
                     }
                 }

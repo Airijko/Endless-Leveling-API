@@ -1,17 +1,26 @@
 Group {
     LayoutMode: Top;
-    Background: #0f1824(0.8);
-    Padding: (Left: 10, Right: 10, Top: 5, Bottom: 5);
+    Anchor: (Bottom: 6);
 
-    Label #PassiveName {
-        Style: (FontSize: 12, TextColor: #e5c68a, RenderBold: true, Wrap: true);
-        Text: "Class Passive";
+    Group {
+        Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 0);
+        Background: (TexturePath: "../../Tiles/TileDefault2x.png", Border: 16, Color: #1a2538);
     }
 
-    Group { Anchor: (Height: 4); }
+    Group {
+        LayoutMode: Top;
+        Padding: (Left: 12, Right: 12, Top: 8, Bottom: 8);
 
-    Label #PassiveValue {
-        Style: (FontSize: 11, TextColor: #ffc300, RenderBold: true, Wrap: true);
-        Text: "+0";
+        Label #PassiveName {
+            Style: (FontSize: 12, TextColor: #e5c68a, RenderBold: true, Wrap: true);
+            Text: "Class Passive";
+        }
+
+        Group { Anchor: (Height: 4); }
+
+        Label #PassiveValue {
+            Style: (FontSize: 11, TextColor: #ffc300, RenderBold: true, Wrap: true);
+            Text: "+0";
+        }
     }
 }

@@ -20,12 +20,14 @@ import com.airijko.endlessleveling.classes.WeaponConfig;
 import com.airijko.endlessleveling.player.PlayerData;
 import com.airijko.endlessleveling.player.PlayerData.PlayerProfile;
 import com.airijko.endlessleveling.enums.ArchetypePassiveType;
+import com.airijko.endlessleveling.enums.PassiveCategory;
 import com.airijko.endlessleveling.enums.PassiveTier;
 import com.airijko.endlessleveling.enums.PassiveType;
 import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.airijko.endlessleveling.enums.themes.AugmentTheme;
 import com.airijko.endlessleveling.enums.themes.AttributeTheme;
 import com.airijko.endlessleveling.enums.themes.ProfileSectionTheme;
+import com.airijko.endlessleveling.enums.themes.WeaponIconTheme;
 import com.airijko.endlessleveling.classes.ClassManager;
 import com.airijko.endlessleveling.leveling.LevelingManager;
 import com.airijko.endlessleveling.player.PlayerAttributeManager;
@@ -60,6 +62,8 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
     private static final String PASSIVE_ENTRY_TEMPLATE = "Pages/Profile/ProfileRacePassiveEntry.ui";
     private static final String SKILL_PASSIVE_ENTRY_TEMPLATE = "Pages/Profile/ProfileSkillPassiveEntry.ui";
+    private static final String WEAPON_ENTRY_TEMPLATE = "Pages/Profile/ProfileWeaponEntry.ui";
+    private static final String AUGMENT_ENTRY_TEMPLATE = "Pages/Profile/ProfileAugmentEntry.ui";
 
     private final PlayerDataManager playerDataManager;
     private final RaceManager raceManager;
@@ -314,12 +318,11 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 passiveSections.innateAttributeEntries(),
                 ProfileSectionTheme.INNATE_ATTRIBUTE);
 
-        renderPassiveSection(ui,
+        renderWeaponSection(ui,
                 "#PrimaryWeaponSummary",
                 "#PrimaryWeaponEntries",
                 tr("ui.profile.classes.primary_weapon_none", "No primary class weapon bonuses"),
-                buildPrimaryWeaponEntries(profile),
-                ProfileSectionTheme.PRIMARY_WEAPON);
+                buildPrimaryWeaponEntries(profile));
         renderAugmentSection(ui, buildAugmentEntries(data));
     }
 
@@ -357,7 +360,7 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         return classManager.getClass(classId);
     }
 
-    private List<PassiveEntry> buildPrimaryWeaponEntries(@Nonnull PlayerProfile profile) {
+    private List<WeaponEntry> buildPrimaryWeaponEntries(@Nonnull PlayerProfile profile) {
         CharacterClassDefinition primary = getClassDefinition(profile.getPrimaryClassId());
         if (primary == null || primary.getWeaponMultipliers().isEmpty()) {
             return List.of();
@@ -366,9 +369,12 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         List<Map.Entry<String, Double>> weaponEntries = new ArrayList<>(primary.getWeaponMultipliers().entrySet());
         weaponEntries.sort(Comparator.comparing(entry -> localizeWeaponType(entry.getKey())));
 
-        List<PassiveEntry> entries = new ArrayList<>();
+        List<WeaponEntry> entries = new ArrayList<>();
         for (Map.Entry<String, Double> entry : weaponEntries) {
-            entries.add(new PassiveEntry(localizeWeaponType(entry.getKey()), formatWeaponMultiplier(entry.getValue())));
+            entries.add(new WeaponEntry(
+                    entry.getKey(),
+                    localizeWeaponType(entry.getKey()),
+                    formatWeaponMultiplier(entry.getValue())));
         }
         return List.copyOf(entries);
     }
@@ -566,7 +572,8 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 groupKey = canonicalId.toLowerCase(Locale.ROOT);
             }
 
-            firstByGroup.putIfAbsent(groupKey, new AugmentGroupMeta(name, tierLabel));
+            String iconId = resolveAugmentIcon(def);
+            firstByGroup.putIfAbsent(groupKey, new AugmentGroupMeta(name, tierLabel, iconId));
             countByGroup.merge(groupKey, 1, Integer::sum);
         });
 
@@ -588,7 +595,7 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 valueText = formatCommonAugmentTotal(commonAttributeKey, totalValue);
             }
 
-            entries.add(new AugmentEntry(displayName, meta.tierLabel(), valueText, ""));
+            entries.add(new AugmentEntry(displayName, meta.tierLabel(), valueText, "", meta.iconItemId()));
         }
 
         entries.sort(Comparator
@@ -794,6 +801,31 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         populateSkillPassiveEntries(ui, entriesSelector, entries, sectionTheme);
     }
 
+    private void renderWeaponSection(@Nonnull UICommandBuilder ui,
+            @Nonnull String summarySelector,
+            @Nonnull String entriesSelector,
+            @Nonnull String emptyText,
+            @Nonnull List<WeaponEntry> entries) {
+        if (entries.isEmpty()) {
+            ui.set(summarySelector + ".Visible", true);
+            ui.set(summarySelector + ".Text", emptyText);
+            ui.clear(entriesSelector);
+            return;
+        }
+        ui.set(summarySelector + ".Visible", false);
+        ui.clear(entriesSelector);
+        for (int i = 0; i < entries.size(); i++) {
+            WeaponEntry entry = entries.get(i);
+            ui.append(entriesSelector, WEAPON_ENTRY_TEMPLATE);
+            String base = entriesSelector + "[" + i + "]";
+            ui.set(base + " #WeaponIcon.ItemId", WeaponIconTheme.resolveIcon(entry.weaponKey()));
+            ui.set(base + " #PassiveName.Text", entry.label());
+            ui.set(base + " #PassiveName.Style.TextColor", ProfileSectionTheme.PRIMARY_WEAPON.nameColor());
+            ui.set(base + " #PassiveValue.Text", entry.value());
+            ui.set(base + " #PassiveValue.Style.TextColor", ProfileSectionTheme.PRIMARY_WEAPON.valueColor());
+        }
+    }
+
     private void renderAugmentSection(@Nonnull UICommandBuilder ui,
             @Nonnull List<AugmentEntry> augments) {
         String summarySelector = "#AugmentSummary";
@@ -808,8 +840,12 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         ui.clear(entriesSelector);
         for (int i = 0; i < augments.size(); i++) {
             AugmentEntry entry = augments.get(i);
-            ui.append(entriesSelector, PASSIVE_ENTRY_TEMPLATE);
+            ui.append(entriesSelector, AUGMENT_ENTRY_TEMPLATE);
             String base = entriesSelector + "[" + i + "]";
+            String icon = entry.iconItemId();
+            if (icon != null && !icon.isBlank()) {
+                ui.set(base + " #AugmentIcon.ItemId", icon);
+            }
             ui.set(base + " #PassiveName.Text", entry.id());
             ui.set(base + " #PassiveName.Style.TextColor", ProfileSectionTheme.AUGMENT.nameColor());
             String tierLabel = entry.tier();
@@ -820,6 +856,18 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             ui.set(base + " #PassiveValue.Text", valueText == null ? "" : valueText);
             ui.set(base + " #PassiveValue.Style.TextColor", resolveTierColor(tierLabel));
         }
+    }
+
+    private String resolveAugmentIcon(AugmentDefinition def) {
+        if (def == null) {
+            return "Ingredient_Ice_Essence";
+        }
+        PassiveCategory category = def.getCategory();
+        if (category == null) {
+            category = PassiveCategory.PASSIVE_STAT;
+        }
+        String iconId = category.getIconItemId();
+        return iconId == null || iconId.isBlank() ? "Ingredient_Ice_Essence" : iconId;
     }
 
     private String formatCommonAugmentTotal(String attributeKey, double totalValue) {
@@ -1107,13 +1155,16 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     private record PassiveEntry(String label, String value) {
     }
 
+    private record WeaponEntry(String weaponKey, String label, String value) {
+    }
+
     private record SkillPassiveEntry(String label, String value, String level) {
     }
 
-    private record AugmentEntry(String id, String tier, String value, String source) {
+    private record AugmentEntry(String id, String tier, String value, String source, String iconItemId) {
     }
 
-    private record AugmentGroupMeta(String name, String tierLabel) {
+    private record AugmentGroupMeta(String name, String tierLabel, String iconItemId) {
     }
 
     private record AggregatedPassiveSections(List<PassiveEntry> passiveEntries,

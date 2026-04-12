@@ -8,9 +8,15 @@ Group {
         Background: #0b141f(0.82);
         Padding: (Horizontal: 12, Vertical: 8);
 
+        Group #RowBgAlt {
+            Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 0);
+            Background: (TexturePath: "../../Tiles/TileRowBackground.png");
+            Visible: false;
+        }
+
         Label #Rank {
             Style: (TextColor: #c0cee5, FontSize: 13, RenderBold: true);
-            Anchor: (Width: 70);
+            Anchor: (Width: 80);
             Text: "-";
         }
 
@@ -22,34 +28,34 @@ Group {
 
         Label #Race {
             Style: (TextColor: #aaccff, FontSize: 13);
-            Anchor: (Width: 130);
+            Anchor: (Width: 170);
             Text: "-";
         }
 
         Label #Class {
             Style: (TextColor: #cfd8e8, FontSize: 13);
-            Anchor: (Width: 130);
+            Anchor: (Width: 170);
             Text: "-";
         }
 
         Label #Prestige {
             Style: (TextColor: #ffd79a, FontSize: 13, RenderBold: true);
-            Anchor: (Width: 90);
+            Anchor: (Width: 110);
             Text: "-";
         }
 
         Label #Level {
             Style: (TextColor: #87dfff, FontSize: 13, RenderBold: true);
-            Anchor: (Width: 80);
+            Anchor: (Width: 100);
             Text: "-";
         }
 
         Label #Exp {
             Style: (TextColor: #9fe0ff, FontSize: 13);
-            Anchor: (Width: 140);
+            Anchor: (Width: 170);
             Text: "-";
         }
     }
 
-    Group { Anchor: (Height: 6); }
+    Group { Anchor: (Height: 4); }
 }

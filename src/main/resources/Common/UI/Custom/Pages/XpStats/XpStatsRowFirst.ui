@@ -8,13 +8,13 @@ Group {
         Background: #352400(0.45);
         Padding: (Horizontal: 12, Vertical: 8);
 
-        Label #Rank { Style: (FontSize: 13, TextColor: #ffd700, RenderBold: true); Anchor: (Width: 60); Text: "-"; }
+        Label #Rank { Style: (FontSize: 13, TextColor: #ffd700, RenderBold: true); Anchor: (Width: 80); Text: "-"; }
         Label #Name { Style: (FontSize: 13, TextColor: #ffd700, RenderBold: true); FlexWeight: 1; Text: "-"; }
-        Label #Profile { Style: (FontSize: 13, TextColor: #ffe6a8); Anchor: (Width: 120); Text: "-"; }
-        Label #Prestige { Style: (FontSize: 13, TextColor: #ffcc66, RenderBold: true); Anchor: (Width: 80); Text: "-"; }
-        Label #Level { Style: (FontSize: 13, TextColor: #ffd700, RenderBold: true); Anchor: (Width: 70); Text: "-"; }
-        Label #Value { Style: (FontSize: 13, TextColor: #ffd98c); Anchor: (Width: 140); Text: "-"; }
+        Label #Profile { Style: (FontSize: 13, TextColor: #ffe6a8); Anchor: (Width: 170); Text: "-"; }
+        Label #Prestige { Style: (FontSize: 13, TextColor: #ffcc66, RenderBold: true); Anchor: (Width: 110); Text: "-"; }
+        Label #Level { Style: (FontSize: 13, TextColor: #ffd700, RenderBold: true); Anchor: (Width: 100); Text: "-"; }
+        Label #Value { Style: (FontSize: 13, TextColor: #ffd98c); Anchor: (Width: 200); Text: "-"; }
     }
 
-    Group { Anchor: (Height: 6); }
+    Group { Anchor: (Height: 4); }
 }

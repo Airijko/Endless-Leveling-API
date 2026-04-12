@@ -55,12 +55,16 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
     private static final String EVOLUTION_ENTRY_TEMPLATE = "Pages/Classes/ClassEvolutionEntry.ui";
+    private static final String CAROUSEL_CARD_TEMPLATE = "Pages/Classes/ClassCarouselCard.ui";
+    private static final String CARD_PASSIVE_ROW_TEMPLATE = "Pages/Classes/ClassCardPassiveRow.ui";
+    private static final String CARD_WEAPON_ROW_TEMPLATE = "Pages/Classes/ClassCardWeaponRow.ui";
 
     private final ClassManager classManager;
     private final PlayerDataManager playerDataManager;
     private final LevelingManager levelingManager;
     private final SkillManager skillManager;
     private String selectedClassId;
+    private boolean detailViewActive;
 
     public ClassesUIPage(@Nonnull PlayerRef playerRef, @Nonnull CustomPageLifetime lifetime) {
         super(playerRef, lifetime, SkillsUIPage.Data.CODEC);
@@ -70,6 +74,7 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         this.levelingManager = plugin != null ? plugin.getLevelingManager() : null;
         this.skillManager = plugin != null ? plugin.getSkillManager() : null;
         this.selectedClassId = null;
+        this.detailViewActive = false;
     }
 
     static {
@@ -103,42 +108,24 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         events.addEventBinding(Activating, "#ConfirmPrimaryButton", of("Action", "class:confirm_primary"), false);
         events.addEventBinding(Activating, "#ConfirmSecondaryButton", of("Action", "class:confirm_secondary"), false);
         events.addEventBinding(Activating, "#ViewClassPathsButton", of("Action", "class:open_paths"), false);
+        events.addEventBinding(Activating, "#BackToCarouselButton", of("Action", "class:back"), false);
 
         if (classManager == null || !classManager.isEnabled()) {
-            ui.set("#SelectedClassLabel.Text", tr("ui.classes.offline.title", "Classes Offline"));
-            ui.set("#SelectedClassSubtitle.Text",
-                    tr("ui.classes.offline.subtitle", "Classes are currently disabled in config.yml."));
-            ui.set("#ClassLoreText.Text", tr("ui.classes.offline.lore", "Enable classes to browse archetypes."));
-            ui.set("#ClassCountLabel.Text", tr("ui.classes.count_none", "0 available"));
-            ui.set("#ClassSwapCooldownHint.Text",
-                    tr("ui.classes.offline.hint", "Enable classes to manage archetypes."));
-            ui.set("#ClassPrimaryCooldownValue.Text", tr("hud.common.unavailable", "--"));
-            ui.set("#ClassSecondaryCooldownValue.Text", tr("hud.common.unavailable", "--"));
-            ui.clear("#ClassRows");
-            ui.clear("#ClassWeaponEntries");
-            ui.clear("#ClassPassiveEntries");
-            ui.clear("#ClassEvolutionEntries");
-            ui.set("#ClassWeaponSummary.Text", tr("ui.classes.offline.weapons", "Weapon bonuses unavailable."));
-            ui.set("#ClassPassiveSummary.Text", tr("ui.classes.offline.passives", "Passive bonuses unavailable."));
+            ui.set("#CarouselSubheading.Text", tr("ui.classes.offline.title", "Classes Offline"));
+            ui.set("#CarouselClassCount.Text", tr("ui.classes.count_none", "0 available"));
+            ui.set("#CarouselPrimaryClass.Text", tr("hud.common.unavailable", "--"));
+            ui.set("#CarouselSecondaryClass.Text", tr("hud.common.unavailable", "--"));
+            ui.clear("#CarouselCards");
             return;
         }
 
         PlayerData playerData = resolvePlayerData();
         if (playerData == null) {
-            ui.set("#SelectedClassLabel.Text", tr("ui.classes.playerdata.title", "Player data unavailable"));
-            ui.set("#SelectedClassSubtitle.Text",
-                    tr("ui.classes.playerdata.subtitle", "Unable to load your class information right now."));
-            ui.set("#ClassLoreText.Text",
-                    tr("ui.classes.playerdata.lore", "Try reopening this page in a few moments."));
-            ui.set("#ClassCountLabel.Text", tr("ui.classes.count_none", "0 available"));
-            ui.set("#ClassSwapCooldownHint.Text",
-                    tr("ui.classes.playerdata.hint", "Try reopening this page in a few moments."));
-            ui.set("#ClassPrimaryCooldownValue.Text", tr("hud.common.unavailable", "--"));
-            ui.set("#ClassSecondaryCooldownValue.Text", tr("hud.common.unavailable", "--"));
-            ui.clear("#ClassRows");
-            ui.clear("#ClassWeaponEntries");
-            ui.clear("#ClassPassiveEntries");
-            ui.clear("#ClassEvolutionEntries");
+            ui.set("#CarouselSubheading.Text", tr("ui.classes.playerdata.title", "Player data unavailable"));
+            ui.set("#CarouselClassCount.Text", tr("ui.classes.count_none", "0 available"));
+            ui.set("#CarouselPrimaryClass.Text", tr("hud.common.unavailable", "--"));
+            ui.set("#CarouselSecondaryClass.Text", tr("hud.common.unavailable", "--"));
+            ui.clear("#CarouselCards");
             return;
         }
 
@@ -176,23 +163,21 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 secondaryEnabled,
                 operatorBypass);
         updateStatusCard(ui, primary, secondary);
-        buildClassList(ui,
-                events,
-                playerData,
-                primary,
-                secondary,
-                operatorBypass || (primaryChangesRemaining && primaryCooldownRemaining <= 0L),
-                operatorBypass || (secondaryChangesRemaining && secondaryCooldownRemaining <= 0L));
-        updateClassDetailPanel(ui,
-                playerData,
-                primary,
-                secondary,
-                cooldownSeconds,
-                primaryCooldownRemaining,
-                secondaryCooldownRemaining,
-                primaryChangesRemaining,
-                secondaryChangesRemaining,
-                operatorBypass);
+        updateCarouselHeader(ui, primary, secondary);
+        buildCarousel(ui, events, primary, secondary);
+        applyViewState(ui);
+        if (detailViewActive) {
+            updateClassDetailPanel(ui,
+                    playerData,
+                    primary,
+                    secondary,
+                    cooldownSeconds,
+                    primaryCooldownRemaining,
+                    secondaryCooldownRemaining,
+                    primaryChangesRemaining,
+                    secondaryChangesRemaining,
+                    operatorBypass);
+        }
     }
 
     private void refreshClassUi(@Nonnull PlayerData playerData, boolean operatorBypass) {
@@ -234,17 +219,21 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 secondaryEnabled,
                 operatorBypass);
         updateStatusCard(ui, primary, secondary);
-        refreshClassList(ui, primary, secondary);
-        updateClassDetailPanel(ui,
-                playerData,
-                primary,
-                secondary,
-                cooldownSeconds,
-                primaryCooldownRemaining,
-                secondaryCooldownRemaining,
-                primaryChangesRemaining,
-                secondaryChangesRemaining,
-                operatorBypass);
+        updateCarouselHeader(ui, primary, secondary);
+        refreshCarousel(ui, primary, secondary);
+        applyViewState(ui);
+        if (detailViewActive) {
+            updateClassDetailPanel(ui,
+                    playerData,
+                    primary,
+                    secondary,
+                    cooldownSeconds,
+                    primaryCooldownRemaining,
+                    secondaryCooldownRemaining,
+                    primaryChangesRemaining,
+                    secondaryChangesRemaining,
+                    operatorBypass);
+        }
         sendUpdate(ui, false);
     }
 
@@ -305,82 +294,151 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         ui.set("#CurrentSecondaryValue.Text", secondaryText);
     }
 
-    private void buildClassList(UICommandBuilder ui,
-            UIEventBuilder events,
-            PlayerData data,
+    private void applyViewState(@Nonnull UICommandBuilder ui) {
+        ui.set("#CarouselView.Visible", !detailViewActive);
+        ui.set("#DetailView.Visible", detailViewActive);
+    }
+
+    private void updateCarouselHeader(@Nonnull UICommandBuilder ui,
             CharacterClassDefinition primary,
-            CharacterClassDefinition secondary,
-            boolean canModifyPrimary,
-            boolean canModifySecondary) {
-        ui.clear("#ClassRows");
+            CharacterClassDefinition secondary) {
+        String primaryName = primary != null ? primary.getDisplayName()
+                : tr("ui.classes.current.none", "None");
+        String secondaryName = secondary != null ? secondary.getDisplayName()
+                : tr("ui.classes.current.none", "None");
+        ui.set("#CarouselPrimaryClass.Text", primaryName);
+        ui.set("#CarouselSecondaryClass.Text", secondaryName);
+    }
+
+    private void buildCarousel(@Nonnull UICommandBuilder ui,
+            @Nonnull UIEventBuilder events,
+            CharacterClassDefinition primary,
+            CharacterClassDefinition secondary) {
+        ui.clear("#CarouselCards");
 
         List<CharacterClassDefinition> classes = getBaseClassesForList();
-        ui.set("#ClassCountLabel.Text",
+        ui.set("#CarouselClassCount.Text",
                 tr("ui.classes.count", "{0} {1}", classes.size(), classes.size() == 1
                         ? tr("ui.classes.count_word.singular", "class")
                         : tr("ui.classes.count_word.plural", "classes")));
 
         for (int index = 0; index < classes.size(); index++) {
             CharacterClassDefinition definition = classes.get(index);
-            ui.append("#ClassRows", "Pages/Classes/ClassRow.ui");
-            String base = "#ClassRows[" + index + "]";
+            ui.append("#CarouselCards", CAROUSEL_CARD_TEMPLATE);
+            String base = "#CarouselCards[" + index + "]";
 
             boolean isPrimary = primary != null && sameClassPath(primary.getId(), definition.getId());
             boolean isSecondary = secondary != null && sameClassPath(secondary.getId(), definition.getId());
-            boolean isSelected = selectedClassMatches(definition.getId());
-
-            ui.set(base + " #ClassName.Text", definition.getDisplayName());
-            String status = isPrimary ? tr("ui.classes.status.primary", "PRIMARY")
-                    : (isSecondary ? tr("ui.classes.status.secondary", "SECONDARY")
-                            : (isSelected ? tr("ui.classes.status.viewing", "VIEWING") : ""));
-            boolean hasStatus = !status.isEmpty();
-            ui.set(base + " #ClassSelectionStatus.Visible", hasStatus);
-            if (hasStatus) {
-                ui.set(base + " #ClassSelectionStatus.Text", status);
-            }
-
-            ui.set(base + " #ViewClassButton.Text", tr("ui.classes.actions.view", "VIEW"));
-
-            applyClassIcon(ui, base, definition);
+            applyCarouselCard(ui, base, definition, isPrimary, isSecondary);
 
             events.addEventBinding(Activating,
-                    base + " #ViewClassButton",
+                    base,
                     of("Action", "class:view:" + definition.getId()),
                     false);
-
         }
     }
 
-    private void refreshClassList(UICommandBuilder ui,
+    private void refreshCarousel(@Nonnull UICommandBuilder ui,
             CharacterClassDefinition primary,
             CharacterClassDefinition secondary) {
         List<CharacterClassDefinition> classes = getBaseClassesForList();
-        ui.set("#ClassCountLabel.Text",
+        ui.set("#CarouselClassCount.Text",
                 tr("ui.classes.count", "{0} {1}", classes.size(), classes.size() == 1
                         ? tr("ui.classes.count_word.singular", "class")
                         : tr("ui.classes.count_word.plural", "classes")));
 
         for (int index = 0; index < classes.size(); index++) {
             CharacterClassDefinition definition = classes.get(index);
-            String base = "#ClassRows[" + index + "]";
-
+            String base = "#CarouselCards[" + index + "]";
             boolean isPrimary = primary != null && sameClassPath(primary.getId(), definition.getId());
             boolean isSecondary = secondary != null && sameClassPath(secondary.getId(), definition.getId());
-            boolean isSelected = selectedClassMatches(definition.getId());
+            applyCarouselCard(ui, base, definition, isPrimary, isSecondary);
+        }
+    }
 
-            ui.set(base + " #ClassName.Text", definition.getDisplayName());
-            String status = isPrimary ? tr("ui.classes.status.primary", "PRIMARY")
-                    : (isSecondary ? tr("ui.classes.status.secondary", "SECONDARY")
-                            : (isSelected ? tr("ui.classes.status.viewing", "VIEWING") : ""));
-            boolean hasStatus = !status.isEmpty();
-            ui.set(base + " #ClassSelectionStatus.Visible", hasStatus);
-            if (hasStatus) {
-                ui.set(base + " #ClassSelectionStatus.Text", status);
+    private void applyCarouselCard(@Nonnull UICommandBuilder ui,
+            @Nonnull String base,
+            @Nonnull CharacterClassDefinition definition,
+            boolean isPrimary,
+            boolean isSecondary) {
+        ui.set(base + " #CardClassName.Text", definition.getDisplayName());
+
+        String iconId = resolveClassIcon(definition);
+        if (iconId != null && !iconId.isBlank()) {
+            ui.set(base + " #CardIcon.ItemId", iconId);
+        }
+
+        // Role tag
+        String role = definition.getRole();
+        ui.set(base + " #CardRoleTag.Text", role != null && !role.isBlank() ? role : "");
+
+        // Description
+        String desc = definition.getDescription();
+        if (desc != null && !desc.isBlank()) {
+            String truncated = desc.length() > 120 ? desc.substring(0, 117) + "..." : desc;
+            ui.set(base + " #CardDescription.Text", truncated);
+        } else {
+            ui.set(base + " #CardDescription.Text", "");
+        }
+
+        // Status badge
+        boolean hasStatus = isPrimary || isSecondary;
+        ui.set(base + " #CardStatusRow.Visible", hasStatus);
+        if (isPrimary) {
+            ui.set(base + " #CardStatusBadge.Text", tr("ui.classes.status.primary", "PRIMARY"));
+        } else if (isSecondary) {
+            ui.set(base + " #CardStatusBadge.Text", tr("ui.classes.status.secondary", "SECONDARY"));
+        }
+
+        // Background state
+        ui.set(base + " #CardBackgroundDefault.Visible", !isPrimary);
+        ui.set(base + " #CardBackgroundActive.Visible", isPrimary);
+        ui.set(base + " #CardActiveAccent.Visible", isPrimary);
+
+        // Weapon rows
+        ui.clear(base + " #CardWeaponRows");
+        Map<String, Double> weaponMap = definition.getWeaponMultipliers();
+        if (weaponMap != null && !weaponMap.isEmpty()) {
+            int weaponIndex = 0;
+            for (Map.Entry<String, Double> entry : weaponMap.entrySet()) {
+                ui.append(base + " #CardWeaponRows", CARD_WEAPON_ROW_TEMPLATE);
+                String wBase = base + " #CardWeaponRows[" + weaponIndex + "]";
+                ui.set(wBase + " #CardWeaponName.Text", localizeWeaponType(entry.getKey()));
+                ui.set(wBase + " #CardWeaponDmg.Text", formatWeaponMultiplier(entry.getValue()));
+                weaponIndex++;
             }
+        }
 
-            ui.set(base + " #ViewClassButton.Text", tr("ui.classes.actions.view", "VIEW"));
+        // Passive names (non-innate)
+        ui.clear(base + " #CardPassiveNames");
+        List<RacePassiveDefinition> passives = definition.getPassiveDefinitions();
+        int passiveIndex = 0;
+        if (passives != null) {
+            for (RacePassiveDefinition passive : passives) {
+                if (passive.type() == ArchetypePassiveType.INNATE_ATTRIBUTE_GAIN) {
+                    continue;
+                }
+                ui.append(base + " #CardPassiveNames", CARD_PASSIVE_ROW_TEMPLATE);
+                String pBase = base + " #CardPassiveNames[" + passiveIndex + "]";
+                ui.set(pBase + " #CardPassiveName.Text", buildPassiveLabel(passive));
+                passiveIndex++;
+            }
+        }
+        ui.set(base + " #CardNoPassives.Visible", passiveIndex == 0);
 
-            applyClassIcon(ui, base, definition);
+        // Evolution hint
+        int pathCount = 0;
+        if (classManager != null) {
+            var nextPaths = classManager.getNextAscensionClasses(definition.getId());
+            pathCount = nextPaths != null ? nextPaths.size() : 0;
+        }
+        if (pathCount > 0) {
+            ui.set(base + " #CardEvolutionHint.Text",
+                    tr("ui.classes.card.evolution", "{0} evolution {1}", pathCount,
+                            pathCount == 1 ? tr("ui.classes.card.path_word.singular", "path")
+                                    : tr("ui.classes.card.path_word.plural", "paths")));
+        } else {
+            ui.set(base + " #CardEvolutionHint.Text", "");
         }
     }
 
@@ -396,10 +454,17 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     }
 
     private void applyStaticLabels(@Nonnull UICommandBuilder ui) {
+        // Carousel labels
+        ui.set("#CarouselSubheading.Text", tr("ui.classes.carousel.subheading", "Select a class to view details."));
+        ui.set("#CarouselPrimaryBadge.Text", tr("ui.classes.carousel.primary_label", "Primary:"));
+        ui.set("#CarouselSecondaryBadge.Text", tr("ui.classes.carousel.secondary_label", "Secondary:"));
+        ui.set("#BackToCarouselButton.Text", tr("ui.classes.actions.back", "BACK"));
+
+        // Detail labels
         ui.set("#ClassesTitleLabel.Text", tr("ui.classes.page.title", "Class Codex"));
-        ui.set("#ClassSwapCooldownCardTitle.Text", tr("ui.classes.page.cooldown_title", "Class Swap Cooldown"));
-        ui.set("#ClassPrimaryCooldownLabel.Text", tr("ui.classes.detail.primary_slot", "Primary"));
-        ui.set("#ClassSecondaryCooldownLabel.Text", tr("ui.classes.detail.secondary_slot", "Secondary"));
+        ui.set("#ClassSwapCooldownCardTitle.Text", tr("ui.classes.page.cooldown_title", "Cooldown"));
+        ui.set("#ClassPrimaryCooldownLabel.Text", tr("ui.classes.detail.primary_short", "Pri:"));
+        ui.set("#ClassSecondaryCooldownLabel.Text", tr("ui.classes.detail.secondary_short", "Sec:"));
         ui.set("#ClassListTitle.Text", tr("ui.classes.page.available", "Available Classes"));
         ui.set("#ClassAssignmentsTitle.Text", tr("ui.classes.page.assignments", "Class Assignments"));
         ui.set("#ClassPrimaryStatusLabel.Text", tr("ui.classes.detail.primary_slot", "Primary"));
@@ -497,6 +562,10 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         }
 
         ui.set("#SelectedClassLabel.Text", selection.getDisplayName());
+        String detailIcon = resolveClassIcon(selection);
+        if (detailIcon != null && !detailIcon.isBlank()) {
+            ui.set("#DetailClassIcon.ItemId", detailIcon);
+        }
         ui.set("#ViewClassPathsButton.Visible", true);
         if (primary != null && primary.getId().equalsIgnoreCase(selection.getId())) {
             ui.set("#SelectedClassSubtitle.Text", tr("ui.classes.subtitle.primary", "Currently your primary class"));
@@ -802,10 +871,17 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             return;
         }
 
+        if (data.action.equals("class:back")) {
+            this.detailViewActive = false;
+            refreshClassUi(playerData, OperatorHelper.isOperator(playerRef));
+            return;
+        }
+
         if (data.action.startsWith("class:view:")) {
             String id = data.action.substring("class:view:".length());
             if (id != null && !id.isBlank()) {
                 this.selectedClassId = id.trim();
+                this.detailViewActive = true;
                 refreshClassUi(playerData, OperatorHelper.isOperator(playerRef));
             }
             return;

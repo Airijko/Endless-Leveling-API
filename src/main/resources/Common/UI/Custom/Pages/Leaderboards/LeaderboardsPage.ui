@@ -28,13 +28,10 @@ $Nav = "../Nav/TopNavBar.ui";
 
 $C.@PageOverlay {
     Group {
-        // Middle stacks children top-to-bottom but centers the GROUP vertically,
-        // so the top navbar / main panels / footer navbar all sit centered on
-        // screen instead of pinned to the top.
         LayoutMode: Middle;
         Padding: (Vertical: 12);
 
-        // ====================== TOP NAVBAR (root, disconnected) ======================
+        // ====================== TOP NAVBAR ======================
         Group {
             LayoutMode: Middle;
             Anchor: (Height: 92);
@@ -47,12 +44,12 @@ $C.@PageOverlay {
 
         Group { Anchor: (Height: 14); }
 
-        // ====================== MAIN CONTENT ROW ======================
+        // ====================== MAIN CONTENT ======================
         Group {
             LayoutMode: Middle;
 
     $Nav.@ObjectiveContainer {
-        Anchor: (Width: 1000, Height: 700);
+        Anchor: (Width: 1400, Height: 700);
         #Title {
             Label #LeaderboardsTitle {
                 Text: "ENDLESS LEVELING";
@@ -61,194 +58,216 @@ $C.@PageOverlay {
         }
 
         #Content {
-            LayoutMode: Left;
+            LayoutMode: Top;
             Padding: (Full: 0);
 
-            // ================= RIGHT PANEL =================
-            Group #RightPanel {
-                FlexWeight: 1;
+            // ================= HEADER =================
+            Group #Header {
                 LayoutMode: Top;
+                Padding: (Horizontal: 16, Top: 10, Bottom: 6);
 
-                // -------- Title --------
-                Group #Header {
+                Group {
                     LayoutMode: Left;
-                    Anchor: (Height: 60);
-                    Padding: (Horizontal: 16, Vertical: 10);
 
                     Label #LeaderboardsTitleLabel {
                         Text: "Leaderboards";
-                        Anchor: (Height: 60);
                         Style: (FontSize: 22, TextColor: #ffffff, RenderBold: true, VerticalAlignment: Center);
+                        Anchor: (Height: 40);
                     }
 
                     Group { FlexWeight: 1; }
 
                     Group #LeaderboardsIntro {
                         LayoutMode: Left;
-                        Background: #0b141f(0.92);
-                        Anchor: (Height: 40);
-                        Padding: (Full: 8);
+                        Background: (TexturePath: "../../Hud/ObjectivePanelContainer.png", Border: 15);
+                        Anchor: (Height: 36);
+                        Padding: (Horizontal: 14, Vertical: 6);
 
                         Label #LeaderboardsIntroText {
-                            Style: (TextColor: #aaccff, FontSize: 14, VerticalAlignment: Center);
+                            Style: (TextColor: #f0c040, FontSize: 12, RenderBold: true, VerticalAlignment: Center);
                             Text: "Top players ranked by level and experience.";
                         }
                     }
                 }
+            }
 
-                Group {
-                    Anchor: (Height: 1);
-                    Background: #2b3542;
-                }
+            // ================= CONTROLS =================
+            Group #ControlSection {
+                LayoutMode: Top;
+                Padding: (Horizontal: 16, Vertical: 6);
 
-                // -------- TABLE --------
-                Group #Main {
-                    LayoutMode: Top;
-                    FlexWeight: 1;
-                    Padding: (Full: 16);
+                Group #ControlRow {
+                    LayoutMode: Left;
 
-                    Group #HeaderCard {
-                        LayoutMode: Top;
-                        Background: #0b141f(0.92);
-                        Padding: (Full: 12);
-
-                        Group #ControlRow {
-                            LayoutMode: Left;
-
-                            Label #SortLabel {
-                                Text: "Sort";
-                                Style: (TextColor: #c0cee5, FontSize: 13, RenderBold: true, VerticalAlignment: Center);
-                                Anchor: (Width: 40);
-                            }
-
-                            $C.@TextButton #SortByButton {
-                                Text: "BY: PRESTIGE";
-                                Anchor: (Width: 132, Height: 30);
-                                Padding: (Horizontal: 2, Vertical: 1);
-                                Style: @FilterCompactStyle;
-                            }
-
-                            Group { Anchor: (Width: 6); }
-
-                            $C.@TextButton #SortOrderButton {
-                                Text: "ORDER: DESC";
-                                Anchor: (Width: 124, Height: 30);
-                                Padding: (Horizontal: 2, Vertical: 1);
-                                Style: @FilterCompactStyle;
-                            }
-
-                            Group { Anchor: (Width: 12); }
-
-                            Label #FilterLabel {
-                                Text: "Filter";
-                                Style: (TextColor: #c0cee5, FontSize: 13, RenderBold: true, VerticalAlignment: Center);
-                                Anchor: (Width: 50);
-                            }
-
-                            $C.@TextButton #RaceFilterButton {
-                                Text: "RACE: ALL";
-                                Anchor: (Width: 125, Height: 30);
-                                Padding: (Horizontal: 2, Vertical: 1);
-                                Style: @FilterCompactStyle;
-                            }
-
-                            Group { Anchor: (Width: 6); }
-
-                            $C.@TextButton #ClassFilterButton {
-                                Text: "CLASS: ALL";
-                                Anchor: (Width: 125, Height: 30);
-                                Padding: (Horizontal: 2, Vertical: 1);
-                                Style: @FilterCompactStyle;
-                            }
-
-                            Group { FlexWeight: 1; }
-
-                            $C.@CancelTextButton #ResetFiltersButton {
-                                Text: "RESET";
-                                Anchor: (Width: 86, Height: 30);
-                                Padding: (Horizontal: 2, Vertical: 1);
-                            }
-                        }
-
-                        Group { Anchor: (Height: 8); }
-
-                        Label #LeaderboardsFilterSummary {
-                            Text: "Showing all players.";
-                            Style: (TextColor: #9ab6d4, FontSize: 12);
-                        }
-
-                        Group { Anchor: (Height: 8); }
-
-                        Group { Anchor: (Height: 1); Background: #2b3542; }
-
-                        Group { Anchor: (Height: 8); }
-
-                        Group #Headers {
-                            LayoutMode: Left;
-                            Padding: (Vertical: 4);
-
-                            Label #HeaderRank {
-                                Style: (TextColor: #c0cee5, FontSize: 13, RenderBold: true, RenderUppercase: true);
-                                Text: "Rank";
-                                Anchor: (Width: 70);
-                            }
-
-                            Label #HeaderPlayer {
-                                Style: (TextColor: #c0cee5, FontSize: 13, RenderBold: true, RenderUppercase: true);
-                                Text: "Player";
-                                FlexWeight: 1;
-                            }
-
-                            Label #HeaderRace {
-                                Style: (TextColor: #c0cee5, FontSize: 13, RenderBold: true, RenderUppercase: true);
-                                Text: "Race";
-                                Anchor: (Width: 130);
-                            }
-
-                            Label #HeaderClass {
-                                Style: (TextColor: #c0cee5, FontSize: 13, RenderBold: true, RenderUppercase: true);
-                                Text: "Class";
-                                Anchor: (Width: 130);
-                            }
-
-                            Label #HeaderPrestige {
-                                Style: (TextColor: #c0cee5, FontSize: 13, RenderBold: true, RenderUppercase: true);
-                                Text: "Prestige";
-                                Anchor: (Width: 90);
-                            }
-
-                            Label #HeaderLevel {
-                                Style: (TextColor: #c0cee5, FontSize: 13, RenderBold: true, RenderUppercase: true);
-                                Text: "Level";
-                                Anchor: (Width: 80);
-                            }
-
-                            Label #HeaderXp {
-                                Style: (TextColor: #c0cee5, FontSize: 13, RenderBold: true, RenderUppercase: true);
-                                Text: "XP";
-                                Anchor: (Width: 140);
-                            }
-                        }
-
-                        Group { Anchor: (Height: 1); Background: #2b3542; }
+                    Label #SortLabel {
+                        Text: "Sort";
+                        Style: (TextColor: #c0cee5, FontSize: 13, RenderBold: true, VerticalAlignment: Center);
+                        Anchor: (Width: 40);
                     }
 
-                    Group { Anchor: (Height: 8); }
+                    $C.@TextButton #SortByButton {
+                        Text: "BY: PRESTIGE";
+                        Anchor: (Height: 30);
+                        Padding: (Horizontal: 12, Vertical: 1);
+                        Style: @FilterCompactStyle;
+                    }
 
-                    Group #RowsContainer {
-                        LayoutMode: Top;
-                        FlexWeight: 1;
-                        Background: #070b12(0.9);
-                        Padding: (Full: 8);
+                    Group { Anchor: (Width: 6); }
 
-                        Group #Rows {
+                    $C.@TextButton #SortOrderButton {
+                        Text: "ORDER: DESC";
+                        Anchor: (Height: 30);
+                        Padding: (Horizontal: 12, Vertical: 1);
+                        Style: @FilterCompactStyle;
+                    }
+
+                    Group { Anchor: (Width: 12); }
+
+                    Label #FilterLabel {
+                        Text: "Filter";
+                        Style: (TextColor: #c0cee5, FontSize: 13, RenderBold: true, VerticalAlignment: Center);
+                        Anchor: (Width: 50);
+                    }
+
+                    $C.@TextButton #RaceFilterButton {
+                        Text: "RACE: ALL";
+                        Anchor: (Height: 30);
+                        Padding: (Horizontal: 12, Vertical: 1);
+                        Style: @FilterCompactStyle;
+                    }
+
+                    Group { Anchor: (Width: 6); }
+
+                    $C.@TextButton #ClassFilterButton {
+                        Text: "CLASS: ALL";
+                        Anchor: (Height: 30);
+                        Padding: (Horizontal: 12, Vertical: 1);
+                        Style: @FilterCompactStyle;
+                    }
+
+                    Group { FlexWeight: 1; }
+
+                    $C.@CancelTextButton #ResetFiltersButton {
+                        Text: "RESET";
+                        Anchor: (Width: 86, Height: 30);
+                        Padding: (Horizontal: 2, Vertical: 1);
+                    }
+                }
+
+                Group { Anchor: (Height: 4); }
+
+                Label #LeaderboardsFilterSummary {
+                    Text: "Showing all players.";
+                    Style: (TextColor: #9ab6d4, FontSize: 11);
+                    Padding: (Left: 2);
+                }
+            }
+
+            Group { Anchor: (Height: 1); Padding: (Horizontal: 16); Group { Background: #2b3f58; } }
+
+            // ================= PODIUM SECTION =================
+            Group #PodiumSection {
+                LayoutMode: Top;
+                Padding: (Horizontal: 16, Top: 10, Bottom: 6);
+
+                Group {
+                    LayoutMode: Top;
+                    Background: (TexturePath: "../../Hud/ObjectivePanelContainer.png", Border: 15);
+                    Padding: (Horizontal: 20, Top: 14, Bottom: 16);
+
+                    Label #PodiumTitle {
+                        Text: "TOP CHAMPIONS";
+                        Style: (FontSize: 14, TextColor: #f0c040, RenderBold: true, LetterSpacing: 2, HorizontalAlignment: Center);
+                        Anchor: (Height: 22);
+                    }
+
+                    Group { Anchor: (Height: 1); Padding: (Horizontal: 4); Group { Background: #7a5a10; } }
+
+                    Group { Anchor: (Height: 12); }
+
+                    Group {
+                        LayoutMode: Middle;
+
+                        Group #PodiumCards {
+                            LayoutMode: Left;
+                        }
+                    }
+                }
+            }
+
+            // ================= TABLE SECTION =================
+            Group #TableSection {
+                LayoutMode: Top;
+                FlexWeight: 1;
+                Padding: (Horizontal: 16, Top: 6, Bottom: 8);
+
+                Group #HeaderCard {
+                    LayoutMode: Top;
+                    Padding: (Horizontal: 12, Vertical: 6);
+
+                    Group #Headers {
+                        LayoutMode: Left;
+                        Padding: (Vertical: 4);
+
+                        Label #HeaderRank {
+                            Style: (TextColor: #c0cee5, FontSize: 13, RenderBold: true, RenderUppercase: true);
+                            Text: "Rank";
+                            Anchor: (Width: 80);
+                        }
+
+                        Label #HeaderPlayer {
+                            Style: (TextColor: #c0cee5, FontSize: 13, RenderBold: true, RenderUppercase: true);
+                            Text: "Player";
                             FlexWeight: 1;
-                            LayoutMode: TopScrolling;
-                            ScrollbarStyle: $C.@DefaultScrollbarStyle;
+                        }
 
-                            Group #RowCards {
-                                LayoutMode: Top;
-                            }
+                        Label #HeaderRace {
+                            Style: (TextColor: #c0cee5, FontSize: 13, RenderBold: true, RenderUppercase: true);
+                            Text: "Race";
+                            Anchor: (Width: 170);
+                        }
+
+                        Label #HeaderClass {
+                            Style: (TextColor: #c0cee5, FontSize: 13, RenderBold: true, RenderUppercase: true);
+                            Text: "Class";
+                            Anchor: (Width: 170);
+                        }
+
+                        Label #HeaderPrestige {
+                            Style: (TextColor: #c0cee5, FontSize: 13, RenderBold: true, RenderUppercase: true);
+                            Text: "Prestige";
+                            Anchor: (Width: 110);
+                        }
+
+                        Label #HeaderLevel {
+                            Style: (TextColor: #c0cee5, FontSize: 13, RenderBold: true, RenderUppercase: true);
+                            Text: "Level";
+                            Anchor: (Width: 100);
+                        }
+
+                        Label #HeaderXp {
+                            Style: (TextColor: #c0cee5, FontSize: 13, RenderBold: true, RenderUppercase: true);
+                            Text: "XP";
+                            Anchor: (Width: 170);
+                        }
+                    }
+
+                    Group { Anchor: (Height: 1); Background: #2b3f58; }
+                }
+
+                Group #RowsContainer {
+                    LayoutMode: Top;
+                    FlexWeight: 1;
+                    Background: #0b1520(0.85);
+                    Padding: (Full: 8);
+
+                    Group #Rows {
+                        FlexWeight: 1;
+                        LayoutMode: TopScrolling;
+                        ScrollbarStyle: $C.@DefaultScrollbarStyle;
+
+                        Group #RowCards {
+                            LayoutMode: Top;
                         }
                     }
                 }
@@ -259,7 +278,7 @@ $C.@PageOverlay {
 
         Group { Anchor: (Height: 14); }
 
-        // ====================== FOOTER NAVBAR (root, disconnected) ======================
+        // ====================== FOOTER NAVBAR ======================
         Group {
             LayoutMode: Middle;
             Anchor: (Height: 92);

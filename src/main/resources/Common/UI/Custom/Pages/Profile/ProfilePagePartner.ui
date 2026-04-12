@@ -73,7 +73,7 @@ $C.@PageOverlay {
                                             // ===== XP EXPERIENCE HEADER =====
                                             Group {
                                                 LayoutMode: Middle;
-                                                Anchor: (Height: 60);
+                                                Anchor: (Height: 40);
                                                 Background: #050910(0.85);
                                                 Padding: (Full: 16);
 

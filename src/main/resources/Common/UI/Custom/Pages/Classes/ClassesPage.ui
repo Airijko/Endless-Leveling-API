@@ -11,13 +11,10 @@ $Nav = "../Nav/TopNavBar.ui";
 
 $C.@PageOverlay {
     Group {
-        // Middle stacks children top-to-bottom but centers the GROUP vertically,
-        // so the top navbar / main panels / footer navbar all sit centered on
-        // screen instead of pinned to the top.
         LayoutMode: Middle;
         Padding: (Vertical: 12);
 
-        // ====================== TOP NAVBAR (root, disconnected) ======================
+        // ====================== TOP NAVBAR ======================
         Group {
             LayoutMode: Middle;
             Anchor: (Height: 92);
@@ -30,7 +27,7 @@ $C.@PageOverlay {
 
         Group { Anchor: (Height: 14); }
 
-        // ====================== MAIN CONTENT ROW ======================
+        // ====================== MAIN CONTENT ======================
         Group {
             LayoutMode: Middle;
 
@@ -42,242 +39,403 @@ $C.@PageOverlay {
                     LayoutMode: Top;
                     Anchor: (Width: 1680, Height: 700);
 
-                    Group {
-                        LayoutMode: Middle;
-                        Anchor: (Width: 1680);
+                    // ========================================================
+                    //  CAROUSEL VIEW
+                    // ========================================================
+                    Group #CarouselView {
+                        Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 0);
+                        LayoutMode: Top;
+                        Visible: true;
 
+                        // ---- Header (centered, ObjectiveContainer bg) ----
                         Group {
-                            LayoutMode: Left;
+                            LayoutMode: Center;
 
-                        $Nav.@ObjectiveContainer {
-                            Anchor: (Width: 300, Height: 700);
-
-                            #Title {
-                                Label #ClassesListPanel {
-                                    Text: "CLASSES";
-                                    Style: $Nav.@PanelTitleStyle;
-                                }
-                            }
-
-                            #Content {
+                            Group {
+                                Background: (TexturePath: "../../Hud/ObjectivePanelContainer.png", Border: 15);
                                 LayoutMode: Top;
-                                Padding: (Horizontal: 12, Bottom: 12);
+                                Padding: (Horizontal: 24, Vertical: 12);
 
-                                Group #ClassListColumn {
-                                    FlexWeight: 1;
-                                    LayoutMode: Top;
+                                // Line 1: title + class count
+                                Group {
+                                    LayoutMode: Left;
+                                    Anchor: (Height: 18);
 
-                                    Group #ClassListHeader {
-                                        LayoutMode: Left;
-                                        Anchor: (Height: 32);
-                                        Padding: (Vertical: 4);
-
-                                        Label #ClassListTitle {
-                                            Text: "Available Classes";
-                                            Style: (FontSize: 16, TextColor: #ffffff, RenderBold: true, VerticalAlignment: Center);
-                                        }
-
-                                        Group { FlexWeight: 1; }
-
-                                        Label #ClassCountLabel {
-                                            Text: "0 classes";
-                                            Style: (FontSize: 12, TextColor: #9fb6d3, VerticalAlignment: Center);
-                                            Anchor: (Height: 18);
-                                        }
+                                    Label #ClassTitle {
+                                        Text: "ENDLESS LEVELING";
+                                        Style: (FontSize: 14, TextColor: #f0c040, RenderBold: true, RenderUppercase: true, LetterSpacing: 2, VerticalAlignment: Center);
                                     }
 
-                                    Group { Anchor: (Height: 10); }
+                                    Group { Anchor: (Width: 10); }
 
-                                    Group #ClassListScroll {
-                                        FlexWeight: 1;
-                                        LayoutMode: TopScrolling;
-                                        ScrollbarStyle: $C.@DefaultScrollbarStyle;
-
-                                        Group #ClassRows {
-                                            LayoutMode: Top;
-                                        }
+                                    Label #CarouselClassCount {
+                                        Text: "0 classes";
+                                        Style: (FontSize: 11, TextColor: #9fb6d3, RenderBold: true, VerticalAlignment: Center);
                                     }
+                                }
+
+                                // Line 2: primary + secondary + cooldown
+                                Group {
+                                    LayoutMode: Left;
+                                    Anchor: (Height: 16);
+
+                                    Label #CarouselPrimaryBadge {
+                                        Text: "Primary:";
+                                        Style: (FontSize: 11, TextColor: #4fd7f7, RenderBold: true, VerticalAlignment: Center);
+                                    }
+
+                                    Group { Anchor: (Width: 4); }
+
+                                    Label #CarouselPrimaryClass {
+                                        Text: "--";
+                                        Style: (FontSize: 11, TextColor: #ffffff, RenderBold: true, VerticalAlignment: Center);
+                                    }
+
+                                    Group { Anchor: (Width: 12); }
+
+                                    Label #CarouselSecondaryBadge {
+                                        Text: "Secondary:";
+                                        Style: (FontSize: 10, TextColor: #d4b5ff, RenderBold: true, VerticalAlignment: Center);
+                                    }
+
+                                    Group { Anchor: (Width: 4); }
+
+                                    Label #CarouselSecondaryClass {
+                                        Text: "--";
+                                        Style: (FontSize: 10, TextColor: #ffffff, VerticalAlignment: Center);
+                                    }
+                                }
+
+                                // Line 3: subtitle
+                                Label #CarouselSubheading {
+                                    Text: "Select a class to view details.";
+                                    Style: (FontSize: 10, TextColor: #8aa1bf, HorizontalAlignment: Center);
+                                    Anchor: (Height: 14);
                                 }
                             }
                         }
 
-                        Group { Anchor: (Width: 40); }
+                        Group { Anchor: (Height: 12); }
 
-                        $Nav.@ObjectiveContainer {
-                            Anchor: (Width: 1000, Height: 700);
-                            #Title {
-                                Label #ClassTitle {
-                                    Text: "ENDLESS LEVELING";
-                                    Style: $Nav.@PanelTitleStyle;
-                                }
-                            }
+                        // ---- Card scroll area ----
+                        Group #CarouselScrollArea {
+                            FlexWeight: 1;
+                            LayoutMode: LeftScrolling;
+                            ScrollbarStyle: $C.@DefaultScrollbarStyle;
+                            Padding: (Left: 24, Right: 24, Top: 6, Bottom: 20);
 
-                            #Content {
+                            Group #CarouselCards {
                                 LayoutMode: Left;
-                                Padding: (Full: 0);
+                            }
+                        }
+                    }
 
-                                Group #LeftContent {
-                                    FlexWeight: 1;
-                                    LayoutMode: Top;
+                    // ========================================================
+                    //  DETAIL VIEW (shown when a carousel card is clicked)
+                    // ========================================================
+                    Group #DetailView {
+                        Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 0);
+                        LayoutMode: Top;
+                        Visible: false;
 
-                                    Group #ClassContent {
-                                        LayoutMode: Left;
+                        Group {
+                            LayoutMode: Middle;
+
+                            Group {
+                                Anchor: (Width: 1500);
+                                LayoutMode: Top;
+
+                                // ============ HEADER ============
+                                Group {
+                                    LayoutMode: Left;
+                                    Background: (TexturePath: "../../Hud/ObjectivePanelContainer.png", Border: 15);
+                                    Padding: (Left: 20, Right: 20, Top: 16, Bottom: 16);
+
+                                    // Class icon with tile border
+                                    Group {
+                                        LayoutMode: Middle;
+                                        Anchor: (Width: 80);
+
+                                        Group {
+                                            Anchor: (Width: 74, Height: 74);
+
+                                            Group {
+                                                Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 0);
+                                                Background: (TexturePath: "../../Tiles/TileBorderCommon.png");
+                                            }
+
+                                            Group {
+                                                Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 0);
+                                                LayoutMode: Middle;
+                                                ItemIcon #DetailClassIcon {
+                                                    Anchor: (Width: 52, Height: 52);
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    Group { Anchor: (Width: 18); }
+
+                                    // Name + subtitle + role + lore
+                                    Group {
+                                        LayoutMode: Top;
                                         FlexWeight: 1;
-                                        Padding: (Full: 16);
 
-                                        Group #ClassDetailPanel {
-                                            LayoutMode: Top;
-                                            Anchor: (Width: 430);
-                                            Background: #050910(0.85);
-                                            Padding: (Left: 18, Right: 18, Top: 18, Bottom: 18);
+                                        Label #SelectedClassLabel {
+                                            Text: "Select a Class";
+                                            Style: (FontSize: 24, TextColor: #f0c040, RenderBold: true);
+                                            Anchor: (Height: 28);
+                                        }
 
-                                            Label #ClassesTitleLabel {
-                                                Text: "Class Codex";
-                                                Style: (FontSize: 20, TextColor: #ffffff, RenderBold: true);
-                                                Anchor: (Height: 24);
-                                            }
-
-                                            Label #SelectedClassLabel {
-                                                Text: "Select a Class";
-                                                Style: (FontSize: 20, TextColor: #ffffff, RenderBold: true);
-                                                Anchor: (Height: 24);
-                                            }
+                                        Group {
+                                            LayoutMode: Left;
+                                            Anchor: (Height: 16);
 
                                             Label #SelectedClassSubtitle {
-                                                Text: "Choose a class on the left to preview its bonuses.";
-                                                Style: (FontSize: 13, TextColor: #8aa1bf);
-                                                Anchor: (Height: 18);
+                                                Text: "Preview role and passives.";
+                                                Style: (FontSize: 12, TextColor: #8aa1bf);
                                             }
 
-                                            Group { Anchor: (Height: 8); }
+                                            Group { Anchor: (Width: 12); }
 
                                             Label #ClassRoleValue {
                                                 Text: "Role: --";
                                                 Style: (FontSize: 12, TextColor: #9fb6d3, RenderBold: true);
-                                                Anchor: (Height: 16);
                                             }
+                                        }
+
+                                        Group { Anchor: (Height: 4); }
+
+                                        Label #ClassLoreText {
+                                            Text: "Dive into the fantasy and goals of this class.";
+                                            Style: (FontSize: 12, TextColor: #9fb6d3, Wrap: true);
+                                            Anchor: (Height: 34);
+                                        }
+                                    }
+
+                                    Group { Anchor: (Width: 24); }
+
+                                    // Status info (right side)
+                                    Group {
+                                        LayoutMode: Top;
+                                        Anchor: (Width: 260);
+
+                                        Group {
+                                            Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 0);
+                                            Background: (TexturePath: "../../Tiles/TileDefault2x.png", Border: 16, Color: #1a2538);
+                                        }
+
+                                        Group {
+                                            Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 0);
+                                            LayoutMode: Top;
+                                            Padding: (Full: 12);
+
+                                            Label #ClassAssignmentsTitle {
+                                                Text: "Class Assignments";
+                                                Style: (FontSize: 10, TextColor: #f0c040, RenderBold: true, RenderUppercase: true, LetterSpacing: 1);
+                                                Anchor: (Height: 14);
+                                            }
+
+                                            Group { Anchor: (Height: 4); }
 
                                             Group {
                                                 LayoutMode: Left;
-                                                Anchor: (Height: 20);
-
-                                                Label #ClassSorceryLabel {
-                                                    Text: "Sorcery Bonus";
-                                                    Style: (FontSize: 12, TextColor: #d7baff, RenderBold: true);
+                                                Anchor: (Height: 18);
+                                                Label #ClassPrimaryStatusLabel {
+                                                    Text: "Primary";
+                                                    Style: (FontSize: 11, TextColor: #6fe3ff, RenderBold: true);
                                                 }
-
-                                                Group { Anchor: (Width: 8); }
-
-                                                Label #ClassSorceryValue {
+                                                Group { Anchor: (Width: 6); }
+                                                Label #CurrentPrimaryValue {
                                                     Text: "--";
-                                                    Style: (FontSize: 13, TextColor: #e8d5ff, RenderBold: true);
+                                                    Style: (FontSize: 12, TextColor: #ffffff, RenderBold: true);
                                                     FlexWeight: 1;
                                                 }
                                             }
 
-                                            Group { Anchor: (Height: 8); }
-                                            Group { Anchor: (Height: 1); Background: #ffffff(0.08); }
-                                            Group { Anchor: (Height: 8); }
+                                            Group {
+                                                LayoutMode: Left;
+                                                Anchor: (Height: 18);
+                                                Label #ClassSecondaryStatusLabel {
+                                                    Text: "Secondary";
+                                                    Style: (FontSize: 11, TextColor: #d4b5ff, RenderBold: true);
+                                                }
+                                                Group { Anchor: (Width: 6); }
+                                                Label #CurrentSecondaryValue {
+                                                    Text: "None";
+                                                    Style: (FontSize: 12, TextColor: #ffffff, RenderBold: true);
+                                                    FlexWeight: 1;
+                                                }
+                                            }
 
-                                            Group #ClassDetailScrollArea {
-                                                FlexWeight: 1;
-                                                LayoutMode: TopScrolling;
-                                                ScrollbarStyle: $C.@DefaultScrollbarStyle;
+                                            Group { Anchor: (Height: 2); }
+                                            Group { Anchor: (Height: 1); Background: #ffffff(0.06); }
+                                            Group { Anchor: (Height: 2); }
 
-                                                Group #ClassDetailScrollContent {
-                                                    LayoutMode: Top;
-
-                                                    Label #ClassLoreTitle {
-                                                        Text: "Lore Preview";
-                                                        Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
-                                                        Anchor: (Height: 20);
-                                                    }
-
-                                                    Label #ClassLoreText {
-                                                        Text: "Dive into the fantasy and goals of this class.";
-                                                        Style: (FontSize: 12, TextColor: #9fb6d3, Wrap: true);
-                                                        Anchor: (Height: 48);
-                                                        FlexWeight: 1;
-                                                    }
-
-                                                    Group { Anchor: (Height: 16); }
-
-                                                    Label #ClassWeaponsTitle {
-                                                        Text: "Weapon Affinities";
-                                                        Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
-                                                        Anchor: (Height: 20);
-                                                    }
-
-                                                    Label #ClassWeaponSummary {
-                                                        Text: "This class does not define weapon bonuses.";
-                                                        Style: (FontSize: 12, TextColor: #9fb6d3, RenderBold: true);
-                                                        Anchor: (Height: 18);
-                                                    }
-
-                                                    Group #ClassWeaponEntries {
-                                                        LayoutMode: Top;
-                                                    }
-
-                                                    Group { Anchor: (Height: 16); }
-
-                                                    Label #ClassInnateTitle {
-                                                        Text: "Innate Attribute Gains";
-                                                        Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
-                                                        Anchor: (Height: 20);
-                                                    }
-
-                                                    Label #ClassInnateSummary {
-                                                        Text: "Inspect a class to preview innate attribute bonuses.";
-                                                        Style: (FontSize: 12, TextColor: #9fb6d3, RenderBold: true);
-                                                        Anchor: (Height: 18);
-                                                    }
-
-                                                    Group #ClassInnateEntries {
-                                                        LayoutMode: Top;
-                                                    }
-
-                                                    Group { Anchor: (Height: 16); }
-
-                                                    Label #ClassPassivesTitle {
-                                                        Text: "Passives";
-                                                        Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true);
-                                                        Anchor: (Height: 20);
-                                                    }
-
-                                                    Label #ClassPassiveSummary {
-                                                        Text: "Inspect a class to preview its passive bonuses.";
-                                                        Style: (FontSize: 12, TextColor: #9fb6d3, RenderBold: true);
-                                                        Anchor: (Height: 18);
-                                                    }
-
-                                                    Group #ClassPassiveEntries {
-                                                        LayoutMode: Top;
-                                                    }
+                                            Group {
+                                                LayoutMode: Left;
+                                                Anchor: (Height: 16);
+                                                Label #ClassSwapCooldownCardTitle {
+                                                    Text: "Cooldown";
+                                                    Style: (FontSize: 10, TextColor: #8aa1bf, LetterSpacing: 1);
+                                                }
+                                                Group { FlexWeight: 1; }
+                                                Label #ClassPrimaryCooldownLabel {
+                                                    Text: "Pri:";
+                                                    Style: (FontSize: 10, TextColor: #6fe3ff);
+                                                }
+                                                Group { Anchor: (Width: 2); }
+                                                Label #ClassPrimaryCooldownValue {
+                                                    Text: "--";
+                                                    Style: (FontSize: 10, TextColor: #ffffff, RenderBold: true);
+                                                }
+                                                Group { Anchor: (Width: 8); }
+                                                Label #ClassSecondaryCooldownLabel {
+                                                    Text: "Sec:";
+                                                    Style: (FontSize: 10, TextColor: #d4b5ff);
+                                                }
+                                                Group { Anchor: (Width: 2); }
+                                                Label #ClassSecondaryCooldownValue {
+                                                    Text: "--";
+                                                    Style: (FontSize: 10, TextColor: #ffffff, RenderBold: true);
                                                 }
                                             }
                                         }
 
-                                        Group { Anchor: (Width: 16); }
+                                        // Hidden labels (still referenced by Java)
+                                        Label #ClassesTitleLabel { Text: ""; Anchor: (Height: 0); Visible: false; }
+                                        Label #ClassSecondaryShareHint { Text: ""; Anchor: (Height: 0); Visible: false; }
+                                        Label #ClassSwapCooldownHint { Text: ""; Anchor: (Height: 0); Visible: false; }
+                                        Label #ClassSorceryLabel { Text: ""; Anchor: (Height: 0); Visible: false; }
+                                        Label #ClassSorceryValue { Text: ""; Anchor: (Height: 0); Visible: false; }
+                                        Label #ClassLoreTitle { Text: ""; Anchor: (Height: 0); Visible: false; }
+                                        Label #ClassesInfoPanel { Text: ""; Anchor: (Height: 0); Visible: false; }
+                                        Label #ClassCountLabel { Text: ""; Anchor: (Height: 0); Visible: false; }
+                                        Label #ClassListTitle { Text: ""; Anchor: (Height: 0); Visible: false; }
+                                    }
+                                }
 
-                                        Group #RightContent {
+                                Group { Anchor: (Height: 10); }
+
+                                // ============ THREE-COLUMN BODY ============
+                                Group {
+                                    LayoutMode: Left;
+                                    FlexWeight: 1;
+
+                                    // ---- Column 1: Weapons + Innates ----
+                                    $Nav.@ObjectiveContainer {
+                                        Anchor: (Width: 420);
+
+                                        #Title {
+                                            Label #ClassWeaponsTitle {
+                                                Text: "Weapon Affinities";
+                                                Style: $Nav.@PanelTitleStyle;
+                                            }
+                                        }
+
+                                        #Content {
                                             LayoutMode: Top;
-                                            FlexWeight: 1;
-                                            Background: #050910(0.85);
-                                            Padding: (Left: 16, Right: 16, Top: 16, Bottom: 16);
+                                            Padding: (Horizontal: 12, Top: 6, Bottom: 8);
 
+                                            Label #ClassWeaponSummary {
+                                                Text: "No weapon bonuses defined.";
+                                                Style: (FontSize: 12, TextColor: #9fb6d3, Wrap: true);
+                                                Anchor: (Height: 18);
+                                            }
+
+                                            Group #ClassWeaponEntries {
+                                                LayoutMode: Top;
+                                            }
+
+                                            Group { Anchor: (Height: 12); }
+
+                                            // Innate section within same column
+                                            Label #ClassInnateTitle {
+                                                Text: "Innate Gains";
+                                                Style: (FontSize: 13, TextColor: #f0c040, RenderBold: true, LetterSpacing: 1);
+                                                Anchor: (Height: 18);
+                                            }
+
+                                            Group { Anchor: (Height: 1); Background: #ffffff(0.06); }
+                                            Group { Anchor: (Height: 4); }
+
+                                            Label #ClassInnateSummary {
+                                                Text: "No innate attribute bonuses.";
+                                                Style: (FontSize: 12, TextColor: #9fb6d3, Wrap: true);
+                                                Anchor: (Height: 18);
+                                            }
+
+                                            Group #ClassInnateScrollArea {
+                                                FlexWeight: 1;
+                                                LayoutMode: TopScrolling;
+                                                ScrollbarStyle: $C.@DefaultScrollbarStyle;
+
+                                                Group #ClassInnateEntries {
+                                                    LayoutMode: Top;
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    Group { Anchor: (Width: 10); }
+
+                                    // ---- Column 2: Passives ----
+                                    $Nav.@ObjectiveContainer {
+                                        Anchor: (Width: 420);
+
+                                        #Title {
+                                            Label #ClassPassivesTitle {
+                                                Text: "Passives";
+                                                Style: $Nav.@PanelTitleStyle;
+                                            }
+                                        }
+
+                                        #Content {
+                                            LayoutMode: Top;
+                                            Padding: (Horizontal: 12, Top: 6, Bottom: 8);
+
+                                            Label #ClassPassiveSummary {
+                                                Text: "Inspect a class to preview its passive bonuses.";
+                                                Style: (FontSize: 12, TextColor: #9fb6d3, Wrap: true);
+                                                Anchor: (Height: 18);
+                                            }
+
+                                            Group #ClassPassiveScrollArea {
+                                                FlexWeight: 1;
+                                                LayoutMode: TopScrolling;
+                                                ScrollbarStyle: $C.@DefaultScrollbarStyle;
+
+                                                Group #ClassPassiveEntries {
+                                                    LayoutMode: Top;
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    Group { Anchor: (Width: 10); }
+
+                                    // ---- Column 3: Class Paths ----
+                                    $Nav.@ObjectiveContainer {
+                                        FlexWeight: 1;
+
+                                        #Title {
                                             Label #ClassEvolutionTitle {
                                                 Text: "Class Paths";
-                                                Style: (FontSize: 16, TextColor: #ffffff, RenderBold: true);
-                                                Anchor: (Height: 22);
+                                                Style: $Nav.@PanelTitleStyle;
                                             }
+                                        }
+
+                                        #Content {
+                                            LayoutMode: Top;
+                                            Padding: (Horizontal: 12, Top: 6, Bottom: 8);
 
                                             Label #ClassEvolutionSummary {
                                                 Text: "Select a class to inspect ascension branches.";
-                                                Style: (FontSize: 12, TextColor: #9fb6d3, RenderBold: true, Wrap: true);
-                                                Anchor: (Height: 48);
+                                                Style: (FontSize: 12, TextColor: #9fb6d3, Wrap: true);
+                                                Anchor: (Height: 32);
                                             }
 
-                                            Group { Anchor: (Height: 10); }
+                                            Group { Anchor: (Height: 4); }
 
                                             Group #ClassEvolutionScrollArea {
                                                 FlexWeight: 1;
@@ -290,178 +448,51 @@ $C.@PageOverlay {
                                             }
                                         }
                                     }
-
-                                    Group #ClassDetailActions {
-                                        LayoutMode: Top;
-                                        Padding: (Full: 12);
-
-                                        Label #ClassDetailStatus {
-                                            Text: "Secondary classes grant half value. Changes apply instantly.";
-                                            Style: (FontSize: 11, TextColor: #ffc300, RenderBold: true, Wrap: true);
-                                            Anchor: (Height: 30);
-                                        }
-
-                                        Group { Anchor: (Height: 8); }
-
-                                        Group {
-                                            LayoutMode: Left;
-
-                                            $C.@TextButton #ViewClassPathsButton {
-                                                Text: "VIEW PATHS";
-                                                Anchor: (Height: 32, Width: 170);
-                                                Style: @CustomStyle;
-                                            }
-
-                                            Group { FlexWeight: 1; }
-
-                                            $C.@TextButton #ConfirmPrimaryButton {
-                                                Text: "SET PRIMARY";
-                                                FlexWeight: 1;
-                                                Anchor: (Height: 32);
-                                                Style: @CustomStyle;
-                                            }
-
-                                            Group { Anchor: (Width: 8); }
-
-                                            $C.@TextButton #ConfirmSecondaryButton {
-                                                Text: "SET SECONDARY";
-                                                FlexWeight: 1;
-                                                Anchor: (Height: 32);
-                                                Style: @CustomStyle;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        Group { Anchor: (Width: 40); }
-
-                        $Nav.@ObjectiveContainer {
-                            Anchor: (Width: 300);
-
-                            #Title {
-                                Label #ClassesInfoPanel {
-                                    Text: "INFO";
-                                    Style: $Nav.@PanelTitleStyle;
-                                }
-                            }
-
-                            #Content {
-                                LayoutMode: Top;
-                                Padding: (Horizontal: 12, Bottom: 12);
-
-                                Group #ClassStatusCard {
-                                    LayoutMode: Top;
-                                    Background: #0b141f(0.92);
-                                    Padding: (Full: 10);
-
-                                    Label #ClassAssignmentsTitle {
-                                        Text: "Class Assignments";
-                                        Style: (FontSize: 12, TextColor: #8aa1bf, RenderBold: true, LetterSpacing: 1);
-                                        Anchor: (Height: 12);
-                                    }
-
-                                    Group { Anchor: (Height: 8); }
-
-                                    Group {
-                                        LayoutMode: Left;
-                                        Anchor: (Height: 20);
-                                        Label #ClassPrimaryStatusLabel {
-                                            Text: "Primary";
-                                            Style: (FontSize: 11, TextColor: #6fe3ff, RenderBold: true);
-                                        }
-                                        Group { Anchor: (Width: 8); }
-                                        Label #CurrentPrimaryValue {
-                                            Text: "--";
-                                            Style: (FontSize: 13, TextColor: #ffffff, RenderBold: true);
-                                            FlexWeight: 1;
-                                        }
-                                    }
-
-                                    Group {
-                                        LayoutMode: Left;
-                                        Anchor: (Height: 20);
-                                        Label #ClassSecondaryStatusLabel {
-                                            Text: "Secondary";
-                                            Style: (FontSize: 11, TextColor: #d4b5ff, RenderBold: true);
-                                        }
-                                        Group { Anchor: (Width: 8); }
-                                        Label #CurrentSecondaryValue {
-                                            Text: "None";
-                                            Style: (FontSize: 13, TextColor: #ffffff, RenderBold: true);
-                                            FlexWeight: 1;
-                                        }
-                                    }
-
-                                    Group { Anchor: (Height: 6); }
-
-                                    Label #ClassSecondaryShareHint {
-                                        Text: "Secondary classes share 50% of bonuses.";
-                                        Style: (FontSize: 11, TextColor: #9fb6d3);
-                                        Anchor: (Height: 14);
-                                    }
                                 }
 
-                                Group { Anchor: (Height: 6); }
+                                Group { Anchor: (Height: 8); }
 
-                                Group #ClassSwapCooldownCard {
-                                    LayoutMode: Top;
-                                    Background: #0b141f(0.92);
-                                    Padding: (Full: 8);
+                                // ============ ACTION BAR ============
+                                Group {
+                                    LayoutMode: Left;
+                                    Background: (TexturePath: "../../Hud/ObjectivePanelContainer.png", Border: 15);
+                                    Padding: (Left: 18, Right: 18, Top: 12, Bottom: 12);
 
-                                    Group {
-                                        LayoutMode: Top;
+                                    $C.@TextButton #BackToCarouselButton {
+                                        Text: "BACK";
+                                        Anchor: (Height: 34, Width: 130);
+                                        Style: @CustomStyle;
+                                    }
 
-                                        Label #ClassSwapCooldownCardTitle {
-                                            Text: "Class Swap Cooldown";
-                                            Style: (FontSize: 12, TextColor: #8aa1bf, RenderBold: true, LetterSpacing: 1);
-                                        }
+                                    Group { Anchor: (Width: 8); }
 
-                                        Group { FlexWeight: 1; }
+                                    $C.@TextButton #ViewClassPathsButton {
+                                        Text: "VIEW PATHS";
+                                        Anchor: (Height: 34, Width: 150);
+                                        Style: @CustomStyle;
+                                    }
 
-                                        Label #ClassSwapCooldownHint {
-                                            Text: "Class swaps share a cooldown per slot.";
-                                            Style: (FontSize: 11, TextColor: #9fb6d3, Wrap: true);
-                                        }
+                                    Group { FlexWeight: 1; }
 
-                                        Group { Anchor: (Height: 8); }
+                                    Label #ClassDetailStatus {
+                                        Text: "Changes apply instantly.";
+                                        Style: (FontSize: 11, TextColor: #ffc300, RenderBold: true, VerticalAlignment: Center);
+                                    }
 
-                                        Group {
-                                            LayoutMode: Left;
-                                            Anchor: (Height: 18);
+                                    Group { FlexWeight: 1; }
 
-                                            Label #ClassPrimaryCooldownLabel {
-                                                Text: "Primary";
-                                                Style: (FontSize: 11, TextColor: #6fe3ff, RenderBold: true, VerticalAlignment: Center);
-                                            }
+                                    $C.@TextButton #ConfirmPrimaryButton {
+                                        Text: "SET PRIMARY";
+                                        Anchor: (Height: 34, Width: 160);
+                                        Style: @CustomStyle;
+                                    }
 
-                                            Group { FlexWeight: 1; }
+                                    Group { Anchor: (Width: 8); }
 
-                                            Label #ClassPrimaryCooldownValue {
-                                                Text: "--";
-                                                Style: (FontSize: 11, TextColor: #ffffff, RenderBold: true, VerticalAlignment: Center);
-                                            }
-                                        }
-
-                                        Group { Anchor: (Height: 4); }
-
-                                        Group {
-                                            LayoutMode: Left;
-                                            Anchor: (Height: 18);
-
-                                            Label #ClassSecondaryCooldownLabel {
-                                                Text: "Secondary";
-                                                Style: (FontSize: 11, TextColor: #d4b5ff, RenderBold: true, VerticalAlignment: Center);
-                                            }
-
-                                            Group { FlexWeight: 1; }
-
-                                            Label #ClassSecondaryCooldownValue {
-                                                Text: "--";
-                                                Style: (FontSize: 11, TextColor: #ffffff, RenderBold: true, VerticalAlignment: Center);
-                                            }
-                                        }
+                                    $C.@TextButton #ConfirmSecondaryButton {
+                                        Text: "SET SECONDARY";
+                                        Anchor: (Height: 34, Width: 170);
+                                        Style: @CustomStyle;
                                     }
                                 }
                             }
@@ -470,11 +501,10 @@ $C.@PageOverlay {
                 }
             }
         }
-        }
 
         Group { Anchor: (Height: 14); }
 
-        // ====================== FOOTER NAVBAR (root, disconnected) ======================
+        // ====================== FOOTER NAVBAR ======================
         Group {
             LayoutMode: Middle;
             Anchor: (Height: 92);
