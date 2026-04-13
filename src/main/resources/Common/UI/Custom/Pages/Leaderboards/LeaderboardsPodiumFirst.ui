@@ -1,103 +1,113 @@
 $C = "../../Common.ui";
 
 Group {
-    Anchor: (Width: 250, Height: 250);
+    Anchor: (Height: 145);
     LayoutMode: Top;
-    Padding: (Right: 8);
+    Padding: (Bottom: 6);
 
     Group {
-        Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 8);
+        Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 0);
         Background: (TexturePath: "../../Tiles/TileLegendary.png");
     }
 
     Group {
-        Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 8);
-        LayoutMode: Top;
-        Padding: (Left: 14, Right: 14, Top: 12, Bottom: 10);
-
-        Group { Anchor: (Height: 4); }
-
-        Label #Rank {
-            Style: (FontSize: 22, TextColor: #ffd700, RenderBold: true, HorizontalAlignment: Center);
-            Anchor: (Height: 28);
-            Text: "1ST";
-        }
-
-        Group { Anchor: (Height: 6); }
+        Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 0);
+        LayoutMode: Left;
+        Padding: (Left: 10, Right: 12, Top: 10, Bottom: 10);
 
         Group {
-            LayoutMode: Middle;
-            Anchor: (Height: 48);
+            Anchor: (Width: 68);
+            LayoutMode: Top;
+            Padding: (Top: 6);
+
+            Label #Rank {
+                Style: (FontSize: 18, TextColor: #ffd700, RenderBold: true, HorizontalAlignment: Center);
+                Anchor: (Height: 22);
+                Text: "1ST";
+            }
+
+            Group { Anchor: (Height: 4); }
 
             Group {
-                Anchor: (Width: 48, Height: 48);
-                Background: (TexturePath: "../../Tiles/TileBorderLegendary.png");
                 LayoutMode: Middle;
-                Padding: (Full: 5);
+                Anchor: (Height: 48);
 
-                ItemIcon #PodiumIcon {
-                    Anchor: (Width: 34, Height: 34);
+                Group {
+                    Anchor: (Width: 48, Height: 48);
+                    Background: (TexturePath: "../../Tiles/TileBorderLegendary.png");
+                    LayoutMode: Middle;
+                    Padding: (Full: 5);
+
+                    ItemIcon #PodiumIcon {
+                        Anchor: (Width: 34, Height: 34);
+                    }
                 }
             }
         }
 
-        Group { Anchor: (Height: 6); }
-
-        Label #Name {
-            Style: (FontSize: 14, TextColor: #ffd700, RenderBold: true, HorizontalAlignment: Center);
-            Anchor: (Height: 20);
-            Text: "-";
+        Group {
+            Anchor: (Width: 1);
+            Padding: (Vertical: 8);
+            Group { Background: #ffd700(0.25); }
         }
 
-        Group { Anchor: (Height: 6); }
+        Group { Anchor: (Width: 10); }
 
         Group {
-            Anchor: (Height: 1);
-            Padding: (Horizontal: 8);
-            Group { Background: #ffd700(0.30); }
-        }
-
-        Group { Anchor: (Height: 10); }
-
-        Group {
+            FlexWeight: 1;
             LayoutMode: Top;
+            Padding: (Top: 4);
 
-            Group {
-                LayoutMode: Left;
-                Padding: (Vertical: 3);
-                Background: (TexturePath: "../../Tiles/TileRowBackground.png");
-                Label { Style: (FontSize: 11, TextColor: #ffe6a8); Text: "Race"; FlexWeight: 1; Padding: (Left: 8); }
-                Label #Race { Style: (FontSize: 11, TextColor: #ffd700, RenderBold: true); Text: "-"; Padding: (Right: 8); }
+            Label #Name {
+                Style: (FontSize: 14, TextColor: #ffd700, RenderBold: true);
+                Anchor: (Height: 18);
+                Text: "-";
             }
 
-            Group {
-                LayoutMode: Left;
-                Padding: (Vertical: 3);
-                Label { Style: (FontSize: 11, TextColor: #f5e4bc); Text: "Class"; FlexWeight: 1; Padding: (Left: 8); }
-                Label #Class { Style: (FontSize: 11, TextColor: #ffd700, RenderBold: true); Text: "-"; Padding: (Right: 8); }
-            }
+            Group { Anchor: (Height: 3); }
+            Group { Anchor: (Height: 1); Group { Background: #ffd700(0.20); } }
+            Group { Anchor: (Height: 5); }
 
             Group {
-                LayoutMode: Left;
-                Padding: (Vertical: 3);
-                Background: (TexturePath: "../../Tiles/TileRowBackground.png");
-                Label { Style: (FontSize: 11, TextColor: #ffe6a8); Text: "Prestige"; FlexWeight: 1; Padding: (Left: 8); }
-                Label #Prestige { Style: (FontSize: 11, TextColor: #ffcc66, RenderBold: true); Text: "-"; Padding: (Right: 8); }
-            }
+                LayoutMode: Top;
 
-            Group {
-                LayoutMode: Left;
-                Padding: (Vertical: 3);
-                Label { Style: (FontSize: 11, TextColor: #f5e4bc); Text: "Level"; FlexWeight: 1; Padding: (Left: 8); }
-                Label #Level { Style: (FontSize: 11, TextColor: #ffd700, RenderBold: true); Text: "-"; Padding: (Right: 8); }
-            }
+                Group {
+                    LayoutMode: Left;
+                    Padding: (Vertical: 2);
+                    Background: (TexturePath: "../../Tiles/TileRowBackground.png");
+                    Label { Style: (FontSize: 10, TextColor: #ffe6a8); Text: "Race"; FlexWeight: 1; Padding: (Left: 6); }
+                    Label #Race { Style: (FontSize: 10, TextColor: #ffd700, RenderBold: true); Text: "-"; Padding: (Right: 6); }
+                }
 
-            Group {
-                LayoutMode: Left;
-                Padding: (Vertical: 3);
-                Background: (TexturePath: "../../Tiles/TileRowBackground.png");
-                Label { Style: (FontSize: 11, TextColor: #ffe6a8); Text: "XP"; FlexWeight: 1; Padding: (Left: 8); }
-                Label #Exp { Style: (FontSize: 11, TextColor: #ffd98c, RenderBold: true); Text: "-"; Padding: (Right: 8); }
+                Group {
+                    LayoutMode: Left;
+                    Padding: (Vertical: 2);
+                    Label { Style: (FontSize: 10, TextColor: #f5e4bc); Text: "Class"; FlexWeight: 1; Padding: (Left: 6); }
+                    Label #Class { Style: (FontSize: 10, TextColor: #ffd700, RenderBold: true); Text: "-"; Padding: (Right: 6); }
+                }
+
+                Group {
+                    LayoutMode: Left;
+                    Padding: (Vertical: 2);
+                    Background: (TexturePath: "../../Tiles/TileRowBackground.png");
+                    Label { Style: (FontSize: 10, TextColor: #ffe6a8); Text: "Prestige"; FlexWeight: 1; Padding: (Left: 6); }
+                    Label #Prestige { Style: (FontSize: 10, TextColor: #ffcc66, RenderBold: true); Text: "-"; Padding: (Right: 6); }
+                }
+
+                Group {
+                    LayoutMode: Left;
+                    Padding: (Vertical: 2);
+                    Label { Style: (FontSize: 10, TextColor: #f5e4bc); Text: "Level"; FlexWeight: 1; Padding: (Left: 6); }
+                    Label #Level { Style: (FontSize: 10, TextColor: #ffd700, RenderBold: true); Text: "-"; Padding: (Right: 6); }
+                }
+
+                Group {
+                    LayoutMode: Left;
+                    Padding: (Vertical: 2);
+                    Background: (TexturePath: "../../Tiles/TileRowBackground.png");
+                    Label { Style: (FontSize: 10, TextColor: #ffe6a8); Text: "XP"; FlexWeight: 1; Padding: (Left: 6); }
+                    Label #Exp { Style: (FontSize: 10, TextColor: #ffd98c, RenderBold: true); Text: "-"; Padding: (Right: 6); }
+                }
             }
         }
     }

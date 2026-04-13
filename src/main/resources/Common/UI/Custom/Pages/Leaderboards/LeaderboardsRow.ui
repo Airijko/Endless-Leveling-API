@@ -16,7 +16,7 @@ Group {
 
         Label #Rank {
             Style: (TextColor: #c0cee5, FontSize: 13, RenderBold: true);
-            Anchor: (Width: 80);
+            Anchor: (Width: 60);
             Text: "-";
         }
 
@@ -28,31 +28,31 @@ Group {
 
         Label #Race {
             Style: (TextColor: #aaccff, FontSize: 13);
-            Anchor: (Width: 170);
+            Anchor: (Width: 140);
             Text: "-";
         }
 
         Label #Class {
             Style: (TextColor: #cfd8e8, FontSize: 13);
-            Anchor: (Width: 170);
+            Anchor: (Width: 140);
             Text: "-";
         }
 
         Label #Prestige {
             Style: (TextColor: #ffd79a, FontSize: 13, RenderBold: true);
-            Anchor: (Width: 110);
+            Anchor: (Width: 80);
             Text: "-";
         }
 
         Label #Level {
             Style: (TextColor: #87dfff, FontSize: 13, RenderBold: true);
-            Anchor: (Width: 100);
+            Anchor: (Width: 70);
             Text: "-";
         }
 
         Label #Exp {
             Style: (TextColor: #9fe0ff, FontSize: 13);
-            Anchor: (Width: 170);
+            Anchor: (Width: 100);
             Text: "-";
         }
     }

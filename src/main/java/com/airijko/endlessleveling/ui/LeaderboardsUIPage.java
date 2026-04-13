@@ -53,11 +53,17 @@ public class LeaderboardsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Dat
             @Nonnull Store<EntityStore> store) {
 
         SafeUICommandBuilder ui = new SafeUICommandBuilder(rawUi);
-        ui.append("Pages/Leaderboards/LeaderboardsPage.ui");
-        NavUIHelper.applyNavVersion(ui, playerRef, "leaderboards",
-            "Common/UI/Custom/Pages/Leaderboards/LeaderboardsPage.ui",
-            "#LeaderboardsTitle");
-        NavUIHelper.bindNavEvents(events, "Common/UI/Custom/Pages/Leaderboards/LeaderboardsPage.ui");
+        boolean partnerAuthorized = EndlessLeveling.getInstance() != null
+                && EndlessLeveling.getInstance().isPartnerAddonAuthorized();
+        String pagePath = partnerAuthorized
+                ? "Pages/Leaderboards/LeaderboardsPagePartner.ui"
+                : "Pages/Leaderboards/LeaderboardsPage.ui";
+        String fullPagePath = partnerAuthorized
+                ? "Common/UI/Custom/Pages/Leaderboards/LeaderboardsPagePartner.ui"
+                : "Common/UI/Custom/Pages/Leaderboards/LeaderboardsPage.ui";
+        ui.append(pagePath);
+        NavUIHelper.applyNavVersion(ui, playerRef, "leaderboards", fullPagePath, "#LeaderboardsTitle");
+        NavUIHelper.bindNavEvents(events, fullPagePath);
 
         events.addEventBinding(Activating, "#SortByButton", of("Action", "lb:sort:field"), false);
         events.addEventBinding(Activating, "#SortOrderButton", of("Action", "lb:sort:order"), false);
@@ -145,7 +151,7 @@ public class LeaderboardsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Dat
             ui.set("#TableSection.Visible", visible.size() > 3);
             ui.set("#PodiumTitle.Text", tr("ui.leaderboards.podium.title", "TOP CHAMPIONS"));
 
-            // Podium: visual order 2nd | 1st | 3rd (classic podium arrangement)
+            // Podium: vertical stack 1st → 2nd → 3rd
             String[] podiumTemplates = {
                 "Pages/Leaderboards/LeaderboardsPodiumFirst.ui",
                 "Pages/Leaderboards/LeaderboardsPodiumSecond.ui",
@@ -156,29 +162,20 @@ public class LeaderboardsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Dat
                 "Ingredient_Lightning_Essence",
                 "Ingredient_Life_Essence"
             };
-            int[] visualOrder;
-            if (podiumCount == 1) {
-                visualOrder = new int[]{0};
-            } else if (podiumCount == 2) {
-                visualOrder = new int[]{1, 0};
-            } else {
-                visualOrder = new int[]{1, 0, 2};
-            }
 
-            for (int podiumIdx = 0; podiumIdx < visualOrder.length; podiumIdx++) {
-                int rankIdx = visualOrder[podiumIdx];
-                ui.append("#PodiumCards", podiumTemplates[rankIdx]);
+            for (int i = 0; i < podiumCount; i++) {
+                ui.append("#PodiumCards", podiumTemplates[i]);
 
-                PlayerData pd = visible.get(rankIdx);
-                String base = "#PodiumCards[" + podiumIdx + "]";
+                PlayerData pd = visible.get(i);
+                String base = "#PodiumCards[" + i + "]";
                 String rankLabel;
-                if (rankIdx == 0) rankLabel = "1ST";
-                else if (rankIdx == 1) rankLabel = "2ND";
+                if (i == 0) rankLabel = "1ST";
+                else if (i == 1) rankLabel = "2ND";
                 else rankLabel = "3RD";
 
                 ui.set(base + " #Rank.Text", rankLabel);
                 ui.set(base + " #Name.Text", pd.getPlayerName());
-                ui.set(base + " #PodiumIcon.ItemId", podiumIcons[rankIdx]);
+                ui.set(base + " #PodiumIcon.ItemId", podiumIcons[i]);
                 ui.set(base + " #Race.Text", resolveRaceLabel(raceManager, pd));
                 ui.set(base + " #Class.Text", resolvePrimaryClassLabel(classManager, pd));
                 ui.set(base + " #Prestige.Text", String.valueOf(pd.getPrestigeLevel()));
