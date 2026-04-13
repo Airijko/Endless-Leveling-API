@@ -14,6 +14,7 @@ import com.airijko.endlessleveling.util.EntityRefUtil;
 import com.hypixel.hytale.builtin.mounts.NPCMountComponent;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.component.spatial.SpatialResource;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.protocol.MovementSettings;
@@ -24,6 +25,7 @@ import com.hypixel.hytale.server.core.entity.UUIDComponent;
 import com.hypixel.hytale.server.core.entity.effect.EffectControllerComponent;
 import com.hypixel.hytale.server.core.entity.entities.player.movement.MovementManager;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
+import com.hypixel.hytale.server.core.modules.entity.EntityModule;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue;
 import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
@@ -32,6 +34,8 @@ import com.hypixel.hytale.server.core.universe.world.ParticleUtil;
 import com.hypixel.hytale.server.core.universe.world.SoundUtil;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.util.TargetUtil;
+
+import it.unimi.dsi.fastutil.objects.ObjectList;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -46,25 +50,17 @@ public final class FrozenDomainAugment extends Augment
     private static final long SLOW_DURATION_MILLIS = 2000L;
     private static final float MIN_MOVEMENT_MULTIPLIER = 0.0001F;
     private static final String[] SLOW_EFFECT_IDS = new String[] { "slowness", "slow" };
-    private static final String[] TRIGGER_PULSE_VFX_IDS = new String[] { "Impact_Blade_01" };
+    private static final String[] AURA_VFX_IDS = new String[] { "Totem_Slow_Circle1", "Totem_Slow_Circle2" };
     private static final String[] TRIGGER_PULSE_SFX_IDS = new String[] {
             "SFX_Arrow_Frost_Miss",
             "SFX_Arrow_Frost_Hit",
             "SFX_Ice_Ball_Death"
     };
-    private static final long TRIGGER_PULSE_DURATION_MILLIS = 250L;
-    private static final long TRIGGER_PULSE_STEP_MILLIS = 50L;
-    private static final int TRIGGER_PULSE_MIN_POINT_COUNT = 10;
-    private static final int TRIGGER_PULSE_MAX_POINT_COUNT = 36;
-    private static final int TRIGGER_PULSE_MIN_LAYER_COUNT = 2;
-    private static final int TRIGGER_PULSE_MAX_LAYER_COUNT = 4;
-    private static final double TRIGGER_PULSE_START_RADIUS = 0.1D;
-    private static final double TRIGGER_PULSE_MIN_LAYER_SPACING = 0.2D;
-    private static final double TRIGGER_PULSE_MAX_LAYER_SPACING = 0.45D;
-    private static final double TRIGGER_PULSE_Y_OFFSET = 0.3D;
+    private static final long AURA_VISUAL_INTERVAL_MILLIS = 500L;
+    private static final double AURA_VFX_Y_OFFSET = 0.3D;
     private static final String PLAYER_HASTE_DEBUFF_SOURCE_PREFIX = ID + "_target_haste_debuff_";
     private static final Map<String, ActiveFrozen> ACTIVE_FROST = new ConcurrentHashMap<>();
-    private static final Map<String, ActivePulse> ACTIVE_PULSES = new ConcurrentHashMap<>();
+    private static final Map<String, AuraVisualState> AURA_VISUAL_STATE = new ConcurrentHashMap<>();
 
     private final double slowPercent;
     private final double stolenSlowRatio;
@@ -144,14 +140,8 @@ public final class FrozenDomainAugment extends Augment
         boolean loggedEffectApplyFailure;
     }
 
-    private static final class ActivePulse {
-        Ref<EntityStore> sourceRef;
-        UUID sourceUuid;
-        long startedAt;
-        long expiresAt;
+    private static final class AuraVisualState {
         long lastVisualAt;
-        double endRadius;
-        boolean soundPlayed;
     }
 
     public FrozenDomainAugment(AugmentDefinition definition) {
@@ -229,10 +219,10 @@ public final class FrozenDomainAugment extends Augment
         var augmentState = context.getRuntimeState().getState(ID);
         boolean active = augmentState.getExpiresAt() > now;
         if (!active) {
-            boolean hadTriggerPulse = clearTriggerPulse(context.getPlayerRef(), context.getCommandBuffer());
+            boolean hadAuraVisual = clearAuraVisual(context.getPlayerRef(), context.getCommandBuffer());
             boolean hadActiveState = augmentState.getStacks() > 0;
             boolean hasLingeringFrozenTargets = !ACTIVE_FROST.isEmpty();
-            if (!hadTriggerPulse && !hadActiveState && !hasLingeringFrozenTargets) {
+            if (!hadAuraVisual && !hadActiveState && !hasLingeringFrozenTargets) {
                 return;
             }
 
@@ -257,13 +247,6 @@ public final class FrozenDomainAugment extends Augment
         AugmentUtils.setAttributeBonus(context.getRuntimeState(), ID + "_life_force", SkillAttributeType.LIFE_FORCE,
                 lifeForceFlatBonus, 0L);
 
-        updateTriggerPulse(context.getPlayerRef(), context.getCommandBuffer(), now);
-        long effectiveTickIntervalMillis = Math.max(1L, Math.min(1000L, slowTickIntervalMillis));
-        if (augmentState.getLastProc() > 0L && now - augmentState.getLastProc() < effectiveTickIntervalMillis) {
-            cleanupExpired(context.getCommandBuffer(), now);
-            return;
-        }
-
         EntityStatMap sourceStats = context.getStatMap();
         EntityStatValue sourceHp = sourceStats.get(DefaultEntityStatTypes.getHealth());
         if (sourceHp == null || sourceHp.getMax() <= 0f || sourceHp.get() <= 0f) {
@@ -273,6 +256,14 @@ public final class FrozenDomainAugment extends Augment
 
         double maxHealth = Math.max(0.0D, sourceHp.getMax());
         double radius = resolveRadius(maxHealth);
+
+        updateAuraVisual(context.getPlayerRef(), context.getCommandBuffer(), now, radius);
+
+        long effectiveTickIntervalMillis = Math.max(1L, Math.min(1000L, slowTickIntervalMillis));
+        if (augmentState.getLastProc() > 0L && now - augmentState.getLastProc() < effectiveTickIntervalMillis) {
+            cleanupExpired(context.getCommandBuffer(), now);
+            return;
+        }
 
         if (radius <= 0.0D || slowPercent <= 0.0D) {
             cleanupExpired(context.getCommandBuffer(), now);
@@ -290,7 +281,10 @@ public final class FrozenDomainAugment extends Augment
         }
 
         augmentState.setLastProc(now);
-        startTriggerPulse(sourceRef, commandBuffer, now);
+        playTriggerPulseSound(sourceRef, new Vector3d(
+                sourceTransform.getPosition().getX(),
+                sourceTransform.getPosition().getY() + AURA_VFX_Y_OFFSET,
+                sourceTransform.getPosition().getZ()));
 
         UUID sourceUuid = context.getPlayerData() != null ? context.getPlayerData().getUuid() : null;
         PartyManager partyManager = resolvePartyManager();
@@ -613,132 +607,56 @@ public final class FrozenDomainAugment extends Augment
         return null;
     }
 
-    private boolean clearTriggerPulse(Ref<EntityStore> sourceRef, CommandBuffer<EntityStore> commandBuffer) {
+    private boolean clearAuraVisual(Ref<EntityStore> sourceRef, CommandBuffer<EntityStore> commandBuffer) {
         if (sourceRef == null || commandBuffer == null) {
             return false;
         }
-        return ACTIVE_PULSES.remove(keyFor(sourceRef, commandBuffer)) != null;
+        return AURA_VISUAL_STATE.remove(keyFor(sourceRef, commandBuffer)) != null;
     }
 
-    private void startTriggerPulse(Ref<EntityStore> sourceRef,
+    private void updateAuraVisual(Ref<EntityStore> sourceRef,
             CommandBuffer<EntityStore> commandBuffer,
-            long now) {
-        if (sourceRef == null || commandBuffer == null) {
+            long now,
+            double radius) {
+        if (sourceRef == null || commandBuffer == null || radius <= 0.0D) {
             return;
         }
 
-        ActivePulse pulse = ACTIVE_PULSES.computeIfAbsent(keyFor(sourceRef, commandBuffer), unused -> new ActivePulse());
-        pulse.sourceRef = sourceRef;
-        pulse.sourceUuid = resolveEntityUuid(sourceRef, commandBuffer);
-        pulse.startedAt = now;
-        pulse.expiresAt = now + TRIGGER_PULSE_DURATION_MILLIS;
-        pulse.lastVisualAt = 0L;
-        pulse.endRadius = resolveTriggerPulseRadius(sourceRef, commandBuffer);
-        pulse.soundPlayed = false;
-        updateTriggerPulse(sourceRef, commandBuffer, now);
-    }
-
-    private void updateTriggerPulse(Ref<EntityStore> sourceRef,
-            CommandBuffer<EntityStore> commandBuffer,
-            long now) {
-        if (sourceRef == null || commandBuffer == null) {
-            return;
-        }
-
-        String pulseKey = keyFor(sourceRef, commandBuffer);
-        ActivePulse pulse = ACTIVE_PULSES.get(pulseKey);
-        if (pulse == null) {
-            return;
-        }
-        if (!matchesExpectedUuid(pulse.sourceUuid, resolveEntityUuid(pulse.sourceRef, commandBuffer))) {
-            ACTIVE_PULSES.remove(pulseKey);
-            return;
-        }
-        if (pulse.expiresAt <= now || pulse.sourceRef == null || !pulse.sourceRef.isValid()) {
-            ACTIVE_PULSES.remove(pulseKey);
+        String key = keyFor(sourceRef, commandBuffer);
+        AuraVisualState state = AURA_VISUAL_STATE.computeIfAbsent(key, unused -> new AuraVisualState());
+        if (state.lastVisualAt > 0L && now - state.lastVisualAt < AURA_VISUAL_INTERVAL_MILLIS) {
             return;
         }
 
         TransformComponent sourceTransform = EntityRefUtil.tryGetComponent(commandBuffer,
-                pulse.sourceRef,
+                sourceRef,
                 TransformComponent.getComponentType());
         if (sourceTransform == null || sourceTransform.getPosition() == null) {
             return;
         }
 
-        Vector3d centerPosition = sourceTransform.getPosition();
-        double centerY = centerPosition.getY() + TRIGGER_PULSE_Y_OFFSET;
-        if (!pulse.soundPlayed) {
-            playTriggerPulseSound(pulse.sourceRef, new Vector3d(centerPosition.getX(), centerY, centerPosition.getZ()));
-            pulse.soundPlayed = true;
-        }
-        if (pulse.lastVisualAt > 0L && now - pulse.lastVisualAt < TRIGGER_PULSE_STEP_MILLIS) {
-            return;
-        }
+        state.lastVisualAt = now;
+        Vector3d position = sourceTransform.getPosition();
+        Vector3d vfxPosition = new Vector3d(position.getX(), position.getY() + AURA_VFX_Y_OFFSET, position.getZ());
+        float scale = (float) Math.max(1.0D, radius);
 
-        double progress = Math.max(0.0D,
-                Math.min(1.0D, (double) (now - pulse.startedAt) / (double) TRIGGER_PULSE_DURATION_MILLIS));
-        double ringRadius = TRIGGER_PULSE_START_RADIUS + ((pulse.endRadius - TRIGGER_PULSE_START_RADIUS) * progress);
-        double baseAngleOffset = progress * Math.PI * 2.0D;
-        int pointCount = resolveTriggerPulsePointCount(pulse.endRadius);
-        int layerCount = resolveTriggerPulseLayerCount(pulse.endRadius);
-        double layerSpacing = resolveTriggerPulseLayerSpacing(pulse.endRadius, layerCount);
-
-        for (int layer = 0; layer < layerCount; layer++) {
-            double layerRadius = Math.max(TRIGGER_PULSE_START_RADIUS, ringRadius - (layer * layerSpacing));
-            double angleOffset = baseAngleOffset + ((Math.PI / pointCount) * layer);
-            for (int i = 0; i < pointCount; i++) {
-            double angle = angleOffset + ((Math.PI * 2.0D * i) / pointCount);
-                Vector3d particlePosition = new Vector3d(
-                        centerPosition.getX() + (Math.cos(angle) * layerRadius),
-                        centerY,
-                        centerPosition.getZ() + (Math.sin(angle) * layerRadius));
-                spawnTriggerPulseParticle(pulse.sourceRef, particlePosition);
-            }
-        }
-
-        pulse.lastVisualAt = now;
-        if (progress >= 1.0D) {
-            ACTIVE_PULSES.remove(pulseKey);
+        for (String vfxId : AURA_VFX_IDS) {
+            spawnScaledAuraParticle(vfxId, vfxPosition, scale, commandBuffer);
         }
     }
 
-    private double resolveTriggerPulseRadius(Ref<EntityStore> sourceRef, CommandBuffer<EntityStore> commandBuffer) {
-        EntityStatMap sourceStats = EntityRefUtil.tryGetComponent(commandBuffer,
-                sourceRef,
-                EntityStatMap.getComponentType());
-        EntityStatValue sourceHp = sourceStats == null ? null : sourceStats.get(DefaultEntityStatTypes.getHealth());
-        double auraRadius = sourceHp == null || sourceHp.getMax() <= 0f
-                ? baseRadius
-                : resolveRadius(Math.max(0.0D, sourceHp.getMax()));
-        return Math.max(TRIGGER_PULSE_START_RADIUS, auraRadius);
-    }
-
-    private int resolveTriggerPulsePointCount(double targetRadius) {
-        return Math.max(TRIGGER_PULSE_MIN_POINT_COUNT,
-                Math.min(TRIGGER_PULSE_MAX_POINT_COUNT, (int) Math.ceil(targetRadius * 6.0D)));
-    }
-
-    private int resolveTriggerPulseLayerCount(double targetRadius) {
-        return Math.max(TRIGGER_PULSE_MIN_LAYER_COUNT,
-                Math.min(TRIGGER_PULSE_MAX_LAYER_COUNT, (int) Math.ceil(targetRadius / 2.5D)));
-    }
-
-    private double resolveTriggerPulseLayerSpacing(double targetRadius, int layerCount) {
-        if (layerCount <= 1) {
-            return 0.0D;
-        }
-        return Math.max(TRIGGER_PULSE_MIN_LAYER_SPACING,
-                Math.min(TRIGGER_PULSE_MAX_LAYER_SPACING, targetRadius / (layerCount * 6.0D)));
-    }
-
-    private static void spawnTriggerPulseParticle(Ref<EntityStore> sourceRef, Vector3d position) {
-        for (String particleId : TRIGGER_PULSE_VFX_IDS) {
-            try {
-                ParticleUtil.spawnParticleEffect(particleId, position, sourceRef.getStore());
-                return;
-            } catch (RuntimeException ignored) {
-            }
+    @SuppressWarnings("unchecked")
+    private static void spawnScaledAuraParticle(String name, Vector3d position, float scale,
+            CommandBuffer<EntityStore> commandBuffer) {
+        try {
+            SpatialResource<Ref<EntityStore>, EntityStore> playerSpatialResource = commandBuffer.getResource(
+                    EntityModule.get().getPlayerSpatialResourceType());
+            ObjectList<Ref<EntityStore>> playerRefs =
+                    (ObjectList<Ref<EntityStore>>) (ObjectList<?>) SpatialResource.getThreadLocalReferenceList();
+            playerSpatialResource.getSpatialStructure().collect(position, 75.0, playerRefs);
+            ParticleUtil.spawnParticleEffect(name, position.getX(), position.getY(), position.getZ(),
+                    0.0F, 0.0F, 0.0F, scale, null, null, playerRefs, commandBuffer);
+        } catch (RuntimeException ignored) {
         }
     }
 
@@ -851,9 +769,9 @@ public final class FrozenDomainAugment extends Augment
     }
 
     public static int clearAllRuntimeState() {
-        int cleared = ACTIVE_FROST.size() + ACTIVE_PULSES.size();
+        int cleared = ACTIVE_FROST.size() + AURA_VISUAL_STATE.size();
         ACTIVE_FROST.clear();
-        ACTIVE_PULSES.clear();
+        AURA_VISUAL_STATE.clear();
         return cleared;
     }
 }

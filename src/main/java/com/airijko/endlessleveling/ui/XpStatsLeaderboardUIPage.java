@@ -25,10 +25,11 @@ import java.util.Locale;
 public class XpStatsLeaderboardUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
-    private static final int MAX_ENTRIES = 100;
+    private static final int PAGE_SIZE = 100;
 
     private final XpStatsLeaderboardService leaderboardService;
     private LeaderboardType activeType = LeaderboardType.XP_24H;
+    private int currentPage = 0;
 
     public XpStatsLeaderboardUIPage(@Nonnull com.hypixel.hytale.server.core.universe.PlayerRef playerRef,
             @Nonnull CustomPageLifetime lifetime,
@@ -53,12 +54,14 @@ public class XpStatsLeaderboardUIPage extends InteractiveCustomUIPage<SkillsUIPa
         events.addEventBinding(Activating, "#TabXp7d", of("Action", "xplb:tab:xp7d"), false);
         events.addEventBinding(Activating, "#TabTotalXp", of("Action", "xplb:tab:totalxp"), false);
         events.addEventBinding(Activating, "#TabMomentum", of("Action", "xplb:tab:momentum"), false);
+        events.addEventBinding(Activating, "#PrevPageButton", of("Action", "xplb:page:prev"), false);
+        events.addEventBinding(Activating, "#NextPageButton", of("Action", "xplb:page:next"), false);
 
         renderLeaderboard(ui);
     }
 
     private void renderLeaderboard(@Nonnull UICommandBuilder ui) {
-        List<LeaderboardEntry> entries = leaderboardService.getLeaderboard(activeType, MAX_ENTRIES);
+        List<LeaderboardEntry> entries = leaderboardService.getLeaderboard(activeType, Integer.MAX_VALUE);
 
         String tabLabel = switch (activeType) {
             case XP_24H -> "XP 24H";
@@ -67,13 +70,19 @@ public class XpStatsLeaderboardUIPage extends InteractiveCustomUIPage<SkillsUIPa
             case MOMENTUM -> "MOMENTUM";
         };
 
+        int totalPages = Math.max(1, (entries.size() + PAGE_SIZE - 1) / PAGE_SIZE);
+        currentPage = Math.min(currentPage, totalPages - 1);
+        int pageStart = currentPage * PAGE_SIZE;
+        int pageEnd = Math.min(pageStart + PAGE_SIZE, entries.size());
+
         ui.set("#ActiveTabLabel.Text", "Sorted by: " + tabLabel);
         ui.set("#HeaderValue.Text", tabLabel);
         ui.set("#PlayerCountLabel.Text", entries.size() + " entries");
 
         ui.clear("#RowCards");
-        for (int i = 0; i < entries.size(); i++) {
+        for (int i = pageStart; i < pageEnd; i++) {
             LeaderboardEntry entry = entries.get(i);
+            int rowIdx = i - pageStart;
 
             String rowUi;
             if (i == 0) rowUi = "Pages/XpStats/XpStatsRowFirst.ui";
@@ -82,7 +91,7 @@ public class XpStatsLeaderboardUIPage extends InteractiveCustomUIPage<SkillsUIPa
             else rowUi = "Pages/XpStats/XpStatsRow.ui";
 
             ui.append("#RowCards", rowUi);
-            String base = "#RowCards[" + i + "]";
+            String base = "#RowCards[" + rowIdx + "]";
             ui.set(base + " #Rank.Text", (i + 1) + ".");
             ui.set(base + " #Name.Text", entry.playerName());
             ui.set(base + " #Profile.Text", entry.profileName());
@@ -97,6 +106,9 @@ public class XpStatsLeaderboardUIPage extends InteractiveCustomUIPage<SkillsUIPa
             };
             ui.set(base + " #Value.Text", value);
         }
+
+        ui.set("#PaginationBar.Visible", totalPages > 1);
+        ui.set("#PageLabel.Text", String.format("Page %d/%d", currentPage + 1, totalPages));
     }
 
     @Override
@@ -111,10 +123,12 @@ public class XpStatsLeaderboardUIPage extends InteractiveCustomUIPage<SkillsUIPa
         String action = data.action.trim().toLowerCase(Locale.ROOT);
         boolean changed = false;
         switch (action) {
-            case "xplb:tab:xp24h" -> { activeType = LeaderboardType.XP_24H; changed = true; }
-            case "xplb:tab:xp7d" -> { activeType = LeaderboardType.XP_7D; changed = true; }
-            case "xplb:tab:totalxp" -> { activeType = LeaderboardType.TOTAL_XP; changed = true; }
-            case "xplb:tab:momentum" -> { activeType = LeaderboardType.MOMENTUM; changed = true; }
+            case "xplb:tab:xp24h" -> { activeType = LeaderboardType.XP_24H; currentPage = 0; changed = true; }
+            case "xplb:tab:xp7d" -> { activeType = LeaderboardType.XP_7D; currentPage = 0; changed = true; }
+            case "xplb:tab:totalxp" -> { activeType = LeaderboardType.TOTAL_XP; currentPage = 0; changed = true; }
+            case "xplb:tab:momentum" -> { activeType = LeaderboardType.MOMENTUM; currentPage = 0; changed = true; }
+            case "xplb:page:prev" -> { if (currentPage > 0) { currentPage--; changed = true; } }
+            case "xplb:page:next" -> { currentPage++; changed = true; }
         }
 
         if (changed) {

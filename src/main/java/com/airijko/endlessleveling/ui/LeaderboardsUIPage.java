@@ -34,12 +34,14 @@ public class LeaderboardsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Dat
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
     private static final String FILTER_ALL = "ALL";
+    private static final int PAGE_SIZE = 100;
 
     private SortField sortField = SortField.PRESTIGE;
     private boolean sortAscending = false;
     private String raceFilter = FILTER_ALL;
     private String classFilter = FILTER_ALL;
     private boolean podiumView = true;
+    private int currentPage = 0;
 
     public LeaderboardsUIPage(@Nonnull com.hypixel.hytale.server.core.universe.PlayerRef playerRef,
             @Nonnull CustomPageLifetime lifetime) {
@@ -71,6 +73,8 @@ public class LeaderboardsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Dat
         events.addEventBinding(Activating, "#ClassFilterButton", of("Action", "lb:filter:class"), false);
         events.addEventBinding(Activating, "#ResetFiltersButton", of("Action", "lb:reset"), false);
         events.addEventBinding(Activating, "#ViewToggleButton", of("Action", "lb:view:toggle"), false);
+        events.addEventBinding(Activating, "#PrevPageButton", of("Action", "lb:page:prev"), false);
+        events.addEventBinding(Activating, "#NextPageButton", of("Action", "lb:page:next"), false);
 
         EndlessLeveling plugin = EndlessLeveling.getInstance();
         if (plugin == null) {
@@ -183,12 +187,19 @@ public class LeaderboardsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Dat
                 ui.set(base + " #Exp.Text", formatXp(pd.getXp()));
             }
 
-            // Table: 4th place onward
-            for (int i = 3; i < visible.size(); i++) {
+            // Paginated table: 4th place onward (podium counts toward page total)
+            int totalPages = Math.max(1, (visible.size() + PAGE_SIZE - 1) / PAGE_SIZE);
+            currentPage = Math.min(currentPage, totalPages - 1);
+            int pageStart = currentPage == 0
+                    ? podiumCount
+                    : currentPage * PAGE_SIZE;
+            int pageEnd = Math.min((currentPage + 1) * PAGE_SIZE, visible.size());
+
+            for (int i = pageStart; i < pageEnd; i++) {
                 PlayerData pd = visible.get(i);
                 ui.append("#RowCards", "Pages/Leaderboards/LeaderboardsRow.ui");
 
-                int rowIdx = i - 3;
+                int rowIdx = i - pageStart;
                 String base = "#RowCards[" + rowIdx + "]";
                 ui.set(base + " #Rank.Text", (i + 1) + ".");
                 ui.set(base + " #Name.Text", pd.getPlayerName());
@@ -202,16 +213,25 @@ public class LeaderboardsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Dat
                     ui.set(base + " #RowBgAlt.Visible", true);
                 }
             }
+
+            ui.set("#PaginationBar.Visible", totalPages > 1);
+            ui.set("#PageLabel.Text", tr("ui.leaderboards.page.info", "Page {0}/{1}", currentPage + 1, totalPages));
         } else {
-            // Table-only view: all players in rows, no podium
+            // Table-only view: paginated
             ui.set("#PodiumSection.Visible", false);
             ui.set("#TableSection.Visible", !visible.isEmpty());
 
-            for (int i = 0; i < visible.size(); i++) {
+            int totalPages = Math.max(1, (visible.size() + PAGE_SIZE - 1) / PAGE_SIZE);
+            currentPage = Math.min(currentPage, totalPages - 1);
+            int pageStart = currentPage * PAGE_SIZE;
+            int pageEnd = Math.min(pageStart + PAGE_SIZE, visible.size());
+
+            for (int i = pageStart; i < pageEnd; i++) {
                 PlayerData pd = visible.get(i);
                 ui.append("#RowCards", "Pages/Leaderboards/LeaderboardsRow.ui");
 
-                String base = "#RowCards[" + i + "]";
+                int rowIdx = i - pageStart;
+                String base = "#RowCards[" + rowIdx + "]";
                 ui.set(base + " #Rank.Text", (i + 1) + ".");
                 ui.set(base + " #Name.Text", pd.getPlayerName());
                 ui.set(base + " #Race.Text", resolveRaceLabel(raceManager, pd));
@@ -220,10 +240,13 @@ public class LeaderboardsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Dat
                 ui.set(base + " #Level.Text", String.valueOf(pd.getLevel()));
                 ui.set(base + " #Exp.Text", formatXp(pd.getXp()));
 
-                if (i % 2 == 1) {
+                if (rowIdx % 2 == 1) {
                     ui.set(base + " #RowBgAlt.Visible", true);
                 }
             }
+
+            ui.set("#PaginationBar.Visible", totalPages > 1);
+            ui.set("#PageLabel.Text", tr("ui.leaderboards.page.info", "Page {0}/{1}", currentPage + 1, totalPages));
         }
     }
 
@@ -439,22 +462,37 @@ public class LeaderboardsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Dat
             switch (action) {
                 case "lb:sort:field" -> {
                     sortField = sortField.next();
+                    currentPage = 0;
                     changed = true;
                 }
                 case "lb:sort:order" -> {
                     sortAscending = !sortAscending;
+                    currentPage = 0;
                     changed = true;
                 }
                 case "lb:filter:race" -> {
                     raceFilter = cycleFilterValue(raceFilter, buildRaceFilterOptions(allPlayers, raceManager));
+                    currentPage = 0;
                     changed = true;
                 }
                 case "lb:filter:class" -> {
                     classFilter = cycleFilterValue(classFilter, buildClassFilterOptions(allPlayers, classManager));
+                    currentPage = 0;
                     changed = true;
                 }
                 case "lb:view:toggle" -> {
                     podiumView = !podiumView;
+                    currentPage = 0;
+                    changed = true;
+                }
+                case "lb:page:prev" -> {
+                    if (currentPage > 0) {
+                        currentPage--;
+                        changed = true;
+                    }
+                }
+                case "lb:page:next" -> {
+                    currentPage++;
                     changed = true;
                 }
                 case "lb:reset", "reset", "filters:reset", "lb:filters:reset" -> {
@@ -462,6 +500,7 @@ public class LeaderboardsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Dat
                     sortAscending = false;
                     raceFilter = FILTER_ALL;
                     classFilter = FILTER_ALL;
+                    currentPage = 0;
                     changed = true;
                 }
                 default -> {

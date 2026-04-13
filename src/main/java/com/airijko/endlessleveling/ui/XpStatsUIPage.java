@@ -35,7 +35,7 @@ public class XpStatsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
     private static final String[] DAY_NAMES = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
-    private static final int MAX_LEADERBOARD_ENTRIES = 100;
+    private static final int PAGE_SIZE = 100;
     private static final double MOMENTUM_THRESHOLD = 3.0;
     private static final double XP24H_THRESHOLD = 500_000;
 
@@ -45,6 +45,7 @@ public class XpStatsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     private enum Tab { MY_STATS, LEADERBOARD, ADMIN_LB, ADMIN_FLAGGED }
     private Tab activeTab = Tab.MY_STATS;
     private LeaderboardType lbType = LeaderboardType.XP_24H;
+    private int currentPage = 0;
 
     public XpStatsUIPage(@Nonnull com.hypixel.hytale.server.core.universe.PlayerRef playerRef,
             @Nonnull CustomPageLifetime lifetime,
@@ -75,12 +76,15 @@ public class XpStatsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         if (isAdmin) {
             events.addEventBinding(Activating, "#TabAdmin", of("Action", "xps:tab:admin"), false);
         }
+        events.addEventBinding(Activating, "#PrevPageButton", of("Action", "xps:page:prev"), false);
+        events.addEventBinding(Activating, "#NextPageButton", of("Action", "xps:page:next"), false);
 
         renderContent(ui);
     }
 
     private void renderContent(@Nonnull UICommandBuilder ui) {
         ui.clear("#ContentRows");
+        ui.set("#PaginationBar.Visible", false);
 
         switch (activeTab) {
             case MY_STATS -> renderMyStats(ui);
@@ -181,10 +185,27 @@ public class XpStatsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         XpStatsLeaderboardService lbService = plugin.getXpStatsLeaderboardService();
         if (lbService == null) return;
 
-        List<LeaderboardEntry> entries = lbService.getLeaderboard(lbType, MAX_LEADERBOARD_ENTRIES);
+        List<LeaderboardEntry> entries = lbService.getLeaderboard(lbType, Integer.MAX_VALUE);
 
-        for (int i = 0; i < entries.size(); i++) {
+        if (entries.isEmpty()) {
+            ui.append("#ContentRows", "Pages/XpStats/XpStatsRow.ui");
+            ui.set("#ContentRows[0] #Rank.Text", "--");
+            ui.set("#ContentRows[0] #Name.Text", "No XP stats data yet.");
+            ui.set("#ContentRows[0] #Profile.Text", "");
+            ui.set("#ContentRows[0] #Prestige.Text", "");
+            ui.set("#ContentRows[0] #Level.Text", "");
+            ui.set("#ContentRows[0] #Value.Text", "");
+            return;
+        }
+
+        int totalPages = Math.max(1, (entries.size() + PAGE_SIZE - 1) / PAGE_SIZE);
+        currentPage = Math.min(currentPage, totalPages - 1);
+        int pageStart = currentPage * PAGE_SIZE;
+        int pageEnd = Math.min(pageStart + PAGE_SIZE, entries.size());
+
+        for (int i = pageStart; i < pageEnd; i++) {
             LeaderboardEntry entry = entries.get(i);
+            int rowIdx = i - pageStart;
 
             String rowUi;
             if (i == 0) rowUi = "Pages/XpStats/XpStatsRowFirst.ui";
@@ -193,7 +214,7 @@ public class XpStatsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             else rowUi = "Pages/XpStats/XpStatsRow.ui";
 
             ui.append("#ContentRows", rowUi);
-            String base = "#ContentRows[" + i + "]";
+            String base = "#ContentRows[" + rowIdx + "]";
             ui.set(base + " #Rank.Text", (i + 1) + ".");
             ui.set(base + " #Name.Text", entry.playerName());
             ui.set(base + " #Profile.Text", entry.profileName());
@@ -209,15 +230,8 @@ public class XpStatsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             ui.set(base + " #Value.Text", value);
         }
 
-        if (entries.isEmpty()) {
-            ui.append("#ContentRows", "Pages/XpStats/XpStatsRow.ui");
-            ui.set("#ContentRows[0] #Rank.Text", "--");
-            ui.set("#ContentRows[0] #Name.Text", "No XP stats data yet.");
-            ui.set("#ContentRows[0] #Profile.Text", "");
-            ui.set("#ContentRows[0] #Prestige.Text", "");
-            ui.set("#ContentRows[0] #Level.Text", "");
-            ui.set("#ContentRows[0] #Value.Text", "");
-        }
+        ui.set("#PaginationBar.Visible", totalPages > 1);
+        ui.set("#PageLabel.Text", String.format("Page %d/%d", currentPage + 1, totalPages));
     }
 
     // ------------------------------------------------------------------
@@ -233,17 +247,29 @@ public class XpStatsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         XpStatsLeaderboardService lbService = plugin.getXpStatsLeaderboardService();
         if (lbService == null) return;
 
-        List<LeaderboardEntry> entries = lbService.getLeaderboard(LeaderboardType.XP_24H, MAX_LEADERBOARD_ENTRIES);
+        List<LeaderboardEntry> entries = lbService.getLeaderboard(LeaderboardType.XP_24H, Integer.MAX_VALUE);
 
-        for (int i = 0; i < entries.size(); i++) {
+        if (entries.isEmpty()) {
+            ui.append("#ContentRows", "Pages/XpStats/XpStatsRow.ui");
+            ui.set("#ContentRows[0] #Name.Text", "No data.");
+            return;
+        }
+
+        int totalPages = Math.max(1, (entries.size() + PAGE_SIZE - 1) / PAGE_SIZE);
+        currentPage = Math.min(currentPage, totalPages - 1);
+        int pageStart = currentPage * PAGE_SIZE;
+        int pageEnd = Math.min(pageStart + PAGE_SIZE, entries.size());
+
+        for (int i = pageStart; i < pageEnd; i++) {
             LeaderboardEntry entry = entries.get(i);
+            int rowIdx = i - pageStart;
 
             String rowUi = (i < 3)
                     ? "Pages/XpStats/XpStatsRow" + (i == 0 ? "First" : i == 1 ? "Second" : "Third") + ".ui"
                     : "Pages/XpStats/XpStatsRow.ui";
 
             ui.append("#ContentRows", rowUi);
-            String base = "#ContentRows[" + i + "]";
+            String base = "#ContentRows[" + rowIdx + "]";
             ui.set(base + " #Rank.Text", (i + 1) + ".");
             ui.set(base + " #Name.Text", entry.playerName());
             ui.set(base + " #Profile.Text", entry.profileName());
@@ -253,10 +279,8 @@ public class XpStatsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                     entry.xp24h(), entry.momentum()));
         }
 
-        if (entries.isEmpty()) {
-            ui.append("#ContentRows", "Pages/XpStats/XpStatsRow.ui");
-            ui.set("#ContentRows[0] #Name.Text", "No data.");
-        }
+        ui.set("#PaginationBar.Visible", totalPages > 1);
+        ui.set("#PageLabel.Text", String.format("Page %d/%d", currentPage + 1, totalPages));
     }
 
     private void renderAdminFlagged(@Nonnull UICommandBuilder ui) {
@@ -282,10 +306,16 @@ public class XpStatsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             return;
         }
 
-        for (int i = 0; i < flagged.size(); i++) {
+        int totalPages = Math.max(1, (flagged.size() + PAGE_SIZE - 1) / PAGE_SIZE);
+        currentPage = Math.min(currentPage, totalPages - 1);
+        int pageStart = currentPage * PAGE_SIZE;
+        int pageEnd = Math.min(pageStart + PAGE_SIZE, flagged.size());
+
+        for (int i = pageStart; i < pageEnd; i++) {
             LeaderboardEntry entry = flagged.get(i);
+            int rowIdx = i - pageStart;
             ui.append("#ContentRows", "Pages/XpStats/XpStatsRow.ui");
-            String base = "#ContentRows[" + i + "]";
+            String base = "#ContentRows[" + rowIdx + "]";
             ui.set(base + " #Rank.Text", (i + 1) + ".");
             ui.set(base + " #Name.Text", entry.playerName());
             ui.set(base + " #Profile.Text", entry.profileName());
@@ -294,6 +324,9 @@ public class XpStatsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             ui.set(base + " #Value.Text", String.format(Locale.ROOT, "m:%.1f xp:%,.0f",
                     entry.momentum(), entry.xp24h()));
         }
+
+        ui.set("#PaginationBar.Visible", totalPages > 1);
+        ui.set("#PageLabel.Text", String.format("Page %d/%d", currentPage + 1, totalPages));
     }
 
     // ------------------------------------------------------------------
@@ -314,11 +347,11 @@ public class XpStatsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         switch (action) {
             case "xps:tab:mystats" -> {
                 activeTab = Tab.MY_STATS;
+                currentPage = 0;
                 changed = true;
             }
             case "xps:tab:lb" -> {
                 if (activeTab == Tab.LEADERBOARD) {
-                    // Cycle leaderboard sort type
                     lbType = switch (lbType) {
                         case XP_24H -> LeaderboardType.XP_7D;
                         case XP_7D -> LeaderboardType.TOTAL_XP;
@@ -328,16 +361,27 @@ public class XpStatsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 } else {
                     activeTab = Tab.LEADERBOARD;
                 }
+                currentPage = 0;
                 changed = true;
             }
             case "xps:tab:admin" -> {
                 if (!isAdmin) break;
-                // Toggle between admin sub-tabs
                 if (activeTab == Tab.ADMIN_LB) {
                     activeTab = Tab.ADMIN_FLAGGED;
                 } else {
                     activeTab = Tab.ADMIN_LB;
                 }
+                currentPage = 0;
+                changed = true;
+            }
+            case "xps:page:prev" -> {
+                if (currentPage > 0) {
+                    currentPage--;
+                    changed = true;
+                }
+            }
+            case "xps:page:next" -> {
+                currentPage++;
                 changed = true;
             }
         }
