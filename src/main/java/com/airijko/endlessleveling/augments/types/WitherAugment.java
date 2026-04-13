@@ -456,26 +456,28 @@ public final class WitherAugment extends Augment implements AugmentHooks.OnHitAu
                 ref,
                 MovementManager.getComponentType());
         if (movementManager == null) {
-            if (!state.loggedMissingMovementManager) {
-                LOGGER.atWarning().log("Wither slow MovementManager missing; trying effect fallback key=%s target=%s",
+            boolean fallbackApplied = applySlowEffectFallback(state, commandBuffer, ref, key);
+            if (!fallbackApplied && !state.loggedMissingMovementManager) {
+                LOGGER.atWarning().log(
+                        "Wither slow unavailable: MovementManager missing and fallback failed key=%s target=%s",
                         key,
                         ref);
                 state.loggedMissingMovementManager = true;
             }
-            applySlowEffectFallback(state, commandBuffer, ref, key);
             return;
         }
         MovementSettings settings = movementManager.getSettings();
         MovementSettings defaultSettings = movementManager.getDefaultSettings();
         PlayerRef playerRef = AugmentUtils.getPlayerRef(commandBuffer, ref);
         if (settings == null && defaultSettings == null) {
-            if (!state.loggedMissingMovementSettings) {
-                LOGGER.atWarning().log("Wither slow movement settings missing; trying effect fallback key=%s target=%s",
+            boolean fallbackApplied = applySlowEffectFallback(state, commandBuffer, ref, key);
+            if (!fallbackApplied && !state.loggedMissingMovementSettings) {
+                LOGGER.atWarning().log(
+                        "Wither slow unavailable: movement settings missing and fallback failed key=%s target=%s",
                         key,
                         ref);
                 state.loggedMissingMovementSettings = true;
             }
-            applySlowEffectFallback(state, commandBuffer, ref, key);
             return;
         }
         if (state.movementSnapshot == null && settings != null) {
@@ -565,7 +567,7 @@ public final class WitherAugment extends Augment implements AugmentHooks.OnHitAu
         }
     }
 
-    private static void applySlowEffectFallback(ActiveWither state,
+        private static boolean applySlowEffectFallback(ActiveWither state,
             CommandBuffer<EntityStore> commandBuffer,
             Ref<EntityStore> ref,
             String key) {
@@ -579,7 +581,7 @@ public final class WitherAugment extends Augment implements AugmentHooks.OnHitAu
                         ref);
                 state.loggedMissingEffectController = true;
             }
-            return;
+            return false;
         }
 
         EntityEffect slowEffect;
@@ -594,7 +596,7 @@ public final class WitherAugment extends Augment implements AugmentHooks.OnHitAu
                         exception.getClass().getSimpleName());
                 state.loggedFallbackApplyException = true;
             }
-            return;
+            return false;
         }
         if (slowEffect == null) {
             if (!state.loggedMissingSlowEffectAsset) {
@@ -603,7 +605,7 @@ public final class WitherAugment extends Augment implements AugmentHooks.OnHitAu
                         ref);
                 state.loggedMissingSlowEffectAsset = true;
             }
-            return;
+            return false;
         }
 
         float remainingSeconds = Math.max(0.1F, (float) ((state.expiresAt - System.currentTimeMillis()) / 1000.0D));
@@ -621,7 +623,7 @@ public final class WitherAugment extends Augment implements AugmentHooks.OnHitAu
                         exception.getClass().getSimpleName());
                 state.loggedFallbackApplyException = true;
             }
-            return;
+            return false;
         }
         if (applied) {
             state.fallbackSlowEffectApplied = true;
@@ -631,6 +633,7 @@ public final class WitherAugment extends Augment implements AugmentHooks.OnHitAu
                     ref,
                     slowEffect.getId(),
                     remainingSeconds);
+            return true;
         } else if (!state.loggedEffectApplyFailure) {
             LOGGER.atWarning().log("Wither fallback slow failed to apply key=%s target=%s effect=%s",
                     key,
@@ -638,6 +641,7 @@ public final class WitherAugment extends Augment implements AugmentHooks.OnHitAu
                     slowEffect.getId());
             state.loggedEffectApplyFailure = true;
         }
+        return false;
     }
 
     private static void clearSlowEffectFallback(ActiveWither state,

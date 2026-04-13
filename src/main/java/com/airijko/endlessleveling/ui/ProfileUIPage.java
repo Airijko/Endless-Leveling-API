@@ -849,6 +849,11 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             ui.set(base + " #PassiveName.Text", entry.id());
             ui.set(base + " #PassiveName.Style.TextColor", ProfileSectionTheme.AUGMENT.nameColor());
             String tierLabel = entry.tier();
+            PassiveTier resolvedTier = parseTierLabel(tierLabel);
+            ui.set(base + " #ItemBgCommon.Visible", resolvedTier == null || resolvedTier == PassiveTier.COMMON);
+            ui.set(base + " #ItemBgElite.Visible", resolvedTier == PassiveTier.ELITE);
+            ui.set(base + " #ItemBgLegendary.Visible", resolvedTier == PassiveTier.LEGENDARY);
+            ui.set(base + " #ItemBgMythic.Visible", resolvedTier == PassiveTier.MYTHIC);
             String valueText = entry.value();
             if (valueText == null || valueText.isBlank()) {
                 valueText = tierLabel;

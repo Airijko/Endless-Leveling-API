@@ -11,13 +11,32 @@ Group {
         LayoutMode: Left;
         Padding: (Left: 8, Right: 12, Top: 6, Bottom: 6);
 
-        // Icon with border frame
+        // Icon with rarity border frame
         Group {
             Anchor: (Width: 34, Height: 34);
 
-            Group {
+            Group #ItemBgCommon {
                 Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 0);
                 Background: (TexturePath: "../../Tiles/TileBorderCommon.png");
+                Visible: true;
+            }
+
+            Group #ItemBgElite {
+                Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 0);
+                Background: (TexturePath: "../../Tiles/TileBorderElite.png");
+                Visible: false;
+            }
+
+            Group #ItemBgLegendary {
+                Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 0);
+                Background: (TexturePath: "../../Tiles/TileBorderLegendary.png");
+                Visible: false;
+            }
+
+            Group #ItemBgMythic {
+                Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 0);
+                Background: (TexturePath: "../../Tiles/TileBorderMythic.png");
+                Visible: false;
             }
 
             Group {

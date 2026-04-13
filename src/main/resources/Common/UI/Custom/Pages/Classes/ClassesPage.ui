@@ -227,77 +227,96 @@ $C.@PageOverlay {
 
                                         Group {
                                             Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 0);
-                                            LayoutMode: Top;
+                                            LayoutMode: Left;
                                             Padding: (Full: 12);
 
-                                            Label #ClassAssignmentsTitle {
-                                                Text: "Class Assignments";
-                                                Style: (FontSize: 10, TextColor: #f0c040, RenderBold: true, RenderUppercase: true, LetterSpacing: 1);
-                                                Anchor: (Height: 14);
+                                            // ---- Left column: Class Assignments ----
+                                            Group {
+                                                LayoutMode: Top;
+                                                FlexWeight: 1;
+
+                                                Label #ClassAssignmentsTitle {
+                                                    Text: "Class Assignments";
+                                                    Style: (FontSize: 10, TextColor: #f0c040, RenderBold: true, RenderUppercase: true, LetterSpacing: 1);
+                                                    Anchor: (Height: 14);
+                                                }
+
+                                                Group { Anchor: (Height: 4); }
+
+                                                Group {
+                                                    LayoutMode: Left;
+                                                    Anchor: (Height: 18);
+                                                    Label #ClassPrimaryStatusLabel {
+                                                        Text: "Primary";
+                                                        Style: (FontSize: 11, TextColor: #6fe3ff, RenderBold: true);
+                                                    }
+                                                    Group { Anchor: (Width: 6); }
+                                                    Label #CurrentPrimaryValue {
+                                                        Text: "--";
+                                                        Style: (FontSize: 12, TextColor: #ffffff, RenderBold: true);
+                                                        FlexWeight: 1;
+                                                    }
+                                                }
+
+                                                Group {
+                                                    LayoutMode: Left;
+                                                    Anchor: (Height: 18);
+                                                    Label #ClassSecondaryStatusLabel {
+                                                        Text: "Secondary";
+                                                        Style: (FontSize: 11, TextColor: #d4b5ff, RenderBold: true);
+                                                    }
+                                                    Group { Anchor: (Width: 6); }
+                                                    Label #CurrentSecondaryValue {
+                                                        Text: "None";
+                                                        Style: (FontSize: 12, TextColor: #ffffff, RenderBold: true);
+                                                        FlexWeight: 1;
+                                                    }
+                                                }
                                             }
 
-                                            Group { Anchor: (Height: 4); }
+                                            // ---- Vertical divider ----
+                                            Group { Anchor: (Width: 1, Top: 4, Bottom: 4); Background: #ffffff(0.06); }
+                                            Group { Anchor: (Width: 12); }
 
+                                            // ---- Right column: Swap Cooldown ----
                                             Group {
-                                                LayoutMode: Left;
-                                                Anchor: (Height: 18);
-                                                Label #ClassPrimaryStatusLabel {
-                                                    Text: "Primary";
-                                                    Style: (FontSize: 11, TextColor: #6fe3ff, RenderBold: true);
-                                                }
-                                                Group { Anchor: (Width: 6); }
-                                                Label #CurrentPrimaryValue {
-                                                    Text: "--";
-                                                    Style: (FontSize: 12, TextColor: #ffffff, RenderBold: true);
-                                                    FlexWeight: 1;
-                                                }
-                                            }
+                                                LayoutMode: Top;
+                                                FlexWeight: 1;
 
-                                            Group {
-                                                LayoutMode: Left;
-                                                Anchor: (Height: 18);
-                                                Label #ClassSecondaryStatusLabel {
-                                                    Text: "Secondary";
-                                                    Style: (FontSize: 11, TextColor: #d4b5ff, RenderBold: true);
-                                                }
-                                                Group { Anchor: (Width: 6); }
-                                                Label #CurrentSecondaryValue {
-                                                    Text: "None";
-                                                    Style: (FontSize: 12, TextColor: #ffffff, RenderBold: true);
-                                                    FlexWeight: 1;
-                                                }
-                                            }
-
-                                            Group { Anchor: (Height: 2); }
-                                            Group { Anchor: (Height: 1); Background: #ffffff(0.06); }
-                                            Group { Anchor: (Height: 2); }
-
-                                            Group {
-                                                LayoutMode: Left;
-                                                Anchor: (Height: 16);
                                                 Label #ClassSwapCooldownCardTitle {
-                                                    Text: "Cooldown";
-                                                    Style: (FontSize: 10, TextColor: #8aa1bf, LetterSpacing: 1);
+                                                    Text: "Swap Cooldown";
+                                                    Style: (FontSize: 10, TextColor: #f0c040, RenderBold: true, RenderUppercase: true, LetterSpacing: 1);
+                                                    Anchor: (Height: 14);
                                                 }
-                                                Group { FlexWeight: 1; }
-                                                Label #ClassPrimaryCooldownLabel {
-                                                    Text: "Pri:";
-                                                    Style: (FontSize: 10, TextColor: #6fe3ff);
+
+                                                Group { Anchor: (Height: 4); }
+
+                                                Group {
+                                                    LayoutMode: Left;
+                                                    Anchor: (Height: 18);
+                                                    Label #ClassPrimaryCooldownLabel {
+                                                        Text: "Pri:";
+                                                        Style: (FontSize: 11, TextColor: #6fe3ff, RenderBold: true);
+                                                    }
+                                                    Group { Anchor: (Width: 4); }
+                                                    Label #ClassPrimaryCooldownValue {
+                                                        Text: "--";
+                                                        Style: (FontSize: 12, TextColor: #ffffff, RenderBold: true);
+                                                    }
                                                 }
-                                                Group { Anchor: (Width: 2); }
-                                                Label #ClassPrimaryCooldownValue {
-                                                    Text: "--";
-                                                    Style: (FontSize: 10, TextColor: #ffffff, RenderBold: true);
-                                                }
-                                                Group { Anchor: (Width: 8); }
-                                                Label #ClassSecondaryCooldownLabel {
-                                                    Text: "Sec:";
-                                                    Style: (FontSize: 10, TextColor: #d4b5ff);
-                                                }
-                                                Group { Anchor: (Width: 2); }
-                                                Label #ClassSecondaryCooldownValue {
-                                                    Text: "--";
-                                                    Style: (FontSize: 10, TextColor: #ffffff, RenderBold: true);
+
+                                                Group {
+                                                    LayoutMode: Left;
+                                                    Anchor: (Height: 18);
+                                                    Label #ClassSecondaryCooldownLabel {
+                                                        Text: "Sec:";
+                                                        Style: (FontSize: 11, TextColor: #d4b5ff, RenderBold: true);
+                                                    }
+                                                    Group { Anchor: (Width: 4); }
+                                                    Label #ClassSecondaryCooldownValue {
+                                                        Text: "--";
+                                                        Style: (FontSize: 12, TextColor: #ffffff, RenderBold: true);
+                                                    }
                                                 }
                                             }
                                         }

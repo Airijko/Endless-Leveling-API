@@ -50,6 +50,9 @@ import java.util.stream.Stream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import com.airijko.endlessleveling.classes.CharacterClassDefinition;
+import com.airijko.endlessleveling.classes.ClassManager;
+import com.airijko.endlessleveling.player.SkillManager;
 import com.airijko.endlessleveling.managers.ConfigManager;
 import com.airijko.endlessleveling.managers.PluginFilesManager;
 import com.airijko.endlessleveling.managers.VersionRegistry;
@@ -545,9 +548,21 @@ public class RaceManager {
         }
 
         for (Map.Entry<SkillAttributeType, Integer> requirement : requirements.getMinSkillLevels().entrySet()) {
-            int current = data.getPlayerSkillAttributeLevel(requirement.getKey());
-            if (current < requirement.getValue()) {
-                blockers.add("Requires " + requirement.getKey().getConfigKey() + " >= " + requirement.getValue());
+            SkillAttributeType attr = requirement.getKey();
+            int requiredLevel = requirement.getValue();
+            int current = data.getPlayerSkillAttributeLevel(attr);
+            if (current < requiredLevel) {
+                // Crit-locked attributes (ferocity/precision) fall back to primary damage stat
+                if (isCritLockedAttribute(attr, data)) {
+                    SkillAttributeType fallback = resolvePrimaryDamageStat(data);
+                    if (fallback != null && fallback != attr) {
+                        int fallbackLevel = data.getPlayerSkillAttributeLevel(fallback);
+                        if (fallbackLevel >= requiredLevel) {
+                            continue;
+                        }
+                    }
+                }
+                blockers.add("Requires " + attr.getConfigKey() + " >= " + requiredLevel);
             }
         }
 
@@ -640,6 +655,38 @@ public class RaceManager {
 
     public boolean canAscend(PlayerData data, String targetRaceInput) {
         return evaluateAscensionEligibility(data, targetRaceInput).isEligible();
+    }
+
+    private boolean isCritLockedAttribute(SkillAttributeType attr, PlayerData data) {
+        if (attr != SkillAttributeType.PRECISION && attr != SkillAttributeType.FEROCITY) {
+            return false;
+        }
+        SkillManager skillManager = EndlessLeveling.getInstance().getSkillManager();
+        return skillManager != null && skillManager.isCritAttributeLocked(data, attr);
+    }
+
+    private SkillAttributeType resolvePrimaryDamageStat(PlayerData data) {
+        ClassManager classManager = EndlessLeveling.getInstance().getClassManager();
+        if (classManager == null) {
+            return null;
+        }
+        CharacterClassDefinition classDef = classManager.getPlayerPrimaryClass(data);
+        if (classDef == null) {
+            return SkillAttributeType.STRENGTH;
+        }
+        String damageType = classDef.getDamageType();
+        if (damageType == null) {
+            return SkillAttributeType.STRENGTH;
+        }
+        return switch (damageType.toLowerCase(Locale.ROOT)) {
+            case "magic" -> SkillAttributeType.SORCERY;
+            case "hybrid" -> {
+                int str = data.getPlayerSkillAttributeLevel(SkillAttributeType.STRENGTH);
+                int sorc = data.getPlayerSkillAttributeLevel(SkillAttributeType.SORCERY);
+                yield sorc > str ? SkillAttributeType.SORCERY : SkillAttributeType.STRENGTH;
+            }
+            default -> SkillAttributeType.STRENGTH;
+        };
     }
 
     /**

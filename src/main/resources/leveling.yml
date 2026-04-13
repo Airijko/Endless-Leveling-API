@@ -89,7 +89,7 @@ prestige:
       prestige_levels: [10]
       required_player_level: 30
     - tier: MYTHIC
-      prestige_levels: [15]
+      prestige_levels: [20]
       required_player_level: 50
 
   # Prestige reroll milestone grants by tier.
