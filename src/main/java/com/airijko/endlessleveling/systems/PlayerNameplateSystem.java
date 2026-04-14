@@ -204,8 +204,23 @@ public class PlayerNameplateSystem extends TickingSystem<EntityStore> {
                     nameplate.setText(label);
                 } else {
                     commandBuffer.run(s -> {
-                        if (ref.isValid()) {
-                            s.ensureAndGetComponent(ref, Nameplate.getComponentType()).setText(label);
+                        if (!ref.isValid()) return;
+                        // Re-check inside the deferred run — the component may have
+                        // been added between the outer check and this consume cycle.
+                        // Skip the add in that case to avoid engine's duplicate-add
+                        // crash.
+                        Nameplate existing = s.getComponent(ref, Nameplate.getComponentType());
+                        if (existing != null) {
+                            existing.setText(label);
+                            return;
+                        }
+                        try {
+                            Nameplate fresh = new Nameplate();
+                            fresh.setText(label);
+                            s.addComponent(ref, Nameplate.getComponentType(), fresh);
+                        } catch (IllegalArgumentException ignored) {
+                            Nameplate retry = s.getComponent(ref, Nameplate.getComponentType());
+                            if (retry != null) retry.setText(label);
                         }
                     });
                 }
