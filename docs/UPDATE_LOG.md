@@ -1,5 +1,65 @@
 # Endless Leveling - Update Log
 
+## 2026-04-14 — 7.8.3 (compared to 7.8.2)
+
+A **crash-fix hotfix release** on top of 7.8.2. One issue addressed: the engine's "already contains component type" crash when two systems try to add a `Nameplate` component to the same entity on the same tick. Affected entities in instance worlds (`el_gate_*`) where vanilla spawn + mob leveling nameplate apply concurrently.
+
+Merged from PR [#6](https://github.com/Airijko/Hytale-Skills/pull/6) by `HazemSb` / `zbevee` (branch `fix/nameplate-race`).
+
+### Highlights
+
+- **Nameplate duplicate-add crash fix** — `MobLevelingSystem` and `PlayerNameplateSystem` now re-check the `Nameplate` component inside the deferred `commandBuffer.run(...)` closure and fall back to `setText` on the existing component instead of blindly calling `addComponent`, which crashed when another system added the nameplate between the outer check and the consume cycle.
+- **Version bump** — `manifest.json` / `gradle.properties`: `7.8.2` → `7.8.3`.
+
+### Nameplate Duplicate-Add Crash (`Bug Fix`)
+
+#### Problem
+
+`MobLevelingSystem.refreshMobNameplate` (and the parallel path in `PlayerNameplateSystem`) scheduled a `commandBuffer.run` closure that called `s.ensureAndGetComponent(ref, Nameplate.getComponentType()).setText(label)`. Under `ensureAndGetComponent`, if the component is absent the engine calls `addComponent` internally. In instance worlds (`el_gate_*`), the vanilla spawn pipeline sometimes added a `Nameplate` between the outer `isValid()` check on the owning tick and the deferred `commandBuffer` consume cycle — so by the time the closure ran, the component was already present, and the internal `addComponent` threw `IllegalArgumentException: already contains component type: Nameplate`, crashing the tick.
+
+#### Fix
+
+Both systems now inline a guarded add:
+
+```java
+commandBuffer.run(s -> {
+    if (!ref.isValid()) return;
+    // Re-check inside the deferred run — another system may have added
+    // the Nameplate between the outer check and this consume cycle.
+    Nameplate existing = s.getComponent(ref, Nameplate.getComponentType());
+    if (existing != null) {
+        existing.setText(label);
+        return;
+    }
+    try {
+        Nameplate fresh = new Nameplate();
+        fresh.setText(label);
+        s.addComponent(ref, Nameplate.getComponentType(), fresh);
+    } catch (IllegalArgumentException ignored) {
+        Nameplate retry = s.getComponent(ref, Nameplate.getComponentType());
+        if (retry != null) retry.setText(label);
+    }
+});
+```
+
+Two-layer defense: explicit `getComponent` re-check first, then a `try/catch` on the add itself to cover the window between the re-check and the `addComponent` call.
+
+#### Files Changed
+
+- [`MobLevelingSystem`](src/main/java/com/airijko/endlessleveling/mob/MobLevelingSystem.java) — +17 / -2 around line 1610 (the mob nameplate refresh path).
+- [`PlayerNameplateSystem`](src/main/java/com/airijko/endlessleveling/systems/PlayerNameplateSystem.java) — +17 / -2 around line 204 (the player nameplate refresh path).
+
+### Version Bump
+
+- [`manifest.json`](src/main/resources/manifest.json) — `Version`: `7.8.2` → `7.8.3`.
+- `gradle.properties` — `version=7.8.3`.
+
+### Known Issues / Followups
+
+- 7.8.2 has no dedicated `UPDATE_LOG.md` section — the 7.8.2 commit re-used the "7.8.1" heading for its entry. The pagination-fix + FrozenDomain aura VFX + RecoveredForce / SupportsDream / UnyieldingFramework augments + HealingAura passive rework described under the 7.8.1 section below were actually shipped in 7.8.2. Next release should add a proper 7.8.2 backfill or merge that scope into the 7.8.1 header.
+
+---
+
 ## 2026-04-13 — 7.8.1 (compared to 7.8.0)
 
 A **polish and bug-fix release** on top of the 7.8.0 UI overhaul. Focus: **pagination controls** on all list/leaderboard pages, **leaderboard podium fixes** plus a new partner-branded leaderboard page, a **FrozenDomainAugment VFX rewrite** (pulse rings → aura circles), a **WitherAugment slow fallback fix**, a **race-ascension crit-lock workaround** in `RaceManager`, **tier-aware augment entry backgrounds** on the profile page, and a heavy **PNG asset recompression pass**.

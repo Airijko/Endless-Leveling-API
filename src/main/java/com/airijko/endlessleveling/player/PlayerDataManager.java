@@ -210,8 +210,6 @@ public class PlayerDataManager {
         ReentrantLock lock = lockFor(data.getUuid());
         lock.lock();
         try {
-            ensureValidRace(data);
-            ensureValidClasses(data);
             initializeSwapDefaultsForAllProfiles(data, false);
             File file = filesManager.getPlayerDataFile(data.getUuid());
 
@@ -1150,15 +1148,21 @@ public class PlayerDataManager {
         }
 
         data.getProfiles().values().forEach(profile -> {
-            String resolved = raceManager.resolveRaceIdentifier(profile.getRaceId());
-            // Nullify stale race IDs that no longer exist in the server's race registry.
-            if (resolved != null && raceManager.getRace(resolved) == null) {
-                resolved = null;
+            String original = profile.getRaceId();
+            String resolved = raceManager.resolveRaceIdentifier(original);
+            // Preserve IDs whose definition isn't currently registered (e.g., an addon-provided
+            // race that hasn't finished its own setup() yet). Nullifying would corrupt the save
+            // once the addon re-registers later.
+            if (resolved == null && original != null && !original.isBlank()) {
+                resolved = original;
             }
             profile.setRaceId(resolved);
         });
 
-        raceManager.setPlayerRaceSilently(data, data.getRaceId());
+        String activeRaceId = data.getRaceId();
+        if (activeRaceId != null && raceManager.getRace(activeRaceId) != null) {
+            raceManager.setPlayerRaceSilently(data, activeRaceId);
+        }
     }
 
     private void ensureValidClasses(PlayerData data) {
@@ -1176,16 +1180,19 @@ public class PlayerDataManager {
         }
 
         data.getProfiles().values().forEach(profile -> {
-            String resolvedPrimary = classManager.resolvePrimaryClassIdentifier(profile.getPrimaryClassId());
-            // Nullify stale class IDs that no longer exist in the server's class registry
-            // so the emergency-swap mechanism can grant a swap for re-selection.
-            if (resolvedPrimary != null && classManager.getClass(resolvedPrimary) == null) {
-                resolvedPrimary = null;
+            String originalPrimary = profile.getPrimaryClassId();
+            String resolvedPrimary = classManager.resolvePrimaryClassIdentifier(originalPrimary);
+            // Preserve IDs whose definition isn't currently registered (addon races/classes
+            // that register later). Nullifying here causes permanent loss after save.
+            if (resolvedPrimary == null && originalPrimary != null && !originalPrimary.isBlank()) {
+                resolvedPrimary = originalPrimary;
             }
             profile.setPrimaryClassId(resolvedPrimary);
-            String resolvedSecondary = classManager.resolveSecondaryClassIdentifier(profile.getSecondaryClassId());
-            if (resolvedSecondary != null && classManager.getClass(resolvedSecondary) == null) {
-                resolvedSecondary = null;
+
+            String originalSecondary = profile.getSecondaryClassId();
+            String resolvedSecondary = classManager.resolveSecondaryClassIdentifier(originalSecondary);
+            if (resolvedSecondary == null && originalSecondary != null && !originalSecondary.isBlank()) {
+                resolvedSecondary = originalSecondary;
             }
             if (resolvedSecondary != null && resolvedSecondary.equalsIgnoreCase(resolvedPrimary)) {
                 resolvedSecondary = null;
@@ -1193,8 +1200,14 @@ public class PlayerDataManager {
             profile.setSecondaryClassId(resolvedSecondary);
         });
 
-        classManager.setPlayerPrimaryClass(data, data.getPrimaryClassId());
-        classManager.setPlayerSecondaryClass(data, data.getSecondaryClassId());
+        String activePrimary = data.getPrimaryClassId();
+        if (activePrimary != null && classManager.getClass(activePrimary) != null) {
+            classManager.setPlayerPrimaryClass(data, activePrimary);
+        }
+        String activeSecondary = data.getSecondaryClassId();
+        if (activeSecondary != null && classManager.getClass(activeSecondary) != null) {
+            classManager.setPlayerSecondaryClass(data, activeSecondary);
+        }
     }
 
     private String resolveRaceDisplayName(String raceId) {
