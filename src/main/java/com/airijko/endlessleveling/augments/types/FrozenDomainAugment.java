@@ -14,7 +14,6 @@ import com.airijko.endlessleveling.util.EntityRefUtil;
 import com.hypixel.hytale.builtin.mounts.NPCMountComponent;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
-import com.hypixel.hytale.component.spatial.SpatialResource;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.protocol.MovementSettings;
@@ -25,19 +24,19 @@ import com.hypixel.hytale.server.core.entity.UUIDComponent;
 import com.hypixel.hytale.server.core.entity.effect.EffectControllerComponent;
 import com.hypixel.hytale.server.core.entity.entities.player.movement.MovementManager;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
-import com.hypixel.hytale.server.core.modules.entity.EntityModule;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue;
 import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
+import com.hypixel.hytale.server.core.modules.entity.EntityModule;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.ParticleUtil;
 import com.hypixel.hytale.server.core.universe.world.SoundUtil;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.util.TargetUtil;
-
-import it.unimi.dsi.fastutil.objects.ObjectList;
+import com.hypixel.hytale.component.spatial.SpatialResource;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -50,17 +49,18 @@ public final class FrozenDomainAugment extends Augment
     private static final long SLOW_DURATION_MILLIS = 2000L;
     private static final float MIN_MOVEMENT_MULTIPLIER = 0.0001F;
     private static final String[] SLOW_EFFECT_IDS = new String[] { "slowness", "slow" };
-    private static final String[] AURA_VFX_IDS = new String[] { "Totem_Slow_Circle1", "Totem_Slow_Circle2" };
+    private static final String ZONE_PARTICLE_ID = "EL_FrozenDomain_Zone";
+    private static final long ZONE_VISUAL_INTERVAL_MILLIS = 2500L;
+    private static final double VANILLA_PARTICLE_RADIUS = 4.0D;
     private static final String[] TRIGGER_PULSE_SFX_IDS = new String[] {
             "SFX_Arrow_Frost_Miss",
             "SFX_Arrow_Frost_Hit",
             "SFX_Ice_Ball_Death"
     };
-    private static final long AURA_VISUAL_INTERVAL_MILLIS = 500L;
     private static final double AURA_VFX_Y_OFFSET = 0.3D;
     private static final String PLAYER_HASTE_DEBUFF_SOURCE_PREFIX = ID + "_target_haste_debuff_";
     private static final Map<String, ActiveFrozen> ACTIVE_FROST = new ConcurrentHashMap<>();
-    private static final Map<String, AuraVisualState> AURA_VISUAL_STATE = new ConcurrentHashMap<>();
+    private static final Map<String, ZoneState> ZONE_STATES = new ConcurrentHashMap<>();
 
     private final double slowPercent;
     private final double stolenSlowRatio;
@@ -140,7 +140,8 @@ public final class FrozenDomainAugment extends Augment
         boolean loggedEffectApplyFailure;
     }
 
-    private static final class AuraVisualState {
+    private static final class ZoneState {
+        Vector3d position;
         long lastVisualAt;
     }
 
@@ -194,6 +195,40 @@ public final class FrozenDomainAugment extends Augment
             runtimeState.setCooldown(ID, getName(), combinedCooldownEnd);
         }
 
+        // Capture zone position at activation — zone stays in place, does not follow player
+        Ref<EntityStore> defenderRef = context.getDefenderRef();
+        CommandBuffer<EntityStore> commandBuffer = context.getCommandBuffer();
+        if (defenderRef != null && commandBuffer != null) {
+            TransformComponent transform = EntityRefUtil.tryGetComponent(commandBuffer,
+                    defenderRef, TransformComponent.getComponentType());
+            if (transform != null && transform.getPosition() != null) {
+                Vector3d pos = transform.getPosition();
+                String key = keyFor(defenderRef, commandBuffer);
+                ZoneState zone = ZONE_STATES.computeIfAbsent(key, unused -> new ZoneState());
+                zone.position = new Vector3d(pos.getX(), pos.getY(), pos.getZ());
+                zone.lastVisualAt = 0L;
+
+
+                // Resolve radius for visual
+                double activationRadius = baseRadius;
+                EntityStatMap defenderStats = EntityRefUtil.tryGetComponent(commandBuffer,
+                        defenderRef, EntityStatMap.getComponentType());
+                if (defenderStats != null) {
+                    EntityStatValue hp = defenderStats.get(DefaultEntityStatTypes.getHealth());
+                    if (hp != null) {
+                        activationRadius = resolveRadius(Math.max(0.0D, hp.getMax()));
+                    }
+                }
+
+                // Spawn initial zone particle at fixed position
+                spawnZoneParticle(zone.position, activationRadius, commandBuffer);
+                playTriggerPulseSound(defenderRef, new Vector3d(
+                        zone.position.getX(),
+                        zone.position.getY() + AURA_VFX_Y_OFFSET,
+                        zone.position.getZ()));
+            }
+        }
+
         PlayerRef playerRef = AugmentUtils.getPlayerRef(context.getCommandBuffer(), context.getDefenderRef());
         if (playerRef != null && playerRef.isValid()) {
             AugmentUtils.sendAugmentMessage(playerRef,
@@ -218,11 +253,13 @@ public final class FrozenDomainAugment extends Augment
         long now = System.currentTimeMillis();
         var augmentState = context.getRuntimeState().getState(ID);
         boolean active = augmentState.getExpiresAt() > now;
+        String playerKey = keyFor(context.getPlayerRef(), context.getCommandBuffer());
+
         if (!active) {
-            boolean hadAuraVisual = clearAuraVisual(context.getPlayerRef(), context.getCommandBuffer());
+            boolean hadZoneState = ZONE_STATES.remove(playerKey) != null;
             boolean hadActiveState = augmentState.getStacks() > 0;
             boolean hasLingeringFrozenTargets = !ACTIVE_FROST.isEmpty();
-            if (!hadAuraVisual && !hadActiveState && !hasLingeringFrozenTargets) {
+            if (!hadZoneState && !hadActiveState && !hasLingeringFrozenTargets) {
                 return;
             }
 
@@ -257,7 +294,30 @@ public final class FrozenDomainAugment extends Augment
         double maxHealth = Math.max(0.0D, sourceHp.getMax());
         double radius = resolveRadius(maxHealth);
 
-        updateAuraVisual(context.getPlayerRef(), context.getCommandBuffer(), now, radius);
+        // Resolve zone position — use stored position (stationary zone)
+        ZoneState zone = ZONE_STATES.get(playerKey);
+        if (zone == null || zone.position == null) {
+            // Fallback: if zone state was lost, re-capture from current position
+            TransformComponent sourceTransform = EntityRefUtil.tryGetComponent(context.getCommandBuffer(),
+                    context.getPlayerRef(), TransformComponent.getComponentType());
+            if (sourceTransform == null || sourceTransform.getPosition() == null) {
+                cleanupExpired(context.getCommandBuffer(), now);
+                return;
+            }
+            Vector3d pos = sourceTransform.getPosition();
+            zone = new ZoneState();
+            zone.position = new Vector3d(pos.getX(), pos.getY(), pos.getZ());
+            zone.lastVisualAt = 0L;
+            ZONE_STATES.put(playerKey, zone);
+        }
+
+        Vector3d zonePos = zone.position;
+
+        // Zone ground particle (spawned at fixed position, re-spawned periodically)
+        if (zone.lastVisualAt <= 0L || now - zone.lastVisualAt >= ZONE_VISUAL_INTERVAL_MILLIS) {
+            zone.lastVisualAt = now;
+            spawnZoneParticle(zonePos, radius, context.getCommandBuffer());
+        }
 
         long effectiveTickIntervalMillis = Math.max(1L, Math.min(1000L, slowTickIntervalMillis));
         if (augmentState.getLastProc() > 0L && now - augmentState.getLastProc() < effectiveTickIntervalMillis) {
@@ -271,20 +331,7 @@ public final class FrozenDomainAugment extends Augment
         }
 
         CommandBuffer<EntityStore> commandBuffer = context.getCommandBuffer();
-        Ref<EntityStore> sourceRef = context.getPlayerRef();
-        TransformComponent sourceTransform = EntityRefUtil.tryGetComponent(commandBuffer,
-                sourceRef,
-                TransformComponent.getComponentType());
-        if (sourceTransform == null || sourceTransform.getPosition() == null) {
-            cleanupExpired(commandBuffer, now);
-            return;
-        }
-
         augmentState.setLastProc(now);
-        playTriggerPulseSound(sourceRef, new Vector3d(
-                sourceTransform.getPosition().getX(),
-                sourceTransform.getPosition().getY() + AURA_VFX_Y_OFFSET,
-                sourceTransform.getPosition().getZ()));
 
         UUID sourceUuid = context.getPlayerData() != null ? context.getPlayerData().getUuid() : null;
         PartyManager partyManager = resolvePartyManager();
@@ -292,8 +339,9 @@ public final class FrozenDomainAugment extends Augment
 
         int affectedTargets = 0;
         HashSet<Integer> visitedEntityIds = new HashSet<>();
+        // Use zone position for sphere check — zone is stationary
         for (Ref<EntityStore> targetRef : TargetUtil.getAllEntitiesInSphere(
-                sourceTransform.getPosition(),
+                zonePos,
                 radius,
                 commandBuffer)) {
             if (targetRef == null || !targetRef.isValid()) {
@@ -302,10 +350,10 @@ public final class FrozenDomainAugment extends Augment
             if (!visitedEntityIds.add(targetRef.getIndex())) {
                 continue;
             }
-            if (targetRef.equals(sourceRef)) {
+            if (targetRef.equals(context.getPlayerRef())) {
                 continue;
             }
-            if (isPetEntity(targetRef, commandBuffer)) {
+            if (isFriendlyPetOrSummon(sourceUuid, sourcePartyLeader, targetRef, commandBuffer, partyManager)) {
                 continue;
             }
             if (isSamePartyTarget(sourceUuid, sourcePartyLeader, targetRef, commandBuffer, partyManager)) {
@@ -341,6 +389,40 @@ public final class FrozenDomainAugment extends Augment
         AugmentUtils.setAttributeBonus(context.getRuntimeState(), ID + "_stolen_haste", SkillAttributeType.HASTE,
                 stolenHastePercent, 0L);
     }
+
+    // ── Zone particle spawning ─────────────────────────────────────────────
+
+    private static void spawnZoneParticle(Vector3d zonePos, double radius,
+            CommandBuffer<EntityStore> commandBuffer) {
+        if (zonePos == null || commandBuffer == null || radius <= 0.0D) {
+            return;
+        }
+        try {
+            // Scale particle system to match computed radius
+            float scale = (float) (radius / VANILLA_PARTICLE_RADIUS);
+
+            // Collect nearby players for particle broadcast
+            @SuppressWarnings("unchecked")
+            SpatialResource<Ref<EntityStore>, EntityStore> playerSpatial =
+                    (SpatialResource<Ref<EntityStore>, EntityStore>)
+                    commandBuffer.getResource(EntityModule.get().getPlayerSpatialResourceType());
+            List<Ref<EntityStore>> playerRefs = SpatialResource.getThreadLocalReferenceList();
+            playerSpatial.getSpatialStructure().collect(zonePos, 75.0D, playerRefs);
+
+            ParticleUtil.spawnParticleEffect(
+                    ZONE_PARTICLE_ID,
+                    zonePos.getX(), zonePos.getY(), zonePos.getZ(),
+                    0f, 0f, 0f,
+                    scale,
+                    null,
+                    null,
+                    playerRefs,
+                    commandBuffer);
+        } catch (Exception ignored) {
+        }
+    }
+
+    // ── Cleanup ──────────────────────────────────────────────────────────────
 
     private void cleanupExpired(CommandBuffer<EntityStore> commandBuffer, long now) {
         if (commandBuffer == null) {
@@ -381,6 +463,8 @@ public final class FrozenDomainAugment extends Augment
         }
         return String.valueOf(ref.getIndex());
     }
+
+    // ── Slow application ─────────────────────────────────────────────────────
 
     private static void applySlowIfPossible(ActiveFrozen state,
             CommandBuffer<EntityStore> commandBuffer,
@@ -486,6 +570,8 @@ public final class FrozenDomainAugment extends Augment
         }
     }
 
+    // ── Haste debuff on frozen targets ───────────────────────────────────────
+
     private static void applyPlayerHasteDebuff(ActiveFrozen state, PlayerRef playerRef, String key) {
         if (state == null || playerRef == null || !playerRef.isValid() || playerRef.getUuid() == null || key == null) {
             return;
@@ -518,6 +604,8 @@ public final class FrozenDomainAugment extends Augment
                 0.0D,
                 0L);
     }
+
+    // ── Slow effect fallback (entity effect system) ──────────────────────────
 
     private static boolean applySlowEffectFallback(ActiveFrozen state,
             CommandBuffer<EntityStore> commandBuffer,
@@ -607,58 +695,7 @@ public final class FrozenDomainAugment extends Augment
         return null;
     }
 
-    private boolean clearAuraVisual(Ref<EntityStore> sourceRef, CommandBuffer<EntityStore> commandBuffer) {
-        if (sourceRef == null || commandBuffer == null) {
-            return false;
-        }
-        return AURA_VISUAL_STATE.remove(keyFor(sourceRef, commandBuffer)) != null;
-    }
-
-    private void updateAuraVisual(Ref<EntityStore> sourceRef,
-            CommandBuffer<EntityStore> commandBuffer,
-            long now,
-            double radius) {
-        if (sourceRef == null || commandBuffer == null || radius <= 0.0D) {
-            return;
-        }
-
-        String key = keyFor(sourceRef, commandBuffer);
-        AuraVisualState state = AURA_VISUAL_STATE.computeIfAbsent(key, unused -> new AuraVisualState());
-        if (state.lastVisualAt > 0L && now - state.lastVisualAt < AURA_VISUAL_INTERVAL_MILLIS) {
-            return;
-        }
-
-        TransformComponent sourceTransform = EntityRefUtil.tryGetComponent(commandBuffer,
-                sourceRef,
-                TransformComponent.getComponentType());
-        if (sourceTransform == null || sourceTransform.getPosition() == null) {
-            return;
-        }
-
-        state.lastVisualAt = now;
-        Vector3d position = sourceTransform.getPosition();
-        Vector3d vfxPosition = new Vector3d(position.getX(), position.getY() + AURA_VFX_Y_OFFSET, position.getZ());
-        float scale = (float) Math.max(1.0D, radius);
-
-        for (String vfxId : AURA_VFX_IDS) {
-            spawnScaledAuraParticle(vfxId, vfxPosition, scale, commandBuffer);
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private static void spawnScaledAuraParticle(String name, Vector3d position, float scale,
-            CommandBuffer<EntityStore> commandBuffer) {
-        try {
-            SpatialResource<Ref<EntityStore>, EntityStore> playerSpatialResource = commandBuffer.getResource(
-                    EntityModule.get().getPlayerSpatialResourceType());
-            ObjectList<Ref<EntityStore>> playerRefs =
-                    (ObjectList<Ref<EntityStore>>) (ObjectList<?>) SpatialResource.getThreadLocalReferenceList();
-            playerSpatialResource.getSpatialStructure().collect(position, 75.0, playerRefs);
-            ParticleUtil.spawnParticleEffect(name, position.getX(), position.getY(), position.getZ(),
-                    0.0F, 0.0F, 0.0F, scale, null, null, playerRefs, commandBuffer);
-        } catch (RuntimeException ignored) {
-        }
-    }
+    // ── Sound ────────────────────────────────────────────────────────────────
 
     private static void playTriggerPulseSound(Ref<EntityStore> sourceRef, Vector3d position) {
         for (String soundId : TRIGGER_PULSE_SFX_IDS) {
@@ -676,8 +713,36 @@ public final class FrozenDomainAugment extends Augment
         return index == Integer.MIN_VALUE ? 0 : index;
     }
 
-    private boolean isPetEntity(Ref<EntityStore> targetRef, CommandBuffer<EntityStore> commandBuffer) {
-        return EntityRefUtil.tryGetComponent(commandBuffer, targetRef, NPCMountComponent.getComponentType()) != null;
+    // ── Target filtering ─────────────────────────────────────────────────────
+
+    /**
+     * Skip ONLY pets/summons owned by source player or party member.
+     * Enemy pets/summons (owned by non-party players) still get slowed.
+     * Ownerless mounts/summons (no valid owner ref) are treated as friendly to avoid edge-case grief.
+     */
+    private boolean isFriendlyPetOrSummon(UUID sourceUuid,
+            UUID sourcePartyLeader,
+            Ref<EntityStore> targetRef,
+            CommandBuffer<EntityStore> commandBuffer,
+            PartyManager partyManager) {
+        NPCMountComponent mountComponent = EntityRefUtil.tryGetComponent(commandBuffer,
+                targetRef,
+                NPCMountComponent.getComponentType());
+        if (mountComponent == null) {
+            return false;
+        }
+
+        PlayerRef ownerPlayer = mountComponent.getOwnerPlayerRef();
+        if (ownerPlayer == null || !ownerPlayer.isValid() || ownerPlayer.getUuid() == null) {
+            return true;
+        }
+
+        UUID ownerUuid = ownerPlayer.getUuid();
+        if (sourceUuid != null && sourceUuid.equals(ownerUuid)) {
+            return true;
+        }
+
+        return isSamePartyUuid(sourceUuid, sourcePartyLeader, ownerUuid, partyManager);
     }
 
     private boolean isSamePartyTarget(UUID sourceUuid,
@@ -698,6 +763,17 @@ public final class FrozenDomainAugment extends Augment
 
         UUID targetUuid = targetPlayer.getUuid();
         if (targetUuid == null) {
+            return false;
+        }
+
+        return isSamePartyUuid(sourceUuid, sourcePartyLeader, targetUuid, partyManager);
+    }
+
+    private boolean isSamePartyUuid(UUID sourceUuid,
+            UUID sourcePartyLeader,
+            UUID targetUuid,
+            PartyManager partyManager) {
+        if (sourceUuid == null || targetUuid == null || partyManager == null || !partyManager.isAvailable()) {
             return false;
         }
 
@@ -726,6 +802,8 @@ public final class FrozenDomainAugment extends Augment
         EndlessLeveling plugin = EndlessLeveling.getInstance();
         return plugin != null ? plugin.getPartyManager() : null;
     }
+
+    // ── Radius resolution ────────────────────────────────────────────────────
 
     private double resolveRadius(double attackerMaxHealth) {
         if (healthPerRadiusBlock <= 0.0D) {
@@ -769,9 +847,9 @@ public final class FrozenDomainAugment extends Augment
     }
 
     public static int clearAllRuntimeState() {
-        int cleared = ACTIVE_FROST.size() + AURA_VISUAL_STATE.size();
+        int cleared = ACTIVE_FROST.size() + ZONE_STATES.size();
         ACTIVE_FROST.clear();
-        AURA_VISUAL_STATE.clear();
+        ZONE_STATES.clear();
         return cleared;
     }
 }

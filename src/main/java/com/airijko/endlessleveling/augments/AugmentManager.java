@@ -92,7 +92,10 @@ public class AugmentManager {
             Map.entry(UndyingRageAugment.ID, UndyingRageAugment::new),
             Map.entry(VampiricStrikeAugment.ID, VampiricStrikeAugment::new),
             Map.entry(VampirismAugment.ID, VampirismAugment::new),
-            Map.entry(WitherAugment.ID, WitherAugment::new));
+            Map.entry(WitherAugment.ID, WitherAugment::new),
+            Map.entry(SupportsDreamAugment.ID, SupportsDreamAugment::new),
+            Map.entry(UnyieldingFrameworkAugment.ID, UnyieldingFrameworkAugment::new),
+            Map.entry(RecoveredForceAugment.ID, RecoveredForceAugment::new));
 
     private static final Map<String, Function<AugmentDefinition, Augment>> EXTERNAL_FACTORIES = new ConcurrentHashMap<>();
 
@@ -292,7 +295,8 @@ public class AugmentManager {
                     ? (Map<String, Object>) m
                     : Collections.emptyMap();
             List<AugmentDefinition.UiSection> uiSections = parseUiSections(root);
-            return new AugmentDefinition(id, name, tier, category, stackable, description, passives, uiSections, mobCompatible);
+            String icon = stringVal(root.get("icon"), null);
+            return new AugmentDefinition(id, name, tier, category, stackable, description, passives, uiSections, mobCompatible, icon);
         }
     }
 

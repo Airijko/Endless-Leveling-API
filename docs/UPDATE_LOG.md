@@ -1,5 +1,176 @@
 # Endless Leveling - Update Log
 
+## 2026-04-13 — 7.8.1 (compared to 7.8.0)
+
+A **polish and bug-fix release** on top of the 7.8.0 UI overhaul. Focus: **pagination controls** on all list/leaderboard pages, **leaderboard podium fixes** plus a new partner-branded leaderboard page, a **FrozenDomainAugment VFX rewrite** (pulse rings → aura circles), a **WitherAugment slow fallback fix**, a **race-ascension crit-lock workaround** in `RaceManager`, **tier-aware augment entry backgrounds** on the profile page, and a heavy **PNG asset recompression pass**.
+
+### Highlights
+
+- **Pagination bar** added to `LeaderboardsPage.ui`, `LeaderboardsPagePartner.ui`, `XpStatsPage.ui`, `XpStatsAdminPage.ui`, `XpStatsLeaderboardPage.ui` — PREV / NEXT buttons + `#PageLabel` showing `"Page N/M"`. Java controllers (`LeaderboardsUIPage`, `XpStatsUIPage`, `XpStatsAdminUIPage`, `XpStatsLeaderboardUIPage`) wired to drive the new controls.
+- **Leaderboards podium fixes** — `LeaderboardsUIPage` rewritten (+203 / -64 across two commits), podium first/second/third templates restyled, `LeaderboardsRow.ui` tweaked, new `LeaderboardsPagePartner.ui` (332 lines) for partner branding.
+- **FrozenDomainAugment reworked** — replaced the expanding pulse-ring VFX system (`TRIGGER_PULSE_*` constants, `ActivePulse` state machine) with a simpler standing-aura VFX (`AURA_VFX_IDS = { "Totem_Slow_Circle1", "Totem_Slow_Circle2" }`, `AuraVisualState`, 500 ms refresh interval). Net −135 / +53 lines.
+- **WitherAugment slow fallback** — `applySlowEffectFallback` now returns `boolean`; "MovementManager missing" / "movement settings missing" warnings only fire when the effect fallback also fails, eliminating false-positive log spam when the fallback succeeds.
+- **RaceManager crit-lock ascension fallback** — ascension `Requires PRECISION >= N` / `Requires FEROCITY >= N` checks now fall back to the class's primary damage stat (`STRENGTH` for physical, `SORCERY` for magic, higher-of-two for hybrid) when the requested crit attribute is locked by `SkillManager.isCritAttributeLocked`. Prevents players from being permanently blocked from ascension by a crit-lock on their class's off-stat.
+- **ProfileUIPage augment entry tier backgrounds** — each augment row now toggles `#ItemBgCommon` / `#ItemBgElite` / `#ItemBgLegendary` / `#ItemBgMythic` visibility based on the parsed `PassiveTier`. `ProfileAugmentEntry.ui` restructured to host the 4 tier backgrounds.
+- **Prestige tuning** — `leveling.yml`: MYTHIC tier `prestige_levels: [15]` → `[20]`.
+- **Asset recompression** — ~35 PNGs shrunk (banners, HUD XP/shield/duration bars, tile/border sprites for all 5 rarities, nav icons, dungeon placeholder cards). Typical 30–60% size drop per file. Visual output unchanged.
+- **ClassesPage.ui** — 133-line layout pass.
+- **ProfilePagePartner.ui** — 869-line restructure to match the new profile layout from 7.8.0 on the partner-branded path.
+
+### Pagination (`Bug Fix + Feature`)
+
+#### UI Template
+
+New `#PaginationBar` group appended inside each list/table section:
+
+```xml
+Group #PaginationBar {
+    LayoutMode: Left;
+    Anchor: (Height: 36);
+    Padding: (Horizontal: 8, Top: 6);
+
+    $C.@TextButton #PrevPageButton { Text: "< PREV"; Anchor: (Width: 90, Height: 28); Style: @TabStyle; }
+    Group { FlexWeight: 1; }
+    Label #PageLabel { Style: (TextColor: #9ab6d4, FontSize: 13, HorizontalAlignment: Center, VerticalAlignment: Center); Text: "Page 1/1"; }
+    Group { FlexWeight: 1; }
+    $C.@TextButton #NextPageButton { Text: "NEXT >"; Anchor: (Width: 90, Height: 28); Style: @TabStyle; }
+}
+```
+
+Added to:
+- [`LeaderboardsPage.ui`](src/main/resources/Common/UI/Custom/Pages/Leaderboards/LeaderboardsPage.ui)
+- [`LeaderboardsPagePartner.ui`](src/main/resources/Common/UI/Custom/Pages/Leaderboards/LeaderboardsPagePartner.ui)
+- [`XpStatsPage.ui`](src/main/resources/Common/UI/Custom/Pages/XpStats/XpStatsPage.ui)
+- [`XpStatsAdminPage.ui`](src/main/resources/Common/UI/Custom/Pages/XpStats/XpStatsAdminPage.ui)
+- [`XpStatsLeaderboardPage.ui`](src/main/resources/Common/UI/Custom/Pages/XpStats/XpStatsLeaderboardPage.ui)
+
+#### Java Changes
+
+- [`LeaderboardsUIPage`](src/main/java/com/airijko/endlessleveling/ui/LeaderboardsUIPage.java) — +53 lines of pagination state + `prev` / `next` actions driving a page index against the filtered row list; page label formatted as `Page <idx+1>/<pageCount>`.
+- [`XpStatsUIPage`](src/main/java/com/airijko/endlessleveling/ui/XpStatsUIPage.java) — +92 / -35 for pagination on personal history rows.
+- [`XpStatsAdminUIPage`](src/main/java/com/airijko/endlessleveling/ui/XpStatsAdminUIPage.java) — +45 / -11 for pagination on admin table.
+- [`XpStatsLeaderboardUIPage`](src/main/java/com/airijko/endlessleveling/ui/XpStatsLeaderboardUIPage.java) — +30 / -5 for pagination on XP leaderboard.
+
+### Leaderboards Podium Fixes (`Bug Fix + UI Polish`)
+
+Two sequential commits (`LEADERBOARD FIXES`, `UI UPDATE FIX`) restyled the podium layout introduced in 7.8.0 and added a partner-branded variant.
+
+- [`LeaderboardsUIPage`](src/main/java/com/airijko/endlessleveling/ui/LeaderboardsUIPage.java) — 200+ line churn (+157 / -46 then +41 / -18) for podium population, table filter restructure, and the new partner-page code path.
+- [`LeaderboardsPage.ui`](src/main/resources/Common/UI/Custom/Pages/Leaderboards/LeaderboardsPage.ui) — layout adjustments around the podium + table boundary.
+- `LeaderboardsPodiumFirst.ui` / `LeaderboardsPodiumSecond.ui` / `LeaderboardsPodiumThird.ui` — polish: tile anchor, icon frame, stat row spacing, text colours.
+- [`LeaderboardsRow.ui`](src/main/resources/Common/UI/Custom/Pages/Leaderboards/LeaderboardsRow.ui) — minor styling pass.
+- **New [`LeaderboardsPagePartner.ui`](src/main/resources/Common/UI/Custom/Pages/Leaderboards/LeaderboardsPagePartner.ui)** — 332 lines, partner-branded mirror of `LeaderboardsPage.ui` (same podium + table + pagination structure, partner assets / colour theme).
+
+### FrozenDomainAugment — Aura VFX Rewrite (`Refactor + Performance`)
+
+The old expanding-ring pulse VFX driven by `ActivePulse` / `ACTIVE_PULSES` is removed. Replaced with a simpler stationary aura.
+
+**Removed:**
+
+- Constants: `TRIGGER_PULSE_VFX_IDS` (`Impact_Blade_01`), `TRIGGER_PULSE_DURATION_MILLIS` (250), `TRIGGER_PULSE_STEP_MILLIS` (50), `TRIGGER_PULSE_MIN_POINT_COUNT` (10), `TRIGGER_PULSE_MAX_POINT_COUNT` (36), `TRIGGER_PULSE_MIN_LAYER_COUNT` (2), `TRIGGER_PULSE_MAX_LAYER_COUNT` (4), `TRIGGER_PULSE_START_RADIUS` (0.1), `TRIGGER_PULSE_MIN_LAYER_SPACING` (0.2), `TRIGGER_PULSE_MAX_LAYER_SPACING` (0.45), `TRIGGER_PULSE_Y_OFFSET` (0.3).
+- State class `ActivePulse { sourceRef, sourceUuid, startedAt, expiresAt, lastVisualAt, endRadius, soundPlayed }` and its `ConcurrentHashMap<String, ActivePulse> ACTIVE_PULSES`.
+
+**Added:**
+
+- Constant `AURA_VFX_IDS = { "Totem_Slow_Circle1", "Totem_Slow_Circle2" }`.
+- Constant `AURA_VISUAL_INTERVAL_MILLIS = 500L` (was 50 ms step on the pulse path).
+- Constant `AURA_VFX_Y_OFFSET = 0.3D` (kept the existing Y offset).
+- State class `AuraVisualState { long lastVisualAt }` and its `ConcurrentHashMap<String, AuraVisualState> AURA_VISUAL_STATE`.
+- New imports: `SpatialResource`, `EntityModule`, `it.unimi.dsi.fastutil.objects.ObjectList` (used by the new aura spawn path).
+
+Net diff: **−135 / +53** in [`FrozenDomainAugment.java`](src/main/java/com/airijko/endlessleveling/augments/types/FrozenDomainAugment.java). Trigger-pulse SFX IDs (`SFX_Arrow_Frost_Miss`, `SFX_Arrow_Frost_Hit`, `SFX_Ice_Ball_Death`) are preserved.
+
+### WitherAugment — Slow Fallback Logging Fix (`Bug Fix`)
+
+[`WitherAugment.applySlowEffectFallback`](src/main/java/com/airijko/endlessleveling/augments/types/WitherAugment.java) now returns `boolean`. Caller logic flipped so the `"MovementManager missing"` / `"movement settings missing"` warnings fire only when the effect-fallback path *also* fails:
+
+```java
+boolean fallbackApplied = applySlowEffectFallback(state, commandBuffer, ref, key);
+if (!fallbackApplied && !state.loggedMissingMovementManager) {
+    LOGGER.atWarning().log(
+            "Wither slow unavailable: MovementManager missing and fallback failed key=%s target=%s",
+            key, ref);
+    state.loggedMissingMovementManager = true;
+}
+return;
+```
+
+Previously both the warning and the fallback ran unconditionally, producing noisy logs on every Wither tick where the MovementManager path was unavailable even when the effect fallback was successfully applying slow.
+
+### RaceManager — Crit-Lock Ascension Fallback (`Bug Fix`)
+
+[`RaceManager`](src/main/java/com/airijko/endlessleveling/races/RaceManager.java): when an ascension requirement names `PRECISION` or `FEROCITY` and the player has that attribute crit-locked (via `SkillManager.isCritAttributeLocked`), the check now falls back to the class's primary damage stat:
+
+```java
+if (isCritLockedAttribute(attr, data)) {
+    SkillAttributeType fallback = resolvePrimaryDamageStat(data);
+    if (fallback != null && fallback != attr) {
+        int fallbackLevel = data.getPlayerSkillAttributeLevel(fallback);
+        if (fallbackLevel >= requiredLevel) {
+            continue;
+        }
+    }
+}
+```
+
+`resolvePrimaryDamageStat(PlayerData)` reads the player's primary `CharacterClassDefinition.getDamageType()`:
+- `"magic"` → `SORCERY`
+- `"hybrid"` → higher of `STRENGTH` vs `SORCERY`
+- anything else (including null class) → `STRENGTH`
+
+**Why:** a crit-lock on `PRECISION`/`FEROCITY` was preventing ascension for classes whose real damage stat is the *other* attribute, even though the player had the required attribute level on their true damage stat. New imports: `CharacterClassDefinition`, `ClassManager`, `SkillManager`.
+
+### ProfileUIPage — Tiered Augment Entry Backgrounds (`UI Polish`)
+
+[`ProfileUIPage`](src/main/java/com/airijko/endlessleveling/ui/ProfileUIPage.java) per-augment-entry binding now toggles tier backgrounds:
+
+```java
+PassiveTier resolvedTier = parseTierLabel(tierLabel);
+ui.set(base + " #ItemBgCommon.Visible", resolvedTier == null || resolvedTier == PassiveTier.COMMON);
+ui.set(base + " #ItemBgElite.Visible", resolvedTier == PassiveTier.ELITE);
+ui.set(base + " #ItemBgLegendary.Visible", resolvedTier == PassiveTier.LEGENDARY);
+ui.set(base + " #ItemBgMythic.Visible", resolvedTier == PassiveTier.MYTHIC);
+```
+
+[`ProfileAugmentEntry.ui`](src/main/resources/Common/UI/Custom/Pages/Profile/ProfileAugmentEntry.ui) restructured to host the 4 stacked tier-background images. Mythic / Legendary / Elite augments now visually match their rarity on the profile page.
+
+### Config Changes
+
+- [`leveling.yml`](src/main/resources/leveling.yml) — `prestige.tiers[MYTHIC].prestige_levels`: `[15]` → `[20]`.
+- [`manifest.json`](src/main/resources/manifest.json) — `Version`: `7.8.0` → `7.8.1`.
+- `gradle.properties` — `version=7.8.1`.
+
+### Asset Recompression
+
+~35 PNG files recompressed with no visual change. Representative deltas:
+
+| Asset | Before | After |
+|-------|-------|-------|
+| `Common/Images/Branding/EndlessLeveling.png` | 59 055 | 28 123 |
+| `UI/Custom/Hud/Endless_XPFill.png` | 605 657 | 322 086 |
+| `UI/Custom/Hud/Partner_XPFill.png` | 617 838 | 325 029 |
+| `UI/Custom/Pages/Addons/Images/EndlessBanner.png` | 1 053 055 | 698 961 |
+| `UI/Custom/Tiles/TileLegendary.png` | 196 470 | 86 693 |
+| `UI/Custom/Tiles/TileMythic.png` | 193 676 | 82 941 |
+| `UI/Custom/Dungeons/Cards/Images/EndgameFrozenPlaceholder.png` | 58 020 | 21 055 |
+| `UI/Custom/Pages/Nav/Icons/NavDungeonsIcon@2x.png` | 3 753 | 2 979 |
+
+All 5 tile rarities, all 5 tile borders, HUD XP/shield/duration bars, nav icons, dungeon placeholder cards, and branding banners recompressed. Overall plugin JAR size drops materially.
+
+### Misc UI
+
+- [`ClassesPage.ui`](src/main/resources/Common/UI/Custom/Pages/Classes/ClassesPage.ui) — 133-line layout pass on top of the 7.8.0 carousel refactor.
+- [`ProfilePagePartner.ui`](src/main/resources/Common/UI/Custom/Pages/Profile/ProfilePagePartner.ui) — 869-line restructure to align the partner profile page with the 7.8.0 main profile layout (weapon / augment icons, promoted XP bar, widened main panel).
+
+### Files Changed
+
+- **Java (8):** `FrozenDomainAugment`, `WitherAugment`, `RaceManager`, `LeaderboardsUIPage`, `ProfileUIPage`, `XpStatsAdminUIPage`, `XpStatsLeaderboardUIPage`, `XpStatsUIPage`.
+- **.ui (12):** `ClassesPage`, `LeaderboardsPage`, `LeaderboardsPagePartner` (new), `LeaderboardsPodiumFirst/Second/Third`, `LeaderboardsRow`, `ProfileAugmentEntry`, `ProfilePagePartner`, `XpStatsPage`, `XpStatsAdminPage`, `XpStatsLeaderboardPage`.
+- **Config (3):** `gradle.properties`, `manifest.json`, `leveling.yml`.
+- **Assets (~35 PNGs):** branding, HUD, tiles, nav icons, dungeon placeholder cards.
+
+---
+
 ## 2026-04-12 — 7.8.0 (compared to 7.7.4 and 7.7.5)
 
 A **UI overhaul** release. The headlines are a **carousel card layout** replacing the row-based class and race browsers, a **leaderboard podium** for the top 3 players, **weapon and augment icons** on the profile page, and a broad **layout and visual polish pass** across all five main UI pages.

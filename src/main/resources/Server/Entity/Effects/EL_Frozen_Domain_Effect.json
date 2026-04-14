@@ -1,0 +1,10 @@
+{
+  "Duration": 10,
+  "OverlapBehavior": "Overwrite",
+  "Debuff": false,
+  "ApplicationEffects": {
+    "EntityBottomTint": "#00beff",
+    "EntityTopTint": "#00d4ff",
+    "ModelVFXId": "EL_Frozen_Domain_Glow"
+  }
+}

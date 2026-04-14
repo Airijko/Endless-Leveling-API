@@ -31,14 +31,19 @@ public final class AugmentRoleWeightRules {
 
     // Augments that are primarily defensive/health scaling.
     private static final Set<String> LIFE_FORCE_AUGMENTS = Set.of(
-            "cripple", "fortress", "goliath", "raid_boss", 
-            "tank_engine", "nesting_doll", "bailout", "death_bomb", 
+            "cripple", "fortress", "goliath", "raid_boss",
+            "tank_engine", "nesting_doll", "bailout", "death_bomb",
             "grasp_of_the_undying", "frozen_domain", "haymaker");
+
+    // Augments that scale with stamina or support playstyles.
+    private static final Set<String> SUPPORT_AUGMENTS = Set.of(
+            "supports_dream", "unyielding_framework", "recovered_force");
 
     private static final Set<String> SORCERY_FAVORED_ROLES = Set.of("mage", "battlemage", "support");
     private static final Set<String> STRENGTH_FAVORED_ROLES = Set.of(
             "assassin", "diver", "skirmisher", "juggernaut", "vanguard", "marksman");
     private static final Set<String> LIFE_FORCE_FAVORED_ROLES = Set.of("vanguard", "juggernaut", "battlemage", "skirmisher");
+    private static final Set<String> SUPPORT_FAVORED_ROLES = Set.of("support");
 
     private AugmentRoleWeightRules() {
     }
@@ -84,6 +89,12 @@ public final class AugmentRoleWeightRules {
         if (LIFE_FORCE_AUGMENTS.contains(normalizedAugmentId)
                 && hasAnyRole(primaryClass, LIFE_FORCE_FAVORED_ROLES)) {
             // Higher bonus to strongly bias tanky/life-force augments for these roles.
+            bonus += 30;
+        }
+
+        if (SUPPORT_AUGMENTS.contains(normalizedAugmentId)
+                && hasAnyRole(primaryClass, SUPPORT_FAVORED_ROLES)) {
+            // Strong bias for support-stamina augments on support classes.
             bonus += 30;
         }
 

@@ -206,7 +206,9 @@ public class PlayerHud extends CustomUIHud {
         changed |= setTextIfChanged(uiCommandBuilder,
                 "#InfoRacePrefix.Text",
                 Lang.tr(targetPlayerRef.getUuid(), LocalizationKey.HUD_RACE_PREFIX));
-        changed |= setTextIfChanged(uiCommandBuilder, "#Level.Text", resolveHudLabel());
+        changed |= setTextIfChanged(uiCommandBuilder, "#Level.Text", resolveLevelLabel());
+        changed |= setTextIfChanged(uiCommandBuilder, "#XpLabel.Text", resolveXpLabel());
+        changed |= setTextIfChanged(uiCommandBuilder, "#PrestigeLevel.Text", resolvePrestigeLabel());
         double progress = resolveXpProgress();
         changed |= setDoubleIfChanged(uiCommandBuilder, "#ProgressBar.Value", progress);
         changed |= setTextIfChanged(uiCommandBuilder, "#InfoRaceValue.Text", resolveRaceLabel());
@@ -543,31 +545,46 @@ public class PlayerHud extends CustomUIHud {
         return raw == null ? "" : raw.trim().toLowerCase(java.util.Locale.ROOT);
     }
 
-    private String resolveHudLabel() {
+    private String resolveLevelLabel() {
         PlayerData data = getPlayerData();
         if (data == null) {
-            return Lang.tr(targetPlayerRef.getUuid(), LocalizationKey.HUD_LEVEL_NO_DATA);
+            return Lang.tr(targetPlayerRef.getUuid(), LocalizationKey.HUD_LEVEL_ONLY_NO_DATA);
+        }
+        return Lang.tr(targetPlayerRef.getUuid(), LocalizationKey.HUD_LEVEL_ONLY, data.getLevel());
+    }
+
+    private String resolveXpLabel() {
+        PlayerData data = getPlayerData();
+        if (data == null) {
+            return Lang.tr(targetPlayerRef.getUuid(), LocalizationKey.HUD_XP_NO_DATA);
         }
 
         double currentXp = Math.max(0.0, data.getXp());
         if (levelingManager == null) {
-            return Lang.tr(targetPlayerRef.getUuid(), LocalizationKey.HUD_LEVEL_WITHOUT_LEVELING,
-                    data.getLevel(), formatXpValue(currentXp));
+            return Lang.tr(targetPlayerRef.getUuid(), LocalizationKey.HUD_XP_WITHOUT_LEVELING,
+                    formatXpValue(currentXp));
         }
 
         int effectiveCap = levelingManager.getLevelCap(data);
-
         if (data.getLevel() >= effectiveCap) {
-            return Lang.tr(targetPlayerRef.getUuid(), LocalizationKey.HUD_LEVEL_MAX, effectiveCap);
+            return Lang.tr(targetPlayerRef.getUuid(), LocalizationKey.HUD_XP_MAX);
         }
 
         double xpNeeded = levelingManager.getXpForNextLevel(data, data.getLevel());
         if (!Double.isFinite(xpNeeded) || xpNeeded <= 0.0) {
-            return Lang.tr(targetPlayerRef.getUuid(), LocalizationKey.HUD_LEVEL_MAX, data.getLevel());
+            return Lang.tr(targetPlayerRef.getUuid(), LocalizationKey.HUD_XP_MAX);
         }
 
-        return Lang.tr(targetPlayerRef.getUuid(), LocalizationKey.HUD_LEVEL_PROGRESS, data.getLevel(),
+        return Lang.tr(targetPlayerRef.getUuid(), LocalizationKey.HUD_XP_PROGRESS,
                 formatXpValue(currentXp), formatXpValue(xpNeeded));
+    }
+
+    private String resolvePrestigeLabel() {
+        PlayerData data = getPlayerData();
+        if (data == null || data.getPrestigeLevel() <= 0) {
+            return "";
+        }
+        return Lang.tr(targetPlayerRef.getUuid(), LocalizationKey.HUD_PRESTIGE, data.getPrestigeLevel());
     }
 
     private double resolveXpProgress() {
@@ -604,7 +621,33 @@ public class PlayerHud extends CustomUIHud {
         }
 
         long rounded = Math.round(value);
+        if (rounded >= 1_000_000_000L) {
+            return formatCompact(rounded, 1_000_000_000L, "B");
+        } else if (rounded >= 1_000_000L) {
+            return formatCompact(rounded, 1_000_000L, "M");
+        } else if (rounded >= 1_000L) {
+            return formatCompact(rounded, 1_000L, "K");
+        }
         return Long.toString(rounded);
+    }
+
+    private static String formatCompact(long value, long divisor, String suffix) {
+        double scaled = (double) value / divisor;
+        if (scaled >= 100.0) {
+            return Math.round(scaled) + suffix;
+        } else if (scaled >= 10.0) {
+            double oneDecimal = Math.round(scaled * 10.0) / 10.0;
+            if (oneDecimal == Math.floor(oneDecimal)) {
+                return (long) oneDecimal + suffix;
+            }
+            return oneDecimal + suffix;
+        } else {
+            double oneDecimal = Math.round(scaled * 10.0) / 10.0;
+            if (oneDecimal == Math.floor(oneDecimal)) {
+                return (long) oneDecimal + suffix;
+            }
+            return oneDecimal + suffix;
+        }
     }
 
     public void refreshHud() {

@@ -24,6 +24,7 @@ public final class AugmentDefinition {
     private final Map<String, Object> passives;
     private final List<UiSection> uiSections;
     private final boolean mobCompatible;
+    private final String icon;
 
     public AugmentDefinition(String id,
             String name,
@@ -32,7 +33,7 @@ public final class AugmentDefinition {
             boolean stackable,
             String description,
             Map<String, Object> passives) {
-        this(id, name, tier, category, stackable, description, passives, Collections.emptyList(), true);
+        this(id, name, tier, category, stackable, description, passives, Collections.emptyList(), true, null);
     }
 
     public AugmentDefinition(String id,
@@ -43,7 +44,7 @@ public final class AugmentDefinition {
             String description,
             Map<String, Object> passives,
             List<UiSection> uiSections) {
-        this(id, name, tier, category, stackable, description, passives, uiSections, true);
+        this(id, name, tier, category, stackable, description, passives, uiSections, true, null);
     }
 
     public AugmentDefinition(String id,
@@ -55,6 +56,19 @@ public final class AugmentDefinition {
             Map<String, Object> passives,
             List<UiSection> uiSections,
             boolean mobCompatible) {
+        this(id, name, tier, category, stackable, description, passives, uiSections, mobCompatible, null);
+    }
+
+    public AugmentDefinition(String id,
+            String name,
+            PassiveTier tier,
+            PassiveCategory category,
+            boolean stackable,
+            String description,
+            Map<String, Object> passives,
+            List<UiSection> uiSections,
+            boolean mobCompatible,
+            String icon) {
         this.id = Objects.requireNonNull(id, "id");
         this.name = name == null ? id : name;
         this.tier = tier == null ? PassiveTier.COMMON : tier;
@@ -66,6 +80,7 @@ public final class AugmentDefinition {
         List<UiSection> safeSections = uiSections == null ? Collections.emptyList() : new ArrayList<>(uiSections);
         this.uiSections = Collections.unmodifiableList(safeSections);
         this.mobCompatible = mobCompatible;
+        this.icon = icon == null || icon.isBlank() ? null : icon.trim();
     }
 
     public String getId() {
@@ -102,6 +117,10 @@ public final class AugmentDefinition {
 
     public boolean isMobCompatible() {
         return mobCompatible;
+    }
+
+    public String getIcon() {
+        return icon;
     }
 
     public record UiSection(String title, String body, String color) {

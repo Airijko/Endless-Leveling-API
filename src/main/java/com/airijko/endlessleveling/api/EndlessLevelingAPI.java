@@ -14,6 +14,7 @@ import com.airijko.endlessleveling.mob.MobLevelingSystem;
 import com.airijko.endlessleveling.player.PlayerAttributeManager;
 import com.airijko.endlessleveling.player.PlayerDataManager;
 import com.airijko.endlessleveling.leveling.PartyManager;
+import com.airijko.endlessleveling.passives.type.ArmyOfTheDeadPassive;
 import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveManager;
 import com.airijko.endlessleveling.passives.archetype.ArchetypePassiveSource;
 import com.airijko.endlessleveling.races.RaceDefinition;
@@ -668,6 +669,24 @@ public final class EndlessLevelingAPI {
         return mgr.getEntityResolvedLevelSnapshot(ref, store, commandBuffer);
     }
 
+    /**
+     * Returns {@code true} if the entity is a managed Necromancer summon
+     * (Army of the Dead).  Managed summons are excluded from the mob leveling
+     * pipeline and should not receive elite promotions or other mob-specific
+     * processing.
+     */
+    public boolean isEntityManagedSummon(Ref<EntityStore> ref, Store<EntityStore> store,
+            CommandBuffer<EntityStore> commandBuffer) {
+        return ArmyOfTheDeadPassive.isManagedSummon(ref, store, commandBuffer);
+    }
+
+    /**
+     * Lightweight UUID-only variant — no ECS component resolution required.
+     */
+    public boolean isEntityManagedSummonByUuid(UUID entityUuid) {
+        return ArmyOfTheDeadPassive.isManagedSummonByUuid(entityUuid);
+    }
+
     // ------------
     // Mob overrides
     // ------------
@@ -765,6 +784,24 @@ public final class EndlessLevelingAPI {
     public boolean removeMobGateLevelOverride(String id) {
         MobLevelingManager mobLevelingManager = mobLevelingManager();
         return mobLevelingManager != null && mobLevelingManager.removeGateLevelOverride(id);
+    }
+
+    /**
+     * Register a scaling override attached to a gate override ID.
+     * When a mob is in a world matched by the gate override, this scaling
+     * takes absolute priority over world-settings.
+     * The map mirrors the world-settings structure:
+     * {@code {"Scaling": {"Health": {...}, ...}, "Mob_Overrides": {"MobType": {"Scaling": {...}}, ...}}}
+     */
+    public boolean registerGateScalingOverride(String id, Map<String, Object> scalingConfig) {
+        MobLevelingManager mobLevelingManager = mobLevelingManager();
+        return mobLevelingManager != null && mobLevelingManager.registerGateScalingOverride(id, scalingConfig);
+    }
+
+    /** Remove a previously registered gate scaling override. */
+    public boolean removeGateScalingOverride(String id) {
+        MobLevelingManager mobLevelingManager = mobLevelingManager();
+        return mobLevelingManager != null && mobLevelingManager.removeGateScalingOverride(id);
     }
 
     /** Remove a previously registered world-wide dynamic FIXED Level_Source override. */

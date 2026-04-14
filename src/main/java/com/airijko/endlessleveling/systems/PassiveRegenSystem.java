@@ -821,9 +821,6 @@ public class PassiveRegenSystem extends TickingSystem<EntityStore> {
         }
 
         long beforePulse = runtimeState.getPartyMendingLastPulseMillis();
-        if (beforePulse > 0L && nowMillis - beforePulse < HealingAuraPassive.pulseIntervalMillis()) {
-            return;
-        }
 
         HealingAuraPassive.pulse(playerData,
                 ref,

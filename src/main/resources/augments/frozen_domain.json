@@ -2,7 +2,7 @@
   "id": "frozen_domain",
   "name": "Frozen Domain",
   "tier": "ELITE",
-  "description": "Create a freezing aura that slows nearby enemies, steals part of that speed, and fortifies your life force.",
+  "description": "Plant a stationary freezing zone that slows nearby enemies, steals part of that speed, and fortifies your life force.",
   "category": "ON_DAMAGE_TAKEN",
   "enabled": true,
   "weights": {
@@ -13,7 +13,7 @@
     "sections": [
       {
         "title": "Buffs",
-        "body": "Slow Percent: +30%\nStolen Slow Ratio: 0.2x\nSlow Interval: +100%\nRadius: +5\n+1 Block Radius per 400 Max HP\n+100 Life Force\n",
+        "body": "Slow Percent: +30%\nStolen Slow Ratio: 0.2x\nSlow Interval: +100%\nRadius: +8\n+1 Block Radius per 300 Max HP\n+100 Life Force\nZone stays in place\n",
         "color": "#8adf9e"
       },
       {
@@ -33,12 +33,12 @@
       "slow_percent": 0.3,
       "slow_percent_cap": 0,
       "stolen_slow_ratio": 0.2,
-      "radius": 5,
+      "radius": 8,
       "duration": 10,
       "cooldown": 25,
       "slow_interval": 1.0,
       "radius_health_scaling": {
-        "health_per_block": 400
+        "health_per_block": 300
       }
     },
     "buffs": {

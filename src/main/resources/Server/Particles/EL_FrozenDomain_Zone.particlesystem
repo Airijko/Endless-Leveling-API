@@ -1,0 +1,14 @@
+{
+  "Spawners": [
+    { "SpawnerId": "Totem_Slow_Ground_Constant" },
+    { "SpawnerId": "Totem_Slow_Ground_Constant2" },
+    { "SpawnerId": "Totem_Slow_Sparks_Constant", "PositionOffset": { "Y": 0.5 } },
+    { "SpawnerId": "Totem_Slow_Lines_Constant", "StartDelay": 0.3 },
+    { "SpawnerId": "Totem_Slow_Extra_Smoke", "PositionOffset": { "Y": 0.3 } },
+    { "SpawnerId": "Totem_Slow_Uhr", "PositionOffset": { "Y": 0.1 }, "StartDelay": 0.3 },
+    { "SpawnerId": "Totem_Slow_SmokeFlat_Constant", "PositionOffset": { "Y": 0.1 } }
+  ],
+  "CullDistance": 60,
+  "IsImportant": true,
+  "LifeSpan": 3
+}

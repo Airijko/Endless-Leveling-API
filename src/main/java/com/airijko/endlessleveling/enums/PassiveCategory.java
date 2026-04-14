@@ -18,7 +18,8 @@ public enum PassiveCategory {
     ON_KILL("Ingredient_Fire_Essence"),
     MAGIC_ON_HIT("Weapon_Spellbook_Fire"),
     LIFESTEAL("Weapon_Sword_Adamantite"),
-    NECROMANCY("Weapon_Spellbook_Demon");
+    NECROMANCY("Weapon_Spellbook_Demon"),
+    STAMINA("Potion_Stamina");
 
     private final String iconItemId;
 

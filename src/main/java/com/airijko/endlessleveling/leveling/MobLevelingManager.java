@@ -102,6 +102,7 @@ public class MobLevelingManager {
     private volatile boolean missingLevelSourceModeWarned;
 
     private final Map<String, GateOverride> gateOverrides = new ConcurrentHashMap<>();
+    private final Map<String, Map<String, Object>> gateScalingOverrides = new ConcurrentHashMap<>();
     private final Map<String, AreaOverride> areaOverrides = new ConcurrentHashMap<>();
     private final Map<String, RuntimeFixedLevelOverride> runtimeFixedLevelOverrides = new ConcurrentHashMap<>();
     private final Set<String> fixedLevelFallbackLoggedWorlds = ConcurrentHashMap.newKeySet();
@@ -417,13 +418,21 @@ public class MobLevelingManager {
             Integer runtimeGateBossOffset = resolveGateBossLevelFromRangeMaxOffset(effectiveStore);
             Integer runtimeFixedBossOffset = resolveRuntimeFixedBossLevelFromRangeMaxOffset(effectiveStore);
 
+            // Also check gate scaling overrides for boss mob matching.
+            // Wave gate bosses may not appear in world-settings Mob_Overrides but ARE
+            // registered in the gate scaling override's Mob_Overrides by mob type.
+            boolean gateScalingBossMatch = mobOverrideMatch == null
+                    && isGateScalingMobOverrideMatch(ref, effectiveStore, commandBuffer);
+
             // Gate overrides should still honor boss-style mob overrides by pinning to range max + offset.
-            // Enter the boss block when the mob matches any Mob_Override AND we have an offset source:
+            // Enter the boss block when the mob matches any Mob_Override (world-settings OR gate scaling)
+            // AND we have an offset source:
             // static Level_From_Range_Max_Offset, runtime gate offset, or runtime fixed offset.
             boolean hasBossOffset = matchedMobOffset != null
                     || runtimeGateBossOffset != null
                     || runtimeFixedBossOffset != null;
-            if (gateOverride.override() != null && mobOverrideMatch != null && hasBossOffset) {
+            boolean isBossMob = mobOverrideMatch != null || gateScalingBossMatch;
+            if (gateOverride.override() != null && isBossMob && hasBossOffset) {
                 int bossOffset = runtimeGateBossOffset != null
                     ? runtimeGateBossOffset
                     : (runtimeFixedBossOffset != null
@@ -2094,7 +2103,32 @@ public class MobLevelingManager {
         if (id == null || id.isBlank()) {
             return false;
         }
+        gateScalingOverrides.remove(id.trim());
         return gateOverrides.remove(id.trim()) != null;
+    }
+
+    /**
+     * Register a scaling override attached to a gate override ID.
+     * The map must mirror the world-settings structure:
+     * {@code {"Scaling": {"Health": {...}, "Damage": {...}, "Defense": {...}}, "Mob_Overrides": {...}}}
+     */
+    public boolean registerGateScalingOverride(String id, Map<String, Object> scalingConfig) {
+        if (id == null || id.isBlank() || scalingConfig == null || scalingConfig.isEmpty()) {
+            return false;
+        }
+        gateScalingOverrides.put(id.trim(), scalingConfig);
+        return true;
+    }
+
+    public boolean removeGateScalingOverride(String id) {
+        if (id == null || id.isBlank()) {
+            return false;
+        }
+        return gateScalingOverrides.remove(id.trim()) != null;
+    }
+
+    public void clearGateScalingOverrides() {
+        gateScalingOverrides.clear();
     }
 
     public boolean removeRuntimeFixedLevelOverride(String id) {
@@ -2110,6 +2144,7 @@ public class MobLevelingManager {
 
     public void clearGateLevelOverrides() {
         gateOverrides.clear();
+        gateScalingOverrides.clear();
     }
 
     public void clearRuntimeFixedLevelOverrides() {
@@ -2153,6 +2188,7 @@ public class MobLevelingManager {
         worldOverrideKeyByStore.clear();
         worldXpBlacklistByStore.clear();
         gateOverrides.clear();
+        gateScalingOverrides.clear();
         runtimeFixedLevelOverrides.clear();
         fixedLevelFallbackLoggedWorlds.clear();
     }
@@ -2521,12 +2557,161 @@ public class MobLevelingManager {
             Store<EntityStore> store,
             Ref<EntityStore> ref,
             CommandBuffer<EntityStore> commandBuffer) {
+        // 1. Gate scaling override takes absolute priority (wave gates, etc.)
+        Double gateScalingValue = resolveGateScalingValue(ref, store, commandBuffer, relativePath);
+        if (gateScalingValue != null) {
+            return gateScalingValue;
+        }
+
+        // 2. World-settings mob override
         Double overrideValue = toDoubleOrNull(
                 resolveMobOverrideScalingValue(ref, store, commandBuffer, relativePath));
         if (overrideValue != null) {
             return overrideValue;
         }
         return getConfigDouble("Mob_Leveling.Scaling." + relativePath, defaultValue, store);
+    }
+
+    /**
+     * Resolve scaling from a gate scaling override.
+     * Checks mob-specific overrides within the gate scaling first, then the default tier scaling.
+     */
+    @Nullable
+    private Double resolveGateScalingValue(Ref<EntityStore> ref,
+            Store<EntityStore> store,
+            CommandBuffer<EntityStore> commandBuffer,
+            String relativePath) {
+        if (store == null || gateScalingOverrides.isEmpty() || relativePath == null || relativePath.isBlank()) {
+            return null;
+        }
+
+        Map<String, Object> scalingConfig = resolveGateScalingConfig(store);
+        if (scalingConfig == null) {
+            return null;
+        }
+
+        // Check mob-specific overrides within the gate scaling (e.g., boss overrides)
+        String mobType = resolveMobTypeForScaling(ref, store, commandBuffer);
+        if (mobType != null) {
+            Object mobOverridesRaw = scalingConfig.get("Mob_Overrides");
+            if (mobOverridesRaw instanceof Map<?, ?> mobOverrides && !mobOverrides.isEmpty()) {
+                for (Map.Entry<?, ?> entry : mobOverrides.entrySet()) {
+                    String overrideKey = entry.getKey() == null ? null : entry.getKey().toString();
+                    if (!(entry.getValue() instanceof Map<?, ?> overrideMap)) {
+                        continue;
+                    }
+                    if (mobMatchesOverrideRule(mobType, overrideKey, overrideMap.get("Names"))) {
+                        Double value = resolveScalingPathValue(overrideMap, relativePath);
+                        if (value != null) {
+                            return value;
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Fall back to default tier scaling
+        return resolveScalingPathValue(scalingConfig, relativePath);
+    }
+
+    /**
+     * Find the gate scaling config that applies to the given store's world.
+     */
+    @Nullable
+    private Map<String, Object> resolveGateScalingConfig(Store<EntityStore> store) {
+        List<String> worldIds = resolveWorldIdentifierCandidates(store, true);
+        if (worldIds.isEmpty()) {
+            return null;
+        }
+        for (Map.Entry<String, Map<String, Object>> entry : gateScalingOverrides.entrySet()) {
+            GateOverride gateOverride = gateOverrides.get(entry.getKey());
+            if (gateOverride != null && matchesAreaOverrideWorld(gateOverride.worldId(), worldIds)) {
+                return entry.getValue();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Navigate into a config map's "Scaling" block and resolve a dot-separated path.
+     */
+    @Nullable
+    private Double resolveScalingPathValue(Map<?, ?> configMap, String relativePath) {
+        Object current = configMap.get("Scaling");
+        if (!(current instanceof Map<?, ?>)) {
+            return null;
+        }
+        String[] segments = relativePath.split("\\.");
+        for (String segment : segments) {
+            if (!(current instanceof Map<?, ?> nestedMap)) {
+                return null;
+            }
+            current = nestedMap.get(segment);
+            if (current == null) {
+                return null;
+            }
+        }
+        return toDoubleOrNull(current);
+    }
+
+    /**
+     * Resolve the NPC type ID for gate-scaling mob override matching.
+     */
+    @Nullable
+    private String resolveMobTypeForScaling(Ref<EntityStore> ref,
+            Store<EntityStore> store,
+            CommandBuffer<EntityStore> commandBuffer) {
+        if (ref == null || store == null) {
+            return null;
+        }
+        NPCEntity npc = resolveComponent(ref, store, commandBuffer, NPCEntity.getComponentType());
+        if (npc == null) {
+            return null;
+        }
+        try {
+            return npc.getNPCTypeId();
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    /**
+     * Check if a mob matches any Mob_Override entry in the gate scaling config
+     * for this mob's world. Used to identify boss mobs for level offset application
+     * when they don't appear in world-settings Mob_Overrides.
+     */
+    private boolean isGateScalingMobOverrideMatch(Ref<EntityStore> ref,
+            Store<EntityStore> store,
+            CommandBuffer<EntityStore> commandBuffer) {
+        if (store == null || gateScalingOverrides.isEmpty()) {
+            return false;
+        }
+
+        Map<String, Object> scalingConfig = resolveGateScalingConfig(store);
+        if (scalingConfig == null) {
+            return false;
+        }
+
+        Object mobOverridesRaw = scalingConfig.get("Mob_Overrides");
+        if (!(mobOverridesRaw instanceof Map<?, ?> mobOverrides) || mobOverrides.isEmpty()) {
+            return false;
+        }
+
+        String mobType = resolveMobTypeForScaling(ref, store, commandBuffer);
+        if (mobType == null || mobType.isBlank()) {
+            return false;
+        }
+
+        for (Map.Entry<?, ?> entry : mobOverrides.entrySet()) {
+            String overrideKey = entry.getKey() == null ? null : entry.getKey().toString();
+            Object value = entry.getValue();
+            Object names = (value instanceof Map<?, ?> m) ? m.get("Names") : null;
+            if (mobMatchesOverrideRule(mobType, overrideKey, names)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean mobMatchesOverrideRule(String mobType, String overrideId, Object namesRaw) {

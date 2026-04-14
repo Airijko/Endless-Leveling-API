@@ -1,5 +1,6 @@
 package com.airijko.endlessleveling.leveling;
 
+import com.airijko.endlessleveling.managers.LoggingManager;
 import com.airijko.endlessleveling.player.PlayerData;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
@@ -28,6 +29,7 @@ import com.airijko.endlessleveling.player.PlayerDataManager;
 public class PartyManager {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
+    private static final String DEBUG_SECTION_PARTY_XP = "party_xp_share";
 
     private final PlayerDataManager playerDataManager;
     private final LevelingManager levelingManager;
@@ -285,6 +287,7 @@ public class PartyManager {
             return;
         }
 
+        boolean partyXpDebug = LoggingManager.isDebugSectionEnabled(DEBUG_SECTION_PARTY_XP);
         int grantedCount = 0;
         for (UUID member : nearbyMembers) {
             PlayerData memberData = playerDataManager.get(member);
@@ -299,6 +302,25 @@ public class PartyManager {
                     skipLevelRangeChecks,
                     sourceStore,
                     null);
+
+            if (partyXpDebug) {
+                int memberLvl = memberData.getLevel();
+                int diff = memberLvl - Math.max(1, mobLevel);
+                double ruleMult = memberBaseShareXp > 0.0D
+                        ? memberXpAfterKillRules / memberBaseShareXp
+                        : 0.0D;
+                LOGGER.atInfo().log(
+                        "[PARTY_XP_SHARE] member=%s memberLvl=%d mobLvl=%d diff=%+d skipRange=%s memberBaseShareXP=%.3f memberAfterKillRulesXP=%.3f ruleMult=%.4f (expected ~BelowRangeMult if diff<<0, ~AboveRangeMult if diff>>0, ~1.0 if in-range)",
+                        member,
+                        memberLvl,
+                        mobLevel,
+                        diff,
+                        skipLevelRangeChecks,
+                        memberBaseShareXp,
+                        memberXpAfterKillRules,
+                        ruleMult);
+            }
+
             if (memberXpAfterKillRules <= 0.0D) {
                 continue;
             }

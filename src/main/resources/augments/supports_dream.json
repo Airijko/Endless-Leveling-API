@@ -1,0 +1,33 @@
+{
+  "id": "supports_dream",
+  "name": "Support's Dream",
+  "tier": "LEGENDARY",
+  "icon": "Potion_Stamina",
+  "description": "Unlock the full potential of your endurance, tripling your total stamina and granting a massive innate boost.",
+  "category": "STAMINA",
+  "enabled": true,
+  "weights": {
+    "default": 5,
+    "conditions": []
+  },
+  "ui": {
+    "sections": [
+      {
+        "title": "Buffs",
+        "body": "Triple your total Stamina\nInnately gain +100 Stamina",
+        "color": "#8adf9e"
+      }
+    ]
+  },
+  "passives": {
+    "buffs": {
+      "innate_stamina": {
+        "value": 100.0
+      },
+      "stamina_multiplier": {
+        "value": 3.0
+      }
+    }
+  },
+  "mob_compatible": false
+}

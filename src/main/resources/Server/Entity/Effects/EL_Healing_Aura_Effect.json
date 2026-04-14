@@ -1,0 +1,16 @@
+{
+  "Duration": 10,
+  "OverlapBehavior": "Overwrite",
+  "Debuff": false,
+  "ApplicationEffects": {
+    "EntityBottomTint": "#02de45",
+    "EntityTopTint": "#02de45",
+    "Particles": [
+      {
+        "SystemId": "Potion_Health_Heal",
+        "TargetEntityPart": "Entity"
+      }
+    ],
+    "ModelVFXId": "EL_Healing_Aura_Glow"
+  }
+}

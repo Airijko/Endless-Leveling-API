@@ -39,6 +39,9 @@ public final class AugmentPresentationMapper {
     }
 
     public String resolveIconItemId(AugmentDefinition definition) {
+        if (definition != null && definition.getIcon() != null) {
+            return definition.getIcon();
+        }
         PassiveCategory category = definition != null ? definition.getCategory() : PassiveCategory.PASSIVE_STAT;
         if (category == null) {
             category = PassiveCategory.PASSIVE_STAT;

@@ -36,12 +36,14 @@ import com.airijko.endlessleveling.player.PlayerDataManager;
 import com.airijko.endlessleveling.player.SkillManager;
 import com.airijko.endlessleveling.passives.PassiveManager;
 import com.airijko.endlessleveling.managers.EventHookManager;
+import com.airijko.endlessleveling.managers.LoggingManager;
 import com.airijko.endlessleveling.managers.PluginFilesManager;
 import com.airijko.endlessleveling.managers.ConfigManager;
 
 public class LevelingManager {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
+    private static final String DEBUG_SECTION_PARTY_XP = "party_xp_share";
 
     private final PlayerDataManager playerDataManager;
     private final SkillManager skillManager;
@@ -750,6 +752,29 @@ public class LevelingManager {
             return 0.0;
 
         MobXpRuleSet rules = resolveMobXpRuleSet(store, mobLevelingManager);
+
+        boolean partyXpDebug = LoggingManager.isDebugSectionEnabled(DEBUG_SECTION_PARTY_XP);
+        if (partyXpDebug) {
+            LOGGER.atInfo().log(
+                    "[PARTY_XP_RULES] player=%s playerLvl=%d mobLvl=%d baseXpIn=%.3f skipRange=%s rules{expEnabled=%s globalMult=%.4f levelRangeEnabled=%s maxDiff=%d belowMult=%.4f aboveMult=%.4f addMin=%.3f scalingMode=%s scalingBonusAtMax=%.4f scalingMinMult=%.4f playerBasedMode=%s playerBasedOffset=%d}",
+                    player.getUuid(),
+                    player.getLevel(),
+                    mobLevel,
+                    baseXpAmount,
+                    skipLevelRangeChecks,
+                    rules.experienceRulesEnabled(),
+                    rules.globalXpMultiplier(),
+                    rules.xpLevelRangeEnabled(),
+                    rules.xpMaxDifference(),
+                    rules.xpBelowRangeMultiplier(),
+                    rules.xpAboveRangeMultiplier(),
+                    rules.xpAdditiveMinimum(),
+                    rules.xpScalingMode(),
+                    rules.xpScalingBonusAtMax(),
+                    rules.xpScalingMinMultiplier(),
+                    rules.playerBasedMode(),
+                    rules.playerBasedOffset());
+        }
 
         double adjustedXp = baseXpAmount;
         if (!rules.experienceRulesEnabled())

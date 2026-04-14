@@ -9,6 +9,7 @@ import com.airijko.endlessleveling.augments.types.ReckoningAugment;
 import com.airijko.endlessleveling.augments.types.WitherAugment;
 import com.airijko.endlessleveling.leveling.XpKillCreditTracker;
 import com.airijko.endlessleveling.passives.type.ArmyOfTheDeadPassive;
+import com.airijko.endlessleveling.passives.type.HealingAuraPassive;
 import com.airijko.endlessleveling.ui.PlayerHud;
 import com.airijko.endlessleveling.ui.PlayerHudHide;
 import com.hypixel.hytale.component.ArchetypeChunk;
@@ -438,6 +439,8 @@ public final class EndlessLevelingShutdownCoordinator {
         logShutdownSystemClear("BurnAugment", burnEntriesCleared);
         int frozenEntriesCleared = FrozenDomainAugment.clearAllRuntimeState();
         logShutdownSystemClear("FrozenDomainAugment", frozenEntriesCleared);
+        int healingAuraEntriesCleared = HealingAuraPassive.clearAllRuntimeState();
+        logShutdownSystemClear("HealingAuraPassive", healingAuraEntriesCleared);
         int witherEntriesCleared = WitherAugment.clearAllRuntimeState();
         logShutdownSystemClear("WitherAugment", witherEntriesCleared);
         int reckoningEntriesCleared = ReckoningAugment.clearAllRuntimeState();

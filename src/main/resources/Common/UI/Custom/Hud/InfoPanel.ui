@@ -1,14 +1,30 @@
 // Import: $IP = "InfoPanel.ui"; then $IP.@InfoPanel #InfoPanel {}
 @InfoPanel = Group {
   LayoutMode: Top;
-  Anchor: (Bottom: 12, Left: 135, Width: 220, Height: 135);
+  Anchor: (Bottom: 12, Left: 135, Width: 220, Height: 138);
   Background: (TexturePath: "ObjectivePanelContainer.png", Border: 15);
   Padding: (Horizontal: 12, Top: 8, Bottom: 10);
 
-  Label #Level {
-    Anchor: (Height: 20, Bottom: 4);
-    Text: "Level";
-    Style: (TextColor: #f0c040, FontSize: 13, RenderBold: true, RenderUppercase: true, LetterSpacing: 1, VerticalAlignment: Center);
+  Group #LevelRow {
+    LayoutMode: Left;
+    Anchor: (Height: 18, Bottom: 2);
+
+    Label #PrestigeLevel {
+      Style: (TextColor: #e080ff, FontSize: 10, RenderBold: true, RenderUppercase: true, LetterSpacing: 1, VerticalAlignment: Center);
+      Text: "";
+    }
+
+    Label #Level {
+      Anchor: (Left: 3);
+      Style: (TextColor: #f0c040, FontSize: 10, RenderBold: true, RenderUppercase: true, LetterSpacing: 1, VerticalAlignment: Center);
+      Text: "LVL --";
+    }
+
+    Label #XpLabel {
+      Anchor: (Left: 6);
+      Text: "0 / --";
+      Style: (TextColor: #c0b880, FontSize: 10, RenderBold: true, VerticalAlignment: Center);
+    }
   }
 
   Group {

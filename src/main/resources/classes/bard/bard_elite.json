@@ -12,7 +12,7 @@
   "icon": "Weapon_Daggers_Bronze_Ancient",
   "weapons": [
     {
-      "type": "DAGGER",
+      "type": "BOW",
       "damage": 1.05
     },
     {
@@ -37,8 +37,8 @@
     {
       "type": "BUFFING_AURA",
       "value": 1.0,
-      "stamina_ratio": 0.6,
-      "max_buffed_value_per_ally": 4.0,
+      "stamina_ratio": 0.2,
+      "max_buffed_value_per_ally": 1.5,
       "self_buff_effectiveness": 0.25,
       "duration": 4,
       "damage_pause_seconds": 10,

@@ -188,6 +188,11 @@ public final class LoggingManager {
                     LOGGER_PREFIX + ".mob.MobDamageScalingSystem",
                     LOGGER_PREFIX + ".augments.MobAugmentExecutor");
         }
+        if ("party_xp_share".equals(lowered)) {
+            return List.of(
+                    LOGGER_PREFIX + ".leveling.PartyManager",
+                    LOGGER_PREFIX + ".leveling.LevelingManager");
+        }
         return null;
     }
 
@@ -229,6 +234,9 @@ public final class LoggingManager {
         }
         if ("xp_death_diag".equals(lowered)) {
             return LOGGER_PREFIX + ".leveling.XpEventSystem.diag";
+        }
+        if ("party_xp_share".equals(lowered)) {
+            return LOGGER_PREFIX + ".leveling.PartyManager";
         }
         // Allow shorthand like "augments" or ".systems"; fall back to full package if
         // provided.

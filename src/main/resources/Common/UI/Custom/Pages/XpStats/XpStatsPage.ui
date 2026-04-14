@@ -129,6 +129,28 @@ $C.@PageOverlay {
                 FlexWeight: 1;
                 Padding: (Horizontal: 16, Bottom: 8);
 
+                Group #HeaderCard {
+                    LayoutMode: Top;
+                    Background: #0b141f(0.92);
+                    Padding: (Full: 12);
+
+                    Group #Headers {
+                        LayoutMode: Left;
+                        Padding: (Vertical: 4);
+
+                        Label #HeaderRank { Style: (TextColor: #c0cee5, FontSize: 13, RenderBold: true, RenderUppercase: true); Text: "Rank"; Anchor: (Width: 80); }
+                        Label #HeaderName { Style: (TextColor: #c0cee5, FontSize: 13, RenderBold: true, RenderUppercase: true); Text: "Player"; FlexWeight: 1; }
+                        Label #HeaderProfile { Style: (TextColor: #c0cee5, FontSize: 13, RenderBold: true, RenderUppercase: true); Text: "Profile"; Anchor: (Width: 170); }
+                        Label #HeaderPrestige { Style: (TextColor: #c0cee5, FontSize: 13, RenderBold: true, RenderUppercase: true); Text: "Prestige"; Anchor: (Width: 110); }
+                        Label #HeaderLevel { Style: (TextColor: #c0cee5, FontSize: 13, RenderBold: true, RenderUppercase: true); Text: "Level"; Anchor: (Width: 100); }
+                        Label #HeaderValue { Style: (TextColor: #c0cee5, FontSize: 13, RenderBold: true, RenderUppercase: true); Text: "Value"; Anchor: (Width: 200); }
+                    }
+
+                    Group { Anchor: (Height: 1); Background: #2b3f58; }
+                }
+
+                Group { Anchor: (Height: 4); }
+
                 Group #ContentArea {
                     LayoutMode: Top;
                     FlexWeight: 1;

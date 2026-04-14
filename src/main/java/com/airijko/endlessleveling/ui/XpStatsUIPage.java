@@ -86,6 +86,24 @@ public class XpStatsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         ui.clear("#ContentRows");
         ui.set("#PaginationBar.Visible", false);
 
+        boolean showHeaders = activeTab != Tab.MY_STATS;
+        ui.set("#HeaderCard.Visible", showHeaders);
+
+        if (showHeaders) {
+            String valueHeader = switch (activeTab) {
+                case LEADERBOARD -> switch (lbType) {
+                    case XP_24H -> "XP 24H";
+                    case XP_7D -> "XP 7D";
+                    case TOTAL_XP -> "TOTAL XP";
+                    case MOMENTUM -> "MOMENTUM";
+                };
+                case ADMIN_LB -> "XP 24H (M)";
+                case ADMIN_FLAGGED -> "FLAGS";
+                default -> "VALUE";
+            };
+            ui.set("#HeaderValue.Text", valueHeader);
+        }
+
         switch (activeTab) {
             case MY_STATS -> renderMyStats(ui);
             case LEADERBOARD -> renderLeaderboard(ui);

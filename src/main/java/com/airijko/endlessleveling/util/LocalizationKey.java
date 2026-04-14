@@ -52,6 +52,13 @@ public enum LocalizationKey {
     HUD_LEVEL_WITHOUT_LEVELING("hud.level.without_leveling", "LVL {0}   XP: {1}"),
     HUD_LEVEL_MAX("hud.level.max", "LVL {0}   MAX LEVEL"),
     HUD_LEVEL_PROGRESS("hud.level.progress", "LVL {0}   XP: {1} / {2}"),
+    HUD_LEVEL_ONLY("hud.level.only", "LVL {0}"),
+    HUD_LEVEL_ONLY_NO_DATA("hud.level.only.no_data", "LVL --"),
+    HUD_XP_NO_DATA("hud.xp.no_data", "0 / --"),
+    HUD_XP_PROGRESS("hud.xp.progress", "{0} / {1}"),
+    HUD_XP_WITHOUT_LEVELING("hud.xp.without_leveling", "{0}"),
+    HUD_XP_MAX("hud.xp.max", "MAX"),
+    HUD_PRESTIGE("hud.prestige", "P{0}"),
 
     UI_AUGMENTS_REMAINING_HEADER("ui.augments.remaining.header",
             "You still have more augments to choose from:"),

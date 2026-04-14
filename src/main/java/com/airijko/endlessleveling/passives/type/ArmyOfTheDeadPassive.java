@@ -1148,6 +1148,16 @@ public final class ArmyOfTheDeadPassive {
                     return;
                 }
 
+                // Register binding IMMEDIATELY after UUID extraction — before any
+                // other work — so MobLevelingSystem's blacklist check sees this
+                // entity as a managed summon on its very first tick.  The previous
+                // location (after slot setup) left a window where the entity existed
+                // in the store but was not yet in SUMMON_BINDINGS, allowing the mob
+                // leveling pipeline to assign a level and downstream systems (e.g.
+                // EndlessEliteMobs) to treat the summon as an ordinary leveled mob.
+                SUMMON_BINDINGS.put(summonUuidComponent.getUuid(),
+                        new SummonBinding(request.ownerUuid(), request.slotIndex()));
+
                 attachSummonToOwnerFlock(request.source().ownerRef(), summonRef, store,
                         spawnRoleType);
 
@@ -1169,8 +1179,6 @@ public final class ArmyOfTheDeadPassive {
                 slot.nextTargetAcquireAt = now;
                 slot.nextTeleportCheckAt = now;
                 slot.nextMovementRefreshAt = now;
-                SUMMON_BINDINGS.put(summonUuidComponent.getUuid(),
-                        new SummonBinding(request.ownerUuid(), request.slotIndex()));
 
                 applySummonScaling(summonRef,
                         store,

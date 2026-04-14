@@ -13,6 +13,9 @@ import com.airijko.endlessleveling.util.ChatMessageTemplate;
 import com.airijko.endlessleveling.util.PlayerChatNotifier;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.server.core.asset.type.entityeffect.config.EntityEffect;
+import com.hypixel.hytale.server.core.asset.type.entityeffect.config.OverlapBehavior;
+import com.hypixel.hytale.server.core.entity.effect.EffectControllerComponent;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue;
 import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
@@ -21,6 +24,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Periodically pulses party healing around the source player.
@@ -34,6 +38,15 @@ public final class HealingAuraPassive {
     private static final double HEAL_FROM_TOTAL_STAMINA = 0.20D;
     private static final double DEFAULT_SELF_HEAL_EFFECTIVENESS = 1.0D;
     private static final double DEFAULT_DAMAGE_PAUSE_SECONDS = 4.0D;
+
+    private static final String AURA_EFFECT_ID = "EL_Healing_Aura_Effect";
+    private static final float AURA_EFFECT_DURATION = 10.0F;
+    private static final long AURA_VISUAL_INTERVAL_MILLIS = 8000L;
+    private static final Map<String, AuraVisualState> AURA_VISUAL_STATE = new ConcurrentHashMap<>();
+
+    private static final class AuraVisualState {
+        long lastVisualAt;
+    }
 
     private HealingAuraPassive() {
     }
@@ -68,6 +81,7 @@ public final class HealingAuraPassive {
         if (isPausedByDamage(runtimeState, now, config.damagePauseMillis())) {
             if (!runtimeState.isHealingAuraPaused()) {
                 runtimeState.setHealingAuraPaused(true);
+                clearAuraVisual(sourceRef, commandBuffer);
                 notifyPassive(sourcePlayer,
                         "Healing Aura paused after taking damage.");
             }
@@ -80,11 +94,6 @@ public final class HealingAuraPassive {
                     "Healing Aura reactivated.");
         }
 
-        long lastPulse = runtimeState.getPartyMendingLastPulseMillis();
-        if (lastPulse > 0L && now - lastPulse < PULSE_INTERVAL_MILLIS) {
-            return;
-        }
-
         EntityStatValue sourceHealth = sourceStats.get(DefaultEntityStatTypes.getHealth());
         if (sourceHealth == null || sourceHealth.getMax() <= 0f || sourceHealth.get() <= 0f) {
             return;
@@ -94,6 +103,20 @@ public final class HealingAuraPassive {
         EntityStatValue sourceStamina = sourceStats.get(DefaultEntityStatTypes.getStamina());
         double totalMana = sourceMana != null ? Math.max(0.0D, sourceMana.getMax()) : 0.0D;
         double totalStamina = sourceStamina != null ? Math.max(0.0D, sourceStamina.getMax()) : 0.0D;
+
+        double radius = Math.max(0.0D, config.baseRadius());
+        if (config.manaPerBlock() > 0.0D) {
+            radius += Math.floor(totalMana / config.manaPerBlock());
+        }
+
+        if (radius > 0.0D) {
+            updateAuraVisual(sourceRef, commandBuffer, now, radius);
+        }
+
+        long lastPulse = runtimeState.getPartyMendingLastPulseMillis();
+        if (lastPulse > 0L && now - lastPulse < PULSE_INTERVAL_MILLIS) {
+            return;
+        }
 
         double healPerPulse = (config.flatHealValue() * auraScales.fullScale())
             + (totalMana * config.manaRatio() * auraScales.ratioScale())
@@ -241,6 +264,74 @@ public final class HealingAuraPassive {
             }
         }
         return fallback;
+    }
+
+    private static void updateAuraVisual(Ref<EntityStore> sourceRef,
+            CommandBuffer<EntityStore> commandBuffer,
+            long now,
+            double radius) {
+        if (sourceRef == null || commandBuffer == null || radius <= 0.0D) {
+            return;
+        }
+
+        String key = resolveVisualKey(sourceRef, commandBuffer);
+        AuraVisualState state = AURA_VISUAL_STATE.computeIfAbsent(key, unused -> new AuraVisualState());
+        if (state.lastVisualAt > 0L && now - state.lastVisualAt < AURA_VISUAL_INTERVAL_MILLIS) {
+            return;
+        }
+
+        EffectControllerComponent controller = EntityRefUtil.tryGetComponent(commandBuffer,
+                sourceRef, EffectControllerComponent.getComponentType());
+        if (controller == null) {
+            return;
+        }
+
+        EntityEffect effect = EntityEffect.getAssetMap().getAsset(AURA_EFFECT_ID);
+        if (effect == null) {
+            return;
+        }
+
+        state.lastVisualAt = now;
+        try {
+            controller.addEffect(sourceRef, effect, AURA_EFFECT_DURATION,
+                    OverlapBehavior.OVERWRITE, commandBuffer);
+        } catch (Exception ignored) {
+        }
+    }
+
+    private static void clearAuraVisual(Ref<EntityStore> sourceRef, CommandBuffer<EntityStore> commandBuffer) {
+        if (sourceRef == null || commandBuffer == null) {
+            return;
+        }
+        AURA_VISUAL_STATE.remove(resolveVisualKey(sourceRef, commandBuffer));
+
+        EffectControllerComponent controller = EntityRefUtil.tryGetComponent(commandBuffer,
+                sourceRef, EffectControllerComponent.getComponentType());
+        if (controller == null) {
+            return;
+        }
+        int idx = EntityEffect.getAssetMap().getIndex(AURA_EFFECT_ID);
+        if (idx != Integer.MIN_VALUE) {
+            controller.removeEffect(sourceRef, idx, commandBuffer);
+        }
+    }
+
+    private static String resolveVisualKey(Ref<EntityStore> ref, CommandBuffer<EntityStore> commandBuffer) {
+        PlayerRef playerRef = EntityRefUtil.tryGetComponent(commandBuffer, ref, PlayerRef.getComponentType());
+        if (playerRef != null && playerRef.isValid() && playerRef.getUuid() != null) {
+            return playerRef.getUuid().toString();
+        }
+        Object store = ref.getStore();
+        if (store != null) {
+            return System.identityHashCode(store) + ":" + ref.getIndex();
+        }
+        return String.valueOf(ref.getIndex());
+    }
+
+    public static int clearAllRuntimeState() {
+        int cleared = AURA_VISUAL_STATE.size();
+        AURA_VISUAL_STATE.clear();
+        return cleared;
     }
 
     private record HealingAuraConfig(double flatHealValue,
