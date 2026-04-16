@@ -50,11 +50,11 @@ $C.@PageOverlay {
 
             Group {
                 LayoutMode: Left;
-                Anchor: (Width: 1680, Height: 720);
+                Anchor: (Width: 1680, Height: 700);
 
                 Group {
                     LayoutMode: Top;
-                    Anchor: (Width: 1680, Height: 720);
+                    Anchor: (Width: 1680, Height: 700);
 
                     // ============================================================
                     //  CAROUSEL VIEW
@@ -85,7 +85,7 @@ $C.@PageOverlay {
 
                                         Label #DungeonsTitle {
                                             Text: "ENDLESS LEVELING";
-                                            Style: (FontSize: 14, TextColor: #ff5555, RenderBold: true, RenderUppercase: true, LetterSpacing: 2, VerticalAlignment: Center);
+                                            Style: (FontSize: 14, TextColor: #f0c040, RenderBold: true, RenderUppercase: true, LetterSpacing: 2, VerticalAlignment: Center);
                                         }
 
                                         Group { Anchor: (Width: 12); }

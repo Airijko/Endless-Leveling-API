@@ -75,8 +75,8 @@ Button #CardDailyBosses {
 
                     Group { Anchor: (Height: 8); }
 
-                    Label {
-                        Text: "Coming Soon - Patreon Exclusive";
+                    Label #DailyBossesStatus {
+                        Text: "Patreon Exclusive";
                         Anchor: (Height: 16);
                         Style: (FontSize: 11, TextColor: #ff5555, RenderBold: true, LetterSpacing: 1);
                     }
@@ -93,7 +93,7 @@ Button #CardDailyBosses {
                         FlexWeight: 1;
                     }
 
-                    Label {
+                    Label #DailyBossesPatreonHint {
                         Text: "Click for Patreon";
                         Anchor: (Height: 14);
                         Style: (FontSize: 10, TextColor: #ff5555, HorizontalAlignment: Center, VerticalAlignment: End, LetterSpacing: 1);

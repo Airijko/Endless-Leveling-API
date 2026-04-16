@@ -5,6 +5,7 @@ import javax.annotation.Nullable;
 
 import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.api.EndlessLevelingAPI;
+import com.airijko.endlessleveling.util.PartnerConsoleGuard;
 import com.airijko.endlessleveling.api.gates.InstanceDungeonDefinition;
 import com.airijko.endlessleveling.leveling.PartyManager;
 import com.airijko.endlessleveling.mob.outlander.OutlanderBridgeRewardCooldowns;
@@ -142,6 +143,16 @@ public class DungeonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         ui.set("#MajorNotInstalledLabel.Visible", !majorInstalled);
         ui.set("#MajorInstallButton.Visible", !majorInstalled);
 
+        // Patreon-exclusive cards:
+        //   - Base mod (no partner addons): "Coming Soon - Patreon Exclusive" + show Patreon hint.
+        //   - Partner addons present (ARank + Partner): "Coming Soon" only, hide Patreon hint.
+        boolean partnerActive = isPartnerActive();
+        String patreonStatus = partnerActive ? "Coming Soon" : "Coming Soon - Patreon Exclusive";
+        ui.set("#DailyBossesStatus.Text", patreonStatus);
+        ui.set("#WeeklyBossesStatus.Text", patreonStatus);
+        ui.set("#DailyBossesPatreonHint.Visible", !partnerActive);
+        ui.set("#WeeklyBossesPatreonHint.Visible", !partnerActive);
+
         // Outlander Bridge reward status label on carousel card.
         updateOutlanderBridgeCardStatus(ui);
 
@@ -161,14 +172,23 @@ public class DungeonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         events.addEventBinding(Activating, "#OutlanderDetailsButton", of("Action", "dungeon:outlander:flip"), false);
         events.addEventBinding(Activating, "#OutlanderBackButton", of("Action", "dungeon:outlander:unflip"), false);
 
-        // Other carousel cards: whole-card click → detail view.
-        events.addEventBinding(Activating, "#CardDailyBosses", of("Action", "dungeon:view:" + DAILY_BOSSES_ID), false);
-        events.addEventBinding(Activating, "#CardWeeklyBosses", of("Action", "dungeon:view:" + WEEKLY_BOSSES_ID), false);
-        events.addEventBinding(Activating, "#CardFrozen", of("Action", "dungeon:view:frozen"), false);
-        events.addEventBinding(Activating, "#CardSwamp", of("Action", "dungeon:view:swamp"), false);
-        events.addEventBinding(Activating, "#CardVoid", of("Action", "dungeon:view:void"), false);
-        events.addEventBinding(Activating, "#CardAzaroth", of("Action", "dungeon:view:azaroth"), false);
-        events.addEventBinding(Activating, "#CardKatherina", of("Action", "dungeon:view:katherina"), false);
+        // Patreon-exclusive cards: click sends Patreon link to chat (no detail-view rerouting).
+        events.addEventBinding(Activating, "#CardDailyBosses", of("Action", "dungeon:patreon"), false);
+        events.addEventBinding(Activating, "#CardWeeklyBosses", of("Action", "dungeon:patreon"), false);
+
+        // Card flip bindings (converted from detail-view cards).
+        events.addEventBinding(Activating, "#FrozenDetailsButton", of("Action", "dungeon:frozen:flip"), false);
+        events.addEventBinding(Activating, "#FrozenBackButton", of("Action", "dungeon:frozen:unflip"), false);
+        events.addEventBinding(Activating, "#SwampDetailsButton", of("Action", "dungeon:swamp:flip"), false);
+        events.addEventBinding(Activating, "#SwampBackButton", of("Action", "dungeon:swamp:unflip"), false);
+        events.addEventBinding(Activating, "#VoidDetailsButton", of("Action", "dungeon:void:flip"), false);
+        events.addEventBinding(Activating, "#VoidBackButton", of("Action", "dungeon:void:unflip"), false);
+        events.addEventBinding(Activating, "#AzarothDetailsButton", of("Action", "dungeon:azaroth:flip"), false);
+        events.addEventBinding(Activating, "#AzarothBackButton", of("Action", "dungeon:azaroth:unflip"), false);
+        events.addEventBinding(Activating, "#KatherinaDetailsButton", of("Action", "dungeon:katherina:flip"), false);
+        events.addEventBinding(Activating, "#KatherinaBackButton", of("Action", "dungeon:katherina:unflip"), false);
+
+        // Baron still uses whole-card click → detail view.
         events.addEventBinding(Activating, "#CardBaron", of("Action", "dungeon:view:baron"), false);
 
         // Detail view buttons.
@@ -272,15 +292,17 @@ public class DungeonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             ui.set("#DetailEnterButton.Visible", true);
             ui.set("#DetailPatreonButton.Visible", false);
         } else if (DAILY_BOSSES_ID.equals(dungeonId) || WEEKLY_BOSSES_ID.equals(dungeonId)) {
+            boolean partner = isPartnerActive();
             ui.set("#DetailRewardHeader.Visible", true);
             ui.set("#DetailRewardHeader.Text", "STATUS");
             ui.set("#DetailRewardStatus.Visible", true);
-            ui.set("#DetailRewardStatus.Text", "Coming Soon - Patreon Exclusive");
+            ui.set("#DetailRewardStatus.Text", partner ? "Coming Soon" : "Coming Soon - Patreon Exclusive");
             ui.set("#DetailRewardDetail.Visible", true);
-            ui.set("#DetailRewardDetail.Text",
-                    "Support development on Patreon to unlock this content when it launches.");
+            ui.set("#DetailRewardDetail.Text", partner
+                    ? "Thanks for being a partner — this content is launching soon."
+                    : "Support development on Patreon to unlock this content when it launches.");
             ui.set("#DetailEnterButton.Visible", false);
-            ui.set("#DetailPatreonButton.Visible", true);
+            ui.set("#DetailPatreonButton.Visible", !partner);
         } else {
             ui.set("#DetailRewardHeader.Visible", false);
             ui.set("#DetailRewardStatus.Visible", false);
@@ -371,6 +393,10 @@ public class DungeonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         return false;
     }
 
+    private boolean isPartnerActive() {
+        return PartnerConsoleGuard.isPartnerAddonPresent();
+    }
+
     private boolean isClassPresent(@Nonnull String className) {
         try {
             Class.forName(className);
@@ -450,6 +476,10 @@ public class DungeonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         }
 
         if ("dungeon:patreon".equalsIgnoreCase(data.action)) {
+            if (isPartnerActive()) {
+                playerRef.sendMessage(Message.raw("[Patreon] Thanks for being a partner! This content is launching soon.").color("#6cff78"));
+                return;
+            }
             playerRef.sendMessage(Message.raw("[Patreon] Support development & unlock exclusive content:").color("#ff9a3c"));
             playerRef.sendMessage(Message.raw(">> patreon.com/cw/airijko <<").link(PATREON_URL).color("#ff9a3c"));
             return;
@@ -486,7 +516,36 @@ public class DungeonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             return;
         }
 
+        if (handleCardFlip(data.action, "frozen", "#FrozenCardFront", "#FrozenCardBack")) return;
+        if (handleCardFlip(data.action, "swamp", "#SwampCardFront", "#SwampCardBack")) return;
+        if (handleCardFlip(data.action, "void", "#VoidCardFront", "#VoidCardBack")) return;
+        if (handleCardFlip(data.action, "azaroth", "#AzarothCardFront", "#AzarothCardBack")) return;
+        if (handleCardFlip(data.action, "katherina", "#KatherinaCardFront", "#KatherinaCardBack")) return;
+
         NavUIHelper.handleNavAction(data.action, ref, store, playerRef);
+    }
+
+    private boolean handleCardFlip(@Nonnull String action,
+            @Nonnull String dungeonKey,
+            @Nonnull String frontSelector,
+            @Nonnull String backSelector) {
+        String flipAction = "dungeon:" + dungeonKey + ":flip";
+        String unflipAction = "dungeon:" + dungeonKey + ":unflip";
+        if (flipAction.equalsIgnoreCase(action)) {
+            UICommandBuilder ui = new UICommandBuilder();
+            ui.set(frontSelector + ".Visible", false);
+            ui.set(backSelector + ".Visible", true);
+            sendUpdate(ui, false);
+            return true;
+        }
+        if (unflipAction.equalsIgnoreCase(action)) {
+            UICommandBuilder ui = new UICommandBuilder();
+            ui.set(frontSelector + ".Visible", true);
+            ui.set(backSelector + ".Visible", false);
+            sendUpdate(ui, false);
+            return true;
+        }
+        return false;
     }
 
     private void handleOutlanderTeleport(@Nonnull Ref<EntityStore> ref, @Nonnull Store<EntityStore> store) {

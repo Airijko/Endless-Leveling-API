@@ -1,12 +1,26 @@
-Button #CardSwamp {
+$C = "../../../../Common.ui";
+
+@CardButtonLabelStyle = LabelStyle(
+    FontSize: 11,
+    TextColor: #e8f1ff,
+    RenderBold: true,
+    RenderUppercase: true,
+    LetterSpacing: 1,
+    HorizontalAlignment: Center,
+    VerticalAlignment: Center,
+);
+
+@CardButtonStyle = TextButtonStyle(
+    Default:  (Background: $C.@DefaultSquareButtonDefaultBackground,  LabelStyle: @CardButtonLabelStyle),
+    Hovered:  (Background: $C.@DefaultSquareButtonHoveredBackground,  LabelStyle: @CardButtonLabelStyle),
+    Pressed:  (Background: $C.@DefaultSquareButtonPressedBackground,  LabelStyle: @CardButtonLabelStyle),
+    Disabled: (Background: $C.@DefaultSquareButtonDisabledBackground, LabelStyle: $C.@DefaultButtonDisabledLabelStyle),
+    Sounds: $C.@ButtonSounds,
+);
+
+Group {
     Anchor: (Width: 340, Height: 580, Right: 24, Top: 10, Bottom: 10);
-    Padding: (Full: 0);
-    Background: #0c121a(0);
     LayoutMode: Top;
-    Style: (
-        Hovered: (Background: #1c2b40(0.20)),
-        Pressed: (Background: #263852(0.28))
-    );
 
     Group { Anchor: (Height: 2); Background: #25384b; }
 
@@ -21,12 +35,13 @@ Button #CardSwamp {
 
             Group { Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 0); Background: #0e1826(0.94); }
 
-            Group {
+            Group #SwampCardFront {
                 Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 0);
                 LayoutMode: Top;
+                Visible: true;
 
                 Group {
-                    Anchor: (Height: 180);
+                    Anchor: (Height: 200);
                     Background: #184637;
                     Padding: (Full: 4);
 
@@ -34,7 +49,6 @@ Button #CardSwamp {
                         Anchor: (Top: 0, Left: 0, Right: 0, Bottom: 0);
                         Background: (TexturePath: "../Images/EndgameSwampPlaceholder.png");
                         Visible: false;
-
                         Group {
                             Anchor: (Top: 0, Left: 0, Right: 0, Bottom: 0);
                             Background: #000000(0.3);
@@ -91,11 +105,90 @@ Button #CardSwamp {
                         FlexWeight: 1;
                     }
 
-                    Label {
-                        Text: "Click for details";
-                        Anchor: (Height: 14);
-                        Style: (FontSize: 10, TextColor: #c8a2ff, HorizontalAlignment: Center, VerticalAlignment: End, LetterSpacing: 1);
+                    Group { Anchor: (Height: 8); }
+
+                    $C.@TextButton #SwampDetailsButton {
+                        Text: "DETAILS";
+                        Anchor: (Height: 36);
+                        Padding: (Horizontal: 8);
+                        Style: @CardButtonStyle;
                     }
+                }
+            }
+
+            Group #SwampCardBack {
+                Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 0);
+                LayoutMode: Top;
+                Visible: false;
+                Padding: (Left: 14, Right: 14, Top: 14, Bottom: 12);
+
+                Label {
+                    Text: "ADVANCED DETAILS";
+                    Anchor: (Height: 14);
+                    Style: (FontSize: 10, TextColor: #c8a2ff, RenderBold: true, LetterSpacing: 2);
+                }
+
+                Group { Anchor: (Height: 4); }
+
+                Label {
+                    Text: "Swamp Dungeon";
+                    Anchor: (Height: 24);
+                    Style: (FontSize: 18, TextColor: #f0c040, RenderBold: true);
+                }
+
+                Group { Anchor: (Height: 8); }
+
+                Group { Anchor: (Height: 1); Background: #ffffff(0.08); }
+
+                Group { Anchor: (Height: 8); }
+
+                Label {
+                    Text: "MECHANICS";
+                    Anchor: (Height: 14);
+                    Style: (FontSize: 10, TextColor: #9fb6d3, RenderBold: true, LetterSpacing: 1);
+                }
+
+                Group { Anchor: (Height: 4); }
+
+                Label {
+                    Text: "- Murky marsh terrain restricts mobility.";
+                    Anchor: (Height: 28);
+                    Style: (FontSize: 10, TextColor: #bdd0e8, Wrap: true);
+                }
+                Label {
+                    Text: "- Heavy poison pressure across the map.";
+                    Anchor: (Height: 28);
+                    Style: (FontSize: 10, TextColor: #bdd0e8, Wrap: true);
+                }
+                Label {
+                    Text: "- Relentless ambush waves and tight chokepoints.";
+                    Anchor: (Height: 28);
+                    Style: (FontSize: 10, TextColor: #bdd0e8, Wrap: true);
+                }
+
+                Group { Anchor: (Height: 8); }
+
+                Label {
+                    Text: "PORTAL ACCESS";
+                    Anchor: (Height: 14);
+                    Style: (FontSize: 10, TextColor: #9fb6d3, RenderBold: true, LetterSpacing: 1);
+                }
+
+                Group { Anchor: (Height: 4); }
+
+                Label {
+                    Text: "Requires the Endgame & QoL mod. Find the dungeon's portal key in-world to enter.";
+                    Anchor: (Height: 44);
+                    Style: (FontSize: 10, TextColor: #ffc98b, Wrap: true);
+                }
+
+                Group { FlexWeight: 1; }
+
+                $C.@TextButton #SwampBackButton {
+                    Text: "< BACK";
+                    Anchor: (Height: 36);
+                    Padding: (Horizontal: 8);
+                    Style: @CardButtonStyle;
                 }
             }
         }
