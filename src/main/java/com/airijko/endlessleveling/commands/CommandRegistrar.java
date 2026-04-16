@@ -81,6 +81,10 @@ public final class CommandRegistrar {
         ensureShortcutCommandRegistered(commandRegistry, priestCommand, "/priest");
         registerCommand(commandRegistry, augmentCommand);
         ensureShortcutCommandRegistered(commandRegistry, augmentCommand, "/augments");
+        com.airijko.endlessleveling.commands.dungeons.DungeonsCommand dungeonsCommand =
+                new com.airijko.endlessleveling.commands.dungeons.DungeonsCommand();
+        registerCommand(commandRegistry, dungeonsCommand);
+        ensureShortcutCommandRegistered(commandRegistry, dungeonsCommand, "/dungeons");
 
         if (xpStatsManager != null && xpStatsLeaderboardService != null) {
             com.airijko.endlessleveling.commands.xpstats.XpStatsCommand xpStatsCommand =

@@ -1,5 +1,267 @@
 # Endless Leveling - Update Log
 
+## 2026-04-15 — 7.9.0 (compared to 7.8.3)
+
+A **content release** introducing the **Outlander Bridge** — a wave-based instanced dungeon with XP banking, tiered reward claiming, and a full HUD overlay. Seven escalating waves of Outlander mobs spawn across a flat arena bridge; XP earned during waves is banked rather than applied directly, split into **pending** (current wave, lost on death) and **saved** (checkpointed on wave clear). After victory or death, a 60-second reward window opens for claiming banked XP, subject to a 1-hour cooldown. The system ships with 4 new ECS systems, a wave orchestration manager, dedicated UI pages, combat music, a portal item, and a pre-built instance world.
+
+### Highlights
+
+- **Outlander Bridge wave dungeon** — 7-wave instanced dungeon with escalating mob compositions (Peon → Marauder → Berserker melee; Hunter → Stalker → Cultist ranged; Priest/Sorcerer mages). Each wave ends with an Outlander_Brute boss (1.8× size scale). Mobs spawn in multi-batch pools with 70% kill-threshold or 25-second fallback triggers. Combat zone enforced within ±30 radius; mobs snap-back if they escape leash bounds.
+- **XP banking system** — `LevelingManager.addXp()` intercepts final XP via `OutlanderBridgeXpBank.tryDivertXp()` and redirects it into a per-player bank instead of the player profile. Pending XP (current wave) wipes on death; saved XP (cleared waves) persists. `checkpointSession()` promotes all pending → saved between waves.
+- **Reward claim flow** — victory triggers a 5-second grace period, then opens `OutlanderBridgeRewardsPage` with a 60-second countdown. Players can CLAIM (applies cooldown, grants XP, kicks from instance) or CANCEL (forfeits XP, no cooldown). Timeout force-closes the page. Session locking prevents TP-exploit re-entry after claim/cancel.
+- **1-hour claim cooldown** — `OutlanderBridgeRewardCooldowns` persists per-player cooldown expiry to `outlander-bridge-reward-cooldowns.json` with atomic `.tmp` + move writes. Expired entries auto-purged on load. Bypassable via `endlessleveling.outlander.bypass_cooldown` permission.
+- **Wave HUD overlay** — real-time HUD showing wave count, remaining mobs, banked XP (green), unsecured XP (orange), and up to 5 mob coordinate hints. State-change detection prevents update spam; 250ms refresh throttle via `OutlanderBridgeWaveHudRefreshSystem`. Multi-HUD mod compatibility via `MultipleHudCompatibility.showHud()`.
+- **Dungeons page integration** — `DungeonsUIPage` lists Outlander Bridge as a native dungeon card with cooldown-aware status badge ("Rewards Available" / remaining cooldown). Cooldown warning confirm dialog shown on entry when on cooldown.
+- **Combat music** — `Outlander-Bridge.ogg` triggered per-player with cooldown, single-instance playback, music-category audio.
+- **Portal item** — `EL_Portal_Outlander_Bridge` (Rare quality, Howling Sands portal visual, 30-minute time limit) links to `Endless_Outlander_Bridge` instance via portal type definition. Spawn at (0.5, 80, 0.5) facing Yaw 180.
+- **Block protection** — two complementary guards: `OutlanderBridgeBlockDamageGuardSystem` cancels `DamageBlockEvent`, and `BreakBlockEntitySystem` early-exits for Outlander Bridge worlds.
+- **Admin command** — `/lvl start` skips wave countdown for testing; validates player is in an active Outlander Bridge instance.
+
+### Outlander Bridge Wave Manager (`Feature`)
+
+Core orchestration lives in [`OutlanderBridgeWaveManager`](src/main/java/com/airijko/endlessleveling/mob/outlander/OutlanderBridgeWaveManager.java) (~1000 lines), extending `TickingSystem`.
+
+#### Game Phases
+
+Four phases drive the session lifecycle: **COUNTDOWN** → **WAVE_ACTIVE** → **WAVE_CLEARED** → **COMPLETED**. Each tick processes the active phase's logic (spawn batches, death pruning, bounds enforcement, aggro, HUD refresh).
+
+#### Wave Definitions
+
+Loaded from [`waves/outlander_bridge_waves.json`](src/main/resources/waves/outlander_bridge_waves.json) (327 lines). Global settings: `spawn_radius: 18`, `batch_kill_percent: 70%`, `batch_fallback_seconds: 25`. Seven waves with escalating pools:
+
+| Wave | Melee Pool | Ranged Pool | Boss |
+|------|-----------|-------------|------|
+| 1–3 | 6–10 Peon/Marauder | 3–7 Hunter/Stalker | Outlander_Brute |
+| 4–5 | 7–10 Marauder/Berserker | 2–3 Priest/Sorcerer | Outlander_Brute |
+| 6–7 | 8–9 Berserker warband | 3–5 Cultist/Sorcerer ritual | Outlander_Brute |
+
+Pools use variant arrays for RNG selection; late-wave swarm variants can field 20+ total mobs.
+
+#### Combat Geometry
+
+- Two spawning flanks at ±50 X, ±8 Z offset from arena center
+- Combat zone enforcement: ±30 radius, mobs snap-back if they escape
+- Y-bounds enforcement prevents mobs falling off the bridge
+- 500m aggro radius with `TargetMemory` updates and ghost-hit aggression
+
+#### Session Management
+
+Per-world instances keyed by UUID. Return portal hidden during waves, restored on victory. Death detection prunes `DeathComponent` mobs each tick. Boss mobs receive 1.8× size scale.
+
+#### Files
+
+- [`OutlanderBridgeWaveManager`](src/main/java/com/airijko/endlessleveling/mob/outlander/OutlanderBridgeWaveManager.java) — ~1000 lines. Core wave orchestration, mob spawning, phase transitions, aggro, bounds, audio, portal management.
+
+### XP Banking System (`Feature`)
+
+[`OutlanderBridgeXpBank`](src/main/java/com/airijko/endlessleveling/mob/outlander/OutlanderBridgeXpBank.java) (249 lines) manages per-player XP state during sessions.
+
+#### Banking Model
+
+Two XP tiers per player per session:
+- **Pending XP** — accumulated during current wave; wiped to zero on player death
+- **Saved XP** — checkpointed from pending on wave clear; safe across deaths
+
+#### State Maps
+
+- `activeBanking` — player UUID → session world UUID
+- `sessionBanks` — world UUID → player UUID → `BankState`
+- `sessionLockedPlayers` — world UUID → set of locked player UUIDs (post-claim/cancel)
+
+#### Integration Point
+
+[`LevelingManager.addXp()`](src/main/java/com/airijko/endlessleveling/leveling/LevelingManager.java) (~line 228): after applying all XP bonuses, checks `OutlanderBridgeXpBank.get().tryDivertXp(uuid, adjustedXp)`. If returns `true`, XP is redirected to the bank instead of the player profile.
+
+#### Key Methods
+
+- `tryDivertXp()` — intercepts XP from `LevelingManager`, adds to pending
+- `checkpointSession()` — moves all pending → saved for all players in session
+- `onPlayerDied()` — zeros pending, queues respawn reward panel if saved > 0
+- `lockAndClear()` — permanent session lockout after claim/cancel/timeout
+- `snapshotSessionSavedXp()` — read-only snapshot for victory panels
+
+#### Files
+
+- [`OutlanderBridgeXpBank`](src/main/java/com/airijko/endlessleveling/mob/outlander/OutlanderBridgeXpBank.java) — 249 lines. Inner types: `BankState`, `PendingReward` record, `BankView` record.
+
+### Reward Claim Cooldown (`Feature`)
+
+[`OutlanderBridgeRewardCooldowns`](src/main/java/com/airijko/endlessleveling/mob/outlander/OutlanderBridgeRewardCooldowns.java) (125 lines) persists per-player 1-hour cooldowns for claiming rewards.
+
+- Singleton with `init()` / `get()` pattern
+- Persists to `outlander-bridge-reward-cooldowns.json`
+- Atomic write: `.tmp` file + move to prevent corruption on crash
+- Auto-purges expired entries on load
+- Methods: `isOnCooldown()`, `remainingMs()`, `setClaimedNow()`
+
+### Rewards Page UI (`Feature`)
+
+[`OutlanderBridgeRewardsPage`](src/main/java/com/airijko/endlessleveling/ui/OutlanderBridgeRewardsPage.java) (263 lines) — interactive modal for claiming or forfeiting banked XP.
+
+#### UI Template
+
+[`OutlanderBridgeRewards.ui`](src/main/resources/Common/UI/Custom/Pages/OutlanderBridge/OutlanderBridgeRewards.ui) (147 lines) — 520×420 px centred modal with:
+- XP card (green accent bar, formatted amount with k/M suffixes)
+- Countdown card (orange accent bar, "Dungeon closes in: 60s")
+- Optional cooldown status message (red)
+- CLAIM / CANCEL buttons
+
+#### Claim Logic
+
+- CLAIM: applies 1-hour cooldown, locks player in session, grants XP via `LevelingManager.addXp()`, kicks from instance
+- CANCEL: forfeits XP, no cooldown applied, kicks from instance
+- Timeout (60s): manager force-closes page
+
+#### Permission
+
+`endlessleveling.outlander.bypass_cooldown` — bypasses the 1-hour cooldown. Also granted implicitly via op/admin/wildcard permissions (resolved through [`OperatorHelper`](src/main/java/com/airijko/endlessleveling/util/OperatorHelper.java)).
+
+### Wave HUD (`Feature`)
+
+[`OutlanderBridgeWaveHud`](src/main/java/com/airijko/endlessleveling/ui/OutlanderBridgeWaveHud.java) (266 lines) — custom HUD overlay with real-time wave progress.
+
+#### Display Elements
+
+- Wave count (current / total)
+- Remaining mobs (alive / spawned)
+- Banked XP (green `#6cff78`) — saved across wave clears
+- Unsecured XP (orange `#ffc98b`) — current wave, lost on death
+- Up to 5 mob coordinate hint labels
+
+#### UI Template
+
+[`OutlanderBridgeWaveHud.ui`](src/main/resources/Common/UI/Custom/Hud/OutlanderBridgeWaveHud.ui) (123 lines) — positioned top-right, 320 px width, golden "Wave Tracker" header banner.
+
+#### Refresh System
+
+[`OutlanderBridgeWaveHudRefreshSystem`](src/main/java/com/airijko/endlessleveling/systems/OutlanderBridgeWaveHudRefreshSystem.java) (64 lines) — `TickingSystem` that pushes state to HUDs every 250ms per player. Sweeps ghost HUDs for players not in active sessions (post-restart, cross-world bleed).
+
+#### Multi-HUD Compatibility
+
+Checks `MultipleHudCompatibility.showHud()` for mod slots; falls back to `hudManager` directly if unavailable.
+
+#### Hide Stub
+
+[`OutlanderBridgeWaveHudHide`](src/main/java/com/airijko/endlessleveling/ui/OutlanderBridgeWaveHudHide.java) (22 lines) — minimal 1×1 px hidden HUD used as placeholder when closing the wave HUD to prevent flicker.
+
+### ECS Systems (`Feature`)
+
+Four new systems registered in [`EndlessLeveling.setup()`](src/main/java/com/airijko/endlessleveling/EndlessLeveling.java):
+
+| System | Type | Purpose |
+|--------|------|---------|
+| `OutlanderBridgeWaveManager` | `TickingSystem` | Wave orchestration, mob spawning, phase transitions |
+| `OutlanderBridgeWaveHudRefreshSystem` | `TickingSystem` | 250ms throttled HUD state push + ghost sweep |
+| `OutlanderBridgeBlockDamageGuardSystem` | `EntityEventSystem<DamageBlockEvent>` | Cancels all block damage in Outlander worlds |
+| `OutlanderBridgePlayerDeathSystem` | `DeathSystems.OnDeathSystem` | Routes player death to wave manager for XP wipe + respawn reward queue |
+
+### Block Protection (`Feature`)
+
+Two complementary guards prevent block modification during Outlander Bridge sessions:
+
+- [`OutlanderBridgeBlockDamageGuardSystem`](src/main/java/com/airijko/endlessleveling/systems/OutlanderBridgeBlockDamageGuardSystem.java) (36 lines) — cancels `DamageBlockEvent` in Outlander worlds
+- [`BreakBlockEntitySystem`](src/main/java/com/airijko/endlessleveling/systems/BreakBlockEntitySystem.java) (~line 41) — early-exit guard added for Outlander Bridge worlds (complementary to the event system)
+
+### Dungeons Page Integration (`Feature`)
+
+[`DungeonsUIPage`](src/main/java/com/airijko/endlessleveling/ui/DungeonsUIPage.java) (462 lines) updated with Outlander Bridge as a selectable native dungeon.
+
+- New constants: `OUTLANDER_BRIDGE_ID`, `OUTLANDER_BRIDGE_DESCRIPTION`
+- Side panel shows cooldown status via `OutlanderBridgeRewardCooldowns.get()` — "Rewards Available" (green) or remaining cooldown time
+- Cooldown warning confirm dialog on entry when player is on claim cooldown (XP earned won't be claimable)
+- Reuses existing portal/instance teleport flow
+
+[`DungeonsPage.ui`](src/main/resources/Common/UI/Custom/Pages/Dungeons/DungeonsPage.ui) (360 lines) — Outlander Bridge card in "ENDLESS LEVELING DUNGEONS" section with status badge, description, VIEW DETAILS and ENTER DUNGEON buttons.
+
+### Portal & Instance World (`Feature`)
+
+#### Portal Item
+
+[`EL_Portal_Outlander_Bridge.json`](src/main/resources/Server/Item/Items/EL_Portal_Outlander_Bridge.json) (47 lines):
+- Rare quality, Howling Sands portal visual (`PortalKey_Howling_Sands.png`)
+- 1800-second (30-minute) time limit
+- `Portal_Shard.blockymodel` with custom texture
+- Tags: `Portal`, `Temporary`
+
+#### Portal Type
+
+[`EL_Portal_Outlander_Bridge.json`](src/main/resources/Server/PortalTypes/EL_Portal_Outlander_Bridge.json) (25 lines):
+- Links to `Endless_Outlander_Bridge` instance
+- Cyan theme colour (`#5bceffff`)
+- Spawn: (0.5, 80.0, 0.5), Yaw 180
+- Tip: "Hold the center to win."
+
+#### Instance World
+
+[`Endless_Outlander_Bridge/`](src/main/resources/Server/Instances/Endless_Outlander_Bridge/) — pre-built flat arena with:
+- `Default_Flat` world generator
+- Time frozen at 07:00 (morning)
+- PvP disabled
+- 16 chunk region files (4×4 grid around origin)
+- `DeleteOnRemove: false` — arena template persists
+
+### World Settings (`Feature`)
+
+[`endless-dungeons.json`](src/main/resources/world-settings/endless-dungeons.json) — Outlander Bridge scaling configuration:
+
+| Setting | Standard Mob | Outlander_Brute (Boss) |
+|---------|-------------|----------------------|
+| Base Health Multiplier | 2.5× | 5.0× |
+| Health Per Level | +0.075 | +0.075 |
+| Base Damage Multiplier | 1.0× | 1.2× |
+| Damage Per Level | +0.025 | +0.025 |
+| Level Range | 20–40 base | 20–40 base |
+
+Player adaptation: ABOVE mode with ±10 level allowance. Endless tiers (20 levels per tier).
+
+### Audio (`Feature`)
+
+- [`Outlander-Bridge.ogg`](src/main/resources/Common/Sounds/EndlessLeveling/Outlander-Bridge.ogg) — combat music track (also mirrored to `Common/Music/`)
+- [`SFX_EL_OutlanderBridge_Combat_Music.json`](src/main/resources/Server/Audio/SoundEvents/SFX/EndlessLeveling/SFX_EL_OutlanderBridge_Combat_Music.json) (19 lines) — music-category audio event, volume 5, single-instance playback, `PreventSoundInterruption: true`
+
+### Localization (`Feature`)
+
+[`server.lang`](src/main/resources/Server/Languages/en-US/server.lang) — 6 new strings:
+
+| Key | Value |
+|-----|-------|
+| `items.EL_Portal_Outlander_Bridge.name` | Outlander Bridge Portal |
+| `items.EL_Portal_Outlander_Bridge.description` | Placeable portal that opens a gateway to the Outlander Bridge arena. |
+| `portals.outlander_bridge` | Outlander Bridge |
+| `portals.outlander_bridge.description` | A contested bridge arena. Fight across the span to claim the other side. |
+| `portals.outlander_bridge.tip1` | Tip: Hold the center to win. |
+
+### Admin Command (`Feature`)
+
+[`OutlanderBridgeStartCommand`](src/main/java/com/airijko/endlessleveling/commands/subcommands/OutlanderBridgeStartCommand.java) (42 lines) — `/lvl start` subcommand. Validates player is in an active Outlander Bridge instance, calls `OutlanderBridgeWaveManager.forceStart()` to skip countdown. Registered in [`EndlessLevelingCommand`](src/main/java/com/airijko/endlessleveling/commands/EndlessLevelingCommand.java) (~line 81).
+
+### Plugin Lifecycle Integration
+
+[`EndlessLeveling.setup()`](src/main/java/com/airijko/endlessleveling/EndlessLeveling.java) changes:
+- Registers all 4 new ECS systems
+- `OutlanderBridgeWaveManager.get().load()` — loads wave config
+- `OutlanderBridgeRewardCooldowns.init()` — initializes cooldown persistence
+- Hooks into `onPlayerEntered` and player-ready events for session management
+- Creates `InstanceDungeonDefinition` for `"outlander-bridge"`
+- `onPlayerDrain` hook calls `OutlanderBridgeWaveManager.get().onPlayerDrain(uuid)`
+
+### Version Bump
+
+- [`manifest.json`](src/main/resources/manifest.json) — `Version`: `7.8.3` → `7.9.0`.
+- `gradle.properties` — `version=7.9.0`.
+
+### Files Changed Summary
+
+- **Java (new, 9):** `OutlanderBridgeWaveManager`, `OutlanderBridgeXpBank`, `OutlanderBridgeRewardsPage`, `OutlanderBridgeRewardCooldowns`, `OutlanderBridgeWaveHud`, `OutlanderBridgeWaveHudHide`, `OutlanderBridgeWaveHudRefreshSystem`, `OutlanderBridgeBlockDamageGuardSystem`, `OutlanderBridgePlayerDeathSystem`, `OutlanderBridgeStartCommand`.
+- **Java (modified, 5):** `EndlessLeveling`, `EndlessLevelingCommand`, `LevelingManager`, `DungeonsUIPage`, `BreakBlockEntitySystem`.
+- **UI (new, 4):** `OutlanderBridgeWaveHud.ui`, `OutlanderBridgeWaveHide.ui`, `OutlanderBridgeRewards.ui`, `DungeonsPage.ui`.
+- **Config/Data (new, 4):** `outlander_bridge_waves.json`, `EL_Portal_Outlander_Bridge.json` (item), `EL_Portal_Outlander_Bridge.json` (portal type), `SFX_EL_OutlanderBridge_Combat_Music.json`.
+- **Instance (new, 16):** `Endless_Outlander_Bridge/` — instance.bson + 12 chunk regions + 4 resource JSONs.
+- **Audio (new, 2):** `Outlander-Bridge.ogg` (×2 paths).
+- **Config (modified, 3):** `manifest.json`, `gradle.properties`, `endless-dungeons.json`, `server.lang`.
+
+---
+
 ## 2026-04-14 — 7.8.3 (compared to 7.8.2)
 
 A **crash-fix + external-addon compatibility hotfix release** on top of 7.8.2. Three issues addressed: (1) the engine's "already contains component type" crash when two systems try to add a `Nameplate` component to the same entity on the same tick (affected entities in instance worlds `el_gate_*` where vanilla spawn + mob leveling nameplate apply concurrently); (2) external addon-provided races/classes being permanently nullified on player-data save when the addon's own `setup()` hadn't finished registering yet; (3) the profile Gates nav button being hidden whenever the active dungeon addon was the renamed `EndlessRiftsAndRaids` variant instead of the legacy `EndlessDungeonsAndGates` class.

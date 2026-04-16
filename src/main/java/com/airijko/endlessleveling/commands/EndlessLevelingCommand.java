@@ -23,6 +23,7 @@ import com.airijko.endlessleveling.commands.subcommands.ToggleHudCommand;
 import com.airijko.endlessleveling.ui.SkillsUIPage;
 import com.airijko.endlessleveling.ui.LeaderboardsUIPage;
 import com.airijko.endlessleveling.ui.ProfileUIPage;
+import com.airijko.endlessleveling.ui.DungeonsUIPage;
 import com.airijko.endlessleveling.ui.SettingsUIPage;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
@@ -100,6 +101,8 @@ public class EndlessLevelingCommand extends AbstractCommand {
                                 playerRef -> new ProfileUIPage(playerRef, CustomPageLifetime.CanDismiss));
                 addGuiShortcut("attributes", "Open the EndlessLeveling Skills page",
                                 playerRef -> new SkillsUIPage(playerRef, CustomPageLifetime.CanDismiss));
+                addGuiShortcut("dungeons", "Open the EndlessLeveling Dungeons page",
+                                playerRef -> new DungeonsUIPage(playerRef, CustomPageLifetime.CanDismiss));
         }
 
         @Override
