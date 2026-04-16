@@ -1,6 +1,8 @@
 package com.airijko.endlessleveling.mob.outlander;
 
 import com.hypixel.hytale.logger.HytaleLogger;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
+import com.hypixel.hytale.server.core.universe.Universe;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -91,11 +93,31 @@ public final class OutlanderBridgeXpBank {
     /**
      * @return true if the XP was diverted into the player's bank. Caller
      *         MUST NOT credit profile XP in that case.
+     * <p>
+     * Hardened: verifies the player's current world id equals the banking
+     * session world id. Closes leaks where {@code activeBanking} drifts from
+     * reality (death gap, missed drain, disconnect without cleanup). If the
+     * player is not currently inside the session world, banking is auto-drained
+     * and the XP falls through to profile credit.
      */
     public boolean tryDivertXp(@Nonnull UUID playerUuid, double adjustedXp) {
         if (adjustedXp <= 0) return false;
         UUID sessionWorldId = activeBanking.get(playerUuid);
         if (sessionWorldId == null) return false;
+
+        // World-location guard: player must physically be inside the session
+        // world for divert to succeed. Prevents stale activeBanking entries
+        // from silently swallowing XP earned outside Outlander Bridge.
+        Universe universe = Universe.get();
+        if (universe != null) {
+            PlayerRef ref = universe.getPlayer(playerUuid);
+            UUID currentWorldId = ref != null ? ref.getWorldUuid() : null;
+            if (currentWorldId == null || !sessionWorldId.equals(currentWorldId)) {
+                activeBanking.remove(playerUuid);
+                return false;
+            }
+        }
+
         ConcurrentHashMap<UUID, BankState> bank = sessionBanks.get(sessionWorldId);
         if (bank == null) return false;
         BankState state = bank.get(playerUuid);
@@ -121,10 +143,17 @@ public final class OutlanderBridgeXpBank {
     /**
      * Called when a player dies in-session. Zeros pending and — if saved
      * XP is non-zero — queues a rewards-panel pending on respawn.
+     * <p>
+     * Also drains {@code activeBanking} so any XP that lands in the
+     * death-to-drain gap (DoT tick kill credit, queued AoE resolution) is
+     * routed to profile XP instead of a stale session bank.
      * @return savedXp (snapshot) so caller can log.
      */
     public double onPlayerDied(@Nonnull UUID playerUuid, @Nonnull UUID sessionWorldId) {
         ConcurrentHashMap<UUID, BankState> bank = sessionBanks.get(sessionWorldId);
+        // Always drain activeBanking on death — do this even if bank/state is
+        // missing, to guarantee no stale divert after death.
+        activeBanking.remove(playerUuid);
         if (bank == null) return 0.0;
         BankState state = bank.get(playerUuid);
         if (state == null) return 0.0;

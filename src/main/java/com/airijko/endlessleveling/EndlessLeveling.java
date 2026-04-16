@@ -502,6 +502,16 @@ public class EndlessLeveling extends JavaPlugin {
             com.airijko.endlessleveling.mob.outlander.OutlanderBridgeWaveManager.get().onPlayerDrain(pr.getUuid());
         });
 
+        // Outlander Bridge banking: failsafe drain on disconnect. Protects
+        // against XP-loss when a player disconnects mid-session (or crashes)
+        // and DrainPlayerFromWorldEvent does not fire before reconnect.
+        this.getEventRegistry().registerGlobal(PlayerDisconnectEvent.class, event -> {
+            com.hypixel.hytale.server.core.universe.PlayerRef pr = event.getPlayerRef();
+            if (pr == null) return;
+            com.airijko.endlessleveling.mob.outlander.OutlanderBridgeXpBank.get()
+                    .onPlayerDrain(pr.getUuid());
+        });
+
         LuckDoubleDropSystem luckDoubleDropSystem = new LuckDoubleDropSystem(playerDataManager, passiveManager);
         resolveInventoryChangeEventClass().ifPresentOrElse(eventClass -> {
             this.getEventRegistry().registerGlobal((Class) eventClass, luckDoubleDropSystem::onInventoryChangeCompat);
@@ -586,9 +596,6 @@ public class EndlessLeveling extends JavaPlugin {
         if (augmentSyncValidator != null) {
             augmentSyncValidator.auditAndNotify();
         }
-
-        // Soft-dep: register mob-level / mob-prefix segments with NameplateBuilder if present
-        com.airijko.endlessleveling.compatibility.NameplateBridgeSupport.tryInit(this);
 
         registerCoreInstanceDungeons();
 

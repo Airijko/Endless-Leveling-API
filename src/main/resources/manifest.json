@@ -1,7 +1,7 @@
 {
   "Group": "com.airijko",
   "Name": "EndlessLeveling",
-  "Version": "7.9.1",
+  "Version": "7.9.2",
   "Description": "Endless Leveling by Airijko",
   "Authors": [
     {
@@ -13,8 +13,7 @@
   "Dependencies": {},
   "OptionalDependencies": {
     "Buuz135:MultipleHUD": ">=1.0.1",
-    "tsumori:PartyPro": ">=0.8.0",
-    "Frotty27:NameplateBuilder": "*"
+    "tsumori:PartyPro": ">=0.8.0"
   },
   "DisabledByDefault": false,
   "IncludesAssetPack": true,

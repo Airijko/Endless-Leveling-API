@@ -1631,12 +1631,7 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
             });
         }
 
-        // Push level + prefix as NameplateBuilder segments so they survive queueUpdate override
-        if (store != null) {
-            com.airijko.endlessleveling.compatibility.NameplateBridgeSupport.setMobSegments(
-                    store, ref, mobLevel, showLevelInNameplate, externalPrefix);
-        }
-        return true;
+                                                                                                                                                                                                                                                                                                                                                    return true;
     }
 
     private boolean shouldLogSummonHealthAnomaly(int entityId) {
@@ -1662,9 +1657,6 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
                 LOGGER.atInfo().log("[MOB_SHUTDOWN_DEBUG] entity=%d uuid=%s removedNameplateComponent=true",
                     ref.getIndex(),
                     resolveUuid(ref, commandBuffer));
-        }
-        if (store != null) {
-            com.airijko.endlessleveling.compatibility.NameplateBridgeSupport.clearMobSegments(store, ref);
         }
     }
 
