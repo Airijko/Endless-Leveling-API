@@ -1,0 +1,253 @@
+$C = "../../../../Common.ui";
+
+@CardButtonLabelStyle = LabelStyle(
+    FontSize: 11,
+    TextColor: #e8f1ff,
+    RenderBold: true,
+    RenderUppercase: true,
+    LetterSpacing: 1,
+    HorizontalAlignment: Center,
+    VerticalAlignment: Center,
+);
+
+@CardButtonStyle = TextButtonStyle(
+    Default:  (Background: $C.@DefaultSquareButtonDefaultBackground,  LabelStyle: @CardButtonLabelStyle),
+    Hovered:  (Background: $C.@DefaultSquareButtonHoveredBackground,  LabelStyle: @CardButtonLabelStyle),
+    Pressed:  (Background: $C.@DefaultSquareButtonPressedBackground,  LabelStyle: @CardButtonLabelStyle),
+    Disabled: (Background: $C.@DefaultSquareButtonDisabledBackground, LabelStyle: $C.@DefaultButtonDisabledLabelStyle),
+    Sounds: $C.@ButtonSounds,
+);
+
+Group {
+    Anchor: (Width: 340, Height: 580, Right: 24, Top: 10, Bottom: 10);
+    LayoutMode: Top;
+
+    // Top border
+    Group { Anchor: (Height: 2); Background: #25384b; }
+
+    Group {
+        FlexWeight: 1;
+        LayoutMode: Left;
+
+        // Left border
+        Group { Anchor: (Width: 2); Background: #25384b; }
+
+        // Card surface
+        Group {
+            FlexWeight: 1;
+
+            // Background fill
+            Group { Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 0); Background: #0e1826(0.94); }
+
+            // ============================================================
+            //  FRONT FACE
+            // ============================================================
+            Group #OutlanderCardFront {
+                Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 0);
+                LayoutMode: Top;
+                Visible: true;
+
+                // ---- Banner ----
+                Group {
+                    Anchor: (Height: 200);
+                    Background: #1a3a5a;
+                    Padding: (Full: 4);
+
+                    Group #OutlanderBridgeBannerImage {
+                        Anchor: (Top: 0, Left: 0, Right: 0, Bottom: 0);
+                        Background: (TexturePath: "../Images/EndlessOutlanderBridgePlaceholder.png");
+                        Visible: false;
+
+                        Group {
+                            Anchor: (Top: 0, Left: 0, Right: 0, Bottom: 0);
+                            Background: #000000(0.3);
+                        }
+                    }
+
+                    // Category tag
+                    Group {
+                        Anchor: (Top: 6, Left: 6, Height: 22, Width: 150);
+                        Background: #0a121c(0.85);
+                        LayoutMode: Middle;
+                        Label {
+                            Text: "ENDLESS LEVELING";
+                            Style: (FontSize: 9, TextColor: #ff5555, RenderBold: true, LetterSpacing: 1, HorizontalAlignment: Center, VerticalAlignment: Center);
+                        }
+                    }
+                }
+
+                // ---- Content ----
+                Group {
+                    LayoutMode: Top;
+                    FlexWeight: 1;
+                    Padding: (Left: 14, Right: 14, Top: 12, Bottom: 12);
+
+                    Label {
+                        Text: "Outlander Bridge";
+                        Anchor: (Height: 24);
+                        Style: (FontSize: 18, TextColor: #f2f7ff, RenderBold: true);
+                    }
+
+                    Group { Anchor: (Height: 2); }
+
+                    Label {
+                        Text: "By Endless Leveling";
+                        Anchor: (Height: 16);
+                        Style: (FontSize: 11, TextColor: #7fb7ff, RenderBold: true);
+                    }
+
+                    Group { Anchor: (Height: 8); }
+
+                    Label #CardOutlanderBridgeStatus {
+                        Text: "Rewards Available";
+                        Anchor: (Height: 16);
+                        Style: (FontSize: 11, TextColor: #6cff78, RenderBold: true, LetterSpacing: 1);
+                    }
+
+                    Group { Anchor: (Height: 8); }
+
+                    Group { Anchor: (Height: 1); Background: #ffffff(0.08); }
+
+                    Group { Anchor: (Height: 8); }
+
+                    Label {
+                        Text: "A wave-based instance dungeon with escalating mob tiers. Clear waves to bank XP, claim at the end. 1-hour cooldown.";
+                        Style: (FontSize: 11, TextColor: #bdd0e8, Wrap: true);
+                        FlexWeight: 1;
+                    }
+
+                    Group { Anchor: (Height: 8); }
+
+                    // ---- Action buttons ----
+                    Group {
+                        LayoutMode: Left;
+                        Anchor: (Height: 36);
+
+                        $C.@TextButton #OutlanderTeleportButton {
+                            Text: "TELEPORT";
+                            Anchor: (Height: 36);
+                            FlexWeight: 1;
+                            Padding: (Horizontal: 8);
+                            Style: @CardButtonStyle;
+                        }
+
+                        Group { Anchor: (Width: 6); }
+
+                        $C.@TextButton #OutlanderDetailsButton {
+                            Text: "DETAILS";
+                            Anchor: (Height: 36);
+                            FlexWeight: 1;
+                            Padding: (Horizontal: 8);
+                            Style: @CardButtonStyle;
+                        }
+                    }
+                }
+            }
+
+            // ============================================================
+            //  BACK FACE (advanced details)
+            // ============================================================
+            Group #OutlanderCardBack {
+                Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 0);
+                LayoutMode: Top;
+                Visible: false;
+                Padding: (Left: 14, Right: 14, Top: 14, Bottom: 12);
+
+                // Header row: title + category tag
+                Label {
+                    Text: "ADVANCED DETAILS";
+                    Anchor: (Height: 14);
+                    Style: (FontSize: 10, TextColor: #ff5555, RenderBold: true, LetterSpacing: 2);
+                }
+
+                Group { Anchor: (Height: 4); }
+
+                Label {
+                    Text: "Outlander Bridge";
+                    Anchor: (Height: 24);
+                    Style: (FontSize: 18, TextColor: #ff5555, RenderBold: true);
+                }
+
+                Group { Anchor: (Height: 8); }
+
+                Group { Anchor: (Height: 1); Background: #ffffff(0.08); }
+
+                Group { Anchor: (Height: 8); }
+
+                // ---- Mechanics list ----
+                Label {
+                    Text: "MECHANICS";
+                    Anchor: (Height: 14);
+                    Style: (FontSize: 10, TextColor: #9fb6d3, RenderBold: true, LetterSpacing: 1);
+                }
+
+                Group { Anchor: (Height: 4); }
+
+                Label {
+                    Text: "- Wave-based survival; mobs scale per wave.";
+                    Anchor: (Height: 16);
+                    Style: (FontSize: 10, TextColor: #bdd0e8, Wrap: true);
+                }
+                Label {
+                    Text: "- XP banks per wave; claim at run's end.";
+                    Anchor: (Height: 16);
+                    Style: (FontSize: 10, TextColor: #bdd0e8, Wrap: true);
+                }
+                Label {
+                    Text: "- 1-hour claim cooldown begins on claim.";
+                    Anchor: (Height: 16);
+                    Style: (FontSize: 10, TextColor: #bdd0e8, Wrap: true);
+                }
+                Label {
+                    Text: "- Party-aware: members converge to same instance.";
+                    Anchor: (Height: 28);
+                    Style: (FontSize: 10, TextColor: #bdd0e8, Wrap: true);
+                }
+
+                Group { Anchor: (Height: 6); }
+
+                // ---- Rewards ----
+                Label {
+                    Text: "REWARDS";
+                    Anchor: (Height: 14);
+                    Style: (FontSize: 10, TextColor: #9fb6d3, RenderBold: true, LetterSpacing: 1);
+                }
+
+                Group { Anchor: (Height: 4); }
+
+                Label {
+                    Text: "- XP scales with wave count cleared.";
+                    Anchor: (Height: 16);
+                    Style: (FontSize: 10, TextColor: #bdd0e8, Wrap: true);
+                }
+                Label {
+                    Text: "- Failed runs forfeit banked XP.";
+                    Anchor: (Height: 16);
+                    Style: (FontSize: 10, TextColor: #bdd0e8, Wrap: true);
+                }
+
+                Group { FlexWeight: 1; }
+
+                // ---- Back button ----
+                $C.@TextButton #OutlanderBackButton {
+                    Text: "< BACK";
+                    Anchor: (Height: 36);
+                    Padding: (Horizontal: 8);
+                    Style: @CardButtonStyle;
+                }
+            }
+        }
+
+        // Right border
+        Group { Anchor: (Width: 2); Background: #25384b; }
+    }
+
+    // Bottom border
+    Group { Anchor: (Height: 2); Background: #25384b; }
+
+    // Top accent stripe
+    Group {
+        Anchor: (Top: 0, Left: 0, Right: 0, Height: 3);
+        Background: #ff5555;
+    }
+}

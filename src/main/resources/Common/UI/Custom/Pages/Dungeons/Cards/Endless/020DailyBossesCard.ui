@@ -1,4 +1,4 @@
-Button #CardFrozen {
+Button #CardDailyBosses {
     Anchor: (Width: 340, Height: 580, Right: 24, Top: 10, Bottom: 10);
     Padding: (Full: 0);
     Background: #0c121a(0);
@@ -25,14 +25,15 @@ Button #CardFrozen {
                 Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 0);
                 LayoutMode: Top;
 
+                // ---- Banner ----
                 Group {
                     Anchor: (Height: 180);
-                    Background: #113451;
+                    Background: #3a2414;
                     Padding: (Full: 4);
 
-                    Group #FrozenBannerImage {
+                    Group #DailyBossesBannerImage {
                         Anchor: (Top: 0, Left: 0, Right: 0, Bottom: 0);
-                        Background: (TexturePath: "../Images/EndgameFrozenPlaceholder.png");
+                        Background: (TexturePath: "../Images/EndlessDailyBossPlaceholder.png");
                         Visible: false;
 
                         Group {
@@ -46,19 +47,20 @@ Button #CardFrozen {
                         Background: #0a121c(0.85);
                         LayoutMode: Middle;
                         Label {
-                            Text: "ENDGAME & QOL";
-                            Style: (FontSize: 9, TextColor: #c8a2ff, RenderBold: true, LetterSpacing: 1, HorizontalAlignment: Center, VerticalAlignment: Center);
+                            Text: "ENDLESS LEVELING";
+                            Style: (FontSize: 9, TextColor: #ff5555, RenderBold: true, LetterSpacing: 1, HorizontalAlignment: Center, VerticalAlignment: Center);
                         }
                     }
                 }
 
+                // ---- Content ----
                 Group {
                     LayoutMode: Top;
                     FlexWeight: 1;
                     Padding: (Left: 14, Right: 14, Top: 12, Bottom: 12);
 
                     Label {
-                        Text: "Frozen Dungeon";
+                        Text: "Daily Bosses";
                         Anchor: (Height: 24);
                         Style: (FontSize: 18, TextColor: #f2f7ff, RenderBold: true);
                     }
@@ -66,7 +68,7 @@ Button #CardFrozen {
                     Group { Anchor: (Height: 2); }
 
                     Label {
-                        Text: "By Lewaii";
+                        Text: "By Airijko";
                         Anchor: (Height: 16);
                         Style: (FontSize: 11, TextColor: #7fb7ff, RenderBold: true);
                     }
@@ -74,9 +76,9 @@ Button #CardFrozen {
                     Group { Anchor: (Height: 8); }
 
                     Label {
-                        Text: "Ice / Elite";
+                        Text: "Coming Soon - Patreon Exclusive";
                         Anchor: (Height: 16);
-                        Style: (FontSize: 11, TextColor: #c8a2ff, RenderBold: true, LetterSpacing: 1);
+                        Style: (FontSize: 11, TextColor: #ff5555, RenderBold: true, LetterSpacing: 1);
                     }
 
                     Group { Anchor: (Height: 8); }
@@ -86,15 +88,15 @@ Button #CardFrozen {
                     Group { Anchor: (Height: 8); }
 
                     Label {
-                        Text: "A frostbound stronghold filled with freezing hazards, glacial corridors, and elite ice-tuned enemies.";
+                        Text: "Daily rotating boss encounters with unique loot pools. Patreon-exclusive content launching soon.";
                         Style: (FontSize: 11, TextColor: #bdd0e8, Wrap: true);
                         FlexWeight: 1;
                     }
 
                     Label {
-                        Text: "Click for details";
+                        Text: "Click for Patreon";
                         Anchor: (Height: 14);
-                        Style: (FontSize: 10, TextColor: #c8a2ff, HorizontalAlignment: Center, VerticalAlignment: End, LetterSpacing: 1);
+                        Style: (FontSize: 10, TextColor: #ff5555, HorizontalAlignment: Center, VerticalAlignment: End, LetterSpacing: 1);
                     }
                 }
             }
@@ -107,6 +109,6 @@ Button #CardFrozen {
 
     Group {
         Anchor: (Top: 0, Left: 0, Right: 0, Height: 3);
-        Background: #c8a2ff;
+        Background: #ff5555;
     }
 }

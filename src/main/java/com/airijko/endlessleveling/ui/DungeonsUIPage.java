@@ -30,6 +30,9 @@ import com.hypixel.hytale.server.core.universe.world.WorldConfig;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -46,18 +49,39 @@ public class DungeonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     private static final String AZAROTH_IMAGE_PATH = IMAGE_SOURCE_BASE + "MajorAzarothPlaceholder.png";
     private static final String KATHERINA_IMAGE_PATH = IMAGE_SOURCE_BASE + "MajorKatherinaPlaceholder.png";
     private static final String BARON_IMAGE_PATH = IMAGE_SOURCE_BASE + "MajorBaronPlaceholder.png";
+    private static final String OUTLANDER_IMAGE_PATH = IMAGE_SOURCE_BASE + "EndlessOutlanderBridgePlaceholder.png";
     private static final String ENDGAME_MAIN_CLASS = "endgame.plugin.EndgameQoL";
     private static final String MAJOR_MAIN_CLASS = "com.major76.majordungeons.MajorDungeons";
     private static final String ENDGAME_DOWNLOAD_URL = "https://www.curseforge.com/hytale/mods/endgame-qol";
     private static final String MAJOR_DOWNLOAD_URL = "https://www.curseforge.com/hytale/mods/major-dungeons";
+    private static final String PATREON_URL = "https://www.patreon.com/cw/airijko";
+
+    private static final String DAILY_BOSSES_ID = "daily-bosses";
+    private static final String WEEKLY_BOSSES_ID = "weekly-bosses";
 
     private static final String OUTLANDER_BRIDGE_ID = "outlander-bridge";
     private static final String OUTLANDER_BRIDGE_DESCRIPTION =
             "A wave-based instance dungeon with escalating mob tiers. Clear waves to bank XP; claim rewards at the end to walk away with it. Ends 1-hour claim cooldown.";
 
-    /** Which native dungeon the side panel currently shows. Null = panel closed/empty. */
+    private static final String CATEGORY_ALL = "ALL";
+    private static final String CATEGORY_ENDLESS = "ENDLESS";
+    private static final String CATEGORY_ENDGAME = "ENDGAME";
+    private static final String CATEGORY_MAJOR = "MAJOR";
+    private static final List<String> CATEGORY_CYCLE = List.of(CATEGORY_ALL, CATEGORY_ENDLESS, CATEGORY_ENDGAME, CATEGORY_MAJOR);
+
+    /** Dungeon display metadata keyed by dungeon id. */
+    private static final Map<String, DungeonMeta> DUNGEONS = buildDungeonMeta();
+
+    /** Which dungeon the detail view currently shows. Null = nothing selected. */
     @Nullable
-    private volatile String selectedNativeDungeonId;
+    private volatile String selectedDungeonId;
+
+    /** True when the detail view is showing; false when carousel is showing. */
+    private volatile boolean detailViewActive;
+
+    /** Active category filter. */
+    @Nonnull
+    private volatile String categoryFilter = CATEGORY_ALL;
 
     /**
      * Active native-dungeon instance worlds keyed by a party grouping UUID
@@ -82,17 +106,28 @@ public class DungeonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         SafeUICommandBuilder ui = new SafeUICommandBuilder(rawUi);
         ui.append("Pages/Dungeons/DungeonsPage.ui");
         ui.set("#DungeonsOverviewText.Text", OVERVIEW_DESCRIPTION);
+
+        // Endless + Endgame + Major cards discovered via folder listing.
         ModularCardUiAppender.appendFolder(ui,
-            "#EndgameCards",
+            "#EndlessCarouselCards",
+            "Common/UI/Custom/Pages/Dungeons/Cards/Endless",
+            "Pages/Dungeons/Cards/Endless",
+            99);
+        ModularCardUiAppender.appendFolder(ui,
+            "#EndgameCarouselCards",
             "Common/UI/Custom/Pages/Dungeons/Cards/Endgame",
             "Pages/Dungeons/Cards/Endgame",
-            3);
+            99);
         ModularCardUiAppender.appendFolder(ui,
-            "#MajorCards",
+            "#MajorCarouselCards",
             "Common/UI/Custom/Pages/Dungeons/Cards/Major",
             "Pages/Dungeons/Cards/Major",
-            3);
+            99);
 
+        // Banner images on carousel cards.
+        setBannerImage(ui, "#OutlanderBridgeBannerImage", OUTLANDER_IMAGE_PATH);
+        setBannerImage(ui, "#DailyBossesBannerImage", IMAGE_SOURCE_BASE + "EndlessDailyBossPlaceholder.png");
+        setBannerImage(ui, "#WeeklyBossesBannerImage", IMAGE_SOURCE_BASE + "EndlessWeeklyBossPlaceholder.png");
         setBannerImage(ui, "#FrozenBannerImage", FROZEN_IMAGE_PATH);
         setBannerImage(ui, "#SwampBannerImage", SWAMP_IMAGE_PATH);
         setBannerImage(ui, "#VoidBannerImage", VOID_IMAGE_PATH);
@@ -104,30 +139,48 @@ public class DungeonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         boolean majorInstalled = isClassPresent(MAJOR_MAIN_CLASS);
         ui.set("#EndgameNotInstalledLabel.Visible", !endgameInstalled);
         ui.set("#EndgameInstallButton.Visible", !endgameInstalled);
-        ui.set("#EndgameDimOverlay.Visible", !endgameInstalled);
         ui.set("#MajorNotInstalledLabel.Visible", !majorInstalled);
         ui.set("#MajorInstallButton.Visible", !majorInstalled);
-        ui.set("#MajorDimOverlay.Visible", !majorInstalled);
 
-        // Native dungeon card — reward availability label.
-        updateNativeCardStatus(ui);
+        // Outlander Bridge reward status label on carousel card.
+        updateOutlanderBridgeCardStatus(ui);
 
-        // Side panel starts with placeholder; reward section + buttons hidden until a dungeon is selected.
-        resetSidePanel(ui);
+        // Detail view starts blank; carousel visible.
+        resetDetailView(ui);
+        applyViewState(ui);
+        applyFilter(ui);
+        updateCategoryFilterLabel(ui);
+        updateDungeonCountLabel(ui);
 
+        // Install button bindings (unchanged actions).
         events.addEventBinding(Activating, "#EndgameInstallButton", of("Action", "dungeons:install:endgame"), false);
         events.addEventBinding(Activating, "#MajorInstallButton", of("Action", "dungeons:install:major"), false);
 
-        events.addEventBinding(Activating, "#NativeCardOutlanderBridge",
-                of("Action", "dungeon:native:select:" + OUTLANDER_BRIDGE_ID), false);
-        events.addEventBinding(Activating, "#NativeCardOutlanderBridgeEnter",
-                of("Action", "dungeon:native:quickenter:" + OUTLANDER_BRIDGE_ID), false);
-        events.addEventBinding(Activating, "#SidePanelEnterButton",
-                of("Action", "dungeon:native:enter"), false);
-        events.addEventBinding(Activating, "#SidePanelConfirmProceedButton",
-                of("Action", "dungeon:native:proceed"), false);
-        events.addEventBinding(Activating, "#SidePanelConfirmCancelButton",
-                of("Action", "dungeon:native:cancel-proceed"), false);
+        // Outlander Bridge card has its own action buttons (no whole-card click).
+        events.addEventBinding(Activating, "#OutlanderTeleportButton", of("Action", "dungeon:outlander:teleport"), false);
+        events.addEventBinding(Activating, "#OutlanderDetailsButton", of("Action", "dungeon:outlander:flip"), false);
+        events.addEventBinding(Activating, "#OutlanderBackButton", of("Action", "dungeon:outlander:unflip"), false);
+
+        // Other carousel cards: whole-card click → detail view.
+        events.addEventBinding(Activating, "#CardDailyBosses", of("Action", "dungeon:view:" + DAILY_BOSSES_ID), false);
+        events.addEventBinding(Activating, "#CardWeeklyBosses", of("Action", "dungeon:view:" + WEEKLY_BOSSES_ID), false);
+        events.addEventBinding(Activating, "#CardFrozen", of("Action", "dungeon:view:frozen"), false);
+        events.addEventBinding(Activating, "#CardSwamp", of("Action", "dungeon:view:swamp"), false);
+        events.addEventBinding(Activating, "#CardVoid", of("Action", "dungeon:view:void"), false);
+        events.addEventBinding(Activating, "#CardAzaroth", of("Action", "dungeon:view:azaroth"), false);
+        events.addEventBinding(Activating, "#CardKatherina", of("Action", "dungeon:view:katherina"), false);
+        events.addEventBinding(Activating, "#CardBaron", of("Action", "dungeon:view:baron"), false);
+
+        // Detail view buttons.
+        events.addEventBinding(Activating, "#BackToCarouselButton", of("Action", "dungeon:back"), false);
+        events.addEventBinding(Activating, "#DetailEnterButton", of("Action", "dungeon:native:enter"), false);
+        events.addEventBinding(Activating, "#DetailConfirmProceedButton", of("Action", "dungeon:native:proceed"), false);
+        events.addEventBinding(Activating, "#DetailConfirmCancelButton", of("Action", "dungeon:native:cancel-proceed"), false);
+        events.addEventBinding(Activating, "#DetailPatreonButton", of("Action", "dungeon:patreon"), false);
+
+        // Filter row.
+        events.addEventBinding(Activating, "#CategoryFilterButton", of("Action", "dungeon:filter:cycle"), false);
+        events.addEventBinding(Activating, "#ResetFiltersButton", of("Action", "dungeon:filter:reset"), false);
 
         NavUIHelper.applyNavVersion(ui, playerRef, "dungeons",
             "Common/UI/Custom/Pages/Dungeons/DungeonsPage.ui",
@@ -135,28 +188,142 @@ public class DungeonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         NavUIHelper.bindNavEvents(events, "Common/UI/Custom/Pages/Dungeons/DungeonsPage.ui");
     }
 
-    private void resetSidePanel(@Nonnull UICommandBuilder ui) {
-        ui.set("#SidePanelTitle.Text", "DUNGEON INFO");
-        ui.set("#SidePanelTag.Text", "");
-        ui.set("#SidePanelDescription.Text", "Select a dungeon to view details.");
-        ui.set("#SidePanelRewardHeader.Visible", false);
-        ui.set("#SidePanelRewardStatus.Visible", false);
-        ui.set("#SidePanelRewardDetail.Visible", false);
-        ui.set("#SidePanelConfirmPrompt.Visible", false);
-        ui.set("#SidePanelEnterButton.Visible", false);
-        ui.set("#SidePanelConfirmCancelButton.Visible", false);
-        ui.set("#SidePanelConfirmProceedButton.Visible", false);
+    private void applyViewState(@Nonnull UICommandBuilder ui) {
+        ui.set("#CarouselView.Visible", !detailViewActive);
+        ui.set("#DetailView.Visible", detailViewActive);
     }
 
-    private void updateNativeCardStatus(@Nonnull UICommandBuilder ui) {
+    private void applyFilter(@Nonnull UICommandBuilder ui) {
+        boolean showEndless = CATEGORY_ALL.equals(categoryFilter) || CATEGORY_ENDLESS.equals(categoryFilter);
+        boolean showEndgame = CATEGORY_ALL.equals(categoryFilter) || CATEGORY_ENDGAME.equals(categoryFilter);
+        boolean showMajor = CATEGORY_ALL.equals(categoryFilter) || CATEGORY_MAJOR.equals(categoryFilter);
+        ui.set("#EndlessCarouselCards.Visible", showEndless);
+        ui.set("#EndgameCarouselCards.Visible", showEndgame);
+        ui.set("#MajorCarouselCards.Visible", showMajor);
+    }
+
+    private void updateCategoryFilterLabel(@Nonnull UICommandBuilder ui) {
+        ui.set("#CategoryFilterButton.Text", "CATEGORY: " + categoryFilter);
+    }
+
+    private void updateDungeonCountLabel(@Nonnull UICommandBuilder ui) {
+        long count = DUNGEONS.values().stream()
+                .filter(meta -> CATEGORY_ALL.equals(categoryFilter) || meta.category().equals(categoryFilter))
+                .count();
+        ui.set("#DungeonCountLabel.Text", count + (count == 1 ? " dungeon" : " dungeons"));
+    }
+
+    private void cycleCategoryFilter() {
+        int idx = CATEGORY_CYCLE.indexOf(categoryFilter);
+        if (idx < 0) {
+            categoryFilter = CATEGORY_ALL;
+            return;
+        }
+        categoryFilter = CATEGORY_CYCLE.get((idx + 1) % CATEGORY_CYCLE.size());
+    }
+
+    private void resetDetailView(@Nonnull UICommandBuilder ui) {
+        ui.set("#SelectedDungeonLabel.Text", "Dungeon");
+        ui.set("#DetailCategoryTag.Text", "");
+        ui.set("#DetailTag.Text", "");
+        ui.set("#DetailAuthor.Text", "");
+        ui.set("#DetailDescription.Text", "Select a dungeon to view details.");
+        ui.set("#DetailRewardHeader.Visible", false);
+        ui.set("#DetailRewardStatus.Visible", false);
+        ui.set("#DetailRewardDetail.Visible", false);
+        ui.set("#DetailConfirmPrompt.Visible", false);
+        ui.set("#DetailEnterButton.Visible", false);
+        ui.set("#DetailConfirmCancelButton.Visible", false);
+        ui.set("#DetailConfirmProceedButton.Visible", false);
+        ui.set("#DetailPatreonButton.Visible", false);
+        hideAllDetailBanners(ui);
+    }
+
+    private void hideAllDetailBanners(@Nonnull UICommandBuilder ui) {
+        ui.set("#DetailBannerOutlanderBridge.Visible", false);
+        ui.set("#DetailBannerDailyBosses.Visible", false);
+        ui.set("#DetailBannerWeeklyBosses.Visible", false);
+        ui.set("#DetailBannerFrozen.Visible", false);
+        ui.set("#DetailBannerSwamp.Visible", false);
+        ui.set("#DetailBannerVoid.Visible", false);
+        ui.set("#DetailBannerAzaroth.Visible", false);
+        ui.set("#DetailBannerKatherina.Visible", false);
+        ui.set("#DetailBannerBaron.Visible", false);
+    }
+
+    private void populateDetailView(@Nonnull UICommandBuilder ui, @Nonnull String dungeonId) {
+        DungeonMeta meta = DUNGEONS.get(dungeonId);
+        if (meta == null) {
+            resetDetailView(ui);
+            return;
+        }
+
+        ui.set("#DetailCategoryTag.Text", meta.categoryLabel());
+        ui.set("#SelectedDungeonLabel.Text", meta.displayName());
+        ui.set("#DetailTag.Text", meta.tag());
+        ui.set("#DetailAuthor.Text", meta.author());
+        ui.set("#DetailDescription.Text", meta.description());
+
+        hideAllDetailBanners(ui);
+        ui.set(meta.detailBannerSelector() + ".Visible", true);
+
+        if (OUTLANDER_BRIDGE_ID.equals(dungeonId)) {
+            populateOutlanderBridgeRewardSection(ui);
+            ui.set("#DetailEnterButton.Visible", true);
+            ui.set("#DetailPatreonButton.Visible", false);
+        } else if (DAILY_BOSSES_ID.equals(dungeonId) || WEEKLY_BOSSES_ID.equals(dungeonId)) {
+            ui.set("#DetailRewardHeader.Visible", true);
+            ui.set("#DetailRewardHeader.Text", "STATUS");
+            ui.set("#DetailRewardStatus.Visible", true);
+            ui.set("#DetailRewardStatus.Text", "Coming Soon - Patreon Exclusive");
+            ui.set("#DetailRewardDetail.Visible", true);
+            ui.set("#DetailRewardDetail.Text",
+                    "Support development on Patreon to unlock this content when it launches.");
+            ui.set("#DetailEnterButton.Visible", false);
+            ui.set("#DetailPatreonButton.Visible", true);
+        } else {
+            ui.set("#DetailRewardHeader.Visible", false);
+            ui.set("#DetailRewardStatus.Visible", false);
+            ui.set("#DetailRewardDetail.Visible", true);
+            ui.set("#DetailRewardDetail.Text",
+                    "This dungeon is hosted by an external mod. Enter through its in-world portal to begin.");
+            ui.set("#DetailEnterButton.Visible", false);
+            ui.set("#DetailPatreonButton.Visible", false);
+        }
+        ui.set("#DetailConfirmPrompt.Visible", false);
+        ui.set("#DetailConfirmCancelButton.Visible", false);
+        ui.set("#DetailConfirmProceedButton.Visible", false);
+    }
+
+    private void populateOutlanderBridgeRewardSection(@Nonnull UICommandBuilder ui) {
+        OutlanderBridgeRewardCooldowns cd = OutlanderBridgeRewardCooldowns.get();
+        UUID uuid = playerRef.getUuid();
+        boolean onCooldown = cd != null && uuid != null && cd.isOnCooldown(uuid);
+
+        ui.set("#DetailRewardHeader.Visible", true);
+        ui.set("#DetailRewardStatus.Visible", true);
+        ui.set("#DetailRewardDetail.Visible", true);
+
+        if (onCooldown) {
+            long remainingMin = (cd.remainingMs(uuid) + 59_999L) / 60_000L;
+            ui.set("#DetailRewardStatus.Text", "On Cooldown");
+            ui.set("#DetailRewardDetail.Text",
+                    "XP claim is locked for " + remainingMin + "m. You can still enter, but XP earned this run will not be claimable until the cooldown ends.");
+        } else {
+            ui.set("#DetailRewardStatus.Text", "Available");
+            ui.set("#DetailRewardDetail.Text",
+                    "XP rewards are claimable at the end of a successful run. A 1-hour cooldown begins on claim.");
+        }
+    }
+
+    private void updateOutlanderBridgeCardStatus(@Nonnull UICommandBuilder ui) {
         OutlanderBridgeRewardCooldowns cd = OutlanderBridgeRewardCooldowns.get();
         UUID uuid = playerRef.getUuid();
         if (cd != null && uuid != null && cd.isOnCooldown(uuid)) {
             long remainingMin = (cd.remainingMs(uuid) + 59_999L) / 60_000L;
-            ui.set("#NativeCardOutlanderBridgeStatus.Text",
-                    "Claim Cooldown: " + remainingMin + "m");
+            ui.set("#CardOutlanderBridgeStatus.Text", "Claim Cooldown: " + remainingMin + "m");
         } else {
-            ui.set("#NativeCardOutlanderBridgeStatus.Text", "Rewards Available");
+            ui.set("#CardOutlanderBridgeStatus.Text", "Rewards Available");
         }
     }
 
@@ -235,16 +402,34 @@ public class DungeonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             return;
         }
 
-        if (data.action.startsWith("dungeon:native:select:")) {
-            String id = data.action.substring("dungeon:native:select:".length());
-            handleSelectNative(id);
+        if (data.action.startsWith("dungeon:view:")) {
+            String id = data.action.substring("dungeon:view:".length());
+            handleViewDungeon(id);
             return;
         }
 
-        if (data.action.startsWith("dungeon:native:quickenter:")) {
-            String id = data.action.substring("dungeon:native:quickenter:".length());
-            handleSelectNative(id);
-            handleEnterRequest(ref, store);
+        if ("dungeon:back".equalsIgnoreCase(data.action)) {
+            handleBackToCarousel();
+            return;
+        }
+
+        if ("dungeon:filter:cycle".equalsIgnoreCase(data.action)) {
+            cycleCategoryFilter();
+            UICommandBuilder ui = new UICommandBuilder();
+            applyFilter(ui);
+            updateCategoryFilterLabel(ui);
+            updateDungeonCountLabel(ui);
+            sendUpdate(ui, false);
+            return;
+        }
+
+        if ("dungeon:filter:reset".equalsIgnoreCase(data.action)) {
+            categoryFilter = CATEGORY_ALL;
+            UICommandBuilder ui = new UICommandBuilder();
+            applyFilter(ui);
+            updateCategoryFilterLabel(ui);
+            updateDungeonCountLabel(ui);
+            sendUpdate(ui, false);
             return;
         }
 
@@ -255,21 +440,48 @@ public class DungeonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
         if ("dungeon:native:proceed".equalsIgnoreCase(data.action)) {
             UICommandBuilder ui = new UICommandBuilder();
-            ui.set("#SidePanelConfirmPrompt.Visible", false);
-            ui.set("#SidePanelConfirmCancelButton.Visible", false);
-            ui.set("#SidePanelConfirmProceedButton.Visible", false);
-            ui.set("#SidePanelEnterButton.Visible", true);
+            ui.set("#DetailConfirmPrompt.Visible", false);
+            ui.set("#DetailConfirmCancelButton.Visible", false);
+            ui.set("#DetailConfirmProceedButton.Visible", false);
+            ui.set("#DetailEnterButton.Visible", true);
             sendUpdate(ui, false);
             teleportToSelected(ref, store);
             return;
         }
 
+        if ("dungeon:patreon".equalsIgnoreCase(data.action)) {
+            playerRef.sendMessage(Message.raw("[Patreon] Support development & unlock exclusive content:").color("#ff9a3c"));
+            playerRef.sendMessage(Message.raw(">> patreon.com/cw/airijko <<").link(PATREON_URL).color("#ff9a3c"));
+            return;
+        }
+
         if ("dungeon:native:cancel-proceed".equalsIgnoreCase(data.action)) {
             UICommandBuilder ui = new UICommandBuilder();
-            ui.set("#SidePanelConfirmPrompt.Visible", false);
-            ui.set("#SidePanelConfirmCancelButton.Visible", false);
-            ui.set("#SidePanelConfirmProceedButton.Visible", false);
-            ui.set("#SidePanelEnterButton.Visible", true);
+            ui.set("#DetailConfirmPrompt.Visible", false);
+            ui.set("#DetailConfirmCancelButton.Visible", false);
+            ui.set("#DetailConfirmProceedButton.Visible", false);
+            ui.set("#DetailEnterButton.Visible", true);
+            sendUpdate(ui, false);
+            return;
+        }
+
+        if ("dungeon:outlander:teleport".equalsIgnoreCase(data.action)) {
+            handleOutlanderTeleport(ref, store);
+            return;
+        }
+
+        if ("dungeon:outlander:flip".equalsIgnoreCase(data.action)) {
+            UICommandBuilder ui = new UICommandBuilder();
+            ui.set("#OutlanderCardFront.Visible", false);
+            ui.set("#OutlanderCardBack.Visible", true);
+            sendUpdate(ui, false);
+            return;
+        }
+
+        if ("dungeon:outlander:unflip".equalsIgnoreCase(data.action)) {
+            UICommandBuilder ui = new UICommandBuilder();
+            ui.set("#OutlanderCardFront.Visible", true);
+            ui.set("#OutlanderCardBack.Visible", false);
             sendUpdate(ui, false);
             return;
         }
@@ -277,43 +489,45 @@ public class DungeonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         NavUIHelper.handleNavAction(data.action, ref, store, playerRef);
     }
 
-    private void handleSelectNative(@Nonnull String dungeonId) {
-        InstanceDungeonDefinition def = EndlessLevelingAPI.get().getInstanceDungeon(dungeonId);
-        if (def == null) {
-            return;
-        }
-        selectedNativeDungeonId = dungeonId;
-
-        UICommandBuilder ui = new UICommandBuilder();
-        ui.set("#SidePanelTitle.Text", def.displayName().toUpperCase());
-        ui.set("#SidePanelTag.Text", "ENDLESS LEVELING");
-        ui.set("#SidePanelDescription.Text", descriptionFor(dungeonId));
-
+    private void handleOutlanderTeleport(@Nonnull Ref<EntityStore> ref, @Nonnull Store<EntityStore> store) {
+        selectedDungeonId = OUTLANDER_BRIDGE_ID;
         OutlanderBridgeRewardCooldowns cd = OutlanderBridgeRewardCooldowns.get();
         UUID uuid = playerRef.getUuid();
-        if (OUTLANDER_BRIDGE_ID.equals(dungeonId)
-                && cd != null && uuid != null && cd.isOnCooldown(uuid)) {
+        if (cd != null && uuid != null && cd.isOnCooldown(uuid)) {
             long remainingMin = (cd.remainingMs(uuid) + 59_999L) / 60_000L;
-            ui.set("#SidePanelRewardStatus.Text", "On Cooldown");
-            ui.set("#SidePanelRewardDetail.Text",
-                    "XP claim is locked for " + remainingMin + "m. You can still enter, but XP earned this run will not be claimable until the cooldown ends.");
-        } else {
-            ui.set("#SidePanelRewardStatus.Text", "Available");
-            ui.set("#SidePanelRewardDetail.Text", "XP rewards are claimable at the end of a successful run. A 1-hour cooldown begins on claim.");
+            playerRef.sendMessage(Message.raw(
+                    "[Outlander Bridge] XP claim is on cooldown (" + remainingMin
+                            + "m). Entering anyway — XP earned this run will not be claimable.")
+                    .color("#ffc98b"));
         }
+        teleportToSelected(ref, store);
+    }
 
-        ui.set("#SidePanelRewardHeader.Visible", true);
-        ui.set("#SidePanelRewardStatus.Visible", true);
-        ui.set("#SidePanelRewardDetail.Visible", true);
-        ui.set("#SidePanelEnterButton.Visible", true);
-        ui.set("#SidePanelConfirmPrompt.Visible", false);
-        ui.set("#SidePanelConfirmCancelButton.Visible", false);
-        ui.set("#SidePanelConfirmProceedButton.Visible", false);
+    private void handleViewDungeon(@Nonnull String dungeonId) {
+        if (!DUNGEONS.containsKey(dungeonId)) {
+            return;
+        }
+        selectedDungeonId = dungeonId;
+        detailViewActive = true;
+
+        UICommandBuilder ui = new UICommandBuilder();
+        populateDetailView(ui, dungeonId);
+        applyViewState(ui);
+        sendUpdate(ui, false);
+    }
+
+    private void handleBackToCarousel() {
+        detailViewActive = false;
+
+        UICommandBuilder ui = new UICommandBuilder();
+        applyViewState(ui);
+        // Refresh outlander carousel card status in case cooldown changed during this session.
+        updateOutlanderBridgeCardStatus(ui);
         sendUpdate(ui, false);
     }
 
     private void handleEnterRequest(@Nonnull Ref<EntityStore> ref, @Nonnull Store<EntityStore> store) {
-        String dungeonId = selectedNativeDungeonId;
+        String dungeonId = selectedDungeonId;
         if (dungeonId == null) {
             return;
         }
@@ -325,12 +539,12 @@ public class DungeonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 && cd != null && uuid != null && cd.isOnCooldown(uuid)) {
             long remainingMin = (cd.remainingMs(uuid) + 59_999L) / 60_000L;
             UICommandBuilder ui = new UICommandBuilder();
-            ui.set("#SidePanelConfirmPrompt.Text",
+            ui.set("#DetailConfirmPrompt.Text",
                     "XP claim on cooldown (" + remainingMin + "m). Any XP earned this run will not be claimable. Proceed?");
-            ui.set("#SidePanelConfirmPrompt.Visible", true);
-            ui.set("#SidePanelEnterButton.Visible", false);
-            ui.set("#SidePanelConfirmCancelButton.Visible", true);
-            ui.set("#SidePanelConfirmProceedButton.Visible", true);
+            ui.set("#DetailConfirmPrompt.Visible", true);
+            ui.set("#DetailEnterButton.Visible", false);
+            ui.set("#DetailConfirmCancelButton.Visible", true);
+            ui.set("#DetailConfirmProceedButton.Visible", true);
             sendUpdate(ui, false);
             return;
         }
@@ -339,7 +553,7 @@ public class DungeonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     }
 
     private void teleportToSelected(@Nonnull Ref<EntityStore> ref, @Nonnull Store<EntityStore> store) {
-        String dungeonId = selectedNativeDungeonId;
+        String dungeonId = selectedDungeonId;
         if (dungeonId == null) {
             return;
         }
@@ -421,10 +635,12 @@ public class DungeonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             }
         });
 
-        // Reset side panel after initiating teleport.
-        selectedNativeDungeonId = null;
+        // Flip back to carousel after initiating teleport.
+        selectedDungeonId = null;
+        detailViewActive = false;
         UICommandBuilder ui = new UICommandBuilder();
-        resetSidePanel(ui);
+        resetDetailView(ui);
+        applyViewState(ui);
         sendUpdate(ui, false);
     }
 
@@ -451,11 +667,72 @@ public class DungeonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         return playerUuid;
     }
 
-    @Nonnull
-    private static String descriptionFor(@Nonnull String dungeonId) {
-        if (OUTLANDER_BRIDGE_ID.equals(dungeonId)) {
-            return OUTLANDER_BRIDGE_DESCRIPTION;
-        }
-        return "";
+    private static Map<String, DungeonMeta> buildDungeonMeta() {
+        Map<String, DungeonMeta> m = new LinkedHashMap<>();
+        m.put(OUTLANDER_BRIDGE_ID, new DungeonMeta(
+                CATEGORY_ENDLESS, "ENDLESS LEVELING",
+                "Outlander Bridge", "WAVE INSTANCE",
+                "By Endless Leveling", OUTLANDER_BRIDGE_DESCRIPTION,
+                OUTLANDER_IMAGE_PATH, "#DetailBannerOutlanderBridge"));
+        m.put(DAILY_BOSSES_ID, new DungeonMeta(
+                CATEGORY_ENDLESS, "ENDLESS LEVELING",
+                "Daily Bosses", "DAILY ROTATION",
+                "By Airijko",
+                "Daily rotating boss encounters with unique loot pools. Fresh targets every 24 hours with curated reward tables and escalating difficulty tiers.",
+                IMAGE_SOURCE_BASE + "EndlessDailyBossPlaceholder.png", "#DetailBannerDailyBosses"));
+        m.put(WEEKLY_BOSSES_ID, new DungeonMeta(
+                CATEGORY_ENDLESS, "ENDLESS LEVELING",
+                "Weekly Bosses", "WEEKLY RAID",
+                "By Airijko",
+                "High-stakes weekly raid bosses with prestige rewards and leaderboard glory. Designed for coordinated groups chasing top-tier loot and global rankings.",
+                IMAGE_SOURCE_BASE + "EndlessWeeklyBossPlaceholder.png", "#DetailBannerWeeklyBosses"));
+        m.put("frozen", new DungeonMeta(
+                CATEGORY_ENDGAME, "ENDGAME & QOL",
+                "Frozen Dungeon", "ICE / ELITE",
+                "By Lewaii",
+                "A frostbound stronghold filled with freezing hazards, glacial corridors, and elite ice-tuned enemies. Requires the Endgame & QoL mod.",
+                FROZEN_IMAGE_PATH, "#DetailBannerFrozen"));
+        m.put("swamp", new DungeonMeta(
+                CATEGORY_ENDGAME, "ENDGAME & QOL",
+                "Swamp Dungeon", "POISON / AMBUSH",
+                "By Lewaii",
+                "A murky marsh dungeon packed with poison pressure, tight terrain, and relentless ambush waves. Requires the Endgame & QoL mod.",
+                SWAMP_IMAGE_PATH, "#DetailBannerSwamp"));
+        m.put("void", new DungeonMeta(
+                CATEGORY_ENDGAME, "ENDGAME & QOL",
+                "Void Golem Realm", "VOID / ARENA",
+                "By Lewaii",
+                "A high-threat void arena where golem guardians and unstable rifts punish weak positioning. Requires the Endgame & QoL mod.",
+                VOID_IMAGE_PATH, "#DetailBannerVoid"));
+        m.put("azaroth", new DungeonMeta(
+                CATEGORY_MAJOR, "MAJOR DUNGEONS",
+                "Azaroth", "COMBAT / BOSS",
+                "By MAJOR76",
+                "The opening Major Dungeons run, designed as a combat-heavy initiation with aggressive boss pacing. Requires the Major Dungeons mod.",
+                AZAROTH_IMAGE_PATH, "#DetailBannerAzaroth"));
+        m.put("katherina", new DungeonMeta(
+                CATEGORY_MAJOR, "MAJOR DUNGEONS",
+                "Katherina", "MECHANICS / CONTROL",
+                "By MAJOR76",
+                "A mid-chain dungeon focused on sustained mechanics, control checks, and layered encounter phases. Requires the Major Dungeons mod.",
+                KATHERINA_IMAGE_PATH, "#DetailBannerKatherina"));
+        m.put("baron", new DungeonMeta(
+                CATEGORY_MAJOR, "MAJOR DUNGEONS",
+                "Baron", "BURST / FINALE",
+                "By MAJOR76",
+                "The final Major Dungeons route, culminating in a punishing finale built around burst damage windows. Requires the Major Dungeons mod.",
+                BARON_IMAGE_PATH, "#DetailBannerBaron"));
+        return java.util.Collections.unmodifiableMap(m);
+    }
+
+    private record DungeonMeta(
+            @Nonnull String category,
+            @Nonnull String categoryLabel,
+            @Nonnull String displayName,
+            @Nonnull String tag,
+            @Nonnull String author,
+            @Nonnull String description,
+            @Nonnull String bannerImagePath,
+            @Nonnull String detailBannerSelector) {
     }
 }

@@ -1,46 +1,112 @@
-Group {
-    Anchor: (Width: 250, Right: 12);
+Button #CardSwamp {
+    Anchor: (Width: 340, Height: 580, Right: 24, Top: 10, Bottom: 10);
+    Padding: (Full: 0);
+    Background: #0c121a(0);
     LayoutMode: Top;
-    Background: #0b141f(0.92);
-    Padding: (Full: 14);
+    Style: (
+        Hovered: (Background: #1c2b40(0.20)),
+        Pressed: (Background: #263852(0.28))
+    );
+
+    Group { Anchor: (Height: 2); Background: #25384b; }
 
     Group {
-        Anchor: (Height: 132, Bottom: 14);
-        Background: #184637;
-        Padding: (Left: 4, Right: 4, Top: 4, Bottom: 4);
+        FlexWeight: 1;
+        LayoutMode: Left;
 
-        Group #SwampBannerImage {
-            Anchor: (Top: 0, Left: 0, Right: 0, Bottom: 0);
-            Background: (TexturePath: "../Images/EndgameSwampPlaceholder.png");
-            Visible: false;
+        Group { Anchor: (Width: 2); Background: #25384b; }
+
+        Group {
+            FlexWeight: 1;
+
+            Group { Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 0); Background: #0e1826(0.94); }
 
             Group {
-                Anchor: (Top: 0, Left: 0, Right: 0, Bottom: 0);
-                Background: #000000(0.3);
+                Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 0);
+                LayoutMode: Top;
+
+                Group {
+                    Anchor: (Height: 180);
+                    Background: #184637;
+                    Padding: (Full: 4);
+
+                    Group #SwampBannerImage {
+                        Anchor: (Top: 0, Left: 0, Right: 0, Bottom: 0);
+                        Background: (TexturePath: "../Images/EndgameSwampPlaceholder.png");
+                        Visible: false;
+
+                        Group {
+                            Anchor: (Top: 0, Left: 0, Right: 0, Bottom: 0);
+                            Background: #000000(0.3);
+                        }
+                    }
+
+                    Group {
+                        Anchor: (Top: 6, Left: 6, Height: 22, Width: 150);
+                        Background: #0a121c(0.85);
+                        LayoutMode: Middle;
+                        Label {
+                            Text: "ENDGAME & QOL";
+                            Style: (FontSize: 9, TextColor: #c8a2ff, RenderBold: true, LetterSpacing: 1, HorizontalAlignment: Center, VerticalAlignment: Center);
+                        }
+                    }
+                }
+
+                Group {
+                    LayoutMode: Top;
+                    FlexWeight: 1;
+                    Padding: (Left: 14, Right: 14, Top: 12, Bottom: 12);
+
+                    Label {
+                        Text: "Swamp Dungeon";
+                        Anchor: (Height: 24);
+                        Style: (FontSize: 18, TextColor: #f2f7ff, RenderBold: true);
+                    }
+
+                    Group { Anchor: (Height: 2); }
+
+                    Label {
+                        Text: "By Lewaii";
+                        Anchor: (Height: 16);
+                        Style: (FontSize: 11, TextColor: #7fb7ff, RenderBold: true);
+                    }
+
+                    Group { Anchor: (Height: 8); }
+
+                    Label {
+                        Text: "Poison / Ambush";
+                        Anchor: (Height: 16);
+                        Style: (FontSize: 11, TextColor: #8be0b2, RenderBold: true, LetterSpacing: 1);
+                    }
+
+                    Group { Anchor: (Height: 8); }
+
+                    Group { Anchor: (Height: 1); Background: #ffffff(0.08); }
+
+                    Group { Anchor: (Height: 8); }
+
+                    Label {
+                        Text: "A murky marsh dungeon packed with poison pressure, tight terrain, and relentless ambush waves.";
+                        Style: (FontSize: 11, TextColor: #bdd0e8, Wrap: true);
+                        FlexWeight: 1;
+                    }
+
+                    Label {
+                        Text: "Click for details";
+                        Anchor: (Height: 14);
+                        Style: (FontSize: 10, TextColor: #c8a2ff, HorizontalAlignment: Center, VerticalAlignment: End, LetterSpacing: 1);
+                    }
+                }
             }
         }
 
-        Label {
-            Text: "ENDGAME & QOL";
-            Anchor: (Height: 16);
-            Style: (FontSize: 10, TextColor: #d9e7f6, RenderBold: true, LetterSpacing: 1);
-        }
-
-        Label {
-            Text: "Swamp Dungeon";
-            Anchor: (Bottom: 4, Height: 40);
-            Style: (FontSize: 18, TextColor: #ffffff, RenderBold: true, Wrap: true);
-        }
+        Group { Anchor: (Width: 2); Background: #25384b; }
     }
 
-    Label {
-        Text: "Swamp Dungeon By Lewaii";
-        Anchor: (Height: 18, Bottom: 10);
-        Style: (FontSize: 11, TextColor: #7fb7ff, RenderBold: true, VerticalAlignment: Center);
-    }
+    Group { Anchor: (Height: 2); Background: #25384b; }
 
-    Label {
-        Text: "A murky marsh dungeon packed with poison pressure, tight terrain, and relentless ambush waves.";
-        Style: (FontSize: 12, TextColor: #bdd0e8, Wrap: true);
+    Group {
+        Anchor: (Top: 0, Left: 0, Right: 0, Height: 3);
+        Background: #c8a2ff;
     }
 }
