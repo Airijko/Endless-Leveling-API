@@ -193,12 +193,21 @@ public class MovementHasteSystem extends TickingSystem<EntityStore> {
             long now = System.currentTimeMillis();
             if (now - state.lastStoreMismatchLogAtMillis >= STORE_MISMATCH_LOG_INTERVAL_MILLIS) {
                 LOGGER.atInfo().log(
-                        "MovementHasteSystem: skipping player %s in current store due to cross-store reference",
+                        "MovementHasteSystem: dropping cross-store player ref for %s",
                         playerId);
                 state.lastStoreMismatchLogAtMillis = now;
             }
-            // Keep this ref tracked; it may be valid in the player's active world store.
-            return true;
+            // Cross-store ref: the player has teleported to a different world's
+            // Store (dungeon/boss instance, /rtp, etc.). The ref is permanently
+            // bound to its origin store and will never validate again here.
+            // Drop it; discoverPlayers() will re-register the player under the
+            // new world's store on the next discovery pass.
+            //
+            // Note: tick()'s removeIf uses `!processActivePlayer(...)` as its
+            // predicate, so returning FALSE here causes the entry to be removed.
+            // Returning true previously caused a ~15-20k/sec ISE throw storm as
+            // every stale entry re-threw IllegalStateException on each tick.
+            return false;
         } catch (NullPointerException | IndexOutOfBoundsException tornDown) {
             // Race window: the entity backing this ref was torn down between
             // the isUsable() pre-check above and the component access. The ref
