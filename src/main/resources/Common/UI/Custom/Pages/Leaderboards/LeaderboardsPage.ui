@@ -289,7 +289,7 @@ $C.@PageOverlay {
 
                         $C.@TextButton #PrevPageButton {
                             Text: "< PREV";
-                            Anchor: (Width: 160, Height: 28);
+                            Anchor: (Width: 200, Height: 28);
                             Style: @FilterCompactStyle;
                         }
 
@@ -298,13 +298,14 @@ $C.@PageOverlay {
                         Label #PageLabel {
                             Style: (TextColor: #9ab6d4, FontSize: 13, HorizontalAlignment: Center, VerticalAlignment: Center);
                             Text: "Page 1/1";
+                            Anchor: (Width: 120);
                         }
 
                         Group { FlexWeight: 1; }
 
                         $C.@TextButton #NextPageButton {
                             Text: "NEXT >";
-                            Anchor: (Width: 160, Height: 28);
+                            Anchor: (Width: 200, Height: 28);
                             Style: @FilterCompactStyle;
                         }
                     }

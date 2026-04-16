@@ -134,9 +134,9 @@ Mob_Leveling:
     Show_Health: true
     # Nameplate HP refresh cadence. The system fires every ~100ms; each tick = 50ms (20 TPS).
     # - 1:  every system cycle (~100ms, smoothest)
-    # - 3:  ~150ms (recommended)
+    # - 3:  ~150ms
     # - 5:  ~250ms
-    # - 10: ~500ms
+    # - 10: ~500ms (recommended)
     Nameplate_Update_Ticks: 10
 
 # Player nameplate controls are separate from mob nameplate controls.

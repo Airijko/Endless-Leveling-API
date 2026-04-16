@@ -218,7 +218,7 @@ $C.@PageOverlay {
                                     // Status info (right side)
                                     Group {
                                         LayoutMode: Top;
-                                        Anchor: (Width: 260);
+                                        Anchor: (Width: 440);
 
                                         Group {
                                             Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 0);
