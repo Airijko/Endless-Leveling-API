@@ -605,7 +605,7 @@ public class EndlessLeveling extends JavaPlugin {
             if (universe == null) return;
             com.hypixel.hytale.server.core.universe.PlayerRef pr = universe.getPlayer(playerUuid);
             if (pr == null || !pr.isValid()) return;
-            OutlanderBridgeWaveManager.get().handlePlayerReady(pr);
+            OutlanderBridgeWaveManager.get().handlePlayerReady(pr, event.getPlayerRef());
         });
 
         LOGGER.atInfo().log("Plugin initialized! Plugin folder: %s",

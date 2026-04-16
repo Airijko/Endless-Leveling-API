@@ -178,6 +178,10 @@ public final class OutlanderBridgeWaveManager extends TickingSystem<EntityStore>
     // ---- Force-start requests from command thread (picked up by next tick) ----
     private final Set<UUID> pendingForceStarts = ConcurrentHashMap.newKeySet();
 
+    // ---- Players who entered an outlander world before session existed ----
+    // Keyed by world UUID → set of player UUIDs. Drained in onSessionCreated.
+    private final ConcurrentHashMap<UUID, Set<UUID>> pendingJoinPlayers = new ConcurrentHashMap<>();
+
     private OutlanderBridgeWaveManager() {}
 
     public static OutlanderBridgeWaveManager get() { return INSTANCE; }
@@ -238,6 +242,13 @@ public final class OutlanderBridgeWaveManager extends TickingSystem<EntityStore>
         // mobs walk toward 0,79,0 even with no valid aggro target.
         if (s.phase == Phase.WAVE_ACTIVE) {
             driveMobsToCenter(s, store, deltaSeconds);
+        }
+
+        // Sweep: register banking + open HUD for any player in world who
+        // isn't banked yet. Covers late joins AND re-entries (TP back mid-
+        // session). Runs every tick; isBankingActive check makes it cheap.
+        if (s.phase != Phase.COMPLETED) {
+            ensureAllPlayersBanked(s);
         }
 
         switch (s.phase) {
@@ -333,6 +344,7 @@ public final class OutlanderBridgeWaveManager extends TickingSystem<EntityStore>
 
         lockTierOffsetForSession(s);
         registerAllPlayersForBanking(s);
+        drainPendingJoinPlayers(s);
 
         // Rich formatted join message with tier/level info
         sendOutlanderJoinNotification(s.world, s.store);
@@ -364,6 +376,21 @@ public final class OutlanderBridgeWaveManager extends TickingSystem<EntityStore>
             // yet — force-close any stale HUD the client may still render
             // (post-restart ghosts). Session will open its own HUD on tick.
             closeHudForWorldPlayers(world);
+
+            // Queue player so onSessionCreated can register banking + HUD once
+            // the session exists. Without this, party members who load in before
+            // the first tick miss XP banking entirely.
+            if (isOutlanderBridgeWorld(world) && holder != null) {
+                PlayerRef joiningRef = holder.getComponent(PlayerRef.getComponentType());
+                if (joiningRef != null && joiningRef.isValid()) {
+                    UUID joiningUuid = joiningRef.getUuid();
+                    if (joiningUuid != null) {
+                        pendingJoinPlayers
+                                .computeIfAbsent(key, k -> ConcurrentHashMap.newKeySet())
+                                .add(joiningUuid);
+                    }
+                }
+            }
             return;
         }
 
@@ -442,6 +469,32 @@ public final class OutlanderBridgeWaveManager extends TickingSystem<EntityStore>
     public boolean hasActiveSession(@Nullable World world) {
         if (world == null) return false;
         return sessions.containsKey(world.getWorldConfig().getUuid());
+    }
+
+    /**
+     * Called from LevelingManager.addXp when a player is about to receive XP
+     * but isn't banking-active. If the player is currently inside an active
+     * outlander-bridge session world, force-register banking so XP is
+     * diverted. Returns true if registration occurred.
+     * <p>
+     * This is the last line of defense against the die → TP-back exploit
+     * where event-based registration has a timing gap.
+     */
+    public boolean tryForceRegisterBanking(@Nonnull UUID playerUuid) {
+        OutlanderBridgeXpBank bank = OutlanderBridgeXpBank.get();
+        for (Session s : sessions.values()) {
+            if (s.phase == Phase.COMPLETED) continue;
+            UUID worldId = s.world.getWorldConfig().getUuid();
+            if (bank.isLockedFromSession(playerUuid, worldId)) continue;
+            for (PlayerRef pr : s.world.getPlayerRefs()) {
+                if (pr == null || !pr.isValid()) continue;
+                if (playerUuid.equals(pr.getUuid())) {
+                    bank.registerPlayerForSession(playerUuid, worldId);
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /**
@@ -1457,7 +1510,7 @@ public final class OutlanderBridgeWaveManager extends TickingSystem<EntityStore>
                 if (size > maxSize) maxSize = size;
             } catch (Throwable ignored) {}
         }
-        return Math.max(0, maxSize - 1);
+        return Math.max(0, (maxSize - 1) * 2);
     }
 
     private void lockTierOffsetForSession(@Nonnull Session s) {
@@ -1609,6 +1662,7 @@ public final class OutlanderBridgeWaveManager extends TickingSystem<EntityStore>
         s.mobSpawnTimes.clear();
         restoreReturnPortals(s);
         closeHudForWorldPlayers(s.world);
+        pendingJoinPlayers.remove(worldId);
         OutlanderBridgeXpBank.get().clearSession(worldId);
     }
 
@@ -1624,6 +1678,61 @@ public final class OutlanderBridgeWaveManager extends TickingSystem<EntityStore>
             UUID uuid = pr.getUuid();
             if (uuid == null) continue;
             bank.registerPlayerForSession(uuid, worldId);
+        }
+    }
+
+    /**
+     * Drain players who entered via AddPlayerToWorldEvent before the session
+     * existed. Registers XP banking + opens HUD for each. Called once in
+     * onSessionCreated after registerAllPlayersForBanking so any player not
+     * yet in getPlayerRefs() at that moment still gets banking.
+     */
+    private void drainPendingJoinPlayers(@Nonnull Session s) {
+        UUID worldId = s.world.getWorldConfig().getUuid();
+        Set<UUID> pending = pendingJoinPlayers.remove(worldId);
+        if (pending == null || pending.isEmpty()) return;
+        OutlanderBridgeXpBank bank = OutlanderBridgeXpBank.get();
+        for (UUID playerUuid : pending) {
+            bank.registerPlayerForSession(playerUuid, worldId);
+        }
+        // HUD is opened for all world players by openHudForWorldPlayers in
+        // onSessionCreated — pending players that ARE in getPlayerRefs() by
+        // now are covered. For any that loaded between the two calls,
+        // openHudForWorldPlayers already handles them.
+    }
+
+    /**
+     * Sweep every player currently in the world — if they aren't banked yet,
+     * register them + open HUD. Called each countdown tick so late-loading
+     * party members are never missed. registerPlayerForSession is idempotent
+     * (no-ops when already registered), so the per-tick cost is negligible.
+     */
+    private void ensureAllPlayersBanked(@Nonnull Session s) {
+        UUID worldId = s.world.getWorldConfig().getUuid();
+        OutlanderBridgeXpBank bank = OutlanderBridgeXpBank.get();
+        Set<UUID> hudUuids = OutlanderBridgeWaveHud.getActiveHudUuids();
+        for (PlayerRef pr : s.world.getPlayerRefs()) {
+            if (pr == null || !pr.isValid()) continue;
+            UUID uuid = pr.getUuid();
+            if (uuid == null) continue;
+            boolean needsBank = !bank.isBankingActive(uuid);
+            boolean needsHud = !hudUuids.contains(uuid);
+            if (!needsBank && !needsHud) continue;
+            if (needsBank) {
+                bank.registerPlayerForSession(uuid, worldId);
+            }
+            if (needsHud) {
+                Ref<EntityStore> ref = pr.getReference();
+                if (ref != null && ref.isValid()) {
+                    Store<EntityStore> st = ref.getStore();
+                    if (st != null) {
+                        Player player = st.getComponent(ref, Player.getComponentType());
+                        if (player != null) {
+                            OutlanderBridgeWaveHud.open(player, pr);
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -1653,21 +1762,62 @@ public final class OutlanderBridgeWaveManager extends TickingSystem<EntityStore>
     }
 
     /**
-     * Called by PlayerReadyEvent hook in EndlessLeveling — if the respawning
-     * player has a pending reward, open the rewards panel now. Never throws
-     * to the event dispatcher; a failure must never block world-join.
+     * Called by PlayerReadyEvent hook in EndlessLeveling. Two jobs:
+     * <ol>
+     *   <li>If the player readied in an outlander-bridge world with an active
+     *       session, force-register banking + open HUD. This is the strictest
+     *       guard — PlayerReadyEvent fires after the client is fully loaded,
+     *       so the player is guaranteed to be in the world and able to earn
+     *       XP. Closes the die → TP-back exploit completely.</li>
+     *   <li>If the player has a pending death-reward, open the rewards panel.</li>
+     * </ol>
+     * Never throws to the event dispatcher; a failure must never block
+     * world-join.
      */
-    public void handlePlayerReady(@Nonnull PlayerRef playerRef) {
+    public void handlePlayerReady(@Nonnull PlayerRef playerRef,
+                                  @Nullable Ref<EntityStore> ref) {
         try {
             UUID uuid = playerRef.getUuid();
             if (uuid == null) return;
+
+            // ---- Force banking on ready inside outlander instance ----
+            World world = null;
+            if (ref != null && ref.isValid()) {
+                Store<EntityStore> st = ref.getStore();
+                if (st != null && st.getExternalData() != null) {
+                    world = st.getExternalData().getWorld();
+                }
+            }
+            if (world != null && isOutlanderBridgeWorld(world)) {
+                UUID worldId = world.getWorldConfig() != null
+                        ? world.getWorldConfig().getUuid() : null;
+                Session s = worldId != null ? sessions.get(worldId) : null;
+                if (s != null && s.phase != Phase.COMPLETED) {
+                    OutlanderBridgeXpBank bank = OutlanderBridgeXpBank.get();
+                    if (!bank.isLockedFromSession(uuid, worldId)) {
+                        bank.registerPlayerForSession(uuid, worldId);
+                        // Open HUD — player entity is fully ready at this point
+                        if (ref != null && ref.isValid()) {
+                            Store<EntityStore> st = ref.getStore();
+                            if (st != null) {
+                                Player player = st.getComponent(ref, Player.getComponentType());
+                                if (player != null) {
+                                    OutlanderBridgeWaveHud.open(player, playerRef);
+                                }
+                            }
+                        }
+                        LOGGER.atFine().log(
+                                "Outlander Bridge: force-registered banking on PlayerReady player=%s world=%s",
+                                uuid, world.getName());
+                    }
+                }
+            }
+
+            // ---- Pending death-reward panel ----
             OutlanderBridgeXpBank.PendingReward pending =
                     OutlanderBridgeXpBank.get().consumePendingOnRespawn(uuid);
             if (pending == null) return;
             if (pending.savedXp() <= 0.0) return;
-            // Death-respawn panel has no dungeon-close timer — player already
-            // left the instance via the death route, so the 60s close countdown
-            // is irrelevant. They decide to claim or cancel at their own pace.
             OutlanderBridgeRewardsPage.openFor(playerRef, pending.sessionWorldId(),
                     pending.savedXp(), 0, false);
         } catch (Throwable t) {

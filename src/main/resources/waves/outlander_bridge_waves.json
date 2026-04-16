@@ -11,20 +11,20 @@
           "mobs": [
             {
               "mobs": [
-                { "id": "Outlander_Peon", "count": 6 },
-                { "id": "Outlander_Marauder", "count": 4 }
-              ]
-            },
-            {
-              "mobs": [
                 { "id": "Outlander_Peon", "count": 8 },
-                { "id": "Outlander_Berserker", "count": 3 }
+                { "id": "Outlander_Marauder", "count": 6 }
               ]
             },
             {
               "mobs": [
-                { "id": "Outlander_Marauder", "count": 5 },
-                { "id": "Outlander_Peon", "count": 5 }
+                { "id": "Outlander_Peon", "count": 10 },
+                { "id": "Outlander_Berserker", "count": 5 }
+              ]
+            },
+            {
+              "mobs": [
+                { "id": "Outlander_Marauder", "count": 7 },
+                { "id": "Outlander_Peon", "count": 7 }
               ]
             }
           ]
@@ -34,14 +34,14 @@
           "mobs": [
             {
               "mobs": [
-                { "id": "Outlander_Hunter", "count": 4 },
-                { "id": "Outlander_Cultist", "count": 3 }
+                { "id": "Outlander_Hunter", "count": 6 },
+                { "id": "Outlander_Cultist", "count": 5 }
               ]
             },
             {
               "mobs": [
-                { "id": "Outlander_Stalker", "count": 4 },
-                { "id": "Outlander_Hunter", "count": 3 }
+                { "id": "Outlander_Stalker", "count": 6 },
+                { "id": "Outlander_Hunter", "count": 5 }
               ]
             }
           ]
@@ -59,20 +59,20 @@
           "mobs": [
             {
               "mobs": [
-                { "id": "Outlander_Berserker", "count": 5 },
-                { "id": "Outlander_Marauder", "count": 4 }
+                { "id": "Outlander_Berserker", "count": 7 },
+                { "id": "Outlander_Marauder", "count": 6 }
               ]
             },
             {
               "mobs": [
-                { "id": "Outlander_Peon", "count": 6 },
-                { "id": "Outlander_Berserker", "count": 4 }
+                { "id": "Outlander_Peon", "count": 8 },
+                { "id": "Outlander_Berserker", "count": 6 }
               ]
             },
             {
               "mobs": [
-                { "id": "Outlander_Marauder", "count": 6 },
-                { "id": "Outlander_Peon", "count": 4 }
+                { "id": "Outlander_Marauder", "count": 8 },
+                { "id": "Outlander_Peon", "count": 6 }
               ]
             }
           ]
@@ -82,14 +82,14 @@
           "mobs": [
             {
               "mobs": [
-                { "id": "Outlander_Stalker", "count": 4 },
-                { "id": "Outlander_Priest", "count": 2 }
+                { "id": "Outlander_Stalker", "count": 6 },
+                { "id": "Outlander_Priest", "count": 4 }
               ]
             },
             {
               "mobs": [
-                { "id": "Outlander_Cultist", "count": 5 },
-                { "id": "Outlander_Sorcerer", "count": 2 }
+                { "id": "Outlander_Cultist", "count": 7 },
+                { "id": "Outlander_Sorcerer", "count": 4 }
               ]
             }
           ]
@@ -107,14 +107,14 @@
           "mobs": [
             {
               "mobs": [
-                { "id": "Outlander_Berserker", "count": 6 },
-                { "id": "Outlander_Marauder", "count": 4 }
+                { "id": "Outlander_Berserker", "count": 8 },
+                { "id": "Outlander_Marauder", "count": 6 }
               ]
             },
             {
               "mobs": [
-                { "id": "Outlander_Marauder", "count": 5 },
-                { "id": "Outlander_Berserker", "count": 5 }
+                { "id": "Outlander_Marauder", "count": 7 },
+                { "id": "Outlander_Berserker", "count": 7 }
               ]
             }
           ]
@@ -124,15 +124,15 @@
           "mobs": [
             {
               "mobs": [
-                { "id": "Outlander_Hunter", "count": 4 },
-                { "id": "Outlander_Stalker", "count": 3 },
-                { "id": "Outlander_Cultist", "count": 3 }
+                { "id": "Outlander_Hunter", "count": 6 },
+                { "id": "Outlander_Stalker", "count": 5 },
+                { "id": "Outlander_Cultist", "count": 5 }
               ]
             },
             {
               "mobs": [
-                { "id": "Outlander_Priest", "count": 3 },
-                { "id": "Outlander_Cultist", "count": 4 }
+                { "id": "Outlander_Priest", "count": 5 },
+                { "id": "Outlander_Cultist", "count": 6 }
               ]
             }
           ]
@@ -150,15 +150,15 @@
           "mobs": [
             {
               "mobs": [
-                { "id": "Outlander_Berserker", "count": 7 },
-                { "id": "Outlander_Marauder", "count": 5 }
+                { "id": "Outlander_Berserker", "count": 9 },
+                { "id": "Outlander_Marauder", "count": 7 }
               ]
             },
             {
               "mobs": [
-                { "id": "Outlander_Marauder", "count": 6 },
-                { "id": "Outlander_Berserker", "count": 4 },
-                { "id": "Outlander_Peon", "count": 4 }
+                { "id": "Outlander_Marauder", "count": 8 },
+                { "id": "Outlander_Berserker", "count": 6 },
+                { "id": "Outlander_Peon", "count": 6 }
               ]
             }
           ]
@@ -168,15 +168,15 @@
           "mobs": [
             {
               "mobs": [
-                { "id": "Outlander_Priest", "count": 3 },
-                { "id": "Outlander_Sorcerer", "count": 2 },
-                { "id": "Outlander_Stalker", "count": 3 }
+                { "id": "Outlander_Priest", "count": 5 },
+                { "id": "Outlander_Sorcerer", "count": 4 },
+                { "id": "Outlander_Stalker", "count": 5 }
               ]
             },
             {
               "mobs": [
-                { "id": "Outlander_Sorcerer", "count": 3 },
-                { "id": "Outlander_Hunter", "count": 4 }
+                { "id": "Outlander_Sorcerer", "count": 5 },
+                { "id": "Outlander_Hunter", "count": 6 }
               ]
             }
           ]
@@ -194,15 +194,15 @@
           "mobs": [
             {
               "mobs": [
-                { "id": "Outlander_Peon", "count": 10 },
-                { "id": "Outlander_Berserker", "count": 5 },
-                { "id": "Outlander_Marauder", "count": 4 }
+                { "id": "Outlander_Peon", "count": 12 },
+                { "id": "Outlander_Berserker", "count": 7 },
+                { "id": "Outlander_Marauder", "count": 6 }
               ]
             },
             {
               "mobs": [
-                { "id": "Outlander_Marauder", "count": 7 },
-                { "id": "Outlander_Berserker", "count": 6 }
+                { "id": "Outlander_Marauder", "count": 9 },
+                { "id": "Outlander_Berserker", "count": 8 }
               ]
             }
           ]
@@ -212,16 +212,16 @@
           "mobs": [
             {
               "mobs": [
-                { "id": "Outlander_Hunter", "count": 5 },
-                { "id": "Outlander_Stalker", "count": 4 },
-                { "id": "Outlander_Priest", "count": 2 }
+                { "id": "Outlander_Hunter", "count": 7 },
+                { "id": "Outlander_Stalker", "count": 6 },
+                { "id": "Outlander_Priest", "count": 4 }
               ]
             },
             {
               "mobs": [
-                { "id": "Outlander_Cultist", "count": 5 },
-                { "id": "Outlander_Sorcerer", "count": 3 },
-                { "id": "Outlander_Stalker", "count": 3 }
+                { "id": "Outlander_Cultist", "count": 7 },
+                { "id": "Outlander_Sorcerer", "count": 5 },
+                { "id": "Outlander_Stalker", "count": 5 }
               ]
             }
           ]
@@ -239,15 +239,15 @@
           "mobs": [
             {
               "mobs": [
-                { "id": "Outlander_Berserker", "count": 8 },
-                { "id": "Outlander_Marauder", "count": 6 }
+                { "id": "Outlander_Berserker", "count": 10 },
+                { "id": "Outlander_Marauder", "count": 8 }
               ]
             },
             {
               "mobs": [
-                { "id": "Outlander_Marauder", "count": 8 },
-                { "id": "Outlander_Berserker", "count": 5 },
-                { "id": "Outlander_Peon", "count": 4 }
+                { "id": "Outlander_Marauder", "count": 10 },
+                { "id": "Outlander_Berserker", "count": 7 },
+                { "id": "Outlander_Peon", "count": 6 }
               ]
             }
           ]
@@ -257,16 +257,16 @@
           "mobs": [
             {
               "mobs": [
-                { "id": "Outlander_Priest", "count": 4 },
-                { "id": "Outlander_Sorcerer", "count": 3 },
-                { "id": "Outlander_Cultist", "count": 4 }
+                { "id": "Outlander_Priest", "count": 6 },
+                { "id": "Outlander_Sorcerer", "count": 5 },
+                { "id": "Outlander_Cultist", "count": 6 }
               ]
             },
             {
               "mobs": [
-                { "id": "Outlander_Sorcerer", "count": 4 },
-                { "id": "Outlander_Stalker", "count": 4 },
-                { "id": "Outlander_Hunter", "count": 3 }
+                { "id": "Outlander_Sorcerer", "count": 6 },
+                { "id": "Outlander_Stalker", "count": 6 },
+                { "id": "Outlander_Hunter", "count": 5 }
               ]
             }
           ]
@@ -284,15 +284,15 @@
           "mobs": [
             {
               "mobs": [
-                { "id": "Outlander_Berserker", "count": 8 },
-                { "id": "Outlander_Marauder", "count": 6 },
-                { "id": "Outlander_Peon", "count": 6 }
+                { "id": "Outlander_Berserker", "count": 10 },
+                { "id": "Outlander_Marauder", "count": 8 },
+                { "id": "Outlander_Peon", "count": 8 }
               ]
             },
             {
               "mobs": [
-                { "id": "Outlander_Marauder", "count": 9 },
-                { "id": "Outlander_Berserker", "count": 7 }
+                { "id": "Outlander_Marauder", "count": 11 },
+                { "id": "Outlander_Berserker", "count": 9 }
               ]
             }
           ]
@@ -302,17 +302,17 @@
           "mobs": [
             {
               "mobs": [
-                { "id": "Outlander_Priest", "count": 4 },
-                { "id": "Outlander_Sorcerer", "count": 4 },
-                { "id": "Outlander_Cultist", "count": 5 },
-                { "id": "Outlander_Stalker", "count": 4 }
+                { "id": "Outlander_Priest", "count": 6 },
+                { "id": "Outlander_Sorcerer", "count": 6 },
+                { "id": "Outlander_Cultist", "count": 7 },
+                { "id": "Outlander_Stalker", "count": 6 }
               ]
             },
             {
               "mobs": [
-                { "id": "Outlander_Sorcerer", "count": 5 },
-                { "id": "Outlander_Hunter", "count": 5 },
-                { "id": "Outlander_Cultist", "count": 4 }
+                { "id": "Outlander_Sorcerer", "count": 7 },
+                { "id": "Outlander_Hunter", "count": 7 },
+                { "id": "Outlander_Cultist", "count": 6 }
               ]
             }
           ]

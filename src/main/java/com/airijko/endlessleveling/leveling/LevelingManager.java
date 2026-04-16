@@ -225,9 +225,18 @@ public class LevelingManager {
         // instead of crediting profile XP. All bonuses (party, marriage, passives,
         // luck, level-diff, gain cap) are already applied above, so the bank
         // receives the exact same number profile XP would have.
-        if (uuid != null && com.airijko.endlessleveling.mob.outlander.OutlanderBridgeXpBank.get()
-                .tryDivertXp(uuid, adjustedXp)) {
-            return;
+        // Force-register fallback: if the player is in an outlander bridge world
+        // but isn't banking-active (die → TP-back exploit), register them now
+        // so the divert succeeds with zero timing gap.
+        if (uuid != null) {
+            var xpBank = com.airijko.endlessleveling.mob.outlander.OutlanderBridgeXpBank.get();
+            if (!xpBank.isBankingActive(uuid)) {
+                com.airijko.endlessleveling.mob.outlander.OutlanderBridgeWaveManager.get()
+                        .tryForceRegisterBanking(uuid);
+            }
+            if (xpBank.tryDivertXp(uuid, adjustedXp)) {
+                return;
+            }
         }
 
         int effectiveCap = getLevelCap(player);
