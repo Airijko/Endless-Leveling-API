@@ -1,0 +1,326 @@
+{
+  "spawn_radius": 18,
+  "batch_kill_percent": 70,
+  "batch_fallback_seconds": 25,
+  "waves": [
+    {
+      "wave": 1,
+      "pools": [
+        {
+          "id": "outlander_melee",
+          "mobs": [
+            {
+              "mobs": [
+                { "id": "Outlander_Peon", "count": 6 },
+                { "id": "Outlander_Marauder", "count": 4 }
+              ]
+            },
+            {
+              "mobs": [
+                { "id": "Outlander_Peon", "count": 8 },
+                { "id": "Outlander_Berserker", "count": 3 }
+              ]
+            },
+            {
+              "mobs": [
+                { "id": "Outlander_Marauder", "count": 5 },
+                { "id": "Outlander_Peon", "count": 5 }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "outlander_ranged",
+          "mobs": [
+            {
+              "mobs": [
+                { "id": "Outlander_Hunter", "count": 4 },
+                { "id": "Outlander_Cultist", "count": 3 }
+              ]
+            },
+            {
+              "mobs": [
+                { "id": "Outlander_Stalker", "count": 4 },
+                { "id": "Outlander_Hunter", "count": 3 }
+              ]
+            }
+          ]
+        }
+      ],
+      "bosses": [
+        { "id": "Outlander_Brute" }
+      ]
+    },
+    {
+      "wave": 2,
+      "pools": [
+        {
+          "id": "outlander_melee",
+          "mobs": [
+            {
+              "mobs": [
+                { "id": "Outlander_Berserker", "count": 5 },
+                { "id": "Outlander_Marauder", "count": 4 }
+              ]
+            },
+            {
+              "mobs": [
+                { "id": "Outlander_Peon", "count": 6 },
+                { "id": "Outlander_Berserker", "count": 4 }
+              ]
+            },
+            {
+              "mobs": [
+                { "id": "Outlander_Marauder", "count": 6 },
+                { "id": "Outlander_Peon", "count": 4 }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "outlander_ranged_mage",
+          "mobs": [
+            {
+              "mobs": [
+                { "id": "Outlander_Stalker", "count": 4 },
+                { "id": "Outlander_Priest", "count": 2 }
+              ]
+            },
+            {
+              "mobs": [
+                { "id": "Outlander_Cultist", "count": 5 },
+                { "id": "Outlander_Sorcerer", "count": 2 }
+              ]
+            }
+          ]
+        }
+      ],
+      "bosses": [
+        { "id": "Outlander_Brute" }
+      ]
+    },
+    {
+      "wave": 3,
+      "pools": [
+        {
+          "id": "outlander_melee",
+          "mobs": [
+            {
+              "mobs": [
+                { "id": "Outlander_Berserker", "count": 6 },
+                { "id": "Outlander_Marauder", "count": 4 }
+              ]
+            },
+            {
+              "mobs": [
+                { "id": "Outlander_Marauder", "count": 5 },
+                { "id": "Outlander_Berserker", "count": 5 }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "outlander_hybrid",
+          "mobs": [
+            {
+              "mobs": [
+                { "id": "Outlander_Hunter", "count": 4 },
+                { "id": "Outlander_Stalker", "count": 3 },
+                { "id": "Outlander_Cultist", "count": 3 }
+              ]
+            },
+            {
+              "mobs": [
+                { "id": "Outlander_Priest", "count": 3 },
+                { "id": "Outlander_Cultist", "count": 4 }
+              ]
+            }
+          ]
+        }
+      ],
+      "bosses": [
+        { "id": "Outlander_Brute" }
+      ]
+    },
+    {
+      "wave": 4,
+      "pools": [
+        {
+          "id": "outlander_melee_heavy",
+          "mobs": [
+            {
+              "mobs": [
+                { "id": "Outlander_Berserker", "count": 7 },
+                { "id": "Outlander_Marauder", "count": 5 }
+              ]
+            },
+            {
+              "mobs": [
+                { "id": "Outlander_Marauder", "count": 6 },
+                { "id": "Outlander_Berserker", "count": 4 },
+                { "id": "Outlander_Peon", "count": 4 }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "outlander_mage",
+          "mobs": [
+            {
+              "mobs": [
+                { "id": "Outlander_Priest", "count": 3 },
+                { "id": "Outlander_Sorcerer", "count": 2 },
+                { "id": "Outlander_Stalker", "count": 3 }
+              ]
+            },
+            {
+              "mobs": [
+                { "id": "Outlander_Sorcerer", "count": 3 },
+                { "id": "Outlander_Hunter", "count": 4 }
+              ]
+            }
+          ]
+        }
+      ],
+      "bosses": [
+        { "id": "Outlander_Brute" }
+      ]
+    },
+    {
+      "wave": 5,
+      "pools": [
+        {
+          "id": "outlander_swarm",
+          "mobs": [
+            {
+              "mobs": [
+                { "id": "Outlander_Peon", "count": 10 },
+                { "id": "Outlander_Berserker", "count": 5 },
+                { "id": "Outlander_Marauder", "count": 4 }
+              ]
+            },
+            {
+              "mobs": [
+                { "id": "Outlander_Marauder", "count": 7 },
+                { "id": "Outlander_Berserker", "count": 6 }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "outlander_skirmish",
+          "mobs": [
+            {
+              "mobs": [
+                { "id": "Outlander_Hunter", "count": 5 },
+                { "id": "Outlander_Stalker", "count": 4 },
+                { "id": "Outlander_Priest", "count": 2 }
+              ]
+            },
+            {
+              "mobs": [
+                { "id": "Outlander_Cultist", "count": 5 },
+                { "id": "Outlander_Sorcerer", "count": 3 },
+                { "id": "Outlander_Stalker", "count": 3 }
+              ]
+            }
+          ]
+        }
+      ],
+      "bosses": [
+        { "id": "Outlander_Brute" }
+      ]
+    },
+    {
+      "wave": 6,
+      "pools": [
+        {
+          "id": "outlander_vanguard",
+          "mobs": [
+            {
+              "mobs": [
+                { "id": "Outlander_Berserker", "count": 8 },
+                { "id": "Outlander_Marauder", "count": 6 }
+              ]
+            },
+            {
+              "mobs": [
+                { "id": "Outlander_Marauder", "count": 8 },
+                { "id": "Outlander_Berserker", "count": 5 },
+                { "id": "Outlander_Peon", "count": 4 }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "outlander_coven",
+          "mobs": [
+            {
+              "mobs": [
+                { "id": "Outlander_Priest", "count": 4 },
+                { "id": "Outlander_Sorcerer", "count": 3 },
+                { "id": "Outlander_Cultist", "count": 4 }
+              ]
+            },
+            {
+              "mobs": [
+                { "id": "Outlander_Sorcerer", "count": 4 },
+                { "id": "Outlander_Stalker", "count": 4 },
+                { "id": "Outlander_Hunter", "count": 3 }
+              ]
+            }
+          ]
+        }
+      ],
+      "bosses": [
+        { "id": "Outlander_Brute" }
+      ]
+    },
+    {
+      "wave": 7,
+      "pools": [
+        {
+          "id": "outlander_warband",
+          "mobs": [
+            {
+              "mobs": [
+                { "id": "Outlander_Berserker", "count": 8 },
+                { "id": "Outlander_Marauder", "count": 6 },
+                { "id": "Outlander_Peon", "count": 6 }
+              ]
+            },
+            {
+              "mobs": [
+                { "id": "Outlander_Marauder", "count": 9 },
+                { "id": "Outlander_Berserker", "count": 7 }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "outlander_ritual",
+          "mobs": [
+            {
+              "mobs": [
+                { "id": "Outlander_Priest", "count": 4 },
+                { "id": "Outlander_Sorcerer", "count": 4 },
+                { "id": "Outlander_Cultist", "count": 5 },
+                { "id": "Outlander_Stalker", "count": 4 }
+              ]
+            },
+            {
+              "mobs": [
+                { "id": "Outlander_Sorcerer", "count": 5 },
+                { "id": "Outlander_Hunter", "count": 5 },
+                { "id": "Outlander_Cultist", "count": 4 }
+              ]
+            }
+          ]
+        }
+      ],
+      "bosses": [
+        { "id": "Outlander_Brute" }
+      ]
+    }
+  ]
+}

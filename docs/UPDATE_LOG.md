@@ -2,13 +2,15 @@
 
 ## 2026-04-14 — 7.8.3 (compared to 7.8.2)
 
-A **crash-fix hotfix release** on top of 7.8.2. One issue addressed: the engine's "already contains component type" crash when two systems try to add a `Nameplate` component to the same entity on the same tick. Affected entities in instance worlds (`el_gate_*`) where vanilla spawn + mob leveling nameplate apply concurrently.
+A **crash-fix + external-addon compatibility hotfix release** on top of 7.8.2. Three issues addressed: (1) the engine's "already contains component type" crash when two systems try to add a `Nameplate` component to the same entity on the same tick (affected entities in instance worlds `el_gate_*` where vanilla spawn + mob leveling nameplate apply concurrently); (2) external addon-provided races/classes being permanently nullified on player-data save when the addon's own `setup()` hadn't finished registering yet; (3) the profile Gates nav button being hidden whenever the active dungeon addon was the renamed `EndlessRiftsAndRaids` variant instead of the legacy `EndlessDungeonsAndGates` class.
 
-Merged from PR [#6](https://github.com/Airijko/Hytale-Skills/pull/6) by `HazemSb` / `zbevee` (branch `fix/nameplate-race`).
+Nameplate fix merged from PR [#6](https://github.com/Airijko/Hytale-Skills/pull/6) by `HazemSb` / `zbevee` (branch `fix/nameplate-race`).
 
 ### Highlights
 
 - **Nameplate duplicate-add crash fix** — `MobLevelingSystem` and `PlayerNameplateSystem` now re-check the `Nameplate` component inside the deferred `commandBuffer.run(...)` closure and fall back to `setText` on the existing component instead of blindly calling `addComponent`, which crashed when another system added the nameplate between the outer check and the consume cycle.
+- **External race/class preservation** — `PlayerDataManager.ensureValidRace` / `ensureValidClasses` no longer null out IDs whose definition isn't currently registered (e.g., addon-provided race/class registered after EL's setup completes). Also removed both `ensureValid*` calls from the save path, so a mid-boot save no longer corrupts the stored identifiers. Active-profile `setPlayer*` calls are now gated on the registry actually containing the ID.
+- **EndlessRiftsAndRaids addon detection** — `NavUIHelper.isEndlessDungeonsPresent` now probes both `EndlessRiftsAndRaids` and legacy `EndlessDungeonsAndGates` classnames, so the profile "Gates" button stays visible under the renamed addon.
 - **Version bump** — `manifest.json` / `gradle.properties`: `7.8.2` → `7.8.3`.
 
 ### Nameplate Duplicate-Add Crash (`Bug Fix`)
@@ -48,6 +50,81 @@ Two-layer defense: explicit `getComponent` re-check first, then a `try/catch` on
 
 - [`MobLevelingSystem`](src/main/java/com/airijko/endlessleveling/mob/MobLevelingSystem.java) — +17 / -2 around line 1610 (the mob nameplate refresh path).
 - [`PlayerNameplateSystem`](src/main/java/com/airijko/endlessleveling/systems/PlayerNameplateSystem.java) — +17 / -2 around line 204 (the player nameplate refresh path).
+
+### External Race/Class Preservation (`Bug Fix`)
+
+#### Problem
+
+`PlayerDataManager.ensureValidRace` and `ensureValidClasses` ran on every save and resolved each profile's `raceId` / `primaryClassId` / `secondaryClassId` against the currently-registered `RaceManager` / `ClassManager` registries. If the ID resolved to a definition that wasn't present (`raceManager.getRace(resolved) == null`), the profile field was set to `null`. This was destructive for addon-provided races/classes: if an external addon registered its content in its own `setup()` that ran *after* EL's first save of the tick, the player's stored `raceId` would be nullified and permanently lost once the save flushed — even though the addon would have registered the ID seconds later. The `setPlayerRaceSilently` / `setPlayerPrimaryClass` / `setPlayerSecondaryClass` tail calls then also ran unconditionally, attempting to apply an ID the registry couldn't resolve.
+
+Additional aggravating factor: `saveData` itself called `ensureValidRace(data)` and `ensureValidClasses(data)` before writing to disk, so every save was a potential data-corruption event during boot or reload windows.
+
+#### Fix
+
+Three changes in [`PlayerDataManager`](src/main/java/com/airijko/endlessleveling/player/PlayerDataManager.java):
+
+1. Removed the `ensureValidRace(data)` / `ensureValidClasses(data)` calls from the `saveData` path (around line 210) — validation on save is no longer destructive.
+2. `ensureValidRace`: when `raceManager.resolveRaceIdentifier(original)` returns `null` but the stored ID is non-blank, **preserve the original ID** instead of nullifying. Comment explains the rationale (addon race may register later).
+3. `ensureValidClasses`: same preservation logic applied to both `primaryClassId` and `secondaryClassId`.
+4. Active-profile re-apply (`raceManager.setPlayerRaceSilently`, `classManager.setPlayerPrimaryClass`, `classManager.setPlayerSecondaryClass`) now guarded by `registry.getRace(id) != null` / `registry.getClass(id) != null` — skips the apply when the definition isn't registered yet rather than pushing a broken ID downstream.
+
+```java
+String original = profile.getRaceId();
+String resolved = raceManager.resolveRaceIdentifier(original);
+// Preserve IDs whose definition isn't currently registered (e.g., an addon-provided
+// race that hasn't finished its own setup() yet). Nullifying would corrupt the save
+// once the addon re-registers later.
+if (resolved == null && original != null && !original.isBlank()) {
+    resolved = original;
+}
+profile.setRaceId(resolved);
+```
+
+```java
+String activeRaceId = data.getRaceId();
+if (activeRaceId != null && raceManager.getRace(activeRaceId) != null) {
+    raceManager.setPlayerRaceSilently(data, activeRaceId);
+}
+```
+
+#### Files Changed
+
+- [`PlayerDataManager`](src/main/java/com/airijko/endlessleveling/player/PlayerDataManager.java) — +28 / -19. Save-path `ensureValid*` calls removed (~line 210); `ensureValidRace` rewritten (~line 1148); `ensureValidClasses` rewritten (~line 1180).
+
+### EndlessRiftsAndRaids Addon Detection (`Bug Fix`)
+
+#### Problem
+
+`NavUIHelper.isEndlessDungeonsPresent` hardcoded a single classpath probe — `Class.forName("com.airijko.endlessleveling.EndlessDungeonsAndGates", false, cl)` — to decide whether the profile page's "Gates" nav button should be visible and wired. The dungeon addon was renamed/forked to `EndlessRiftsAndRaids` (new main class `com.airijko.endlessleveling.EndlessRiftsAndRaids`); servers running the renamed variant had the Gates button hidden because the legacy classname was absent.
+
+#### Fix
+
+`NavUIHelper.isEndlessDungeonsPresent` now iterates a list of both main classes and returns `true` on the first that resolves:
+
+```java
+private static final String[] ENDLESS_DUNGEONS_CLASSES = {
+        "com.airijko.endlessleveling.EndlessRiftsAndRaids",
+        "com.airijko.endlessleveling.EndlessDungeonsAndGates",
+};
+
+private static boolean isEndlessDungeonsPresent() {
+    ClassLoader cl = NavUIHelper.class.getClassLoader();
+    for (String name : ENDLESS_DUNGEONS_CLASSES) {
+        try {
+            Class.forName(name, false, cl);
+            return true;
+        } catch (ClassNotFoundException ignored) {
+        }
+    }
+    return false;
+}
+```
+
+RiftsAndRaids is checked first (current addon); `EndlessDungeonsAndGates` remains as legacy fallback so older deployments still pick up the button.
+
+#### Files Changed
+
+- [`NavUIHelper`](src/main/java/com/airijko/endlessleveling/ui/NavUIHelper.java) — +13 / -8 around line 433 (classname constant + probe loop).
 
 ### Version Bump
 

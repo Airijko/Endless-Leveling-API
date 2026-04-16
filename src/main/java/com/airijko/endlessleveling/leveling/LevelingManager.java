@@ -220,6 +220,16 @@ public class LevelingManager {
             }
         }
 
+        // Outlander Bridge XP banking: when the player is in an active outlander
+        // bridge session, divert fully-adjusted XP into their per-player bank
+        // instead of crediting profile XP. All bonuses (party, marriage, passives,
+        // luck, level-diff, gain cap) are already applied above, so the bank
+        // receives the exact same number profile XP would have.
+        if (uuid != null && com.airijko.endlessleveling.mob.outlander.OutlanderBridgeXpBank.get()
+                .tryDivertXp(uuid, adjustedXp)) {
+            return;
+        }
+
         int effectiveCap = getLevelCap(player);
 
         if (player.getLevel() >= effectiveCap) {

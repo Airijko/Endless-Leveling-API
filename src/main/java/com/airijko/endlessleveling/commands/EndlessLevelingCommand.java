@@ -2,6 +2,7 @@ package com.airijko.endlessleveling.commands;
 
 import com.airijko.endlessleveling.commands.augments.AugmentCommand;
 import com.airijko.endlessleveling.commands.subcommands.ApplyModifiersCommand;
+import com.airijko.endlessleveling.commands.subcommands.OutlanderBridgeStartCommand;
 import com.airijko.endlessleveling.commands.subcommands.OpenPageSubCommand;
 import com.airijko.endlessleveling.commands.subcommands.ResetAllPlayersCommand;
 import com.airijko.endlessleveling.commands.subcommands.ResetLevelCommand;
@@ -77,6 +78,7 @@ public class EndlessLevelingCommand extends AbstractCommand {
                 this.addSubCommand(new ResetPrestigeCommand());
                 this.addSubCommand(new ResetAllCommand());
                 this.addSubCommand(new ApplyModifiersCommand());
+                this.addSubCommand(new OutlanderBridgeStartCommand());
                 this.addSubCommand(new DebugCommand());
                 this.addSubCommand(new ResetAllPlayersCommand());
                 this.addSubCommand(new ResetSkillPointsCommand());

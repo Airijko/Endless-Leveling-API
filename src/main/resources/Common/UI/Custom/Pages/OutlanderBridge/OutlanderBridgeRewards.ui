@@ -1,0 +1,146 @@
+$C = "../../Common.ui";
+
+@OutlanderRewardsButton = TextButtonStyle(
+    Default: (Background: $C.@DefaultSquareButtonDefaultBackground, LabelStyle: $C.@DefaultButtonLabelStyle),
+    Hovered: (Background: $C.@DefaultSquareButtonHoveredBackground, LabelStyle: $C.@DefaultButtonLabelStyle),
+    Pressed: (Background: $C.@DefaultSquareButtonPressedBackground, LabelStyle: $C.@DefaultButtonLabelStyle),
+    Disabled: (Background: $C.@DefaultSquareButtonDisabledBackground, LabelStyle: $C.@DefaultButtonDisabledLabelStyle),
+    Sounds: $C.@ButtonSounds,
+);
+
+$C.@PageOverlay {
+    Group {
+        LayoutMode: Middle;
+
+        Group {
+            Anchor: (Width: 520, Height: 420);
+            Background: (TexturePath: "Images/ObjectivePanelContainer.png", Border: 15);
+            LayoutMode: Top;
+            Padding: (Full: 18);
+
+            // ---- Title ----
+            Label {
+                Text: "OUTLANDER BRIDGE REWARDS";
+                Anchor: (Height: 28);
+                Style: (FontSize: 17, TextColor: #ffd700, RenderBold: true, RenderUppercase: true, LetterSpacing: 2, HorizontalAlignment: Center, VerticalAlignment: Center);
+            }
+
+            Group { Anchor: (Height: 1); Background: #7a5a10; }
+            Group { Anchor: (Height: 6); }
+
+            Label #RewardsSubtitle {
+                Text: "Claim your banked XP before the dungeon closes.";
+                Anchor: (Height: 18);
+                Style: (FontSize: 12, TextColor: #e8e8b0, HorizontalAlignment: Center, VerticalAlignment: Center);
+            }
+
+            Group { Anchor: (Height: 14); }
+
+            // ===== XP CARD =====
+            Group {
+                LayoutMode: Top;
+                Background: #0b141f(0.88);
+                Padding: (Full: 16);
+                Anchor: (Height: 120);
+
+                Group {
+                    Anchor: (Width: 3, Top: 0, Left: 0, Bottom: 0);
+                    Background: #6cff78;
+                }
+
+                Group {
+                    LayoutMode: Top;
+                    Padding: (Left: 14);
+
+                    Label {
+                        Text: "BANKED XP";
+                        Style: (FontSize: 11, TextColor: #6cff78, RenderBold: true, LetterSpacing: 2);
+                        Anchor: (Height: 16);
+                    }
+
+                    Group { Anchor: (Height: 1); Background: #ffffff(0.07); }
+                    Group { Anchor: (Height: 6); }
+
+                    Label #RewardsXpAmount {
+                        Text: "0 XP";
+                        Style: (FontSize: 28, TextColor: #ffffff, RenderBold: true);
+                        Anchor: (Height: 34);
+                    }
+
+                    Group { Anchor: (Height: 4); }
+
+                    Label #RewardsXpHint {
+                        Text: "Accumulated across the waves you completed.";
+                        Style: (FontSize: 11, TextColor: #9fb6d3);
+                        Anchor: (Height: 14);
+                    }
+                }
+            }
+
+            Group { Anchor: (Height: 10); }
+
+            // ===== COUNTDOWN CARD =====
+            Group {
+                LayoutMode: Top;
+                Background: #0b141f(0.88);
+                Padding: (Full: 14);
+                Anchor: (Height: 78);
+
+                Group {
+                    Anchor: (Width: 3, Top: 0, Left: 0, Bottom: 0);
+                    Background: #ff9a5c;
+                }
+
+                Group {
+                    LayoutMode: Top;
+                    Padding: (Left: 14);
+
+                    Label #RewardsCountdownLabel {
+                        Text: "Dungeon closes in: 60s";
+                        Style: (FontSize: 14, TextColor: #ffc98b, RenderBold: true);
+                        Anchor: (Height: 18);
+                    }
+
+                    Group { Anchor: (Height: 4); }
+
+                    Label #RewardsCountdownHint {
+                        Text: "Claim to secure your XP, or cancel to forfeit it.";
+                        Style: (FontSize: 11, TextColor: #9fb6d3);
+                        Anchor: (Height: 14);
+                    }
+
+                    Label #RewardsCooldownStatus {
+                        Text: "";
+                        Style: (FontSize: 11, TextColor: #ff6666, RenderBold: true);
+                        Anchor: (Height: 14);
+                        Visible: false;
+                    }
+                }
+            }
+
+            Group { Anchor: (Height: 14); }
+
+            // ===== BUTTON ROW =====
+            Group {
+                LayoutMode: Left;
+                Anchor: (Height: 44);
+
+                $C.@TextButton #RewardsCancelButton {
+                    Text: "CANCEL";
+                    Anchor: (Height: 40, Width: 230);
+                    Padding: (Horizontal: 6);
+                    Style: @OutlanderRewardsButton;
+                }
+
+                Group { Anchor: (Width: 20); }
+
+                $C.@TextButton #RewardsClaimButton {
+                    Text: "CLAIM";
+                    Anchor: (Height: 40, Width: 230);
+                    Padding: (Horizontal: 6);
+                    Style: @OutlanderRewardsButton;
+                }
+            }
+        }
+    }
+}

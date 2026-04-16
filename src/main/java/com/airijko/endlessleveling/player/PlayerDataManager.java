@@ -42,6 +42,10 @@ import com.airijko.endlessleveling.races.RaceManager;
 import com.airijko.endlessleveling.managers.ConfigManager;
 import com.airijko.endlessleveling.managers.PluginFilesManager;
 import com.airijko.endlessleveling.managers.VersionRegistry;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
+import com.hypixel.hytale.server.core.universe.Universe;
+import com.hypixel.hytale.server.core.modules.entity.component.DisplayNameComponent;
+import com.hypixel.hytale.server.core.Message;
 
 public class PlayerDataManager {
 
@@ -413,6 +417,56 @@ public class PlayerDataManager {
                     }
                 }
             }
+        }
+
+        // Fallback: check online players by current username or display name.
+        // Handles cases where player changed their Hytale username or has a custom
+        // display name different from the account name stored in PlayerData.
+        try {
+            Universe universe = Universe.get();
+            if (universe != null) {
+                for (PlayerRef ref : universe.getPlayers()) {
+                    if (ref == null) continue;
+
+                    // Check current Hytale username
+                    if (normalizedTarget.equalsIgnoreCase(ref.getUsername())) {
+                        PlayerData found = playerCache.get(ref.getUuid());
+                        if (found != null) {
+                            LOGGER.atInfo().log(
+                                "PlayerData for '%s' resolved via online username match (stored name: '%s').",
+                                normalizedTarget, found.getPlayerName());
+                            return found;
+                        }
+                    }
+
+                    // Check DisplayNameComponent (custom display name / nameplate)
+                    try {
+                        DisplayNameComponent dnc = ref.getComponent(
+                                DisplayNameComponent.getComponentType());
+                        if (dnc != null) {
+                            Message displayMsg = dnc.getDisplayName();
+                            if (displayMsg != null) {
+                                String displayText = displayMsg.getRawText();
+                                if (displayText != null
+                                        && normalizedTarget.equalsIgnoreCase(displayText.trim())) {
+                                    PlayerData found = playerCache.get(ref.getUuid());
+                                    if (found != null) {
+                                        LOGGER.atInfo().log(
+                                            "PlayerData for '%s' resolved via display name match (stored name: '%s').",
+                                            normalizedTarget, found.getPlayerName());
+                                        return found;
+                                    }
+                                }
+                            }
+                        }
+                    } catch (Exception ignored) {
+                        // DisplayNameComponent may not be accessible from this thread; skip silently
+                    }
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.atWarning().log("Online player fallback lookup failed for '%s': %s",
+                    normalizedTarget, e.getMessage());
         }
 
         LOGGER.atWarning().log("PlayerData for player name %s not found in cache or on disk.", normalizedTarget);

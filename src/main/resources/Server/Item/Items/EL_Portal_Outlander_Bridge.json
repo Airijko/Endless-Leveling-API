@@ -1,0 +1,47 @@
+{
+  "TranslationProperties": {
+    "Name": "server.items.EL_Portal_Outlander_Bridge.name",
+    "Description": "server.items.EL_Portal_Outlander_Bridge.description"
+  },
+  "Icon": "Icons/ItemsGenerated/PortalKey_Howling_Sands.png",
+  "Categories": [
+    "Blocks.Portals"
+  ],
+  "PortalKey": {
+    "PortalType": "EL_Portal_Outlander_Bridge",
+    "TimeLimitSeconds": 1800
+  },
+  "BlockType": {
+    "DrawType": "Model",
+    "Material": "Solid",
+    "Opacity": "Transparent",
+    "CustomModel": "Blocks/Miscellaneous/Portal_Shard.blockymodel",
+    "CustomModelTexture": [
+      {
+        "Texture": "Blocks/Miscellaneous/Portal_Shard_Texture.png",
+        "Weight": 1
+      }
+    ]
+  },
+  "PlayerAnimationsId": "Item",
+  "Tags": {
+    "Type": [
+      "Portal",
+      "Temporary"
+    ]
+  },
+  "Quality": "Rare",
+  "ItemLevel": 1,
+  "IconProperties": {
+    "Scale": 1.4,
+    "Rotation": [
+      22.5,
+      137.0,
+      22.5
+    ],
+    "Translation": [
+      0.0,
+      1.0
+    ]
+  }
+}

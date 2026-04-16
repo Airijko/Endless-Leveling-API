@@ -1,0 +1,9 @@
+# EndlessLeveling core server-namespaced translations - en-US
+# Keys are auto-prefixed with "server." by the I18n loader
+
+items.EL_Portal_Outlander_Bridge.name = Outlander Bridge Portal
+items.EL_Portal_Outlander_Bridge.description = Placeable portal that opens a gateway to the Outlander Bridge arena.
+
+portals.outlander_bridge = Outlander Bridge
+portals.outlander_bridge.description = A contested bridge arena. Fight across the span to claim the other side.
+portals.outlander_bridge.tip1 = Tip: Hold the center to win.

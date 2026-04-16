@@ -14,6 +14,7 @@ import javax.annotation.Nonnull;
 import java.util.Locale;
 import java.util.UUID;
 import com.airijko.endlessleveling.drops.LuckDoubleDropSystem;
+import com.airijko.endlessleveling.mob.outlander.OutlanderBridgeWaveManager;
 import com.airijko.endlessleveling.player.PlayerDataManager;
 
 public class BreakBlockEntitySystem extends EntityEventSystem<EntityStore, BreakBlockEvent> {
@@ -36,6 +37,12 @@ public class BreakBlockEntitySystem extends EntityEventSystem<EntityStore, Break
             @Nonnull Store<EntityStore> store,
             @Nonnull CommandBuffer<EntityStore> commandBuffer,
             @Nonnull BreakBlockEvent event) {
+        EntityStore ext = store.getExternalData();
+        if (OutlanderBridgeWaveManager.get().isOutlanderBridgeWorld(ext.getWorld())) {
+            event.setCancelled(true);
+            return;
+        }
+
         Ref<EntityStore> initiatorRef = archetypeChunk.getReferenceTo(index);
         PlayerRef player = store.getComponent(initiatorRef, PlayerRef.getComponentType());
         if (player == null)

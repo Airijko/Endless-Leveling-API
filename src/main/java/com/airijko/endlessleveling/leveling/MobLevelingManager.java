@@ -2415,6 +2415,7 @@ public class MobLevelingManager {
                 configuredRange = normalizeLevelRange(fixed, fixed, store);
             }
         }
+        boolean configuredRangeAlreadyTierShifted = false;
         if (configuredRange == null) {
             Integer levelFromRangeMaxOffset = parseInteger(matchedOverride.get("Level_From_Range_Max_Offset"));
             Integer runtimeBossOffset = resolveGateBossLevelFromRangeMaxOffset(store);
@@ -2440,6 +2441,8 @@ public class MobLevelingManager {
                 if (referenceRange != null) {
                     int resolvedLevel = referenceRange.max() + levelFromRangeMaxOffset;
                     configuredRange = normalizeLevelRange(resolvedLevel, resolvedLevel, store);
+                    // referenceRange already baked tierOffset in — skip double-shift below.
+                    configuredRangeAlreadyTierShifted = (mode == LevelSourceMode.TIERS);
                 }
             }
         }
@@ -2448,7 +2451,7 @@ public class MobLevelingManager {
         }
 
         LevelRange effectiveRange = configuredRange;
-        if (mode == LevelSourceMode.TIERS && tierOffset != 0) {
+        if (mode == LevelSourceMode.TIERS && tierOffset != 0 && !configuredRangeAlreadyTierShifted) {
             int shiftedMin = configuredRange.min() + (tierOffset * levelsPerTier);
             int shiftedMax = configuredRange.max() + (tierOffset * levelsPerTier);
             effectiveRange = normalizeLevelRange(shiftedMin, shiftedMax, store);

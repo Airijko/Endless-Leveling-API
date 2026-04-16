@@ -10,6 +10,8 @@
 package com.airijko.endlessleveling;
 
 import com.airijko.endlessleveling.analytics.HStats;
+import com.airijko.endlessleveling.api.EndlessLevelingAPI;
+import com.airijko.endlessleveling.api.gates.InstanceDungeonDefinition;
 import com.airijko.endlessleveling.classes.ClassWeaponResolver;
 import com.airijko.endlessleveling.classes.WeaponConfig;
 import com.airijko.endlessleveling.augments.AugmentExecutor;
@@ -45,11 +47,14 @@ import com.airijko.endlessleveling.shutdown.EndlessLevelingShutdownCoordinator;
 import com.airijko.endlessleveling.systems.BreakBlockEntitySystem;
 import com.airijko.endlessleveling.systems.ArmyOfTheDeadDeathSystem;
 import com.airijko.endlessleveling.systems.PlayerDeathXpPenaltySystem;
+import com.airijko.endlessleveling.systems.OutlanderBridgePlayerDeathSystem;
 import com.airijko.endlessleveling.systems.ArmyOfTheDeadCleanupSystem;
+import com.airijko.endlessleveling.mob.outlander.OutlanderBridgeRewardCooldowns;
 import com.airijko.endlessleveling.drops.MobDropTaggingSystem;
 import com.airijko.endlessleveling.systems.PassiveRegenSystem;
 import com.airijko.endlessleveling.mob.MobDamageScalingSystem;
 import com.airijko.endlessleveling.mob.MobLevelingSystem;
+import com.airijko.endlessleveling.mob.outlander.OutlanderBridgeWaveManager;
 import com.airijko.endlessleveling.drops.LuckDoubleDropSystem;
 import com.airijko.endlessleveling.systems.PlayerCombatPostApplyProbeSystem;
 import com.airijko.endlessleveling.systems.PlayerCombatSystem;
@@ -60,13 +65,16 @@ import com.airijko.endlessleveling.systems.PlayerRaceStatSystem;
 import com.airijko.endlessleveling.systems.PeriodicSkillModifierSystem;
 import com.airijko.endlessleveling.systems.SwiftnessKillSystem;
 import com.airijko.endlessleveling.systems.HudRefreshSystem;
+import com.airijko.endlessleveling.systems.OutlanderBridgeWaveHudRefreshSystem;
 import com.airijko.endlessleveling.systems.UiIntegrityAlertSystem;
 import com.airijko.endlessleveling.systems.WitherEffectSystem;
 import com.airijko.endlessleveling.leveling.XpEventSystem;
 import com.airijko.endlessleveling.util.FixedValue;
 import com.hypixel.hytale.logger.HytaleLogger;
+import com.hypixel.hytale.server.core.event.events.player.AddPlayerToWorldEvent;
 import com.hypixel.hytale.server.core.event.events.player.PlayerDisconnectEvent;
 import com.hypixel.hytale.server.core.event.events.player.PlayerReadyEvent;
+import com.hypixel.hytale.server.core.event.events.player.DrainPlayerFromWorldEvent;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 
@@ -483,6 +491,17 @@ public class EndlessLeveling extends JavaPlugin {
         }
 
         this.getEventRegistry().registerGlobal(PlayerReadyEvent.class, OpenPlayerHudListener::openGui);
+
+        // Outlander Bridge wave HUD: unregister before entity removal
+        this.getEventRegistry().registerGlobal(DrainPlayerFromWorldEvent.class, event -> {
+            com.hypixel.hytale.component.Holder<com.hypixel.hytale.server.core.universe.world.storage.EntityStore> holder = event.getHolder();
+            if (holder == null) return;
+            com.hypixel.hytale.server.core.universe.PlayerRef pr = holder.getComponent(
+                    com.hypixel.hytale.server.core.universe.PlayerRef.getComponentType());
+            if (pr == null) return;
+            com.airijko.endlessleveling.mob.outlander.OutlanderBridgeWaveManager.get().onPlayerDrain(pr.getUuid());
+        });
+
         LuckDoubleDropSystem luckDoubleDropSystem = new LuckDoubleDropSystem(playerDataManager, passiveManager);
         resolveInventoryChangeEventClass().ifPresentOrElse(eventClass -> {
             this.getEventRegistry().registerGlobal((Class) eventClass, luckDoubleDropSystem::onInventoryChangeCompat);
@@ -490,6 +509,7 @@ public class EndlessLeveling extends JavaPlugin {
         }, () -> LOGGER.atWarning().log(
                 "No supported inventory change event class was found; luck double-drop inventory listener disabled."));
         this.getEntityStoreRegistry().registerSystem(new BreakBlockEntitySystem(luckDoubleDropSystem));
+        this.getEntityStoreRegistry().registerSystem(new com.airijko.endlessleveling.systems.OutlanderBridgeBlockDamageGuardSystem());
         this.getEntityStoreRegistry().registerSystem(new MobDropTaggingSystem(luckDoubleDropSystem));
         this.getEntityStoreRegistry()
                 .registerSystem(new XpEventSystem(playerDataManager, levelingManager, partyManager, passiveManager,
@@ -505,6 +525,7 @@ public class EndlessLeveling extends JavaPlugin {
                         skillManager, augmentExecutor));
         this.getEntityStoreRegistry().registerSystem(new ArmyOfTheDeadDeathSystem());
         this.getEntityStoreRegistry().registerSystem(new PlayerDeathXpPenaltySystem(levelingManager));
+        this.getEntityStoreRegistry().registerSystem(new OutlanderBridgePlayerDeathSystem());
         this.getEntityStoreRegistry().registerSystem(new ArmyOfTheDeadCleanupSystem());
         this.getEntityStoreRegistry().registerSystem(new MobDamageScalingSystem(mobLevelingManager));
         movementHasteSystem = new MovementHasteSystem(playerDataManager, skillManager, augmentRuntimeManager);
@@ -525,6 +546,8 @@ public class EndlessLeveling extends JavaPlugin {
         mobLevelingSystem = new MobLevelingSystem();
         this.getEntityStoreRegistry().registerSystem(mobLevelingSystem);
         this.getEntityStoreRegistry().registerSystem(new HudRefreshSystem());
+        this.getEntityStoreRegistry().registerSystem(OutlanderBridgeWaveManager.get());
+        this.getEntityStoreRegistry().registerSystem(new OutlanderBridgeWaveHudRefreshSystem());
         uiIntegrityAlertSystem = new UiIntegrityAlertSystem(uiTitleIntegrityGuard);
         this.getEntityStoreRegistry().registerSystem(uiIntegrityAlertSystem);
         this.getEntityStoreRegistry().registerSystem(new WitherEffectSystem());
@@ -567,8 +590,39 @@ public class EndlessLeveling extends JavaPlugin {
         // Soft-dep: register mob-level / mob-prefix segments with NameplateBuilder if present
         com.airijko.endlessleveling.compatibility.NameplateBridgeSupport.tryInit(this);
 
+        registerCoreInstanceDungeons();
+
+        OutlanderBridgeWaveManager.get().load();
+        OutlanderBridgeRewardCooldowns.init(filesManager.getPluginFolder().toPath());
+        this.getEventRegistry().registerGlobal(AddPlayerToWorldEvent.class,
+                event -> OutlanderBridgeWaveManager.get().onPlayerEntered(event.getWorld(), event.getHolder()));
+        this.getEventRegistry().registerGlobal(PlayerReadyEvent.class, event -> {
+            if (event == null || event.getPlayer() == null) return;
+            java.util.UUID playerUuid = event.getPlayer().getUuid();
+            if (playerUuid == null) return;
+            com.hypixel.hytale.server.core.universe.Universe universe =
+                    com.hypixel.hytale.server.core.universe.Universe.get();
+            if (universe == null) return;
+            com.hypixel.hytale.server.core.universe.PlayerRef pr = universe.getPlayer(playerUuid);
+            if (pr == null || !pr.isValid()) return;
+            OutlanderBridgeWaveManager.get().handlePlayerReady(pr);
+        });
+
         LOGGER.atInfo().log("Plugin initialized! Plugin folder: %s",
                 filesManager.getPluginFolder().getAbsolutePath());
+    }
+
+    private void registerCoreInstanceDungeons() {
+        EndlessLevelingAPI api = EndlessLevelingAPI.get();
+        InstanceDungeonDefinition outlanderBridge = new InstanceDungeonDefinition(
+                "outlander-bridge",
+                "Endless_Outlander_Bridge",
+                "EL_Portal_Outlander_Bridge",
+                "endless_outlander_bridge",
+                "Outlander Bridge",
+                "Endless_Outlander_Bridge",
+                "Endless_Outlander_Bridge");
+        api.registerInstanceDungeon(outlanderBridge, true);
     }
 
     protected void shutdown() {

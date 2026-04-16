@@ -1,0 +1,25 @@
+{
+  "InstanceId": "Endless_Outlander_Bridge",
+  "Description": {
+    "DisplayName": "server.portals.outlander_bridge",
+    "FlavorText": "server.portals.outlander_bridge.description",
+    "ThemeColor": "#5bceffff",
+    "SplashImage": "DefaultArtwork.png",
+    "Tips": [
+      "server.portals.outlander_bridge.tip1"
+    ]
+  },
+  "Spawn": {
+    "SpawnProviderOverride": {
+      "Id": "Global",
+      "SpawnPoint": {
+        "X": 0.5,
+        "Y": 80.0,
+        "Z": 0.5,
+        "Pitch": 0,
+        "Yaw": 180,
+        "Roll": 0.0
+      }
+    }
+  }
+}

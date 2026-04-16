@@ -433,17 +433,22 @@ public final class NavUIHelper {
                 return true;
         }
 
-        private static final String ENDLESS_DUNGEONS_CLASS =
-                        "com.airijko.endlessleveling.EndlessDungeonsAndGates";
+        private static final String[] ENDLESS_DUNGEONS_CLASSES = {
+                        "com.airijko.endlessleveling.EndlessRiftsAndRaids",
+                        "com.airijko.endlessleveling.EndlessDungeonsAndGates",
+        };
 
-        /** Returns true only when the EndlessDungeons addon is present on the classpath. */
+        /** Returns true only when the EndlessDungeons/RiftsAndRaids addon is present on the classpath. */
         private static boolean isEndlessDungeonsPresent() {
-                try {
-                        Class.forName(ENDLESS_DUNGEONS_CLASS, false, NavUIHelper.class.getClassLoader());
-                        return true;
-                } catch (ClassNotFoundException ignored) {
-                        return false;
+                ClassLoader cl = NavUIHelper.class.getClassLoader();
+                for (String name : ENDLESS_DUNGEONS_CLASSES) {
+                        try {
+                                Class.forName(name, false, cl);
+                                return true;
+                        } catch (ClassNotFoundException ignored) {
+                        }
                 }
+                return false;
         }
 
         private static boolean openGatesGui(@Nonnull PlayerRef playerRef) {

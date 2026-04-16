@@ -11,13 +11,10 @@ $Nav = "../Nav/TopNavBar.ui";
 
 $C.@PageOverlay {
     Group {
-        // Middle stacks children top-to-bottom but centers the GROUP vertically,
-        // so the top navbar / main panels / footer navbar all sit centered on
-        // screen instead of pinned to the top.
         LayoutMode: Middle;
         Padding: (Vertical: 12);
 
-        // ====================== TOP NAVBAR (root, disconnected) ======================
+        // ====================== TOP NAVBAR ======================
         Group {
             LayoutMode: Middle;
             Anchor: (Height: 92);
@@ -34,144 +31,319 @@ $C.@PageOverlay {
         Group {
             LayoutMode: Middle;
 
-    $Nav.@ObjectiveContainer {
-        Anchor: (Width: 1000, Height: 700);
-        #Title {
-            Label #DungeonsTitle {
-                Text: "ENDLESS LEVELING";
-                Style: $Nav.@PanelTitleStyle;
-            }
-        }
+            Group {
+                LayoutMode: Left;
+                Anchor: (Width: 1340, Height: 700);
 
-        #Content {
-            LayoutMode: Left;
-            Padding: (Full: 0);
+                $Nav.@ObjectiveContainer {
+                    Anchor: (Width: 1000, Height: 700);
 
-            Group #RightPanel {
-                FlexWeight: 1;
-                LayoutMode: Top;
+                    #Title {
+                        Label #DungeonsTitle {
+                            Text: "ENDLESS LEVELING";
+                            Style: $Nav.@PanelTitleStyle;
+                        }
+                    }
 
-                Group #Main {
-                    LayoutMode: TopScrolling;
-                    ScrollbarStyle: $C.@DefaultScrollbarStyle;
-                    FlexWeight: 1;
+                    #Content {
+                        LayoutMode: Left;
+                        Padding: (Full: 0);
+
+                        Group #RightPanel {
+                            FlexWeight: 1;
+                            LayoutMode: Top;
+
+                            Group #Main {
+                                LayoutMode: TopScrolling;
+                                ScrollbarStyle: $C.@DefaultScrollbarStyle;
+                                FlexWeight: 1;
+                                Padding: (Full: 16);
+
+                                Group #OverviewCard {
+                                    LayoutMode: Top;
+                                    Background: #0b141f(0.88);
+                                    Padding: (Full: 18);
+
+                                    Label {
+                                        Text: "Dungeon Library";
+                                        Anchor: (Height: 24);
+                                        Style: (FontSize: 18, TextColor: #ffffff, RenderBold: true);
+                                    }
+
+                                    Group { Anchor: (Height: 6); }
+
+                                    Label #DungeonsOverviewText {
+                                        Text: "";
+                                        Style: (FontSize: 13, TextColor: #bfd0e4, Wrap: true);
+                                    }
+                                }
+
+                                Group { Anchor: (Height: 18); }
+
+                                Group #NativeSection {
+                                    LayoutMode: Top;
+
+                                    Group {
+                                        LayoutMode: Left;
+                                        Anchor: (Height: 30, Bottom: 10);
+
+                                        Label {
+                                            Text: "ENDLESS LEVELING DUNGEONS";
+                                            Anchor: (Height: 24);
+                                            Style: (FontSize: 16, TextColor: #a6f0ff, RenderBold: true, LetterSpacing: 1, VerticalAlignment: Center);
+                                        }
+                                    }
+
+                                    Group #NativeCards {
+                                        LayoutMode: Left;
+                                        Anchor: (Height: 290);
+
+                                        Group {
+                                            Anchor: (Width: 320, Right: 12);
+                                            LayoutMode: Top;
+                                            Background: #0b141f(0.94);
+
+                                            Group {
+                                                Anchor: (Height: 3);
+                                                Background: #a6f0ff;
+                                            }
+
+                                            Group {
+                                                LayoutMode: Top;
+                                                Padding: (Full: 16);
+
+                                                Label {
+                                                    Text: "ENDLESS LEVELING";
+                                                    Anchor: (Height: 14, Bottom: 6);
+                                                    Style: (FontSize: 10, TextColor: #a6f0ff, RenderBold: true, LetterSpacing: 2);
+                                                }
+
+                                                Label {
+                                                    Text: "Outlander Bridge";
+                                                    Anchor: (Height: 28, Bottom: 6);
+                                                    Style: (FontSize: 19, TextColor: #ffffff, RenderBold: true);
+                                                }
+
+                                                Label #NativeCardOutlanderBridgeStatus {
+                                                    Text: "Rewards Available";
+                                                    Anchor: (Height: 16, Bottom: 10);
+                                                    Style: (FontSize: 11, TextColor: #6cff78, RenderBold: true, LetterSpacing: 1);
+                                                }
+
+                                                Group {
+                                                    Anchor: (Height: 1, Bottom: 10);
+                                                    Background: #ffffff(0.08);
+                                                }
+
+                                                Label {
+                                                    Text: "Instanced wave dungeon. Survive scaling waves for XP rewards.";
+                                                    Anchor: (Height: 32, Bottom: 12);
+                                                    Style: (FontSize: 11, TextColor: #bdd0e8, Wrap: true);
+                                                }
+
+                                                Group { FlexWeight: 1; }
+
+                                                $C.@TextButton #NativeCardOutlanderBridge {
+                                                    Text: "VIEW DETAILS";
+                                                    Anchor: (Height: 32, Bottom: 6);
+                                                    Padding: (Horizontal: 10);
+                                                    Style: @DownloadButtonStyle;
+                                                }
+
+                                                $C.@TextButton #NativeCardOutlanderBridgeEnter {
+                                                    Text: "ENTER DUNGEON";
+                                                    Anchor: (Height: 36);
+                                                    Padding: (Horizontal: 10);
+                                                    Style: @DownloadButtonStyle;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                Group { Anchor: (Height: 18); }
+
+                                Group #EndgameSection {
+                                    LayoutMode: Top;
+
+                                    Group {
+                                        LayoutMode: Left;
+                                        Anchor: (Height: 30, Bottom: 10);
+
+                                        Label {
+                                            Text: "ENDGAME & QOL";
+                                            Anchor: (Height: 24);
+                                            Style: (FontSize: 16, TextColor: #d2ecff, RenderBold: true, LetterSpacing: 1, VerticalAlignment: Center);
+                                        }
+
+                                        Group { FlexWeight: 1; }
+
+                                        Label #EndgameNotInstalledLabel {
+                                            Text: "Not Installed";
+                                            Anchor: (Height: 20, Right: 10);
+                                            Visible: false;
+                                            Style: (FontSize: 12, TextColor: #e07070, RenderBold: true, VerticalAlignment: Center);
+                                        }
+
+                                        $C.@TextButton #EndgameInstallButton {
+                                            Text: "Download";
+                                            Anchor: (Width: 100, Height: 28);
+                                            Padding: (Horizontal: 10);
+                                            Style: @DownloadButtonStyle;
+                                            Visible: false;
+                                        }
+                                    }
+
+                                    Group #EndgameCards {
+                                        LayoutMode: Top;
+                                    }
+
+                                    Group #EndgameDimOverlay {
+                                        Anchor: (Top: 0, Left: 0, Right: 0, Bottom: 0);
+                                        Background: #000000(0.55);
+                                        Visible: false;
+                                    }
+                                }
+
+                                Group { Anchor: (Height: 16); }
+
+                                Group #MajorSection {
+                                    LayoutMode: Top;
+
+                                    Group {
+                                        LayoutMode: Left;
+                                        Anchor: (Height: 30, Bottom: 10);
+
+                                        Label {
+                                            Text: "MAJOR DUNGEONS";
+                                            Anchor: (Height: 24);
+                                            Style: (FontSize: 16, TextColor: #ffd58a, RenderBold: true, LetterSpacing: 1, VerticalAlignment: Center);
+                                        }
+
+                                        Group { FlexWeight: 1; }
+
+                                        Label #MajorNotInstalledLabel {
+                                            Text: "Not Installed";
+                                            Anchor: (Height: 20, Right: 10);
+                                            Visible: false;
+                                            Style: (FontSize: 12, TextColor: #e07070, RenderBold: true, VerticalAlignment: Center);
+                                        }
+
+                                        $C.@TextButton #MajorInstallButton {
+                                            Text: "Download";
+                                            Anchor: (Width: 100, Height: 28);
+                                            Padding: (Horizontal: 10);
+                                            Style: @DownloadButtonStyle;
+                                            Visible: false;
+                                        }
+                                    }
+
+                                    Group #MajorCards {
+                                        LayoutMode: Top;
+                                    }
+
+                                    Group #MajorDimOverlay {
+                                        Anchor: (Top: 0, Left: 0, Right: 0, Bottom: 0);
+                                        Background: #000000(0.55);
+                                        Visible: false;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Group { Anchor: (Width: 12); }
+
+                Group #SidePanel {
+                    Anchor: (Width: 328, Height: 700);
+                    LayoutMode: Top;
+                    Background: #0b141f(0.94);
                     Padding: (Full: 16);
 
-                    Group #OverviewCard {
-                        LayoutMode: Top;
-                        Background: #0b141f(0.88);
-                        Padding: (Full: 18);
-
-                        Label {
-                            Text: "Dungeon Library";
-                            Anchor: (Height: 24);
-                            Style: (FontSize: 18, TextColor: #ffffff, RenderBold: true);
-                        }
-
-                        Group { Anchor: (Height: 6); }
-
-                        Label #DungeonsOverviewText {
-                            Text: "";
-                            Style: (FontSize: 13, TextColor: #bfd0e4, Wrap: true);
-                        }
+                    Label #SidePanelTitle {
+                        Text: "DUNGEON INFO";
+                        Anchor: (Height: 24, Bottom: 8);
+                        Style: (FontSize: 16, TextColor: #ffffff, RenderBold: true, LetterSpacing: 1);
                     }
 
-                    Group { Anchor: (Height: 18); }
-
-                    Group #EndgameSection {
-                        LayoutMode: Top;
-
-                        Group {
-                            LayoutMode: Left;
-                            Anchor: (Height: 30, Bottom: 10);
-
-                            Label {
-                                Text: "ENDGAME & QOL";
-                                Anchor: (Height: 24);
-                                Style: (FontSize: 16, TextColor: #d2ecff, RenderBold: true, LetterSpacing: 1, VerticalAlignment: Center);
-                            }
-
-                            Group { FlexWeight: 1; }
-
-                            Label #EndgameNotInstalledLabel {
-                                Text: "Not Installed";
-                                Anchor: (Height: 20, Right: 10);
-                                Visible: false;
-                                Style: (FontSize: 12, TextColor: #e07070, RenderBold: true, VerticalAlignment: Center);
-                            }
-
-                            $C.@TextButton #EndgameInstallButton {
-                                Text: "Download";
-                                Anchor: (Width: 100, Height: 28);
-                                Padding: (Horizontal: 10);
-                                Style: @DownloadButtonStyle;
-                                Visible: false;
-                            }
-                        }
-
-                        Group #EndgameCards {
-                            LayoutMode: Top;
-                        }
-
-                        Group #EndgameDimOverlay {
-                            Anchor: (Top: 0, Left: 0, Right: 0, Bottom: 0);
-                            Background: #000000(0.55);
-                            Visible: false;
-                        }
+                    Group {
+                        Anchor: (Height: 1, Bottom: 10);
+                        Background: #ffffff(0.08);
                     }
 
-                    Group { Anchor: (Height: 16); }
+                    Label #SidePanelTag {
+                        Text: "";
+                        Anchor: (Height: 14, Bottom: 6);
+                        Style: (FontSize: 10, TextColor: #a6f0ff, RenderBold: true, LetterSpacing: 1);
+                    }
 
-                    Group #MajorSection {
-                        LayoutMode: Top;
+                    Label #SidePanelDescription {
+                        Text: "Select a dungeon to view details.";
+                        Anchor: (Bottom: 12);
+                        Style: (FontSize: 12, TextColor: #bfd0e4, Wrap: true);
+                    }
 
-                        Group {
-                            LayoutMode: Left;
-                            Anchor: (Height: 30, Bottom: 10);
+                    Label #SidePanelRewardHeader {
+                        Text: "REWARDS";
+                        Anchor: (Height: 14, Bottom: 4);
+                        Style: (FontSize: 10, TextColor: #9fb6d3, RenderBold: true, LetterSpacing: 1);
+                        Visible: false;
+                    }
 
-                            Label {
-                                Text: "MAJOR DUNGEONS";
-                                Anchor: (Height: 24);
-                                Style: (FontSize: 16, TextColor: #ffd58a, RenderBold: true, LetterSpacing: 1, VerticalAlignment: Center);
-                            }
+                    Label #SidePanelRewardStatus {
+                        Text: "";
+                        Anchor: (Height: 18, Bottom: 6);
+                        Style: (FontSize: 13, TextColor: #6cff78, RenderBold: true);
+                        Visible: false;
+                    }
 
-                            Group { FlexWeight: 1; }
+                    Label #SidePanelRewardDetail {
+                        Text: "";
+                        Anchor: (Bottom: 14);
+                        Style: (FontSize: 11, TextColor: #9fb6d3, Wrap: true);
+                        Visible: false;
+                    }
 
-                            Label #MajorNotInstalledLabel {
-                                Text: "Not Installed";
-                                Anchor: (Height: 20, Right: 10);
-                                Visible: false;
-                                Style: (FontSize: 12, TextColor: #e07070, RenderBold: true, VerticalAlignment: Center);
-                            }
+                    Group { FlexWeight: 1; }
 
-                            $C.@TextButton #MajorInstallButton {
-                                Text: "Download";
-                                Anchor: (Width: 100, Height: 28);
-                                Padding: (Horizontal: 10);
-                                Style: @DownloadButtonStyle;
-                                Visible: false;
-                            }
-                        }
+                    Label #SidePanelConfirmPrompt {
+                        Text: "";
+                        Anchor: (Bottom: 8);
+                        Style: (FontSize: 11, TextColor: #ffc98b, RenderBold: true, Wrap: true, HorizontalAlignment: Center);
+                        Visible: false;
+                    }
 
-                        Group #MajorCards {
-                            LayoutMode: Top;
-                        }
+                    $C.@TextButton #SidePanelEnterButton {
+                        Text: "ENTER DUNGEON";
+                        Anchor: (Height: 40, Bottom: 8);
+                        Padding: (Horizontal: 12);
+                        Style: @DownloadButtonStyle;
+                        Visible: false;
+                    }
 
-                        Group #MajorDimOverlay {
-                            Anchor: (Top: 0, Left: 0, Right: 0, Bottom: 0);
-                            Background: #000000(0.55);
-                            Visible: false;
-                        }
+                    $C.@TextButton #SidePanelConfirmCancelButton {
+                        Text: "CANCEL";
+                        Anchor: (Height: 36, Bottom: 6);
+                        Padding: (Horizontal: 10);
+                        Style: @DownloadButtonStyle;
+                        Visible: false;
+                    }
+
+                    $C.@TextButton #SidePanelConfirmProceedButton {
+                        Text: "PROCEED ANYWAY";
+                        Anchor: (Height: 36);
+                        Padding: (Horizontal: 10);
+                        Style: @DownloadButtonStyle;
+                        Visible: false;
                     }
                 }
             }
         }
-    }
-        }
 
         Group { Anchor: (Height: 14); }
 
-        // ====================== FOOTER NAVBAR (root, disconnected) ======================
+        // ====================== FOOTER NAVBAR ======================
         Group {
             LayoutMode: Middle;
             Anchor: (Height: 92);

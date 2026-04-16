@@ -1,0 +1,18 @@
+{
+  "Layers": [
+    {
+      "Files": [
+        "Sounds/EndlessLeveling/Outlander-Bridge.ogg"
+      ],
+      "RandomSettings": {
+        "MinPitch": 0,
+        "MaxPitch": 0,
+        "MinVolume": 0
+      }
+    }
+  ],
+  "Volume": 5,
+  "AudioCategory": "AudioCat_Music",
+  "MaxInstance": 1,
+  "PreventSoundInterruption": true
+}

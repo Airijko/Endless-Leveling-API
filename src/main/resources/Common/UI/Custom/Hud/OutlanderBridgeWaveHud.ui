@@ -1,0 +1,122 @@
+Group #OutlanderBridgeWaveHud {
+  LayoutMode: Top;
+  Anchor: (Top: 200, Right: 12, Width: 320);
+
+  // --- Banner header ---
+  Group #WaveBanner {
+    Anchor: (Width: 320, Bottom: 6);
+    LayoutMode: Top;
+    Padding: (Top: 7, Bottom: 7);
+    Background: (TexturePath: "Images/ObjectivePanelContainer.png", Border: 15);
+
+    Label #WaveHeading {
+      Anchor: (Left: 0, Right: 0, Bottom: 3);
+      Style: (
+        FontSize: 11,
+        TextColor: #d7e7f7,
+        RenderBold: true,
+        RenderUppercase: true,
+        HorizontalAlignment: Center,
+        VerticalAlignment: Center,
+        LetterSpacing: 1
+      );
+      Text: "Outlander Bridge";
+    }
+
+    Label #WaveTitle {
+      Anchor: (Left: 0, Right: 0);
+      Style: (
+        FontSize: 18,
+        TextColor: #ffe396,
+        RenderBold: true,
+        RenderUppercase: true,
+        HorizontalAlignment: Center,
+        VerticalAlignment: Center
+      );
+      Text: "Wave Tracker";
+    }
+  }
+
+  // --- Wave details panel ---
+  Group #WavePanel {
+    LayoutMode: Top;
+    Anchor: (Width: 320);
+    Padding: (Horizontal: 16, Top: 9, Bottom: 10);
+    Background: (TexturePath: "Images/ObjectivePanelContainer.png", Border: 15);
+
+    Label #BankedXp {
+      Anchor: (Bottom: 2);
+      Style: (FontSize: 13, TextColor: #6cff78, RenderBold: true, VerticalAlignment: Center);
+      Text: "Banked XP: 0";
+    }
+
+    Label #UnsecuredXp {
+      Anchor: (Bottom: 3);
+      Style: (FontSize: 13, TextColor: #ffc98b, RenderBold: true, VerticalAlignment: Center);
+      Text: "Unsecured XP: 0";
+    }
+
+    Group {
+      Anchor: (Height: 1, Bottom: 6);
+      Background: #ffffff(0.12);
+    }
+
+    Label #WaveCount {
+      Anchor: (Bottom: 2);
+      Style: (FontSize: 13, TextColor: #ecf7ff, RenderBold: true, VerticalAlignment: Center);
+      Text: "Wave: --/--";
+    }
+
+    Label #RemainingMobs {
+      Anchor: (Bottom: 3);
+      Style: (FontSize: 13, TextColor: #d2ffdf, RenderBold: true, VerticalAlignment: Center);
+      Text: "Remaining Mobs: --";
+    }
+
+    Group {
+      Anchor: (Height: 1, Bottom: 6);
+      Background: #ffffff(0.12);
+    }
+
+    Label #CoordsHeading {
+      Anchor: (Bottom: 2);
+      Style: (FontSize: 12, TextColor: #ffc98b, RenderBold: true, VerticalAlignment: Center);
+      Text: "Tracked Remaining Mob Coords";
+      Visible: false;
+    }
+
+    Label #MobHint1 {
+      Anchor: (Bottom: 1);
+      Style: (FontSize: 12, TextColor: #ffd27a, VerticalAlignment: Center);
+      Text: "";
+      Visible: false;
+    }
+
+    Label #MobHint2 {
+      Anchor: (Bottom: 1);
+      Style: (FontSize: 12, TextColor: #ffd27a, VerticalAlignment: Center);
+      Text: "";
+      Visible: false;
+    }
+
+    Label #MobHint3 {
+      Anchor: (Bottom: 1);
+      Style: (FontSize: 12, TextColor: #ffd27a, VerticalAlignment: Center);
+      Text: "";
+      Visible: false;
+    }
+
+    Label #MobHint4 {
+      Anchor: (Bottom: 1);
+      Style: (FontSize: 12, TextColor: #ffd27a, VerticalAlignment: Center);
+      Text: "";
+      Visible: false;
+    }
+
+    Label #MobHint5 {
+      Style: (FontSize: 12, TextColor: #ffd27a, VerticalAlignment: Center);
+      Text: "";
+      Visible: false;
+    }
+  }
+}

@@ -115,6 +115,33 @@ public final class OperatorHelper {
         return true;
     }
 
+    /**
+     * Returns {@code true} if the player has the given permission node, or
+     * any administrative access (operator, admin group, wildcard node).
+     * Reflection-based — tolerates missing PermissionsModule.
+     */
+    public static boolean hasPermission(PlayerRef playerRef, String node) {
+        if (playerRef == null || node == null || node.isBlank()) {
+            return false;
+        }
+        if (hasAdministrativeAccess(playerRef)) {
+            return true;
+        }
+        UUID uuid = playerRef.getUuid();
+        if (uuid == null) {
+            return false;
+        }
+        try {
+            PermissionsModule permissions = PermissionsModule.get();
+            if (permissions == null) {
+                return false;
+            }
+            return hasPermissionNode(permissions, uuid, node);
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
     private static boolean hasOperatorGroup(PlayerRef playerRef) {
         try {
             PermissionsModule permissions = PermissionsModule.get();

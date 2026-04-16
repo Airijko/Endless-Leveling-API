@@ -1,0 +1,65 @@
+{
+  "World_Overrides": {
+    "instance-endless_outlander_bridge-*": {
+      "Enable_XP": true,
+      "Experience": {
+        "Global_XP_Multiplier": 1.0
+      },
+      "Level_Range": {
+        "Max": "ENDLESS"
+      },
+      "Level_Source": {
+        "Mode": "TIERED",
+        "Base_Level": {
+          "Level": "20-40"
+        },
+        "Tiers": {
+          "Total_Tiers": "ENDLESS",
+          "Levels_Per_Tier": 20,
+          "Player_Adaptation": {
+            "Enabled": true,
+            "Allowance_Mode": "ABOVE",
+            "Range_Allowance": 10
+          }
+        }
+      },
+      "Scaling": {
+        "Health": {
+          "Base_Multiplier": 2.5,
+          "Per_Level": 0.075
+        },
+        "Damage": {
+          "Base_Multiplier": 1.0,
+          "Per_Level": 0.025
+        },
+        "Defense": {
+          "At_Negative_Max_Difference": -0.20,
+          "At_Positive_Max_Difference": 0.6,
+          "Below_Negative_Max_Difference": 0.0,
+          "Above_Positive_Max_Difference": 0.9
+        }
+      },
+      "Mob_Overrides": {
+        "Outlander_Brute": {
+          "Allow_Random_Mob_Augments": true,
+          "Scaling": {
+            "Health": {
+              "Base_Multiplier": 5.0,
+              "Per_Level": 0.125
+            },
+            "Damage": {
+              "Base_Multiplier": 1.2,
+              "Per_Level": 0.025
+            },
+            "Defense": {
+              "At_Negative_Max_Difference": 0.25,
+              "At_Positive_Max_Difference": 0.6,
+              "Below_Negative_Max_Difference": 0.25,
+              "Above_Positive_Max_Difference": 0.975
+            }
+          }
+        }
+      }
+    }
+  }
+}
