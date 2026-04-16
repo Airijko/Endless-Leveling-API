@@ -31,17 +31,20 @@ public final class UiTitleIntegrityGuard {
     private static final Pattern TEXT_PATTERN = Pattern.compile("@?Text\\s*[:=]\\s*\"([^\"]*)\"");
 
     private static final List<SelectorCheck> SELECTOR_CHECKS = List.of(
-        new SelectorCheck("Common/UI/Custom/Pages/Skills/SkillsPage.ui", "SkillsPageTitle"),
-        new SelectorCheck("Common/UI/Custom/Pages/Addons/AddonsPage.ui", "AddonsTitle"),
-        new SelectorCheck("Common/UI/Custom/Pages/Augments/AugmentsPage.ui", "AugmentsPageTitle"),
-        new SelectorCheck("Common/UI/Custom/Pages/Classes/ClassesPage.ui", "ClassTitle"),
-        new SelectorCheck("Common/UI/Custom/Pages/Classes/ClassPathsPage.ui", "ClassPathsTitle"),
-        new SelectorCheck("Common/UI/Custom/Pages/Dungeons/DungeonsPage.ui", "DungeonsTitle"),
-        new SelectorCheck("Common/UI/Custom/Pages/Leaderboards/LeaderboardsPage.ui", "LeaderboardsTitle"),
-        new SelectorCheck("Common/UI/Custom/Pages/Profile/ProfilePage.ui", "ProfileTitle"),
-        new SelectorCheck("Common/UI/Custom/Pages/Races/RacesPage.ui", "RacesTitle"),
-        new SelectorCheck("Common/UI/Custom/Pages/Settings/SettingsPage.ui", "SettingsTitle"),
-        new SelectorCheck("Common/UI/Custom/Pages/SupportPage.ui", "SupportTitle"));
+        new SelectorCheck("Common/UI/Custom/Pages/Skills/SkillsPage.ui", "SkillsPageTitle", null),
+        new SelectorCheck("Common/UI/Custom/Pages/Addons/AddonsPage.ui", "AddonsTitle", null),
+        new SelectorCheck("Common/UI/Custom/Pages/Augments/AugmentsPage.ui", "AugmentsPageTitle", null),
+        new SelectorCheck("Common/UI/Custom/Pages/Classes/ClassesPage.ui", "ClassTitle", null),
+        new SelectorCheck("Common/UI/Custom/Pages/Classes/ClassPathsPage.ui", "ClassPathsTitle", null),
+        new SelectorCheck("Common/UI/Custom/Pages/Dungeons/DungeonsPage.ui", "DungeonsTitle", null),
+        new SelectorCheck("Common/UI/Custom/Pages/Leaderboards/LeaderboardsPage.ui", "LeaderboardsTitle", null),
+        new SelectorCheck("Common/UI/Custom/Pages/Profile/ProfilePage.ui", "ProfileTitle", null),
+        new SelectorCheck("Common/UI/Custom/Pages/Races/RacesPage.ui", "RacesTitle", null),
+        new SelectorCheck("Common/UI/Custom/Pages/Settings/SettingsPage.ui", "SettingsTitle", null),
+        new SelectorCheck("Common/UI/Custom/Pages/Support/SupportPage.ui", "SupportTitle", null),
+        // Author credit — must stay exactly "Developer: Airijko".
+        new SelectorCheck("Common/UI/Custom/Pages/Support/SupportPage.ui", "SupportDeveloperLabel",
+                "Developer: Airijko"));
 
     private static final String NAV_RESOURCE_PATH = "Common/UI/Custom/Pages/Nav/LeftNavPanel.ui";
     private static final String NAV_HEADER_SELECTOR = "NavHeader";
@@ -90,9 +93,10 @@ public final class UiTitleIntegrityGuard {
         String currentBrand = expectedBrand;
 
         for (SelectorCheck check : SELECTOR_CHECKS) {
+            String expected = check.expectedText() != null ? check.expectedText() : currentBrand;
             List<ResourceSnapshot> resources = loadResources(resourceCache, check.resourcePath());
             if (resources.isEmpty()) {
-                violations.add(TitleViolation.missingResource(check.resourcePath(), check.selector(), currentBrand));
+                violations.add(TitleViolation.missingResource(check.resourcePath(), check.selector(), expected));
                 continue;
             }
 
@@ -102,15 +106,15 @@ public final class UiTitleIntegrityGuard {
                     violations.add(TitleViolation.missingText(
                             check.resourcePath() + " @ " + snapshot.source(),
                             check.selector(),
-                            currentBrand));
+                            expected));
                     continue;
                 }
 
-                if (!normalize(actualText).equals(normalize(currentBrand))) {
+                if (!normalize(actualText).equals(normalize(expected))) {
                     violations.add(TitleViolation.renamed(
                             check.resourcePath() + " @ " + snapshot.source(),
                             check.selector(),
-                            currentBrand,
+                            expected,
                             actualText));
                 }
             }
@@ -352,7 +356,12 @@ public final class UiTitleIntegrityGuard {
         return lastResult;
     }
 
-    private record SelectorCheck(String resourcePath, String selector) {
+    /**
+     * {@code expectedText} is the literal string the selector's Text binding must
+     * match. When null, the check falls back to {@link #expectedBrand} (the mod
+     * brand name) so partner builds can relabel branding but not author credits.
+     */
+    private record SelectorCheck(String resourcePath, String selector, String expectedText) {
     }
 
     private record ResourceSnapshot(String source, String content) {

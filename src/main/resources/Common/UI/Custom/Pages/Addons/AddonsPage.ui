@@ -66,15 +66,17 @@ $C.@PageOverlay {
                                 Group { Anchor: (Height: 7); }
 
                                 Group #AddonsLeftBannerCard {
-                                    Anchor: (Height: 126, Bottom: 24);
+                                    Anchor: (Height: 220, Bottom: 24);
                                     Background: #0b141f(0.6);
                                     Padding: (Left: 7, Right: 7, Top: 7, Bottom: 7);
+                                    LayoutMode: Middle;
 
                                     Group #AddonsLeftBanner {
+                                        Anchor: (Width: 206, Height: 206);
 
                                         Group #AddonsLeftBannerImage {
-                                            Anchor: (Width: 286, Height: 169, Top: -24);
-                                            Background: (TexturePath: "Images/EndlessBanner.png");
+                                            Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 0);
+                                            Background: (TexturePath: "Images/EndlessLevelingAvatarIcon.png");
                                         }
                                     }
                                 }

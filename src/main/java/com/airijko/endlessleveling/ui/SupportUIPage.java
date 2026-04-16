@@ -39,15 +39,18 @@ public class SupportUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             @Nonnull Store<EntityStore> store) {
 
         SafeUICommandBuilder ui = new SafeUICommandBuilder(rawUi);
-        ui.append("Pages/SupportPage.ui");
+        ui.append("Pages/Support/SupportPage.ui");
         NavUIHelper.applyNavVersion(ui, playerRef, "support",
-                "Common/UI/Custom/Pages/SupportPage.ui",
+                "Common/UI/Custom/Pages/Support/SupportPage.ui",
                 "#SupportTitle");
-        NavUIHelper.bindNavEvents(events, "Common/UI/Custom/Pages/SupportPage.ui");
+        NavUIHelper.bindNavEvents(events, "Common/UI/Custom/Pages/Support/SupportPage.ui");
         events.addEventBinding(Activating, "#SupportDiscordButton", of("Action", "support:discord"), false);
+        events.addEventBinding(Activating, "#SupportPatreonButton", of("Action", "support:patreon"), false);
 
         ui.set("#SupportTitleLabel.Text",
                 Lang.tr(playerRef.getUuid(), "ui.support.page.title", "Support"));
+        ui.set("#SupportVersionLabel.Text", NavUIHelper.getNavVersion());
+        ui.set("#SupportHeaderVersionLabel.Text", NavUIHelper.getNavVersion());
         ui.set("#SupportModName.Text",
                 Lang.tr(playerRef.getUuid(), "ui.support.mod_name", "Endless Leveling"));
         ui.set("#SupportDeveloperLabel.Text",
@@ -69,10 +72,22 @@ public class SupportUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
         ui.set("#NoticeCard.Visible", showNoticeCard);
         ui.set("#NoticeCardSpacer.Visible", showNoticeCard);
+        ui.set("#SupportUnofficialWarningBlock.Visible", showNoticeCard);
+        ui.set("#SupportPartnerThanksBlock.Visible", partnerAddonValid);
+        ui.set("#SupportPartnerThanksHeadline.Text",
+                Lang.tr(playerRef.getUuid(), "ui.support.partner.thanks.headline",
+                        "Official partner build detected."));
+        ui.set("#SupportPartnerThanksBody1.Text",
+                Lang.tr(playerRef.getUuid(), "ui.support.partner.thanks.body1",
+                        "This server runs an authorized partner build of Endless Leveling with full developer approval."));
+        ui.set("#SupportPartnerThanksBody2.Text",
+                Lang.tr(playerRef.getUuid(), "ui.support.partner.thanks.body2",
+                        "Thanks for supporting the original project and its official partners."));
 
         ui.set("#SupportPartnerSectionTitle.Text",
                 Lang.tr(playerRef.getUuid(), "ui.support.partner.section", "Official Endless Partners"));
 
+        ui.set("#SupportPartnerValidationBlock.Visible", partnerAddonDetected);
         ui.set("#SupportPartnerAddonValidationLabel.Text",
                 Lang.tr(playerRef.getUuid(), "ui.support.partner.valid.label", "Addon Validation"));
         if (!partnerAddonDetected) {
@@ -124,12 +139,27 @@ public class SupportUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             String discordInviteUrl = DiscordLinkResolver.getDiscordInviteUrl();
             playerRef.sendMessage(Message.raw(
                     Lang.tr(playerRef.getUuid(), "ui.support.discord_chat_prompt",
-                            "Need help or want to report an issue? Click below to join Discord."))
-                    .color("#4fd7f7"));
+                            "Need help or want to report an issue? Join the Endless Leveling Discord."))
+                    .color("#8ab4ff"));
             playerRef.sendMessage(Message
-                    .raw(Lang.tr(playerRef.getUuid(), "ui.support.discord_chat_link_label", "Endless Leveling Discord"))
+                    .raw(Lang.tr(playerRef.getUuid(), "ui.support.discord_chat_link_label",
+                            "[CLICK HERE] Join the Discord"))
                     .link(discordInviteUrl)
-                    .color("#6fe3ff"));
+                    .color("#7aecff"));
+            return;
+        }
+
+        if ("support:patreon".equalsIgnoreCase(data.action)) {
+            String patreonUrl = "https://www.patreon.com/cw/airijko";
+            playerRef.sendMessage(Message.raw(
+                    Lang.tr(playerRef.getUuid(), "ui.support.patreon_chat_prompt",
+                            "Love the mod? Support Airijko on Patreon and help keep Endless Leveling growing."))
+                    .color("#ffb07a"));
+            playerRef.sendMessage(Message
+                    .raw(Lang.tr(playerRef.getUuid(), "ui.support.patreon_chat_link_label",
+                            "[CLICK HERE] Support on Patreon"))
+                    .link(patreonUrl)
+                    .color("#ff8866"));
             return;
         }
 

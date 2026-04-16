@@ -87,7 +87,7 @@ $C.@PageOverlay {
                                     // Identity stats row
                                     Group #DetailSummary {
                                         LayoutMode: Left;
-                                        Anchor: (Height: 38);
+                                        Anchor: (Height: 70);
 
                                         // Prestige
                                         Group {
@@ -103,6 +103,12 @@ $C.@PageOverlay {
                                                 Text: "--";
                                                 Style: (FontSize: 18, TextColor: #b084e0, RenderBold: true);
                                                 Anchor: (Height: 22);
+                                            }
+                                            Group { Anchor: (Height: 4); }
+                                            $C.@TextButton #PrestigeButton {
+                                                Text: "PRESTIGE UP";
+                                                Anchor: (Height: 26);
+                                                Padding: (Horizontal: 6);
                                             }
                                         }
 
@@ -164,6 +170,12 @@ $C.@PageOverlay {
                                                 Style: (FontSize: 16, TextColor: #e5c68a, RenderBold: true);
                                                 Anchor: (Height: 22);
                                             }
+                                            Group { Anchor: (Height: 4); }
+                                            $C.@TextButton #ViewRaceButton {
+                                                Text: "VIEW RACE";
+                                                Anchor: (Height: 26);
+                                                Padding: (Horizontal: 6);
+                                            }
                                         }
 
                                         Group { Anchor: (Width: 1, Top: 4, Bottom: 4); Background: #ffffff(0.06); }
@@ -184,6 +196,12 @@ $C.@PageOverlay {
                                                 Style: (FontSize: 16, TextColor: #f0c15a, RenderBold: true);
                                                 Anchor: (Height: 22);
                                             }
+                                            Group { Anchor: (Height: 4); }
+                                            $C.@TextButton #ViewPrimaryClassButton {
+                                                Text: "VIEW CLASS";
+                                                Anchor: (Height: 26);
+                                                Padding: (Horizontal: 6);
+                                            }
                                         }
 
                                         Group { Anchor: (Width: 1, Top: 4, Bottom: 4); Background: #ffffff(0.06); }
@@ -203,6 +221,12 @@ $C.@PageOverlay {
                                                 Text: "--";
                                                 Style: (FontSize: 16, TextColor: #9fb6d3, RenderBold: true);
                                                 Anchor: (Height: 22);
+                                            }
+                                            Group { Anchor: (Height: 4); }
+                                            $C.@TextButton #ViewSecondaryClassButton {
+                                                Text: "VIEW CLASS";
+                                                Anchor: (Height: 26);
+                                                Padding: (Horizontal: 6);
                                             }
                                         }
                                     }

@@ -1,0 +1,614 @@
+$C = "../../Common.ui";
+$Nav = "../Nav/TopNavBar.ui";
+
+$C.@PageOverlay {
+    Group {
+        LayoutMode: Middle;
+        Padding: (Vertical: 12);
+
+        // ====================== TOP NAVBAR ======================
+        Group {
+            LayoutMode: Middle;
+            Anchor: (Height: 92);
+
+            Group {
+                Anchor: (Height: 92);
+                $Nav.@TopNavBar {}
+            }
+        }
+
+        Group { Anchor: (Height: 14); }
+
+        // ====================== MAIN CONTENT ======================
+        Group {
+            LayoutMode: Middle;
+
+            Group {
+                LayoutMode: Top;
+                Anchor: (Width: 1080, Height: 700);
+
+                // ============ HEADER STRIP ============
+                Group {
+                    LayoutMode: Left;
+                    Background: (TexturePath: "../../Hud/ObjectivePanelContainer.png", Border: 15);
+                    Padding: (Left: 22, Right: 22, Top: 16, Bottom: 16);
+                    Anchor: (Height: 108, Bottom: 12);
+
+                    // Icon block
+                    Group {
+                        LayoutMode: Middle;
+                        Anchor: (Width: 76);
+
+                        Group {
+                            Anchor: (Width: 68, Height: 68);
+                            Background: #1a2538;
+                            Padding: (Full: 6);
+
+                            Group {
+                                Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 0);
+                                Background: (TexturePath: "Icons/EndlessLevelingAvatarIcon.png");
+                            }
+                        }
+                    }
+
+                    Group { Anchor: (Width: 18); }
+
+                    // Title + meta + subtitle
+                    Group {
+                        LayoutMode: Top;
+                        FlexWeight: 1;
+
+                        Label #SupportModName {
+                            Text: "Endless Leveling";
+                            Anchor: (Height: 32);
+                            Style: (FontSize: 26, TextColor: #f0c040, RenderBold: true);
+                        }
+
+                        Group {
+                            LayoutMode: Left;
+                            Anchor: (Height: 18, Bottom: 4);
+
+                            Label #SupportDeveloperLabel {
+                                Text: "Developer: Airijko";
+                                Anchor: (Width: 160);
+                                Style: (FontSize: 12, TextColor: #4fd7f7, RenderBold: true, VerticalAlignment: Center);
+                            }
+
+                            Label {
+                                Text: "•";
+                                Anchor: (Width: 12);
+                                Style: (FontSize: 12, TextColor: #8aa1bf, VerticalAlignment: Center, HorizontalAlignment: Center);
+                            }
+
+                            Label #SupportHeaderTagline {
+                                Text: "RPG Leveling System Inspired by League of Legends and Solo Leveling";
+                                FlexWeight: 1;
+                                Style: (FontSize: 12, TextColor: #9fb6d3, VerticalAlignment: Center);
+                            }
+
+                            Label #SupportHeaderVersionLabel {
+                                Text: "v?.?";
+                                Anchor: (Width: 80);
+                                Style: (FontSize: 12, TextColor: #f0c040, RenderBold: true, VerticalAlignment: Center, HorizontalAlignment: End);
+                            }
+                        }
+
+                        Label #SupportHeaderSubtitle {
+                            Text: "Support, authenticity, and official partner information.";
+                            Style: (FontSize: 12, TextColor: #8aa1bf, Wrap: true);
+                            Anchor: (Height: 16);
+                        }
+                    }
+
+                    Group { Anchor: (Width: 16); }
+
+                    // Status pill
+                    Group {
+                        LayoutMode: Middle;
+                        Anchor: (Width: 184);
+
+                        Group {
+                            Background: #1a2538;
+                            Padding: (Horizontal: 12, Vertical: 10);
+                            Anchor: (Height: 48);
+                            LayoutMode: Left;
+
+                            Group {
+                                LayoutMode: Middle;
+                                Anchor: (Width: 24);
+
+                                Group {
+                                    Anchor: (Width: 22, Height: 22);
+                                    Background: (TexturePath: "Icons/IconCheckmark.png");
+                                }
+                            }
+
+                            Group { Anchor: (Width: 10); }
+
+                            Group {
+                                LayoutMode: Middle;
+                                FlexWeight: 1;
+
+                                Label {
+                                    Text: "OFFICIAL BUILD";
+                                    Style: (FontSize: 11, TextColor: #6ee7b7, RenderBold: true, LetterSpacing: 1, VerticalAlignment: Center);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // ============ BODY: 3-COLUMN ============
+                Group {
+                    LayoutMode: Left;
+                    Anchor: (Height: 330, Bottom: 12);
+
+                    // --- Column 1: Need Help ---
+                    $Nav.@ObjectiveContainer {
+                        FlexWeight: 1;
+
+                        #Title {
+                            Label #SupportDiscordHeaderLabel {
+                                Text: "NEED HELP";
+                                Style: $Nav.@PanelTitleStyle;
+                            }
+                        }
+
+                        #Content {
+                            LayoutMode: Top;
+                            Padding: (Horizontal: 18, Top: 14, Bottom: 16);
+
+                            Group {
+                                LayoutMode: Middle;
+                                Anchor: (Height: 68, Bottom: 12);
+
+                                Group {
+                                    Anchor: (Width: 60, Height: 60);
+                                    Background: #0b141f(0.7);
+                                    Padding: (Full: 10);
+
+                                    Group {
+                                        Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 0);
+                                        Background: (TexturePath: "Icons/Wave.png");
+                                    }
+                                }
+                            }
+
+                            Label #SupportDiscordTitle {
+                                Text: "Need help?";
+                                Style: (FontSize: 15, TextColor: #ffffff, RenderBold: true, HorizontalAlignment: Center);
+                                Anchor: (Height: 20, Bottom: 6);
+                            }
+
+                            Label #SupportDiscordDescription {
+                                Text: "Questions, bug reports, and live help — join the community Discord.";
+                                Style: (FontSize: 12, TextColor: #c0cee5, Wrap: true, HorizontalAlignment: Center);
+                                Anchor: (Height: 50, Bottom: 10);
+                            }
+
+                            Group { FlexWeight: 1; }
+
+                            Group {
+                                LayoutMode: Middle;
+                                Anchor: (Height: 36);
+
+                                $C.@TextButton #SupportDiscordButton {
+                                    Anchor: (Width: 240, Height: 34);
+                                    Padding: (Horizontal: 12, Vertical: 4);
+                                    Text: "JOIN DISCORD";
+                                }
+                            }
+                        }
+                    }
+
+                    Group { Anchor: (Width: 12); }
+
+                    // --- Column 2: Support the Mod ---
+                    $Nav.@ObjectiveContainer {
+                        FlexWeight: 1;
+
+                        #Title {
+                            Label #SupportPatreonHeaderLabel {
+                                Text: "SUPPORT THE MOD";
+                                Style: $Nav.@PanelTitleStyle;
+                            }
+                        }
+
+                        #Content {
+                            LayoutMode: Top;
+                            Padding: (Horizontal: 18, Top: 14, Bottom: 16);
+
+                            Group {
+                                LayoutMode: Middle;
+                                Anchor: (Height: 68, Bottom: 12);
+
+                                Group {
+                                    Anchor: (Width: 60, Height: 60);
+                                    Background: #0b141f(0.7);
+                                    Padding: (Full: 10);
+
+                                    Group {
+                                        Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 0);
+                                        Background: (TexturePath: "Icons/Books.png");
+                                    }
+                                }
+                            }
+
+                            Label #SupportPatreonTitle {
+                                Text: "Support";
+                                Style: (FontSize: 15, TextColor: #ffffff, RenderBold: true, HorizontalAlignment: Center);
+                                Anchor: (Height: 20, Bottom: 6);
+                            }
+
+                            Label #SupportPatreonBody {
+                                Text: "Support the original developer and help keep Endless Leveling growing.";
+                                Style: (FontSize: 12, TextColor: #c0cee5, Wrap: true, HorizontalAlignment: Center);
+                                Anchor: (Height: 50, Bottom: 10);
+                            }
+
+                            Group { FlexWeight: 1; }
+
+                            Group {
+                                LayoutMode: Middle;
+                                Anchor: (Height: 36);
+
+                                $C.@TextButton #SupportPatreonButton {
+                                    Anchor: (Width: 240, Height: 34);
+                                    Padding: (Horizontal: 12, Vertical: 4);
+                                    Text: "SUPPORT ON PATREON";
+                                }
+                            }
+                        }
+                    }
+
+                    Group { Anchor: (Width: 12); }
+
+                    // --- Column 3: Official Partners ---
+                    $Nav.@ObjectiveContainer {
+                        FlexWeight: 1;
+
+                        #Title {
+                            Label #SupportPartnerSectionTitle {
+                                Text: "OFFICIAL ENDLESS PARTNERS";
+                                Style: $Nav.@PanelTitleStyle;
+                            }
+                        }
+
+                        #Content {
+                            LayoutMode: Top;
+                            Padding: (Horizontal: 18, Top: 14, Bottom: 16);
+
+                            Group #SupportPartnerValidationBlock {
+                                LayoutMode: Left;
+                                Background: #0b141f(0.6);
+                                Padding: (Horizontal: 12, Vertical: 10);
+                                Anchor: (Height: 44, Bottom: 12);
+                                Visible: false;
+
+                                Group {
+                                    FlexWeight: 1;
+                                    LayoutMode: Top;
+
+                                    Label #SupportPartnerAddonValidationLabel {
+                                        Text: "Addon Validation";
+                                        Anchor: (Height: 12, Bottom: 2);
+                                        Style: (FontSize: 10, TextColor: #8aa1bf, RenderBold: true, LetterSpacing: 1);
+                                    }
+
+                                    Label #SupportPartnerAddonValidationValue {
+                                        Text: "--";
+                                        Anchor: (Height: 18);
+                                        Style: (FontSize: 13, TextColor: #c0cee5, RenderBold: true);
+                                    }
+                                }
+                            }
+
+                            Group #SupportUnofficialWarningBlock {
+                                LayoutMode: Top;
+
+                                Group {
+                                    LayoutMode: Left;
+                                    Anchor: (Height: 30, Bottom: 8);
+
+                                    Group {
+                                        LayoutMode: Middle;
+                                        Anchor: (Width: 28);
+
+                                        Group {
+                                            Anchor: (Width: 22, Height: 22);
+                                            Background: (TexturePath: "Icons/IconAlert.png");
+                                        }
+                                    }
+
+                                    Group { Anchor: (Width: 8); }
+
+                                    Label #SupportNotice2 {
+                                        Text: "These versions are not official.";
+                                        FlexWeight: 1;
+                                        Style: (FontSize: 13, TextColor: #ff9966, RenderBold: true, VerticalAlignment: Center);
+                                    }
+                                }
+
+                                Group {
+                                    Anchor: (Height: 1, Bottom: 10);
+                                    Background: #ffffff(0.08);
+                                }
+
+                                Label #SupportNotice1 {
+                                    Text: "Some redistributed versions alter the UI or remove the Endless Leveling name and credit.";
+                                    Style: (FontSize: 12, TextColor: #c0cee5, Wrap: true);
+                                    Anchor: (Height: 40, Bottom: 8);
+                                }
+
+                                Label #SupportNotice3 {
+                                    Text: "If you enjoy the mod, please support the original project and developer.";
+                                    Style: (FontSize: 12, TextColor: #c0cee5, Wrap: true);
+                                    Anchor: (Height: 40);
+                                }
+                            }
+
+                            Group #SupportPartnerThanksBlock {
+                                LayoutMode: Top;
+                                Visible: false;
+
+                                Group {
+                                    LayoutMode: Left;
+                                    Anchor: (Height: 30, Bottom: 8);
+
+                                    Group {
+                                        LayoutMode: Middle;
+                                        Anchor: (Width: 28);
+
+                                        Group {
+                                            Anchor: (Width: 22, Height: 22);
+                                            Background: (TexturePath: "Icons/IconCheckmark.png");
+                                        }
+                                    }
+
+                                    Group { Anchor: (Width: 8); }
+
+                                    Label #SupportPartnerThanksHeadline {
+                                        Text: "Official partner build detected.";
+                                        FlexWeight: 1;
+                                        Style: (FontSize: 13, TextColor: #6ee7b7, RenderBold: true, VerticalAlignment: Center);
+                                    }
+                                }
+
+                                Group {
+                                    Anchor: (Height: 1, Bottom: 10);
+                                    Background: #ffffff(0.08);
+                                }
+
+                                Label #SupportPartnerThanksBody1 {
+                                    Text: "This server runs an authorized partner build of Endless Leveling with full developer approval.";
+                                    Style: (FontSize: 12, TextColor: #c0cee5, Wrap: true);
+                                    Anchor: (Height: 40, Bottom: 8);
+                                }
+
+                                Label #SupportPartnerThanksBody2 {
+                                    Text: "Thanks for supporting the original project and its official partners.";
+                                    Style: (FontSize: 12, TextColor: #c0cee5, Wrap: true);
+                                    Anchor: (Height: 40);
+                                }
+                            }
+
+                            Group #NoticeCard { Visible: false; Anchor: (Height: 0); }
+                            Group #NoticeCardSpacer { Visible: false; Anchor: (Height: 0); }
+                        }
+                    }
+                }
+
+                // ============ OFFICIAL SERVERS ROW ============
+                $Nav.@ObjectiveContainer {
+                    FlexWeight: 1;
+
+                    #Title {
+                        Label #SupportServersSectionTitle {
+                            Text: "OFFICIAL SERVERS";
+                            Style: $Nav.@PanelTitleStyle;
+                        }
+                    }
+
+                    #Content {
+                        LayoutMode: Top;
+                        Padding: (Horizontal: 16, Top: 8, Bottom: 12);
+
+                        Group {
+                            LayoutMode: Left;
+                            Anchor: (Height: 20, Bottom: 6);
+
+                            Group {
+                                LayoutMode: Middle;
+                                Anchor: (Width: 24);
+
+                                Group {
+                                    Anchor: (Width: 18, Height: 18);
+                                    Background: (TexturePath: "Icons/Portal.png");
+                                }
+                            }
+
+                            Group { Anchor: (Width: 8); }
+
+                            Label #SupportServersSectionSubtitle {
+                                Text: "Authorized partner servers listed as official cards.";
+                                FlexWeight: 1;
+                                Style: (FontSize: 12, TextColor: #bdd0e8, VerticalAlignment: Center);
+                            }
+                        }
+
+                        Group {
+                            Anchor: (Height: 1, Bottom: 10);
+                            Background: #ffffff(0.08);
+                        }
+
+                        Group {
+                            LayoutMode: Left;
+                            FlexWeight: 1;
+
+                            // ---- Card 1: Endless Leveling ----
+                            Group #SupportServerCard1 {
+                                LayoutMode: Left;
+                                Background: #0b141f(0.88);
+                                FlexWeight: 1;
+
+                                // Banner stripe (left)
+                                Group {
+                                    LayoutMode: Top;
+                                    Background: #233a5c;
+                                    Padding: (Horizontal: 14, Vertical: 12);
+                                    Anchor: (Width: 220);
+
+                                    Label #SupportServerCard1Tag {
+                                        Text: "OFFICIAL SERVER";
+                                        Anchor: (Height: 14, Bottom: 4);
+                                        Style: (FontSize: 10, TextColor: #e6eff9, RenderBold: true, LetterSpacing: 1);
+                                    }
+
+                                    Label #SupportServerCard1Name {
+                                        Text: "Endless Leveling";
+                                        Anchor: (Height: 26);
+                                        Style: (FontSize: 17, TextColor: #ffffff, RenderBold: true);
+                                    }
+
+                                    Group { FlexWeight: 1; }
+
+                                    Label {
+                                        Text: "Run by the mod developer";
+                                        Anchor: (Height: 14);
+                                        Style: (FontSize: 10, TextColor: #c5d7ee, LetterSpacing: 1);
+                                    }
+                                }
+
+                                // Info column (right)
+                                Group {
+                                    LayoutMode: Top;
+                                    FlexWeight: 1;
+                                    Padding: (Horizontal: 14, Vertical: 12);
+
+                                    Label {
+                                        Text: "HOST";
+                                        Anchor: (Height: 12, Bottom: 4);
+                                        Style: (FontSize: 10, TextColor: #8aa1bf, RenderBold: true, LetterSpacing: 1);
+                                    }
+
+                                    Label #SupportServerCard1Host {
+                                        Text: "play.endlessleveling.net:9005";
+                                        Anchor: (Height: 20, Bottom: 10);
+                                        Style: (FontSize: 14, TextColor: #9fd0ff, RenderBold: true, VerticalAlignment: Center);
+                                    }
+
+                                    Group {
+                                        Anchor: (Height: 1, Bottom: 10);
+                                        Background: #ffffff(0.06);
+                                    }
+
+                                    Group {
+                                        FlexWeight: 1;
+                                        LayoutMode: Top;
+
+                                        Label {
+                                            Text: "Region: NA  •  Language: English";
+                                            Style: (FontSize: 11, TextColor: #c0cee5, Wrap: true);
+                                            Anchor: (Height: 16);
+                                        }
+                                    }
+                                }
+                            }
+
+                            Group { Anchor: (Width: 14); }
+
+                            // ---- Card 2: Histatu ----
+                            Group #SupportServerCard2 {
+                                LayoutMode: Left;
+                                Background: #0b141f(0.88);
+                                FlexWeight: 1;
+
+                                Group {
+                                    LayoutMode: Top;
+                                    Background: #2d4a37;
+                                    Padding: (Horizontal: 14, Vertical: 12);
+                                    Anchor: (Width: 220);
+
+                                    Label #SupportServerCard2Tag {
+                                        Text: "AUTHORIZED PARTNER";
+                                        Anchor: (Height: 14, Bottom: 4);
+                                        Style: (FontSize: 10, TextColor: #e6eff9, RenderBold: true, LetterSpacing: 1);
+                                    }
+
+                                    Label #SupportServerCard2Name {
+                                        Text: "Histatu";
+                                        Anchor: (Height: 26);
+                                        Style: (FontSize: 17, TextColor: #ffffff, RenderBold: true);
+                                    }
+
+                                    Group { FlexWeight: 1; }
+
+                                    Label {
+                                        Text: "Official partner network";
+                                        Anchor: (Height: 14);
+                                        Style: (FontSize: 10, TextColor: #c5d7ee, LetterSpacing: 1);
+                                    }
+                                }
+
+                                Group {
+                                    LayoutMode: Top;
+                                    FlexWeight: 1;
+                                    Padding: (Horizontal: 14, Vertical: 12);
+
+                                    Label {
+                                        Text: "HOST";
+                                        Anchor: (Height: 12, Bottom: 4);
+                                        Style: (FontSize: 10, TextColor: #8aa1bf, RenderBold: true, LetterSpacing: 1);
+                                    }
+
+                                    Label #SupportServerCard2Host {
+                                        Text: "play.histatu.net";
+                                        Anchor: (Height: 20, Bottom: 10);
+                                        Style: (FontSize: 14, TextColor: #9fd0ff, RenderBold: true, VerticalAlignment: Center);
+                                    }
+
+                                    Group {
+                                        Anchor: (Height: 1, Bottom: 10);
+                                        Background: #ffffff(0.06);
+                                    }
+
+                                    Group {
+                                        FlexWeight: 1;
+                                        LayoutMode: Top;
+
+                                        Label {
+                                            Text: "Region: NA  •  Language: English";
+                                            Style: (FontSize: 11, TextColor: #c0cee5, Wrap: true);
+                                            Anchor: (Height: 16);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // ==== Integrity placeholders (required by UiTitleIntegrityGuard) ====
+                Label #SupportPanelFootnote { Text: ""; Visible: false; Anchor: (Height: 0); }
+                Label #SupportVersionLabel { Text: ""; Visible: false; Anchor: (Height: 0); }
+                Label #SupportTitle { Text: "Endless Leveling"; Visible: false; Anchor: (Height: 0); }
+                Label #SupportTitleLabel { Text: ""; Visible: false; Anchor: (Height: 0); }
+            }
+        }
+
+        Group { Anchor: (Height: 14); }
+
+        // ====================== FOOTER NAVBAR ======================
+        Group {
+            LayoutMode: Middle;
+            Anchor: (Height: 92);
+
+            Group {
+                Anchor: (Height: 92);
+                $Nav.@BottomNavBar {}
+            }
+        }
+    }
+}
+
+$C.@BackButton {}

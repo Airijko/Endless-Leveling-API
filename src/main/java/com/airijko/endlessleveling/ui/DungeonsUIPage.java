@@ -187,9 +187,8 @@ public class DungeonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         events.addEventBinding(Activating, "#AzarothBackButton", of("Action", "dungeon:azaroth:unflip"), false);
         events.addEventBinding(Activating, "#KatherinaDetailsButton", of("Action", "dungeon:katherina:flip"), false);
         events.addEventBinding(Activating, "#KatherinaBackButton", of("Action", "dungeon:katherina:unflip"), false);
-
-        // Baron still uses whole-card click → detail view.
-        events.addEventBinding(Activating, "#CardBaron", of("Action", "dungeon:view:baron"), false);
+        events.addEventBinding(Activating, "#BaronDetailsButton", of("Action", "dungeon:baron:flip"), false);
+        events.addEventBinding(Activating, "#BaronBackButton", of("Action", "dungeon:baron:unflip"), false);
 
         // Detail view buttons.
         events.addEventBinding(Activating, "#BackToCarouselButton", of("Action", "dungeon:back"), false);
@@ -521,6 +520,7 @@ public class DungeonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         if (handleCardFlip(data.action, "void", "#VoidCardFront", "#VoidCardBack")) return;
         if (handleCardFlip(data.action, "azaroth", "#AzarothCardFront", "#AzarothCardBack")) return;
         if (handleCardFlip(data.action, "katherina", "#KatherinaCardFront", "#KatherinaCardBack")) return;
+        if (handleCardFlip(data.action, "baron", "#BaronCardFront", "#BaronCardBack")) return;
 
         NavUIHelper.handleNavAction(data.action, ref, store, playerRef);
     }

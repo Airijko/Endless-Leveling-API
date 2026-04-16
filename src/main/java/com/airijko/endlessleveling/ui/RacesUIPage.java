@@ -61,12 +61,19 @@ public class RacesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     private boolean detailViewActive;
 
     public RacesUIPage(@Nonnull PlayerRef playerRef, @Nonnull CustomPageLifetime lifetime) {
+        this(playerRef, lifetime, null);
+    }
+
+    public RacesUIPage(@Nonnull PlayerRef playerRef,
+            @Nonnull CustomPageLifetime lifetime,
+            String initialRaceId) {
         super(playerRef, lifetime, SkillsUIPage.Data.CODEC);
         EndlessLeveling plugin = EndlessLeveling.getInstance();
         this.raceManager = plugin != null ? plugin.getRaceManager() : null;
         this.playerDataManager = plugin != null ? plugin.getPlayerDataManager() : null;
-        this.selectedRaceId = null;
-        this.detailViewActive = false;
+        boolean hasInitial = initialRaceId != null && !initialRaceId.isBlank();
+        this.selectedRaceId = hasInitial ? initialRaceId.trim() : null;
+        this.detailViewActive = hasInitial;
     }
 
     @Override

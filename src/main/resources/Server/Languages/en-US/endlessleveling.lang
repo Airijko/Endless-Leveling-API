@@ -615,6 +615,7 @@ ui.nav.leaderboards = LEADERBOARDS
 ui.nav.settings = SETTINGS
 ui.nav.augments = AUGMENTS
 ui.nav.support = SUPPORT
+ui.nav.servers = SERVERS
 ui.profile.playerdata.unavailable = Player data unavailable.
 ui.profile.detail.title = Selected Profile
 ui.profile.detail.subtitle.default = Select a profile to view stats

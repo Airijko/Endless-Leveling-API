@@ -1,0 +1,108 @@
+$C = "../../Common.ui";
+$Nav = "../Nav/TopNavBar.ui";
+
+$C.@PageOverlay {
+    Group {
+        LayoutMode: Middle;
+        Padding: (Vertical: 12);
+
+        // ====================== TOP NAVBAR ======================
+        Group {
+            LayoutMode: Middle;
+            Anchor: (Height: 92);
+
+            Group {
+                Anchor: (Height: 92);
+                $Nav.@TopNavBar {}
+            }
+        }
+
+        Group { Anchor: (Height: 14); }
+
+        // ====================== MAIN CONTENT ======================
+        Group {
+            LayoutMode: Middle;
+
+            Group {
+                LayoutMode: Left;
+                Anchor: (Width: 1680, Height: 700);
+
+                Group {
+                    LayoutMode: Top;
+                    Anchor: (Width: 1680, Height: 700);
+
+                    // ========================================================
+                    //  CAROUSEL VIEW
+                    // ========================================================
+                    Group #CarouselView {
+                        Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 0);
+                        LayoutMode: Top;
+                        Visible: true;
+
+                        // ---- Header ----
+                        Group {
+                            LayoutMode: Center;
+
+                            Group {
+                                Background: (TexturePath: "../../Hud/ObjectivePanelContainer.png", Border: 15);
+                                LayoutMode: Top;
+                                Padding: (Horizontal: 24, Vertical: 12);
+
+                                Group {
+                                    LayoutMode: Left;
+                                    Anchor: (Height: 18);
+
+                                    Label #ServersTitle {
+                                        Text: "ENDLESS LEVELING";
+                                        Style: (FontSize: 14, TextColor: #f0c040, RenderBold: true, RenderUppercase: true, LetterSpacing: 2, VerticalAlignment: Center);
+                                    }
+
+                                    Group { Anchor: (Width: 10); }
+
+                                    Label #CarouselServerCount {
+                                        Text: "0 servers";
+                                        Style: (FontSize: 11, TextColor: #9fb6d3, RenderBold: true, VerticalAlignment: Center);
+                                    }
+                                }
+
+                                Label #CarouselSubheading {
+                                    Text: "Authorized partner servers running official Endless Leveling builds.";
+                                    Style: (FontSize: 10, TextColor: #8aa1bf, HorizontalAlignment: Center);
+                                    Anchor: (Height: 14);
+                                }
+                            }
+                        }
+
+                        Group { Anchor: (Height: 12); }
+
+                        // ---- Card area (centered) ----
+                        Group #CarouselScrollArea {
+                            FlexWeight: 1;
+                            LayoutMode: Center;
+                            Padding: (Left: 24, Right: 24, Top: 6, Bottom: 20);
+
+                            Group #CarouselCards {
+                                LayoutMode: Left;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Group { Anchor: (Height: 14); }
+
+        // ====================== FOOTER NAVBAR ======================
+        Group {
+            LayoutMode: Middle;
+            Anchor: (Height: 92);
+
+            Group {
+                Anchor: (Height: 92);
+                $Nav.@BottomNavBar {}
+            }
+        }
+    }
+}
+
+$C.@BackButton {}

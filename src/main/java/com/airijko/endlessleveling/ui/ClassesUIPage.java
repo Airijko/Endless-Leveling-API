@@ -67,14 +67,21 @@ public class ClassesUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     private boolean detailViewActive;
 
     public ClassesUIPage(@Nonnull PlayerRef playerRef, @Nonnull CustomPageLifetime lifetime) {
+        this(playerRef, lifetime, null);
+    }
+
+    public ClassesUIPage(@Nonnull PlayerRef playerRef,
+            @Nonnull CustomPageLifetime lifetime,
+            String initialClassId) {
         super(playerRef, lifetime, SkillsUIPage.Data.CODEC);
         EndlessLeveling plugin = EndlessLeveling.getInstance();
         this.classManager = plugin != null ? plugin.getClassManager() : null;
         this.playerDataManager = plugin != null ? plugin.getPlayerDataManager() : null;
         this.levelingManager = plugin != null ? plugin.getLevelingManager() : null;
         this.skillManager = plugin != null ? plugin.getSkillManager() : null;
-        this.selectedClassId = null;
-        this.detailViewActive = false;
+        boolean hasInitial = initialClassId != null && !initialClassId.isBlank();
+        this.selectedClassId = hasInitial ? initialClassId.trim() : null;
+        this.detailViewActive = hasInitial;
     }
 
     static {

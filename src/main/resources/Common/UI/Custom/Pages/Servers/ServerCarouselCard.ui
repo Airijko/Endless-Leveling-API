@@ -1,0 +1,197 @@
+$C = "../../Common.ui";
+
+Button {
+    Anchor: (Width: 440, Height: 640, Right: 24, Top: 10, Bottom: 10);
+    Padding: (Full: 0);
+    Background: #0c121a(0);
+    LayoutMode: Top;
+    Style: (
+        Hovered: (
+            Background: #1c2b40(0.18)
+        ),
+        Pressed: (
+            Background: #263852(0.24)
+        )
+    );
+
+    // ---- Border (top) ----
+    Group #CardOutlineTop {
+        Anchor: (Height: 2);
+        Background: #25384b;
+    }
+
+    Group {
+        FlexWeight: 1;
+        LayoutMode: Left;
+
+        Group #CardOutlineLeft {
+            Anchor: (Width: 2);
+            Background: #25384b;
+        }
+
+        // ---- Card surface ----
+        Group #CardSurface {
+            FlexWeight: 1;
+
+            Group #CardBackgroundDefault {
+                Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 0);
+                Background: #0e1826(0.92);
+                Visible: true;
+            }
+
+            // Content overlay
+            Group {
+                Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 0);
+                LayoutMode: Top;
+                Padding: (Left: 18, Right: 18, Top: 18, Bottom: 18);
+
+                // ---- Banner ----
+                Group {
+                    Anchor: (Height: 120, Bottom: 14);
+
+                    Group #CardBannerOfficial {
+                        Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 0);
+                        Background: #7a2a2a;
+                        Visible: true;
+                    }
+
+                    Group #CardBannerPartner {
+                        Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 0);
+                        Background: #a6661f;
+                        Visible: false;
+                    }
+
+                    Group {
+                        Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 0);
+                        Padding: (Left: 14, Right: 14, Top: 12, Bottom: 12);
+                        LayoutMode: Top;
+
+                        Label #CardTag {
+                            Text: "OFFICIAL SERVER";
+                            Anchor: (Height: 16);
+                            Style: (FontSize: 10, TextColor: #e6eff9, RenderBold: true, LetterSpacing: 1);
+                        }
+
+                        Group { FlexWeight: 1; }
+
+                        Label #CardServerName {
+                            Text: "Server Name";
+                            Anchor: (Height: 36);
+                            Style: (FontSize: 22, TextColor: #ffffff, RenderBold: true, Wrap: true);
+                        }
+                    }
+                }
+
+                // ---- Host ----
+                Label #CardHostLabel {
+                    Text: "Host";
+                    Anchor: (Height: 14, Bottom: 2);
+                    Style: (FontSize: 11, TextColor: #8aa1bf, RenderBold: true, LetterSpacing: 1);
+                }
+
+                Group {
+                    Anchor: (Height: 32, Bottom: 12);
+                    Background: #0b141f(0.6);
+                    Padding: (Horizontal: 10, Vertical: 6);
+
+                    Label #CardHost {
+                        Text: "host.example.net";
+                        Style: (FontSize: 14, TextColor: #9fd0ff, RenderBold: true, VerticalAlignment: Center);
+                    }
+                }
+
+                // ---- Region + Language row ----
+                Group {
+                    Anchor: (Height: 48, Bottom: 12);
+                    LayoutMode: Left;
+
+                    Group {
+                        FlexWeight: 1;
+                        LayoutMode: Top;
+
+                        Label #CardRegionLabel {
+                            Text: "Region";
+                            Anchor: (Height: 14, Bottom: 2);
+                            Style: (FontSize: 11, TextColor: #8aa1bf, RenderBold: true, LetterSpacing: 1);
+                        }
+
+                        Group {
+                            Anchor: (Height: 28);
+                            Background: #0b141f(0.6);
+                            Padding: (Horizontal: 10, Vertical: 4);
+
+                            Label #CardRegion {
+                                Text: "NA";
+                                Style: (FontSize: 13, TextColor: #ffffff, RenderBold: true, VerticalAlignment: Center);
+                            }
+                        }
+                    }
+
+                    Group { Anchor: (Width: 10); }
+
+                    Group {
+                        FlexWeight: 1;
+                        LayoutMode: Top;
+
+                        Label #CardLanguageLabel {
+                            Text: "Language";
+                            Anchor: (Height: 14, Bottom: 2);
+                            Style: (FontSize: 11, TextColor: #8aa1bf, RenderBold: true, LetterSpacing: 1);
+                        }
+
+                        Group {
+                            Anchor: (Height: 28);
+                            Background: #0b141f(0.6);
+                            Padding: (Horizontal: 10, Vertical: 4);
+
+                            Label #CardLanguage {
+                                Text: "English";
+                                Style: (FontSize: 13, TextColor: #ffffff, RenderBold: true, VerticalAlignment: Center);
+                            }
+                        }
+                    }
+                }
+
+                // ---- Divider ----
+                Group {
+                    Anchor: (Height: 1, Bottom: 10);
+                    Background: #ffffff(0.06);
+                }
+
+                // ---- About ----
+                Label #CardAboutLabel {
+                    Text: "About";
+                    Anchor: (Height: 14, Bottom: 4);
+                    Style: (FontSize: 11, TextColor: #8aa1bf, RenderBold: true, LetterSpacing: 1);
+                }
+
+                Label #CardDescription {
+                    Text: "Server description.";
+                    Style: (FontSize: 12, TextColor: #c0cee5, Wrap: true);
+                    FlexWeight: 1;
+                }
+
+                Group { Anchor: (Height: 8); }
+
+                // ---- Footer ----
+                Label #CardFootnote {
+                    Text: "Verified official build";
+                    Style: (FontSize: 10, TextColor: #5a7a8f, HorizontalAlignment: Center, LetterSpacing: 1);
+                    Anchor: (Height: 14);
+                }
+            }
+        }
+
+        Group #CardOutlineRight {
+            Anchor: (Width: 2);
+            Background: #25384b;
+        }
+    }
+
+    // ---- Border (bottom) ----
+    Group #CardOutlineBottom {
+        Anchor: (Height: 2);
+        Background: #25384b;
+    }
+
+}

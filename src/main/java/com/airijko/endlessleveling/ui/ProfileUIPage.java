@@ -47,6 +47,7 @@ import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
 import com.hypixel.hytale.server.core.Message;
+import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.entity.entities.player.pages.InteractiveCustomUIPage;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
@@ -128,6 +129,10 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         applyStaticLabels(ui);
 
         events.addEventBinding(Activating, "#NewProfileButton", of("Action", "profile:new"), false);
+        events.addEventBinding(Activating, "#PrestigeButton", of("Action", "profile:prestige"), false);
+        events.addEventBinding(Activating, "#ViewRaceButton", of("Action", "profile:viewrace"), false);
+        events.addEventBinding(Activating, "#ViewPrimaryClassButton", of("Action", "profile:viewprimary"), false);
+        events.addEventBinding(Activating, "#ViewSecondaryClassButton", of("Action", "profile:viewsecondary"), false);
 
         EntityStatMap statMap = store.getComponent(ref, EntityStatMap.getComponentType());
 
@@ -1612,6 +1617,18 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             if ("new".equalsIgnoreCase(payload)) {
                 return handleNewProfile(ref, store, playerData);
             }
+            if ("prestige".equalsIgnoreCase(payload)) {
+                return handlePrestige(ref, store, playerData);
+            }
+            if ("viewrace".equalsIgnoreCase(payload)) {
+                return handleViewRace(ref, store, playerData);
+            }
+            if ("viewprimary".equalsIgnoreCase(payload)) {
+                return handleViewClass(ref, store, playerData.getPrimaryClassId());
+            }
+            if ("viewsecondary".equalsIgnoreCase(payload)) {
+                return handleViewClass(ref, store, playerData.getSecondaryClassId());
+            }
             if (payload.startsWith("select:")) {
                 return handleSelectProfile(ref, store, playerData, payload);
             }
@@ -1673,6 +1690,72 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         }
         reapplyProfileModifiers(ref, store, playerData);
         return new ProfileActionOutcome(true, true);
+    }
+
+    private ProfileActionOutcome handleViewRace(@Nonnull Ref<EntityStore> ref,
+            @Nonnull Store<EntityStore> store,
+            @Nonnull PlayerData playerData) {
+        Player player = store.getComponent(ref, Player.getComponentType());
+        if (player == null) {
+            return new ProfileActionOutcome(false, false);
+        }
+        String raceId = playerData.getRaceId();
+        player.getPageManager().openCustomPage(ref, store,
+                new RacesUIPage(playerRef, CustomPageLifetime.CanDismiss, raceId));
+        return new ProfileActionOutcome(false, false);
+    }
+
+    private ProfileActionOutcome handleViewClass(@Nonnull Ref<EntityStore> ref,
+            @Nonnull Store<EntityStore> store,
+            String classId) {
+        Player player = store.getComponent(ref, Player.getComponentType());
+        if (player == null) {
+            return new ProfileActionOutcome(false, false);
+        }
+        player.getPageManager().openCustomPage(ref, store,
+                new ClassesUIPage(playerRef, CustomPageLifetime.CanDismiss, classId));
+        return new ProfileActionOutcome(false, false);
+    }
+
+    private ProfileActionOutcome handlePrestige(@Nonnull Ref<EntityStore> ref,
+            @Nonnull Store<EntityStore> store,
+            @Nonnull PlayerData playerData) {
+        if (levelingManager == null) {
+            playerRef.sendMessage(Message.raw(tr("ui.profile.prestige.unavailable",
+                    "Prestige system is unavailable right now.")).color("#ff6666"));
+            return new ProfileActionOutcome(false, false);
+        }
+
+        int currentCap = levelingManager.getLevelCap(playerData);
+        LevelingManager.PrestigeResult result = levelingManager.tryGainPrestige(playerData);
+        switch (result) {
+            case SUCCESS -> {
+                int prestigeLevel = playerData.getPrestigeLevel();
+                int newCap = levelingManager.getLevelCap(playerData);
+                playerRef.sendMessage(Message.raw(tr("ui.profile.prestige.success",
+                        "Prestige increased to {0}. Level reset to 1. New cap: {1}.",
+                        prestigeLevel, newCap)).color("#4fd7f7"));
+                PlayerHud.refreshHud(playerData.getUuid());
+                if (partyManager != null && partyManager.isAvailable()) {
+                    partyManager.updatePartyHudCustomText(playerData);
+                }
+                reapplyProfileModifiers(ref, store, playerData);
+                return new ProfileActionOutcome(true, true);
+            }
+            case NOT_AT_CAP -> playerRef.sendMessage(Message.raw(tr("ui.profile.prestige.not_at_cap",
+                    "You must reach level {0} before prestiging.", currentCap)).color("#ff9d00"));
+            case AT_MAX_PRESTIGE -> {
+                Integer prestigeCap = levelingManager.getPrestigeCap();
+                String capText = prestigeCap != null ? String.valueOf(prestigeCap) : "ENDLESS";
+                playerRef.sendMessage(Message.raw(tr("ui.profile.prestige.at_max",
+                        "You have already reached the prestige cap of {0}.", capText)).color("#ff9d00"));
+            }
+            case DISABLED -> playerRef.sendMessage(Message.raw(tr("ui.profile.prestige.disabled",
+                    "Prestige is disabled on this server.")).color("#ff6666"));
+            default -> playerRef.sendMessage(Message.raw(tr("ui.profile.prestige.failed",
+                    "Unable to prestige right now. Please try again.")).color("#ff6666"));
+        }
+        return new ProfileActionOutcome(false, true);
     }
 
     private ProfileActionOutcome handleSelectProfile(@Nonnull Ref<EntityStore> ref,

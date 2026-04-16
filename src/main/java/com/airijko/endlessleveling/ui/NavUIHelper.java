@@ -58,6 +58,15 @@ public final class NavUIHelper {
         }
 
         /**
+         * Plugin version string ("v{Manifest.Version}") resolved from the bundled manifest.json.
+         * Falls back to "v?.?" when unavailable.
+         */
+        @Nonnull
+        public static String getNavVersion() {
+                return NAV_VERSION;
+        }
+
+        /**
          * Write the current plugin version into the shared nav panel.
          */
         public static void applyNavVersion(
@@ -96,6 +105,8 @@ public final class NavUIHelper {
                         ui.set("#NavXpStatsLabel.Text", Lang.tr(playerRef.getUuid(), "ui.nav.xpstats", "XP STATS"));
                         ui.set("#NavAddonsLabel.Text", Lang.tr(playerRef.getUuid(), "ui.nav.addons", "ADDONS"));
                         ui.set("#NavSupportLabel.Text", Lang.tr(playerRef.getUuid(), "ui.nav.support", "SUPPORT"));
+                        ui.set("#NavServersLabel.Text", Lang.tr(playerRef.getUuid(), "ui.nav.servers", "SERVERS"));
+                        ui.set("#NavServersContainer.Visible", !isAuthorizedPartnerAddonPresent());
                         ui.set("#NavSettingsLabel.Text", Lang.tr(playerRef.getUuid(), "ui.nav.settings", "SETTINGS"));
                 } else {
                         // Legacy left navbar layout: each MenuItem renders its own Text directly.
@@ -261,6 +272,7 @@ public final class NavUIHelper {
                         setTopNavButtonSelected(ui, "#NavXpStats", "xpstats".equalsIgnoreCase(activeNav));
                         setTopNavButtonSelected(ui, "#NavAddons", "addons".equalsIgnoreCase(activeNav));
                         setTopNavButtonSelected(ui, "#NavSupport", "support".equalsIgnoreCase(activeNav));
+                        setTopNavButtonSelected(ui, "#NavServers", "servers".equalsIgnoreCase(activeNav));
                         setTopNavButtonSelected(ui, "#NavSettings", "settings".equalsIgnoreCase(activeNav));
                         return;
                 }
@@ -316,6 +328,7 @@ public final class NavUIHelper {
                         events.addEventBinding(Activating, "#NavXpStats", of("Action", "nav:xpstats"), false);
                         events.addEventBinding(Activating, "#NavAddons", of("Action", "nav:addons"), false);
                         events.addEventBinding(Activating, "#NavSupport", of("Action", "nav:support"), false);
+                        events.addEventBinding(Activating, "#NavServers", of("Action", "nav:servers"), false);
                         events.addEventBinding(Activating, "#NavSettings", of("Action", "nav:settings"), false);
                         return;
                 }
@@ -424,6 +437,17 @@ public final class NavUIHelper {
                         case "support" -> player.getPageManager()
                                         .openCustomPage(ref, store,
                                                         new SupportUIPage(playerRef, CustomPageLifetime.CanDismiss));
+                        case "servers" -> {
+                                if (isAuthorizedPartnerAddonPresent()) {
+                                        LOGGER.atInfo().log(
+                                                        "NavUIHelper: servers nav blocked (authorized Partner addon present)");
+                                } else {
+                                        player.getPageManager()
+                                                        .openCustomPage(ref, store,
+                                                                        new ServersUIPage(playerRef,
+                                                                                        CustomPageLifetime.CanDismiss));
+                                }
+                        }
                         default -> {
                                 LOGGER.atWarning().log("NavUIHelper: unknown nav target '%s'", target);
                                 return false;
@@ -437,6 +461,23 @@ public final class NavUIHelper {
                         "com.airijko.endlessleveling.EndlessRiftsAndRaids",
                         "com.airijko.endlessleveling.EndlessDungeonsAndGates",
         };
+
+        private static final String PARTNER_ADDON_MAIN_CLASS =
+                        "com.airijko.endlessleveling.EndlessLevelingPartnerAddon";
+
+        /**
+         * Returns true iff the EndlessLevelingPartnerAddon class is on the classpath and the
+         * plugin has marked the partner addon as authorized. Explicitly excludes ARank.
+         */
+        private static boolean isAuthorizedPartnerAddonPresent() {
+                try {
+                        Class.forName(PARTNER_ADDON_MAIN_CLASS, false, NavUIHelper.class.getClassLoader());
+                } catch (ClassNotFoundException e) {
+                        return false;
+                }
+                EndlessLeveling plugin = EndlessLeveling.getInstance();
+                return plugin != null && plugin.isPartnerAddonAuthorized();
+        }
 
         /** Returns true only when the EndlessDungeons/RiftsAndRaids addon is present on the classpath. */
         private static boolean isEndlessDungeonsPresent() {

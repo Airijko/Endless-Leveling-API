@@ -440,6 +440,14 @@ $C.@PageOverlay {
                                         Padding: (Horizontal: 8);
                                     }
                                 }
+
+                                Group { Anchor: (Height: 8); }
+
+                                Label #SettingsVersionLabel {
+                                    Text: "v?.?";
+                                    Style: (FontSize: 11, TextColor: #6e7da1, RenderBold: true, HorizontalAlignment: Center, LetterSpacing: 1);
+                                    Anchor: (Height: 14);
+                                }
                             }
                         }
                     }
