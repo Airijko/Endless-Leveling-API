@@ -2,6 +2,7 @@ package com.airijko.endlessleveling.systems;
 
 import com.airijko.endlessleveling.mob.outlander.OutlanderBridgeWaveManager;
 import com.airijko.endlessleveling.ui.OutlanderBridgeWaveHud;
+import com.airijko.endlessleveling.util.EntityRefUtil;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.system.tick.TickingSystem;
@@ -42,6 +43,7 @@ public final class OutlanderBridgeWaveHudRefreshSystem extends TickingSystem<Ent
                 Ref<EntityStore> ref = pr.getReference();
                 if (ref == null || !ref.isValid()) continue;
                 if (ref.getStore() != store) continue;
+                if (!EntityRefUtil.isAliveAndUsable(ref, store)) continue;
                 Player player = store.getComponent(ref, Player.getComponentType());
                 if (player == null) continue;
                 OutlanderBridgeWaveHud.close(player, pr);

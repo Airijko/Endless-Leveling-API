@@ -111,6 +111,12 @@ public class AugmentManager {
     private final Map<String, AugmentDefinition> externalDefinitions;
     private volatile Map<String, AugmentDefinition> fileDefinitions;
     private volatile Map<String, AugmentDefinition> cache;
+    // Augment instances are immutable post-construction (all fields final, per-target
+    // state lives in static ConcurrentHashMaps on each augment type). Share them to
+    // avoid reconstructing on every mob spawn / passive eval — previously the dominant
+    // gameplay-side allocation site (CommonAugment: ~24% of total server allocation).
+    // Cleared in rebuildCache() so reloads pick up new definitions.
+    private final ConcurrentHashMap<String, Augment> instanceCache = new ConcurrentHashMap<>();
 
     public AugmentManager(Path root, PluginFilesManager filesManager, ConfigManager configManager) {
         this.gson = new Gson();
@@ -181,6 +187,12 @@ public class AugmentManager {
 
     public Augment createAugment(String id) {
         String lookup = resolveLookupId(id);
+        if (lookup != null) {
+            Augment cached = instanceCache.get(lookup);
+            if (cached != null) {
+                return cached;
+            }
+        }
         AugmentDefinition definition = lookup == null ? null : cache.get(lookup);
         if (definition == null) {
             String candidate = id == null ? "null" : id.trim();
@@ -190,7 +202,12 @@ public class AugmentManager {
             }
             return null;
         }
-        return createFromDefinition(definition);
+        Augment created = createFromDefinition(definition);
+        if (created != null) {
+            Augment existing = instanceCache.putIfAbsent(lookup, created);
+            return existing != null ? existing : created;
+        }
+        return null;
     }
 
     // ── External augment registration ───────────────────────────────────────
@@ -466,6 +483,9 @@ public class AugmentManager {
         Map<String, AugmentDefinition> merged = new LinkedHashMap<>(fileDefinitions);
         merged.putAll(externalDefinitions);
         this.cache = Collections.unmodifiableMap(merged);
+        // Invalidate shared instances; they bind to the now-replaced AugmentDefinition
+        // objects. Next createAugment call will reconstruct against the new definitions.
+        this.instanceCache.clear();
     }
 
     private static String requireValidId(String id) {
