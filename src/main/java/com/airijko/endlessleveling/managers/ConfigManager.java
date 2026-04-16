@@ -23,6 +23,24 @@ public class ConfigManager {
     private static final String LEGACY_KEYS_MARKER = "# Preserved legacy keys from previous config";
     private static final String VERSION_MARKER_COMMENT = "# DON'T EDIT THIS LINE BELOW";
 
+    // Top-level config.yml toggles that must remain user-owned even when
+    // force_builtin_config: true rewrites the rest of the file from bundled defaults.
+    // Without this, toggling e.g. force_builtin_races requires flipping force_builtin_config
+    // off first, because the force-sync would otherwise overwrite the user's value.
+    private static final List<String> CONFIG_YML_PRESERVED_TOGGLES = List.of(
+            "force_builtin_config",
+            "force_builtin_leveling",
+            "force_builtin_events",
+            "force_builtin_races",
+            "force_builtin_classes",
+            "force_builtin_augments",
+            "force_builtin_languages",
+            "force_builtin_world_settings",
+            "enable_builtin_races",
+            "enable_builtin_classes",
+            "enable_builtin_augments"
+    );
+
     private final PluginFilesManager filesManager;
     private final File configFile;
     private final Yaml yaml;
@@ -419,9 +437,11 @@ public class ConfigManager {
         target.put(VersionRegistry.CONFIG_VERSION_KEY, bundledConfigVersion);
 
         if ("config.yml".equalsIgnoreCase(resourceName)) {
-            target.put("force_builtin_config", parseBoolean(configMap.get("force_builtin_config"), false));
-            target.put("force_builtin_leveling", parseBoolean(configMap.get("force_builtin_leveling"), false));
-            target.put("force_builtin_events", parseBoolean(configMap.get("force_builtin_events"), false));
+            for (String key : CONFIG_YML_PRESERVED_TOGGLES) {
+                if (configMap.containsKey(key)) {
+                    target.put(key, parseBoolean(configMap.get(key), parseBoolean(bundledMap.get(key), false)));
+                }
+            }
         }
 
         return target;
@@ -432,9 +452,9 @@ public class ConfigManager {
         normalized.put(VersionRegistry.CONFIG_VERSION_KEY, bundledConfigVersion);
 
         if ("config.yml".equalsIgnoreCase(resourceName)) {
-            normalized.remove("force_builtin_config");
-            normalized.remove("force_builtin_leveling");
-            normalized.remove("force_builtin_events");
+            for (String key : CONFIG_YML_PRESERVED_TOGGLES) {
+                normalized.remove(key);
+            }
         }
 
         return normalized;
