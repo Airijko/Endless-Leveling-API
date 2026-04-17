@@ -112,12 +112,23 @@ public class MobDamageScalingSystem extends DamageEventSystem {
                     boolean targetIsPlayer = targetPlayerRef != null && targetPlayerRef.isValid();
 
                     double mobLevelDiffReduction = 0.0D;
+                    int resolvedOwnerLevel = 0;
+                    int resolvedMobLevel = -1;
                     if (!targetIsPlayer) {
+                        // Resolve the summoner's level first; if the owner can't
+                        // be looked up (e.g. cross-world edge case), fall back to
+                        // the summon's inherited mob level — summons copy owner
+                        // level at spawn, so this still approximates the player.
                         int ownerLevel = resolveSummonOwnerLevel(attackerRef, store, commandBuffer);
-                        if (ownerLevel > 0
-                                && levelingManager.isMobLevelingEnabled()
+                        if (ownerLevel <= 0) {
+                            ownerLevel = Math.max(1,
+                                    levelingManager.resolveMobLevel(attackerRef, commandBuffer));
+                        }
+                        resolvedOwnerLevel = ownerLevel;
+                        if (levelingManager.isMobLevelingEnabled()
                                 && levelingManager.isMobDefenseScalingEnabled(targetRef.getStore())) {
                             int mobLevel = levelingManager.resolveMobLevel(targetRef, commandBuffer);
+                            resolvedMobLevel = mobLevel;
                             mobLevelDiffReduction = levelingManager.getMobDefenseReductionForLevels(
                                     targetRef, commandBuffer, mobLevel, ownerLevel);
                             if (mobLevelDiffReduction != 0.0D) {
@@ -139,9 +150,10 @@ public class MobDamageScalingSystem extends DamageEventSystem {
 
                     if (LoggingManager.isDebugSectionEnabled("necromancer_summons")) {
                         LOGGER.atInfo().log(
-                                "[NECROMANCER_SUMMONS][COMBAT] Summon hit: before=%.2f after=%.2f crit=%s proc=%s true=%.2f mobLevelDiffRed=%.3f targetIsPlayer=%s",
+                                "[NECROMANCER_SUMMONS][COMBAT] Summon hit: before=%.2f after=%.2f crit=%s proc=%s true=%.2f ownerLvl=%d mobLvl=%d mobLevelDiffRed=%.3f targetIsPlayer=%s",
                                 beforeAugments, damage.getAmount(), summonCrit, false,
-                                summonTrueDamage, mobLevelDiffReduction, targetIsPlayer);
+                                summonTrueDamage, resolvedOwnerLevel, resolvedMobLevel,
+                                mobLevelDiffReduction, targetIsPlayer);
                     }
                 } else if (LoggingManager.isDebugSectionEnabled("necromancer_summons")) {
                     LOGGER.atInfo().log(
