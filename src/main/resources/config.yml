@@ -50,7 +50,7 @@ skill_attributes:
     per_level: 0.5 # Flow (mana) per level
   discipline:
     enabled: true
-    per_level: 0.75 # XP gain bonus percent per level
+    per_level: 0.6 # XP gain bonus percent per level
 
 # Passive skills
 # Each passive uses: enabled, unlock_level, base_value, value_per_level, max_level, tier_interval.

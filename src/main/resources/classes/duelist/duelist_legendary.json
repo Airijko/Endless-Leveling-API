@@ -28,7 +28,7 @@
       "type": "BLADE_DANCE",
       "category": "ON_HIT",
       "display_name": "Blade Dance",
-      "value": 0.07,
+      "value": 0.044,
       "duration": 5,
       "max_stacks": 8,
       "damage_bonus_per_stack": 0.04,
@@ -37,7 +37,7 @@
     {
       "type": "INNATE_ATTRIBUTE_GAIN",
       "attribute": "haste",
-      "value": 0.46
+      "value": 0.23
     },
     {
       "type": "INNATE_ATTRIBUTE_GAIN",

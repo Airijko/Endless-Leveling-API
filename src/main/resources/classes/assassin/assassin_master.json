@@ -31,14 +31,14 @@
       "value": 1.0,
       "normal_bonus_damage": false,
       "true_damage_flat_bonus": 300,
-      "haste_bonus": 40,
+      "haste_bonus": 20,
       "cooldown": 30,
       "reset_on_kill": true
     },
     {
       "type": "INNATE_ATTRIBUTE_GAIN",
       "attribute": "haste",
-      "value": 0.4
+      "value": 0.2
     },
     {
       "type": "INNATE_ATTRIBUTE_GAIN",

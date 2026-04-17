@@ -26,7 +26,7 @@
     "sections": [
       {
         "title": "Buffs",
-        "body": "+4% Haste per stack\n+5% Critical Damage per stack\nMax stacks: 8\n",
+        "body": "+3% Haste per stack\n+5% Critical Damage per stack\nMax stacks: 8\n",
         "color": "#8adf9e"
       },
       {
@@ -44,7 +44,7 @@
   "passives": {
     "buffs": {
       "haste": {
-        "value": 0.04
+        "value": 0.03
       },
       "crit_damage": {
         "value": 0.05

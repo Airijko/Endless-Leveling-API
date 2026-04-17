@@ -26,7 +26,7 @@
     "sections": [
       {
         "title": "Buffs",
-        "body": "+12% Haste per stack\n+6% Strength per stack\nMax stacks: 4\n",
+        "body": "+10% Haste per stack\n+6% Strength per stack\nMax stacks: 4\n",
         "color": "#8adf9e"
       },
       {
@@ -49,7 +49,7 @@
   "passives": {
     "buffs": {
       "haste": {
-        "value": 0.12
+        "value": 0.1
       },
       "strength": {
         "value": 0.06

@@ -38,7 +38,7 @@
     "life_force": 155.3,
     "strength": 1.42,
     "defense": 1.17,
-    "haste": 1.33,
+    "haste": 0.665,
     "precision": 24.19,
     "ferocity": 64.51,
     "stamina": 8.9,
@@ -53,7 +53,7 @@
     },
     {
       "type": "SWIFTNESS",
-      "value": 0.24,
+      "value": 0.11,
       "duration": 5,
       "max_stacks": 8
     },

@@ -26,7 +26,7 @@
     "sections": [
       {
         "title": "Buffs",
-        "body": "+5% Lifesteal\n+25% Haste\n",
+        "body": "+5% Lifesteal\n+15% Haste\n",
         "color": "#8adf9e"
       }
     ]
@@ -37,7 +37,7 @@
         "value": 0.05
       },
       "haste": {
-        "value": 0.25
+        "value": 0.15
       }
     }
   },

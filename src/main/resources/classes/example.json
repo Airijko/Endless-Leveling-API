@@ -104,7 +104,7 @@
     },
     {
       "type": "SWIFTNESS",
-      "value": 0.1,
+      "value": 0.085,
       "duration": 8,
       "max_stacks": 8
     },
@@ -126,7 +126,7 @@
     {
       "type": "INNATE_ATTRIBUTE_GAIN",
       "attribute": "haste",
-      "value": 2.0
+      "value": 1.0
     },
     {
       "type": "INNATE_ATTRIBUTE_GAIN",

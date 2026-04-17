@@ -13,7 +13,7 @@
     "sections": [
       {
         "title": "Buffs",
-        "body": "+50% Haste\n+50% Damage\n",
+        "body": "+30% Haste\n+50% Damage\n",
         "color": "#8adf9e"
       },
       {
@@ -29,7 +29,7 @@
     },
     "buffs": {
       "haste": {
-        "value": 0.5
+        "value": 0.3
       },
       "bonus_damage": {
         "value": 0.5

@@ -30,7 +30,7 @@
       },
       {
         "title": "Buffs",
-        "body": "+50% Haste\nDuring Phase Rush burst: gain % bonus damage equal to 50% of your Haste bonus\n",
+        "body": "+35% Haste\nDuring Phase Rush burst: gain % bonus damage equal to 50% of your Haste bonus\n",
         "color": "#8adf9e"
       },
       {
@@ -48,7 +48,7 @@
   "passives": {
     "buffs": {
       "haste": {
-        "value": 0.5
+        "value": 0.35
       }
     },
     "hit_counter": {

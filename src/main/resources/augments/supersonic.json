@@ -13,7 +13,7 @@
     "sections": [
       {
         "title": "Buffs",
-        "body": "+50% Haste",
+        "body": "+40% Haste",
         "color": "#8adf9e"
       },
       {
@@ -26,7 +26,7 @@
   "passives": {
     "buffs": {
       "haste": {
-        "value": 0.5
+        "value": 0.4
       }
     },
     "debuffs": {
