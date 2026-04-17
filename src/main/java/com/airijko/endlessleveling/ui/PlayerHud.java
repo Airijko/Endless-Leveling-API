@@ -166,6 +166,10 @@ public class PlayerHud extends CustomUIHud {
     }
 
     private void pushHudState(@Nonnull UICommandBuilder rawUi) {
+        pushHudState(rawUi, false);
+    }
+
+    private void pushHudState(@Nonnull UICommandBuilder rawUi, boolean overlayOnly) {
         if (!built.get() || showInProgress) {
             return; // HUD not ready or show() still writing the clear+append packet.
         }
@@ -193,7 +197,10 @@ public class PlayerHud extends CustomUIHud {
                         "Hud/EndlessStackingAugments.ui",
                         "Hud/InfoPanel.ui");
 
-        if (applyHudState(uiCommandBuilder)) {
+        boolean changed = overlayOnly
+                ? applyAugmentOverlay(uiCommandBuilder)
+                : applyHudState(uiCommandBuilder);
+        if (changed) {
             update(false, uiCommandBuilder);
         }
     }
@@ -654,6 +661,10 @@ public class PlayerHud extends CustomUIHud {
         pushHudState(new UICommandBuilder());
     }
 
+    public void refreshOverlayOnly() {
+        pushHudState(new UICommandBuilder(), true);
+    }
+
     public static void refreshHud(UUID uuid) {
         markDirty(uuid);
     }
@@ -704,6 +715,28 @@ public class PlayerHud extends CustomUIHud {
         }
 
         hud.refreshHud();
+    }
+
+    public static void refreshAugmentOverlayNow(UUID uuid) {
+        if (uuid == null) {
+            return;
+        }
+
+        PlayerHud hud = ACTIVE_HUDS.get(uuid);
+        if (hud == null || !hud.built.get()) {
+            return;
+        }
+        if (!hud.targetPlayerRef.isValid()) {
+            unregister(uuid);
+            return;
+        }
+
+        PlayerData data = hud.getPlayerData();
+        if (data == null) {
+            return;
+        }
+
+        hud.refreshOverlayOnly();
     }
 
     /** Refresh all active HUDs (used after config reloads). */

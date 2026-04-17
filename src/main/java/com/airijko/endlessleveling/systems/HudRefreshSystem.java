@@ -1,35 +1,37 @@
 package com.airijko.endlessleveling.systems;
 
 import com.airijko.endlessleveling.ui.PlayerHud;
-import com.airijko.endlessleveling.util.EntityRefUtil;
-import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.system.tick.TickingSystem;
-import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import javax.annotation.Nonnull;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
 /**
- * Periodically refreshes the Endless Leveling HUD so dynamic values (e.g.,
- * local mob level)
- * stay in sync with player position without relying on manual triggers.
+ * Periodically refreshes the Endless Leveling HUD so dynamic values stay in
+ * sync without relying on manual triggers.
+ *
+ * Two cadences:
+ *  - Dirty refresh every 0.1s drains any HUD explicitly marked dirty; pushes
+ *    the full HUD state (level, xp, race, class, mob level, overlays).
+ *  - Overlay refresh every 0.5s (10 ticks @ 20 TPS) pushes only the augment/
+ *    passive overlay (duration bar, shield bar, stacking augment icons +
+ *    progress + stack counts) so time-driven overlay state animates smoothly
+ *    while the rest of the HUD stays event-driven. Diff guards in
+ *    pushHudState drop unchanged properties, so steady-state cost is a
+ *    no-op.
  */
 public class HudRefreshSystem extends TickingSystem<EntityStore> {
 
     private static final float DIRTY_REFRESH_INTERVAL_SECONDS = 0.1f;
-    private static final float FALLBACK_REFRESH_INTERVAL_SECONDS = 3.0f;
+    private static final float OVERLAY_REFRESH_INTERVAL_SECONDS = 0.5f;
     private static final int MAX_DIRTY_REFRESHES_PER_PASS = 48;
-    private static final int MAX_FALLBACK_REFRESHES_PER_PASS = 16;
-    private static final double MOVEMENT_EPSILON_SQUARED = 0.09D;
+    private static final int MAX_OVERLAY_REFRESHES_PER_PASS = 48;
 
     private float timeSinceDirtyRefresh = 0f;
-    private float timeSinceFallbackRefresh = 0f;
-    private final Map<UUID, PositionSample> lastFallbackPositions = new HashMap<>();
+    private float timeSinceOverlayRefresh = 0f;
 
     public HudRefreshSystem() {
     }
@@ -41,9 +43,6 @@ public class HudRefreshSystem extends TickingSystem<EntityStore> {
         }
 
         if (!PlayerHud.hasActiveHuds()) {
-            if (!lastFallbackPositions.isEmpty()) {
-                lastFallbackPositions.clear();
-            }
             return;
         }
 
@@ -53,10 +52,10 @@ public class HudRefreshSystem extends TickingSystem<EntityStore> {
             refreshDirtyHudsForStore(store);
         }
 
-        timeSinceFallbackRefresh += deltaSeconds;
-        if (timeSinceFallbackRefresh >= FALLBACK_REFRESH_INTERVAL_SECONDS) {
-            timeSinceFallbackRefresh = 0f;
-            refreshAllHudsForStore(store);
+        timeSinceOverlayRefresh += deltaSeconds;
+        if (timeSinceOverlayRefresh >= OVERLAY_REFRESH_INTERVAL_SECONDS) {
+            timeSinceOverlayRefresh = 0f;
+            refreshOverlaysForStore(store);
         }
     }
 
@@ -91,13 +90,12 @@ public class HudRefreshSystem extends TickingSystem<EntityStore> {
         }
     }
 
-    private void refreshAllHudsForStore(Store<EntityStore> store) {
+    private void refreshOverlaysForStore(Store<EntityStore> store) {
         int refreshed = 0;
         Set<UUID> activeHudUuids = PlayerHud.getActiveHudUuids();
 
         for (UUID uuid : activeHudUuids) {
             if (uuid == null || !PlayerHud.isActive(uuid)) {
-                lastFallbackPositions.remove(uuid);
                 continue;
             }
 
@@ -105,69 +103,11 @@ public class HudRefreshSystem extends TickingSystem<EntityStore> {
                 continue;
             }
 
-            if (!shouldRefreshForMovement(uuid, store)) {
-                continue;
-            }
-
-            PlayerHud.refreshHudNow(uuid);
+            PlayerHud.refreshAugmentOverlayNow(uuid);
             refreshed++;
-            if (refreshed >= MAX_FALLBACK_REFRESHES_PER_PASS) {
+            if (refreshed >= MAX_OVERLAY_REFRESHES_PER_PASS) {
                 break;
             }
-        }
-
-        if (!lastFallbackPositions.isEmpty()) {
-            lastFallbackPositions.keySet().removeIf(uuid -> !activeHudUuids.contains(uuid));
-        }
-    }
-
-    private boolean shouldRefreshForMovement(UUID uuid, Store<EntityStore> store) {
-        Ref<EntityStore> entityRef = PlayerHud.getHudEntityRef(uuid);
-        if (entityRef == null || EntityRefUtil.getStore(entityRef) != store) {
-            return false;
-        }
-
-        // Use EntityRefUtil to swallow IllegalStateException / IndexOutOfBoundsException
-        // raised when the entity slot has been recycled mid-tick (e.g. world transition,
-        // death respawn). Direct store.getComponent throws and crashes the world thread.
-        TransformComponent transform = EntityRefUtil.tryGetComponent(
-                store, entityRef, TransformComponent.getComponentType());
-        if (transform == null || transform.getPosition() == null) {
-            return false;
-        }
-
-        PositionSample current = new PositionSample(
-                transform.getPosition().getX(),
-                transform.getPosition().getY(),
-                transform.getPosition().getZ());
-
-        PositionSample previous = lastFallbackPositions.get(uuid);
-        if (previous == null) {
-            lastFallbackPositions.put(uuid, current);
-            return true;
-        }
-
-        double dx = current.x - previous.x;
-        double dy = current.y - previous.y;
-        double dz = current.z - previous.z;
-        double distanceSquared = dx * dx + dy * dy + dz * dz;
-        if (distanceSquared < MOVEMENT_EPSILON_SQUARED) {
-            return false;
-        }
-
-        lastFallbackPositions.put(uuid, current);
-        return true;
-    }
-
-    private static final class PositionSample {
-        private final double x;
-        private final double y;
-        private final double z;
-
-        private PositionSample(double x, double y, double z) {
-            this.x = x;
-            this.y = y;
-            this.z = z;
         }
     }
 }
