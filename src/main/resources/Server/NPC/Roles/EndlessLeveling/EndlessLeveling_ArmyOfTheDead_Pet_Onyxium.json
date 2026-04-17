@@ -4,7 +4,7 @@
   "NameTranslationKey": "server.npcRoles.Skeleton_Soldier.name",
   "MaxHealth": 150,
   "DropList": "Empty",
-  "DefaultPlayerAttitude": "Hostile",
+  "DefaultPlayerAttitude": "Friendly",
   "DefaultNPCAttitude": "Hostile",
   "DisableDamageFlock": true,
   "FlockCanLead": false,
