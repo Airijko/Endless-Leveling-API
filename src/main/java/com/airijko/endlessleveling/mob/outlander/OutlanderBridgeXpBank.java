@@ -1,5 +1,7 @@
 package com.airijko.endlessleveling.mob.outlander;
 
+import com.airijko.endlessleveling.EndlessLeveling;
+import com.airijko.endlessleveling.leveling.LevelingManager;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
@@ -130,13 +132,56 @@ public final class OutlanderBridgeXpBank {
     // Checkpoint / death
     // ========================================================================
 
-    /** Called on wave clear — moves all players' pending into saved. */
-    public void checkpointSession(@Nonnull UUID sessionWorldId) {
+    /**
+     * Called on wave clear — resolves every player's pending XP.
+     * <p>
+     * Every wave (including final): full pending rolls into {@code savedXp}
+     * (old behavior). On top of that, {@code immediatePercent} of pending is
+     * credited additively to the player's profile via
+     * {@link LevelingManager#adjustRawXp}, bypassing bank divert and the
+     * bonus pipeline (pending was already bonus-adjusted when accumulated).
+     * This gives players some live XP per wave instead of only at end.
+     * <p>
+     * Final wave only: after the pending→saved roll, {@code bonusPercent}
+     * multiplier is applied to total {@code savedXp} so the victory panel
+     * shows the boosted claim amount.
+     *
+     * @param immediatePercent e.g. 20.0 → 20% of pending credited on top
+     * @param bonusPercent     e.g. 25.0 → saved *= 1.25 on final wave
+     */
+    public void checkpointSession(@Nonnull UUID sessionWorldId,
+                                  boolean isFinalWave,
+                                  double immediatePercent,
+                                  double bonusPercent) {
         ConcurrentHashMap<UUID, BankState> bank = sessionBanks.get(sessionWorldId);
         if (bank == null) return;
-        for (BankState state : bank.values()) {
-            state.savedXp += state.pendingXp;
+        LevelingManager lm = EndlessLeveling.getInstance() != null
+                ? EndlessLeveling.getInstance().getLevelingManager() : null;
+        for (Map.Entry<UUID, BankState> e : bank.entrySet()) {
+            UUID playerUuid = e.getKey();
+            BankState state = e.getValue();
+            double pending = state.pendingXp;
             state.pendingXp = 0.0;
+
+            state.savedXp += pending;
+
+            if (immediatePercent > 0.0 && pending > 0.0 && lm != null) {
+                double immediate = pending * (immediatePercent / 100.0);
+                if (immediate > 0.0) {
+                    lm.adjustRawXp(playerUuid, immediate);
+                    LOGGER.atInfo().log(
+                            "Outlander Bridge: wave-clear immediate player=%s pending=%.2f credited=%.2f banked=%.2f",
+                            playerUuid, pending, immediate, state.savedXp);
+                }
+            }
+
+            if (isFinalWave && bonusPercent > 0.0 && state.savedXp > 0.0) {
+                double before = state.savedXp;
+                state.savedXp = before * (1.0 + bonusPercent / 100.0);
+                LOGGER.atInfo().log(
+                        "Outlander Bridge: final-wave bonus player=%s saved=%.2f → %.2f (+%.1f%%)",
+                        playerUuid, before, state.savedXp, bonusPercent);
+            }
         }
     }
 

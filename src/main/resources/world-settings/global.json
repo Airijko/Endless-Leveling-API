@@ -3,7 +3,7 @@
     "Global": {
       "Enable_XP": true,
       "Blacklist_Friendly_Mobs": true,
-      "Gain_XP_From_Blacklisted_Mob": false,
+      "Flat_XP_For_Blacklisted_Mobs": true,
       "Blacklist_Mob_Types": {
         "ids": [],
         "keywords": [
@@ -122,10 +122,10 @@
         },
         "Damage_Max_Difference": {
           "Enabled": true,
-          "At_Negative_Max_Difference": 0.75,
+          "At_Negative_Max_Difference": 0.6,
           "Below_Negative_Max_Difference": 0.5,
-          "At_Positive_Max_Difference": 1.5,
-          "Above_Positive_Max_Difference": 3.0
+          "At_Positive_Max_Difference": 1.35,
+          "Above_Positive_Max_Difference": 2.0
         }
       },
       "Player_Combat_Scaling": {

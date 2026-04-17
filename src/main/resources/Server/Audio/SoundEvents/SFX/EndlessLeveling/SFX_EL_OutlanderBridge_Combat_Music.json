@@ -11,7 +11,7 @@
       }
     }
   ],
-  "Volume": 5,
+  "Volume": 0.5,
   "AudioCategory": "AudioCat_Music",
   "MaxInstance": 1,
   "PreventSoundInterruption": true

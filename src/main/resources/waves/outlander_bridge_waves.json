@@ -1,7 +1,9 @@
 {
   "spawn_radius": 18,
-  "batch_kill_percent": 70,
-  "batch_fallback_seconds": 25,
+  "batch_kill_percent": 60,
+  "batch_fallback_seconds": 15,
+  "wave_clear_immediate_xp_percent": 20,
+  "completion_xp_bonus_percent": 25,
   "waves": [
     {
       "wave": 1,

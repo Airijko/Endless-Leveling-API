@@ -7,6 +7,7 @@ import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.api.EndlessLevelingAPI;
 import com.airijko.endlessleveling.util.PartnerConsoleGuard;
 import com.airijko.endlessleveling.api.gates.InstanceDungeonDefinition;
+import com.airijko.endlessleveling.leveling.MobLevelingManager;
 import com.airijko.endlessleveling.leveling.PartyManager;
 import com.airijko.endlessleveling.mob.outlander.OutlanderBridgeRewardCooldowns;
 import com.hypixel.hytale.builtin.instances.InstancesPlugin;
@@ -155,6 +156,9 @@ public class DungeonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
         // Outlander Bridge reward status label on carousel card.
         updateOutlanderBridgeCardStatus(ui);
+
+        // Per-player dungeon level / tier labels on carousel cards.
+        updateDungeonLevelLabels(ui);
 
         // Detail view starts blank; carousel visible.
         resetDetailView(ui);
@@ -334,6 +338,59 @@ public class DungeonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             ui.set("#DetailRewardStatus.Text", "Available");
             ui.set("#DetailRewardDetail.Text",
                     "XP rewards are claimable at the end of a successful run. A 1-hour cooldown begins on claim.");
+        }
+    }
+
+    @SuppressWarnings("null")
+    private void updateDungeonLevelLabels(@Nonnull UICommandBuilder ui) {
+        MobLevelingManager mlm = EndlessLeveling.getInstance().getMobLevelingManager();
+        // Reload world-settings from disk so the card reflects edits made at runtime.
+        if (mlm != null) {
+            try {
+                mlm.reloadWorldSettingsOnly();
+            } catch (Throwable ignored) {
+            }
+        }
+        for (DungeonMeta meta : DUNGEONS.values()) {
+            String rawSelector = meta.cardLevelLabelSelector();
+            String rawNextTierSelector = meta.cardNextTierLabelSelector();
+            String rawWorldKey = meta.worldOverrideKey();
+            if (rawSelector == null || rawSelector.isBlank()
+                    || rawWorldKey == null || rawWorldKey.isBlank()) {
+                continue;
+            }
+            String labelPath = rawSelector + ".Text";
+            String nextTierPath = (rawNextTierSelector != null && !rawNextTierSelector.isBlank())
+                    ? rawNextTierSelector + ".Text"
+                    : null;
+            if (mlm == null) {
+                ui.set(labelPath, "Lv --");
+                if (nextTierPath != null) ui.set(nextTierPath, "");
+                continue;
+            }
+            MobLevelingManager.TieredWorldSummary summary =
+                    mlm.previewTieredSummaryByWorldKey(rawWorldKey, playerRef);
+            if (summary == null) {
+                ui.set(labelPath, "Lv --");
+                if (nextTierPath != null) ui.set(nextTierPath, "");
+                continue;
+            }
+            StringBuilder text = new StringBuilder("Lv ")
+                    .append(summary.tierMinLevel()).append('-').append(summary.tierMaxLevel());
+            text.append(" · Boss ").append(summary.bossLevel());
+            if (summary.tierOffset() != 0) {
+                int tier = summary.tierOffset() + 1;
+                text.append(" · Tier ").append(tier);
+            }
+            ui.set(labelPath, text.toString());
+
+            if (nextTierPath != null) {
+                if (summary.nextTierUpgradeLevel() > 0) {
+                    ui.set(nextTierPath, "Next tier @ Lv " + summary.nextTierUpgradeLevel());
+                } else {
+                    ui.set(nextTierPath, "");
+                }
+            }
         }
     }
 
@@ -582,6 +639,8 @@ public class DungeonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         applyViewState(ui);
         // Refresh outlander carousel card status in case cooldown changed during this session.
         updateOutlanderBridgeCardStatus(ui);
+        // Refresh per-player level/tier labels in case player level or party changed.
+        updateDungeonLevelLabels(ui);
         sendUpdate(ui, false);
     }
 
@@ -732,55 +791,78 @@ public class DungeonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 CATEGORY_ENDLESS, "ENDLESS LEVELING",
                 "Outlander Bridge", "WAVE INSTANCE",
                 "By Endless Leveling", OUTLANDER_BRIDGE_DESCRIPTION,
-                OUTLANDER_IMAGE_PATH, "#DetailBannerOutlanderBridge"));
+                OUTLANDER_IMAGE_PATH, "#DetailBannerOutlanderBridge",
+                "instance-endless_outlander_bridge-*",
+                "#CardOutlanderBridgeLevel",
+                "#CardOutlanderBridgeNextTier"));
         m.put(DAILY_BOSSES_ID, new DungeonMeta(
                 CATEGORY_ENDLESS, "ENDLESS LEVELING",
                 "Daily Bosses", "DAILY ROTATION",
                 "By Airijko",
                 "Daily rotating boss encounters with unique loot pools. Fresh targets every 24 hours with curated reward tables and escalating difficulty tiers.",
-                IMAGE_SOURCE_BASE + "EndlessDailyBossPlaceholder.png", "#DetailBannerDailyBosses"));
+                IMAGE_SOURCE_BASE + "EndlessDailyBossPlaceholder.png", "#DetailBannerDailyBosses",
+                null, null, null));
         m.put(WEEKLY_BOSSES_ID, new DungeonMeta(
                 CATEGORY_ENDLESS, "ENDLESS LEVELING",
                 "Weekly Bosses", "WEEKLY RAID",
                 "By Airijko",
                 "High-stakes weekly raid bosses with prestige rewards and leaderboard glory. Designed for coordinated groups chasing top-tier loot and global rankings.",
-                IMAGE_SOURCE_BASE + "EndlessWeeklyBossPlaceholder.png", "#DetailBannerWeeklyBosses"));
+                IMAGE_SOURCE_BASE + "EndlessWeeklyBossPlaceholder.png", "#DetailBannerWeeklyBosses",
+                null, null, null));
         m.put("frozen", new DungeonMeta(
                 CATEGORY_ENDGAME, "ENDGAME & QOL",
                 "Frozen Dungeon", "ICE / ELITE",
                 "By Lewaii",
                 "A frostbound stronghold filled with freezing hazards, glacial corridors, and elite ice-tuned enemies. Requires the Endgame & QoL mod.",
-                FROZEN_IMAGE_PATH, "#DetailBannerFrozen"));
+                FROZEN_IMAGE_PATH, "#DetailBannerFrozen",
+                "instance-endgame_frozen_dungeon-*",
+                "#CardFrozenLevel",
+                "#CardFrozenNextTier"));
         m.put("swamp", new DungeonMeta(
                 CATEGORY_ENDGAME, "ENDGAME & QOL",
                 "Swamp Dungeon", "POISON / AMBUSH",
                 "By Lewaii",
                 "A murky marsh dungeon packed with poison pressure, tight terrain, and relentless ambush waves. Requires the Endgame & QoL mod.",
-                SWAMP_IMAGE_PATH, "#DetailBannerSwamp"));
+                SWAMP_IMAGE_PATH, "#DetailBannerSwamp",
+                "instance-endgame_swamp_dungeon-*",
+                "#CardSwampLevel",
+                "#CardSwampNextTier"));
         m.put("void", new DungeonMeta(
                 CATEGORY_ENDGAME, "ENDGAME & QOL",
                 "Void Golem Realm", "VOID / ARENA",
                 "By Lewaii",
                 "A high-threat void arena where golem guardians and unstable rifts punish weak positioning. Requires the Endgame & QoL mod.",
-                VOID_IMAGE_PATH, "#DetailBannerVoid"));
+                VOID_IMAGE_PATH, "#DetailBannerVoid",
+                "instance-endgame_golem_void-*",
+                "#CardVoidLevel",
+                "#CardVoidNextTier"));
         m.put("azaroth", new DungeonMeta(
                 CATEGORY_MAJOR, "MAJOR DUNGEONS",
                 "Azaroth", "COMBAT / BOSS",
                 "By MAJOR76",
                 "The opening Major Dungeons run, designed as a combat-heavy initiation with aggressive boss pacing. Requires the Major Dungeons mod.",
-                AZAROTH_IMAGE_PATH, "#DetailBannerAzaroth"));
+                AZAROTH_IMAGE_PATH, "#DetailBannerAzaroth",
+                "instance-mj_instance_d01-*",
+                "#CardAzarothLevel",
+                "#CardAzarothNextTier"));
         m.put("katherina", new DungeonMeta(
                 CATEGORY_MAJOR, "MAJOR DUNGEONS",
                 "Katherina", "MECHANICS / CONTROL",
                 "By MAJOR76",
                 "A mid-chain dungeon focused on sustained mechanics, control checks, and layered encounter phases. Requires the Major Dungeons mod.",
-                KATHERINA_IMAGE_PATH, "#DetailBannerKatherina"));
+                KATHERINA_IMAGE_PATH, "#DetailBannerKatherina",
+                "instance-mj_instance_d02-*",
+                "#CardKatherinaLevel",
+                "#CardKatherinaNextTier"));
         m.put("baron", new DungeonMeta(
                 CATEGORY_MAJOR, "MAJOR DUNGEONS",
                 "Baron", "BURST / FINALE",
                 "By MAJOR76",
                 "The final Major Dungeons route, culminating in a punishing finale built around burst damage windows. Requires the Major Dungeons mod.",
-                BARON_IMAGE_PATH, "#DetailBannerBaron"));
+                BARON_IMAGE_PATH, "#DetailBannerBaron",
+                "instance-mj_instance_d03-*",
+                "#CardBaronLevel",
+                "#CardBaronNextTier"));
         return java.util.Collections.unmodifiableMap(m);
     }
 
@@ -792,6 +874,9 @@ public class DungeonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             @Nonnull String author,
             @Nonnull String description,
             @Nonnull String bannerImagePath,
-            @Nonnull String detailBannerSelector) {
+            @Nonnull String detailBannerSelector,
+            @Nullable String worldOverrideKey,
+            @Nullable String cardLevelLabelSelector,
+            @Nullable String cardNextTierLabelSelector) {
     }
 }

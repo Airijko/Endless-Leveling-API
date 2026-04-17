@@ -11,11 +11,11 @@
       "Level_Source": {
         "Mode": "TIERED",
         "Base_Level": {
-          "Level": "20-40"
+          "Level": "20-30"
         },
         "Tiers": {
           "Total_Tiers": "ENDLESS",
-          "Levels_Per_Tier": 20,
+          "Levels_Per_Tier": 15,
           "Player_Adaptation": {
             "Enabled": true,
             "Allowance_Mode": "ABOVE",
@@ -41,6 +41,7 @@
       },
       "Mob_Overrides": {
         "Outlander_Brute": {
+          "Level": 35,
           "Allow_Random_Mob_Augments": true,
           "Scaling": {
             "Health": {

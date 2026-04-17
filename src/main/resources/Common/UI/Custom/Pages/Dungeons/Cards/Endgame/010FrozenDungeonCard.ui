@@ -98,6 +98,20 @@ Group {
 
                     Group { Anchor: (Height: 8); }
 
+                    Label #CardFrozenLevel {
+                        Text: "Lv --";
+                        Anchor: (Height: 16);
+                        Style: (FontSize: 11, TextColor: #a4e4b0, RenderBold: true, LetterSpacing: 1);
+                    }
+
+                    Label #CardFrozenNextTier {
+                        Text: "";
+                        Anchor: (Height: 14);
+                        Style: (FontSize: 10, TextColor: #7ea0be, LetterSpacing: 1);
+                    }
+
+                    Group { Anchor: (Height: 8); }
+
                     Group { Anchor: (Height: 1); Background: #ffffff(0.08); }
 
                     Group { Anchor: (Height: 8); }

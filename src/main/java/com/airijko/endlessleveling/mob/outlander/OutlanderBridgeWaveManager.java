@@ -107,6 +107,8 @@ public final class OutlanderBridgeWaveManager extends TickingSystem<EntityStore>
     private static final float WAVE_TICK_INTERVAL = 1.0f;
     private static final int DEFAULT_BATCH_KILL_PERCENT = 70;
     private static final int DEFAULT_BATCH_FALLBACK_SECONDS = 25;
+    private static final double DEFAULT_WAVE_CLEAR_IMMEDIATE_XP_PERCENT = 20.0;
+    private static final double DEFAULT_COMPLETION_XP_BONUS_PERCENT = 25.0;
     private static final double DEFAULT_SPAWN_RADIUS = 18.0;
     private static final double LEASH_RADIUS = 150.0;
     private static final double AGGRO_RADIUS = 500.0;
@@ -167,6 +169,8 @@ public final class OutlanderBridgeWaveManager extends TickingSystem<EntityStore>
     private int configSpawnRadius = (int) DEFAULT_SPAWN_RADIUS;
     private int configBatchKillPercent = DEFAULT_BATCH_KILL_PERCENT;
     private int configBatchFallbackSeconds = DEFAULT_BATCH_FALLBACK_SECONDS;
+    private double configWaveClearImmediateXpPercent = DEFAULT_WAVE_CLEAR_IMMEDIATE_XP_PERCENT;
+    private double configCompletionXpBonusPercent = DEFAULT_COMPLETION_XP_BONUS_PERCENT;
     private final Random random = new Random();
 
     // ---- Per-world sessions keyed by world UUID ----
@@ -279,6 +283,14 @@ public final class OutlanderBridgeWaveManager extends TickingSystem<EntityStore>
                 configBatchKillPercent = rootObj.get("batch_kill_percent").getAsInt();
             if (rootObj.has("batch_fallback_seconds"))
                 configBatchFallbackSeconds = rootObj.get("batch_fallback_seconds").getAsInt();
+            if (rootObj.has("wave_clear_immediate_xp_percent"))
+                configWaveClearImmediateXpPercent = rootObj.get("wave_clear_immediate_xp_percent").getAsDouble();
+            else if (rootObj.has("wave_clear_xp_tax_percent")) // legacy alias
+                configWaveClearImmediateXpPercent = rootObj.get("wave_clear_xp_tax_percent").getAsDouble();
+            if (rootObj.has("completion_xp_bonus_percent"))
+                configCompletionXpBonusPercent = rootObj.get("completion_xp_bonus_percent").getAsDouble();
+            else if (rootObj.has("final_wave_bonus_percent")) // legacy alias
+                configCompletionXpBonusPercent = rootObj.get("final_wave_bonus_percent").getAsDouble();
 
             JsonArray wavesArr = rootObj.getAsJsonArray("waves");
             for (JsonElement we : wavesArr) {
@@ -310,9 +322,10 @@ public final class OutlanderBridgeWaveManager extends TickingSystem<EntityStore>
                 waves.add(def);
             }
             LOGGER.atInfo().log(
-                    "Outlander Bridge: loaded %d waves (radius=%d, batchKill=%d%%, fallback=%ds)",
+                    "Outlander Bridge: loaded %d waves (radius=%d, batchKill=%d%%, fallback=%ds, waveClearImmediate=%.1f%%, completionBonus=%.1f%%)",
                     waves.size(), configSpawnRadius, configBatchKillPercent,
-                    configBatchFallbackSeconds);
+                    configBatchFallbackSeconds, configWaveClearImmediateXpPercent,
+                    configCompletionXpBonusPercent);
         } catch (Exception ex) {
             LOGGER.atSevere().withCause(ex).log("Failed to load Outlander Bridge wave config");
         }
@@ -578,8 +591,17 @@ public final class OutlanderBridgeWaveManager extends TickingSystem<EntityStore>
         }
 
         // All mobs dead + all batches spawned → wave cleared. Checkpoint
-        // the XP bank: every player's pending XP is now locked into saved.
-        OutlanderBridgeXpBank.get().checkpointSession(s.world.getWorldConfig().getUuid());
+        // the XP bank: every player's pending XP is locked into saved.
+        // Every wave also credits `configWaveClearImmediateXpPercent` of
+        // pending to the player profile on top (additive — bank keeps 100%).
+        // Final wave additionally applies `configCompletionXpBonusPercent`
+        // multiplier to total saved as the dungeon completion reward.
+        boolean isFinalWave = s.currentWave >= waves.size();
+        OutlanderBridgeXpBank.get().checkpointSession(
+                s.world.getWorldConfig().getUuid(),
+                isFinalWave,
+                configWaveClearImmediateXpPercent,
+                configCompletionXpBonusPercent);
 
         s.phase = Phase.WAVE_CLEARED;
         s.waveClearedElapsed = 0.0f;

@@ -149,8 +149,8 @@ public class XpEventSystem extends DeathSystems.OnDeathSystem {
                 && mobLevelingManager.isEntityBlacklisted(ref, store, commandBuffer);
 
         if (mobIsBlacklisted && mobLevelingManager != null
-                && !mobLevelingManager.isGainXpFromBlacklistedMobEnabled(store)) {
-            LOGGER.atFine().log("XP gain blocked for player %s: mob is blacklisted and Gain_XP_From_Blacklisted_Mob=false",
+                && !mobLevelingManager.isFlatXpForBlacklistedMobsEnabled(store)) {
+            LOGGER.atFine().log("XP gain blocked for player %s: mob is blacklisted and Flat_XP_For_Blacklisted_Mobs=false",
                     playerUuid);
             XpKillCreditTracker.clearTarget(ref, store, commandBuffer);
             return;
@@ -194,7 +194,16 @@ public class XpEventSystem extends DeathSystems.OnDeathSystem {
         double maxHealthForXp = hasFiniteCached && hasFiniteLive
             ? Math.max(cachedMaxHealth, liveMaxHealth)
             : (hasFiniteCached ? cachedMaxHealth : (hasFiniteLive ? liveMaxHealth : 1.0f));
-        double baseXp = Math.max(1.0, maxHealthForXp);
+        double baseXp;
+        if (mobIsBlacklisted) {
+            // Blacklisted mobs grant flat Additive_Minimum_XP (personal bonuses still apply in addXp).
+            double flatMin = mobLevelingManager != null
+                ? mobLevelingManager.getMobXpAdditiveMinimum(store)
+                : 0.0D;
+            baseXp = Math.max(0.0D, flatMin);
+        } else {
+            baseXp = Math.max(1.0, maxHealthForXp);
+        }
 
         // XP Death Diagnostic (enable via logging.debug_sections: [xp_death_diag])
         if (LoggingManager.isDebugSectionEnabled(XP_DIAG_SECTION)) {

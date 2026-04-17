@@ -757,14 +757,14 @@ public class LevelingManager {
     }
 
     public double applyMobKillXpRules(PlayerData player, int mobLevel, double baseXpAmount,
-            boolean skipLevelRangeChecks) {
-        return applyMobKillXpRules(player, mobLevel, baseXpAmount, skipLevelRangeChecks, null, null);
+            boolean mobIsBlacklisted) {
+        return applyMobKillXpRules(player, mobLevel, baseXpAmount, mobIsBlacklisted, null, null);
     }
 
     public double applyMobKillXpRules(PlayerData player,
             int mobLevel,
             double baseXpAmount,
-            boolean skipLevelRangeChecks,
+            boolean mobIsBlacklisted,
             Store<EntityStore> store,
             MobLevelingManager mobLevelingManager) {
         if (player == null || baseXpAmount <= 0)
@@ -772,15 +772,25 @@ public class LevelingManager {
 
         MobXpRuleSet rules = resolveMobXpRuleSet(store, mobLevelingManager);
 
+        // Blacklisted mobs: flat pass-through. baseXpAmount is already the flat
+        // Additive_Minimum_XP value (set by XpEventSystem / party share scaled by
+        // member_share_percent). Skip globalMult, additive-on-top, level range, scaling.
+        // Personal bonuses (luck, discipline, archetype XP_BONUS) still apply in addXp.
+        if (mobIsBlacklisted) {
+            if (!rules.experienceRulesEnabled())
+                return 0.0D;
+            return baseXpAmount;
+        }
+
         boolean partyXpDebug = LoggingManager.isDebugSectionEnabled(DEBUG_SECTION_PARTY_XP);
         if (partyXpDebug) {
             LOGGER.atInfo().log(
-                    "[PARTY_XP_RULES] player=%s playerLvl=%d mobLvl=%d baseXpIn=%.3f skipRange=%s rules{expEnabled=%s globalMult=%.4f levelRangeEnabled=%s maxDiff=%d belowMult=%.4f aboveMult=%.4f addMin=%.3f scalingMode=%s scalingBonusAtMax=%.4f scalingMinMult=%.4f playerBasedMode=%s playerBasedOffset=%d}",
+                    "[PARTY_XP_RULES] player=%s playerLvl=%d mobLvl=%d baseXpIn=%.3f blacklisted=%s rules{expEnabled=%s globalMult=%.4f levelRangeEnabled=%s maxDiff=%d belowMult=%.4f aboveMult=%.4f addMin=%.3f scalingMode=%s scalingBonusAtMax=%.4f scalingMinMult=%.4f playerBasedMode=%s playerBasedOffset=%d}",
                     player.getUuid(),
                     player.getLevel(),
                     mobLevel,
                     baseXpAmount,
-                    skipLevelRangeChecks,
+                    mobIsBlacklisted,
                     rules.experienceRulesEnabled(),
                     rules.globalXpMultiplier(),
                     rules.xpLevelRangeEnabled(),
@@ -813,10 +823,10 @@ public class LevelingManager {
 
         boolean blockedForBeingTooHigh = false;
         boolean blockedForBeingTooLow = false;
-        boolean levelKnown = !skipLevelRangeChecks;
+        boolean levelKnown = !mobIsBlacklisted;
         boolean eligibleForScaling = true;
         Integer relativeDiff = null;
-        if (!skipLevelRangeChecks) {
+        if (!mobIsBlacklisted) {
             int mobLvl = Math.max(1, mobLevel);
             int diff = player.getLevel() - mobLvl;
             if (rules.playerBasedMode())

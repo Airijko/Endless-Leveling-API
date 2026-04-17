@@ -164,7 +164,8 @@ public class MobLevelingManager {
             int levelsPerTier,
             int tierMinLevel,
             int tierMaxLevel,
-            int bossLevel) {
+            int bossLevel,
+            int nextTierUpgradeLevel) {
     }
 
     public MobLevelingManager(PluginFilesManager filesManager, PlayerDataManager playerDataManager) {
@@ -889,12 +890,264 @@ public class MobLevelingManager {
         int baseBossLevel = resolveConfiguredBossBaseLevel(store, baseRange.max());
         int bossLevel = clampToConfiguredRange(baseBossLevel + (tierOffset * levelsPerTier), store);
 
+        boolean adaptationEnabled = getConfigBoolean(
+                "Mob_Leveling.Level_Source.Tiers.Player_Adaptation.Enabled", true, store);
+        int allowance = Math.max(0,
+                getConfigInt("Mob_Leveling.Level_Source.Tiers.Player_Adaptation.Range_Allowance", 0, store));
+        TierAdaptationMode adaptMode = getTierAdaptationMode(store);
+        int nextTierUpgradeLevel = computeNextTierUpgradeLevel(
+                adaptationEnabled, adaptMode, baseRange, allowance, levelsPerTier, tierOffset);
+
         return new TieredWorldSummary(
                 tierOffset,
                 levelsPerTier,
                 shiftedRange.min(),
                 shiftedRange.max(),
-                bossLevel);
+                bossLevel,
+                nextTierUpgradeLevel);
+    }
+
+    private int computeNextTierUpgradeLevel(boolean adaptationEnabled,
+            TierAdaptationMode mode,
+            LevelRange baseRange,
+            int allowance,
+            int levelsPerTier,
+            int tierOffset) {
+        if (!adaptationEnabled || mode == TierAdaptationMode.BELOW) {
+            return 0;
+        }
+        return baseRange.max() + allowance + (tierOffset * levelsPerTier) + 1;
+    }
+
+    /**
+     * Pre-entry preview of the tiered summary for a dungeon world identified by
+     * its world-settings override key (e.g. {@code "instance-endless_outlander_bridge-*"}).
+     * Unlike {@link #resolveTieredWorldSummary(Store, PlayerRef)} this does not
+     * require the target world to be loaded — it reads config straight from the
+     * world-settings JSON, so UI cards can show the tier a player would enter
+     * into before they actually teleport. Party-aware: falls back to global
+     * Party_System config when not overridden.
+     *
+     * @return summary with tierOffset, levelsPerTier, shifted min/max level,
+     *         and bossLevel (approximated as the shifted max), or {@code null}
+     *         when the world key is absent / not in TIERED mode / base range
+     *         cannot be parsed.
+     */
+    public TieredWorldSummary previewTieredSummaryByWorldKey(String worldOverrideKey,
+            PlayerRef sourcePlayer) {
+        if (worldOverrideKey == null || worldOverrideKey.isBlank()) {
+            return null;
+        }
+        String base = "World_Overrides." + worldOverrideKey;
+        Object modeRaw = getWorldSettingsValue(base + ".Level_Source.Mode");
+        if (modeRaw == null || !"TIERED".equalsIgnoreCase(modeRaw.toString().trim())) {
+            return null;
+        }
+
+        Object levelRaw = getWorldSettingsValue(base + ".Level_Source.Base_Level.Level");
+        Object minRaw = getWorldSettingsValue(base + ".Level_Source.Base_Level.Min");
+        Object maxRaw = getWorldSettingsValue(base + ".Level_Source.Base_Level.Max");
+        LevelRange baseRange = parseLevelRange(levelRaw, minRaw, maxRaw, null);
+        if (baseRange == null) {
+            return null;
+        }
+
+        int levelsPerTier = 20;
+        Integer lptWorld = parsePositiveInt(getWorldSettingsValue(base + ".Level_Source.Tiers.Levels_Per_Tier"));
+        if (lptWorld != null) {
+            levelsPerTier = lptWorld;
+        } else {
+            Integer lptGlobal = parsePositiveInt(
+                    configManager.get("Mob_Leveling.Level_Source.Tiers.Levels_Per_Tier", 20, false));
+            if (lptGlobal != null) {
+                levelsPerTier = lptGlobal;
+            }
+        }
+
+        int playerLevel = Math.max(1, resolvePartyAwareLevelByWorldKey(worldOverrideKey, sourcePlayer));
+
+        Object adaptEnabledRaw = firstNonNullWorldOrGlobal(
+                base + ".Level_Source.Tiers.Player_Adaptation.Enabled",
+                "Mob_Leveling.Level_Source.Tiers.Player_Adaptation.Enabled",
+                Boolean.TRUE);
+        boolean adaptationEnabled = toBoolean(adaptEnabledRaw);
+
+        int tierOffset = 0;
+        if (adaptationEnabled && sourcePlayer != null && sourcePlayer.isValid()) {
+            Object allowanceRaw = firstNonNullWorldOrGlobal(
+                    base + ".Level_Source.Tiers.Player_Adaptation.Range_Allowance",
+                    "Mob_Leveling.Level_Source.Tiers.Player_Adaptation.Range_Allowance",
+                    0);
+            int allowance = Math.max(0, parseIntOrDefault(allowanceRaw, 0));
+
+            TierAdaptationMode mode = resolveTierAdaptationModeByWorldKey(worldOverrideKey);
+            switch (mode) {
+                case BELOW -> tierOffset = resolveDownwardTierOffset(playerLevel, baseRange.min(), allowance, levelsPerTier);
+                case BOTH -> {
+                    int up = resolveUpwardTierOffset(playerLevel, baseRange.max(), allowance, levelsPerTier);
+                    int down = resolveDownwardTierOffset(playerLevel, baseRange.min(), allowance, levelsPerTier);
+                    tierOffset = (up > 0) ? up : down;
+                }
+                case ABOVE -> tierOffset = resolveUpwardTierOffset(playerLevel, baseRange.max(), allowance, levelsPerTier);
+                default -> tierOffset = 0;
+            }
+
+            Integer totalTiers = parsePositiveInt(firstNonNullWorldOrGlobal(
+                    base + ".Level_Source.Tiers.Total_Tiers",
+                    "Mob_Leveling.Level_Source.Tiers.Total_Tiers",
+                    null));
+            if (totalTiers != null) {
+                int maxOffset = Math.max(0, totalTiers - 1);
+                tierOffset = Math.max(-maxOffset, Math.min(maxOffset, tierOffset));
+            }
+        }
+
+        int shiftedMin = Math.max(1, baseRange.min() + (tierOffset * levelsPerTier));
+        int shiftedMax = Math.max(shiftedMin, baseRange.max() + (tierOffset * levelsPerTier));
+
+        int baseBossLevel = resolveConfiguredBossBaseLevelByWorldKey(worldOverrideKey, baseRange.max());
+        int bossLevel = Math.max(1, baseBossLevel + (tierOffset * levelsPerTier));
+
+        Object previewAllowanceRaw = firstNonNullWorldOrGlobal(
+                base + ".Level_Source.Tiers.Player_Adaptation.Range_Allowance",
+                "Mob_Leveling.Level_Source.Tiers.Player_Adaptation.Range_Allowance",
+                0);
+        int previewAllowance = Math.max(0, parseIntOrDefault(previewAllowanceRaw, 0));
+        TierAdaptationMode previewMode = resolveTierAdaptationModeByWorldKey(worldOverrideKey);
+        int nextTierUpgradeLevel = computeNextTierUpgradeLevel(
+                adaptationEnabled, previewMode, baseRange, previewAllowance, levelsPerTier, tierOffset);
+
+        return new TieredWorldSummary(
+                tierOffset,
+                levelsPerTier,
+                shiftedMin,
+                shiftedMax,
+                bossLevel,
+                nextTierUpgradeLevel);
+    }
+
+    private int resolveConfiguredBossBaseLevelByWorldKey(String worldKey, int fallback) {
+        Object mobOverridesRaw = getWorldSettingsValue("World_Overrides." + worldKey + ".Mob_Overrides");
+        if (!(mobOverridesRaw instanceof Map<?, ?> mobOverrides) || mobOverrides.isEmpty()) {
+            return fallback;
+        }
+
+        int best = Integer.MIN_VALUE;
+        for (Object value : mobOverrides.values()) {
+            if (!(value instanceof Map<?, ?> entry)) {
+                continue;
+            }
+            LevelRange levelRange = parseLevelRangeValue(entry.get("Level"), null);
+            if (levelRange == null) {
+                Integer fixed = parsePositiveInt(entry.get("Level"));
+                if (fixed != null) {
+                    best = Math.max(best, fixed);
+                }
+                continue;
+            }
+            best = Math.max(best, levelRange.max());
+        }
+
+        if (best == Integer.MIN_VALUE) {
+            return fallback;
+        }
+        return best;
+    }
+
+    private TierAdaptationMode resolveTierAdaptationModeByWorldKey(String worldKey) {
+        Object raw = firstNonNullWorldOrGlobal(
+                "World_Overrides." + worldKey + ".Level_Source.Tiers.Player_Adaptation.Allowance_Mode",
+                "Mob_Leveling.Level_Source.Tiers.Player_Adaptation.Allowance_Mode",
+                "ABOVE");
+        if (raw == null) {
+            return TierAdaptationMode.ABOVE;
+        }
+        try {
+            return TierAdaptationMode.valueOf(raw.toString().trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException ignored) {
+            return TierAdaptationMode.ABOVE;
+        }
+    }
+
+    private int resolvePartyAwareLevelByWorldKey(String worldKey, PlayerRef sourcePlayer) {
+        if (sourcePlayer == null || !sourcePlayer.isValid()) {
+            return 1;
+        }
+        UUID sourceUuid = sourcePlayer.getUuid();
+        int fallback = getPlayerLevel(sourceUuid);
+
+        Object partyEnabledRaw = firstNonNullWorldOrGlobal(
+                "World_Overrides." + worldKey + ".Level_Source.Party_System.Enabled",
+                "Mob_Leveling.Level_Source.Party_System.Enabled",
+                Boolean.FALSE);
+        if (!toBoolean(partyEnabledRaw)) {
+            return Math.max(1, fallback);
+        }
+
+        PartyManager partyManager = resolvePartyManager();
+        if (partyManager == null || !partyManager.isAvailable() || !partyManager.isInParty(sourceUuid)) {
+            return Math.max(1, fallback);
+        }
+
+        Set<UUID> members = partyManager.getOnlinePartyMembers(sourceUuid);
+        if (members == null || members.isEmpty()) {
+            members = partyManager.getPartyMembers(sourceUuid);
+        }
+        if (members == null || members.isEmpty()) {
+            return Math.max(1, fallback);
+        }
+
+        List<Integer> levels = new ArrayList<>();
+        for (UUID member : members) {
+            levels.add(Math.max(1, getPlayerLevel(member)));
+        }
+        if (levels.isEmpty()) {
+            return Math.max(1, fallback);
+        }
+
+        Object calcRaw = firstNonNullWorldOrGlobal(
+                "World_Overrides." + worldKey + ".Level_Source.Party_System.Level_Calculation",
+                "Mob_Leveling.Level_Source.Party_System.Level_Calculation",
+                "AVERAGE");
+        boolean median = calcRaw != null && "MEDIAN".equalsIgnoreCase(calcRaw.toString().trim());
+        if (median) {
+            Collections.sort(levels);
+            int size = levels.size();
+            int mid = size / 2;
+            if (size % 2 == 1) {
+                return levels.get(mid);
+            }
+            return (int) Math.round((levels.get(mid - 1) + levels.get(mid)) / 2.0D);
+        }
+        double sum = 0.0D;
+        for (int lvl : levels) {
+            sum += lvl;
+        }
+        return (int) Math.round(sum / levels.size());
+    }
+
+    private Object firstNonNullWorldOrGlobal(String worldSettingsPath,
+            String globalConfigPath,
+            Object defaultValue) {
+        Object worldVal = getWorldSettingsValue(worldSettingsPath);
+        if (worldVal != null) {
+            return worldVal;
+        }
+        return configManager.get(globalConfigPath, defaultValue, false);
+    }
+
+    private int parseIntOrDefault(Object raw, int defaultValue) {
+        if (raw == null) {
+            return defaultValue;
+        }
+        if (raw instanceof Number n) {
+            return n.intValue();
+        }
+        try {
+            return Integer.parseInt(raw.toString().trim());
+        } catch (Exception ignored) {
+            return defaultValue;
+        }
     }
 
     public int getPlayerBasedOffset(Store<EntityStore> store) {
@@ -1238,8 +1491,8 @@ public class MobLevelingManager {
         return getConfigBoolean("Mob_Leveling.allow_passive_mob_leveling", false, null);
     }
 
-    public boolean isGainXpFromBlacklistedMobEnabled(Store<EntityStore> store) {
-        return getConfigBoolean("Mob_Leveling.Gain_XP_From_Blacklisted_Mob", true, store);
+    public boolean isFlatXpForBlacklistedMobsEnabled(Store<EntityStore> store) {
+        return getConfigBoolean("Mob_Leveling.Flat_XP_For_Blacklisted_Mobs", true, store);
     }
 
     @SuppressWarnings("unchecked")
@@ -4053,8 +4306,8 @@ public class MobLevelingManager {
             candidates.add("Blacklist_Mob_Types");
         } else if ("Mob_Leveling.Blacklist_Friendly_Mobs".equals(trimmedPath)) {
             candidates.add("Blacklist_Friendly_Mobs");
-        } else if ("Mob_Leveling.Gain_XP_From_Blacklisted_Mob".equals(trimmedPath)) {
-            candidates.add("Gain_XP_From_Blacklisted_Mob");
+        } else if ("Mob_Leveling.Flat_XP_For_Blacklisted_Mobs".equals(trimmedPath)) {
+            candidates.add("Flat_XP_For_Blacklisted_Mobs");
         } else if (trimmedPath.startsWith("Mob_Leveling.Level_Range.")) {
             candidates.add("Level_Range." + trimmedPath.substring("Mob_Leveling.Level_Range.".length()));
         } else if (trimmedPath.startsWith("Mob_Leveling.Level_Source.")) {
@@ -4079,7 +4332,7 @@ public class MobLevelingManager {
 
         return "Enable_XP".equals(path)
                 || "Blacklist_Friendly_Mobs".equals(path)
-                || "Gain_XP_From_Blacklisted_Mob".equals(path)
+                || "Flat_XP_For_Blacklisted_Mobs".equals(path)
                 || "Blacklist_Mob_Types".equals(path)
                 || "Level_Range".equals(path)
                 || "Level_Source".equals(path)
