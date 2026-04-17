@@ -31,6 +31,9 @@ public class ArchetypePassiveManager {
     public static final String PASSIVE_SOURCE_CLASS = "class";
     public static final String PASSIVE_SOURCE_EXTERNAL = "external";
     public static final String PASSIVE_CLASS_ID_PROPERTY = "__el_class_id";
+    public static final String PASSIVE_CLASS_SLOT_PROPERTY = "__el_class_slot";
+    public static final String PASSIVE_CLASS_SLOT_PRIMARY = "primary";
+    public static final String PASSIVE_CLASS_SLOT_SECONDARY = "secondary";
 
     private final List<PassiveSource> builtinSources;
     private final List<ArchetypePassiveSource> externalSources;
@@ -157,7 +160,7 @@ public class ArchetypePassiveManager {
                 return;
             }
             for (RacePassiveDefinition passive : race.getPassiveDefinitions()) {
-                addPassive(passive, 1.0D, null, totals, grouped);
+                addPassive(passive, 1.0D, null, null, totals, grouped);
             }
         }
     }
@@ -179,14 +182,19 @@ public class ArchetypePassiveManager {
             CharacterClassDefinition primary = classManager.getPlayerPrimaryClass(playerData);
             if (primary != null) {
                 for (RacePassiveDefinition passive : primary.getPassiveDefinitions()) {
-                    addPassive(passive, 1.0D, primary.getId(), totals, grouped);
+                    addPassive(passive, 1.0D, primary.getId(), PASSIVE_CLASS_SLOT_PRIMARY, totals, grouped);
                 }
             }
             CharacterClassDefinition secondary = classManager.getPlayerSecondaryClass(playerData);
             if (secondary != null && secondary != primary) {
-                double scale = classManager.getSecondaryPassiveScale();
+                double passiveScale = classManager.getSecondaryPassiveScale();
+                double innateScale = classManager.getSecondaryInnatePassiveScale();
                 for (RacePassiveDefinition passive : secondary.getPassiveDefinitions()) {
-                    addPassive(passive, scale, secondary.getId(), totals, grouped);
+                    double scale = (passive != null
+                            && passive.type() == ArchetypePassiveType.INNATE_ATTRIBUTE_GAIN)
+                            ? innateScale
+                            : passiveScale;
+                    addPassive(passive, scale, secondary.getId(), PASSIVE_CLASS_SLOT_SECONDARY, totals, grouped);
                 }
             }
         }
@@ -195,6 +203,7 @@ public class ArchetypePassiveManager {
     private static void addPassive(RacePassiveDefinition passive,
             double scale,
             String classId,
+            String classSlot,
             EnumMap<ArchetypePassiveType, ArchetypePassiveSource.StackAccumulator> totals,
             EnumMap<ArchetypePassiveType, List<RacePassiveDefinition>> grouped) {
         if (passive == null || passive.type() == null) {
@@ -215,6 +224,9 @@ public class ArchetypePassiveManager {
         } else {
             effectiveProperties.put(PASSIVE_SOURCE_PROPERTY, PASSIVE_SOURCE_CLASS);
             effectiveProperties.put(PASSIVE_CLASS_ID_PROPERTY, classId);
+            if (classSlot != null && !classSlot.isBlank()) {
+                effectiveProperties.put(PASSIVE_CLASS_SLOT_PROPERTY, classSlot);
+            }
         }
 
         RacePassiveDefinition effectiveDefinition = new RacePassiveDefinition(passive.type(),

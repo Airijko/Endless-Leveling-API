@@ -73,7 +73,8 @@ public class ClassManager {
     private boolean hasConfiguredDefaultPrimaryClass = true;
     private String defaultSecondaryClassId = null;
     private double offClassWeaponDamageMultiplier = 1.0D + DEFAULT_OFF_CLASS_WEAPON_DAMAGE_PENALTY;
-    private final double secondaryPassiveScale = 0.5D;
+    private final double secondaryPassiveScale = 1.0D;
+    private final double secondaryInnatePassiveScale = 0.5D;
     private final long chooseClassCooldownSeconds;
     private final int maxClassSwitches;
 
@@ -664,6 +665,10 @@ public class ClassManager {
 
     public double getSecondaryPassiveScale() {
         return secondaryPassiveScale;
+    }
+
+    public double getSecondaryInnatePassiveScale() {
+        return secondaryInnatePassiveScale;
     }
 
     public long getChooseClassCooldownSeconds() {

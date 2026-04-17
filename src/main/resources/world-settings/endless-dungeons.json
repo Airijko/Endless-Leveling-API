@@ -33,7 +33,7 @@
           "Per_Level": 0.025
         },
         "Defense": {
-          "At_Negative_Max_Difference": -0.20,
+          "At_Negative_Max_Difference": 0.10,
           "At_Positive_Max_Difference": 0.6,
           "Below_Negative_Max_Difference": 0.0,
           "Above_Positive_Max_Difference": 0.9
@@ -53,9 +53,9 @@
               "Per_Level": 0.025
             },
             "Defense": {
-              "At_Negative_Max_Difference": 0.25,
-              "At_Positive_Max_Difference": 0.6,
-              "Below_Negative_Max_Difference": 0.25,
+              "At_Negative_Max_Difference": 0.35,
+              "At_Positive_Max_Difference": 0.9,
+              "Below_Negative_Max_Difference": 0.0,
               "Above_Positive_Max_Difference": 0.975
             }
           }

@@ -655,7 +655,8 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             return List.of();
         }
         Map<SkillAttributeType, Double> uncappedPerLevelTotals = new EnumMap<>(SkillAttributeType.class);
-        Map<SkillAttributeType, Double> classPerLevelTotals = new EnumMap<>(SkillAttributeType.class);
+        Map<SkillAttributeType, Double> primaryClassPerLevelTotals = new EnumMap<>(SkillAttributeType.class);
+        Map<SkillAttributeType, Double> secondaryClassPerLevelTotals = new EnumMap<>(SkillAttributeType.class);
         for (RacePassiveDefinition definition : definitions) {
             if (definition == null || definition.attributeType() == null) {
                 continue;
@@ -665,17 +666,27 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 continue;
             }
             if (isClassInnateDefinition(definition)) {
-                classPerLevelTotals.merge(definition.attributeType(), value, Double::sum);
+                if (isSecondaryClassInnateDefinition(definition)) {
+                    secondaryClassPerLevelTotals.merge(definition.attributeType(), value, Double::sum);
+                } else {
+                    primaryClassPerLevelTotals.merge(definition.attributeType(), value, Double::sum);
+                }
             } else {
                 uncappedPerLevelTotals.merge(definition.attributeType(), value, Double::sum);
             }
         }
-        if (uncappedPerLevelTotals.isEmpty() && classPerLevelTotals.isEmpty()) {
+        if (uncappedPerLevelTotals.isEmpty() && primaryClassPerLevelTotals.isEmpty()
+                && secondaryClassPerLevelTotals.isEmpty()) {
             return List.of();
         }
 
         List<SkillAttributeType> attributes = new ArrayList<>(uncappedPerLevelTotals.keySet());
-        for (SkillAttributeType attributeType : classPerLevelTotals.keySet()) {
+        for (SkillAttributeType attributeType : primaryClassPerLevelTotals.keySet()) {
+            if (!attributes.contains(attributeType)) {
+                attributes.add(attributeType);
+            }
+        }
+        for (SkillAttributeType attributeType : secondaryClassPerLevelTotals.keySet()) {
             if (!attributes.contains(attributeType)) {
                 attributes.add(attributeType);
             }
@@ -686,12 +697,18 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         List<PassiveEntry> entries = new ArrayList<>();
         for (SkillAttributeType attribute : attributes) {
             double uncappedPerLevel = uncappedPerLevelTotals.getOrDefault(attribute, 0.0D);
-            double classPerLevel = classPerLevelTotals.getOrDefault(attribute, 0.0D);
-            double gain = uncappedPerLevel + classPerLevel;
-            int classEffectiveLevel = skillManager != null
+            double primaryClassPerLevel = primaryClassPerLevelTotals.getOrDefault(attribute, 0.0D);
+            double secondaryClassPerLevel = secondaryClassPerLevelTotals.getOrDefault(attribute, 0.0D);
+            double gain = uncappedPerLevel + primaryClassPerLevel + secondaryClassPerLevel;
+            int primaryEffectiveLevel = skillManager != null
                     ? skillManager.applyClassInnateAttributeLevelCap(attribute, currentLevel)
                     : currentLevel;
-            double totalGain = (uncappedPerLevel * currentLevel) + (classPerLevel * classEffectiveLevel);
+            int secondaryEffectiveLevel = skillManager != null
+                    ? skillManager.applySecondaryClassInnateAttributeLevelCap(attribute, currentLevel)
+                    : currentLevel;
+            double totalGain = (uncappedPerLevel * currentLevel)
+                    + (primaryClassPerLevel * primaryEffectiveLevel)
+                    + (secondaryClassPerLevel * secondaryEffectiveLevel);
             String label = toDisplay(attribute.name());
             String valueText = formatInnateAttributeValue(gain, totalGain, currentLevel);
             entries.add(new PassiveEntry(label, valueText));
@@ -708,6 +725,17 @@ public class ProfileUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             return false;
         }
         return ArchetypePassiveManager.PASSIVE_SOURCE_CLASS.equalsIgnoreCase(sourceText.trim());
+    }
+
+    private boolean isSecondaryClassInnateDefinition(@Nonnull RacePassiveDefinition definition) {
+        if (definition.properties() == null || definition.properties().isEmpty()) {
+            return false;
+        }
+        Object slot = definition.properties().get(ArchetypePassiveManager.PASSIVE_CLASS_SLOT_PROPERTY);
+        if (!(slot instanceof String slotText)) {
+            return false;
+        }
+        return ArchetypePassiveManager.PASSIVE_CLASS_SLOT_SECONDARY.equalsIgnoreCase(slotText.trim());
     }
 
     private AggregatedPassiveProps aggregatePassiveProperties(@Nonnull List<RacePassiveDefinition> definitions) {

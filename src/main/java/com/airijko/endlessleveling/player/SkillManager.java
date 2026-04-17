@@ -58,12 +58,14 @@ public class SkillManager {
     private static final String BRUTE_FORCE_AUGMENT_ID = "brute_force";
     private static final String VANGUARD_BASE_CLASS_ID = "vanguard";
     private static final String CLASS_INNATE_CAPS_PATH = "classes.innate_attribute_gain_level_caps";
+    private static final String CLASS_INNATE_CAPS_SECONDARY_PATH = "classes.innate_attribute_gain_level_caps_secondary";
     private static final String DEFENSE_CAPS_PATH = "defense_caps";
     private static final String DEFENSE_CAPS_DEFAULT_ROLE_PATH = DEFENSE_CAPS_PATH + ".default_role";
     private static final String DEFENSE_CAPS_ROLES_PATH = DEFENSE_CAPS_PATH + ".roles";
     private static final String DEFENSE_CAPS_MAX_REDUCTION_KEY = "max_reduction";
     private static final String DEFENSE_CAPS_DEFAULT_ROLE = "skirmisher";
     private static final int DEFAULT_CLASS_INNATE_LEVEL_CAP = 100;
+    private static final int DEFAULT_CLASS_INNATE_LEVEL_CAP_SECONDARY = 200;
 
     private final ConfigManager levelingConfig;
     private final ConfigManager config;
@@ -80,6 +82,8 @@ public class SkillManager {
             DEFENSE_MAX_REDUCTION);
         private volatile String defaultDefenseCapRole = DEFENSE_CAPS_DEFAULT_ROLE;
     private final Map<SkillAttributeType, Integer> classInnateAttributeLevelCaps = new EnumMap<>(
+            SkillAttributeType.class);
+    private final Map<SkillAttributeType, Integer> secondaryClassInnateAttributeLevelCaps = new EnumMap<>(
             SkillAttributeType.class);
 
     public SkillManager(PluginFilesManager filesManager,
@@ -237,19 +241,29 @@ public class SkillManager {
 
     private void loadDefaultClassInnateAttributeLevelCaps() {
         classInnateAttributeLevelCaps.clear();
+        secondaryClassInnateAttributeLevelCaps.clear();
         for (SkillAttributeType type : SkillAttributeType.values()) {
             classInnateAttributeLevelCaps.put(type,
                     type == SkillAttributeType.LIFE_FORCE ? null : DEFAULT_CLASS_INNATE_LEVEL_CAP);
+            secondaryClassInnateAttributeLevelCaps.put(type,
+                    type == SkillAttributeType.LIFE_FORCE ? null : DEFAULT_CLASS_INNATE_LEVEL_CAP_SECONDARY);
         }
     }
 
     private void loadClassInnateAttributeLevelCaps() {
         classInnateAttributeLevelCaps.clear();
+        secondaryClassInnateAttributeLevelCaps.clear();
 
         Integer defaultCap = parseOptionalLevelCap(
                 levelingConfig.get(CLASS_INNATE_CAPS_PATH + ".default", DEFAULT_CLASS_INNATE_LEVEL_CAP, false),
                 DEFAULT_CLASS_INNATE_LEVEL_CAP,
                 CLASS_INNATE_CAPS_PATH + ".default");
+
+        Integer defaultSecondaryCap = parseOptionalLevelCap(
+                levelingConfig.get(CLASS_INNATE_CAPS_SECONDARY_PATH + ".default",
+                        DEFAULT_CLASS_INNATE_LEVEL_CAP_SECONDARY, false),
+                DEFAULT_CLASS_INNATE_LEVEL_CAP_SECONDARY,
+                CLASS_INNATE_CAPS_SECONDARY_PATH + ".default");
 
         for (SkillAttributeType type : SkillAttributeType.values()) {
             String path = CLASS_INNATE_CAPS_PATH + "." + type.getConfigKey();
@@ -257,6 +271,14 @@ public class SkillManager {
             Integer fallback = type == SkillAttributeType.LIFE_FORCE ? null : defaultCap;
             Integer cap = raw == null ? fallback : parseOptionalLevelCap(raw, fallback, path);
             classInnateAttributeLevelCaps.put(type, cap);
+
+            String secondaryPath = CLASS_INNATE_CAPS_SECONDARY_PATH + "." + type.getConfigKey();
+            Object secondaryRaw = levelingConfig.get(secondaryPath, null, false);
+            Integer secondaryFallback = type == SkillAttributeType.LIFE_FORCE ? null : defaultSecondaryCap;
+            Integer secondaryCap = secondaryRaw == null
+                    ? secondaryFallback
+                    : parseOptionalLevelCap(secondaryRaw, secondaryFallback, secondaryPath);
+            secondaryClassInnateAttributeLevelCaps.put(type, secondaryCap);
         }
     }
 
@@ -305,6 +327,18 @@ public class SkillManager {
         return Math.min(safeLevel, cap);
     }
 
+    public int applySecondaryClassInnateAttributeLevelCap(SkillAttributeType attributeType, int level) {
+        int safeLevel = Math.max(1, level);
+        if (attributeType == null) {
+            return safeLevel;
+        }
+        Integer cap = secondaryClassInnateAttributeLevelCaps.get(attributeType);
+        if (cap == null || cap <= 0) {
+            return safeLevel;
+        }
+        return Math.min(safeLevel, cap);
+    }
+
     private boolean isClassInnateDefinition(RacePassiveDefinition definition) {
         if (definition == null || definition.properties() == null) {
             return false;
@@ -314,6 +348,17 @@ public class SkillManager {
             return false;
         }
         return ArchetypePassiveManager.PASSIVE_SOURCE_CLASS.equalsIgnoreCase(sourceText.trim());
+    }
+
+    private boolean isSecondaryClassInnateDefinition(RacePassiveDefinition definition) {
+        if (definition == null || definition.properties() == null) {
+            return false;
+        }
+        Object slot = definition.properties().get(ArchetypePassiveManager.PASSIVE_CLASS_SLOT_PROPERTY);
+        if (!(slot instanceof String slotText)) {
+            return false;
+        }
+        return ArchetypePassiveManager.PASSIVE_CLASS_SLOT_SECONDARY.equalsIgnoreCase(slotText.trim());
     }
 
     private int getIntFromLevelingConfig(String path, int defaultValue) {
@@ -1669,7 +1714,8 @@ public class SkillManager {
         if (definitions.isEmpty()) {
             return 0.0D;
         }
-        double classPerLevelValue = 0.0D;
+        double primaryClassPerLevelValue = 0.0D;
+        double secondaryClassPerLevelValue = 0.0D;
         double uncappedPerLevelValue = 0.0D;
         double totalHealthScalingPercent = 0.0D;
         for (RacePassiveDefinition definition : definitions) {
@@ -1685,7 +1731,11 @@ public class SkillManager {
                 // health-scaling bonuses.
             }
             if (isClassInnateDefinition(definition)) {
-                classPerLevelValue += candidate;
+                if (isSecondaryClassInnateDefinition(definition)) {
+                    secondaryClassPerLevelValue += candidate;
+                } else {
+                    primaryClassPerLevelValue += candidate;
+                }
             } else {
                 uncappedPerLevelValue += candidate;
             }
@@ -1699,12 +1749,16 @@ public class SkillManager {
                 totalHealthScalingPercent += scalingCandidate;
             }
         }
-        if (classPerLevelValue == 0.0D && uncappedPerLevelValue == 0.0D && totalHealthScalingPercent == 0.0D) {
+        if (primaryClassPerLevelValue == 0.0D && secondaryClassPerLevelValue == 0.0D
+                && uncappedPerLevelValue == 0.0D && totalHealthScalingPercent == 0.0D) {
             return 0.0D;
         }
         int playerLevel = Math.max(1, playerData.getLevel());
-        int classEffectiveLevels = applyClassInnateAttributeLevelCap(attributeType, playerLevel);
-        double perLevelBonus = (uncappedPerLevelValue * playerLevel) + (classPerLevelValue * classEffectiveLevels);
+        int primaryEffectiveLevels = applyClassInnateAttributeLevelCap(attributeType, playerLevel);
+        int secondaryEffectiveLevels = applySecondaryClassInnateAttributeLevelCap(attributeType, playerLevel);
+        double perLevelBonus = (uncappedPerLevelValue * playerLevel)
+                + (primaryClassPerLevelValue * primaryEffectiveLevels)
+                + (secondaryClassPerLevelValue * secondaryEffectiveLevels);
         if (totalHealthScalingPercent <= 0.0D) {
             return perLevelBonus;
         }

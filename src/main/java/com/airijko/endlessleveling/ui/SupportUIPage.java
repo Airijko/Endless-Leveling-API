@@ -7,6 +7,7 @@ import java.util.List;
 
 import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.security.PartnerBrandingAllowlist;
+import com.airijko.endlessleveling.security.UiTitleIntegrityGuard;
 import com.airijko.endlessleveling.util.Lang;
 import com.airijko.endlessleveling.util.DiscordLinkResolver;
 import com.hypixel.hytale.component.Ref;
@@ -70,6 +71,17 @@ public class SupportUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         boolean partnerAddonValid = partnerAddonDetected && plugin != null && plugin.isPartnerAddonAuthorized();
         boolean showNoticeCard = !partnerAddonValid;
 
+        boolean uiIntegrityViolated = false;
+        if (plugin != null) {
+            UiTitleIntegrityGuard guard = plugin.getUiTitleIntegrityGuard();
+            if (guard != null) {
+                uiIntegrityViolated = guard.evaluate().modified();
+            }
+        }
+        boolean officialBuild = !uiIntegrityViolated;
+        ui.set("#SupportOfficialBuildPill.Visible", officialBuild);
+        ui.set("#SupportUnofficialBuildPill.Visible", !officialBuild);
+
         ui.set("#NoticeCard.Visible", showNoticeCard);
         ui.set("#NoticeCardSpacer.Visible", showNoticeCard);
         ui.set("#SupportUnofficialWarningBlock.Visible", showNoticeCard);
@@ -115,7 +127,7 @@ public class SupportUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         List<String> orderedPartnerServers = getOrderedPartnerServerNames();
         ui.set("#SupportServerCard1Name.Text",
                 orderedPartnerServers.isEmpty() ? "Endless Leveling" : orderedPartnerServers.get(0));
-        ui.set("#SupportServerCard1Host.Text", "endlessleveling.net");
+        ui.set("#SupportServerCard1Host.Text", "play.endlessleveling.net:9005");
 
         boolean hasSecondaryPartner = orderedPartnerServers.size() > 1;
         ui.set("#SupportServerCard2.Visible", hasSecondaryPartner);
@@ -187,7 +199,7 @@ public class SupportUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                         return "play.histatu.net";
                 }
                 if ("Endless Leveling".equalsIgnoreCase(serverName)) {
-                        return "endlessleveling.net";
+                        return "play.endlessleveling.net:9005";
                 }
                 return "authorized partner";
         }

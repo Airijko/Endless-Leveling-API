@@ -222,6 +222,10 @@ public class EndlessLeveling extends JavaPlugin {
         return uiIntegrityAlertSystem;
     }
 
+    public UiTitleIntegrityGuard getUiTitleIntegrityGuard() {
+        return uiTitleIntegrityGuard;
+    }
+
     public AugmentManager getAugmentManager() {
         return augmentManager;
     }
