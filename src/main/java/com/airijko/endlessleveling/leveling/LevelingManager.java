@@ -220,23 +220,18 @@ public class LevelingManager {
             }
         }
 
-        // Outlander Bridge XP banking: when the player is in an active outlander
-        // bridge session, divert fully-adjusted XP into their per-player bank
-        // instead of crediting profile XP. All bonuses (party, marriage, passives,
-        // luck, level-diff, gain cap) are already applied above, so the bank
-        // receives the exact same number profile XP would have.
-        // Force-register fallback: if the player is in an outlander bridge world
-        // but isn't banking-active (die → TP-back exploit), register them now
-        // so the divert succeeds with zero timing gap.
-        if (uuid != null) {
-            var xpBank = com.airijko.endlessleveling.mob.outlander.OutlanderBridgeXpBank.get();
-            if (!xpBank.isBankingActive(uuid)) {
-                com.airijko.endlessleveling.mob.outlander.OutlanderBridgeWaveManager.get()
-                        .tryForceRegisterBanking(uuid);
-            }
-            if (xpBank.tryDivertXp(uuid, adjustedXp)) {
-                return;
-            }
+        // Outlander Bridge XP banking: strict — if the player is currently in
+        // any active outlander-bridge session world, divert every XP source
+        // into the per-player bank instead of crediting profile XP. All
+        // bonuses (party, marriage, passives, luck, level-diff, gain cap) are
+        // already applied above, so the bank receives the exact number
+        // profile XP would have. tryDivertXp self-registers and resolves the
+        // session via WaveManager (authoritative player-list scan), so there
+        // is no timing gap between world-join and first-XP.
+        if (uuid != null
+                && com.airijko.endlessleveling.mob.outlander.OutlanderBridgeXpBank.get()
+                        .tryDivertXp(uuid, adjustedXp)) {
+            return;
         }
 
         int effectiveCap = getLevelCap(player);

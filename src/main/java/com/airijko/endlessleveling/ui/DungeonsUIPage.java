@@ -706,47 +706,42 @@ public class DungeonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         final PortalType finalPortalType = portalType;
         final World finalSourceWorld = sourceWorld;
 
-        final UUID partyKey = resolvePartyInstanceKey(playerRef.getUuid());
+        // Party-share key: only valid when the player is currently in a party.
+        // When solo, we do NOT cache in ACTIVE_PARTY_INSTANCES — otherwise a
+        // former party leader who left the party would re-enter via their own
+        // UUID as the map key and get routed into the old party's instance.
+        // Solo clicks always spawn a fresh instance.
+        final UUID partyLeaderKey = resolvePartyShareKey(playerRef.getUuid());
         final String instancePrefix = "instance-" + finalPortalType.getInstanceId().toLowerCase(java.util.Locale.ROOT) + "-";
 
         sourceWorld.execute(() -> {
             try {
-                CompletableFuture<World> instanceWorld = ACTIVE_PARTY_INSTANCES.compute(partyKey, (key, existing) -> {
-                    if (existing != null) {
-                        if (!existing.isDone()) {
-                            // Party member is mid-spawn; join the in-flight future.
-                            return existing;
+                CompletableFuture<World> instanceWorld;
+                if (partyLeaderKey != null) {
+                    instanceWorld = ACTIVE_PARTY_INSTANCES.compute(partyLeaderKey, (key, existing) -> {
+                        if (existing != null) {
+                            if (!existing.isDone()) {
+                                // Party member is mid-spawn; join the in-flight future.
+                                return existing;
+                            }
+                            World w = existing.getNow(null);
+                            if (w != null && w.isAlive()
+                                    && w.getName() != null
+                                    && w.getName().toLowerCase(java.util.Locale.ROOT).startsWith(instancePrefix)) {
+                                playerRef.sendMessage(Message.raw("Joining party instance: " + displayName).color("#6cff78"));
+                                return existing;
+                            }
                         }
-                        World w = existing.getNow(null);
-                        if (w != null && w.isAlive()
-                                && w.getName() != null
-                                && w.getName().toLowerCase(java.util.Locale.ROOT).startsWith(instancePrefix)) {
-                            playerRef.sendMessage(Message.raw("Joining party instance: " + displayName).color("#6cff78"));
-                            return existing;
-                        }
-                    }
+                        playerRef.sendMessage(Message.raw("Entering " + displayName + "...").color("#6cff78"));
+                        return spawnDungeonInstance(plugin, finalPortalType, finalSourceWorld,
+                                returnTransform, timeLimitSeconds);
+                    });
+                } else {
+                    // Solo: bypass cache entirely — always a brand-new instance.
                     playerRef.sendMessage(Message.raw("Entering " + displayName + "...").color("#6cff78"));
-                    return plugin
-                            .spawnInstance(finalPortalType.getInstanceId(), finalSourceWorld, returnTransform)
-                            .thenApply(spawnedWorld -> {
-                                WorldConfig worldConfig = spawnedWorld.getWorldConfig();
-                                worldConfig.setDeleteOnUniverseStart(true);
-                                worldConfig.setDeleteOnRemove(true);
-                                worldConfig.setGameplayConfig(finalPortalType.getGameplayConfigId());
-                                InstanceWorldConfig instanceConfig = InstanceWorldConfig.ensureAndGet(worldConfig);
-                                PortalRemovalCondition removal = new PortalRemovalCondition(timeLimitSeconds);
-                                instanceConfig.setRemovalConditions(removal);
-                                PortalWorld portalWorld = spawnedWorld
-                                        .getEntityStore().getStore()
-                                        .getResource(PortalWorld.getResourceType());
-                                GameplayConfig gp = finalPortalType.getGameplayConfig();
-                                PortalGameplayConfig portalGameplayConfig = gp != null
-                                        ? gp.getPluginConfig().get(PortalGameplayConfig.class)
-                                        : null;
-                                portalWorld.init(finalPortalType, timeLimitSeconds, removal, portalGameplayConfig);
-                                return spawnedWorld;
-                            });
-                });
+                    instanceWorld = spawnDungeonInstance(plugin, finalPortalType, finalSourceWorld,
+                            returnTransform, timeLimitSeconds);
+                }
                 InstancesPlugin.teleportPlayerToLoadingInstance(ref, store, instanceWorld, null);
             } catch (Throwable t) {
                 playerRef.sendMessage(Message.raw("Teleport failed. Try again in a moment.").color("#ff6666"));
@@ -764,25 +759,56 @@ public class DungeonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
     /**
      * Key used to group party members into the same native-dungeon instance.
-     * Returns the party leader's UUID when the player is in a party, otherwise
-     * the player's own UUID (solo → each player gets their own instance).
+     * Returns the party leader's UUID only when the player is currently in a
+     * party; returns null for solo players so the caller can bypass the
+     * shared-instance cache entirely. Without this split, a former leader
+     * who left their party would still resolve to their own UUID as the key
+     * and re-enter the old party's instance.
      */
-    @Nonnull
-    private static UUID resolvePartyInstanceKey(@Nullable UUID playerUuid) {
-        if (playerUuid == null) {
-            return new UUID(0L, 0L);
-        }
+    @Nullable
+    private static UUID resolvePartyShareKey(@Nullable UUID playerUuid) {
+        if (playerUuid == null) return null;
         try {
             PartyManager pm = EndlessLeveling.getInstance().getPartyManager();
-            if (pm != null) {
+            if (pm != null && pm.isInParty(playerUuid)) {
                 UUID leader = pm.getPartyLeader(playerUuid);
-                if (leader != null) {
-                    return leader;
-                }
+                if (leader != null) return leader;
             }
         } catch (Throwable ignored) {
         }
-        return playerUuid;
+        return null;
+    }
+
+    /**
+     * Spawn + configure a fresh native-dungeon instance world. Shared by the
+     * party-cached path and the solo bypass path.
+     */
+    private static CompletableFuture<World> spawnDungeonInstance(
+            @Nonnull InstancesPlugin plugin,
+            @Nonnull PortalType portalType,
+            @Nonnull World sourceWorld,
+            @Nonnull Transform returnTransform,
+            int timeLimitSeconds) {
+        return plugin
+                .spawnInstance(portalType.getInstanceId(), sourceWorld, returnTransform)
+                .thenApply(spawnedWorld -> {
+                    WorldConfig worldConfig = spawnedWorld.getWorldConfig();
+                    worldConfig.setDeleteOnUniverseStart(true);
+                    worldConfig.setDeleteOnRemove(true);
+                    worldConfig.setGameplayConfig(portalType.getGameplayConfigId());
+                    InstanceWorldConfig instanceConfig = InstanceWorldConfig.ensureAndGet(worldConfig);
+                    PortalRemovalCondition removal = new PortalRemovalCondition(timeLimitSeconds);
+                    instanceConfig.setRemovalConditions(removal);
+                    PortalWorld portalWorld = spawnedWorld
+                            .getEntityStore().getStore()
+                            .getResource(PortalWorld.getResourceType());
+                    GameplayConfig gp = portalType.getGameplayConfig();
+                    PortalGameplayConfig portalGameplayConfig = gp != null
+                            ? gp.getPluginConfig().get(PortalGameplayConfig.class)
+                            : null;
+                    portalWorld.init(portalType, timeLimitSeconds, removal, portalGameplayConfig);
+                    return spawnedWorld;
+                });
     }
 
     private static Map<String, DungeonMeta> buildDungeonMeta() {

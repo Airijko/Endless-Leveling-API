@@ -490,20 +490,37 @@ public final class OutlanderBridgeWaveManager extends TickingSystem<EntityStore>
      * where event-based registration has a timing gap.
      */
     public boolean tryForceRegisterBanking(@Nonnull UUID playerUuid) {
+        UUID worldId = resolveActiveSessionForPlayer(playerUuid);
+        if (worldId == null) return false;
         OutlanderBridgeXpBank bank = OutlanderBridgeXpBank.get();
+        if (bank.isLockedFromSession(playerUuid, worldId)) return false;
+        bank.registerPlayerForSession(playerUuid, worldId);
+        return true;
+    }
+
+    /**
+     * Authoritative resolver: returns the session world UUID if the player is
+     * currently inside an active (non-COMPLETED) outlander-bridge session,
+     * else null. Walks {@code s.world.getPlayerRefs()} directly — does NOT
+     * rely on {@link PlayerRef#getWorldUuid()}, which can be stale between
+     * world-join and the first position tick.
+     * <p>
+     * Used by {@link OutlanderBridgeXpBank#tryDivertXp} to make XP banking
+     * strict: whenever the player's UUID is present in a session world's
+     * player list, every XP source is diverted.
+     */
+    @Nullable
+    public UUID resolveActiveSessionForPlayer(@Nonnull UUID playerUuid) {
         for (Session s : sessions.values()) {
             if (s.phase == Phase.COMPLETED) continue;
-            UUID worldId = s.world.getWorldConfig().getUuid();
-            if (bank.isLockedFromSession(playerUuid, worldId)) continue;
             for (PlayerRef pr : s.world.getPlayerRefs()) {
                 if (pr == null || !pr.isValid()) continue;
                 if (playerUuid.equals(pr.getUuid())) {
-                    bank.registerPlayerForSession(playerUuid, worldId);
-                    return true;
+                    return s.world.getWorldConfig().getUuid();
                 }
             }
         }
-        return false;
+        return null;
     }
 
     /**
@@ -1617,22 +1634,31 @@ public final class OutlanderBridgeWaveManager extends TickingSystem<EntityStore>
                 Session s = worldId != null ? sessions.get(worldId) : null;
                 if (s != null && s.phase != Phase.COMPLETED) {
                     OutlanderBridgeXpBank bank = OutlanderBridgeXpBank.get();
-                    if (!bank.isLockedFromSession(uuid, worldId)) {
-                        bank.registerPlayerForSession(uuid, worldId);
-                        // Open HUD — player entity is fully ready at this point
-                        if (ref != null && ref.isValid()) {
-                            Store<EntityStore> st = ref.getStore();
-                            if (st != null) {
-                                Player player = st.getComponent(ref, Player.getComponentType());
-                                if (player != null) {
-                                    OutlanderBridgeWaveHud.open(player, playerRef);
-                                }
+                    if (bank.isLockedFromSession(uuid, worldId)) {
+                        // Re-entry guard: claimed/cancelled/timed-out player
+                        // came back via party-TP (only fires PlayerReady, not
+                        // AddPlayerToWorld). Kick immediately — symmetric
+                        // with onPlayerEntered.
+                        LOGGER.atInfo().log(
+                                "Outlander Bridge: locked player=%s re-entered on PlayerReady instance=%s, re-kicking",
+                                uuid, world.getName());
+                        kickPlayerFromInstance(uuid);
+                        return;
+                    }
+                    bank.registerPlayerForSession(uuid, worldId);
+                    // Open HUD — player entity is fully ready at this point
+                    if (ref != null && ref.isValid()) {
+                        Store<EntityStore> st = ref.getStore();
+                        if (st != null) {
+                            Player player = st.getComponent(ref, Player.getComponentType());
+                            if (player != null) {
+                                OutlanderBridgeWaveHud.open(player, playerRef);
                             }
                         }
-                        LOGGER.atFine().log(
-                                "Outlander Bridge: force-registered banking on PlayerReady player=%s world=%s",
-                                uuid, world.getName());
                     }
+                    LOGGER.atFine().log(
+                            "Outlander Bridge: force-registered banking on PlayerReady player=%s world=%s",
+                            uuid, world.getName());
                 }
             }
 

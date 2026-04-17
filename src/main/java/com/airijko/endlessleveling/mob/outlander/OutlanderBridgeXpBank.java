@@ -3,8 +3,6 @@ package com.airijko.endlessleveling.mob.outlander;
 import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.leveling.LevelingManager;
 import com.hypixel.hytale.logger.HytaleLogger;
-import com.hypixel.hytale.server.core.universe.PlayerRef;
-import com.hypixel.hytale.server.core.universe.Universe;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -96,34 +94,46 @@ public final class OutlanderBridgeXpBank {
      * @return true if the XP was diverted into the player's bank. Caller
      *         MUST NOT credit profile XP in that case.
      * <p>
-     * Hardened: verifies the player's current world id equals the banking
-     * session world id. Closes leaks where {@code activeBanking} drifts from
-     * reality (death gap, missed drain, disconnect without cleanup). If the
-     * player is not currently inside the session world, banking is auto-drained
-     * and the XP falls through to profile credit.
+     * Strict: the single source of truth is
+     * {@link OutlanderBridgeWaveManager#resolveActiveSessionForPlayer} — if
+     * the player's UUID is present in any active session's
+     * {@code world.getPlayerRefs()}, divert succeeds. This avoids the stale
+     * {@code PlayerRef.worldUuid} window (updated only on position tick) that
+     * previously let XP leak to profile during the first ticks after
+     * world-join.
+     * <p>
+     * Self-registers: if {@code activeBanking} lacks an entry but the
+     * resolver finds a session, the player is lazily registered and the bank
+     * state is created on the spot. Closes every event-timing gap.
+     * <p>
+     * If the resolver returns null, any stale {@code activeBanking} entry is
+     * dropped and the XP falls through to normal profile credit — so players
+     * outside outlander worlds are unaffected.
      */
     public boolean tryDivertXp(@Nonnull UUID playerUuid, double adjustedXp) {
         if (adjustedXp <= 0) return false;
-        UUID sessionWorldId = activeBanking.get(playerUuid);
-        if (sessionWorldId == null) return false;
 
-        // World-location guard: player must physically be inside the session
-        // world for divert to succeed. Prevents stale activeBanking entries
-        // from silently swallowing XP earned outside Outlander Bridge.
-        Universe universe = Universe.get();
-        if (universe != null) {
-            PlayerRef ref = universe.getPlayer(playerUuid);
-            UUID currentWorldId = ref != null ? ref.getWorldUuid() : null;
-            if (currentWorldId == null || !sessionWorldId.equals(currentWorldId)) {
-                activeBanking.remove(playerUuid);
-                return false;
-            }
+        OutlanderBridgeWaveManager mgr = OutlanderBridgeWaveManager.get();
+        UUID sessionWorldId = mgr.resolveActiveSessionForPlayer(playerUuid);
+        if (sessionWorldId == null) {
+            activeBanking.remove(playerUuid);
+            return false;
         }
 
-        ConcurrentHashMap<UUID, BankState> bank = sessionBanks.get(sessionWorldId);
-        if (bank == null) return false;
-        BankState state = bank.get(playerUuid);
-        if (state == null) return false;
+        Set<UUID> locked = sessionLockedPlayers.get(sessionWorldId);
+        if (locked != null && locked.contains(playerUuid)) {
+            // Swallow — locked player (claimed/cancelled/timed-out) re-entered
+            // via party TP. Returning true blocks profile credit; the entry
+            // hooks (onPlayerEntered / handlePlayerReady) teleport them out
+            // momentarily. Without this, XP earned in the split second before
+            // the kick lands would credit profile and bypass the lock.
+            return true;
+        }
+
+        activeBanking.put(playerUuid, sessionWorldId);
+        ConcurrentHashMap<UUID, BankState> bank = sessionBanks.computeIfAbsent(
+                sessionWorldId, k -> new ConcurrentHashMap<>());
+        BankState state = bank.computeIfAbsent(playerUuid, k -> new BankState());
         state.pendingXp += adjustedXp;
         return true;
     }
