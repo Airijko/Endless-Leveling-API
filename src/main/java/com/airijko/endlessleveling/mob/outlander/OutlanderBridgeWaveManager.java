@@ -105,21 +105,21 @@ public final class OutlanderBridgeWaveManager extends TickingSystem<EntityStore>
     /** Post-timeout buffer before safeRemoveInstance so teleports drain cleanly. */
     private static final long INSTANCE_REMOVE_DELAY_MS = 500L;
     private static final float WAVE_TICK_INTERVAL = 1.0f;
-    private static final int DEFAULT_BATCH_KILL_PERCENT = 70;
+    private static final int DEFAULT_BATCH_KILL_PERCENT = 60;
     private static final int DEFAULT_BATCH_FALLBACK_SECONDS = 25;
     private static final double DEFAULT_WAVE_CLEAR_IMMEDIATE_XP_PERCENT = 20.0;
     private static final double DEFAULT_COMPLETION_XP_BONUS_PERCENT = 25.0;
     private static final double DEFAULT_SPAWN_RADIUS = 18.0;
     private static final double LEASH_RADIUS = 150.0;
-    private static final double AGGRO_RADIUS = 500.0;
+    private static final double AGGRO_RADIUS = 200.0;
     private static final double MIN_SPAWN_Y = 80.0;
-    // Bridge combat zone: 30-block radius around (0,0). Mobs are pulled toward
+    // Bridge combat zone: 25-block radius around (0,0). Mobs are pulled toward
     // X = ±15 (their own side) rather than CENTER so two opposing fronts form
-    // on the deck. After PULL_GRACE_SECONDS any mob still outside the 30-block
+    // on the deck. After PULL_GRACE_SECONDS any mob still outside the 25-block
     // combat zone is snapped back onto its side line at X = ±15, Z scattered
     // in [-5, +5] to avoid pile-up at a single point.
     private static final double PULL_X_ABS = 15.0;
-    private static final double COMBAT_ZONE_RADIUS = 30.0;
+    private static final double COMBAT_ZONE_RADIUS = 25.0;
     private static final double COMBAT_ZONE_RADIUS_SQ = COMBAT_ZONE_RADIUS * COMBAT_ZONE_RADIUS;
     private static final double SNAPBACK_Z_HALF_RANGE = 5.0;
     private static final float PULL_GRACE_SECONDS = 10.0f;
@@ -1090,7 +1090,7 @@ public final class OutlanderBridgeWaveManager extends TickingSystem<EntityStore>
      * (~16-24m) so native sensors have plenty of overlap to see the player
      * and engage on their own.
      */
-    private static final double NATIVE_HANDOFF_DIST = 24.0;
+    private static final double NATIVE_HANDOFF_DIST = 30.0;
     private static final double CHASE_SPEED = 6.0;
 
     /**

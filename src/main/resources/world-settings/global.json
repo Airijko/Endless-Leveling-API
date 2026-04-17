@@ -122,7 +122,7 @@
         },
         "Damage_Max_Difference": {
           "Enabled": true,
-          "At_Negative_Max_Difference": 0.6,
+          "At_Negative_Max_Difference": 0.75,
           "Below_Negative_Max_Difference": 0.5,
           "At_Positive_Max_Difference": 1.35,
           "Above_Positive_Max_Difference": 2.0
