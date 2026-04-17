@@ -40,7 +40,7 @@
         }
       },
       "Mob_Overrides": {
-        "Outlander_Brute": {
+        "ELBridge_Outlander_Brute": {
           "Level": 35,
           "Allow_Random_Mob_Augments": true,
           "Scaling": {
