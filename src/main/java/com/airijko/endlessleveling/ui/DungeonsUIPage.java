@@ -27,6 +27,7 @@ import com.hypixel.hytale.server.core.entity.entities.player.pages.InteractiveCu
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
+import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.WorldConfig;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -714,28 +715,44 @@ public class DungeonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         final UUID partyLeaderKey = resolvePartyShareKey(playerRef.getUuid());
         final String instancePrefix = "instance-" + finalPortalType.getInstanceId().toLowerCase(java.util.Locale.ROOT) + "-";
 
+        final UUID clickerUuid = playerRef.getUuid();
         sourceWorld.execute(() -> {
             try {
                 CompletableFuture<World> instanceWorld;
                 if (partyLeaderKey != null) {
-                    instanceWorld = ACTIVE_PARTY_INSTANCES.compute(partyLeaderKey, (key, existing) -> {
-                        if (existing != null) {
-                            if (!existing.isDone()) {
-                                // Party member is mid-spawn; join the in-flight future.
-                                return existing;
+                    // Live-world scan first — authoritative. If any online
+                    // party member is already inside an instance matching
+                    // this portal type, join that world directly. Handles
+                    // the case where the cache is keyed on a stale party id
+                    // (party disbanded + reformed with a different id, or
+                    // member rejoined after the original party id rotated).
+                    CompletableFuture<World> live = clickerUuid != null
+                            ? findLivePartyMemberInstance(clickerUuid, instancePrefix)
+                            : null;
+                    if (live != null) {
+                        ACTIVE_PARTY_INSTANCES.put(partyLeaderKey, live);
+                        playerRef.sendMessage(Message.raw("Joining party instance: " + displayName).color("#6cff78"));
+                        instanceWorld = live;
+                    } else {
+                        instanceWorld = ACTIVE_PARTY_INSTANCES.compute(partyLeaderKey, (key, existing) -> {
+                            if (existing != null) {
+                                if (!existing.isDone()) {
+                                    // Party member is mid-spawn; join the in-flight future.
+                                    return existing;
+                                }
+                                World w = existing.getNow(null);
+                                if (w != null && w.isAlive()
+                                        && w.getName() != null
+                                        && w.getName().toLowerCase(java.util.Locale.ROOT).startsWith(instancePrefix)) {
+                                    playerRef.sendMessage(Message.raw("Joining party instance: " + displayName).color("#6cff78"));
+                                    return existing;
+                                }
                             }
-                            World w = existing.getNow(null);
-                            if (w != null && w.isAlive()
-                                    && w.getName() != null
-                                    && w.getName().toLowerCase(java.util.Locale.ROOT).startsWith(instancePrefix)) {
-                                playerRef.sendMessage(Message.raw("Joining party instance: " + displayName).color("#6cff78"));
-                                return existing;
-                            }
-                        }
-                        playerRef.sendMessage(Message.raw("Entering " + displayName + "...").color("#6cff78"));
-                        return spawnDungeonInstance(plugin, finalPortalType, finalSourceWorld,
-                                returnTransform, timeLimitSeconds);
-                    });
+                            playerRef.sendMessage(Message.raw("Entering " + displayName + "...").color("#6cff78"));
+                            return spawnDungeonInstance(plugin, finalPortalType, finalSourceWorld,
+                                    returnTransform, timeLimitSeconds);
+                        });
+                    }
                 } else {
                     // Solo: bypass cache entirely — always a brand-new instance.
                     playerRef.sendMessage(Message.raw("Entering " + displayName + "...").color("#6cff78"));
@@ -758,12 +775,16 @@ public class DungeonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     }
 
     /**
-     * Key used to group party members into the same native-dungeon instance.
-     * Returns the party leader's UUID only when the player is currently in a
+     * Stable key used to group party members into the same native-dungeon
+     * instance. Returns the PartyPro party id (persists across leader
+     * transitions and leave/rejoin cycles) when the player is currently in a
      * party; returns null for solo players so the caller can bypass the
-     * shared-instance cache entirely. Without this split, a former leader
-     * who left their party would still resolve to their own UUID as the key
-     * and re-enter the old party's instance.
+     * shared-instance cache entirely.
+     * <p>
+     * Must not be keyed on leader UUID: if the leader changes or the original
+     * leader leaves and rejoins, the cache entry would never match the
+     * current leader's UUID and a new instance would be spawned even though
+     * the party's original instance is still alive.
      */
     @Nullable
     private static UUID resolvePartyShareKey(@Nullable UUID playerUuid) {
@@ -771,8 +792,49 @@ public class DungeonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         try {
             PartyManager pm = EndlessLeveling.getInstance().getPartyManager();
             if (pm != null && pm.isInParty(playerUuid)) {
-                UUID leader = pm.getPartyLeader(playerUuid);
-                if (leader != null) return leader;
+                UUID partyId = pm.getPartyId(playerUuid);
+                if (partyId != null) return partyId;
+            }
+        } catch (Throwable ignored) {
+        }
+        return null;
+    }
+
+    /**
+     * Live-world scan for the case where cache is stale or missing: walks
+     * the player's online party members and returns a completed future over
+     * the first member world whose name matches {@code instancePrefix}. Used
+     * as the authoritative truth source before consulting the cache — covers
+     * parties that reformed (new party id) but still have a member inside
+     * the original instance world.
+     */
+    @Nullable
+    private static CompletableFuture<World> findLivePartyMemberInstance(
+            @Nonnull UUID playerUuid, @Nonnull String instancePrefix) {
+        try {
+            PartyManager pm = EndlessLeveling.getInstance().getPartyManager();
+            if (pm == null || !pm.isInParty(playerUuid)) return null;
+            java.util.Set<UUID> members = pm.getOnlinePartyMembers(playerUuid);
+            if (members.isEmpty()) return null;
+            Universe universe = Universe.get();
+            if (universe == null) return null;
+            for (UUID member : members) {
+                if (member == null) continue;
+                PlayerRef pr = universe.getPlayer(member);
+                if (pr == null || !pr.isValid()) continue;
+                Ref<EntityStore> ref = pr.getReference();
+                if (ref == null || !ref.isValid()) continue;
+                Store<EntityStore> st = ref.getStore();
+                if (st == null) continue;
+                EntityStore ext = st.getExternalData();
+                if (ext == null) continue;
+                World w = ext.getWorld();
+                if (w == null || !w.isAlive()) continue;
+                String name = w.getName();
+                if (name == null) continue;
+                if (name.toLowerCase(java.util.Locale.ROOT).startsWith(instancePrefix)) {
+                    return CompletableFuture.completedFuture(w);
+                }
             }
         } catch (Throwable ignored) {
         }

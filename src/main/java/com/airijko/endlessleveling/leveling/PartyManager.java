@@ -64,6 +64,19 @@ public class PartyManager {
         return snapshot != null ? snapshot.leader() : null;
     }
 
+    /**
+     * Stable PartyPro party id for the party this player is in, or null. The
+     * id persists across leadership transitions (leader leaves → another
+     * member promoted) and across a member leaving + rejoining, so it's the
+     * correct key for cross-session routing maps like the shared dungeon
+     * instance cache.
+     */
+    @Nullable
+    public UUID getPartyId(@Nonnull UUID memberUuid) {
+        PartySnapshot snapshot = partyPro.getPartyByPlayer(memberUuid);
+        return snapshot != null ? snapshot.id() : null;
+    }
+
     /** Get the display name of the party the player is in, if any. */
     @Nullable
     public String getPartyName(@Nonnull UUID memberUuid) {
