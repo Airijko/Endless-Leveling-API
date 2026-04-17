@@ -98,6 +98,25 @@ final class ModularCardUiAppender {
     private static void collectFromJarUrl(URL url, String classpathFolder, Set<String> fileNames) {
         try {
             JarURLConnection connection = (JarURLConnection) url.openConnection();
+            // CRITICAL: do NOT remove this call.
+            //
+            // Without setUseCaches(false), getJarFile() returns the JarFile
+            // instance that sun.net.www.protocol.jar.JarFileFactory caches
+            // on behalf of the entire JVM URL layer - i.e. the same instance
+            // the mod classloader uses for every getResource /
+            // getResourceAsStream against this JAR. The try-with-resources
+            // below would then close the classloader's shared handle,
+            // causing subsequent resource loads across the whole plugin to
+            // fail with IOException whose message is just the JAR path
+            // ("/home/container/mods/EndlessLeveling-X_Y_Z.jar"). That
+            // cascades into empty card enumeration, SafeUI dropping every
+            // card-declared selector, and the dungeons page rendering into
+            // a broken UI state that can crash the client.
+            //
+            // Setting useCaches=false causes the JDK to return a fresh,
+            // connection-scoped JarFile that this method owns and may close
+            // safely via the try-with-resources below.
+            connection.setUseCaches(false);
             try (JarFile jarFile = connection.getJarFile()) {
                 collectFromJarEntries(jarFile, classpathFolder, fileNames);
             }
