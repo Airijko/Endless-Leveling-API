@@ -138,7 +138,9 @@ public class PlayerDefenseSystem extends DamageEventSystem {
 
 		if (attackerRef != null
 				&& ArmyOfTheDeadPassive.shouldPreventFriendlyDamage(attackerRef, targetRef, store, commandBuffer)) {
-			damage.setAmount(0.0f);
+			damage.setCancelled(true);
+			commandBuffer.tryRemoveComponent(targetRef,
+					com.hypixel.hytale.server.core.entity.knockback.KnockbackComponent.getComponentType());
 			return;
 		}
 

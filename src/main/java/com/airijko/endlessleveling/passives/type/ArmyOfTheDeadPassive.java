@@ -901,6 +901,12 @@ public final class ArmyOfTheDeadPassive {
             if (candidate.equals(summonRef)) {
                 continue;
             }
+            // Only target NPCs (hostile mobs) or players (PVP). Skip items,
+            // projectiles, block entities, and other non-combat entities.
+            if (EntityRefUtil.tryGetComponent(store, candidate, NPCEntity.getComponentType()) == null
+                    && EntityRefUtil.tryGetComponent(store, candidate, PlayerRef.getComponentType()) == null) {
+                continue;
+            }
             if (!isValidAggroTargetForOwner(ownerUuid, candidate, store, null)) {
                 continue;
             }
@@ -1059,6 +1065,11 @@ public final class ArmyOfTheDeadPassive {
             return false;
         }
         if (targetRef.equals(summonRef)) {
+            return false;
+        }
+        // Target must be an NPC or player — not an item, projectile, or other non-combat entity.
+        if (EntityRefUtil.tryGetComponent(store, targetRef, NPCEntity.getComponentType()) == null
+                && EntityRefUtil.tryGetComponent(store, targetRef, PlayerRef.getComponentType()) == null) {
             return false;
         }
         if (!isValidAggroTargetForOwner(ownerUuid, targetRef, store, null)) {
@@ -2490,22 +2501,30 @@ public final class ArmyOfTheDeadPassive {
                         Ref<EntityStore> currentTarget = summonNpc.getRole()
                                 .getMarkedEntitySupport()
                                 .getMarkedEntityRef("LockedTarget");
-                        if (!isSummonTargetStillValid(ownerUuid, slot.activeRef, currentTarget, store)
-                                && now >= slot.nextTargetAcquireAt
-                                && slot.initialAggroAt == 0L) {
-                            boolean reacquired = assignImmediateSummonTarget(ownerUuid,
-                                    slot.activeRef,
-                                    summonNpc,
-                                    store);
-                            slot.nextTargetAcquireAt = now + TARGET_REACQUIRE_INTERVAL_MS;
-                            if (reacquired) {
-                                // Re-arm the taunt sweep on the new target so the
-                                // mob can't ignore the summon for the next 5 s.
-                                Ref<EntityStore> newTarget = summonNpc.getRole()
-                                        .getMarkedEntitySupport()
-                                        .getMarkedEntityRef("LockedTarget");
-                                applyTauntToTarget(slot.activeRef, newTarget, store);
-                                slot.nextTauntReassertAt = now + TAUNT_REASSERT_INTERVAL_MS;
+                        if (!isSummonTargetStillValid(ownerUuid, slot.activeRef, currentTarget, store)) {
+                            if (now >= slot.nextTargetAcquireAt && slot.initialAggroAt == 0L) {
+                                boolean reacquired = assignImmediateSummonTarget(ownerUuid,
+                                        slot.activeRef,
+                                        summonNpc,
+                                        store);
+                                slot.nextTargetAcquireAt = now + TARGET_REACQUIRE_INTERVAL_MS;
+                                if (reacquired) {
+                                    Ref<EntityStore> newTarget = summonNpc.getRole()
+                                            .getMarkedEntitySupport()
+                                            .getMarkedEntityRef("LockedTarget");
+                                    applyTauntToTarget(slot.activeRef, newTarget, store);
+                                    slot.nextTauntReassertAt = now + TAUNT_REASSERT_INTERVAL_MS;
+                                } else {
+                                    // No valid target found — clear stale LockedTarget
+                                    // so the summon falls back to idle (leash / wander).
+                                    summonNpc.getRole().setMarkedTarget("LockedTarget", null);
+                                    slot.nextTauntReassertAt = 0L;
+                                }
+                            } else {
+                                // Target invalid but reacquire on cooldown — clear
+                                // immediately so summon stops attacking air.
+                                summonNpc.getRole().setMarkedTarget("LockedTarget", null);
+                                slot.nextTauntReassertAt = 0L;
                             }
                         }
                     }
