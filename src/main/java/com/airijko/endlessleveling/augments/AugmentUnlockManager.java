@@ -216,6 +216,86 @@ public class AugmentUnlockManager {
     }
 
     /**
+     * Snapshot of unlock thresholds for a tier, aggregated across level and
+     * prestige rules. Used by the Augments UI to describe how a tier is earned.
+     */
+    public record TierThresholds(
+            PassiveTier tier,
+            List<Integer> levelUnlocks,
+            List<ProgressiveRule> levelProgressives,
+            List<Integer> prestigeUnlocks,
+            List<ProgressivePrestige> prestigeProgressives,
+            List<Integer> prestigeRerollUnlocks,
+            List<ProgressivePrestige> prestigeRerollProgressives) {
+    }
+
+    public record ProgressiveRule(int start, int interval, int maxUnlocks) {
+    }
+
+    public record ProgressivePrestige(int startPrestige, int interval, int maxUnlocks,
+            int requiredPlayerLevel) {
+    }
+
+    /**
+     * Returns a snapshot of unlock thresholds for the given tier, for UI display.
+     */
+    @Nonnull
+    public TierThresholds getTierThresholds(@Nonnull PassiveTier tier) {
+        List<Integer> lvlExplicit = new ArrayList<>();
+        List<ProgressiveRule> lvlProgressive = new ArrayList<>();
+        for (UnlockRule rule : unlockRules) {
+            if (rule.tier() != tier) {
+                continue;
+            }
+            if (rule.isProgressive()) {
+                lvlProgressive.add(new ProgressiveRule(rule.requiredPlayerLevel(),
+                        rule.levelInterval(), rule.maxUnlocks()));
+            } else {
+                lvlExplicit.addAll(rule.levels());
+            }
+        }
+        Collections.sort(lvlExplicit);
+
+        List<Integer> presExplicit = new ArrayList<>();
+        List<ProgressivePrestige> presProgressive = new ArrayList<>();
+        for (PrestigeUnlockRule rule : prestigeUnlockRules) {
+            if (rule.tier() != tier) {
+                continue;
+            }
+            if (rule.prestigeLevels().isEmpty()) {
+                presProgressive.add(new ProgressivePrestige(rule.requiredPrestigeLevel(),
+                        rule.interval(), rule.maxUnlocks(), rule.requiredPlayerLevel()));
+            } else {
+                presExplicit.addAll(rule.prestigeLevels());
+            }
+        }
+        Collections.sort(presExplicit);
+
+        List<Integer> rerollExplicit = new ArrayList<>();
+        List<ProgressivePrestige> rerollProgressive = new ArrayList<>();
+        for (PrestigeRerollRule rule : prestigeRerollRules) {
+            if (rule.tier() != tier) {
+                continue;
+            }
+            if (rule.prestigeLevels().isEmpty()) {
+                rerollProgressive.add(new ProgressivePrestige(rule.requiredPrestigeLevel(),
+                        1, rule.maxRerolls(), rule.requiredPlayerLevel()));
+            } else {
+                rerollExplicit.addAll(rule.prestigeLevels());
+            }
+        }
+        Collections.sort(rerollExplicit);
+
+        return new TierThresholds(tier,
+                Collections.unmodifiableList(lvlExplicit),
+                Collections.unmodifiableList(lvlProgressive),
+                Collections.unmodifiableList(presExplicit),
+                Collections.unmodifiableList(presProgressive),
+                Collections.unmodifiableList(rerollExplicit),
+                Collections.unmodifiableList(rerollProgressive));
+    }
+
+    /**
      * Returns how many rerolls are still available for the given tier.
      */
     public int getRemainingRerolls(@Nonnull PlayerData playerData, @Nonnull PassiveTier tier) {

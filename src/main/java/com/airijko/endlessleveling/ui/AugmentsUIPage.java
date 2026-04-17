@@ -116,13 +116,11 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
 
     private void applyStaticLabels(@Nonnull UICommandBuilder ui) {
         ui.set("#OpenAugmentsChooseButton.Text", tr("ui.augments.page.choose_button", "CHOOSE AUGMENTS"));
-        ui.set("#AugmentsOverviewDescription.Text", tr("ui.augments.page.left.description",
-                "Augments are powerful passive enhancements that permanently strengthen your character. Earn them by reaching level milestones and through prestige."));
-        ui.set("#AugmentsCollectionTitle.Text", tr("ui.augments.page.left.collection_title", "YOUR COLLECTION"));
-        ui.set("#AugmentsRerollsTitle.Text", tr("ui.augments.page.left.rerolls_available_title", "REROLLS AVAILABLE"));
+        ui.set("#AugmentActionInfo.Text", tr("ui.augments.page.left.panel_title", "AUGMENTS"));
+        ui.set("#AugmentsThresholdsTitle.Text", tr("ui.augments.page.left.thresholds_title", "UNLOCK THRESHOLDS"));
+        ui.set("#AugmentsRerollsTitle.Text", tr("ui.augments.page.left.rerolls_title", "REROLLS"));
+        ui.set("#AugmentsCollectionTitle.Text", tr("ui.augments.page.grid.collection_title", "COLLECTION"));
         ui.set("#AugmentRerollTotal.Text", tr("ui.augments.page.rerolls.total", "Total: {0}", 0));
-        ui.set("#AugmentsInfoText.Text",
-                tr("ui.augments.page.left.hover_hint", "Hover over an augment to preview it."));
         ui.set("#SearchInput.PlaceholderText", tr("ui.augments.page.search_placeholder", "Search augments..."));
         ui.set("#UnlockedHeader.Text", tr("ui.augments.page.section.unlocked", "UNLOCKED"));
         ui.set("#MythicHeader.Text", tr("ui.augments.page.section.mythic", "MYTHIC"));
@@ -130,6 +128,112 @@ public class AugmentsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         ui.set("#EliteHeader.Text", tr("ui.augments.page.section.elite", "ELITE"));
         ui.set("#CommonHeader.Text", tr("ui.augments.page.section.common", "COMMON"));
         ui.set("#AugmentInfoPanel.Text", tr("ui.augments.page.info_title", "AUGMENT INFO"));
+        applyThresholdLabels(ui);
+    }
+
+    private void applyThresholdLabels(@Nonnull UICommandBuilder ui) {
+        applyThresholdLabel(ui, PassiveTier.MYTHIC,
+                "#AugmentThresholdMythicHeader",
+                "#AugmentThresholdMythicLevel",
+                "#AugmentThresholdMythicPrestige");
+        applyThresholdLabel(ui, PassiveTier.LEGENDARY,
+                "#AugmentThresholdLegendaryHeader",
+                "#AugmentThresholdLegendaryLevel",
+                "#AugmentThresholdLegendaryPrestige");
+        applyThresholdLabel(ui, PassiveTier.ELITE,
+                "#AugmentThresholdEliteHeader",
+                "#AugmentThresholdEliteLevel",
+                "#AugmentThresholdElitePrestige");
+        applyThresholdLabel(ui, PassiveTier.COMMON,
+                "#AugmentThresholdCommonHeader",
+                "#AugmentThresholdCommonLevel",
+                "#AugmentThresholdCommonPrestige");
+    }
+
+    private void applyThresholdLabel(@Nonnull UICommandBuilder ui,
+            @Nonnull PassiveTier tier,
+            @Nonnull String headerId,
+            @Nonnull String levelId,
+            @Nonnull String prestigeId) {
+        String tierColor = AugmentTheme.gridOwnedColor(tier);
+        ui.set(headerId + ".Style.TextColor", tierColor);
+
+        if (augmentUnlockManager == null) {
+            ui.set(levelId + ".Text", tr("ui.augments.page.thresholds.unavailable", "unavailable"));
+            ui.set(prestigeId + ".Text", "");
+            ui.set(prestigeId + ".Visible", false);
+            return;
+        }
+
+        AugmentUnlockManager.TierThresholds t = augmentUnlockManager.getTierThresholds(tier);
+
+        String levelText = formatLevelThresholds(t);
+        if (levelText.isEmpty()) {
+            ui.set(levelId + ".Text", "");
+            ui.set(levelId + ".Visible", false);
+        } else {
+            ui.set(levelId + ".Text", "Level  \u2022  " + levelText);
+            ui.set(levelId + ".Visible", true);
+        }
+
+        String prestigeText = formatPrestigeThresholds(t.prestigeUnlocks(), t.prestigeProgressives());
+        if (prestigeText.isEmpty()) {
+            ui.set(prestigeId + ".Text", "");
+            ui.set(prestigeId + ".Visible", false);
+        } else {
+            ui.set(prestigeId + ".Text", "Prestige  \u2022  " + prestigeText);
+            ui.set(prestigeId + ".Visible", true);
+        }
+    }
+
+    private String formatLevelThresholds(@Nonnull AugmentUnlockManager.TierThresholds t) {
+        List<String> parts = new ArrayList<>();
+        if (!t.levelUnlocks().isEmpty()) {
+            parts.add(t.levelUnlocks().stream()
+                    .map(v -> "Lv " + v)
+                    .collect(Collectors.joining(", ")));
+        }
+        for (AugmentUnlockManager.ProgressiveRule r : t.levelProgressives()) {
+            StringBuilder sb = new StringBuilder();
+            int interval = Math.max(1, r.interval());
+            if (interval == 1) {
+                sb.append("every Lv from ").append(r.start());
+            } else {
+                sb.append("every ").append(interval).append(" Lv (from ").append(r.start()).append(")");
+            }
+            if (r.maxUnlocks() > 0) {
+                sb.append(", max ").append(r.maxUnlocks());
+            }
+            parts.add(sb.toString());
+        }
+        return String.join(", ", parts);
+    }
+
+    private String formatPrestigeThresholds(@Nonnull List<Integer> explicit,
+            @Nonnull List<AugmentUnlockManager.ProgressivePrestige> progressives) {
+        List<String> parts = new ArrayList<>();
+        if (!explicit.isEmpty()) {
+            parts.add(explicit.stream()
+                    .map(v -> "P" + v)
+                    .collect(Collectors.joining(", ")));
+        }
+        for (AugmentUnlockManager.ProgressivePrestige r : progressives) {
+            StringBuilder sb = new StringBuilder();
+            int interval = Math.max(1, r.interval());
+            int start = Math.max(1, r.startPrestige());
+            if (interval == 1 && start == 1) {
+                sb.append("every Prestige");
+            } else if (interval == 1) {
+                sb.append("every Prestige from P").append(start);
+            } else {
+                sb.append("every ").append(interval).append(" Prestige (from P").append(start).append(")");
+            }
+            if (r.maxUnlocks() > 0) {
+                sb.append(", max ").append(r.maxUnlocks());
+            }
+            parts.add(sb.toString());
+        }
+        return String.join(", ", parts);
     }
 
     @Override

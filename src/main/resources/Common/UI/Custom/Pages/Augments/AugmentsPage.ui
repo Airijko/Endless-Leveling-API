@@ -55,131 +55,196 @@ $C.@PageOverlay {
 
                             #Content {
                                 LayoutMode: Top;
-                                Padding: (Full: 12);
+                                Padding: (Full: 0);
 
-                                $C.@TextButton #OpenAugmentsChooseButton {
-                                    Text: "CHOOSE AUGMENTS";
-                                    Anchor: (Width: 210, Height: 34);
-                                    Padding: (Horizontal: 12);
-                                }
+                                Group #AugmentsLeftScroll {
+                                    FlexWeight: 1;
+                                    LayoutMode: TopScrolling;
+                                    Padding: (Full: 10);
+                                    ScrollbarStyle: $C.@DefaultScrollbarStyle;
 
-                                Label #AugmentsChooseAvailabilityLabel {
-                                    Text: "No augments available to choose.";
-                                    Style: (FontSize: 14, TextColor: #ff9f9f, RenderBold: true, Wrap: true, VerticalAlignment: Center);
-                                    Anchor: (Height: 34);
-                                    Padding: (Horizontal: 12);
-                                }
+                                    // ============ CHOOSE AUGMENTS (top) ============
+                                    $C.@TextButton #OpenAugmentsChooseButton {
+                                        Text: "CHOOSE AUGMENTS";
+                                        Anchor: (Width: 210, Height: 32);
+                                        Padding: (Horizontal: 12);
+                                    }
 
-                                Group { Anchor: (Height: 10); }
+                                    Label #AugmentsChooseAvailabilityLabel {
+                                        Text: "No augments available to choose.";
+                                        Style: (FontSize: 11, TextColor: #ff9f9f, RenderBold: true, Wrap: true, HorizontalAlignment: Center);
+                                        Anchor: (Bottom: 10);
+                                        Padding: (Horizontal: 8);
+                                    }
 
-                                Label #AugmentsOverviewDescription {
-                                    Text: "Augments are powerful passive enhancements that permanently strengthen your character. Earn them by reaching level milestones and through prestige.";
-                                    Style: (FontSize: 12, TextColor: #7a9abf, Wrap: true);
-                                    Anchor: (Bottom: 10);
-                                    Padding: (Horizontal: 12);
-                                }
+                                    // ============ UNLOCK THRESHOLDS ============
+                                    Group {
+                                        Anchor: (Height: 22, Bottom: 8);
+                                        Background: #4a6380(0.22);
 
-                                Group {
-                                    Anchor: (Height: 1, Bottom: 10);
-                                    Background: #ffffff(0.08);
-                                }
+                                        Label #AugmentsThresholdsTitle {
+                                            Text: "UNLOCK THRESHOLDS";
+                                            Style: (FontSize: 11, TextColor: #d6e4f5, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
+                                        }
+                                    }
 
-                                Label #AugmentsCollectionTitle {
-                                    Text: "YOUR COLLECTION";
-                                    Style: (FontSize: 11, TextColor: #9fb6d3, RenderBold: true, HorizontalAlignment: Center);
-                                    Anchor: (Height: 16, Bottom: 8);
-                                    Padding: (Horizontal: 12);
-                                }
+                                    // Mythic block
+                                    Group {
+                                        LayoutMode: Top;
+                                        Anchor: (Bottom: 8);
+                                        Background: #b084e0(0.08);
+                                        Padding: (Vertical: 6);
 
-                                Label #AugmentStatTotal {
-                                    Text: "Total: 0 / 0";
-                                    Style: (FontSize: 13, TextColor: #c5d4e8);
-                                    Anchor: (Height: 20, Bottom: 4);
-                                    Padding: (Horizontal: 12);
-                                }
+                                        Label #AugmentThresholdMythicHeader {
+                                            Text: "MYTHIC";
+                                            Style: (FontSize: 12, TextColor: #b084e0, RenderBold: true);
+                                            Anchor: (Height: 16, Bottom: 4);
+                                            Padding: (Horizontal: 12);
+                                        }
 
-                                Label #AugmentStatMythic {
-                                    Text: "Mythic: 0 / 0";
-                                    Style: (FontSize: 13, TextColor: #b084e0);
-                                    Anchor: (Height: 20, Bottom: 4);
-                                    Padding: (Horizontal: 12);
-                                }
+                                        Label #AugmentThresholdMythicLevel {
+                                            Text: "";
+                                            Style: (FontSize: 12, TextColor: #c5d4e8, Wrap: true);
+                                            Anchor: (Bottom: 2);
+                                            Padding: (Horizontal: 20);
+                                        }
 
-                                Label #AugmentStatLegendary {
-                                    Text: "Legendary: 0 / 0";
-                                    Style: (FontSize: 13, TextColor: #f0c15a);
-                                    Anchor: (Height: 20, Bottom: 4);
-                                    Padding: (Horizontal: 12);
-                                }
+                                        Label #AugmentThresholdMythicPrestige {
+                                            Text: "";
+                                            Style: (FontSize: 12, TextColor: #9fb6d3, Wrap: true);
+                                            Padding: (Horizontal: 20);
+                                        }
+                                    }
 
-                                Label #AugmentStatElite {
-                                    Text: "Elite: 0 / 0";
-                                    Style: (FontSize: 13, TextColor: #7ec8f5);
-                                    Anchor: (Height: 20, Bottom: 4);
-                                    Padding: (Horizontal: 12);
-                                }
+                                    // Legendary block
+                                    Group {
+                                        LayoutMode: Top;
+                                        Anchor: (Bottom: 8);
+                                        Background: #f0c15a(0.08);
+                                        Padding: (Vertical: 6);
 
-                                Label #AugmentStatCommon {
-                                    Text: "Common: 0 / 0";
-                                    Style: (FontSize: 13, TextColor: #e6c168);
-                                    Anchor: (Height: 20, Bottom: 10);
-                                    Padding: (Horizontal: 12);
-                                }
+                                        Label #AugmentThresholdLegendaryHeader {
+                                            Text: "LEGENDARY";
+                                            Style: (FontSize: 12, TextColor: #f0c15a, RenderBold: true);
+                                            Anchor: (Height: 16, Bottom: 4);
+                                            Padding: (Horizontal: 12);
+                                        }
 
-                                Group {
-                                    Anchor: (Height: 1, Bottom: 10);
-                                    Background: #ffffff(0.08);
-                                }
+                                        Label #AugmentThresholdLegendaryLevel {
+                                            Text: "";
+                                            Style: (FontSize: 12, TextColor: #c5d4e8, Wrap: true);
+                                            Anchor: (Bottom: 2);
+                                            Padding: (Horizontal: 20);
+                                        }
 
-                                Label #AugmentsRerollsTitle {
-                                    Text: "REROLLS AVAILABLE";
-                                    Style: (FontSize: 11, TextColor: #9fb6d3, RenderBold: true, HorizontalAlignment: Center);
-                                    Anchor: (Height: 16, Bottom: 8);
-                                    Padding: (Horizontal: 12);
-                                }
+                                        Label #AugmentThresholdLegendaryPrestige {
+                                            Text: "";
+                                            Style: (FontSize: 12, TextColor: #9fb6d3, Wrap: true);
+                                            Padding: (Horizontal: 20);
+                                        }
+                                    }
 
-                                Label #AugmentRerollTotal {
-                                    Text: "Total: 0";
-                                    Style: (FontSize: 13, TextColor: #c5d4e8);
-                                    Anchor: (Height: 20, Bottom: 4);
-                                    Padding: (Horizontal: 12);
-                                }
+                                    // Elite block
+                                    Group {
+                                        LayoutMode: Top;
+                                        Anchor: (Bottom: 8);
+                                        Background: #7ec8f5(0.08);
+                                        Padding: (Vertical: 6);
 
-                                Label #AugmentRerollMythic {
-                                    Text: "Mythic: 0";
-                                    Style: (FontSize: 13, TextColor: #b084e0);
-                                    Anchor: (Height: 20, Bottom: 4);
-                                    Padding: (Horizontal: 12);
-                                }
+                                        Label #AugmentThresholdEliteHeader {
+                                            Text: "ELITE";
+                                            Style: (FontSize: 12, TextColor: #7ec8f5, RenderBold: true);
+                                            Anchor: (Height: 16, Bottom: 4);
+                                            Padding: (Horizontal: 12);
+                                        }
 
-                                Label #AugmentRerollLegendary {
-                                    Text: "Legendary: 0";
-                                    Style: (FontSize: 13, TextColor: #f0c15a);
-                                    Anchor: (Height: 20, Bottom: 4);
-                                    Padding: (Horizontal: 12);
-                                }
+                                        Label #AugmentThresholdEliteLevel {
+                                            Text: "";
+                                            Style: (FontSize: 12, TextColor: #c5d4e8, Wrap: true);
+                                            Anchor: (Bottom: 2);
+                                            Padding: (Horizontal: 20);
+                                        }
 
-                                Label #AugmentRerollElite {
-                                    Text: "Elite: 0";
-                                    Style: (FontSize: 13, TextColor: #7ec8f5);
-                                    Anchor: (Height: 20, Bottom: 4);
-                                    Padding: (Horizontal: 12);
-                                }
+                                        Label #AugmentThresholdElitePrestige {
+                                            Text: "";
+                                            Style: (FontSize: 12, TextColor: #9fb6d3, Wrap: true);
+                                            Padding: (Horizontal: 20);
+                                        }
+                                    }
 
-                                Label #AugmentRerollCommon {
-                                    Text: "Common: 0";
-                                    Style: (FontSize: 13, TextColor: #e6c168);
-                                    Anchor: (Height: 20, Bottom: 10);
-                                    Padding: (Horizontal: 12);
-                                }
+                                    // Common block
+                                    Group {
+                                        LayoutMode: Top;
+                                        Anchor: (Bottom: 12);
+                                        Background: #bbbbbb(0.08);
+                                        Padding: (Vertical: 6);
 
-                                Group { FlexWeight: 1; }
+                                        Label #AugmentThresholdCommonHeader {
+                                            Text: "COMMON";
+                                            Style: (FontSize: 12, TextColor: #bbbbbb, RenderBold: true);
+                                            Anchor: (Height: 16, Bottom: 4);
+                                            Padding: (Horizontal: 12);
+                                        }
 
-                                Label #AugmentsInfoText {
-                                    Text: "Hover over an augment to preview it.";
-                                    Style: (FontSize: 12, TextColor: #5a7a9a, Wrap: true, HorizontalAlignment: Center);
-                                    Anchor: (Bottom: 4);
-                                    Padding: (Horizontal: 12);
+                                        Label #AugmentThresholdCommonLevel {
+                                            Text: "";
+                                            Style: (FontSize: 12, TextColor: #c5d4e8, Wrap: true);
+                                            Anchor: (Bottom: 2);
+                                            Padding: (Horizontal: 20);
+                                        }
+
+                                        Label #AugmentThresholdCommonPrestige {
+                                            Text: "";
+                                            Style: (FontSize: 12, TextColor: #9fb6d3, Wrap: true);
+                                            Padding: (Horizontal: 20);
+                                        }
+                                    }
+
+                                    // ============ REROLLS ============
+                                    Group {
+                                        Anchor: (Height: 22, Bottom: 8);
+                                        Background: #4a6380(0.22);
+
+                                        Label #AugmentsRerollsTitle {
+                                            Text: "REROLLS";
+                                            Style: (FontSize: 11, TextColor: #d6e4f5, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
+                                        }
+                                    }
+
+                                    Label #AugmentRerollTotal {
+                                        Text: "Total: 0";
+                                        Style: (FontSize: 12, TextColor: #c5d4e8);
+                                        Anchor: (Height: 18, Bottom: 2);
+                                        Padding: (Horizontal: 10);
+                                    }
+
+                                    Label #AugmentRerollMythic {
+                                        Text: "Mythic: 0";
+                                        Style: (FontSize: 12, TextColor: #b084e0);
+                                        Anchor: (Height: 18, Bottom: 2);
+                                        Padding: (Horizontal: 10);
+                                    }
+
+                                    Label #AugmentRerollLegendary {
+                                        Text: "Legendary: 0";
+                                        Style: (FontSize: 12, TextColor: #f0c15a);
+                                        Anchor: (Height: 18, Bottom: 2);
+                                        Padding: (Horizontal: 10);
+                                    }
+
+                                    Label #AugmentRerollElite {
+                                        Text: "Elite: 0";
+                                        Style: (FontSize: 12, TextColor: #7ec8f5);
+                                        Anchor: (Height: 18, Bottom: 2);
+                                        Padding: (Horizontal: 10);
+                                    }
+
+                                    Label #AugmentRerollCommon {
+                                        Text: "Common: 0";
+                                        Style: (FontSize: 12, TextColor: #bbbbbb);
+                                        Anchor: (Height: 18, Bottom: 4);
+                                        Padding: (Horizontal: 10);
+                                    }
                                 }
                             }
                         }
@@ -200,11 +265,69 @@ $C.@PageOverlay {
                                 LayoutMode: Top;
                                 Padding: (Full: 0);
 
-                                // Search row sits above the result list
+                                // Search row with inline collection stats
+                                // Wrapped with Padding:4 to match the panel title-underline inset
                                 Group {
-                                    Anchor: (Height: 36);
-                                    LayoutMode: Right;
-                                    Padding: (Horizontal: 12);
+                                    Anchor: (Height: 46, Top: -4);
+                                    Padding: (Horizontal: 4);
+
+                                    Group {
+                                    Anchor: (Top: 0, Bottom: 0, Left: 0, Right: 0);
+                                    Background: #4a6380(0.22);
+                                    LayoutMode: Left;
+                                    Padding: (Horizontal: 16);
+
+                                    Label #AugmentsCollectionTitle {
+                                        Text: "COLLECTION";
+                                        Style: (FontSize: 12, TextColor: #f0c040, RenderBold: true, LetterSpacing: 2, VerticalAlignment: Center);
+                                        Anchor: (Width: 110);
+                                    }
+
+                                    Group {
+                                        Anchor: (Width: 1, Vertical: 14);
+                                        Background: #ffffff(0.18);
+                                    }
+
+                                    Group { Anchor: (Width: 14); }
+
+                                    Label #AugmentStatTotal {
+                                        Text: "Total: 0 / 0";
+                                        Style: (FontSize: 12, TextColor: #e6edf5, RenderBold: true, VerticalAlignment: Center);
+                                        Anchor: (Width: 100);
+                                    }
+
+                                    Label #AugmentStatMythic {
+                                        Text: "Mythic: 0 / 0";
+                                        Style: (FontSize: 12, TextColor: #b084e0, RenderBold: true, VerticalAlignment: Center);
+                                        Anchor: (Width: 100);
+                                    }
+
+                                    Label #AugmentStatLegendary {
+                                        Text: "Legendary: 0 / 0";
+                                        Style: (FontSize: 12, TextColor: #f0c15a, RenderBold: true, VerticalAlignment: Center);
+                                        Anchor: (Width: 130);
+                                    }
+
+                                    Label #AugmentStatElite {
+                                        Text: "Elite: 0 / 0";
+                                        Style: (FontSize: 12, TextColor: #7ec8f5, RenderBold: true, VerticalAlignment: Center);
+                                        Anchor: (Width: 100);
+                                    }
+
+                                    Label #AugmentStatCommon {
+                                        Text: "Common: 0";
+                                        Style: (FontSize: 12, TextColor: #bbbbbb, RenderBold: true, VerticalAlignment: Center);
+                                        Anchor: (Width: 90);
+                                    }
+
+                                    Group { FlexWeight: 1; }
+
+                                    Group {
+                                        Anchor: (Width: 1, Vertical: 14);
+                                        Background: #ffffff(0.18);
+                                    }
+
+                                    Group { Anchor: (Width: 14); }
 
                                     CompactTextField #SearchInput {
                                         Anchor: (Width: 280, Height: 32);
@@ -214,6 +337,14 @@ $C.@PageOverlay {
                                         Padding: (Horizontal: 10);
                                         Style: (FontSize: 14);
                                     }
+                                    }
+                                }
+
+                                Group {
+                                    Anchor: (Height: 1);
+                                    Padding: (Horizontal: 4);
+
+                                    Group { Background: #f0c040(0.35); }
                                 }
 
                                 Group #AugmentsResultsArea {
