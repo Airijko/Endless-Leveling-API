@@ -77,7 +77,11 @@ public final class CommonAugment extends Augment implements AugmentHooks.Passive
         String selectionKey = context.getSelectionKey();
         String selectedAugmentId = null;
         if (context.getPlayerData() != null) {
-            selectedAugmentId = context.getPlayerData().getSelectedAugmentsSnapshot().get(selectionKey);
+            // Direct per-tier lookup avoids allocating a defensive snapshot (UnmodifiableMap
+            // + LinkedHashMap copy + iterator) on every passive tick just to read one key.
+            // This path runs per-player per-tick from PassiveRegenSystem; previously the
+            // dominant server-side allocation site (~49.6 GB sampled over a 2-minute JFR).
+            selectedAugmentId = context.getPlayerData().getSelectedAugmentForTier(selectionKey);
         }
         if (selectedAugmentId == null || selectedAugmentId.isBlank()) {
             selectedAugmentId = extractMobAugmentIdFromSelectionKey(selectionKey);

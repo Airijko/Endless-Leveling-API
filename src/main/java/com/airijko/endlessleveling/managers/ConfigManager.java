@@ -12,6 +12,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import com.hypixel.hytale.logger.HytaleLogger;
@@ -22,6 +23,18 @@ public class ConfigManager {
     private static final Pattern VERSION_LINE_PATTERN = Pattern.compile("(?m)^\\s*config_version\\s*:\\s*.*$");
     private static final String LEGACY_KEYS_MARKER = "# Preserved legacy keys from previous config";
     private static final String VERSION_MARKER_COMMENT = "# DON'T EDIT THIS LINE BELOW";
+
+    // Pre-compiled splitter for dot-separated config paths. Paired with
+    // pathTokenCache below to eliminate the per-call String.split(regex)
+    // allocation — previously a hot-path allocator via
+    // MobLevelingSystem.processEntity → isMobLevelingEnabled → get(), firing
+    // per-entity-per-tick at ~6k calls/sec under load.
+    private static final Pattern DOT_SPLIT_PATTERN = Pattern.compile("\\.");
+
+    // Cache of path -> token array. Path strings are a bounded set (~200
+    // hardcoded in EL call sites); split results are a pure function of the
+    // input, so no invalidation is required on config reload.
+    private final ConcurrentHashMap<String, String[]> pathTokenCache = new ConcurrentHashMap<>();
 
     // Top-level config.yml toggles that must remain user-owned even when
     // force_builtin_config: true rewrites the rest of the file from bundled defaults.
@@ -109,7 +122,7 @@ public class ConfigManager {
 
     /** Get a value from config with optional logging */
     public Object get(String path, Object defaultValue, boolean logAccess) {
-        String[] keys = path.split("\\.");
+        String[] keys = pathTokenCache.computeIfAbsent(path, DOT_SPLIT_PATTERN::split);
         Map<String, Object> currentMap = configMap;
         Object value = null;
 

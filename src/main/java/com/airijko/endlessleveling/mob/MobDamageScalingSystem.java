@@ -2,6 +2,7 @@ package com.airijko.endlessleveling.mob;
 
 import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.augments.MobAugmentExecutor;
+import com.airijko.endlessleveling.enums.SkillAttributeType;
 import com.airijko.endlessleveling.leveling.MobLevelingManager;
 import com.airijko.endlessleveling.leveling.XpKillCreditTracker;
 import com.airijko.endlessleveling.passives.type.ArmyOfTheDeadPassive.SummonInheritedStats;
@@ -27,6 +28,7 @@ import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import javax.annotation.Nonnull;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
@@ -96,11 +98,50 @@ public class MobDamageScalingSystem extends DamageEventSystem {
                 if (!isSummonProc) {
                     float beforeAugments = damage.getAmount();
                     boolean summonCrit = applySummonOutgoingScaling(damage, attackerRef, store, commandBuffer);
-                    applySummonAttackerAugments(damage, attackerRef, targetRef, store, commandBuffer, summonCrit);
+                    double summonTrueDamage = applySummonAttackerAugments(damage, attackerRef, targetRef,
+                            store, commandBuffer, summonCrit);
+
+                    // Summons mirror the owner's player→mob pipeline: apply the
+                    // mob's level-difference defense, the mob's common-stat
+                    // defense (capped 80%), and the mob's onDamageTaken/onLowHp
+                    // augments. True damage from summon augments bypasses the
+                    // augment-defense pipeline and is only reduced by level diff,
+                    // matching how player-true-damage is treated.
+                    PlayerRef targetPlayerRef = EntityRefUtil.tryGetComponent(commandBuffer, targetRef,
+                            PlayerRef.getComponentType());
+                    boolean targetIsPlayer = targetPlayerRef != null && targetPlayerRef.isValid();
+
+                    double mobLevelDiffReduction = 0.0D;
+                    if (!targetIsPlayer) {
+                        int ownerLevel = resolveSummonOwnerLevel(attackerRef, store, commandBuffer);
+                        if (ownerLevel > 0
+                                && levelingManager.isMobLevelingEnabled()
+                                && levelingManager.isMobDefenseScalingEnabled(targetRef.getStore())) {
+                            int mobLevel = levelingManager.resolveMobLevel(targetRef, commandBuffer);
+                            mobLevelDiffReduction = levelingManager.getMobDefenseReductionForLevels(
+                                    targetRef, commandBuffer, mobLevel, ownerLevel);
+                            if (mobLevelDiffReduction != 0.0D) {
+                                damage.setAmount((float) (damage.getAmount() * (1.0D - mobLevelDiffReduction)));
+                            }
+                        }
+
+                        float afterMobDefense = applyTargetMobDefensePipeline(targetRef, store, attackerRef,
+                                commandBuffer, damage.getAmount());
+                        damage.setAmount(afterMobDefense);
+                    }
+
+                    if (summonTrueDamage > 0.0D) {
+                        double reducedTrue = targetIsPlayer
+                                ? summonTrueDamage
+                                : summonTrueDamage * (1.0D - mobLevelDiffReduction);
+                        damage.setAmount(Math.max(0.0f, damage.getAmount() + (float) Math.max(0.0D, reducedTrue)));
+                    }
+
                     if (LoggingManager.isDebugSectionEnabled("necromancer_summons")) {
                         LOGGER.atInfo().log(
-                                "[NECROMANCER_SUMMONS][COMBAT] Summon hit: before=%.2f after=%.2f crit=%s proc=%s",
-                                beforeAugments, damage.getAmount(), summonCrit, false);
+                                "[NECROMANCER_SUMMONS][COMBAT] Summon hit: before=%.2f after=%.2f crit=%s proc=%s true=%.2f mobLevelDiffRed=%.3f targetIsPlayer=%s",
+                                beforeAugments, damage.getAmount(), summonCrit, false,
+                                summonTrueDamage, mobLevelDiffReduction, targetIsPlayer);
                     }
                 } else if (LoggingManager.isDebugSectionEnabled("necromancer_summons")) {
                     LOGGER.atInfo().log(
@@ -149,7 +190,14 @@ public class MobDamageScalingSystem extends DamageEventSystem {
         }
     }
 
-    private void applySummonAttackerAugments(@Nonnull Damage damage,
+    /**
+     * Runs summon on-hit augments and writes the regular (non-true) damage
+     * portion back onto the Damage event. Returns the true-damage bonus so
+     * the caller can reduce it by level diff and add it back separately —
+     * keeping it out of the mob-augment defense/onDamageTaken pipeline, same
+     * as the player→mob true-damage path in PlayerCombatSystem.
+     */
+    private double applySummonAttackerAugments(@Nonnull Damage damage,
             @Nonnull Ref<EntityStore> attackerRef,
             @Nonnull Ref<EntityStore> targetRef,
             @Nonnull Store<EntityStore> store,
@@ -157,12 +205,12 @@ public class MobDamageScalingSystem extends DamageEventSystem {
             boolean isCritical) {
         EndlessLeveling plugin = EndlessLeveling.getInstance();
         if (plugin == null) {
-            return;
+            return 0.0D;
         }
 
         MobAugmentExecutor executor = plugin.getMobAugmentExecutor();
         if (executor == null) {
-            return;
+            return 0.0D;
         }
 
         UUID attackerUuid = resolveEntityUuid(attackerRef, store, commandBuffer);
@@ -170,7 +218,7 @@ public class MobDamageScalingSystem extends DamageEventSystem {
             if (LoggingManager.isDebugSectionEnabled("necromancer_summons")) {
                 LOGGER.atInfo().log("[NECROMANCER_SUMMONS][AUGMENTS] applySummonAttackerAugments: attackerUuid is null");
             }
-            return;
+            return 0.0D;
         }
         // Lazy re-mirror: if the owner's augment selection has drifted from
         // what's currently bound to this summon (or the owner had no augments
@@ -183,7 +231,7 @@ public class MobDamageScalingSystem extends DamageEventSystem {
                         "[NECROMANCER_SUMMONS][AUGMENTS] No mob augments bound for summon=%s (hasMobAugments=false)",
                         attackerUuid);
             }
-            return;
+            return 0.0D;
         }
 
         EntityStatMap attackerStats = EntityRefUtil.tryGetComponent(commandBuffer, attackerRef,
@@ -213,11 +261,96 @@ public class MobDamageScalingSystem extends DamageEventSystem {
             ownerPlayerData,
             ownerSkillManager);
 
-        // Preserve legacy behavior where true damage is represented as a flat add-on.
-        double trueDamage = Math.max(0.0D, onHit.trueDamageBonus());
-        float after = Math.max(0.0f, onHit.damage() + (float) trueDamage);
-        damage.setAmount(after);
+        float regular = Math.max(0.0f, onHit.damage());
+        damage.setAmount(regular);
+        return Math.max(0.0D, onHit.trueDamageBonus());
     }
+
+    private int resolveSummonOwnerLevel(@Nonnull Ref<EntityStore> summonRef,
+            @Nonnull Store<EntityStore> store,
+            @Nonnull CommandBuffer<EntityStore> commandBuffer) {
+        EndlessLeveling plugin = EndlessLeveling.getInstance();
+        if (plugin == null) {
+            return 0;
+        }
+        PlayerData ownerData = resolveSummonOwnerPlayerData(summonRef, store, commandBuffer, plugin);
+        if (ownerData == null) {
+            return 0;
+        }
+        return Math.max(1, ownerData.getLevel());
+    }
+
+    /**
+     * Applies the target mob's common-stat defense (capped 80%) and augment
+     * onDamageTaken/onLowHp hooks to summon-dealt regular damage — mirroring
+     * PlayerCombatSystem.applyMobAugmentsIfPresent so summon hits respect the
+     * same mob resistances as player hits.
+     */
+    private float applyTargetMobDefensePipeline(@Nonnull Ref<EntityStore> targetRef,
+            @Nonnull Store<EntityStore> store,
+            @Nonnull Ref<EntityStore> attackerRef,
+            @Nonnull CommandBuffer<EntityStore> commandBuffer,
+            float incomingDamage) {
+        if (incomingDamage <= 0.0f) {
+            return Math.max(0.0f, incomingDamage);
+        }
+        EndlessLeveling plugin = EndlessLeveling.getInstance();
+        if (plugin == null) {
+            return incomingDamage;
+        }
+        MobAugmentExecutor executor = plugin.getMobAugmentExecutor();
+        if (executor == null) {
+            return incomingDamage;
+        }
+
+        EntityStatMap targetStats = EntityRefUtil.tryGetComponent(commandBuffer, targetRef,
+                EntityStatMap.getComponentType());
+        if (targetStats == null) {
+            return incomingDamage;
+        }
+
+        List<String> augmentIds = levelingManager.getMobOverrideAugmentIds(targetRef, store, commandBuffer);
+        if (augmentIds.isEmpty()) {
+            return incomingDamage;
+        }
+
+        UUID mobUuid = resolveEntityUuid(targetRef, store, commandBuffer);
+        if (mobUuid == null) {
+            return incomingDamage;
+        }
+
+        if (!executor.hasMobAugments(mobUuid)
+                && plugin.getAugmentManager() != null
+                && plugin.getAugmentRuntimeManager() != null) {
+            executor.registerMobAugments(mobUuid,
+                    augmentIds,
+                    plugin.getAugmentManager(),
+                    plugin.getAugmentRuntimeManager());
+        }
+
+        double defensePercent = Math.max(0.0D,
+                Math.min(MOB_DEFENSE_MAX_REDUCTION_PERCENT,
+                        executor.getAttributeBonus(mobUuid, SkillAttributeType.DEFENSE)));
+        float afterDefense = (float) (incomingDamage * (1.0D - (defensePercent / 100.0D)));
+
+        float afterDamageTaken = executor.applyOnDamageTaken(
+                mobUuid,
+                targetRef,
+                attackerRef,
+                commandBuffer,
+                targetStats,
+                afterDefense);
+        float afterLowHp = executor.applyOnLowHp(
+                mobUuid,
+                targetRef,
+                attackerRef,
+                commandBuffer,
+                targetStats,
+                afterDamageTaken);
+        return Math.max(0.0f, afterLowHp);
+    }
+
+    private static final double MOB_DEFENSE_MAX_REDUCTION_PERCENT = 80.0D;
 
     private void applySummonDefenderAugments(@Nonnull Damage damage,
             @Nonnull Ref<EntityStore> targetRef,

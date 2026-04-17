@@ -48,6 +48,16 @@ public class PlayerData {
     private boolean necromancerPveMode;
     private String language;
 
+    // Cached immutable snapshot of the active profile's selected augments.
+    // Rebuilt lazily on first read after invalidation; invalidation fires on
+    // every mutation point (set/add/clear) and auto-refreshes on profile
+    // switch via the profile-identity check in getSelectedAugmentsSnapshot().
+    // Hot-path read source for CommonAugment / PassiveManager / SkillManager /
+    // ClassManager / RaceManager — previously ~49.6 GB of sampled allocation
+    // churn from per-tick defensive-copy snapshotting.
+    private transient volatile PlayerProfile cachedSnapshotProfile;
+    private transient volatile Map<String, String> cachedSelectedAugmentsSnapshot;
+
     public PlayerData(UUID uuid, String playerName) {
         this(uuid, playerName, 0);
     }
@@ -479,15 +489,35 @@ public class PlayerData {
     }
 
     public void setSelectedAugmentForTier(String tierKey, String augmentId) {
+        invalidateSelectedAugmentsCache();
         getActiveProfile().setSelectedAugment(tierKey, augmentId);
     }
 
     public void addSelectedAugmentForTier(String tierKey, String augmentId) {
+        invalidateSelectedAugmentsCache();
         getActiveProfile().addSelectedAugment(tierKey, augmentId);
     }
 
     public Map<String, String> getSelectedAugmentsSnapshot() {
-        return Collections.unmodifiableMap(new LinkedHashMap<>(getActiveProfile().getSelectedAugments()));
+        PlayerProfile active = getActiveProfile();
+        Map<String, String> cached = cachedSelectedAugmentsSnapshot;
+        // Identity check auto-handles profile switches: when activeProfileIndex
+        // changes, getActiveProfile() returns a different PlayerProfile instance
+        // and the cache rebuilds transparently. Mid-profile mutations still
+        // require explicit invalidateSelectedAugmentsCache() calls below.
+        if (cached != null && cachedSnapshotProfile == active) {
+            return cached;
+        }
+        Map<String, String> fresh = Collections.unmodifiableMap(
+                new LinkedHashMap<>(active.getSelectedAugments()));
+        cachedSnapshotProfile = active;
+        cachedSelectedAugmentsSnapshot = fresh;
+        return fresh;
+    }
+
+    private void invalidateSelectedAugmentsCache() {
+        cachedSelectedAugmentsSnapshot = null;
+        cachedSnapshotProfile = null;
     }
 
     public Double getAugmentValueRoll(String selectionKey, String rollKey) {
@@ -503,6 +533,7 @@ public class PlayerData {
     }
 
     public void clearSelectedAugments() {
+        invalidateSelectedAugmentsCache();
         getActiveProfile().clearSelectedAugments();
     }
 

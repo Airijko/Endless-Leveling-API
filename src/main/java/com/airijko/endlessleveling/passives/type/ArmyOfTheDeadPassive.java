@@ -44,8 +44,10 @@ import com.hypixel.hytale.server.npc.role.support.EntitySupport;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -688,6 +690,59 @@ public final class ArmyOfTheDeadPassive {
 
     public static void cleanupOwnerSummonsOnDisconnect(UUID ownerUuid, Store<EntityStore> ownerStore) {
         cleanupOwnerSummons(ownerUuid, ownerStore, true, System.currentTimeMillis());
+    }
+
+    /**
+     * Despawns all active summons for a dying owner regardless of which store
+     * each summon currently lives in. Unlike the 3s cleanup sweep, this fires
+     * immediately so dead-owner summons don't persist (the periodic sweep only
+     * treats offline/invalid PlayerRefs as "disconnected" — a dead-but-still-
+     * valid owner would keep its army alive otherwise).
+     */
+    public static void cleanupOwnerSummonsOnDeath(UUID ownerUuid) {
+        if (ownerUuid == null) {
+            return;
+        }
+        OwnerSummonState ownerState = OWNER_STATES.get(ownerUuid);
+        if (ownerState == null) {
+            return;
+        }
+
+        Universe universe = Universe.get();
+        PlayerRef ownerPlayerRef = universe != null ? universe.getPlayer(ownerUuid) : null;
+        Ref<EntityStore> ownerRef = ownerPlayerRef != null && ownerPlayerRef.isValid()
+                ? ownerPlayerRef.getReference()
+                : null;
+        Store<EntityStore> ownerStore = ownerRef != null ? ownerRef.getStore() : null;
+
+        Set<Store<EntityStore>> summonStores = new HashSet<>();
+        synchronized (ownerState) {
+            for (SummonSlot slot : ownerState.slots) {
+                if (slot == null || slot.activeRef == null) {
+                    continue;
+                }
+                try {
+                    Store<EntityStore> st = slot.activeRef.getStore();
+                    if (st != null) {
+                        summonStores.add(st);
+                    }
+                } catch (Throwable ignored) {
+                }
+            }
+        }
+        if (ownerStore != null) {
+            summonStores.add(ownerStore);
+        }
+
+        long now = System.currentTimeMillis();
+        for (Store<EntityStore> st : summonStores) {
+            if (st == null || st.isShutdown()) {
+                continue;
+            }
+            cleanupOwnerSummons(ownerUuid, st, true, now, ownerStore, ownerState);
+        }
+        OWNER_LAST_THREAT_TARGETS.remove(ownerUuid);
+        PENDING_ON_HIT_TRIGGERS.remove(ownerUuid);
     }
 
     public static int clearAllRuntimeState() {

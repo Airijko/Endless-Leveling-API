@@ -16,6 +16,7 @@ import com.hypixel.hytale.server.core.modules.entity.damage.Damage;
 import com.hypixel.hytale.server.core.modules.entity.damage.DeathComponent;
 import com.hypixel.hytale.server.core.modules.entity.damage.DeathSystems;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import javax.annotation.Nonnull;
@@ -43,6 +44,17 @@ public class ArmyOfTheDeadDeathSystem extends DeathSystems.OnDeathSystem {
 
         // Then handle the dying entity itself (if it is a managed summon).
         ArmyOfTheDeadPassive.handleDeath(ref, store, commandBuffer);
+
+        // If a player owner just died, despawn their army. The periodic 3s
+        // cleanup sweep treats only offline/invalid PlayerRefs as "disconnected",
+        // so a dead-but-still-valid player would keep summons alive otherwise.
+        PlayerRef victimPlayer = EntityRefUtil.tryGetComponent(commandBuffer, ref, PlayerRef.getComponentType());
+        if (victimPlayer == null) {
+            victimPlayer = EntityRefUtil.tryGetComponent(store, ref, PlayerRef.getComponentType());
+        }
+        if (victimPlayer != null && victimPlayer.isValid()) {
+            ArmyOfTheDeadPassive.cleanupOwnerSummonsOnDeath(victimPlayer.getUuid());
+        }
     }
 
     private void dispatchSummonKillAugments(@Nonnull Ref<EntityStore> victimRef,
