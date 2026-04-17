@@ -1365,6 +1365,7 @@ public class PlayerDataManager {
         options.put("useRaceModel", data.isUseRaceModel());
         options.put("supportPveMode", data.isSupportPveMode());
         options.put("necromancerPveMode", data.isNecromancerPveMode());
+        options.put("movementHasteCapPercent", data.getMovementHasteCapPercent());
         options.put("language", data.getLanguage());
         map.put("options", options);
 
@@ -1736,6 +1737,8 @@ public class PlayerDataManager {
         Object useRaceModel = options != null ? options.get("useRaceModel") : map.get("useRaceModel");
         Object supportPveMode = options != null ? options.get("supportPveMode") : map.get("supportPveMode");
         Object necromancerPveMode = options != null ? options.get("necromancerPveMode") : map.get("necromancerPveMode");
+        Object movementHasteCapPercent = options != null ? options.get("movementHasteCapPercent")
+                : map.get("movementHasteCapPercent");
         Object language = options != null ? options.get("language") : map.get("language");
         data.setPlayerHudEnabled(parseBoolean(playerHud, true));
         data.setCriticalNotifEnabled(parseBoolean(criticalNotif, true));
@@ -1746,6 +1749,7 @@ public class PlayerDataManager {
         data.setAugmentNotifEnabled(parseBoolean(augmentNotif, true));
         data.setSupportPveMode(parseBoolean(supportPveMode, true));
         data.setNecromancerPveMode(parseBoolean(necromancerPveMode, true));
+        data.setMovementHasteCapPercent(parseInt(movementHasteCapPercent, 100));
         String configuredLanguage = parseString(language);
         if (configuredLanguage == null || configuredLanguage.isBlank()) {
             data.setLanguage(resolveConfiguredDefaultLanguage());

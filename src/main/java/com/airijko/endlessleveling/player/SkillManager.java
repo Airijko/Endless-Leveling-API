@@ -1035,7 +1035,11 @@ public class SkillManager {
         }
 
         HasteBreakdown hasteBreakdown = getHasteBreakdown(playerData);
-        float requestedMultiplier = hasteBreakdown.totalMultiplier();
+        float capRatio = Math.max(0, Math.min(100, playerData.getMovementHasteCapPercent())) / 100.0f;
+        float rawSkillBonus = hasteBreakdown.skillBonus();
+        float scaledSkillBonus = rawSkillBonus > 0.0f ? rawSkillBonus * capRatio : rawSkillBonus;
+        float cappedMultiplier = hasteBreakdown.raceMultiplier() * (1.0f + scaledSkillBonus);
+        float requestedMultiplier = cappedMultiplier;
         float swiftnessMultiplier = getSwiftnessMultiplier(playerData);
         requestedMultiplier *= swiftnessMultiplier;
 

@@ -3,6 +3,7 @@ package com.airijko.endlessleveling.ui;
 import javax.annotation.Nonnull;
 
 import com.airijko.endlessleveling.player.PlayerData;
+import com.airijko.endlessleveling.player.SkillManager;
 import com.airijko.endlessleveling.managers.ConfigManager;
 import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.util.Lang;
@@ -123,6 +124,10 @@ public class SettingsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                                 of("Action", "toggle:supportPveMode"), false);
                 events.addEventBinding(Activating, "#NecromancerPveModeToggle",
                                 of("Action", "toggle:necromancerPveMode"), false);
+                events.addEventBinding(ValueChanged, "#MovementHasteCapSlider",
+                                new EventData().append("Action", "slider:movementHasteCap")
+                                                .append("@MovementHasteCapValue", "#MovementHasteCapSlider.Value"),
+                                false);
 
                 // Section navigation
                 events.addEventBinding(Activating, "#NavPlayerSettings", of("Action", "nav:playerSettings"), false);
@@ -321,6 +326,16 @@ public class SettingsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 ui.set("#NecromancerPveModeValue.Text", data.isNecromancerPveMode()
                                 ? Lang.tr(playerRef.getUuid(), "ui.common.toggle.on", "ON")
                                 : Lang.tr(playerRef.getUuid(), "ui.common.toggle.off", "OFF"));
+
+                int hasteCap = data.getMovementHasteCapPercent();
+                ui.set("#MovementHasteCapLabel.Text",
+                                Lang.tr(playerRef.getUuid(), "ui.settings.movement_haste_cap.label",
+                                                "Max Haste Movement Cap"));
+                ui.set("#MovementHasteCapSlider.Value", hasteCap);
+                ui.set("#MovementHasteCapValue.Text", formatCappedHastePercent(data));
+                ui.set("#MovementHasteCapDescription.Text",
+                                Lang.tr(playerRef.getUuid(), "ui.settings.description.movement_haste_cap",
+                                                "Limits how much of your haste stat speeds you up. Damage-conversion and haste-based augments still use your full haste."));
 
                 ui.set("#SettingsTitleLabel.Text",
                                 Lang.tr(playerRef.getUuid(), "ui.settings.page.title", "Settings"));
@@ -645,12 +660,40 @@ public class SettingsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                                                                 "Race model visuals disabled"))
                                                 .color("#ff9900"));
                         }
+                } else if ("slider:movementHasteCap".equalsIgnoreCase(action) && data.movementHasteCapValue != null) {
+                        int requested = Math.max(0, Math.min(100, data.movementHasteCapValue));
+                        if (requested != playerData.getMovementHasteCapPercent()) {
+                                playerData.setMovementHasteCapPercent(requested);
+                                changed = true;
+                                UICommandBuilder sliderUi = new UICommandBuilder();
+                                sliderUi.set("#MovementHasteCapValue.Text", formatCappedHastePercent(playerData));
+                                sendUpdate(sliderUi, false);
+                                try {
+                                        EndlessLeveling.getInstance().getSkillManager()
+                                                        .applyMovementSpeedModifier(ref, store, playerData);
+                                } catch (Exception ex) {
+                                        LOGGER.atWarning().log(
+                                                        "SettingsUIPage: failed to reapply movement speed after haste cap change for %s: %s",
+                                                        playerRef.getUuid(), ex.getMessage());
+                                }
+                        }
                 }
 
                 if (changed) {
                         EndlessLeveling.getInstance().getPlayerDataManager().save(playerData);
                         sendValuesUpdate();
                 }
+        }
+
+        private String formatCappedHastePercent(PlayerData data) {
+                SkillManager sm = EndlessLeveling.getInstance().getSkillManager();
+                SkillManager.HasteBreakdown breakdown = sm.getHasteBreakdown(data);
+                float capRatio = Math.max(0, Math.min(100, data.getMovementHasteCapPercent())) / 100.0f;
+                float rawSkillBonus = breakdown.skillBonus();
+                float scaledSkillBonus = rawSkillBonus > 0.0f ? rawSkillBonus * capRatio : rawSkillBonus;
+                float cappedMult = breakdown.raceMultiplier() * (1.0f + scaledSkillBonus);
+                double effectivePercent = (cappedMult - 1.0D) * 100.0D;
+                return Math.round(effectivePercent) + "%";
         }
 
         private void applyConfigTabStyles(@Nonnull UICommandBuilder ui) {
@@ -998,6 +1041,10 @@ public class SettingsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                                         : data.isUseRaceModel()
                                                 ? Lang.tr(playerRef.getUuid(), "ui.common.toggle.on", "ON")
                                                 : Lang.tr(playerRef.getUuid(), "ui.common.toggle.off", "OFF"));
+
+                        int hasteCap = data.getMovementHasteCapPercent();
+                        ui.set("#MovementHasteCapSlider.Value", hasteCap);
+                        ui.set("#MovementHasteCapValue.Text", formatCappedHastePercent(data));
                 }
 
                 sendUpdate(ui);

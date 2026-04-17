@@ -1088,6 +1088,9 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                 // Generic numeric value for config NumberField inputs (settings page).
                 public Double configValue;
 
+                // Value for the movement haste cap slider on the Player Settings page.
+                public Integer movementHasteCapValue;
+
                 public Data() {
                         this.action = "";
                         this.autoAllocatePerLevelValue = null;
@@ -1103,6 +1106,7 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                         this.quickSpendSorceryValue = null;
                         this.searchQuery = null;
                         this.configValue = null;
+                        this.movementHasteCapValue = null;
                 }
 
                 public static final BuilderCodec<Data> CODEC = BuilderCodec.builder(Data.class, Data::new)
@@ -1161,6 +1165,10 @@ public class SkillsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
                                 .append(new KeyedCodec<>("@ConfigValue", Codec.DOUBLE),
                                                 (d, v) -> d.configValue = v,
                                                 d -> d.configValue)
+                                .add()
+                                .append(new KeyedCodec<>("@MovementHasteCapValue", Codec.INTEGER),
+                                                (d, v) -> d.movementHasteCapValue = v,
+                                                d -> d.movementHasteCapValue)
                                 .add()
                                 .build();
         }

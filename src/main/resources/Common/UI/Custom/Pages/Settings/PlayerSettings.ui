@@ -43,6 +43,83 @@ $S = "SettingsStyles.ui";
         Group #PlayerSettingsList {
             LayoutMode: Top;
 
+            // ======== MOVEMENT SECTION ========
+            Group {
+                LayoutMode: Left;
+                Padding: (Bottom: 8);
+
+                Group { Anchor: (Width: 3, Height: 18); Background: #b5f5a4; }
+                Group { Anchor: (Width: 8); }
+                Label { Text: "MOVEMENT"; Style: (TextColor: #b5f5a4, FontSize: 13, RenderBold: true, RenderUppercase: true, LetterSpacing: 1); }
+            }
+
+            // -- Max Haste Cap --
+            Group #MovementHasteCapRow {
+                LayoutMode: Left;
+                Background: #0b141f(0.84);
+                Padding: (Full: 0);
+
+                Group { Anchor: (Width: 3); Background: #b5f5a4(0.40); }
+
+                Group {
+                    LayoutMode: Left;
+                    FlexWeight: 1;
+                    Padding: (Full: 12);
+
+                    Group {
+                        LayoutMode: Top;
+                        FlexWeight: 1;
+
+                        Group {
+                            LayoutMode: Left;
+
+                            Label #MovementHasteCapLabel { Style: (TextColor: #f4f9ff, FontSize: 15, RenderBold: true); FlexWeight: 1; Text: "Max Haste Movement Cap"; }
+
+                            Label #MovementHasteCapValue {
+                                Text: "100%";
+                                Anchor: (Width: $S.@SettingValueWidth, Height: 24);
+                                Padding: (Horizontal: 8, Vertical: 4);
+                                Style: (TextColor: #b5f5a4, FontSize: 12, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
+                                Background: #061420;
+                            }
+                        }
+
+                        Group { Anchor: (Height: 4); }
+
+                        Label #MovementHasteCapDescription {
+                            Text: "Limits how much of your haste stat speeds you up. Damage-conversion and haste-based augments still use your full haste.";
+                            Style: (TextColor: #c0cee5, FontSize: 12);
+                        }
+
+                        Group { Anchor: (Height: 6); }
+
+                        Group {
+                            LayoutMode: Left;
+
+                            Label { Text: "0%"; Style: (TextColor: #8ca2bd, FontSize: 11); Anchor: (Width: 22, Height: 18); }
+
+                            Group { Anchor: (Width: 6); }
+
+                            Slider #MovementHasteCapSlider {
+                                Value: 100;
+                                Min: 0;
+                                Max: 100;
+                                Step: 5;
+                                Style: $C.@DefaultSliderStyle;
+                                FlexWeight: 1;
+                                Anchor: (Height: 6);
+                            }
+
+                            Group { Anchor: (Width: 6); }
+
+                            Label { Text: "100%"; Style: (TextColor: #8ca2bd, FontSize: 11, RenderBold: true); Anchor: (Width: 32, Height: 18); }
+                        }
+                    }
+                }
+            }
+
+            Group { Anchor: (Height: 16); }
+
             // ======== DISPLAY SECTION ========
             Group {
                 LayoutMode: Left;

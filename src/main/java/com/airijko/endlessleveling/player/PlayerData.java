@@ -46,6 +46,7 @@ public class PlayerData {
     private boolean useRaceModel;
     private boolean supportPveMode;
     private boolean necromancerPveMode;
+    private int movementHasteCapPercent;
     private String language;
 
     // Cached immutable snapshot of the active profile's selected augments.
@@ -78,6 +79,7 @@ public class PlayerData {
         this.useRaceModel = false;
         this.supportPveMode = true;
         this.necromancerPveMode = true;
+        this.movementHasteCapPercent = 100;
         this.language = DEFAULT_LANGUAGE;
         LOGGER.atInfo().log("PlayerData created for player: %s (UUID: %s) with profile slot 1", playerName, uuid);
     }
@@ -431,6 +433,20 @@ public class PlayerData {
 
     public void setNecromancerPveMode(boolean necromancerPveMode) {
         this.necromancerPveMode = necromancerPveMode;
+    }
+
+    public int getMovementHasteCapPercent() {
+        return movementHasteCapPercent;
+    }
+
+    public void setMovementHasteCapPercent(int movementHasteCapPercent) {
+        if (movementHasteCapPercent < 0) {
+            this.movementHasteCapPercent = 0;
+        } else if (movementHasteCapPercent > 100) {
+            this.movementHasteCapPercent = 100;
+        } else {
+            this.movementHasteCapPercent = movementHasteCapPercent;
+        }
     }
 
     public String getLanguage() {
