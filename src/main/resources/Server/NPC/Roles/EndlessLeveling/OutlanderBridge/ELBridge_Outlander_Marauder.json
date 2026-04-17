@@ -1,0 +1,40 @@
+{
+  "Type": "Variant",
+  "Reference": "Template_Trork_Chieftain",
+  "Modify": {
+    "Appearance": "Outlander_Marauder",
+    "DropList": "Drop_Outlander_Marauder",
+    "Weapons": ["Weapon_Sword_Doomed", "Weapon_Sword_Doomed"],
+    "OffHand": ["Weapon_Shield_Doomed"],
+    "DefaultOffHandSlot": 0,
+    "ViewRange": 75,
+    "ViewSector": 360,
+    "HearingRange": 75,
+    "AlertedRange": 75,
+    "AttackSequence": "Component_Instruction_Attack_Sequence_Outlander_Marauder",
+    "TargetGroups": ["Outlander"],
+    "ChestBlockSet": "Trork_Chest",
+    "UnderlingGroups": ["Outlander_Underlings"],
+    "DisableDamageGroups": ["Self", "Outlander"],
+    "BackupSpawnMarker": "Outlander_Marauder_Backup",
+    "AttitudeGroup": "Outlander",
+    "MaxHealth": 103,
+    "IsMemory": true,
+    "MemoriesCategory": "Outlander",
+    "_InteractionVars": {
+      "Melee_Damage": {
+        "Interactions": [{
+          "Parent": "NPC_Attack_Melee_Damage",
+          "DamageCalculator": { "BaseDamage": { "Physical": 27 } }
+        }]
+      }
+    },
+    "NameTranslationKey": { "Compute": "NameTranslationKey" }
+  },
+  "Parameters": {
+    "NameTranslationKey": {
+      "Value": "server.npcRoles.Outlander_Marauder.name",
+      "Description": "Translation key for NPC name display"
+    }
+  }
+}

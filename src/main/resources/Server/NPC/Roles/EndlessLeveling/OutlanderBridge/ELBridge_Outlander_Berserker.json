@@ -1,0 +1,42 @@
+{
+  "Type": "Variant",
+  "Reference": "Template_Trork_Melee",
+  "Modify": {
+    "Appearance": "Outlander_Berserker",
+    "DropList": "Drop_Outlander_Berserker",
+    "Weapons": ["Weapon_Axe_Doomed", "Weapon_Axe_Doomed"],
+    "ViewRange": 75,
+    "ViewSector": 360,
+    "HearingRange": 75,
+    "AlertedRange": 75,
+    "AttackSequence": "Component_Instruction_Attack_Sequence_Outlander_Berserker",
+    "TargetGroups": ["Outlander"],
+    "ChestBlockSet": "Trork_Chest",
+    "BedBlockSet": "Trork_Bedroll",
+    "CampfireBlockSet": "Trork_Campfire",
+    "SparTargetGroups": ["Outlander_Spar"],
+    "UnderlingGroups": ["Outlander_Underlings"],
+    "DisableDamageGroups": ["Self", "Outlander"],
+    "AttitudeGroup": "Outlander",
+    "AttackDistance": 2.5,
+    "IdleMotionComponent": "$Null",
+    "MaxHealth": 103,
+    "IsMemory": true,
+    "MemoriesCategory": "Outlander",
+    "_InteractionVars": {
+      "Melee_Damage": {
+        "Interactions": [{
+          "Parent": "NPC_Attack_Melee_Damage",
+          "DamageCalculator": { "BaseDamage": { "Physical": 27 } }
+        }]
+      }
+    },
+    "NameTranslationKey": { "Compute": "NameTranslationKey" }
+  },
+  "Parameters": {
+    "NameTranslationKey": {
+      "Value": "server.npcRoles.Outlander_Berserker.name",
+      "Description": "Translation key for NPC name display"
+    }
+  }
+}

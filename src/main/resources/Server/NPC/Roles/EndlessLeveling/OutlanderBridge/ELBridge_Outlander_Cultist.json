@@ -1,0 +1,42 @@
+{
+  "Type": "Variant",
+  "Reference": "Template_Trork_Hybrid",
+  "Modify": {
+    "ViewRange": 75,
+    "ViewSector": 360,
+    "HearingRange": 75,
+    "AlertedRange": 75,
+    "Weapons": ["Weapon_Daggers_Doomed", "Weapon_Daggers_Doomed"],
+    "DropList": "Drop_Outlander_Cultist",
+    "Appearance": "Outlander_Cultist",
+    "AttackSequence": "Component_Instruction_Attack_Sequence_Outlander_Cultist",
+    "TargetGroups": ["Outlander"],
+    "ChestBlockSet": "Trork_Chest",
+    "BedBlockSet": "Trork_Bedroll",
+    "CampfireBlockSet": "Trork_Campfire",
+    "UnderlingGroups": ["Outlander_Underlings"],
+    "DisableDamageGroups": ["Self", "Outlander"],
+    "RangedAttackSequence": "Component_Instruction_Attack_Sequence_Outlander_Cultist_Ranged",
+    "AttitudeGroup": "Outlander_Ranged",
+    "AttackDistance": 2.5,
+    "IdleMotionComponent": "$Null",
+    "MaxHealth": 81,
+    "IsMemory": true,
+    "MemoriesCategory": "Outlander",
+    "_InteractionVars": {
+      "Melee_Damage": {
+        "Interactions": [{
+          "Parent": "NPC_Attack_Melee_Damage",
+          "DamageCalculator": { "BaseDamage": { "Physical": 21 } }
+        }]
+      }
+    },
+    "NameTranslationKey": { "Compute": "NameTranslationKey" }
+  },
+  "Parameters": {
+    "NameTranslationKey": {
+      "Value": "server.npcRoles.Outlander_Cultist.name",
+      "Description": "Translation key for NPC name display"
+    }
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "Type": "Variant",
+  "Reference": "Template_Trork_Melee",
+  "Modify": {
+    "Appearance": "Outlander_Peon",
+    "DropList": "Drop_Outlander_Peon",
+    "ViewRange": 75,
+    "ViewSector": 360,
+    "HearingRange": 75,
+    "AlertedRange": 75,
+    "TargetGroups": ["Outlander"],
+    "Weapons": ["Tool_Pickaxe_Cobalt"],
+    "ChestBlockSet": "Trork_Chest",
+    "BedBlockSet": "Trork_Bedroll",
+    "CampfireBlockSet": "Trork_Campfire",
+    "SparTargetGroups": ["Outlander_Spar"],
+    "UnderlingGroups": ["Outlander_Underlings"],
+    "DisableDamageGroups": ["Self", "Outlander"],
+    "AttackSequence": "Component_Instruction_Attack_Sequence_Outlander_Peon",
+    "AttitudeGroup": "Outlander",
+    "AttackDistance": 2.5,
+    "IdleMotionComponent": "$Null",
+    "MaxHealth": 81,
+    "IsMemory": true,
+    "MemoriesCategory": "Outlander",
+    "_InteractionVars": {
+      "Melee_Damage": {
+        "Interactions": [{
+          "Parent": "NPC_Attack_Melee_Damage",
+          "DamageCalculator": { "BaseDamage": { "Physical": 21 } }
+        }]
+      }
+    },
+    "NameTranslationKey": { "Compute": "NameTranslationKey" }
+  },
+  "Parameters": {
+    "NameTranslationKey": {
+      "Value": "server.npcRoles.Outlander_Peon.name",
+      "Description": "Translation key for NPC name display"
+    }
+  }
+}

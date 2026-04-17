@@ -1,0 +1,42 @@
+{
+  "Type": "Variant",
+  "Reference": "Template_Trork_Hybrid",
+  "Modify": {
+    "ViewRange": 75,
+    "ViewSector": 360,
+    "HearingRange": 75,
+    "AlertedRange": 75,
+    "Weapons": ["Weapon_Shortbow_Doomed", "Weapon_Daggers_Fang_Doomed"],
+    "DropList": "Drop_Outlander_Hunter",
+    "Appearance": "Outlander_Hunter",
+    "AttackSequence": "Component_Instruction_Attack_Sequence_Outlander_Hunter",
+    "TargetGroups": ["Outlander"],
+    "ChestBlockSet": "Trork_Chest",
+    "BedBlockSet": "Trork_Bedroll",
+    "CampfireBlockSet": "Trork_Campfire",
+    "UnderlingGroups": ["Outlander_Underlings"],
+    "DisableDamageGroups": ["Self", "Outlander"],
+    "RangedAttackSequence": "Component_Instruction_Attack_Sequence_Outlander_Hunter_Ranged",
+    "AttitudeGroup": "Outlander_Ranged",
+    "AttackDistance": 2.5,
+    "IdleMotionComponent": "$Null",
+    "MaxHealth": 61,
+    "IsMemory": true,
+    "MemoriesCategory": "Outlander",
+    "_InteractionVars": {
+      "Melee_Damage": {
+        "Interactions": [{
+          "Parent": "NPC_Attack_Melee_Damage",
+          "DamageCalculator": { "BaseDamage": { "Physical": 23 } }
+        }]
+      }
+    },
+    "NameTranslationKey": { "Compute": "NameTranslationKey" }
+  },
+  "Parameters": {
+    "NameTranslationKey": {
+      "Value": "server.npcRoles.Outlander_Hunter.name",
+      "Description": "Translation key for NPC name display"
+    }
+  }
+}

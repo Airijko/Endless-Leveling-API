@@ -19,9 +19,6 @@ import com.hypixel.hytale.server.core.asset.type.soundevent.config.SoundEvent;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.modules.entity.component.EntityScaleComponent;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
-import com.hypixel.hytale.server.core.modules.entity.damage.Damage;
-import com.hypixel.hytale.server.core.modules.entity.damage.DamageCause;
-import com.hypixel.hytale.server.core.modules.entity.damage.DamageSystems;
 import com.hypixel.hytale.server.core.modules.entity.damage.DeathComponent;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.SoundUtil;
@@ -32,7 +29,6 @@ import com.hypixel.hytale.server.core.util.EventTitleUtil;
 import com.hypixel.hytale.server.npc.NPCPlugin;
 import com.hypixel.hytale.server.npc.entities.NPCEntity;
 import com.hypixel.hytale.server.npc.util.NPCPhysicsMath;
-import com.hypixel.hytale.builtin.npccombatactionevaluator.memory.TargetMemory;
 import com.airijko.endlessleveling.EndlessLeveling;
 import com.airijko.endlessleveling.leveling.MobLevelingManager;
 import com.airijko.endlessleveling.ui.OutlanderBridgeRewardsPage;
@@ -43,7 +39,6 @@ import com.hypixel.hytale.math.vector.Transform;
 import com.hypixel.hytale.server.core.HytaleServer;
 import com.hypixel.hytale.server.core.modules.entity.teleport.Teleport;
 import com.hypixel.hytale.server.core.universe.Universe;
-import it.unimi.dsi.fastutil.ints.Int2FloatOpenHashMap;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -106,24 +101,31 @@ public final class OutlanderBridgeWaveManager extends TickingSystem<EntityStore>
     private static final long INSTANCE_REMOVE_DELAY_MS = 500L;
     private static final float WAVE_TICK_INTERVAL = 1.0f;
     private static final int DEFAULT_BATCH_KILL_PERCENT = 60;
-    private static final int DEFAULT_BATCH_FALLBACK_SECONDS = 25;
+    private static final int DEFAULT_BATCH_FALLBACK_SECONDS = 15;
     private static final double DEFAULT_WAVE_CLEAR_IMMEDIATE_XP_PERCENT = 20.0;
     private static final double DEFAULT_COMPLETION_XP_BONUS_PERCENT = 25.0;
     private static final double DEFAULT_SPAWN_RADIUS = 18.0;
     private static final double LEASH_RADIUS = 150.0;
-    private static final double AGGRO_RADIUS = 200.0;
     private static final double MIN_SPAWN_Y = 80.0;
     // Bridge combat zone: 25-block radius around (0,0). Mobs are pulled toward
     // X = ±15 (their own side) rather than CENTER so two opposing fronts form
     // on the deck. After PULL_GRACE_SECONDS any mob still outside the 25-block
     // combat zone is snapped back onto its side line at X = ±15, Z scattered
     // in [-5, +5] to avoid pile-up at a single point.
-    private static final double PULL_X_ABS = 15.0;
-    private static final double COMBAT_ZONE_RADIUS = 25.0;
+    private static final double PULL_X_ABS = 20.0;
+    // Per-mob stop-point jitter — prevents mobs from stacking on a single
+    // point at (±20, 80, 0). Each mob gets a stable random offset within
+    // ±STOP_JITTER_X on X (depth along approach) and ±STOP_JITTER_Z on Z
+    // (along the bridge length) at spawn time, reused by pullToward.
+    private static final double STOP_JITTER_X = 5.0;
+    private static final double STOP_JITTER_Z = 12.0;
+    private static final Vector3d ZERO_OFFSET = new Vector3d(0.0, 0.0, 0.0);
+    // Snapback threshold — must exceed max legitimate jittered stop distance
+    // from origin (sqrt((PULL_X_ABS + STOP_JITTER_X)^2 + STOP_JITTER_Z^2) ≈ 27.7m)
+    // or mobs resting at their stop point get teleported in a loop.
+    private static final double COMBAT_ZONE_RADIUS = 30.0;
     private static final double COMBAT_ZONE_RADIUS_SQ = COMBAT_ZONE_RADIUS * COMBAT_ZONE_RADIUS;
-    private static final double SNAPBACK_Z_HALF_RANGE = 5.0;
     private static final float PULL_GRACE_SECONDS = 10.0f;
-    private static final double AGGRO_RADIUS_SQ = AGGRO_RADIUS * AGGRO_RADIUS;
     private static final double BOUNDS_HORIZONTAL_MULTIPLIER = 1.6;
     private static final double BOUNDS_VERTICAL_BELOW = 12.0;
     private static final double BOUNDS_VERTICAL_ABOVE = 48.0;
@@ -157,12 +159,6 @@ public final class OutlanderBridgeWaveManager extends TickingSystem<EntityStore>
     private static final int PORTAL_SCAN_Y_MIN = 76;
     private static final int PORTAL_SCAN_Y_MAX = 86;
     private static volatile int[] returnPortalBlockIntIdsCache;
-
-    // ---- Aggro target-memory slots ----
-    private static final String[] AGGRO_TARGET_SLOTS = {
-            "LockedTarget", "Target", "EnemyTarget", "Enemy",
-            "CombatTarget", "PrimaryTarget", "Attacker", "Hostile"
-    };
 
     // ---- Config / wave definitions (loaded once) ----
     private final List<WaveDef> waves = new ArrayList<>();
@@ -728,6 +724,8 @@ public final class OutlanderBridgeWaveManager extends TickingSystem<EntityStore>
         s.activeMobs.clear();
         s.activeMobNames.clear();
         s.mobSpawnTimes.clear();
+        s.mobStopOffsets.clear();
+        s.settledMobs.clear();
         s.waveClearedElapsed = 0.0f;
         s.nextWaveCountdownFired = false;
         s.secondsSinceLastKill = 0.0f;
@@ -857,13 +855,10 @@ public final class OutlanderBridgeWaveManager extends TickingSystem<EntityStore>
                     s.activeMobs.add(ref);
                     s.activeMobNames.put(ref, roleName);
                     s.mobSpawnTimes.put(ref, s.sessionElapsedSeconds);
+                    double offX = (random.nextDouble() * 2.0 - 1.0) * STOP_JITTER_X;
+                    double offZ = (random.nextDouble() * 2.0 - 1.0) * STOP_JITTER_Z;
+                    s.mobStopOffsets.put(ref, new Vector3d(offX, 0.0, offZ));
                     batchSpawned++;
-
-                    TransformComponent mobTr = store.getComponent(ref,
-                            Objects.requireNonNull(TransformComponent.getComponentType()));
-                    Vector3d mobPos = (mobTr != null && mobTr.getPosition() != null)
-                            ? mobTr.getPosition() : spawnPos;
-                    activateWaveMobAggro(s.world, ref, mobPos, store);
 
                     if (spawnAsBoss) {
                         applyBossSizeScale(store, ref);
@@ -926,6 +921,8 @@ public final class OutlanderBridgeWaveManager extends TickingSystem<EntityStore>
         s.activeMobNames.clear();
         s.activeMobNames.putAll(aliveNames);
         s.mobSpawnTimes.keySet().retainAll(aliveNames.keySet());
+        s.mobStopOffsets.keySet().retainAll(aliveNames.keySet());
+        s.settledMobs.retainAll(aliveNames.keySet());
     }
 
     // ========================================================================
@@ -949,16 +946,7 @@ public final class OutlanderBridgeWaveManager extends TickingSystem<EntityStore>
             if (tr == null || tr.getPosition() == null) continue;
             Vector3d pos = tr.getPosition();
 
-            // Refresh aggro every tick. If a player is within our extended
-            // AGGRO_RADIUS (500m), drive the mob toward them — the native role
-            // sensor range is fixed at build time and shorter than 500m, so
-            // relying on native chase beyond that would stall the mob.
-            Vector3d targetPos = activateWaveMobAggro(s.world, mobRef, pos, store);
-            if (targetPos != null) {
-                chasePlayer(mobRef, pos, targetPos, store);
-            } else {
-                pullToward(mobRef, pos, store);
-            }
+            // Pull disabled — native role sensor (75m) handles aggro/chase.
 
             double dx = pos.x - CENTER.x;
             double dz = pos.z - CENTER.z;
@@ -976,157 +964,54 @@ public final class OutlanderBridgeWaveManager extends TickingSystem<EntityStore>
         }
     }
 
-    // ========================================================================
-    // Aggro: TargetMemory + marked-entity + ghost-hit
-    // ========================================================================
-
-    /**
-     * Applies aggro to any player within {@link #AGGRO_RADIUS} of the mob.
-     * <p>Returns the closest player's position so callers can drive the mob
-     * toward that point — native sensor range is fixed per-role at build time
-     * ({@code SensorEntityBase.range}, loaded from the role YAML), so beyond
-     * that native cap we have to steer the mob ourselves to honor our custom
-     * 500m aggro radius.
-     * @return closest player's position if any within aggro range, else null.
-     */
-    @Nullable
-    private static Vector3d activateWaveMobAggro(@Nonnull World world,
-                                                 @Nonnull Ref<EntityStore> mobRef,
-                                                 @Nonnull Vector3d mobPos,
-                                                 @Nonnull Store<EntityStore> store) {
-        Ref<EntityStore> closest = null;
-        Vector3d closestPos = null;
-        double closestD2 = Double.MAX_VALUE;
-
-        for (PlayerRef p : world.getPlayerRefs()) {
-            if (p == null || !p.isValid()) continue;
-            Ref<EntityStore> pRef = p.getReference();
-            if (pRef == null || !pRef.isValid()) continue;
-            Store<EntityStore> pStore = pRef.getStore();
-            if (pStore == null) continue;
-
-            TransformComponent pt = pStore.getComponent(pRef,
-                    Objects.requireNonNull(TransformComponent.getComponentType()));
-            if (pt == null || pt.getPosition() == null) continue;
-            Vector3d pp = pt.getPosition();
-            double dx = pp.x - mobPos.x;
-            double dy = pp.y - mobPos.y;
-            double dz = pp.z - mobPos.z;
-            double d2 = dx * dx + dy * dy + dz * dz;
-            if (d2 > AGGRO_RADIUS_SQ) continue;
-
-            forceAggroOnPlayer(mobRef, pRef, store);
-
-            if (d2 < closestD2) {
-                closestD2 = d2;
-                closest = pRef;
-                closestPos = pp;
-            }
-        }
-
-        if (closest != null) {
-            TargetMemory tm = store.getComponent(mobRef,
-                    Objects.requireNonNull(TargetMemory.getComponentType()));
-            if (tm != null) tm.setClosestHostile(closest);
-            return closestPos;
-        }
-        return null;
-    }
-
-    /** Closest player position within AGGRO_RADIUS, or null. Does not mutate aggro state. */
-    @Nullable
-    private static Vector3d findClosestPlayerInAggro(@Nonnull World world, @Nonnull Vector3d mobPos) {
-        Vector3d best = null;
-        double bestD2 = Double.MAX_VALUE;
-        for (PlayerRef p : world.getPlayerRefs()) {
-            if (p == null || !p.isValid()) continue;
-            Ref<EntityStore> pRef = p.getReference();
-            if (pRef == null || !pRef.isValid()) continue;
-            Store<EntityStore> pStore = pRef.getStore();
-            if (pStore == null) continue;
-            TransformComponent pt = pStore.getComponent(pRef,
-                    Objects.requireNonNull(TransformComponent.getComponentType()));
-            if (pt == null || pt.getPosition() == null) continue;
-            Vector3d pp = pt.getPosition();
-            double dx = pp.x - mobPos.x;
-            double dy = pp.y - mobPos.y;
-            double dz = pp.z - mobPos.z;
-            double d2 = dx * dx + dy * dy + dz * dz;
-            if (d2 > AGGRO_RADIUS_SQ) continue;
-            if (d2 < bestD2) { bestD2 = d2; best = pp; }
-        }
-        return best;
-    }
+    /** Once a mob enters this radius around its stop point, it's marked
+     *  settled and never pulled again — native AI takes over from there.
+     *  Must be wide enough that the 10 m/s pull can't overshoot past it
+     *  on a single tick, else the mob oscillates outside the zone forever. */
+    private static final double SETTLE_THRESHOLD = 8.0;
 
     private static void pullToward(@Nonnull Ref<EntityStore> mobRef,
                                    @Nonnull Vector3d mobPos,
+                                   @Nonnull Vector3d stopOffset,
+                                   @Nonnull Set<Ref<EntityStore>> settledMobs,
+                                   @Nonnull Session session,
                                    @Nonnull Store<EntityStore> store) {
-        // Side line pull: left-spawn mobs walk toward X=-15, right-spawn
-        // toward X=+15, forming two fronts on the bridge. Z target is the
-        // deck centerline (0), so mobs converge onto the combat strip.
-        double targetX = mobPos.x < 0.0 ? -PULL_X_ABS : PULL_X_ABS;
+        if (settledMobs.contains(mobRef)) return;
+        // Time-based fallback: if a mob has been pulling for the full grace
+        // period without settling (terrain blocking, jittered target unreachable,
+        // etc.) force-settle anyway so native AI can take over.
+        Float spawnTime = session.mobSpawnTimes.get(mobRef);
+        if (spawnTime != null
+                && session.sessionElapsedSeconds - spawnTime >= PULL_GRACE_SECONDS) {
+            settledMobs.add(mobRef);
+            return;
+        }
+        // Stop-line pull: left-spawn mobs march to (-20, 80, 0), right-spawn
+        // to (+20, 80, 0), plus a per-mob jitter offset on X and Z so mobs
+        // don't pile onto a single coordinate. Spawns are at x=±50.
+        double baseX = mobPos.x < 0.0 ? -PULL_X_ABS : PULL_X_ABS;
+        double targetX = baseX + stopOffset.x;
+        double targetZ = stopOffset.z;
         double dx = targetX - mobPos.x;
-        double dz = -mobPos.z;
+        double dz = targetZ - mobPos.z;
         double distH = Math.sqrt(dx * dx + dz * dz);
-        if (distH < 3.0) return;
-
-        NPCEntity npcE = store.getComponent(mobRef,
-                Objects.requireNonNull(NPCEntity.getComponentType()));
-        if (npcE == null) return;
-        com.hypixel.hytale.server.npc.role.Role role = npcE.getRole();
-        if (role == null) return;
-
-        double inv = 1.0 / distH;
-        double speed = 6.0; // m/s — forced stride toward side line
-        Vector3d vel = new Vector3d(dx * inv * speed, 0.0, dz * inv * speed);
-        // ignoreDamping=false so velocity decays and native steering can take
-        // over once the mob settles — sticky overrides leave mobs frozen.
-        role.forceVelocity(vel, null, false);
-    }
-
-    /**
-     * Distance (m) at which we fully release and let native AI (chase +
-     * combat) take over. Sized generously above typical role sensor ranges
-     * (~16-24m) so native sensors have plenty of overlap to see the player
-     * and engage on their own.
-     */
-    private static final double NATIVE_HANDOFF_DIST = 30.0;
-    private static final double CHASE_SPEED = 6.0;
-
-    /**
-     * Long-range chase bridge: NPC role's vanilla sensor range is fixed at
-     * build time ({@code SensorEntityBase.range}, sourced from YAML via
-     * {@code PositionCache.requirePlayerDistanceSorted} during a
-     * configuring-only phase — no runtime override). We extend effective
-     * aggro to {@link #AGGRO_RADIUS} by pushing the mob toward the player
-     * until it's within native sensor reach, then completely releasing so
-     * native chase + combat AI engages.
-     * <p>Inside {@link #NATIVE_HANDOFF_DIST} we do NOT touch velocity, leash,
-     * or path. Continuing to push every frame was locking mobs in forced
-     * motion next to the player.
-     */
-    private static void chasePlayer(@Nonnull Ref<EntityStore> mobRef,
-                                    @Nonnull Vector3d mobPos,
-                                    @Nonnull Vector3d playerPos,
-                                    @Nonnull Store<EntityStore> store) {
-        NPCEntity npcE = store.getComponent(mobRef,
-                Objects.requireNonNull(NPCEntity.getComponentType()));
-        if (npcE == null) return;
-        com.hypixel.hytale.server.npc.role.Role role = npcE.getRole();
-        if (role == null) return;
-
-        double dx = playerPos.x - mobPos.x;
-        double dz = playerPos.z - mobPos.z;
-        double distH = Math.sqrt(dx * dx + dz * dz);
-        if (distH < NATIVE_HANDOFF_DIST) {
-            // Full handoff — native AI takes everything from here.
+        if (distH < SETTLE_THRESHOLD) {
+            settledMobs.add(mobRef);
             return;
         }
 
+        NPCEntity npcE = store.getComponent(mobRef,
+                Objects.requireNonNull(NPCEntity.getComponentType()));
+        if (npcE == null) return;
+        com.hypixel.hytale.server.npc.role.Role role = npcE.getRole();
+        if (role == null) return;
+
         double inv = 1.0 / distH;
-        Vector3d vel = new Vector3d(dx * inv * CHASE_SPEED, 0.0, dz * inv * CHASE_SPEED);
-        // ignoreDamping=false → force decays between pushes so steering can
-        // still operate. Prevents the "locked in forced motion" state.
+        double speed = 8.0; // m/s — forced stride toward stop line. Kept under
+        // SETTLE_THRESHOLD so a single tick of force can't overshoot the zone.
+        Vector3d vel = new Vector3d(dx * inv * speed, 0.0, dz * inv * speed);
+        // ignoreDamping=false so velocity decays and native steering can take
+        // over once the mob settles — sticky overrides leave mobs frozen.
         role.forceVelocity(vel, null, false);
     }
 
@@ -1145,9 +1030,6 @@ public final class OutlanderBridgeWaveManager extends TickingSystem<EntityStore>
                                           float deltaSeconds) {
         if (s.activeMobs.isEmpty()) return;
 
-        // Cheap global closest-player lookup — nulls out to no-op if empty world.
-        Ref<EntityStore> globalClosestPlayer = findAnyPlayerRef(s.world);
-
         s.stuckSampleAccumulator += deltaSeconds;
         boolean sample = s.stuckSampleAccumulator >= STUCK_SAMPLE_INTERVAL;
         if (sample) s.stuckSampleAccumulator = 0.0f;
@@ -1162,42 +1044,28 @@ public final class OutlanderBridgeWaveManager extends TickingSystem<EntityStore>
             if (tr == null || tr.getPosition() == null) continue;
             Vector3d pos = tr.getPosition();
 
-            // If a player is within our extended AGGRO_RADIUS (500m), chase
-            // the player directly — the native sensor range is shorter, so
-            // leaving this to native chase would stall mobs mid-map.
-            Vector3d chaseTarget = findClosestPlayerInAggro(s.world, pos);
-            boolean hasAggro = chaseTarget != null;
+            // Pull disabled — native role sensor (75m) handles aggro/chase.
 
-            if (hasAggro) {
-                chasePlayer(mobRef, pos, chaseTarget, store);
-                if (globalClosestPlayer != null) {
-                    lockAggro(mobRef, globalClosestPlayer, store);
-                }
-            } else {
-                pullToward(mobRef, pos, store);
-            }
-
-            // Grace-period snapback: the 10s grace lets mobs walk in from
-            // their spawn flank (outside the combat zone). After that, any
-            // mob outside the 30-block combat zone around (0,0) is teleported
-            // to its side line at X=±15, Z randomized in [-5, +5] so repeated
-            // snapbacks don't pile every mob on the same point.
+            // Grace-period snapback: 10s grace lets mobs walk in from spawn.
+            // After that, any mob still outside COMBAT_ZONE_RADIUS (40m) is
+            // teleported to its per-mob jittered stop point. Threshold must
+            // exceed legitimate stop distance (~28m) or resting mobs loop.
             Float spawnTime = s.mobSpawnTimes.get(mobRef);
             if (spawnTime != null
                     && s.sessionElapsedSeconds - spawnTime >= PULL_GRACE_SECONDS) {
                 double originD2 = pos.x * pos.x + pos.z * pos.z;
                 if (originD2 > COMBAT_ZONE_RADIUS_SQ) {
-                    double side = pos.x < 0.0 ? -PULL_X_ABS : PULL_X_ABS;
-                    double tpZ = (Math.random() * 2.0 - 1.0) * SNAPBACK_Z_HALF_RANGE;
-                    tr.teleportPosition(new Vector3d(side, CENTER.y, tpZ));
+                    Vector3d off = s.mobStopOffsets.getOrDefault(mobRef, ZERO_OFFSET);
+                    double baseX = pos.x < 0.0 ? -PULL_X_ABS : PULL_X_ABS;
+                    tr.teleportPosition(new Vector3d(baseX + off.x, CENTER.y, off.z));
                 }
             }
 
             if (sample) {
                 StuckState st = s.mobStuckStates.computeIfAbsent(mobRef, k -> new StuckState());
 
-                // Aggro'd mobs are free — reset stuck tracking, no teleport.
-                if (hasAggro) {
+                // Settled mobs are free — reset stuck tracking, no teleport.
+                if (s.settledMobs.contains(mobRef)) {
                     st.stuckSeconds = 0.0f;
                     st.lastDistToCenter = Double.MAX_VALUE;
                     continue;
@@ -1239,75 +1107,6 @@ public final class OutlanderBridgeWaveManager extends TickingSystem<EntityStore>
             s.mobStuckStates.keySet().removeIf(r -> r == null || !r.isValid()
                     || store.getComponent(r, DeathComponent.getComponentType()) != null);
         }
-    }
-
-    @Nullable
-    private static Ref<EntityStore> findAnyPlayerRef(@Nonnull World world) {
-        Ref<EntityStore> best = null;
-        for (PlayerRef p : world.getPlayerRefs()) {
-            if (p == null || !p.isValid()) continue;
-            Ref<EntityStore> pRef = p.getReference();
-            if (pRef == null || !pRef.isValid()) continue;
-            best = pRef;
-            break;
-        }
-        return best;
-    }
-
-    private static void lockAggro(@Nonnull Ref<EntityStore> mobRef,
-                                  @Nonnull Ref<EntityStore> playerRef,
-                                  @Nonnull Store<EntityStore> store) {
-        if (!mobRef.isValid() || !playerRef.isValid()) return;
-        TargetMemory tm = store.getComponent(mobRef,
-                Objects.requireNonNull(TargetMemory.getComponentType()));
-        if (tm != null) {
-            Int2FloatOpenHashMap hostiles = tm.getKnownHostiles();
-            int pIdx = playerRef.getIndex();
-            float remember = tm.getRememberFor();
-            if (hostiles.put(pIdx, remember) <= 0.0F)
-                tm.getKnownHostilesList().add(playerRef);
-            tm.setClosestHostile(playerRef);
-        }
-        NPCEntity npcE = store.getComponent(mobRef,
-                Objects.requireNonNull(NPCEntity.getComponentType()));
-        if (npcE != null) {
-            com.hypixel.hytale.server.npc.role.Role role = npcE.getRole();
-            if (role != null) {
-                for (String slot : AGGRO_TARGET_SLOTS) role.setMarkedTarget(slot, playerRef);
-            }
-        }
-    }
-
-    private static void forceAggroOnPlayer(@Nonnull Ref<EntityStore> mobRef,
-                                           @Nonnull Ref<EntityStore> playerRef,
-                                           @Nonnull Store<EntityStore> store) {
-        if (!mobRef.isValid() || !playerRef.isValid()) return;
-
-        TargetMemory tm = store.getComponent(mobRef,
-                Objects.requireNonNull(TargetMemory.getComponentType()));
-        if (tm != null) {
-            Int2FloatOpenHashMap hostiles = tm.getKnownHostiles();
-            int pIdx = playerRef.getIndex();
-            float remember = tm.getRememberFor();
-            if (hostiles.put(pIdx, remember) <= 0.0F)
-                tm.getKnownHostilesList().add(playerRef);
-            tm.setClosestHostile(playerRef);
-        }
-
-        NPCEntity npcE = store.getComponent(mobRef,
-                Objects.requireNonNull(NPCEntity.getComponentType()));
-        if (npcE != null) {
-            com.hypixel.hytale.server.npc.role.Role role = npcE.getRole();
-            if (role != null) {
-                for (String slot : AGGRO_TARGET_SLOTS) role.setMarkedTarget(slot, playerRef);
-            }
-        }
-
-        try {
-            Damage ghost = new Damage(
-                    new Damage.EntitySource(playerRef), DamageCause.PHYSICAL, 0.0F);
-            DamageSystems.executeDamage(mobRef, store, ghost);
-        } catch (Throwable ignored) {}
     }
 
     // ========================================================================
@@ -1682,6 +1481,8 @@ public final class OutlanderBridgeWaveManager extends TickingSystem<EntityStore>
         s.activeMobs.clear();
         s.activeMobNames.clear();
         s.mobSpawnTimes.clear();
+        s.mobStopOffsets.clear();
+        s.settledMobs.clear();
         restoreReturnPortals(s);
         closeHudForWorldPlayers(s.world);
         pendingJoinPlayers.remove(worldId);
@@ -2118,6 +1919,12 @@ public final class OutlanderBridgeWaveManager extends TickingSystem<EntityStore>
         final Map<Ref<EntityStore>, String> activeMobNames = new IdentityHashMap<>();
         final Map<Ref<EntityStore>, StuckState> mobStuckStates = new IdentityHashMap<>();
         final Map<Ref<EntityStore>, Float> mobSpawnTimes = new IdentityHashMap<>();
+        // Per-mob (dx, dz) offset added to the (±PULL_X_ABS, 0) stop point so
+        // mobs disperse across an area instead of piling on one coordinate.
+        final Map<Ref<EntityStore>, Vector3d> mobStopOffsets = new IdentityHashMap<>();
+        // Mobs that have reached their stop line. Pull is suppressed thereafter
+        // so native AI can chase/wander without being yanked back every tick.
+        final Set<Ref<EntityStore>> settledMobs = Collections.newSetFromMap(new IdentityHashMap<>());
         float sessionElapsedSeconds = 0.0f;
         float stuckSampleAccumulator = 0.0f;
         int lastAliveMobCount = 0;

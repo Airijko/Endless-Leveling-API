@@ -204,11 +204,15 @@ public final class OutlanderBridgeRewardsPage extends InteractiveCustomUIPage<Sk
         OPEN_PAGES.remove(playerUuid);
 
         // Grant XP (banking inactive for this player now that they're locked).
+        // Use adjustRawXp: bank already holds fully bonus-adjusted XP from the
+        // addXp pipeline at accumulation time. Re-running addXp here would
+        // double-stack bonuses and — worse — clamp the whole session total
+        // against the per-kill XP gain cap, wiping most of the claim.
         LevelingManager lm = EndlessLeveling.getInstance().getLevelingManager();
         OutlanderBridgeXpBank bank = OutlanderBridgeXpBank.get();
         bank.lockAndClear(playerUuid, sessionWorldId);
         if (lm != null && savedXp > 0.0) {
-            lm.addXp(playerUuid, savedXp);
+            lm.adjustRawXp(playerUuid, savedXp);
         }
         if (!bypass && cd != null) cd.setClaimedNow(playerUuid);
 

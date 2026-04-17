@@ -1,0 +1,36 @@
+{
+  "Type": "Variant",
+  "Reference": "Template_Trork_Mage",
+  "Modify": {
+    "ViewRange": 75,
+    "ViewSector": 360,
+    "HearingRange": 75,
+    "AlertedRange": 75,
+    "Weapons": ["Weapon_Club_Doomed", "Weapon_Club_Doomed"],
+    "DropList": "Drop_Outlander_Priest",
+    "Appearance": "Outlander_Priest",
+    "TargetGroups": ["Outlander"],
+    "ChestBlockSet": "Trork_Chest",
+    "BedBlockSet": "Trork_Bedroll",
+    "CampfireBlockSet": "Trork_Campfire",
+    "UnderlingGroups": ["Outlander_Underlings"],
+    "DisableDamageGroups": ["Self", "Outlander"],
+    "RangedAttack": "Skeleton_Sand_Mage_Spellbook_Corruption_Orb",
+    "RangedAttackSequence": "Component_Instruction_Attack_Sequence_Outlander_Priest_Ranged",
+    "SummonKind": "Wolf_Outlander_Priest",
+    "AttitudeGroup": "Outlander",
+    "IdleMotionComponent": "$Null",
+    "CloseRange": 2.5,
+    "CloseRangeSequence": "Component_Instruction_Attack_Sequence_Outlander_Priest",
+    "MaxHealth": 103,
+    "IsMemory": true,
+    "MemoriesCategory": "Outlander",
+    "NameTranslationKey": { "Compute": "NameTranslationKey" }
+  },
+  "Parameters": {
+    "NameTranslationKey": {
+      "Value": "server.npcRoles.Outlander_Priest.name",
+      "Description": "Translation key for NPC name display"
+    }
+  }
+}

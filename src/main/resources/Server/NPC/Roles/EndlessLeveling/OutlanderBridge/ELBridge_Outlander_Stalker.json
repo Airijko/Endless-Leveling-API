@@ -1,0 +1,43 @@
+{
+  "Type": "Variant",
+  "Reference": "Template_Trork_Hybrid",
+  "Modify": {
+    "ViewRange": 75,
+    "ViewSector": 360,
+    "HearingRange": 75,
+    "AlertedRange": 75,
+    "Weapons": ["Weapon_Crossbow_Iron", "Weapon_Daggers_Doomed"],
+    "DropList": "Drop_Outlander_Stalker",
+    "Appearance": "Outlander_Stalker",
+    "AttackSequence": "Component_Instruction_Attack_Sequence_Outlander_Stalker",
+    "TargetGroups": ["Outlander"],
+    "ChestBlockSet": "Trork_Chest",
+    "BedBlockSet": "Trork_Bedroll",
+    "CampfireBlockSet": "Trork_Campfire",
+    "UnderlingGroups": ["Outlander_Underlings"],
+    "DisableDamageGroups": ["Self", "Outlander"],
+    "RangedAttackSequence": "Component_Instruction_Attack_Sequence_Outlander_Stalker_Ranged",
+    "AttitudeGroup": "Outlander_Ranged",
+    "AttackDistance": 2.5,
+    "IdleMotionComponent": "$Null",
+    "CrouchToAttack": true,
+    "MaxHealth": 61,
+    "IsMemory": true,
+    "MemoriesCategory": "Outlander",
+    "_InteractionVars": {
+      "Melee_Damage": {
+        "Interactions": [{
+          "Parent": "NPC_Attack_Melee_Damage",
+          "DamageCalculator": { "BaseDamage": { "Physical": 23 } }
+        }]
+      }
+    },
+    "NameTranslationKey": { "Compute": "NameTranslationKey" }
+  },
+  "Parameters": {
+    "NameTranslationKey": {
+      "Value": "server.npcRoles.Outlander_Stalker.name",
+      "Description": "Translation key for NPC name display"
+    }
+  }
+}

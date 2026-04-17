@@ -1,0 +1,34 @@
+{
+  "Type": "Variant",
+  "Reference": "Template_Trork_Mage",
+  "Modify": {
+    "ViewRange": 75,
+    "ViewSector": 360,
+    "HearingRange": 75,
+    "AlertedRange": 75,
+    "Weapons": ["Weapon_Staff_Doomed", "Weapon_Staff_Doomed"],
+    "DropList": "Drop_Outlander_Sorcerer",
+    "Appearance": "Outlander_Sorcerer",
+    "TargetGroups": ["Outlander"],
+    "ChestBlockSet": "Trork_Chest",
+    "BedBlockSet": "Trork_Bedroll",
+    "CampfireBlockSet": "Trork_Campfire",
+    "UnderlingGroups": ["Outlander_Underlings"],
+    "DisableDamageGroups": ["Self", "Outlander"],
+    "RangedAttack": "Skeleton_Archmage_Staff_Corruption_Orb",
+    "RangedAttackSequence": "Component_Instruction_Attack_Sequence_Outlander_Sorcerer_Ranged",
+    "SummonKind": "Wolf_Outlander_Sorcerer",
+    "AttitudeGroup": "Outlander",
+    "IdleMotionComponent": "$Null",
+    "MaxHealth": 103,
+    "IsMemory": true,
+    "MemoriesCategory": "Outlander",
+    "NameTranslationKey": { "Compute": "NameTranslationKey" }
+  },
+  "Parameters": {
+    "NameTranslationKey": {
+      "Value": "server.npcRoles.Outlander_Sorcerer.name",
+      "Description": "Translation key for NPC name display"
+    }
+  }
+}

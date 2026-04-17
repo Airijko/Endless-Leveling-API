@@ -1,0 +1,45 @@
+{
+  "Type": "Variant",
+  "Reference": "Template_Trork_Melee",
+  "Modify": {
+    "Appearance": "Outlander_Brute",
+    "DropList": "Drop_Outlander_Brute",
+    "Weapons": ["Weapon_Battleaxe_Doomed"],
+    "ViewRange": 75,
+    "ViewSector": 360,
+    "HearingRange": 75,
+    "AlertedRange": 75,
+    "CombatRelativeTurnSpeed": 0.25,
+    "AttackSequence": "Component_Instruction_Attack_Sequence_Outlander_Brute",
+    "AttackDistance": 3.5,
+    "TargetGroups": ["Outlander"],
+    "ChestBlockSet": "Trork_Chest",
+    "BedBlockSet": "Trork_Bedroll",
+    "CampfireBlockSet": "Trork_Campfire",
+    "SparTargetGroups": ["Outlander_Spar"],
+    "UnderlingGroups": ["Outlander_Underlings"],
+    "DisableDamageGroups": ["Self", "Outlander"],
+    "AttitudeGroup": "Outlander",
+    "MaxSpeed": 5,
+    "RelativeChaseSpeed": 0.4,
+    "IdleMotionComponent": "$Null",
+    "MaxHealth": 124,
+    "IsMemory": true,
+    "MemoriesCategory": "Outlander",
+    "_InteractionVars": {
+      "Melee_Damage": {
+        "Interactions": [{
+          "Parent": "NPC_Attack_Melee_Damage",
+          "DamageCalculator": { "BaseDamage": { "Physical": 35 } }
+        }]
+      }
+    },
+    "NameTranslationKey": { "Compute": "NameTranslationKey" }
+  },
+  "Parameters": {
+    "NameTranslationKey": {
+      "Value": "server.npcRoles.Outlander_Brute.name",
+      "Description": "Translation key for NPC name display"
+    }
+  }
+}

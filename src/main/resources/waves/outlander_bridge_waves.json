@@ -13,20 +13,20 @@
           "mobs": [
             {
               "mobs": [
-                { "id": "Outlander_Peon", "count": 8 },
-                { "id": "Outlander_Marauder", "count": 6 }
+                { "id": "ELBridge_Outlander_Peon", "count": 8 },
+                { "id": "ELBridge_Outlander_Marauder", "count": 6 }
               ]
             },
             {
               "mobs": [
-                { "id": "Outlander_Peon", "count": 10 },
-                { "id": "Outlander_Berserker", "count": 5 }
+                { "id": "ELBridge_Outlander_Peon", "count": 10 },
+                { "id": "ELBridge_Outlander_Berserker", "count": 5 }
               ]
             },
             {
               "mobs": [
-                { "id": "Outlander_Marauder", "count": 7 },
-                { "id": "Outlander_Peon", "count": 7 }
+                { "id": "ELBridge_Outlander_Marauder", "count": 7 },
+                { "id": "ELBridge_Outlander_Peon", "count": 7 }
               ]
             }
           ]
@@ -36,21 +36,21 @@
           "mobs": [
             {
               "mobs": [
-                { "id": "Outlander_Hunter", "count": 6 },
-                { "id": "Outlander_Cultist", "count": 5 }
+                { "id": "ELBridge_Outlander_Hunter", "count": 6 },
+                { "id": "ELBridge_Outlander_Cultist", "count": 5 }
               ]
             },
             {
               "mobs": [
-                { "id": "Outlander_Stalker", "count": 6 },
-                { "id": "Outlander_Hunter", "count": 5 }
+                { "id": "ELBridge_Outlander_Stalker", "count": 6 },
+                { "id": "ELBridge_Outlander_Hunter", "count": 5 }
               ]
             }
           ]
         }
       ],
       "bosses": [
-        { "id": "Outlander_Brute" }
+        { "id": "ELBridge_Outlander_Brute" }
       ]
     },
     {
@@ -61,20 +61,20 @@
           "mobs": [
             {
               "mobs": [
-                { "id": "Outlander_Berserker", "count": 7 },
-                { "id": "Outlander_Marauder", "count": 6 }
+                { "id": "ELBridge_Outlander_Berserker", "count": 7 },
+                { "id": "ELBridge_Outlander_Marauder", "count": 6 }
               ]
             },
             {
               "mobs": [
-                { "id": "Outlander_Peon", "count": 8 },
-                { "id": "Outlander_Berserker", "count": 6 }
+                { "id": "ELBridge_Outlander_Peon", "count": 8 },
+                { "id": "ELBridge_Outlander_Berserker", "count": 6 }
               ]
             },
             {
               "mobs": [
-                { "id": "Outlander_Marauder", "count": 8 },
-                { "id": "Outlander_Peon", "count": 6 }
+                { "id": "ELBridge_Outlander_Marauder", "count": 8 },
+                { "id": "ELBridge_Outlander_Peon", "count": 6 }
               ]
             }
           ]
@@ -84,21 +84,21 @@
           "mobs": [
             {
               "mobs": [
-                { "id": "Outlander_Stalker", "count": 6 },
-                { "id": "Outlander_Priest", "count": 4 }
+                { "id": "ELBridge_Outlander_Stalker", "count": 6 },
+                { "id": "ELBridge_Outlander_Priest", "count": 4 }
               ]
             },
             {
               "mobs": [
-                { "id": "Outlander_Cultist", "count": 7 },
-                { "id": "Outlander_Sorcerer", "count": 4 }
+                { "id": "ELBridge_Outlander_Cultist", "count": 7 },
+                { "id": "ELBridge_Outlander_Sorcerer", "count": 4 }
               ]
             }
           ]
         }
       ],
       "bosses": [
-        { "id": "Outlander_Brute" }
+        { "id": "ELBridge_Outlander_Brute" }
       ]
     },
     {
@@ -109,14 +109,14 @@
           "mobs": [
             {
               "mobs": [
-                { "id": "Outlander_Berserker", "count": 8 },
-                { "id": "Outlander_Marauder", "count": 6 }
+                { "id": "ELBridge_Outlander_Berserker", "count": 8 },
+                { "id": "ELBridge_Outlander_Marauder", "count": 6 }
               ]
             },
             {
               "mobs": [
-                { "id": "Outlander_Marauder", "count": 7 },
-                { "id": "Outlander_Berserker", "count": 7 }
+                { "id": "ELBridge_Outlander_Marauder", "count": 7 },
+                { "id": "ELBridge_Outlander_Berserker", "count": 7 }
               ]
             }
           ]
@@ -126,22 +126,22 @@
           "mobs": [
             {
               "mobs": [
-                { "id": "Outlander_Hunter", "count": 6 },
-                { "id": "Outlander_Stalker", "count": 5 },
-                { "id": "Outlander_Cultist", "count": 5 }
+                { "id": "ELBridge_Outlander_Hunter", "count": 6 },
+                { "id": "ELBridge_Outlander_Stalker", "count": 5 },
+                { "id": "ELBridge_Outlander_Cultist", "count": 5 }
               ]
             },
             {
               "mobs": [
-                { "id": "Outlander_Priest", "count": 5 },
-                { "id": "Outlander_Cultist", "count": 6 }
+                { "id": "ELBridge_Outlander_Priest", "count": 5 },
+                { "id": "ELBridge_Outlander_Cultist", "count": 6 }
               ]
             }
           ]
         }
       ],
       "bosses": [
-        { "id": "Outlander_Brute" }
+        { "id": "ELBridge_Outlander_Brute" }
       ]
     },
     {
@@ -152,15 +152,15 @@
           "mobs": [
             {
               "mobs": [
-                { "id": "Outlander_Berserker", "count": 9 },
-                { "id": "Outlander_Marauder", "count": 7 }
+                { "id": "ELBridge_Outlander_Berserker", "count": 9 },
+                { "id": "ELBridge_Outlander_Marauder", "count": 7 }
               ]
             },
             {
               "mobs": [
-                { "id": "Outlander_Marauder", "count": 8 },
-                { "id": "Outlander_Berserker", "count": 6 },
-                { "id": "Outlander_Peon", "count": 6 }
+                { "id": "ELBridge_Outlander_Marauder", "count": 8 },
+                { "id": "ELBridge_Outlander_Berserker", "count": 6 },
+                { "id": "ELBridge_Outlander_Peon", "count": 6 }
               ]
             }
           ]
@@ -170,22 +170,22 @@
           "mobs": [
             {
               "mobs": [
-                { "id": "Outlander_Priest", "count": 5 },
-                { "id": "Outlander_Sorcerer", "count": 4 },
-                { "id": "Outlander_Stalker", "count": 5 }
+                { "id": "ELBridge_Outlander_Priest", "count": 5 },
+                { "id": "ELBridge_Outlander_Sorcerer", "count": 4 },
+                { "id": "ELBridge_Outlander_Stalker", "count": 5 }
               ]
             },
             {
               "mobs": [
-                { "id": "Outlander_Sorcerer", "count": 5 },
-                { "id": "Outlander_Hunter", "count": 6 }
+                { "id": "ELBridge_Outlander_Sorcerer", "count": 5 },
+                { "id": "ELBridge_Outlander_Hunter", "count": 6 }
               ]
             }
           ]
         }
       ],
       "bosses": [
-        { "id": "Outlander_Brute" }
+        { "id": "ELBridge_Outlander_Brute" }
       ]
     },
     {
@@ -196,15 +196,15 @@
           "mobs": [
             {
               "mobs": [
-                { "id": "Outlander_Peon", "count": 12 },
-                { "id": "Outlander_Berserker", "count": 7 },
-                { "id": "Outlander_Marauder", "count": 6 }
+                { "id": "ELBridge_Outlander_Peon", "count": 12 },
+                { "id": "ELBridge_Outlander_Berserker", "count": 7 },
+                { "id": "ELBridge_Outlander_Marauder", "count": 6 }
               ]
             },
             {
               "mobs": [
-                { "id": "Outlander_Marauder", "count": 9 },
-                { "id": "Outlander_Berserker", "count": 8 }
+                { "id": "ELBridge_Outlander_Marauder", "count": 9 },
+                { "id": "ELBridge_Outlander_Berserker", "count": 8 }
               ]
             }
           ]
@@ -214,23 +214,23 @@
           "mobs": [
             {
               "mobs": [
-                { "id": "Outlander_Hunter", "count": 7 },
-                { "id": "Outlander_Stalker", "count": 6 },
-                { "id": "Outlander_Priest", "count": 4 }
+                { "id": "ELBridge_Outlander_Hunter", "count": 7 },
+                { "id": "ELBridge_Outlander_Stalker", "count": 6 },
+                { "id": "ELBridge_Outlander_Priest", "count": 4 }
               ]
             },
             {
               "mobs": [
-                { "id": "Outlander_Cultist", "count": 7 },
-                { "id": "Outlander_Sorcerer", "count": 5 },
-                { "id": "Outlander_Stalker", "count": 5 }
+                { "id": "ELBridge_Outlander_Cultist", "count": 7 },
+                { "id": "ELBridge_Outlander_Sorcerer", "count": 5 },
+                { "id": "ELBridge_Outlander_Stalker", "count": 5 }
               ]
             }
           ]
         }
       ],
       "bosses": [
-        { "id": "Outlander_Brute" }
+        { "id": "ELBridge_Outlander_Brute" }
       ]
     },
     {
@@ -241,15 +241,15 @@
           "mobs": [
             {
               "mobs": [
-                { "id": "Outlander_Berserker", "count": 10 },
-                { "id": "Outlander_Marauder", "count": 8 }
+                { "id": "ELBridge_Outlander_Berserker", "count": 10 },
+                { "id": "ELBridge_Outlander_Marauder", "count": 8 }
               ]
             },
             {
               "mobs": [
-                { "id": "Outlander_Marauder", "count": 10 },
-                { "id": "Outlander_Berserker", "count": 7 },
-                { "id": "Outlander_Peon", "count": 6 }
+                { "id": "ELBridge_Outlander_Marauder", "count": 10 },
+                { "id": "ELBridge_Outlander_Berserker", "count": 7 },
+                { "id": "ELBridge_Outlander_Peon", "count": 6 }
               ]
             }
           ]
@@ -259,23 +259,23 @@
           "mobs": [
             {
               "mobs": [
-                { "id": "Outlander_Priest", "count": 6 },
-                { "id": "Outlander_Sorcerer", "count": 5 },
-                { "id": "Outlander_Cultist", "count": 6 }
+                { "id": "ELBridge_Outlander_Priest", "count": 6 },
+                { "id": "ELBridge_Outlander_Sorcerer", "count": 5 },
+                { "id": "ELBridge_Outlander_Cultist", "count": 6 }
               ]
             },
             {
               "mobs": [
-                { "id": "Outlander_Sorcerer", "count": 6 },
-                { "id": "Outlander_Stalker", "count": 6 },
-                { "id": "Outlander_Hunter", "count": 5 }
+                { "id": "ELBridge_Outlander_Sorcerer", "count": 6 },
+                { "id": "ELBridge_Outlander_Stalker", "count": 6 },
+                { "id": "ELBridge_Outlander_Hunter", "count": 5 }
               ]
             }
           ]
         }
       ],
       "bosses": [
-        { "id": "Outlander_Brute" }
+        { "id": "ELBridge_Outlander_Brute" }
       ]
     },
     {
@@ -286,15 +286,15 @@
           "mobs": [
             {
               "mobs": [
-                { "id": "Outlander_Berserker", "count": 10 },
-                { "id": "Outlander_Marauder", "count": 8 },
-                { "id": "Outlander_Peon", "count": 8 }
+                { "id": "ELBridge_Outlander_Berserker", "count": 10 },
+                { "id": "ELBridge_Outlander_Marauder", "count": 8 },
+                { "id": "ELBridge_Outlander_Peon", "count": 8 }
               ]
             },
             {
               "mobs": [
-                { "id": "Outlander_Marauder", "count": 11 },
-                { "id": "Outlander_Berserker", "count": 9 }
+                { "id": "ELBridge_Outlander_Marauder", "count": 11 },
+                { "id": "ELBridge_Outlander_Berserker", "count": 9 }
               ]
             }
           ]
@@ -304,24 +304,24 @@
           "mobs": [
             {
               "mobs": [
-                { "id": "Outlander_Priest", "count": 6 },
-                { "id": "Outlander_Sorcerer", "count": 6 },
-                { "id": "Outlander_Cultist", "count": 7 },
-                { "id": "Outlander_Stalker", "count": 6 }
+                { "id": "ELBridge_Outlander_Priest", "count": 6 },
+                { "id": "ELBridge_Outlander_Sorcerer", "count": 6 },
+                { "id": "ELBridge_Outlander_Cultist", "count": 7 },
+                { "id": "ELBridge_Outlander_Stalker", "count": 6 }
               ]
             },
             {
               "mobs": [
-                { "id": "Outlander_Sorcerer", "count": 7 },
-                { "id": "Outlander_Hunter", "count": 7 },
-                { "id": "Outlander_Cultist", "count": 6 }
+                { "id": "ELBridge_Outlander_Sorcerer", "count": 7 },
+                { "id": "ELBridge_Outlander_Hunter", "count": 7 },
+                { "id": "ELBridge_Outlander_Cultist", "count": 6 }
               ]
             }
           ]
         }
       ],
       "bosses": [
-        { "id": "Outlander_Brute" }
+        { "id": "ELBridge_Outlander_Brute" }
       ]
     }
   ]
