@@ -350,11 +350,24 @@ public class SafeUICommandBuilder extends UICommandBuilder {
     /**
      * Returns the set of selectors declared (recursively, following includes)
      * by the given .ui resource. Cached across pages.
+     *
+     * <p>Note: we intentionally do NOT cache a negative/empty result when the
+     * root resource fails to load. A transient classloader / JAR-cache issue
+     * (for example, a shared JarFile instance being closed elsewhere) would
+     * otherwise poison this cache for the entire JVM lifetime, causing every
+     * subsequent set() on that document's selectors to be dropped even after
+     * the underlying issue clears. Only successful root loads are cached.
      */
     private static Set<String> loadSelectorsFor(String classpathPath) {
         Set<String> cached = RESOURCE_SELECTOR_CACHE.get(classpathPath);
         if (cached != null) {
             return cached;
+        }
+        // Probe the root resource first. If it cannot be read, skip caching so
+        // the next call can retry once the classloader is healthy again.
+        String rootContent = loadResource(classpathPath);
+        if (rootContent == null) {
+            return Set.of();
         }
         Set<String> collected = new HashSet<>();
         Set<String> visited = new HashSet<>();
@@ -426,18 +439,30 @@ public class SafeUICommandBuilder extends UICommandBuilder {
     }
 
     private static String loadResource(String classpathPath) {
-        String cached = RESOURCE_CACHE.computeIfAbsent(classpathPath, key -> {
-            ClassLoader loader = SafeUICommandBuilder.class.getClassLoader();
-            try (InputStream in = loader.getResourceAsStream(key)) {
-                if (in == null) {
-                    return MISSING_RESOURCE;
-                }
-                return new String(in.readAllBytes(), StandardCharsets.UTF_8);
-            } catch (IOException e) {
-                LOGGER.atWarning().log("SafeUI: failed reading resource '%s': %s", key, e.getMessage());
-                return MISSING_RESOURCE;
+        String cached = RESOURCE_CACHE.get(classpathPath);
+        if (cached != null) {
+            return MISSING_RESOURCE.equals(cached) ? null : cached;
+        }
+        ClassLoader loader = SafeUICommandBuilder.class.getClassLoader();
+        try (InputStream in = loader.getResourceAsStream(classpathPath)) {
+            if (in == null) {
+                // Do NOT cache the miss. A null here can be a legitimate
+                // "file not in jar" (typo / deleted asset) but it can also be
+                // a transient classloader failure (for example a shared
+                // JarFile instance briefly closed by another bit of code).
+                // Caching the miss with computeIfAbsent would pin that
+                // negative result for the JVM lifetime and cause SafeUI to
+                // permanently drop the document's selectors even after the
+                // underlying issue is fixed.
+                return null;
             }
-        });
-        return MISSING_RESOURCE.equals(cached) ? null : cached;
+            String content = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+            RESOURCE_CACHE.put(classpathPath, content);
+            return content;
+        } catch (IOException e) {
+            LOGGER.atWarning().log("SafeUI: failed reading resource '%s': %s", classpathPath, e.getMessage());
+            // Same reasoning as above: don't cache read failures.
+            return null;
+        }
     }
 }
