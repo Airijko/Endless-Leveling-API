@@ -57,7 +57,7 @@ Do not use .\ in Git Bash. That syntax is for cmd/PowerShell.
 
 ## License
 
-MIT
+MPL
 
 ## Author
 
