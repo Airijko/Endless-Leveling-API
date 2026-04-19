@@ -1067,9 +1067,14 @@ public final class EndlessLevelingAPI {
     }
 
     /**
-     * Set a fixed level for a specific entity index (e.g., a spawned boss). This
-     * is checked before any Level_Source logic.
+     * <b>Deprecated — store-less variant cannot safely pin a specific entity.</b> Entity
+     * indices are per-store in Hytale ECS, so two mobs in different worlds can share the
+     * same index; matching by index alone would cross-contaminate unrelated mobs. This
+     * overload is retained for binary compatibility and is intentionally a no-op.
+     * <p>
+     * Use {@link #setMobEntityLevelOverride(com.hypixel.hytale.component.Ref, int)} instead.
      */
+    @Deprecated
     public void setMobEntityLevelOverride(int entityIndex, int level) {
         MobLevelingManager mobLevelingManager = mobLevelingManager();
         if (mobLevelingManager != null) {
@@ -1077,11 +1082,34 @@ public final class EndlessLevelingAPI {
         }
     }
 
-    /** Remove a specific entity override. */
+    /**
+     * Pin a fixed level for a specific entity (e.g., a plugin-spawned boss or companion).
+     * Takes precedence over gate / area / LevelSourceMode resolution, clamped to the
+     * configured range. Safe across worlds: the override is keyed by (store, index).
+     */
+    public void setMobEntityLevelOverride(com.hypixel.hytale.component.Ref<com.hypixel.hytale.server.core.universe.world.storage.EntityStore> ref, int level) {
+        if (ref == null) return;
+        MobLevelingManager mobLevelingManager = mobLevelingManager();
+        if (mobLevelingManager != null) {
+            mobLevelingManager.setEntityLevelOverride(ref.getStore(), ref.getIndex(), level);
+        }
+    }
+
+    /** @deprecated see {@link #setMobEntityLevelOverride(int, int)} — no-op. */
+    @Deprecated
     public void clearMobEntityLevelOverride(int entityIndex) {
         MobLevelingManager mobLevelingManager = mobLevelingManager();
         if (mobLevelingManager != null) {
             mobLevelingManager.clearEntityLevelOverride(entityIndex);
+        }
+    }
+
+    /** Remove the per-entity override for {@code ref}. */
+    public void clearMobEntityLevelOverride(com.hypixel.hytale.component.Ref<com.hypixel.hytale.server.core.universe.world.storage.EntityStore> ref) {
+        if (ref == null) return;
+        MobLevelingManager mobLevelingManager = mobLevelingManager();
+        if (mobLevelingManager != null) {
+            mobLevelingManager.clearEntityLevelOverride(ref.getStore(), ref.getIndex());
         }
     }
 
