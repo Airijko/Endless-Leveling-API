@@ -87,6 +87,15 @@ public class MobLevelingManager {
     private final Map<Long, String> worldOverrideKeyByStore = new ConcurrentHashMap<>();
     private final Map<Long, Boolean> worldXpBlacklistByStore = new ConcurrentHashMap<>();
     private final Map<Long, FixedLevelLock> fixedLevelLocks = new ConcurrentHashMap<>();
+    /**
+     * Per-entity level overrides, keyed by the composite {@link #toEntityKey} (store identity
+     * + entity index). Populated only by {@link #setEntityLevelOverride(Store, int, int)} —
+     * the store-less {@code setEntityLevelOverride(int, int)} stays a no-op because entity
+     * indices are per-store in Hytale ECS; matching by raw index would cross-contaminate
+     * unrelated mobs across worlds. Checked by {@link #resolveMobLevelForEntity} with higher
+     * priority than gate, area, and LevelSourceMode resolution.
+     */
+    private final Map<Long, Integer> entityLevelOverrides = new ConcurrentHashMap<>();
     private final Set<Store<EntityStore>> debugSuppressedStores = Collections.newSetFromMap(new ConcurrentHashMap<>());
     /**
      * Anchors each mob's base health to the value captured on the very first
@@ -407,6 +416,25 @@ public class MobLevelingManager {
                         resolveAttempts);
             }
             return null;
+        }
+
+        // Per-entity level override — highest priority once blacklist/XP-blacklist checks pass.
+        // Populated by plugin callers via setEntityLevelOverride(Store, int, int) and wins over
+        // gate, area, LevelSourceMode fallback. Store-aware lookup only; the store-less
+        // overload is a no-op (see its Javadoc) so this map stays free of cross-world entries.
+        Integer entityOverride = entityLevelOverrides.get(toEntityKey(effectiveStore, ref.getIndex()));
+        if (entityOverride != null && entityOverride > 0) {
+            int clamped = clampToConfiguredRange(entityOverride, effectiveStore);
+            if (shouldLogMobLevelDebug(ref, effectiveStore)) {
+                LOGGER.atFine().log(
+                        "[MOB_LEVEL_DEBUG] source=ENTITY_OVERRIDE mob=%d resolveAttempts=%d resolved=%d clamped=%d world=%s",
+                        ref.getIndex(),
+                        resolveAttempts,
+                        entityOverride,
+                        clamped,
+                        safeDebugValue(resolveWorldIdentifier(effectiveStore)));
+            }
+            return clamped;
         }
 
         GateOverrideRollOutcome gateOverride = resolveRegisteredGateOverrideOutcome(ref, effectiveStore, commandBuffer);
@@ -2404,29 +2432,54 @@ public class MobLevelingManager {
         runtimeFixedLevelOverrides.clear();
     }
 
-    // No persistent per-entity overrides in stateless mode.
+    /**
+     * Store-less variant is a no-op on purpose. Entity indices are per-store in Hytale ECS:
+     * two different mobs in two different worlds can share the same index, so matching by
+     * raw index would cross-contaminate (overriding mob 42 in world A would also override
+     * mob 42 in world B — breaks nameplates + normal mob levels for unrelated entities).
+     * Callers must use {@link #setEntityLevelOverride(Store, int, int)} instead.
+     */
     public void setEntityLevelOverride(int entityIndex, int level) {
-        // no-op
+        // intentionally no-op — see method Javadoc
     }
 
+    /** Pin a specific mob's level, keyed uniquely by (store, entityIndex). */
     public void setEntityLevelOverride(Store<EntityStore> store, int entityIndex, int level) {
-        // no-op
+        if (store == null || entityIndex < 0 || level < 1) return;
+        entityLevelOverrides.put(toEntityKey(store, entityIndex), level);
     }
 
+    /** Read the current per-entity override for a (store, index) pair, or null if none. */
     public Integer getEntityLevelOverride(Store<EntityStore> store, int entityIndex) {
-        return null;
+        if (store == null || entityIndex < 0) return null;
+        return entityLevelOverrides.get(toEntityKey(store, entityIndex));
     }
 
+    /**
+     * Set only if the stored value differs from {@code level}. Returns {@code true} when
+     * a write happened. Lets callers resync every tick without spamming debug logs.
+     */
     public boolean setEntityLevelOverrideIfChanged(Store<EntityStore> store, int entityIndex, int level) {
-        return false;
+        if (store == null || entityIndex < 0 || level < 1) return false;
+        long key = toEntityKey(store, entityIndex);
+        Integer prev = entityLevelOverrides.get(key);
+        if (prev != null && prev == level) return false;
+        entityLevelOverrides.put(key, level);
+        return true;
     }
 
+    /**
+     * Store-less clear variant is a no-op — same reasoning as
+     * {@link #setEntityLevelOverride(int, int)}. Use the store-aware overload.
+     */
     public void clearEntityLevelOverride(int entityIndex) {
-        // no-op
+        // intentionally no-op — see method Javadoc
     }
 
+    /** Remove the override for a specific (store, entityIndex) pair. */
     public void clearEntityLevelOverride(Store<EntityStore> store, int entityIndex) {
-        // no-op
+        if (store == null || entityIndex < 0) return;
+        entityLevelOverrides.remove(toEntityKey(store, entityIndex));
     }
 
     public void clearAllEntityLevelOverrides() {
@@ -2436,6 +2489,7 @@ public class MobLevelingManager {
         trueBaseHealthCache.clear();
         tieredInstanceLocks.clear();
         fixedLevelLocks.clear();
+        entityLevelOverrides.clear();
         worldIdentifierCandidatesByStore.clear();
         worldIdentifierMissRetryAtStore.clear();
         worldOverrideKeyByStore.clear();
