@@ -1,0 +1,74 @@
+$C = "../../Common.ui";
+
+$C.@PageOverlay {
+    Group {
+        LayoutMode: Middle;
+
+        Group {
+            Anchor: (Width: 600, Height: 400);
+            Background: $C.@InputBoxBackground;
+            LayoutMode: Top;
+            Padding: (Full: 16);
+
+            Label #QuestsHeaderTitle {
+                Text: "Quests and Rewards";
+                Style: (FontSize: 22, TextColor: #ffffff, RenderBold: true, HorizontalAlignment: Center);
+                Anchor: (Height: 30);
+            }
+
+            Group { Anchor: (Height: 8); }
+
+            Group #QuestsTabBar {
+                LayoutMode: Left;
+                Anchor: (Height: 30);
+
+                $C.@TextButton #QuestsTabDaily {
+                    Text: "DAILY";
+                    Anchor: (Height: 30, Width: 120);
+                }
+
+                Group { Anchor: (Width: 6); }
+
+                $C.@TextButton #QuestsTabWeekly {
+                    Text: "WEEKLY";
+                    Anchor: (Height: 30, Width: 120);
+                }
+
+                Group { Anchor: (Width: 6); }
+
+                $C.@TextButton #QuestsTabProgress {
+                    Text: "PROGRESS";
+                    Anchor: (Height: 30, Width: 120);
+                }
+
+                Group { FlexWeight: 1; }
+
+                $C.@TextButton #QuestsClaimAllButton {
+                    Text: "CLAIM ALL";
+                    Anchor: (Height: 30, Width: 140);
+                }
+            }
+
+            Group { Anchor: (Height: 8); }
+
+            Label #QuestsTimerLabel {
+                Text: "";
+                Style: (FontSize: 12, TextColor: #f0c040, RenderBold: true, HorizontalAlignment: Center);
+                Anchor: (Height: 16);
+            }
+
+            Group #QuestsRows {
+                FlexWeight: 1;
+                LayoutMode: Top;
+            }
+
+            Label #QuestsEmptyLabel {
+                Text: "No quests available.";
+                Style: (FontSize: 14, TextColor: #9ab6d4, HorizontalAlignment: Center);
+                Anchor: (Height: 24);
+            }
+        }
+    }
+}
+
+$C.@BackButton {}

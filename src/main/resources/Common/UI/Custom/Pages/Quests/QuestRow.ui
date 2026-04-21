@@ -1,0 +1,59 @@
+$C = "../../Common.ui";
+
+Group {
+    LayoutMode: Left;
+    Anchor: (Height: 56);
+    Background: $C.@InputBoxBackground;
+    Padding: (Horizontal: 6, Vertical: 4);
+
+    Group {
+        Anchor: (Width: 40);
+        LayoutMode: Middle;
+
+        Group #QuestRowStatusPending {
+            Anchor: (Width: 24, Height: 24);
+            Background: #4a5668;
+        }
+        Group #QuestRowStatusReady {
+            Anchor: (Width: 24, Height: 24);
+            Background: #ffd27a;
+        }
+        Group #QuestRowStatusClaimed {
+            Anchor: (Width: 24, Height: 24);
+            Background: #6cff78;
+        }
+    }
+
+    Group {
+        FlexWeight: 1;
+        LayoutMode: Top;
+
+        Label #QuestRowName {
+            Text: "Quest Name";
+            Style: (FontSize: 13, TextColor: #ffffff, RenderBold: true);
+            Anchor: (Height: 16);
+        }
+
+        Label #QuestRowDesc {
+            Text: "Description.";
+            Style: (FontSize: 11, TextColor: #a9b8cf);
+            Anchor: (Height: 14);
+        }
+
+        Label #QuestRowProgressText {
+            Text: "0 / 1";
+            Style: (FontSize: 12, TextColor: #e0eaff, RenderBold: true);
+            Anchor: (Height: 14);
+        }
+    }
+
+    Group {
+        Anchor: (Width: 110);
+        LayoutMode: Middle;
+
+        $C.@TextButton #QuestRowClaimButton {
+            Text: "CLAIM";
+            Anchor: (Height: 30, Width: 100);
+        }
+    }
+}

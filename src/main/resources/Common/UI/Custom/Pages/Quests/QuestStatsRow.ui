@@ -1,0 +1,20 @@
+$C = "../../Common.ui";
+
+Group {
+    LayoutMode: Left;
+    Anchor: (Height: 24);
+    Background: $C.@InputBoxBackground;
+    Padding: (Horizontal: 8);
+
+    Label #QuestStatsRowName {
+        Text: "Stat Name";
+        Style: (FontSize: 13, TextColor: #e0eaff);
+        FlexWeight: 1;
+    }
+
+    Label #QuestStatsRowValue {
+        Text: "0";
+        Style: (FontSize: 13, TextColor: #f0c040, RenderBold: true, HorizontalAlignment: End);
+        Anchor: (Width: 120);
+    }
+}
