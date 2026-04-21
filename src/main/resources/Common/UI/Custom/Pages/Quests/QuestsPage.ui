@@ -88,6 +88,14 @@ $C.@PageOverlay {
                         Style: @QuestButtonStyle;
                     }
 
+                    Group { Anchor: (Width: 14); }
+
+                    TextButton #QuestsTabClaimed {
+                        Anchor: (Width: 150, Height: 44);
+                        Text: "CLAIMED";
+                        Style: @QuestButtonStyle;
+                    }
+
                     // Flex spacer pushes the timer + claim-all cluster to the right.
                     Group { FlexWeight: 1; }
 

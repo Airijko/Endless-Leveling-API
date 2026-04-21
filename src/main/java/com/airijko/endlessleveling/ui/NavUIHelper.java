@@ -428,7 +428,7 @@ public final class NavUIHelper {
                                                 PlayerChatNotifier.send(playerRef, Message.join(
                                                         Message.raw("Gates is a Patreon exclusive feature. ").color("#ff6666"),
                                                         Message.raw("[CLICK HERE]")
-                                                                .link("https://www.patreon.com/cw/airijko")
+                                                                .link("https://www.patreon.com/posts/dungeons-gates-155609841")
                                                                 .color("#ffd08a")
                                                 ));
                                         }
