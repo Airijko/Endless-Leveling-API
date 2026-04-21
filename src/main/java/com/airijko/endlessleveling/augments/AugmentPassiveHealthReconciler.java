@@ -118,11 +118,7 @@ public final class AugmentPassiveHealthReconciler {
             ratio = 1.0f;
         }
 
-        // [SUMMON-FIX-4] Preserve HP=0 so dead entities are not resurrected
-        // by the Math.max(1.0f, ...) floor.
-        float adjustedCurrent = (previousCurrent <= 0.0f)
-                ? 0.0f
-                : Math.max(1.0f, Math.min(newMax, ratio * newMax));
+        float adjustedCurrent = Math.max(1.0f, Math.min(newMax, ratio * newMax));
         statMap.setStatValue(DefaultEntityStatTypes.getHealth(), adjustedCurrent);
     }
 
