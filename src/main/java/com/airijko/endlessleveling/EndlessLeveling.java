@@ -605,8 +605,21 @@ public class EndlessLeveling extends JavaPlugin {
 
         OutlanderBridgeWaveManager.get().load();
         OutlanderBridgeRewardCooldowns.init(filesManager.getPluginFolder().toPath());
+        // AddPlayerToWorldEvent is fired by the engine from the netty packet-handler
+        // thread (ServerWorkerGroup-4) during player join / world transfer. The
+        // onPlayerEntered handler calls Store.getComponent(...) on the target
+        // world's EntityStore, which trips Store.assertThread(...) because it must
+        // run on the destination WorldThread. Dispatch via world.execute(...) so
+        // the handler runs on the correct thread, eliminating the thousands of
+        // IllegalStateException stack-trace allocations on WORKER4 that were
+        // contributing to ping spikes under heavy dungeon-transfer load.
         this.getEventRegistry().registerGlobal(AddPlayerToWorldEvent.class,
-                event -> OutlanderBridgeWaveManager.get().onPlayerEntered(event.getWorld(), event.getHolder()));
+                event -> {
+                    final var world = event.getWorld();
+                    if (world == null) return;
+                    final var holder = event.getHolder();
+                    world.execute(() -> OutlanderBridgeWaveManager.get().onPlayerEntered(world, holder));
+                });
         this.getEventRegistry().registerGlobal(PlayerReadyEvent.class, event -> {
             if (event == null || event.getPlayer() == null) return;
             java.util.UUID playerUuid = event.getPlayer().getUuid();
@@ -616,11 +629,49 @@ public class EndlessLeveling extends JavaPlugin {
             if (universe == null) return;
             com.hypixel.hytale.server.core.universe.PlayerRef pr = universe.getPlayer(playerUuid);
             if (pr == null || !pr.isValid()) return;
-            OutlanderBridgeWaveManager.get().handlePlayerReady(pr, event.getPlayerRef());
+            // Same threading-bug fix as the AddPlayerToWorldEvent handler above.
+            // PlayerReadyEvent is fired on the netty packet-handler thread.
+            // handlePlayerReady calls Store.getComponent(...) which requires the
+            // destination WorldThread. The existing try/catch inside
+            // handlePlayerReady was silently swallowing the assertion failure —
+            // the work was never actually completing for affected joins, while
+            // the stack-trace allocation still punished WORKER4.
+            final com.hypixel.hytale.component.Ref<com.hypixel.hytale.server.core.universe.world.storage.EntityStore> playerEntityRef = event.getPlayerRef();
+            com.hypixel.hytale.server.core.universe.world.World targetWorld = null;
+            if (playerEntityRef != null && playerEntityRef.isValid()) {
+                com.hypixel.hytale.component.Store<com.hypixel.hytale.server.core.universe.world.storage.EntityStore> st = playerEntityRef.getStore();
+                if (st != null && st.getExternalData() != null) {
+                    targetWorld = st.getExternalData().getWorld();
+                }
+            }
+            if (targetWorld == null) {
+                // No world context — can't safely dispatch. Skip the handler
+                // entirely rather than run it on the wrong thread.
+                return;
+            }
+            final com.hypixel.hytale.server.core.universe.world.World dispatchWorld = targetWorld;
+            dispatchWorld.execute(() ->
+                    OutlanderBridgeWaveManager.get().handlePlayerReady(pr, playerEntityRef));
         });
 
         LOGGER.atInfo().log("Plugin initialized! Plugin folder: %s",
                 filesManager.getPluginFolder().getAbsolutePath());
+
+        // Prime the card-UI file cache. This reads the relevant UI resource
+        // folders once, while the JarFile handle is still freshly-warm from
+        // class loading, and caches the file lists permanently. After this
+        // call, ModularCardUiAppender never needs to touch the jar again —
+        // which is what prevents the "dungeons tab crashes client after ~20
+        // minutes of uptime" failure mode. See ModularCardUiAppender for the
+        // full explanation of the underlying bug.
+        com.airijko.endlessleveling.ui.ModularCardUiAppender.warmUp(
+                "Common/UI/Custom/Pages/Dungeons/Cards/Endless",
+                "Common/UI/Custom/Pages/Dungeons/Cards/Endgame",
+                "Common/UI/Custom/Pages/Dungeons/Cards/Major",
+                "Common/UI/Custom/Pages/Addons/Cards/Core",
+                "Common/UI/Custom/Pages/Addons/Cards/Extensions",
+                "Common/UI/Custom/Pages/Addons/Cards/ModPartners",
+                "Common/UI/Custom/Pages/Addons/Cards/Community");
     }
 
     private void registerCoreInstanceDungeons() {
@@ -725,4 +776,4 @@ public class EndlessLeveling extends JavaPlugin {
         shutdownCoordinator.appendShutlog(message);
     }
 
-}
+}                                                                                                                                                                                           

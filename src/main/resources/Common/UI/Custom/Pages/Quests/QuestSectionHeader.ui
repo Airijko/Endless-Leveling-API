@@ -1,0 +1,13 @@
+Group {
+    LayoutMode: Top;
+    Anchor: (Height: 28);
+    Padding: (Top: 8, Bottom: 4, Horizontal: 4);
+
+    Label #QuestSectionHeaderLabel {
+        Text: "Section";
+        Style: (FontSize: 13, TextColor: #f0c040, RenderBold: true, RenderUppercase: true, LetterSpacing: 2, VerticalAlignment: Center);
+        Anchor: (Height: 16);
+    }
+
+    Group { Anchor: (Height: 1); Group { Background: #7a5a10; } }
+}

@@ -1,74 +1,245 @@
 $C = "../../Common.ui";
+$Nav = "../Nav/TopNavBar.ui";
+
+@QuestLabelAmber = LabelStyle(
+    FontSize: 15,
+    TextColor: #f0c040,
+    RenderBold: true,
+    RenderUppercase: true,
+    LetterSpacing: 1,
+    HorizontalAlignment: Center,
+    VerticalAlignment: Center
+);
+
+@QuestLabelBlack = LabelStyle(
+    FontSize: 16,
+    TextColor: #000000,
+    RenderBold: true,
+    RenderUppercase: true,
+    LetterSpacing: 1,
+    HorizontalAlignment: Center,
+    VerticalAlignment: Center
+);
+
+// Inactive — dark amber InputBox texture. Unchanged; this is the look you
+// approved earlier for the default state.
+@QuestButtonStyle = TextButtonStyle(
+    Default:  (Background: PatchStyle(TexturePath: "../../Common/InputBox.png",         Border: 16, Color: #7a5a10), LabelStyle: @QuestLabelAmber),
+    Hovered:  (Background: PatchStyle(TexturePath: "../../Common/InputBoxHovered.png",  Border: 16, Color: #a07d14), LabelStyle: @QuestLabelAmber),
+    Pressed:  (Background: PatchStyle(TexturePath: "../../Common/InputBoxPressed.png",  Border: 16, Color: #5a430c), LabelStyle: @QuestLabelAmber),
+    Sounds: $C.@ButtonSounds,
+);
+
+// Active / selected — Tertiary_Active has a light cream base + baked-in gold
+// border, so color tints stay true. InputBoxSelected has a blue fill that
+// multiplies gold tints into muddy olive, which is why the previous version
+// looked disfigured.
+@QuestButtonStyleSelected = TextButtonStyle(
+    Default:  (Background: PatchStyle(TexturePath: "../../Common/Buttons/Tertiary_Active.png", Border: 16, Color: #ffffff), LabelStyle: @QuestLabelBlack),
+    Hovered:  (Background: PatchStyle(TexturePath: "../../Common/Buttons/Tertiary_Active.png", Border: 16, Color: #fff0c0), LabelStyle: @QuestLabelBlack),
+    Pressed:  (Background: PatchStyle(TexturePath: "../../Common/Buttons/Tertiary_Active.png", Border: 16, Color: #d8b060), LabelStyle: @QuestLabelBlack),
+    Sounds: $C.@ButtonSounds,
+);
 
 $C.@PageOverlay {
     Group {
         LayoutMode: Middle;
+        Padding: (Vertical: 12);
 
+        // ================== TOP NAVBAR ==================
         Group {
-            Anchor: (Width: 600, Height: 400);
-            Background: $C.@InputBoxBackground;
-            LayoutMode: Top;
-            Padding: (Full: 16);
-
-            Label #QuestsHeaderTitle {
-                Text: "Quests and Rewards";
-                Style: (FontSize: 22, TextColor: #ffffff, RenderBold: true, HorizontalAlignment: Center);
-                Anchor: (Height: 30);
+            LayoutMode: Middle;
+            Anchor: (Height: 92);
+            Group {
+                Anchor: (Height: 92);
+                $Nav.@TopNavBar {}
             }
+        }
 
-            Group { Anchor: (Height: 8); }
+        Group { Anchor: (Height: 14); }
 
-            Group #QuestsTabBar {
+        // ================== HEADER CONTAINER (single row) ==================
+        Group {
+            LayoutMode: Middle;
+
+            $Nav.@ObjectiveContainer {
+                Anchor: (Width: 1400, Height: 118);
+
+                #Title {
+                    Label #QuestsTitle {
+                        Text: "QUESTS AND REWARDS";
+                        Style: $Nav.@PanelTitleStyle;
+                    }
+                }
+
+                #Content {
+                    LayoutMode: Left;
+                    Padding: (Horizontal: 28, Vertical: 18);
+
+                    TextButton #QuestsTabDaily {
+                        Anchor: (Width: 150, Height: 44);
+                        Text: "DAILY";
+                        Style: @QuestButtonStyle;
+                    }
+
+                    Group { Anchor: (Width: 14); }
+
+                    TextButton #QuestsTabWeekly {
+                        Anchor: (Width: 150, Height: 44);
+                        Text: "WEEKLY";
+                        Style: @QuestButtonStyle;
+                    }
+
+                    Group { Anchor: (Width: 14); }
+
+                    TextButton #QuestsTabProgress {
+                        Anchor: (Width: 150, Height: 44);
+                        Text: "PROGRESS";
+                        Style: @QuestButtonStyle;
+                    }
+
+                    // Flex spacer pushes the timer + claim-all cluster to the right.
+                    Group { FlexWeight: 1; }
+
+                    // Timer pill — same rounded patch as inactive buttons but
+                    // tinted slightly darker so it reads as an info display, not a button.
+                    Group {
+                        Anchor: (Width: 260, Height: 44);
+                        Background: PatchStyle(TexturePath: "../../Common/InputBox.png", Border: 16, Color: #3a2a10);
+                        LayoutMode: Middle;
+
+                        Label #QuestsTimerLabel {
+                            Style: (TextColor: #f0c040, FontSize: 13, RenderBold: true, RenderUppercase: true, LetterSpacing: 2, HorizontalAlignment: Center, VerticalAlignment: Center);
+                            Text: "";
+                        }
+                    }
+
+                    Group { Anchor: (Width: 14); }
+
+                    TextButton #QuestsClaimAllButton {
+                        Anchor: (Width: 180, Height: 44);
+                        Text: "CLAIM ALL";
+                        Style: @QuestButtonStyleSelected;
+                    }
+                }
+            }
+        }
+
+        Group { Anchor: (Height: 14); }
+
+        // ================== MAIN SPLIT ==================
+        Group {
+            LayoutMode: Middle;
+
+            Group {
+                Anchor: (Width: 1400, Height: 560);
                 LayoutMode: Left;
-                Anchor: (Height: 30);
 
-                $C.@TextButton #QuestsTabDaily {
-                    Text: "DAILY";
-                    Anchor: (Height: 30, Width: 120);
+                // === Left: category filter container ===
+                $Nav.@ObjectiveContainer {
+                    Anchor: (Width: 260);
+
+                    #Title {
+                        Label {
+                            Text: "QUESTS";
+                            Style: $Nav.@PanelTitleStyle;
+                        }
+                    }
+
+                    #Content {
+                        LayoutMode: Top;
+                        Padding: (Horizontal: 14, Vertical: 14);
+
+                        TextButton #QuestsCategoryAll {
+                            Anchor: (Height: 40);
+                            Text: "ALL QUESTS";
+                            Style: @QuestButtonStyle;
+                        }
+                        Group { Anchor: (Height: 10); }
+
+                        TextButton #QuestsCategoryBoss {
+                            Anchor: (Height: 40);
+                            Text: "BOSS KILLS";
+                            Style: @QuestButtonStyle;
+                        }
+                        Group { Anchor: (Height: 10); }
+
+                        TextButton #QuestsCategoryHarvest {
+                            Anchor: (Height: 40);
+                            Text: "HARVESTING";
+                            Style: @QuestButtonStyle;
+                        }
+                        Group { Anchor: (Height: 10); }
+
+                        TextButton #QuestsCategoryOutbreak {
+                            Anchor: (Height: 40);
+                            Text: "OUTBREAK";
+                            Style: @QuestButtonStyle;
+                        }
+                        Group { Anchor: (Height: 10); }
+
+                        TextButton #QuestsCategoryBridge {
+                            Anchor: (Height: 40);
+                            Text: "BRIDGE";
+                            Style: @QuestButtonStyle;
+                        }
+                        Group { Anchor: (Height: 10); }
+
+                        TextButton #QuestsCategoryLevel {
+                            Anchor: (Height: 40);
+                            Text: "LEVEL UP";
+                            Style: @QuestButtonStyle;
+                        }
+                        Group { Anchor: (Height: 10); }
+
+                        TextButton #QuestsCategoryPrestige {
+                            Anchor: (Height: 40);
+                            Text: "PRESTIGE";
+                            Style: @QuestButtonStyle;
+                        }
+                    }
                 }
 
-                Group { Anchor: (Width: 6); }
+                Group { Anchor: (Width: 16); }
 
-                $C.@TextButton #QuestsTabWeekly {
-                    Text: "WEEKLY";
-                    Anchor: (Height: 30, Width: 120);
-                }
+                // === Right: quest list container ===
+                // Plain Group (not @ObjectiveContainer) so there's no title bar
+                // or separator strip at the top — just the bordered panel bg.
+                Group {
+                    FlexWeight: 1;
+                    LayoutMode: Top;
+                    Background: (TexturePath: "../../Hud/ObjectivePanelContainer.png", Border: 15);
+                    Padding: (Horizontal: 12, Vertical: 16);
 
-                Group { Anchor: (Width: 6); }
+                    Group #QuestsScroll {
+                        FlexWeight: 1;
+                        LayoutMode: TopScrolling;
+                        ScrollbarStyle: $C.@DefaultScrollbarStyle;
 
-                $C.@TextButton #QuestsTabProgress {
-                    Text: "PROGRESS";
-                    Anchor: (Height: 30, Width: 120);
-                }
+                        Group #QuestsRows {
+                            LayoutMode: Top;
+                        }
+                    }
 
-                Group { FlexWeight: 1; }
-
-                $C.@TextButton #QuestsClaimAllButton {
-                    Text: "CLAIM ALL";
-                    Anchor: (Height: 30, Width: 140);
+                    Label #QuestsEmptyLabel {
+                        Text: "No quests available.";
+                        Style: (TextColor: #9ab6d4, FontSize: 14, HorizontalAlignment: Center, VerticalAlignment: Center);
+                        Anchor: (Height: 28);
+                    }
                 }
             }
+        }
 
-            Group { Anchor: (Height: 8); }
+        Group { Anchor: (Height: 14); }
 
-            Label #QuestsTimerLabel {
-                Text: "";
-                Style: (FontSize: 12, TextColor: #f0c040, RenderBold: true, HorizontalAlignment: Center);
-                Anchor: (Height: 16);
-            }
-
-            Group #QuestsRows {
-                FlexWeight: 1;
-                LayoutMode: Top;
-            }
-
-            Label #QuestsEmptyLabel {
-                Text: "No quests available.";
-                Style: (FontSize: 14, TextColor: #9ab6d4, HorizontalAlignment: Center);
-                Anchor: (Height: 24);
+        // ================== BOTTOM NAVBAR ==================
+        Group {
+            LayoutMode: Middle;
+            Anchor: (Height: 92);
+            Group {
+                Anchor: (Height: 92);
+                $Nav.@BottomNavBar {}
             }
         }
     }
 }
-
-$C.@BackButton {}

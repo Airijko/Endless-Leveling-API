@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
-final class ModularCardUiAppender {
+public final class ModularCardUiAppender {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
 
@@ -29,6 +29,12 @@ final class ModularCardUiAppender {
             new ConcurrentHashMap<>();
 
     private ModularCardUiAppender() {
+    }
+
+    public static void warmUp(@Nonnull String... classpathFolders) {
+        for (String folder : classpathFolders) {
+            FOLDER_LISTING_CACHE.computeIfAbsent(folder, ModularCardUiAppender::listUiFileNames);
+        }
     }
 
     static void appendFolder(@Nonnull UICommandBuilder ui,

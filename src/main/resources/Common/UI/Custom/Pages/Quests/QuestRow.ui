@@ -1,59 +1,130 @@
 $C = "../../Common.ui";
 
+@QuestRowClaimLabelStyle = LabelStyle(
+    FontSize: 16,
+    TextColor: #000000,
+    RenderBold: true,
+    RenderUppercase: true,
+    LetterSpacing: 1,
+    HorizontalAlignment: Center,
+    VerticalAlignment: Center
+);
+
+// Matches the gold @QuestButtonStyleSelected in QuestsPage.ui. Uses
+// Tertiary_Active (light cream + gold border) so the tint color survives the
+// multiply blend — InputBoxSelected has a blue fill that muddies gold.
+@QuestRowClaimStyle = TextButtonStyle(
+    Default:  (Background: PatchStyle(TexturePath: "../../Common/Buttons/Tertiary_Active.png", Border: 16, Color: #ffffff), LabelStyle: @QuestRowClaimLabelStyle),
+    Hovered:  (Background: PatchStyle(TexturePath: "../../Common/Buttons/Tertiary_Active.png", Border: 16, Color: #fff0c0), LabelStyle: @QuestRowClaimLabelStyle),
+    Pressed:  (Background: PatchStyle(TexturePath: "../../Common/Buttons/Tertiary_Active.png", Border: 16, Color: #d8b060), LabelStyle: @QuestRowClaimLabelStyle),
+    Sounds: $C.@ButtonSounds,
+);
+
+// Wrapper adds vertical spacing between rows (4px top + 4px bottom → 8px gap).
 Group {
-    LayoutMode: Left;
-    Anchor: (Height: 56);
-    Background: $C.@InputBoxBackground;
-    Padding: (Horizontal: 6, Vertical: 4);
+    Anchor: (Height: 92);
+    Padding: (Vertical: 4);
 
     Group {
-        Anchor: (Width: 40);
-        LayoutMode: Middle;
+        LayoutMode: Left;
+        Background: $C.@InputBoxBackground;
+        Padding: (Horizontal: 10, Vertical: 8);
 
-        Group #QuestRowStatusPending {
-            Anchor: (Width: 24, Height: 24);
-            Background: #4a5668;
+        // ====== Status "checkbox" ======
+        // Outer frame is always visible (empty = pending). Inner colored square
+        // is smaller than the frame and appears only when the quest is
+        // ready-to-claim or already claimed, giving a filled-checkbox look.
+        Group {
+            Anchor: (Width: 48);
+            LayoutMode: Middle;
+
+            Group {
+                Anchor: (Width: 32, Height: 32);
+                Background: #2a1f08(0.85);
+
+                Group {
+                    Anchor: (Left: 2, Right: 2, Top: 2, Bottom: 2);
+                    Background: #0b1520(0.9);
+                    LayoutMode: Middle;
+
+                    Group #QuestRowStatusPending {
+                        Anchor: (Width: 0, Height: 0);
+                    }
+                    Group #QuestRowStatusReady {
+                        Anchor: (Width: 18, Height: 18);
+                        Background: #f0c040;
+                    }
+                    Group #QuestRowStatusClaimed {
+                        Anchor: (Width: 18, Height: 18);
+                        Background: #6cff78;
+                    }
+                }
+            }
         }
-        Group #QuestRowStatusReady {
-            Anchor: (Width: 24, Height: 24);
-            Background: #ffd27a;
+
+        Group { Anchor: (Width: 10); }
+
+        // ====== Main text + progress ======
+        Group {
+            FlexWeight: 1;
+            LayoutMode: Top;
+
+            Label #QuestRowName {
+                Text: "Quest Name";
+                Style: (FontSize: 15, TextColor: #ffffff, RenderBold: true);
+                Anchor: (Height: 20);
+            }
+
+            Group { Anchor: (Height: 2); }
+
+            Label #QuestRowDesc {
+                Text: "Description.";
+                Style: (FontSize: 11, TextColor: #a9b8cf);
+                Anchor: (Height: 14);
+            }
+
+            Group { Anchor: (Height: 6); }
+
+            Group {
+                LayoutMode: Left;
+                Anchor: (Height: 16);
+
+                Group {
+                    FlexWeight: 1;
+                    Background: (TexturePath: "../../Hud/Endless_DurationBarBackground.png", Border: 4);
+                    Padding: (Full: 2);
+
+                    ProgressBar #QuestRowProgressBar {
+                        Anchor: (Height: 12);
+                        BarTexturePath: "../../Hud/Endless_DurationBarFill.png";
+                        Value: 0;
+                        Direction: End;
+                        Alignment: Horizontal;
+                    }
+                }
+
+                Group { Anchor: (Width: 10); }
+
+                Label #QuestRowProgressText {
+                    Text: "0 / 1";
+                    Style: (FontSize: 12, TextColor: #e0eaff, RenderBold: true, VerticalAlignment: Center);
+                    Anchor: (Width: 140);
+                }
+            }
         }
-        Group #QuestRowStatusClaimed {
-            Anchor: (Width: 24, Height: 24);
-            Background: #6cff78;
-        }
-    }
 
-    Group {
-        FlexWeight: 1;
-        LayoutMode: Top;
+        Group { Anchor: (Width: 12); }
 
-        Label #QuestRowName {
-            Text: "Quest Name";
-            Style: (FontSize: 13, TextColor: #ffffff, RenderBold: true);
-            Anchor: (Height: 16);
-        }
+        // ====== Claim button — matches CLAIM ALL gold style ======
+        Group {
+            Anchor: (Width: 130);
+            LayoutMode: Middle;
 
-        Label #QuestRowDesc {
-            Text: "Description.";
-            Style: (FontSize: 11, TextColor: #a9b8cf);
-            Anchor: (Height: 14);
-        }
-
-        Label #QuestRowProgressText {
-            Text: "0 / 1";
-            Style: (FontSize: 12, TextColor: #e0eaff, RenderBold: true);
-            Anchor: (Height: 14);
-        }
-    }
-
-    Group {
-        Anchor: (Width: 110);
-        LayoutMode: Middle;
-
-        $C.@TextButton #QuestRowClaimButton {
-            Text: "CLAIM";
-            Anchor: (Height: 30, Width: 100);
+            TextButton #QuestRowClaimButton {
+                Anchor: (Height: 44, Width: 120);
+                Text: "CLAIM";
+                Style: @QuestRowClaimStyle;
+            }
         }
     }
 }
