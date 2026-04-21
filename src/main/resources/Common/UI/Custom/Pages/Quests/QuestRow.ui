@@ -2,7 +2,7 @@ $C = "../../Common.ui";
 
 @QuestRowClaimLabelStyle = LabelStyle(
     FontSize: 16,
-    TextColor: #000000,
+    TextColor: #f0c040,
     RenderBold: true,
     RenderUppercase: true,
     LetterSpacing: 1,
