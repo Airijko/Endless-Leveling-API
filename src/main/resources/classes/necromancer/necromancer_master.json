@@ -34,7 +34,11 @@
       "cooldown_seconds": 16,
       "base_summon_damage": 15,
       "summon_stat_inheritance": 0.4,
-      "skeleton_type": "EndlessLeveling_ArmyOfTheDead_Pet_Adamantite"
+      "skeleton_type": "EndlessLeveling_ArmyOfTheDead_Pet_Adamantite",
+      "summon_cap": 8,
+      "bonus_damage_per_lost_summon_percent": 2.0,
+      "augment_inherit_chance": 0.2,
+      "augment_inherit_guaranteed": ["death_bomb"]
     },
     {
       "type": "INNATE_ATTRIBUTE_GAIN",

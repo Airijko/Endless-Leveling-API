@@ -50,6 +50,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Handles Necromancer summon behavior for ARMY_OF_THE_DEAD.
@@ -72,6 +73,10 @@ public final class ArmyOfTheDeadPassive {
     private static final double DEFAULT_LIFETIME_SECONDS = 30.0D;
     private static final double DEFAULT_STAT_INHERITANCE = 0.10D;
     private static final int MAX_SUMMON_CAP = 64;
+    private static final int DEFAULT_SUMMON_CAP = 0;
+    private static final double DEFAULT_BONUS_DAMAGE_PER_LOST_SUMMON_PERCENT = 0.0D;
+    private static final double DEFAULT_AUGMENT_INHERIT_CHANCE = 1.0D;
+    private static final Set<String> DEFAULT_AUGMENT_INHERIT_GUARANTEED = Set.of();
     private static final double TELEPORT_RANGE = 24.0D;
     private static final double TELEPORT_RANGE_SQ = TELEPORT_RANGE * TELEPORT_RANGE;
     private static final double TARGET_STALE_RANGE = 40.0D;
@@ -1250,7 +1255,8 @@ public final class ArmyOfTheDeadPassive {
                         store,
                         request.source(),
                         request.config().statInheritance(),
-                        request.slotIndex());
+                        request.slotIndex(),
+                        request.config());
 
                 NPCEntity summonNpc = EntityRefUtil.tryGetComponent(store,
                     summonRef,
@@ -1306,7 +1312,8 @@ public final class ArmyOfTheDeadPassive {
             Store<EntityStore> store,
             SummonSourceSnapshot source,
             double inheritance,
-            int slotIndex) {
+            int slotIndex,
+            ArmyOfTheDeadConfig config) {
         if (summonRef == null || store == null || source == null) {
             return;
         }
@@ -1338,7 +1345,7 @@ public final class ArmyOfTheDeadPassive {
         // Apply player augments to the summon
         UUID summonUuid = resolveEntityUuid(summonRef, store, null);
         if (summonUuid != null) {
-            applyPlayerAugmentsToSummon(summonRef, store, source.ownerUuid(), summonUuid, slotIndex);
+            applyPlayerAugmentsToSummon(summonRef, store, source.ownerUuid(), summonUuid, slotIndex, config);
         }
         applySummonMovementSpeedBonus(summonRef, store, inheritedStats.movementMultiplier());
     }
@@ -1398,7 +1405,8 @@ public final class ArmyOfTheDeadPassive {
             Store<EntityStore> store,
             UUID ownerUuid,
             UUID summonUuid,
-            int slotIndex) {
+            int slotIndex,
+            ArmyOfTheDeadConfig config) {
         if (summonRef == null || store == null || ownerUuid == null || summonUuid == null) {
             LOGGER.atWarning().log(
                     "[ARMY_OF_THE_DEAD][AUGMENTS] Cannot apply augments: missing required parameters for slot %d owner=%s summon=%s",
@@ -1429,8 +1437,12 @@ public final class ArmyOfTheDeadPassive {
 
         // Get selected augments — only mirror non-common tiers (ELITE, LEGENDARY, MYTHIC).
         Map<String, String> selectedAugmentsMap = playerData.getSelectedAugmentsSnapshot();
-        List<String> augmentIds = filterNonCommonAugments(selectedAugmentsMap);
-        if (augmentIds.isEmpty()) {
+        List<String> ownerAugmentIds = filterNonCommonAugments(selectedAugmentsMap);
+        // Stamp the signature of the *owner's* full non-common selection so
+        // the re-sync fast path compares against a roll-agnostic baseline.
+        String ownerSignature = buildAugmentSignature(ownerAugmentIds);
+
+        if (ownerAugmentIds.isEmpty()) {
             if (isSummonDebugEnabled()) {
                 LOGGER.atInfo().log(
                         "[NECROMANCER_SUMMONS] No non-common augments selected for owner=%s slot=%d summon=%s (full_map=%s)",
@@ -1439,12 +1451,14 @@ public final class ArmyOfTheDeadPassive {
                         summonUuid,
                         selectedAugmentsMap);
             }
-            // Stamp the empty signature so ensureSummonAugmentsInSync correctly
-            // detects when the owner adds augments after spawn and triggers a
-            // mirror sync at the next combat event.
-            updateSummonOwnerAugmentSignature(ownerUuid, summonUuid, "");
+            updateSummonOwnerAugmentSignature(ownerUuid, summonUuid, ownerSignature);
             return;
         }
+
+        // Per-summon inheritance roll. Each augment rolls independently
+        // against config.augmentInheritChance; entries in
+        // config.augmentInheritGuaranteed bypass the roll and are always kept.
+        List<String> inheritedIds = rollInheritedAugments(ownerAugmentIds, config);
 
         // Get augment managers
         EndlessLeveling plugin = EndlessLeveling.getInstance();
@@ -1470,35 +1484,56 @@ public final class ArmyOfTheDeadPassive {
         }
 
         try {
-            if (isSummonDebugEnabled()) {
-                LOGGER.atInfo().log(
-                        "[NECROMANCER_SUMMONS] Registering %d non-common augments for slot=%d owner=%s summon=%s ids=%s",
-                        augmentIds.size(),
-                        slotIndex,
-                        ownerUuid,
-                        summonUuid,
-                        augmentIds);
+            if (inheritedIds.isEmpty()) {
+                // Owner has non-common augments, but this summon rolled none
+                // (and had no always-inherit entries). Clear any prior binding
+                // so the summon dispatches nothing, but still stamp the owner
+                // signature so we don't re-roll every hit.
+                try {
+                    mobAugmentExecutor.unregisterMob(summonUuid);
+                } catch (Throwable throwable) {
+                    LOGGER.atWarning().withCause(throwable).log(
+                            "[ARMY_OF_THE_DEAD][AUGMENTS] Failed to clear empty roll for summon=%s owner=%s",
+                            summonUuid, ownerUuid);
+                }
+                updateSummonOwnerAugmentSignature(ownerUuid, summonUuid, ownerSignature);
+                if (isSummonDebugEnabled()) {
+                    LOGGER.atInfo().log(
+                            "[NECROMANCER_SUMMONS] Summon rolled 0/%d augments (chance=%.2f guaranteed=%s) slot=%d owner=%s summon=%s",
+                            ownerAugmentIds.size(),
+                            config != null ? config.augmentInheritChance() : 1.0D,
+                            config != null ? config.augmentInheritGuaranteed() : Set.of(),
+                            slotIndex,
+                            ownerUuid,
+                            summonUuid);
+                }
+                return;
             }
 
-            // registerSummonAugments mirrors the player's non-common loadout —
-            // COMMON tier augments are excluded since summons should only
-            // inherit ELITE, LEGENDARY, and MYTHIC augments from the owner.
-            mobAugmentExecutor.registerSummonAugments(summonUuid, augmentIds, augmentManager, augmentRuntimeManager);
-
-            // Cache the signature of the augment list we just applied so the
-            // combat hot path can detect when the owner's selection drifts and
-            // re-mirror without re-iterating the augment map every hit.
-            String signature = buildAugmentSignature(augmentIds);
-            updateSummonOwnerAugmentSignature(ownerUuid, summonUuid, signature);
-
             if (isSummonDebugEnabled()) {
                 LOGGER.atInfo().log(
-                        "[NECROMANCER_SUMMONS] ✓ Mirrored %d non-common augments to summon at slot %d owner=%s summon=%s ids=%s",
-                        augmentIds.size(),
+                        "[NECROMANCER_SUMMONS] Registering %d/%d rolled augments for slot=%d owner=%s summon=%s rolled=%s (chance=%.2f)",
+                        inheritedIds.size(),
+                        ownerAugmentIds.size(),
                         slotIndex,
                         ownerUuid,
                         summonUuid,
-                        augmentIds);
+                        inheritedIds,
+                        config != null ? config.augmentInheritChance() : 1.0D);
+            }
+
+            mobAugmentExecutor.registerSummonAugments(summonUuid, inheritedIds, augmentManager, augmentRuntimeManager);
+
+            updateSummonOwnerAugmentSignature(ownerUuid, summonUuid, ownerSignature);
+
+            if (isSummonDebugEnabled()) {
+                LOGGER.atInfo().log(
+                        "[NECROMANCER_SUMMONS] ✓ Mirrored %d rolled augments to summon at slot %d owner=%s summon=%s ids=%s",
+                        inheritedIds.size(),
+                        slotIndex,
+                        ownerUuid,
+                        summonUuid,
+                        inheritedIds);
             }
         } catch (Exception e) {
             LOGGER.atSevere().withCause(e).log(
@@ -1508,6 +1543,60 @@ public final class ArmyOfTheDeadPassive {
                     summonUuid,
                     e.getMessage());
         }
+    }
+
+    /**
+     * Rolls each candidate augment against the config's inheritance chance.
+     * Augments whose id (lowercased) appears in
+     * {@code config.augmentInheritGuaranteed} bypass the roll and are kept
+     * unconditionally — but only when the owner already has that augment
+     * selected (ownerAugmentIds is the owner-filtered list). The guaranteed
+     * list never materializes augments the summoner doesn't possess.
+     * Preserves input order so the resulting signature remains stable when
+     * rolls are identical.
+     *
+     * Hot-path note: called once per spawn and once per owner-loadout resync
+     * per summon — never on the per-hit path — so a linear scan over the
+     * owner's non-common augment list is negligible. Uses
+     * {@link ThreadLocalRandom} to avoid contention on a shared RNG.
+     */
+    private static List<String> rollInheritedAugments(List<String> ownerAugmentIds,
+            ArmyOfTheDeadConfig config) {
+        if (ownerAugmentIds == null || ownerAugmentIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+        double chance = config != null ? config.augmentInheritChance() : 1.0D;
+        if (!Double.isFinite(chance)) {
+            chance = 0.0D;
+        }
+        chance = Math.max(0.0D, Math.min(1.0D, chance));
+
+        Set<String> guaranteed = config != null ? config.augmentInheritGuaranteed() : Set.of();
+        if (guaranteed == null) {
+            guaranteed = Set.of();
+        }
+
+        // Fast paths avoid touching RNG when the result is deterministic.
+        if (chance >= 1.0D) {
+            return new ArrayList<>(ownerAugmentIds);
+        }
+
+        List<String> result = new ArrayList<>(ownerAugmentIds.size());
+        ThreadLocalRandom rng = chance > 0.0D ? ThreadLocalRandom.current() : null;
+        for (String id : ownerAugmentIds) {
+            if (id == null || id.isBlank()) {
+                continue;
+            }
+            String normalized = id.trim().toLowerCase();
+            if (guaranteed.contains(normalized)) {
+                result.add(id);
+                continue;
+            }
+            if (rng != null && rng.nextDouble() < chance) {
+                result.add(id);
+            }
+        }
+        return result;
     }
 
     /**
@@ -1634,6 +1723,9 @@ public final class ArmyOfTheDeadPassive {
 
         Map<String, String> selectedAugmentsMap = playerData.getSelectedAugmentsSnapshot();
         List<String> currentAugmentIds = filterNonCommonAugments(selectedAugmentsMap);
+        // Owner-level signature (what the *owner* has selected) — drives sync
+        // detection. Per-summon rolls happen downstream; the signature here
+        // must remain roll-agnostic so the hot-path fast compare stays stable.
         String currentSignature = buildAugmentSignature(currentAugmentIds);
 
         OwnerSummonState ownerState = OWNER_STATES.get(ownerUuid);
@@ -1686,7 +1778,35 @@ public final class ArmyOfTheDeadPassive {
             return;
         }
 
-        applyPlayerAugmentsToSummon(summonRef, effectiveStore, ownerUuid, summonUuid, binding.slotIndex());
+        ArmyOfTheDeadConfig config = resolveConfigForOwner(playerData);
+        applyPlayerAugmentsToSummon(summonRef, effectiveStore, ownerUuid, summonUuid, binding.slotIndex(), config);
+    }
+
+    /**
+     * Resolves the current Army of the Dead config for a given player by
+     * pulling a fresh archetype snapshot from the manager. Falls back to
+     * {@link ArmyOfTheDeadConfig#disabled()} when the manager or snapshot
+     * cannot be obtained. Kept separate from the cold spawn path so the
+     * re-sync hot path can avoid threading an extra snapshot argument
+     * through every caller.
+     */
+    private static ArmyOfTheDeadConfig resolveConfigForOwner(PlayerData playerData) {
+        if (playerData == null) {
+            return ArmyOfTheDeadConfig.disabled();
+        }
+        EndlessLeveling plugin = EndlessLeveling.getInstance();
+        if (plugin == null) {
+            return ArmyOfTheDeadConfig.disabled();
+        }
+        var manager = plugin.getArchetypePassiveManager();
+        if (manager == null) {
+            return ArmyOfTheDeadConfig.disabled();
+        }
+        ArchetypePassiveSnapshot snapshot = manager.getSnapshot(playerData);
+        if (snapshot == null) {
+            return ArmyOfTheDeadConfig.disabled();
+        }
+        return resolveConfig(snapshot);
     }
 
     private static void applySummonMovementSpeedBonus(Ref<EntityStore> summonRef,
@@ -1731,6 +1851,20 @@ public final class ArmyOfTheDeadPassive {
     private static int resolveMaxSummons(ArmyOfTheDeadConfig config,
             PlayerData sourcePlayerData,
             EntityStatMap sourceStats) {
+        int potential = computePotentialSummons(config, sourcePlayerData, sourceStats);
+        return clampToConfiguredCap(potential, config);
+    }
+
+    /**
+     * Pre-cap summon count: base + attribute-scaled extras, capped only by
+     * the global safety ceiling {@link #MAX_SUMMON_CAP}. Used both by
+     * {@link #resolveMaxSummons} (which then applies the per-tier summon_cap)
+     * and by the bonus-damage pipeline to measure how many summons the player
+     * lost to the cap.
+     */
+    private static int computePotentialSummons(ArmyOfTheDeadConfig config,
+            PlayerData sourcePlayerData,
+            EntityStatMap sourceStats) {
         if (config == null) {
             return 0;
         }
@@ -1744,12 +1878,12 @@ public final class ArmyOfTheDeadPassive {
         SkillManager skillManager = EndlessLeveling.getInstance() != null
             ? EndlessLeveling.getInstance().getSkillManager()
             : null;
-        
+
         // Check for strength and sorcery scaling
         if (config.strengthPerSummon() > 0.0D || config.sorceryPerSummon() > 0.0D) {
             double strength = 0.0D;
             double sorcery = 0.0D;
-            
+
             if (sourcePlayerData != null) {
                 if (skillManager != null) {
                     // Use effective attribute totals so augment scaling (including Brute Force)
@@ -1758,10 +1892,10 @@ public final class ArmyOfTheDeadPassive {
                     sorcery = Math.max(0.0D, skillManager.calculatePlayerSorcery(sourcePlayerData));
                 }
             }
-            
+
             int strengthExtra = 0;
             int sorceryExtra = 0;
-            
+
             if (config.strengthPerSummon() > 0.0D) {
                 strengthExtra = (int) Math.floor(strength / config.strengthPerSummon());
             }
@@ -1770,7 +1904,6 @@ public final class ArmyOfTheDeadPassive {
             }
 
             // Strength and sorcery each grant their own summon increments.
-            // Example: 175 strength + 175 sorcery with 175 thresholds grants +2.
             extra = strengthExtra + sorceryExtra;
         } else {
             // Fallback to mana-based scaling for backwards compatibility
@@ -1791,10 +1924,59 @@ public final class ArmyOfTheDeadPassive {
         }
 
         int total = base + Math.max(0, extra);
-        if (config.maxSummons() > 0) {
-            total = Math.min(total, config.maxSummons());
-        }
         return Math.min(MAX_SUMMON_CAP, Math.max(0, total));
+    }
+
+    private static int clampToConfiguredCap(int potential, ArmyOfTheDeadConfig config) {
+        if (config == null) {
+            return 0;
+        }
+        int capped = potential;
+        if (config.maxSummons() > 0) {
+            capped = Math.min(capped, config.maxSummons());
+        }
+        return Math.max(0, Math.min(MAX_SUMMON_CAP, capped));
+    }
+
+    /**
+     * Resolves the outgoing bonus-damage multiplier granted by the Army of
+     * the Dead passive when the player's potential summon count exceeds the
+     * configured summon_cap. Returned value is a pure percentage expressed
+     * as a fraction (0.03 = +3%), to be applied multiplicatively by the
+     * caller (e.g. {@code finalDamage * (1 + multiplier)}).
+     *
+     * All numeric coefficients come from the class-JSON passive entry
+     * (bonus_damage_per_lost_summon_percent). No values are hardcoded.
+     */
+    public static double resolveArmyOfTheDeadBonusDamageMultiplier(PlayerData playerData,
+            EntityStatMap sourceStats,
+            ArchetypePassiveSnapshot archetypeSnapshot) {
+        if (playerData == null || archetypeSnapshot == null) {
+            return 0.0D;
+        }
+        if (archetypeSnapshot.getDefinitions(ArchetypePassiveType.ARMY_OF_THE_DEAD).isEmpty()) {
+            return 0.0D;
+        }
+
+        ArmyOfTheDeadConfig config = resolveConfig(archetypeSnapshot);
+        double percentPerLost = Math.max(0.0D, config.bonusDamagePerLostSummonPercent());
+        if (percentPerLost <= 0.0D) {
+            return 0.0D;
+        }
+        // When the cap is disabled (summon_cap <= 0) the player never loses a
+        // summon to it, so the bonus is definitionally zero.
+        if (config.maxSummons() <= 0) {
+            return 0.0D;
+        }
+
+        int potential = computePotentialSummons(config, playerData, sourceStats);
+        int allowed = clampToConfiguredCap(potential, config);
+        int lost = Math.max(0, potential - allowed);
+        if (lost <= 0) {
+            return 0.0D;
+        }
+
+        return (lost * percentPerLost) / 100.0D;
     }
 
     private static boolean isSummonSlotDeployed(SummonSlot slot, long now) {
@@ -2695,7 +2877,29 @@ public final class ArmyOfTheDeadPassive {
             skeletonType = skeleton.trim();
         }
 
-        int maxSummons = parseIntNonNegative(firstNonNull(props.get("max_summons"), props.get("summon_cap")), 0);
+        int maxSummons = parseIntNonNegative(firstNonNull(props.get("summon_cap"), props.get("max_summons")),
+                DEFAULT_SUMMON_CAP);
+
+        double bonusDamagePerLostSummonPercent = parseNonNegativeDouble(
+                firstNonNull(props.get("bonus_damage_per_lost_summon_percent"),
+                        props.get("bonus_damage_per_lost_summon")),
+                DEFAULT_BONUS_DAMAGE_PER_LOST_SUMMON_PERCENT);
+
+        double augmentInheritChance = parseInheritChance(
+                firstNonNull(props.get("augment_inherit_chance"), props.get("augment_inheritance_chance")),
+                DEFAULT_AUGMENT_INHERIT_CHANCE);
+
+        // "Guaranteed" = bypasses the random inheritance roll. The summon
+        // still only gets the augment if the *summoner* has it selected; this
+        // list never grants augments the owner doesn't already own.
+        Set<String> augmentInheritGuaranteed = parseAugmentGuaranteedSet(
+                firstNonNull(
+                        firstNonNull(props.get("augment_inherit_guaranteed"),
+                                props.get("augment_guaranteed_inherit")),
+                        // legacy aliases — kept so older configs still parse
+                        firstNonNull(props.get("augment_inherit_always"),
+                                props.get("augment_always_inherit"))),
+                DEFAULT_AUGMENT_INHERIT_GUARANTEED);
 
         return new ArmyOfTheDeadConfig(onDamageActivation,
                 baseSummonAmount,
@@ -2707,8 +2911,66 @@ public final class ArmyOfTheDeadPassive {
                 baseDamage,
                 statInheritance,
                 skeletonType,
-            maxSummons,
-            effectivenessScale);
+                maxSummons,
+                effectivenessScale,
+                bonusDamagePerLostSummonPercent,
+                augmentInheritChance,
+                augmentInheritGuaranteed);
+    }
+
+    /**
+     * Parses an augment-inherit chance from props. Accepts values in [0,1] as
+     * probabilities or >1 as percents (e.g. 20 → 0.20). Clamped to [0,1].
+     */
+    private static double parseInheritChance(Object raw, double fallback) {
+        double value = parseRawDouble(raw, fallback);
+        if (!Double.isFinite(value) || value <= 0.0D) {
+            return 0.0D;
+        }
+        if (value > 1.0D) {
+            value = value / 100.0D;
+        }
+        return Math.min(1.0D, value);
+    }
+
+    /**
+     * Parses the augment_inherit_guaranteed list. Accepts a List<String> (or
+     * List of objects with toString) or a comma-separated String. Returns a
+     * lowercased set; falls back to {@code fallback} when the prop is absent
+     * (null), but returns an empty set when the prop is explicitly present as
+     * an empty list/string — letting configs opt out of guaranteed inheritance
+     * entirely.
+     *
+     * Note: entries in this set only guarantee that, *if the summoner has
+     * that augment selected*, it bypasses the random inheritance roll. It
+     * never grants augments the summoner does not possess.
+     */
+    private static Set<String> parseAugmentGuaranteedSet(Object raw, Set<String> fallback) {
+        if (raw == null) {
+            return fallback;
+        }
+        Set<String> result = new HashSet<>();
+        if (raw instanceof List<?> list) {
+            for (Object entry : list) {
+                if (entry == null) {
+                    continue;
+                }
+                String id = entry.toString().trim().toLowerCase();
+                if (!id.isEmpty()) {
+                    result.add(id);
+                }
+            }
+        } else if (raw instanceof String string) {
+            for (String part : string.split(",")) {
+                String id = part.trim().toLowerCase();
+                if (!id.isEmpty()) {
+                    result.add(id);
+                }
+            }
+        } else {
+            return fallback;
+        }
+        return result;
     }
 
     private static RacePassiveDefinition resolveStrongestDefinition(List<RacePassiveDefinition> definitions) {
@@ -2787,7 +3049,10 @@ public final class ArmyOfTheDeadPassive {
             double statInheritance,
             String skeletonType,
             int maxSummons,
-            double effectivenessScale) {
+            double effectivenessScale,
+            double bonusDamagePerLostSummonPercent,
+            double augmentInheritChance,
+            Set<String> augmentInheritGuaranteed) {
 
         private static ArmyOfTheDeadConfig disabled() {
             return new ArmyOfTheDeadConfig(false,
@@ -2800,8 +3065,11 @@ public final class ArmyOfTheDeadPassive {
                 DEFAULT_BASE_SUMMON_DAMAGE,
                     DEFAULT_STAT_INHERITANCE,
                     DEFAULT_SKELETON_TYPE,
-                    0,
-                    0.0D);
+                    DEFAULT_SUMMON_CAP,
+                    0.0D,
+                    DEFAULT_BONUS_DAMAGE_PER_LOST_SUMMON_PERCENT,
+                    DEFAULT_AUGMENT_INHERIT_CHANCE,
+                    DEFAULT_AUGMENT_INHERIT_GUARANTEED);
         }
     }
 

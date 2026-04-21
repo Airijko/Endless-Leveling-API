@@ -34,7 +34,11 @@
       "cooldown_seconds": 12,
       "base_summon_damage": 25,
       "summon_stat_inheritance": 0.6,
-      "skeleton_type": "EndlessLeveling_ArmyOfTheDead_Pet_Onyxium"
+      "skeleton_type": "EndlessLeveling_ArmyOfTheDead_Pet_Onyxium",
+      "summon_cap": 12,
+      "bonus_damage_per_lost_summon_percent": 3.0,
+      "augment_inherit_chance": 0.2,
+      "augment_inherit_guaranteed": ["death_bomb"]
     },
     {
       "type": "INNATE_ATTRIBUTE_GAIN",

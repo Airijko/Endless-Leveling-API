@@ -311,6 +311,19 @@ public final class CombatHookProcessor {
                     playerData.getUuid());
         }
 
+        // Army of the Dead "lost summon" bonus damage. One scalar multiplier
+        // per player derived from (potential_summons - summon_cap) * per-lost
+        // percent defined in the class JSON. Zero for non-necromancers.
+        double aodLostSummonBonus = ArmyOfTheDeadPassive.resolveArmyOfTheDeadBonusDamageMultiplier(
+                playerData, attackerStats, archetypeSnapshot);
+        if (aodLostSummonBonus > 0.0D) {
+            finalDamage = (float) (finalDamage * (1.0D + aodLostSummonBonus));
+            logPassiveTrigger(playerData,
+                    ArchetypePassiveType.ARMY_OF_THE_DEAD,
+                    "lost_summon_multiplier=%.3f",
+                    1.0D + aodLostSummonBonus);
+        }
+
         if (runtimeState != null
                 && finalDamage > 0f
                 && archetypeSnapshot.getValue(ArchetypePassiveType.SHIELDING_AURA) > 0.0D) {

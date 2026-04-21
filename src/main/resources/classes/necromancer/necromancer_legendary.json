@@ -34,7 +34,11 @@
       "cooldown_seconds": 14,
       "base_summon_damage": 20,
       "summon_stat_inheritance": 0.5,
-      "skeleton_type": "EndlessLeveling_ArmyOfTheDead_Pet_Mithril"
+      "skeleton_type": "EndlessLeveling_ArmyOfTheDead_Pet_Mithril",
+      "summon_cap": 10,
+      "bonus_damage_per_lost_summon_percent": 2.5,
+      "augment_inherit_chance": 0.2,
+      "augment_inherit_guaranteed": ["death_bomb"]
     },
     {
       "type": "INNATE_ATTRIBUTE_GAIN",

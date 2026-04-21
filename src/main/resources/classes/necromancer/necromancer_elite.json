@@ -34,7 +34,11 @@
       "cooldown_seconds": 18,
       "base_summon_damage": 10,
       "summon_stat_inheritance": 0.3,
-      "skeleton_type": "EndlessLeveling_ArmyOfTheDead_Pet_Iron"
+      "skeleton_type": "EndlessLeveling_ArmyOfTheDead_Pet_Iron",
+      "summon_cap": 6,
+      "bonus_damage_per_lost_summon_percent": 1.5,
+      "augment_inherit_chance": 0.2,
+      "augment_inherit_guaranteed": ["death_bomb"]
     },
     {
       "type": "INNATE_ATTRIBUTE_GAIN",
