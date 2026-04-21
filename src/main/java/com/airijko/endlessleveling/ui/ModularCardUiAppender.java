@@ -16,12 +16,17 @@ import java.util.Enumeration;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 final class ModularCardUiAppender {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClassFull();
+
+    // JAR resources are immutable at runtime; cache the folder listing forever.
+    private static final ConcurrentHashMap<String, List<String>> FOLDER_LISTING_CACHE =
+            new ConcurrentHashMap<>();
 
     private ModularCardUiAppender() {
     }
@@ -33,7 +38,8 @@ final class ModularCardUiAppender {
             int cardsPerRow) {
         ui.clear(containerSelector);
 
-        List<String> cardNames = listUiFileNames(classpathFolder);
+        List<String> cardNames = FOLDER_LISTING_CACHE.computeIfAbsent(
+                classpathFolder, ModularCardUiAppender::listUiFileNames);
         if (cardNames.isEmpty()) {
             return;
         }

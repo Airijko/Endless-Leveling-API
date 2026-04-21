@@ -95,6 +95,32 @@ public class DungeonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     private static final java.util.concurrent.ConcurrentHashMap<UUID, CompletableFuture<World>> ACTIVE_PARTY_INSTANCES =
             new java.util.concurrent.ConcurrentHashMap<>();
 
+    /** Currently-open DungeonsUIPage instances keyed by player UUID. Used by
+     *  the tick-refresh path to push live Outlander-Bridge cooldown updates
+     *  without forcing the player to close + reopen the tab. */
+    private static final java.util.concurrent.ConcurrentHashMap<UUID, DungeonsUIPage> OPEN_PAGES =
+            new java.util.concurrent.ConcurrentHashMap<>();
+
+    /** Results of {@link #resourceExists(String)} cached forever — JAR
+     *  resource presence does not change at runtime, and the check does
+     *  multiple classloader + filesystem probes. Cutting this from the
+     *  per-build cost was a primary driver of the tab-open slow-down. */
+    private static final java.util.concurrent.ConcurrentHashMap<String, Boolean> RESOURCE_EXISTS_CACHE =
+            new java.util.concurrent.ConcurrentHashMap<>();
+
+    /** Results of {@link #isClassPresent(String)}. Classpath doesn't change
+     *  mid-session so this is safe to keep forever. */
+    private static final java.util.concurrent.ConcurrentHashMap<String, Boolean> CLASS_PRESENT_CACHE =
+            new java.util.concurrent.ConcurrentHashMap<>();
+
+    /** Last text pushed to the outlander carousel status label. Lets the
+     *  tick-refresh skip the packet send when the string hasn't changed. */
+    private volatile String lastCarouselStatusText = "";
+    /** Last text pushed to the outlander detail-view reward status. */
+    private volatile String lastDetailStatusText = "";
+    /** Last text pushed to the outlander detail-view reward detail. */
+    private volatile String lastDetailDetailText = "";
+
     public DungeonsUIPage(@Nonnull PlayerRef playerRef,
             @Nonnull CustomPageLifetime lifetime) {
         super(playerRef, lifetime, SkillsUIPage.Data.CODEC);
@@ -210,6 +236,53 @@ public class DungeonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
             "Common/UI/Custom/Pages/Dungeons/DungeonsPage.ui",
                 "#DungeonsTitle");
         NavUIHelper.bindNavEvents(events, "Common/UI/Custom/Pages/Dungeons/DungeonsPage.ui");
+
+        // Register this page for live tick-refresh of the Outlander Bridge
+        // cooldown labels. Without this the card + detail-view status go
+        // stale the moment the cooldown ticks below 1m resolution, and
+        // players see "Available" only after closing + reopening the tab.
+        UUID uuid = playerRef.getUuid();
+        if (uuid != null) {
+            OPEN_PAGES.put(uuid, this);
+        }
+    }
+
+    @Override
+    public void onDismiss(@Nonnull Ref<EntityStore> ref,
+            @Nonnull Store<EntityStore> store) {
+        UUID uuid = playerRef.getUuid();
+        if (uuid != null) {
+            OPEN_PAGES.remove(uuid, this);
+        }
+        super.onDismiss(ref, store);
+    }
+
+    /** Per-tick entry point called by {@code HudRefreshSystem}. Pushes a
+     *  diff-guarded update to every open DungeonsUIPage so the Outlander
+     *  Bridge cooldown countdown animates live without closing the tab. */
+    public static void tickRefreshOpenPages() {
+        if (OPEN_PAGES.isEmpty()) return;
+        for (DungeonsUIPage page : OPEN_PAGES.values()) {
+            try {
+                page.pushLiveRefresh();
+            } catch (Throwable ignored) {
+                // Never let a per-page refresh failure break the tick loop.
+            }
+        }
+    }
+
+    private void pushLiveRefresh() {
+        if (!playerRef.isValid()) {
+            UUID uuid = playerRef.getUuid();
+            if (uuid != null) OPEN_PAGES.remove(uuid, this);
+            return;
+        }
+        UICommandBuilder ui = new UICommandBuilder();
+        updateOutlanderBridgeCardStatus(ui);
+        if (detailViewActive && OUTLANDER_BRIDGE_ID.equals(selectedDungeonId)) {
+            populateOutlanderBridgeRewardSection(ui);
+        }
+        sendUpdate(ui, false);
     }
 
     private void applyViewState(@Nonnull UICommandBuilder ui) {
@@ -324,34 +397,35 @@ public class DungeonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     private void populateOutlanderBridgeRewardSection(@Nonnull UICommandBuilder ui) {
         OutlanderBridgeRewardCooldowns cd = OutlanderBridgeRewardCooldowns.get();
         UUID uuid = playerRef.getUuid();
-        boolean onCooldown = cd != null && uuid != null && cd.isOnCooldown(uuid);
+        long remainingMs = (cd != null && uuid != null) ? cd.remainingMs(uuid) : 0L;
 
         ui.set("#DetailRewardHeader.Visible", true);
         ui.set("#DetailRewardStatus.Visible", true);
         ui.set("#DetailRewardDetail.Visible", true);
 
-        if (onCooldown) {
-            long remainingMin = (cd.remainingMs(uuid) + 59_999L) / 60_000L;
-            ui.set("#DetailRewardStatus.Text", "On Cooldown");
-            ui.set("#DetailRewardDetail.Text",
-                    "XP claim is locked for " + remainingMin + "m. You can still enter, but XP earned this run will not be claimable until the cooldown ends.");
+        String statusText;
+        String detailText;
+        if (remainingMs > 0L) {
+            statusText = "Ready in " + formatRemaining(remainingMs);
+            detailText = "XP claim is locked. You can still enter, but XP earned this run will not be claimable until the timer ends.";
         } else {
-            ui.set("#DetailRewardStatus.Text", "Available");
-            ui.set("#DetailRewardDetail.Text",
-                    "XP rewards are claimable at the end of a successful run. A 1-hour cooldown begins on claim.");
+            statusText = "Available";
+            detailText = "XP rewards are claimable at the end of a successful run. A 1-hour cooldown begins on claim.";
         }
+        setIfChanged(ui, "#DetailRewardStatus.Text", statusText, () -> lastDetailStatusText,
+                t -> lastDetailStatusText = t);
+        setIfChanged(ui, "#DetailRewardDetail.Text", detailText, () -> lastDetailDetailText,
+                t -> lastDetailDetailText = t);
     }
 
     @SuppressWarnings("null")
     private void updateDungeonLevelLabels(@Nonnull UICommandBuilder ui) {
+        // NOTE: do NOT reload world-settings from disk here — the Dungeons
+        // tab was previously triggering a JSON reload on every build() call,
+        // which compounded with leaked per-player state to stall and crash
+        // the server after extended uptime. Admin reload commands already
+        // force a refresh when world-settings edits need to be picked up.
         MobLevelingManager mlm = EndlessLeveling.getInstance().getMobLevelingManager();
-        // Reload world-settings from disk so the card reflects edits made at runtime.
-        if (mlm != null) {
-            try {
-                mlm.reloadWorldSettingsOnly();
-            } catch (Throwable ignored) {
-            }
-        }
         for (DungeonMeta meta : DUNGEONS.values()) {
             String rawSelector = meta.cardLevelLabelSelector();
             String rawNextTierSelector = meta.cardNextTierLabelSelector();
@@ -398,11 +472,43 @@ public class DungeonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     private void updateOutlanderBridgeCardStatus(@Nonnull UICommandBuilder ui) {
         OutlanderBridgeRewardCooldowns cd = OutlanderBridgeRewardCooldowns.get();
         UUID uuid = playerRef.getUuid();
-        if (cd != null && uuid != null && cd.isOnCooldown(uuid)) {
-            long remainingMin = (cd.remainingMs(uuid) + 59_999L) / 60_000L;
-            ui.set("#CardOutlanderBridgeStatus.Text", "Claim Cooldown: " + remainingMin + "m");
-        } else {
-            ui.set("#CardOutlanderBridgeStatus.Text", "Rewards Available");
+        long remainingMs = (cd != null && uuid != null) ? cd.remainingMs(uuid) : 0L;
+        String text = remainingMs > 0L
+                ? "Ready in " + formatRemaining(remainingMs)
+                : "Rewards Available";
+        setIfChanged(ui, "#CardOutlanderBridgeStatus.Text", text,
+                () -> lastCarouselStatusText, t -> lastCarouselStatusText = t);
+    }
+
+    /** Formats a remaining-ms value as the most concise countdown label that
+     *  still conveys live-changing resolution. Examples: 59s, 4m 12s, 1h 03m. */
+    @Nonnull
+    private static String formatRemaining(long remainingMs) {
+        long totalSec = (remainingMs + 999L) / 1000L;
+        if (totalSec < 60L) {
+            return totalSec + "s";
+        }
+        long totalMin = totalSec / 60L;
+        long sec = totalSec % 60L;
+        if (totalMin < 60L) {
+            return totalMin + "m " + String.format(java.util.Locale.ROOT, "%02ds", sec);
+        }
+        long hour = totalMin / 60L;
+        long min = totalMin % 60L;
+        return hour + "h " + String.format(java.util.Locale.ROOT, "%02dm", min);
+    }
+
+    /** Push {@code value} to {@code selector} only when it differs from the
+     *  previously-pushed value. Cuts per-tick packet traffic to near-zero
+     *  when the label text is unchanged. */
+    private static void setIfChanged(@Nonnull UICommandBuilder ui,
+            @Nonnull String selector,
+            @Nonnull String value,
+            @Nonnull java.util.function.Supplier<String> lastGetter,
+            @Nonnull java.util.function.Consumer<String> lastSetter) {
+        if (!value.equals(lastGetter.get())) {
+            ui.set(selector, value);
+            lastSetter.accept(value);
         }
     }
 
@@ -416,6 +522,10 @@ public class DungeonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     }
 
     private boolean resourceExists(@Nonnull String path) {
+        return RESOURCE_EXISTS_CACHE.computeIfAbsent(path, DungeonsUIPage::resourceExistsUncached);
+    }
+
+    private static boolean resourceExistsUncached(@Nonnull String path) {
         ClassLoader loader = DungeonsUIPage.class.getClassLoader();
         if (loader.getResource(path) != null) {
             return true;
@@ -455,6 +565,10 @@ public class DungeonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     }
 
     private boolean isClassPresent(@Nonnull String className) {
+        return CLASS_PRESENT_CACHE.computeIfAbsent(className, DungeonsUIPage::isClassPresentUncached);
+    }
+
+    private static boolean isClassPresentUncached(@Nonnull String className) {
         try {
             Class.forName(className);
             return true;
@@ -718,6 +832,12 @@ public class DungeonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         final UUID clickerUuid = playerRef.getUuid();
         sourceWorld.execute(() -> {
             try {
+                // Prune dead instance worlds from the share-cache before we
+                // consult it. Without this, the map grows unbounded over the
+                // life of a long server uptime (party disbands, world
+                // unloads, instance times out) and was a primary contributor
+                // to the hour-scale crash.
+                pruneDeadPartyInstances();
                 CompletableFuture<World> instanceWorld;
                 if (partyLeaderKey != null) {
                     // Live-world scan first — authoritative. If any online
@@ -772,6 +892,25 @@ public class DungeonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
         resetDetailView(ui);
         applyViewState(ui);
         sendUpdate(ui, false);
+    }
+
+    /**
+     * Sweeps {@link #ACTIVE_PARTY_INSTANCES} of entries whose instance world
+     * has completed + unloaded. Without this the map is an unbounded leak:
+     * every party teleport adds an entry, nothing ever removes them, and
+     * memory pressure accumulates across hours of play.
+     */
+    private static void pruneDeadPartyInstances() {
+        ACTIVE_PARTY_INSTANCES.values().removeIf(future -> {
+            if (future == null) return true;
+            if (!future.isDone()) return false;
+            try {
+                World w = future.getNow(null);
+                return w == null || !w.isAlive();
+            } catch (Throwable t) {
+                return true;
+            }
+        });
     }
 
     /**

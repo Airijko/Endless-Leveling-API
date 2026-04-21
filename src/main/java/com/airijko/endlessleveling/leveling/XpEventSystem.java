@@ -127,6 +127,19 @@ public class XpEventSystem extends DeathSystems.OnDeathSystem {
         LOGGER.atFine().log("[MOB_LUCK] onDeath: killer=%s target=%d targetIsPlayer=%s source=%s",
                 playerUuid, ref.getIndex(), deadPlayerRef != null && deadPlayerRef.isValid(), sourceName);
 
+        // Fire mob-kill listeners regardless of whether XP is granted. Mob-type id
+        // is resolved from the NPCEntity component on the dead mob. Keeps quest/
+        // objective tracking independent from XP gating (blacklists, etc).
+        try {
+            var npcComp = store.getComponent(ref,
+                    com.hypixel.hytale.server.npc.entities.NPCEntity.getComponentType());
+            String mobType = npcComp != null ? npcComp.getNPCTypeId() : null;
+            if (mobType != null) {
+                EndlessLevelingAPI.get().notifyMobKill(playerUuid, mobType, null);
+            }
+        } catch (Throwable ignored) {
+        }
+
         var playerData = playerDataManager.get(playerUuid);
         if (playerData == null) {
             XpKillCreditTracker.clearTarget(ref, store, commandBuffer);

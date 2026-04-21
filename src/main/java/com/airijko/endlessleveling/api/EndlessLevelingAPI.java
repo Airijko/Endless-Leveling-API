@@ -93,6 +93,26 @@ public final class EndlessLevelingAPI {
     // Parameters: (playerUuid, adjustedXpAmount).
     private final List<BiConsumer<UUID, Double>> xpGrantListeners = new CopyOnWriteArrayList<>();
 
+    // Prestige listeners — fired after a successful prestige gain.
+    public record PrestigeEvent(UUID playerUuid, int oldPrestigeLevel, int newPrestigeLevel) {}
+    private final List<java.util.function.Consumer<PrestigeEvent>> prestigeListeners = new CopyOnWriteArrayList<>();
+
+    // Level-up listeners — fired after a player levels up (per level crossed).
+    public record LevelUpEvent(UUID playerUuid, int oldLevel, int newLevel, int prestigeLevel) {}
+    private final List<java.util.function.Consumer<LevelUpEvent>> levelUpListeners = new CopyOnWriteArrayList<>();
+
+    // Outlander Bridge completion listeners — fired when all waves are cleared.
+    public record OutlanderBridgeCompletedEvent(UUID playerUuid, int wavesCompleted, String worldName) {}
+    private final List<java.util.function.Consumer<OutlanderBridgeCompletedEvent>> outlanderBridgeCompletedListeners = new CopyOnWriteArrayList<>();
+
+    // Wave-gate completion listeners — fired by Rifts & Raids when an outbreak gate clears its final wave.
+    public record WaveGateCompletedEvent(UUID playerUuid, String rankLetter, int wavesCompleted, String worldName, UUID sessionId) {}
+    private final List<java.util.function.Consumer<WaveGateCompletedEvent>> waveGateCompletedListeners = new CopyOnWriteArrayList<>();
+
+    // Mob kill listeners — fired when a player kills a mob. Keyed by normalized entity type id.
+    public record MobKillEvent(UUID playerUuid, String mobTypeId, String worldName) {}
+    private final List<java.util.function.Consumer<MobKillEvent>> mobKillListeners = new CopyOnWriteArrayList<>();
+
     // Pre-teleport listeners — notified just before a player is teleported to
     // another world. Allows mods to clean up transient ECS state (e.g. mounts).
     // Parameter: playerUuid.
@@ -1422,6 +1442,106 @@ public final class EndlessLevelingAPI {
     public void removeXpGrantListener(BiConsumer<UUID, Double> listener) {
         if (listener != null) {
             xpGrantListeners.remove(listener);
+        }
+    }
+
+    // ----------------------
+    // Prestige listeners
+    // ----------------------
+
+    public void addPrestigeListener(java.util.function.Consumer<PrestigeEvent> listener) {
+        if (listener != null) prestigeListeners.add(listener);
+    }
+
+    public void removePrestigeListener(java.util.function.Consumer<PrestigeEvent> listener) {
+        if (listener != null) prestigeListeners.remove(listener);
+    }
+
+    public void notifyPrestigeListeners(UUID uuid, int oldLevel, int newLevel) {
+        if (uuid == null || prestigeListeners.isEmpty()) return;
+        PrestigeEvent event = new PrestigeEvent(uuid, oldLevel, newLevel);
+        for (var listener : prestigeListeners) {
+            try { listener.accept(event); } catch (Exception ignored) {}
+        }
+    }
+
+    // ----------------------
+    // Level-up listeners
+    // ----------------------
+
+    public void addLevelUpListener(java.util.function.Consumer<LevelUpEvent> listener) {
+        if (listener != null) levelUpListeners.add(listener);
+    }
+
+    public void removeLevelUpListener(java.util.function.Consumer<LevelUpEvent> listener) {
+        if (listener != null) levelUpListeners.remove(listener);
+    }
+
+    public void notifyLevelUpListeners(UUID uuid, int oldLevel, int newLevel, int prestigeLevel) {
+        if (uuid == null || levelUpListeners.isEmpty()) return;
+        LevelUpEvent event = new LevelUpEvent(uuid, oldLevel, newLevel, prestigeLevel);
+        for (var listener : levelUpListeners) {
+            try { listener.accept(event); } catch (Exception ignored) {}
+        }
+    }
+
+    // ----------------------
+    // Outlander Bridge completion listeners
+    // ----------------------
+
+    public void addOutlanderBridgeCompletedListener(java.util.function.Consumer<OutlanderBridgeCompletedEvent> listener) {
+        if (listener != null) outlanderBridgeCompletedListeners.add(listener);
+    }
+
+    public void removeOutlanderBridgeCompletedListener(java.util.function.Consumer<OutlanderBridgeCompletedEvent> listener) {
+        if (listener != null) outlanderBridgeCompletedListeners.remove(listener);
+    }
+
+    public void notifyOutlanderBridgeCompleted(UUID uuid, int wavesCompleted, String worldName) {
+        if (uuid == null || outlanderBridgeCompletedListeners.isEmpty()) return;
+        OutlanderBridgeCompletedEvent event = new OutlanderBridgeCompletedEvent(uuid, wavesCompleted, worldName);
+        for (var listener : outlanderBridgeCompletedListeners) {
+            try { listener.accept(event); } catch (Exception ignored) {}
+        }
+    }
+
+    // ----------------------
+    // Wave-gate completion listeners (Rifts & Raids)
+    // ----------------------
+
+    public void addWaveGateCompletedListener(java.util.function.Consumer<WaveGateCompletedEvent> listener) {
+        if (listener != null) waveGateCompletedListeners.add(listener);
+    }
+
+    public void removeWaveGateCompletedListener(java.util.function.Consumer<WaveGateCompletedEvent> listener) {
+        if (listener != null) waveGateCompletedListeners.remove(listener);
+    }
+
+    public void notifyWaveGateCompleted(UUID uuid, String rankLetter, int waves, String worldName, UUID sessionId) {
+        if (uuid == null || waveGateCompletedListeners.isEmpty()) return;
+        WaveGateCompletedEvent event = new WaveGateCompletedEvent(uuid, rankLetter, waves, worldName, sessionId);
+        for (var listener : waveGateCompletedListeners) {
+            try { listener.accept(event); } catch (Exception ignored) {}
+        }
+    }
+
+    // ----------------------
+    // Mob kill listeners
+    // ----------------------
+
+    public void addMobKillListener(java.util.function.Consumer<MobKillEvent> listener) {
+        if (listener != null) mobKillListeners.add(listener);
+    }
+
+    public void removeMobKillListener(java.util.function.Consumer<MobKillEvent> listener) {
+        if (listener != null) mobKillListeners.remove(listener);
+    }
+
+    public void notifyMobKill(UUID uuid, String mobTypeId, String worldName) {
+        if (uuid == null || mobTypeId == null || mobKillListeners.isEmpty()) return;
+        MobKillEvent event = new MobKillEvent(uuid, mobTypeId, worldName);
+        for (var listener : mobKillListeners) {
+            try { listener.accept(event); } catch (Exception ignored) {}
         }
     }
 

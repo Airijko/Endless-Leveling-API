@@ -410,6 +410,53 @@ $C = "../../Common.ui";
                 }
             }
 
+            Group #NavQuestsContainer {
+                LayoutMode: Left;
+
+                Group { Anchor: (Width: @TopNavButtonGap); }
+
+                // ---- QUESTS ----
+                Group {
+                    Anchor: (MinWidth: @TopNavButtonWidth, Height: @TopNavButtonHeight);
+                    Background: PatchStyle(TexturePath: "../../Common/ColorPickerButton.png", Border: 14, Color: @NavButtonBorderColor);
+
+                    Group {
+                        Anchor: (Left: @NavButtonBorderInset, Right: @NavButtonBorderInset, Top: @NavButtonBorderInset, Bottom: @NavButtonBorderInset);
+                        Background: PatchStyle(TexturePath: "../../Common/ColorPickerFill.png", Border: 14, Color: @NavButtonFillColor);
+
+                        Button #NavQuests {
+                            Anchor: (Top: 0, Bottom: 0);
+                            Style: @TopNavButtonStyle;
+
+                            Group {
+                                LayoutMode: Left;
+                                Padding: (Horizontal: 14);
+
+                                Group {
+                                    Anchor: (Width: 52, Height: 52);
+                                    LayoutMode: Middle;
+                                    Group #NavQuestsIcon {
+                                        Anchor: (Width: @TopNavIconSize, Height: @TopNavIconSize);
+                                        Background: (TexturePath: "Icons/NavQuestsIcon.png");
+                                    }
+                                }
+
+                                Group { Anchor: (Width: 8); }
+
+                                Group {
+                                    LayoutMode: Middle;
+                                    Padding: (Right: 6);
+                                    Label #NavQuestsLabel {
+                                        Text: "QUESTS";
+                                        Style: @TopNavLabelDefault;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
         }
     }
 };

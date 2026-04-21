@@ -632,6 +632,14 @@ public final class OutlanderBridgeWaveManager extends TickingSystem<EntityStore>
             s.completedTimer = 0.0f;
             s.rewardsOpened = false;
             s.lastCountdownSecond = -1;
+
+            int wavesCompleted = waves.size();
+            String worldName = s.world.getName();
+            for (PlayerRef pr : s.world.getPlayerRefs()) {
+                if (pr == null || !pr.isValid()) continue;
+                com.airijko.endlessleveling.api.EndlessLevelingAPI.get()
+                        .notifyOutlanderBridgeCompleted(pr.getUuid(), wavesCompleted, worldName);
+            }
             return;
         }
 

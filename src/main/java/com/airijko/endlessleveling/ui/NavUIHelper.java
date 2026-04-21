@@ -101,6 +101,8 @@ public final class NavUIHelper {
                         ui.set("#NavClassesLabel.Text", Lang.tr(playerRef.getUuid(), "ui.nav.classes", "CLASSES"));
                         ui.set("#NavGatesLabel.Text", Lang.tr(playerRef.getUuid(), "ui.nav.gates", "GATES"));
                         ui.set("#NavDungeonsLabel.Text", Lang.tr(playerRef.getUuid(), "ui.nav.dungeons", "DUNGEONS"));
+                        ui.set("#NavQuestsLabel.Text", Lang.tr(playerRef.getUuid(), "ui.nav.quests", "QUESTS"));
+                        ui.set("#NavQuestsContainer.Visible", isQuestsAddonPresent());
                         ui.set("#NavLeaderboardsLabel.Text", Lang.tr(playerRef.getUuid(), "ui.nav.leaderboards", "LEADERBOARDS"));
                         ui.set("#NavXpStatsLabel.Text", Lang.tr(playerRef.getUuid(), "ui.nav.xpstats", "XP STATS"));
                         ui.set("#NavAddonsLabel.Text", Lang.tr(playerRef.getUuid(), "ui.nav.addons", "ADDONS"));
@@ -268,6 +270,7 @@ public final class NavUIHelper {
                         setTopNavButtonSelected(ui, "#NavClasses", "classes".equalsIgnoreCase(activeNav));
                         setTopNavButtonSelected(ui, "#NavGates", "gates".equalsIgnoreCase(activeNav));
                         setTopNavButtonSelected(ui, "#NavDungeons", "dungeons".equalsIgnoreCase(activeNav));
+                        setTopNavButtonSelected(ui, "#NavQuests", "quests".equalsIgnoreCase(activeNav));
                         setTopNavButtonSelected(ui, "#NavLeaderboards", "leaderboards".equalsIgnoreCase(activeNav));
                         setTopNavButtonSelected(ui, "#NavXpStats", "xpstats".equalsIgnoreCase(activeNav));
                         setTopNavButtonSelected(ui, "#NavAddons", "addons".equalsIgnoreCase(activeNav));
@@ -324,6 +327,7 @@ public final class NavUIHelper {
                         events.addEventBinding(Activating, "#NavClasses", of("Action", "nav:classes"), false);
                         events.addEventBinding(Activating, "#NavGates", of("Action", "nav:gates"), false);
                         events.addEventBinding(Activating, "#NavDungeons", of("Action", "nav:dungeons"), false);
+                        events.addEventBinding(Activating, "#NavQuests", of("Action", "nav:quests"), false);
                         events.addEventBinding(Activating, "#NavLeaderboards", of("Action", "nav:leaderboards"), false);
                         events.addEventBinding(Activating, "#NavXpStats", of("Action", "nav:xpstats"), false);
                         events.addEventBinding(Activating, "#NavAddons", of("Action", "nav:addons"), false);
@@ -392,6 +396,13 @@ public final class NavUIHelper {
                         case "dungeons" -> player.getPageManager()
                                         .openCustomPage(ref, store,
                                                         new DungeonsUIPage(playerRef, CustomPageLifetime.CanDismiss));
+                        case "quests" -> {
+                                // Quests UI lives in the EndlessQuestAndRewards addon and is exposed via /quests.
+                                if (!openQuestsGui(playerRef)) {
+                                        PlayerChatNotifier.send(playerRef,
+                                                Message.raw("Quests addon is not installed.").color("#ff6666"));
+                                }
+                        }
                         case "addons" -> player.getPageManager()
                                         .openCustomPage(ref, store,
                                                         new AddonsUIPage(playerRef, CustomPageLifetime.CanDismiss));
@@ -462,6 +473,10 @@ public final class NavUIHelper {
                         "com.airijko.endlessleveling.EndlessDungeonsAndGates",
         };
 
+        private static final String[] ENDLESS_QUESTS_CLASSES = {
+                        "com.airijko.endlessleveling.questsandrewards.EndlessQuestAndRewards",
+        };
+
         private static final String PARTNER_ADDON_MAIN_CLASS =
                         "com.airijko.endlessleveling.EndlessLevelingPartnerAddon";
 
@@ -490,6 +505,34 @@ public final class NavUIHelper {
                         }
                 }
                 return false;
+        }
+
+        /** Returns true only when the EndlessQuestAndRewards addon is present on the classpath. */
+        private static boolean isQuestsAddonPresent() {
+                ClassLoader cl = NavUIHelper.class.getClassLoader();
+                for (String name : ENDLESS_QUESTS_CLASSES) {
+                        try {
+                                Class.forName(name, false, cl);
+                                return true;
+                        } catch (ClassNotFoundException ignored) {
+                        }
+                }
+                return false;
+        }
+
+        private static boolean openQuestsGui(@Nonnull PlayerRef playerRef) {
+                if (playerRef == null) {
+                        return false;
+                }
+                if (!isQuestsAddonPresent()) {
+                        return false;
+                }
+                try {
+                        CommandManager.get().handleCommand(playerRef, "quests");
+                        return true;
+                } catch (Exception ignored) {
+                }
+                return runCommandAsPlayer(playerRef, "quests");
         }
 
         private static boolean openGatesGui(@Nonnull PlayerRef playerRef) {

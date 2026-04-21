@@ -494,6 +494,14 @@ public class LevelingManager {
         if (eventHookManager != null && newLevel > oldLevel) {
             eventHookManager.onPlayerLevelUp(player, oldLevel, newLevel);
         }
+
+        if (newLevel > oldLevel) {
+            EndlessLevelingAPI.get().notifyLevelUpListeners(
+                    player.getUuid(),
+                    oldLevel,
+                    newLevel,
+                    Math.max(0, player.getPrestigeLevel()));
+        }
     }
 
     private void notifyAvailableAugments(PlayerData player) {
@@ -714,6 +722,8 @@ public class LevelingManager {
         if (eventHookManager != null) {
             eventHookManager.onPrestigeLevelUp(player, oldPrestigeLevel, nextPrestigeLevel);
         }
+
+        EndlessLevelingAPI.get().notifyPrestigeListeners(player.getUuid(), oldPrestigeLevel, nextPrestigeLevel);
 
         refreshHud(player);
         pushPartyProHudText(player);

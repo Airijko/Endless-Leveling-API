@@ -1,5 +1,6 @@
 package com.airijko.endlessleveling.systems;
 
+import com.airijko.endlessleveling.ui.DungeonsUIPage;
 import com.airijko.endlessleveling.ui.PlayerHud;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.system.tick.TickingSystem;
@@ -27,11 +28,16 @@ public class HudRefreshSystem extends TickingSystem<EntityStore> {
 
     private static final float DIRTY_REFRESH_INTERVAL_SECONDS = 0.1f;
     private static final float OVERLAY_REFRESH_INTERVAL_SECONDS = 0.5f;
+    /** 1s cadence is enough to keep the Outlander Bridge cooldown countdown
+     *  visually live; we only push when the label text actually changed, so
+     *  this is effectively a no-op at steady state. */
+    private static final float DUNGEONS_REFRESH_INTERVAL_SECONDS = 1.0f;
     private static final int MAX_DIRTY_REFRESHES_PER_PASS = 48;
     private static final int MAX_OVERLAY_REFRESHES_PER_PASS = 48;
 
     private float timeSinceDirtyRefresh = 0f;
     private float timeSinceOverlayRefresh = 0f;
+    private float timeSinceDungeonsRefresh = 0f;
 
     public HudRefreshSystem() {
     }
@@ -40,6 +46,18 @@ public class HudRefreshSystem extends TickingSystem<EntityStore> {
     public void tick(float deltaSeconds, int tickCount, @Nonnull Store<EntityStore> store) {
         if (store == null || store.isShutdown()) {
             return;
+        }
+
+        // DungeonsUIPage tick-refresh intentionally runs even when no HUDs
+        // are active — the dungeons tab can be open independently of the
+        // per-player HUD state.
+        timeSinceDungeonsRefresh += deltaSeconds;
+        if (timeSinceDungeonsRefresh >= DUNGEONS_REFRESH_INTERVAL_SECONDS) {
+            timeSinceDungeonsRefresh = 0f;
+            try {
+                DungeonsUIPage.tickRefreshOpenPages();
+            } catch (Throwable ignored) {
+            }
         }
 
         if (!PlayerHud.hasActiveHuds()) {
