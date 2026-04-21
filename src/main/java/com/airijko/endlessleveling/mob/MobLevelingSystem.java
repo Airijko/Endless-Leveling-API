@@ -1078,6 +1078,13 @@ public class MobLevelingSystem extends DelayedSystem<EntityStore> {
             float beforeCurrent = before != null ? before.get() : -1.0f;
             float beforeMax = before != null ? before.getMax() : -1.0f;
 
+            // [SUMMON-FIX-2] Never restore HP on a summon that was already killed.
+            // forceKillSummon sets HP to 0 in the same frame before SUMMON_BINDINGS
+            // is cleared, so this branch can still fire for a dead summon.
+            if (beforeCurrent <= 0.0f && Float.isFinite(beforeCurrent)) {
+                return true;
+            }
+
             summonStatMap.removeModifier(healthIndex, MOB_HEALTH_SCALE_MODIFIER_KEY);
             summonStatMap.removeModifier(healthIndex, MOB_AUGMENT_LIFE_FORCE_MODIFIER_KEY);
             EntityStatValue summonHp = summonStatMap.get(healthIndex);

@@ -144,7 +144,13 @@ public class PlayerCombatSystem extends DamageEventSystem {
         }
 
         if (ArmyOfTheDeadPassive.shouldPreventFriendlyDamage(attackerRef, targetRef, store, commandBuffer)) {
-            damage.setAmount(0.0f);
+            // [SUMMON-FIX-1] Cancel the event so the engine never processes the hit.
+            // setAmount(0) alone still lets the NPC AI register the attacker as a
+            // threat, which causes summons to retarget onto their owner or siblings.
+            // Matches the pattern in MobDamageScalingSystem / PlayerDefenseSystem.
+            damage.setCancelled(true);
+            commandBuffer.tryRemoveComponent(targetRef,
+                    com.hypixel.hytale.server.core.entity.knockback.KnockbackComponent.getComponentType());
             return;
         }
 

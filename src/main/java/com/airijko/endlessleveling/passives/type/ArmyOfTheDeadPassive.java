@@ -23,6 +23,9 @@ import com.hypixel.hytale.server.core.asset.type.attitude.Attitude;
 import com.hypixel.hytale.server.core.entity.UUIDComponent;
 import com.hypixel.hytale.server.core.entity.nameplate.Nameplate;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
+import com.hypixel.hytale.server.core.modules.entity.damage.Damage;
+import com.hypixel.hytale.server.core.modules.entity.damage.DamageCause;
+import com.hypixel.hytale.server.core.modules.entity.damage.DeathComponent;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue;
 import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
@@ -2802,6 +2805,19 @@ public final class ArmyOfTheDeadPassive {
         if (hp != null && hp.get() > 0f) {
             summonStats.setStatValue(DefaultEntityStatTypes.getHealth(), 0.0f);
         }
+
+        // [SUMMON-FIX-3] Add DeathComponent so the engine processes the death.
+        // Without this, setting HP=0 alone leaves the NPC in the world as an
+        // orphan after SUMMON_BINDINGS is cleared — it wanders forever.
+        try {
+            if (commandBuffer.getComponent(summonRef, DeathComponent.getComponentType()) == null) {
+                DeathComponent.tryAddComponent(commandBuffer, summonRef,
+                        new Damage(Damage.NULL_SOURCE, DamageCause.PHYSICAL, 0.0f));
+            }
+        } catch (Throwable ignored) {
+            // Best-effort: ensureDeadComponentWhenZeroHp in MobLevelingSystem
+            // will catch it on the next tick as a fallback.
+        }
     }
 
     private static void forceKillSummon(Ref<EntityStore> summonRef,
@@ -2819,6 +2835,16 @@ public final class ArmyOfTheDeadPassive {
         EntityStatValue hp = summonStats.get(DefaultEntityStatTypes.getHealth());
         if (hp != null && hp.get() > 0f) {
             summonStats.setStatValue(DefaultEntityStatTypes.getHealth(), 0.0f);
+        }
+
+        // [SUMMON-FIX-3] No CommandBuffer available here — use removeEntity as
+        // a hard fallback so the NPC cannot linger as an orphan. The caller
+        // (cleanupOwnerSummons) already handles all EL-side state cleanup.
+        try {
+            store.removeEntity(summonRef, com.hypixel.hytale.component.RemoveReason.REMOVE);
+        } catch (Throwable ignored) {
+            // Best-effort: MobLevelingSystem.ensureDeadComponentWhenZeroHp
+            // picks up HP=0 entities on its next tick.
         }
     }
 
