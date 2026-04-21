@@ -57,7 +57,7 @@ public class DungeonsUIPage extends InteractiveCustomUIPage<SkillsUIPage.Data> {
     private static final String MAJOR_MAIN_CLASS = "com.major76.majordungeons.MajorDungeons";
     private static final String ENDGAME_DOWNLOAD_URL = "https://www.curseforge.com/hytale/mods/endgame-qol";
     private static final String MAJOR_DOWNLOAD_URL = "https://www.curseforge.com/hytale/mods/major-dungeons";
-    private static final String PATREON_URL = "https://www.patreon.com/cw/airijko";
+    private static final String PATREON_URL = "https://www.patreon.com/posts/155609841";
 
     private static final String DAILY_BOSSES_ID = "daily-bosses";
     private static final String WEEKLY_BOSSES_ID = "weekly-bosses";

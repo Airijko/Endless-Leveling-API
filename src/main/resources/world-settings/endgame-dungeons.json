@@ -1,192 +1,198 @@
 {
-  "World_Overrides": {
-    "instance-endgame_frozen_dungeon-*": {
-      "Enable_XP": true,
-      "Experience": {
-        "Global_XP_Multiplier": 1.0
+  "instance-endgame_void_realm-*": {
+    "Enable_XP": true,
+    "Experience": {
+      "Global_XP_Multiplier": 1.0
+    },
+    "Level_Range": {
+      "Max": "ENDLESS"
+    },
+    "Level_Source": {
+      "Mode": "TIERED",
+      "Base_Level": {
+        "Level": "100-115"
       },
-      "Level_Range": {
-        "Max": "ENDLESS"
-      },
-      "Level_Source": {
-        "Mode": "TIERED",
-        "Base_Level": {
-          "Level": "10-25"
-        },
-        "Tiers": {
-          "Total_Tiers": "ENDLESS",
-          "Levels_Per_Tier": 20,
-          "Player_Adaptation": {
-            "Enabled": true,
-            "Allowance_Mode": "ABOVE",
-            "Range_Allowance": 10
-          }
-        }
-      },
-      "Scaling": {
-        "Health": {
-          "Base_Multiplier": 3.0,
-          "Per_Level": 0.075
-        },
-        "Damage": {
-          "Base_Multiplier": 1.25,
-          "Per_Level": 0.025
-        },
-        "Defense": {
-          "At_Negative_Max_Difference": 0.30,
-          "At_Positive_Max_Difference": 0.8,
-          "Below_Negative_Max_Difference": 0.0,
-          "Above_Positive_Max_Difference": 0.9
-        }
-      },
-      "Mob_Overrides": {
-        "Endgame_Dragon_Frost": {
-          "Level": 30,
-          "Augments": ["blood_surge"],
-          "Allow_Random_Mob_Augments": true,
-          "Scaling": {
-            "Health": {
-              "Base_Multiplier": 2.0,
-              "Per_Level": 0.075
-            },
-            "Damage": {
-              "Base_Multiplier": 1.0,
-              "Per_Level": 0.05
-            },
-            "Defense": {
-              "At_Negative_Max_Difference": 0.35,
-              "At_Positive_Max_Difference": 0.9,
-              "Below_Negative_Max_Difference": 0.0,
-              "Above_Positive_Max_Difference": 0.975
-            }
-          }
+      "Tiers": {
+        "Total_Tiers": "ENDLESS",
+        "Levels_Per_Tier": 20,
+        "Player_Adaptation": {
+          "Enabled": true,
+          "Allowance_Mode": "ABOVE",
+          "Range_Allowance": 10
         }
       }
     },
-    "instance-endgame_swamp_dungeon-*": {
-      "Enable_XP": true,
-      "Experience": {
-        "Global_XP_Multiplier": 1.0
+    "Scaling": {
+      "Health": {
+        "Base_Multiplier": 3.25,
+        "Per_Level": 0.06
       },
-      "Level_Range": {
-        "Max": "ENDLESS"
+      "Damage": {
+        "Base_Multiplier": 1.3,
+        "Per_Level": 0.03
       },
-      "Level_Source": {
-        "Mode": "TIERED",
-        "Base_Level": {
-          "Level": "60-75"
-        },
-        "Tiers": {
-          "Total_Tiers": "ENDLESS",
-          "Levels_Per_Tier": 20,
-          "Player_Adaptation": {
-            "Enabled": true,
-            "Allowance_Mode": "ABOVE",
-            "Range_Allowance": 10
-          }
-        }
-      },
-      "Scaling": {
-        "Health": {
-          "Base_Multiplier": 3.0,
-          "Per_Level": 0.05
-        },
-        "Damage": {
-          "Base_Multiplier": 1.25,
-          "Per_Level": 0.025
-        },
-        "Defense": {
-          "At_Negative_Max_Difference": 0.30,
-          "At_Positive_Max_Difference": 0.8,
-          "Below_Negative_Max_Difference": 0.0,
-          "Above_Positive_Max_Difference": 0.9
-        }
-      },
-      "Mob_Overrides": {
-        "Endgame_Hedera": {
-          "Level": 80,
-          "Augments": ["rebirth"],
-          "Allow_Random_Mob_Augments": true,
-          "Scaling": {
-            "Health": {
-              "Base_Multiplier": 2.0,
-              "Per_Level": 0.075
-            },
-            "Damage": {
-              "Base_Multiplier": 1.0,
-              "Per_Level": 0.05
-            },
-            "Defense": {
-              "At_Negative_Max_Difference": 0.35,
-              "At_Positive_Max_Difference": 0.9,
-              "Below_Negative_Max_Difference": 0.0,
-              "Above_Positive_Max_Difference": 0.975
-            }
+      "Defense": {
+        "At_Negative_Max_Difference": 0.30,
+        "At_Positive_Max_Difference": 0.85,
+        "Below_Negative_Max_Difference": 0.0,
+        "Above_Positive_Max_Difference": 0.92
+      }
+    },
+    "Mob_Overrides": {
+      "Endgame_Golem_Void": {
+        "Level": 110,
+        "Augments": ["rebirth"],
+        "Allow_Random_Mob_Augments": true,
+        "Scaling": {
+          "Health": {
+            "Base_Multiplier": 2.25,
+            "Per_Level": 0.08
+          },
+          "Damage": {
+            "Base_Multiplier": 1.1,
+            "Per_Level": 0.055
+          },
+          "Defense": {
+            "At_Negative_Max_Difference": 0.35,
+            "At_Positive_Max_Difference": 0.92,
+            "Below_Negative_Max_Difference": 0.0,
+            "Above_Positive_Max_Difference": 0.98
           }
         }
       }
+    }
+  },
+
+  "instance-endgame_oakwood_refuge-*": {
+    "Enable_XP": true,
+    "Experience": {
+      "Global_XP_Multiplier": 1.0
     },
-    "instance-endgame_golem_void-*": {
-      "Enable_XP": true,
-      "Experience": {
-        "Global_XP_Multiplier": 1.0
+    "Level_Range": {
+      "Max": "ENDLESS"
+    },
+    "Level_Source": {
+      "Mode": "TIERED",
+      "Base_Level": {
+        "Level": "40-55"
       },
-      "Level_Range": {
-        "Max": "ENDLESS"
-      },
-      "Level_Source": {
-        "Mode": "TIERED",
-        "Base_Level": {
-          "Level": "80-95"
-        },
-        "Tiers": {
-          "Total_Tiers": "ENDLESS",
-          "Levels_Per_Tier": 20,
-          "Player_Adaptation": {
-            "Enabled": true,
-            "Allowance_Mode": "ABOVE",
-            "Range_Allowance": 10
-          }
+      "Tiers": {
+        "Total_Tiers": "ENDLESS",
+        "Levels_Per_Tier": 20,
+        "Player_Adaptation": {
+          "Enabled": true,
+          "Allowance_Mode": "ABOVE",
+          "Range_Allowance": 10
         }
+      }
+    },
+    "Scaling": {
+      "Health": {
+        "Base_Multiplier": 2.75,
+        "Per_Level": 0.055
       },
-      "Scaling": {
-        "Health": {
-          "Base_Multiplier": 3.0,
-          "Per_Level": 0.05
-        },
-        "Damage": {
-          "Base_Multiplier": 1.25,
-          "Per_Level": 0.025
-        },
-        "Defense": {
-          "At_Negative_Max_Difference": 0.30,
-          "At_Positive_Max_Difference": 0.8,
-          "Below_Negative_Max_Difference": 0.0,
-          "Above_Positive_Max_Difference": 0.9
-        }
+      "Damage": {
+        "Base_Multiplier": 1.2,
+        "Per_Level": 0.025
       },
-      "Mob_Overrides": {
-        "Endgame_Golem_Void": {
-          "Level": 100,
-          "Augments": ["rebirth"],
-          "Allow_Random_Mob_Augments": true,
-          "Scaling": {
-            "Health": {
-              "Base_Multiplier": 2.0,
-              "Per_Level": 0.075
-            },
-            "Damage": {
-              "Base_Multiplier": 1.0,
-              "Per_Level": 0.05
-            },
-            "Defense": {
-              "At_Negative_Max_Difference": 0.35,
-              "At_Positive_Max_Difference": 0.9,
-              "Below_Negative_Max_Difference": 0.0,
-              "Above_Positive_Max_Difference": 0.975
-            }
-          }
+      "Defense": {
+        "At_Negative_Max_Difference": 0.30,
+        "At_Positive_Max_Difference": 0.8,
+        "Below_Negative_Max_Difference": 0.0,
+        "Above_Positive_Max_Difference": 0.9
+      }
+    },
+    "Mob_Overrides": {
+      "Endgame_Oakwood_Warlord": {
+        "Level": 60,
+        "Augments": ["blood_surge"],
+        "Allow_Random_Mob_Augments": true
+      },
+      "Endgame_Oakwood_Warlord_Small": {
+        "Level": 55,
+        "Allow_Random_Mob_Augments": true
+      }
+    }
+  },
+
+  "instance-endgame_eldergrove_hollow-*": {
+    "Enable_XP": true,
+    "Experience": {
+      "Global_XP_Multiplier": 1.0
+    },
+    "Level_Range": {
+      "Max": "ENDLESS"
+    },
+    "Level_Source": {
+      "Mode": "TIERED",
+      "Base_Level": {
+        "Level": "70-85"
+      },
+      "Tiers": {
+        "Total_Tiers": "ENDLESS",
+        "Levels_Per_Tier": 20,
+        "Player_Adaptation": {
+          "Enabled": true,
+          "Allowance_Mode": "ABOVE",
+          "Range_Allowance": 10
         }
+      }
+    },
+    "Scaling": {
+      "Health": {
+        "Base_Multiplier": 3.0,
+        "Per_Level": 0.055
+      },
+      "Damage": {
+        "Base_Multiplier": 1.25,
+        "Per_Level": 0.025
+      },
+      "Defense": {
+        "At_Negative_Max_Difference": 0.30,
+        "At_Positive_Max_Difference": 0.82,
+        "Below_Negative_Max_Difference": 0.0,
+        "Above_Positive_Max_Difference": 0.92
+      }
+    }
+  },
+
+  "instance-endgame_canopy_shrine-*": {
+    "Enable_XP": true,
+    "Experience": {
+      "Global_XP_Multiplier": 1.0
+    },
+    "Level_Range": {
+      "Max": "ENDLESS"
+    },
+    "Level_Source": {
+      "Mode": "TIERED",
+      "Base_Level": {
+        "Level": "90-105"
+      },
+      "Tiers": {
+        "Total_Tiers": "ENDLESS",
+        "Levels_Per_Tier": 20,
+        "Player_Adaptation": {
+          "Enabled": true,
+          "Allowance_Mode": "ABOVE",
+          "Range_Allowance": 10
+        }
+      }
+    },
+    "Scaling": {
+      "Health": {
+        "Base_Multiplier": 3.1,
+        "Per_Level": 0.06
+      },
+      "Damage": {
+        "Base_Multiplier": 1.3,
+        "Per_Level": 0.03
+      },
+      "Defense": {
+        "At_Negative_Max_Difference": 0.30,
+        "At_Positive_Max_Difference": 0.85,
+        "Below_Negative_Max_Difference": 0.0,
+        "Above_Positive_Max_Difference": 0.93
       }
     }
   }

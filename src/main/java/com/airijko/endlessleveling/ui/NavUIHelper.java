@@ -102,7 +102,6 @@ public final class NavUIHelper {
                         ui.set("#NavGatesLabel.Text", Lang.tr(playerRef.getUuid(), "ui.nav.gates", "GATES"));
                         ui.set("#NavDungeonsLabel.Text", Lang.tr(playerRef.getUuid(), "ui.nav.dungeons", "DUNGEONS"));
                         ui.set("#NavQuestsLabel.Text", Lang.tr(playerRef.getUuid(), "ui.nav.quests", "QUESTS"));
-                        ui.set("#NavQuestsContainer.Visible", isQuestsAddonPresent());
                         ui.set("#NavLeaderboardsLabel.Text", Lang.tr(playerRef.getUuid(), "ui.nav.leaderboards", "LEADERBOARDS"));
                         ui.set("#NavXpStatsLabel.Text", Lang.tr(playerRef.getUuid(), "ui.nav.xpstats", "XP STATS"));
                         ui.set("#NavAddonsLabel.Text", Lang.tr(playerRef.getUuid(), "ui.nav.addons", "ADDONS"));
@@ -399,8 +398,18 @@ public final class NavUIHelper {
                         case "quests" -> {
                                 // Quests UI lives in the EndlessQuestAndRewards addon and is exposed via /quests.
                                 if (!openQuestsGui(playerRef)) {
-                                        PlayerChatNotifier.send(playerRef,
-                                                Message.raw("Quests addon is not installed.").color("#ff6666"));
+                                        if (com.airijko.endlessleveling.util.PartnerConsoleGuard.isPartnerAddonPresent()) {
+                                                // Partner servers don't ship EndlessQuestAndRewards; quests are simply off.
+                                                PlayerChatNotifier.send(playerRef,
+                                                        Message.raw("Quests are disabled.").color("#ff6666"));
+                                        } else {
+                                                PlayerChatNotifier.send(playerRef, Message.join(
+                                                        Message.raw("Quests is a Patreon exclusive feature. ").color("#ff6666"),
+                                                        Message.raw("[CLICK HERE]")
+                                                                .link("https://www.patreon.com/posts/endless-quests-156146244")
+                                                                .color("#ffd08a")
+                                                ));
+                                        }
                                 }
                         }
                         case "addons" -> player.getPageManager()

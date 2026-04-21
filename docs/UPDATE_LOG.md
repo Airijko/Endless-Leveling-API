@@ -1,5 +1,480 @@
 # Endless Leveling - Update Log
 
+## 2026-04-21 — 7.12.0 (compared to 7.9.3)
+
+A **major content + stability release** spanning thirteen internal versions. Headline: the brand-new **Endless Quests and Rewards** premium addon plugs into the Outlander Bridge, Rifts & Raids, and core EL to ship a full daily/weekly quest system with per-player progress persistence and configurable XP-plus-command rewards. A **Necromancer summon rework** brings summon damage fully in-line with the player-to-mob pipeline (mob defense, level-diff reduction, owner-death cleanup, non-combat-entity targeting filter). The **Outlander Bridge** gets four balance/polish passes (aggro rewrite, combat-zone tightening, XP-banking exploit closure, party-TP reentry fixes). Other shipped work: an augments UI page rework with unlock-threshold display, a nav-bar Quests icon, a general haste rebalance across all classes/races/augments plus a per-player haste movement cap slider, secondary class innate-gain buff, a new public EL API surface for downstream addons (level-up / prestige / mob-kill / Outlander-bridge / wave-gate listeners), mob XP flat-pass-through for blacklisted entities, pre-entry dungeon tier previews, a 5-hour JarFile-close crash fix, a store-aware per-entity level-override API, summon knockback cancellation, and two UI sub-page rewrites (Dungeons, Profile/Servers/Support).
+
+### Highlights
+
+- **Endless Quests and Rewards premium addon** — standalone plugin ([`EndlessQuestAndRewards/`](../../EndlessQuestAndRewards/)) that ships 30+ configurable daily/weekly quests with UTC midnight / Monday rollover, per-player JSON progress persistence, native in-game Quests panel (DAILY / WEEKLY / PROGRESS tabs, category filters), and configurable rewards (XP + console command templates with `{player}` / `{player_uuid}` substitution).
+- **Necromancer rework** — summon hits now run the full player→mob defense pipeline (level-diff reduction, capped 80% common-stat defense, target mob augments onDamageTaken/onLowHp), summon true-damage flows through the same level-diff path as player true-damage, and summons despawn immediately on owner death instead of leaking past the 3 s cleanup sweep.
+- **Public EL event API** — new `EndlessLevelingAPI` listener surfaces for `PrestigeEvent`, `LevelUpEvent`, `OutlanderBridgeCompletedEvent`, `WaveGateCompletedEvent`, `MobKillEvent`. These are the integration points the Quests addon hooks into and are available to any downstream plugin.
+- **Store-aware per-entity level override** (PR #11) — the existing `setEntityLevelOverride(int, int)` was a silent no-op; now `setMobEntityLevelOverride(Ref<EntityStore>, int)` actually pins a specific mob's level, fixing EndgameQoL pets that were receiving 33/86/90/91 instead of their Level-80 owner's level.
+- **ModularCardUiAppender JarFile 5-hour crash fix** (PR #10) — added `setUseCaches(false)` on the `JarURLConnection` so the try-with-resources no longer closes the JDK-cached shared `JarFile` the entire mod classloader uses, preventing the card-enumeration cascade that manifested as broken dungeon UI and client crashes after ~5 hours.
+- **Augments UI page rework** — new left-panel "UNLOCK THRESHOLDS" card rendering per-tier level / prestige / reroll unlock rules (explicit lists + progressive start/interval/max). Collection grid restyled, search input relocated.
+- **Outlander Bridge aggro + combat polish** — dropped `AGGRO_RADIUS` 500→200→removed, tightened `COMBAT_ZONE_RADIUS` 30→25, tuned `PULL_X_ABS` 15→20, added per-mob stop-point jitter to break stacking at (±20, 80, 0), shortened batch fallback 25→15 s, added dedicated `ELBridge_Outlander_*` NPC JSONs (9 NPC types).
+- **XP banking exploit fix** — die-then-TP-back or party-TP reentry by a claimed/cancelled/timed-out player is now rejected on `PlayerReady` (symmetric with `onPlayerEntered`) and re-kicked from the instance; `tryDivertXp` is now strict and self-registers via an authoritative player-list scan.
+- **Haste rebalance** — flat nerfs across ~90 augment/class/race JSON files (e.g. Glass Cannon 50→30%, Blood Frenzy 25→15%, Overdrive 4→3%/stack). Plus a new per-player **Max Haste Movement Cap** slider (0–100%) — damage-conversion and haste-based augments still use full haste; the cap only scales the movement-speed contribution.
+- **Summon targeting + knockback fixes** (PR #9) — summons now filter target acquisition to only NPCs and PlayerRefs (stops attacking items, projectiles, block entities), cancel friendly-damage events entirely via `setCancelled(true) + tryRemoveComponent(KnockbackComponent)` (stops knocking owner/party/allied-summons backwards), and clear stale `LockedTarget` when no valid replacement is found.
+- **Secondary class innate buff** — secondary class passive scale raised 0.5× → 1.0× for non-innate passives; innate attribute gains stay at 0.5× but now accumulate up to a higher level cap (default 200 vs primary 100), configurable via `classes.innate_attribute_gain_level_caps_secondary` in `leveling.yml`.
+- **Flat-XP for blacklisted mobs** — `Gain_XP_From_Blacklisted_Mob: false` replaced by `Flat_XP_For_Blacklisted_Mobs: true`; blacklisted mobs now pass through a flat `Additive_Minimum_XP` value (skipping globalMult / level-range / scaling) while personal bonuses (luck, discipline, XP_BONUS) still apply.
+- **Mob dungeon info previews** — `MobLevelingManager.previewTieredSummaryByWorldKey()` computes pre-entry tier summaries (tier offset, shifted min/max, boss level, next-tier-upgrade player level) straight from world-settings JSON without requiring the target world to be loaded, feeding the Dungeons page cards.
+- **HUD refresh cadence rework** — replaced the fallback-on-movement sampler with a 0.5 s overlay tick that pushes augment/passive overlay state (duration bar, shield bar, stacking augment icons/progress/stacks) so time-driven overlays animate smoothly while the rest of the HUD stays event-driven. Diff-guarded so steady state is a no-op.
+- **Dungeons UI v2** — rebuilt with top-tab category filter (ALL / ENDLESS / ENDGAME / MAJOR), per-dungeon detail cards with placeholder artwork, cooldown-aware "Rewards Available" / remaining-cooldown status, and a new Patreon CTA.
+- **Endgame dungeons rework** — `endgame-dungeons.json` schema flattened (dropped the `World_Overrides` wrapper), Frozen + Hedera dungeons replaced with **Oakwood Refuge** (lvl 40-55, Warlord boss lvl 60), **Eldergrove Hollow** (lvl 70-85), **Canopy Shrine** (lvl 90-105); Void Realm retained and bumped to lvl 100-115 with Void Golem boss at lvl 110. Defense curves raised across all endgame dungeons.
+- **Profile / Support / Servers UI refresh** — new ProfilePagePartner variant, Support page rebuilt under `Pages/Support/` with icons and books subfolder, new Servers page with carousel cards, Leaderboards pagination width fix.
+- **Endless Rifts and Raids** — sibling mod directory (`Endless-Rifts-and-Raids/`, v1.0.2) is now referenced by the Quests addon via `OptionalDependencies`; EL itself fires `notifyWaveGateCompleted(...)` hooks for any Rifts-like addon to plug into.
+
+### Endless Quests and Rewards (`New Premium Addon`)
+
+A standalone Hytale plugin at [`EndlessQuestAndRewards/`](../../EndlessQuestAndRewards/) (v1.0.0, main class `com.airijko.endlessleveling.questsandrewards.EndlessQuestAndRewards`, ~2160 total lines across 17 Java files + config). Ships as its own JAR, independently deployable, with `OptionalDependencies` on `airijko:EndlessLeveling >=7.7.0` and `airijko:EndlessRiftsAndRaids >=1.0.1`.
+
+#### Quest Catalog
+
+30+ quest definitions shipped in [`quests.json`](../../EndlessQuestAndRewards/src/main/resources/quests.json) (272 lines). Each quest has:
+
+- `cycle` — `daily` or `weekly` (UTC midnight / Monday 00:00 rollover)
+- `trigger` — one of `mob_kill`, `outlander_bridge_complete`, `wave_gate_complete`, `block_harvest`, `level_gain`, `prestige`
+- `match` — optional list of keys (mob type ids, block type ids) that the trigger must match
+- `target` — target count before completion
+- `rewards` — list of reward ids consumed from `rewards.json`
+- `min_gate_rank` — optional letter filter for wave-gate triggers (S > A > B > C...)
+
+Built-in daily quests: slay each of Azaroth / Katherina / Baron / Frost Dragon / Hedera / Void Golem / Shiva, clear Outlander Bridge, clear any outbreak gate, harvest 500 logs / 100 stone / 25 iron / 25 copper / 25 tin / 20 gold / 15 silver, earn 10 player levels.
+Built-in weekly quests: slay each major boss × 7, clear Outlander Bridge × 7, 3× A-rank+ outbreak clears, harvest 3500 logs / 700 stone, earn 70 levels, prestige 1 time.
+
+#### Reward Catalog
+
+[`rewards.json`](../../EndlessQuestAndRewards/src/main/resources/rewards.json) — shallow map of reward id → `{ xp: int, commands: [string...] }`. Default rewards: `daily_basic` (5 000 XP), `daily_boss` (10 000 XP), `weekly_grand` (75 000 XP). Command templates support `{player}` and `{player_uuid}` substitution and run via `CommandManager.get().handleCommand(ConsoleSender.INSTANCE, cmd)`.
+
+#### Managers
+
+| Manager | Purpose |
+|---------|---------|
+| [`QuestFilesManager`](../../EndlessQuestAndRewards/src/main/java/com/airijko/endlessleveling/questsandrewards/managers/QuestFilesManager.java) (77 lines) | Resolves file paths; seeds `quests.json` + `rewards.json` defaults on first enable |
+| [`QuestDefinitionManager`](../../EndlessQuestAndRewards/src/main/java/com/airijko/endlessleveling/questsandrewards/managers/QuestDefinitionManager.java) (191 lines) | Loads `quests.json` into `byId` + `byTrigger` maps; hot-reloadable |
+| [`QuestRewardManager`](../../EndlessQuestAndRewards/src/main/java/com/airijko/endlessleveling/questsandrewards/managers/QuestRewardManager.java) (158 lines) | Loads `rewards.json`; grants XP via `EndlessLevelingAPI.grantXp()` + dispatches commands |
+| [`QuestProgressManager`](../../EndlessQuestAndRewards/src/main/java/com/airijko/endlessleveling/questsandrewards/managers/QuestProgressManager.java) (302 lines) | Per-player JSON persistence at `addonData/playerdata/{uuid}.json`; tracks `current`, `claimed`, `lifetime` counts, `lifetimeKilled`/`lifetimeHarvested` maps, cycle reset epoch millis, baseline-level snapshot for `level_gain` |
+| [`QuestResetManager`](../../EndlessQuestAndRewards/src/main/java/com/airijko/endlessleveling/questsandrewards/managers/QuestResetManager.java) (81 lines) | UTC midnight daily + Monday 00:00 weekly rollover; idempotent `ensureCurrent(uuid)` on read |
+| [`JsonMini`](../../EndlessQuestAndRewards/src/main/java/com/airijko/endlessleveling/questsandrewards/managers/JsonMini.java) (223 lines) | In-tree minimal JSON reader (no external dep) |
+
+#### Event Routing
+
+[`QuestEventRouter`](../../EndlessQuestAndRewards/src/main/java/com/airijko/endlessleveling/questsandrewards/listeners/QuestEventRouter.java) (143 lines) subscribes to five `EndlessLevelingAPI` events (`PrestigeEvent`, `LevelUpEvent`, `OutlanderBridgeCompletedEvent`, `WaveGateCompletedEvent`, `MobKillEvent`) plus `PlayerReadyEvent` (seed bundle) and a custom [`QuestBlockHarvestSystem`](../../EndlessQuestAndRewards/src/main/java/com/airijko/endlessleveling/questsandrewards/listeners/QuestBlockHarvestSystem.java) (67 lines) that listens for player block harvests. Listener handles are stored as `Consumer` field references so shutdown can correctly pass the same instance to `remove*Listener()`.
+
+Wave-gate rank filter: walks each wave-gate quest definition and compares the actual rank letter (`S=0`, `A=1`, `B=2`, ..., `F=6`, lower ordinal = higher tier) against `min_gate_rank`; only matching quests increment.
+
+#### UI
+
+[`QuestsUIPage`](../../EndlessQuestAndRewards/src/main/java/com/airijko/endlessleveling/questsandrewards/ui/QuestsUIPage.java) (406 lines) extends `InteractiveCustomUIPage<SkillsUIPage.Data>`. Three top tabs (`DAILY` / `WEEKLY` / `PROGRESS`) plus side-panel category filter (`ALL` / `BOSS` / `HARVEST` / ...). In `ALL` category, quest rows are grouped under section headers; in a specific category, headers hide and only matching quests render. Progress rendered via native `ProgressBar` element (`ui.set("#QuestRowProgressBar.Value", ratio)`).
+
+UI templates (authored in the core EL plugin at [`Common/UI/Custom/Pages/Quests/`](src/main/resources/Common/UI/Custom/Pages/Quests/)):
+
+- [`QuestsPage.ui`](src/main/resources/Common/UI/Custom/Pages/Quests/QuestsPage.ui) (74 lines) — page shell
+- [`QuestRow.ui`](src/main/resources/Common/UI/Custom/Pages/Quests/QuestRow.ui) (59 lines) — single quest row with status dot, name, description, progress text, CLAIM button
+- [`QuestStatsRow.ui`](src/main/resources/Common/UI/Custom/Pages/Quests/QuestStatsRow.ui) (20 lines) — lifetime progress stat row
+- `QuestSectionHeader.ui` — category section header
+
+#### Commands
+
+- `/quests` (aliases `/quest`, `/eqr`) — opens [`QuestsUIPage`](../../EndlessQuestAndRewards/src/main/java/com/airijko/endlessleveling/questsandrewards/ui/QuestsUIPage.java)
+- `/questsreload` — admin reload of the quest catalog and reward definitions (via `EndlessQuestAndRewards.reloadAll()`)
+
+### Necromancer Rework (`Feature` / `Balance`)
+
+Two commits (`ee036db`, `908929f`) overhaul how summon damage flows through the existing mob scaling pipeline. Touches [`MobDamageScalingSystem`](src/main/java/com/airijko/endlessleveling/mob/MobDamageScalingSystem.java), [`ArmyOfTheDeadPassive`](src/main/java/com/airijko/endlessleveling/passives/type/ArmyOfTheDeadPassive.java), [`ArmyOfTheDeadDeathSystem`](src/main/java/com/airijko/endlessleveling/systems/ArmyOfTheDeadDeathSystem.java), [`PlayerData`](src/main/java/com/airijko/endlessleveling/player/PlayerData.java), [`ConfigManager`](src/main/java/com/airijko/endlessleveling/managers/ConfigManager.java), [`CommonAugment`](src/main/java/com/airijko/endlessleveling/augments/types/CommonAugment.java).
+
+#### Summon damage now mirrors the player-to-mob pipeline
+
+Before: summons ran their own on-hit augments, and the resulting true-damage was added back as a flat float on top of the raw damage event. Mob defense (common-stat capped 80%), mob augment `onDamageTaken`/`onLowHp` hooks, and the mob's level-difference reduction were all skipped — summons effectively hit with raw damage + true-damage.
+
+After: [`MobDamageScalingSystem`](src/main/java/com/airijko/endlessleveling/mob/MobDamageScalingSystem.java) now runs summon hits through the same pipeline as player hits:
+
+1. `applySummonAttackerAugments()` returns the regular damage (written to the event) plus the true-damage bonus as a separate `double`.
+2. If the target is not a player: resolve the summoner's level (fallback to the summon's own mob level if owner-lookup fails), compute `getMobDefenseReductionForLevels(targetRef, mobLevel, ownerLevel)` — the same level-diff curve players use — and apply it to regular damage.
+3. Run `applyTargetMobDefensePipeline()` — new method that mirrors `PlayerCombatSystem.applyMobAugmentsIfPresent`. Reads `getMobOverrideAugmentIds`, registers the mob's augments if not already bound, applies common-stat defense (capped 80%), then runs `applyOnDamageTaken` + `applyOnLowHp`.
+4. True-damage is added back on top, reduced only by the level-diff percentage — matching the player-true-damage path where true-damage bypasses augment defense but respects level scaling.
+
+```java
+double summonTrueDamage = applySummonAttackerAugments(damage, attackerRef, targetRef, store, commandBuffer, summonCrit);
+// ... level-diff reduction on regular damage ...
+float afterMobDefense = applyTargetMobDefensePipeline(targetRef, store, attackerRef, commandBuffer, damage.getAmount());
+damage.setAmount(afterMobDefense);
+if (summonTrueDamage > 0.0D) {
+    double reducedTrue = targetIsPlayer ? summonTrueDamage : summonTrueDamage * (1.0D - mobLevelDiffReduction);
+    damage.setAmount(Math.max(0.0f, damage.getAmount() + (float) Math.max(0.0D, reducedTrue)));
+}
+```
+
+#### Owner-death cleanup
+
+New method [`ArmyOfTheDeadPassive.cleanupOwnerSummonsOnDeath(UUID)`](src/main/java/com/airijko/endlessleveling/passives/type/ArmyOfTheDeadPassive.java). The periodic 3-second cleanup sweep only treats `offline/invalid PlayerRef` as "disconnected" — a dead-but-still-valid owner would keep its army alive otherwise. On death, [`ArmyOfTheDeadDeathSystem`](src/main/java/com/airijko/endlessleveling/systems/ArmyOfTheDeadDeathSystem.java) now resolves the victim's `PlayerRef` and, if valid, calls `cleanupOwnerSummonsOnDeath()` which walks all `SummonSlot.activeRef` stores, adds the owner's own store, and sweeps each with `cleanupOwnerSummons()` immediately.
+
+#### Hot-path allocation fixes (bundled)
+
+Two GC-pressure fixes shipped with the rework:
+
+- **[`CommonAugment`](src/main/java/com/airijko/endlessleveling/augments/types/CommonAugment.java)** — replaced `getPlayerData().getSelectedAugmentsSnapshot().get(selectionKey)` with direct `getSelectedAugmentForTier(selectionKey)` lookup. Previously allocated an `UnmodifiableMap` wrapping a `LinkedHashMap` copy on every passive tick per player — sampled at **~49.6 GB over a 2-minute JFR**.
+- **[`ConfigManager.get()`](src/main/java/com/airijko/endlessleveling/managers/ConfigManager.java)** — replaced `path.split("\\.")` with a `ConcurrentHashMap<String, String[]> pathTokenCache` + precompiled `Pattern DOT_SPLIT_PATTERN`. Previously a per-call allocation at ~6k calls/sec via `MobLevelingSystem.processEntity → isMobLevelingEnabled → get()`.
+- **[`PlayerData.getSelectedAugmentsSnapshot()`](src/main/java/com/airijko/endlessleveling/player/PlayerData.java)** — new `cachedSelectedAugmentsSnapshot` + `cachedSnapshotProfile` identity-check pattern. Cache auto-invalidates on profile switch (identity check) and on every mutation (`set`/`add`/`clear` call invalidate explicitly). Hot-path read source for `CommonAugment` / `PassiveManager` / `SkillManager` / `ClassManager` / `RaceManager`.
+
+### Endless Leveling Public API (`Feature`)
+
+[`EndlessLevelingAPI`](src/main/java/com/airijko/endlessleveling/api/EndlessLevelingAPI.java) gained 5 new event types + matching listener pairs (add/remove/notify × 5), all implemented via `CopyOnWriteArrayList<Consumer<Event>>` so listeners are safe to register/unregister across threads:
+
+| Event Record | Fired From | Payload |
+|--------------|-----------|---------|
+| `PrestigeEvent(UUID playerUuid, int oldPrestigeLevel, int newPrestigeLevel)` | `LevelingManager.prestige()` | Post-successful prestige |
+| `LevelUpEvent(UUID, int oldLevel, int newLevel, int prestigeLevel)` | `LevelingManager` (on every level crossed) | After `eventHookManager.onPlayerLevelUp` |
+| `OutlanderBridgeCompletedEvent(UUID, int wavesCompleted, String worldName)` | `OutlanderBridgeWaveManager` (victory path) | All waves cleared |
+| `WaveGateCompletedEvent(UUID, String rankLetter, int wavesCompleted, String worldName, UUID sessionId)` | External (Rifts & Raids) calls `notifyWaveGateCompleted(...)` | Outbreak gate final wave cleared |
+| `MobKillEvent(UUID, String mobTypeId, String worldName)` | [`XpEventSystem.onDeath()`](src/main/java/com/airijko/endlessleveling/leveling/XpEventSystem.java) — fired regardless of XP gating | Mob type id from `NPCEntity.getNPCTypeId()` |
+
+### Store-Aware Per-Entity Level Override (`Fix` — PR #11)
+
+[`MobLevelingManager`](src/main/java/com/airijko/endlessleveling/leveling/MobLevelingManager.java) / [`EndlessLevelingAPI`](src/main/java/com/airijko/endlessleveling/api/EndlessLevelingAPI.java) — the existing `setEntityLevelOverride(int, int)` methods were empty `return` / no-op stubs commented as "stateless mode", so plugins calling `EndlessLevelingAPI.setMobEntityLevelOverride` had no effect. Fixed in `d173b44` (by `lewai1`).
+
+#### What shipped
+
+- **New map**: `entityLevelOverrides: Map<Long, Integer>` keyed by `toEntityKey(store, index)`.
+- **Store-aware setter**: `setEntityLevelOverride(Store, int, int)` populates the map; `clearEntityLevelOverride(Store, int)` and `getEntityLevelOverride(Store, int)` operate on it; `clearAllEntityLevelOverrides()` purges it.
+- **Resolver hook**: `resolveMobLevelForEntity` now checks the override map right after the blacklist gate, before gate / area / LevelSourceMode resolution. Override is clamped via `clampToConfiguredRange`.
+- **New public API**: `EndlessLevelingAPI.setMobEntityLevelOverride(Ref<EntityStore>, int)` and `clearMobEntityLevelOverride(Ref<EntityStore>)` — the recommended surface.
+- **Deprecated**: the int-only overloads on both manager and API retained for binary compat; kept as no-ops because entity indices are per-store in Hytale ECS and matching by index alone would cross-contaminate unrelated mobs in other worlds.
+
+Use case: EndgameQoL companion pets that were receiving `33/86/90/91` instead of a Level-80 owner's level now pin correctly.
+
+### ModularCardUiAppender JarFile Crash Fix (`Fix` — PR #10)
+
+Commit `6ce8c0b` (by `Dimotai`). [`ModularCardUiAppender.collectFromJarUrl()`](src/main/java/com/airijko/endlessleveling/ui/ModularCardUiAppender.java) was using a try-with-resources on the `JarFile` returned by `JarURLConnection.getJarFile()`. Without `setUseCaches(false)`, the JDK returns the `sun.net.www.protocol.jar.JarFileFactory`-cached instance — i.e. the same instance the mod classloader uses for every `getResource`/`getResourceAsStream` against the JAR. Closing it via try-with-resources closed the classloader's shared handle, and subsequent resource loads across the whole plugin failed with an `IOException` whose message was just the JAR path. That cascaded into empty card enumeration, `SafeUI` dropping every card-declared selector, and the dungeons page rendering into a broken UI state that could crash the client after ~5 hours of server uptime.
+
+Fix:
+
+```java
+connection.setUseCaches(false);
+try (JarFile jarFile = connection.getJarFile()) { ... }
+```
+
+[`SafeUICommandBuilder.loadSelectorsFor()`](src/main/java/com/airijko/endlessleveling/ui/SafeUICommandBuilder.java) also updated to **no longer cache empty-set results** when the root resource fails to load. A transient classloader issue would otherwise poison this cache for the JVM lifetime, causing every subsequent `set()` on that document's selectors to be dropped even after the underlying issue cleared. Also invalidates the main `RESOURCE_CACHE` entry on read failure so the next call retries.
+
+### Summon Knockback + Targeting Fix (`Fix` — PR #9)
+
+Commit `975b14d` (by `HazemSb`). Three coupled fixes:
+
+1. **Friendly-damage cancellation** — [`MobDamageScalingSystem`](src/main/java/com/airijko/endlessleveling/mob/MobDamageScalingSystem.java) `shouldPreventFriendlyDamage` branch: was `damage.setAmount(0.0f)` (let knockback fire with 0 damage). Now `setCancelled(true) + tryRemoveComponent(KnockbackComponent)` — prevents summons from knocking back their owner, party members, and allied summons.
+2. **Target acquisition filter** — [`ArmyOfTheDeadPassive`](src/main/java/com/airijko/endlessleveling/passives/type/ArmyOfTheDeadPassive.java) `isValidAggroTargetForOwner` and validity check now require the candidate to have either `NPCEntity` or `PlayerRef` component. Prevents summons from targeting items, projectiles, block entities, and other non-combat entities that lack visible models.
+3. **Stale target clearing** — when a summon's `LockedTarget` becomes invalid and no valid replacement is found, clear the marked target entirely so the summon returns to idle behaviour (leash toward owner / wander) instead of attacking air indefinitely.
+
+### Outlander Bridge Polish (`Fix` / `Balance`)
+
+Five commits across versions 7.9.9 → 7.11.2 polish the 7.9.0 Outlander Bridge content release.
+
+#### Aggro + combat-zone geometry (`92c85f1`, `def756d`)
+
+| Constant | 7.9.3 | 7.12.0 |
+|----------|-------|--------|
+| `AGGRO_RADIUS` | 500.0 | removed (native NPC sensors handle aggro) |
+| `COMBAT_ZONE_RADIUS` | 30.0 | 25.0 |
+| `PULL_X_ABS` | 15.0 | 20.0 |
+| `DEFAULT_BATCH_KILL_PERCENT` | 70 | 60 |
+| `DEFAULT_BATCH_FALLBACK_SECONDS` | 25 | 15 |
+| `NATIVE_HANDOFF_DIST` | 24.0 | 30.0 |
+
+Added per-mob stop-point jitter (`STOP_JITTER_X`, `STOP_JITTER_Z`) reused by `pullToward` to break pile-up at single snap-back coordinates. Dropped three imports (`Damage`, `DamageCause`, `DamageSystems`, `TargetMemory`, `Int2FloatOpenHashMap`) as the aggro rewrite removed their call sites.
+
+Also added 9 dedicated bridge NPC JSON files in [`Server/NPC/NPCs/OutlanderBridge/`](src/main/resources/Server/NPC/NPCs/OutlanderBridge/) — `ELBridge_Outlander_{Peon, Marauder, Berserker, Hunter, Stalker, Cultist, Priest, Sorcerer, Brute}.json` — so bridge mobs can run differentiated AI from world-native Outlanders.
+
+Wave config in [`outlander_bridge_waves.json`](src/main/resources/waves/outlander_bridge_waves.json) rewrote spawn pools to use the new `ELBridge_*` NPC ids. Deleted the unused `aram_bridge_waves.json` (819 lines) and two stale `.java.bak` / `.java.bak2` files.
+
+#### XP banking exploit (`57d0573`)
+
+Previously, a player who died inside the bridge then TP'd back in could resume XP banking as if nothing happened. Fix:
+
+- [`LevelingManager.addXp()`](src/main/java/com/airijko/endlessleveling/leveling/LevelingManager.java) diverts XP **strictly** whenever `tryDivertXp` returns true, instead of the two-step "if not banking-active, force-register, then try again" path. `tryDivertXp` now self-registers via the new authoritative `OutlanderBridgeWaveManager.resolveActiveSessionForPlayer(UUID)` — walks `s.world.getPlayerRefs()` directly (does not rely on `PlayerRef.getWorldUuid()`, which is stale between world-join and first position tick).
+- [`OutlanderBridgeWaveManager.onPlayerReady`](src/main/java/com/airijko/endlessleveling/mob/outlander/OutlanderBridgeWaveManager.java) now rejects re-entry symmetrically with `onPlayerEntered`: claimed / cancelled / timed-out players who come back via party-TP (only fires `PlayerReady`, not `AddPlayerToWorld`) are re-kicked from the instance.
+
+#### Party-TP routing (`bf0e42a`)
+
+Party-TP-shared instance resolution is now **live-world-scan first**. [`DungeonsUIPage`](src/main/java/com/airijko/endlessleveling/ui/DungeonsUIPage.java) `findLivePartyMemberInstance(clicker, instancePrefix)` walks online party members' current worlds and, if any match the portal's instance prefix, routes the clicker directly to that live world. Cache fallback only used when no live member is found. Handles stale party-ids after party disband/reform.
+
+New [`PartyManager.getPartyId(UUID)`](src/main/java/com/airijko/endlessleveling/leveling/PartyManager.java) returns the stable PartyPro party id that persists across leadership transitions and member rejoin — the correct key for cross-session routing maps.
+
+#### Audio + misc (`5bd80e1`, `6612deb`)
+
+- [`SFX_EL_OutlanderBridge_Combat_Music.json`](src/main/resources/Server/Audio/SoundEvents/SFX/EndlessLeveling/SFX_EL_OutlanderBridge_Combat_Music.json) — volume lowered.
+- [`endless-dungeons.json`](src/main/resources/world-settings/endless-dungeons.json) — defense scaling `At_Negative_Max_Difference` bumped -0.20 → 0.10, bumped again later to 0.35 for bosses (`bf0e42a` sibling commit `b280ae7`).
+
+### Augments UI Page Rework (`Feature`)
+
+Commits `0fde9a6` + `a0d058b`. [`AugmentsUIPage`](src/main/java/com/airijko/endlessleveling/ui/AugmentsUIPage.java) (116 new lines) rebuilt.
+
+New side panel: **"UNLOCK THRESHOLDS"** card backed by [`AugmentUnlockManager.getTierThresholds(PassiveTier)`](src/main/java/com/airijko/endlessleveling/augments/AugmentUnlockManager.java) (+80 lines). Snapshot record:
+
+```java
+TierThresholds(PassiveTier tier,
+               List<Integer> levelUnlocks,            List<ProgressiveRule> levelProgressives,
+               List<Integer> prestigeUnlocks,         List<ProgressivePrestige> prestigeProgressives,
+               List<Integer> prestigeRerollUnlocks,   List<ProgressivePrestige> prestigeRerollProgressives)
+
+ProgressiveRule(int start, int interval, int maxUnlocks)
+ProgressivePrestige(int startPrestige, int interval, int maxUnlocks, int requiredPlayerLevel)
+```
+
+[`AugmentsPage.ui`](src/main/resources/Common/UI/Custom/Pages/Augments/AugmentsPage.ui) — 349 lines changed (+234 / −115). Selectors renamed (`AugmentsOverviewDescription` → `AugmentActionInfo`, `AugmentsInfoText` removed, `AugmentsThresholdsTitle` added, `AugmentsRerollsTitle` short-form). Static labels localized via `tr(...)` keys rooted at `ui.augments.page.left.*` and `ui.augments.page.grid.*`.
+
+### Haste Rebalance (`Balance`)
+
+Commit `673db19` — flat nerfs across 96 JSON files. Representative cuts:
+
+| Source | Old | New |
+|--------|-----|-----|
+| Augments: `glass_cannon.json` | +50% Haste | +30% Haste |
+| Augments: `blood_frenzy.json` | +25% Haste | +15% Haste |
+| Augments: `overdrive.json` | +4%/stack (max 8) | +3%/stack (max 8) |
+| Augments: `phase_rush.json`, `predator.json`, `supersonic.json` | ~proportional nerfs | ~proportional nerfs |
+| Class `assassin/duelist/marksman/*` (all tiers) | haste values | −10 to −20% |
+| Race `ascended/celestial/darkin/dragonborn/golem/human/iceborn/vastaya/voidborn/watcher/wraith/yordle/*` (all tiers) | haste values | −1 to −2% per tier |
+
+#### Per-Player Movement Haste Cap (commit `0d22999`)
+
+New player-owned setting: [`PlayerData.movementHasteCapPercent`](src/main/java/com/airijko/endlessleveling/player/PlayerData.java) (0–100, default 100). Exposed as a slider `#MovementHasteCapSlider` in [`SettingsUIPage`](src/main/java/com/airijko/endlessleveling/ui/SettingsUIPage.java) + a new block in [`PlayerSettings.ui`](src/main/resources/Common/UI/Custom/Pages/Settings/PlayerSettings.ui) (77 lines). Persisted through [`PlayerDataManager`](src/main/java/com/airijko/endlessleveling/player/PlayerDataManager.java) under `options.movementHasteCapPercent`.
+
+Applied in [`SkillManager`](src/main/java/com/airijko/endlessleveling/player/SkillManager.java) at the movement-multiplier composition point:
+
+```java
+float capRatio = Math.max(0, Math.min(100, playerData.getMovementHasteCapPercent())) / 100.0f;
+float rawSkillBonus = hasteBreakdown.skillBonus();
+float scaledSkillBonus = rawSkillBonus > 0.0f ? rawSkillBonus * capRatio : rawSkillBonus;
+float cappedMultiplier = hasteBreakdown.raceMultiplier() * (1.0f + scaledSkillBonus);
+```
+
+Only scales the **positive** skill bonus (negative haste still applies at full magnitude) and only affects movement speed — damage-conversion and haste-based augments keep using the uncapped full haste stat.
+
+### Secondary Class Buff (`Balance` — 7.11.0)
+
+Commit `b280ae7`. Changes in [`ClassManager`](src/main/java/com/airijko/endlessleveling/classes/ClassManager.java) / [`ArchetypePassiveManager`](src/main/java/com/airijko/endlessleveling/passives/archetype/ArchetypePassiveManager.java) / [`SkillManager`](src/main/java/com/airijko/endlessleveling/player/SkillManager.java) / [`ProfileUIPage`](src/main/java/com/airijko/endlessleveling/ui/ProfileUIPage.java):
+
+- `secondaryPassiveScale`: `0.5D` → `1.0D` (non-innate passives now full strength from the secondary slot)
+- `secondaryInnatePassiveScale`: new `0.5D` constant (innate attribute gains stay halved)
+- Passive definitions now carry a `__el_class_slot` property (`primary`|`secondary`) so `SkillManager.computeClassInnateContribution` can route bonuses through separate level caps.
+- New `classes.innate_attribute_gain_level_caps_secondary` block in [`leveling.yml`](src/main/resources/leveling.yml) (default: 200, `life_force: ENDLESS`) — a Level 150 player's secondary class keeps accumulating innate gains past the primary's 100-level cap.
+
+World-settings balancing: [`endgame-dungeons.json`](src/main/resources/world-settings/endgame-dungeons.json), [`major-dungeons.json`](src/main/resources/world-settings/major-dungeons.json), [`shiva-dungeons.json`](src/main/resources/world-settings/shiva-dungeons.json), [`endless-dungeons.json`](src/main/resources/world-settings/endless-dungeons.json) — raised `At_Negative_Max_Difference` defense (0.20→0.30 / 0.30→0.35 for bosses) so high-level mobs shed less damage when overpowered.
+
+### Endgame Dungeons Rework (`Feature` / `Balance`)
+
+[`world-settings/endgame-dungeons.json`](src/main/resources/world-settings/endgame-dungeons.json) fully restructured — 193 lines → 199 lines, net ~375 lines of diff.
+
+#### Schema flatten
+
+The outer `World_Overrides` wrapper was dropped. World-key entries (`instance-*`) now sit at the JSON root, matching the flattened schema used elsewhere. Any external code that walks this file needs to skip the `World_Overrides` lookup step.
+
+```diff
+-{
+-  "World_Overrides": {
+-    "instance-endgame_frozen_dungeon-*": { ... },
+-    "instance-endgame_hedera_dungeon-*": { ... },
+-    "instance-endgame_void_realm-*": { ... }
+-  }
+-}
++{
++  "instance-endgame_void_realm-*": { ... },
++  "instance-endgame_oakwood_refuge-*": { ... },
++  "instance-endgame_eldergrove_hollow-*": { ... },
++  "instance-endgame_canopy_shrine-*": { ... }
++}
+```
+
+#### Dungeon roster changes
+
+| Dungeon Key | Status | Base Level | Boss |
+|-------------|--------|------------|------|
+| `instance-endgame_frozen_dungeon-*` | **Removed** (was `10-25`, Dragon_Frost lvl 30) | — | — |
+| `instance-endgame_hedera_dungeon-*` | **Removed** (was `30-45` → bumped to `60-75`, Hedera lvl 50 → 80) | — | — |
+| `instance-endgame_void_realm-*` | **Retained + bumped** | `50-65` → `80-95` → `100-115` | Endgame_Golem_Void lvl 70 → 100 → 110 |
+| `instance-endgame_oakwood_refuge-*` | **New** | `40-55` | Endgame_Oakwood_Warlord lvl 60, Warlord_Small lvl 55 |
+| `instance-endgame_eldergrove_hollow-*` | **New** | `70-85` | (no mob overrides — tiered scaling only) |
+| `instance-endgame_canopy_shrine-*` | **New** | `90-105` | (no mob overrides — tiered scaling only) |
+
+Every remaining / new dungeon uses `Mode: TIERED`, `Levels_Per_Tier: 20`, `Max: ENDLESS`, `Allowance_Mode: ABOVE`, `Range_Allowance: 10` — matches the Endless Dungeons tiering model so player-adaptation scales each dungeon upward indefinitely.
+
+#### Scaling / defense curve bumps
+
+Applied uniformly to every dungeon block in the file:
+
+| Field | 7.9.3 | 7.12.0 |
+|-------|-------|--------|
+| Base `Defense.At_Negative_Max_Difference` | `0.20` | `0.30` |
+| Base `Defense.At_Positive_Max_Difference` | `0.8` | `0.8` → `0.82` → `0.85` (per dungeon) |
+| Base `Defense.Above_Positive_Max_Difference` | `0.9` | `0.9` → `0.92` → `0.93` (per dungeon) |
+| Boss `Defense.At_Negative_Max_Difference` | `0.30` | `0.35` |
+| Boss `Defense.At_Positive_Max_Difference` | `0.9` | `0.92` |
+| Boss `Defense.Above_Positive_Max_Difference` | `0.975` | `0.98` |
+
+Void Realm also bumps base `Health.Base_Multiplier` 3.0→3.25 and `Damage.Base_Multiplier` 1.25→1.3, plus `Health.Per_Level` 0.075→0.06 (lower per-level multiplier because the base is higher). Eldergrove Hollow and Canopy Shrine ship with fresh base curves tuned to their level bands (2.75–3.1 health base, 1.2–1.3 damage base).
+
+#### Downstream impact
+
+- **Mob level resolution**: `MobLevelingManager.resolveMobLevelForEntity` now sees `endgame_oakwood_refuge`, `endgame_eldergrove_hollow`, `endgame_canopy_shrine` as valid world-key matches; old frozen/hedera lookups will fall through to `global.json`.
+- **Portal / gate mapping**: any portal items or gate definitions that still reference `instance-endgame_frozen_dungeon-*` / `instance-endgame_hedera_dungeon-*` should be reviewed — those worlds no longer have endgame-specific overrides.
+- **Dungeons UI**: `DungeonsUIPage` tier previews for the three new dungeons will read correctly via `previewTieredSummaryByWorldKey` once matching card entries are added to the `DUNGEONS` registry.
+
+### Mob Balance + Blacklist Flat-XP (`Balance` — 7.9.5 / 7.9.9)
+
+#### Common augment drop distribution (`235c587`)
+
+[`world-settings/global.json`](src/main/resources/world-settings/global.json):
+
+| Field | 7.9.4 | 7.9.5 |
+|-------|-------|-------|
+| `Per_Level` | `"1-3"` | `"0-3"` |
+| Weights | `1:0.22, 2:0.50, 3:0.28` | `0:0.15, 1:0.22, 2:0.42, 3:0.21` |
+
+15% chance of zero common augments per mob level now.
+
+#### Flat-XP for blacklisted mobs (`e0e94a3`)
+
+[`world-settings/global.json`](src/main/resources/world-settings/global.json):
+
+- `Gain_XP_From_Blacklisted_Mob: false` → `Flat_XP_For_Blacklisted_Mobs: true`
+- `Damage_Max_Difference.At_Negative_Max_Difference`: `0.75` → `0.6` → `0.75` (bumped then reverted in `def756d`)
+- `At_Positive_Max_Difference`: `1.5` → `1.35`
+- `Above_Positive_Max_Difference`: `3.0` → `2.0`
+
+[`LevelingManager.applyMobKillXpRules`](src/main/java/com/airijko/endlessleveling/leveling/LevelingManager.java) — the `skipLevelRangeChecks` parameter was renamed to `mobIsBlacklisted` and now triggers a flat-pass-through branch:
+
+```java
+if (mobIsBlacklisted) {
+    if (!rules.experienceRulesEnabled()) return 0.0D;
+    return baseXpAmount;  // baseXpAmount is already Additive_Minimum_XP (party-share scaled)
+}
+```
+
+Personal bonuses (luck, discipline, archetype XP_BONUS) still apply downstream in `addXp`; the level-range / scaling / globalMult stages are bypassed.
+
+### Mob Leveling Preview API (`Feature` — 7.9.9)
+
+[`MobLevelingManager.previewTieredSummaryByWorldKey(String worldKey, PlayerRef source)`](src/main/java/com/airijko/endlessleveling/leveling/MobLevelingManager.java) — 267-line net addition. Computes a `TieredWorldSummary` for a dungeon world identified by its world-settings override key (e.g. `"instance-endless_outlander_bridge-*"`) **without requiring the target world to be loaded**. Reads config straight from world-settings JSON so dungeon UI cards can show the tier a player would enter into before they actually teleport.
+
+Returns a new record field: `nextTierUpgradeLevel` — the player level at which the tier shifts one step up (`baseRange.max() + allowance + (tierOffset * levelsPerTier) + 1`). Party-aware via `resolvePartyAwareLevelByWorldKey`.
+
+Consumed by [`DungeonsUIPage`](src/main/java/com/airijko/endlessleveling/ui/DungeonsUIPage.java) to render pre-entry tier / level-range / boss-level / next-upgrade-level info on each dungeon card.
+
+### HUD Refresh Cadence Rework (`Feature` / `Fix` — 7.10.0)
+
+Commit `b670278`. [`HudRefreshSystem`](src/main/java/com/airijko/endlessleveling/systems/HudRefreshSystem.java) simplified from a three-branch tick (0.1 s dirty + 3.0 s fallback + movement-position sampler) to a two-branch tick:
+
+| Branch | Interval | Work |
+|--------|----------|------|
+| Dirty refresh | 0.1 s | Drains HUDs explicitly marked dirty; full state push |
+| Overlay refresh | 0.5 s | Pushes augment/passive overlay (duration bar, shield bar, stacking icons + progress + stack counts) to all active HUDs |
+
+Removed `lastFallbackPositions` map, `MOVEMENT_EPSILON_SQUARED` threshold, `PositionSample` inner class. Diff guards inside `pushHudState` drop unchanged property sets, so overlay-refresh is effectively a no-op when nothing changes.
+
+Also in `36fa96e`: a third branch for `DungeonsUIPage` tick-refresh at 1 Hz so the Outlander Bridge cooldown countdown label on the dungeons page stays visually live even when no HUDs are active.
+
+### Dungeons UI v2 (`Feature` — 7.9.6 / 7.9.8 / 7.9.9 / 7.11.2)
+
+[`DungeonsUIPage`](src/main/java/com/airijko/endlessleveling/ui/DungeonsUIPage.java) rebuilt incrementally across four releases (+463 / +83 / +105 / +181 lines).
+
+- **Category tabs**: `ALL` / `ENDLESS` / `ENDGAME` / `MAJOR` — side-panel filter cycling via `CATEGORY_CYCLE` constant.
+- **Dungeon metadata map** — `DUNGEONS: Map<String, DungeonMeta>` registry with display name, description, category, image path, detail-card selector.
+- **New dungeon cards**:
+  - [`010OutlanderBridgeCard.ui`](src/main/resources/Common/UI/Custom/Pages/Dungeons/Cards/Endless/010OutlanderBridgeCard.ui) (253 lines)
+  - [`020DailyBossesCard.ui`](src/main/resources/Common/UI/Custom/Pages/Dungeons/Cards/Endless/020DailyBossesCard.ui) (114 lines)
+  - [`030WeeklyBossesCard.ui`](src/main/resources/Common/UI/Custom/Pages/Dungeons/Cards/Endless/030WeeklyBossesCard.ui) (112 lines)
+- **Endgame / Major card polish** — `010FrozenDungeonCard.ui`, `020SwampDungeonCard.ui`, `030VoidGolemRealmCard.ui`, `010AzarothCard.ui`, `020KatherinaCard.ui`, `030BaronCard.ui` all rebuilt (+14 to +132 lines each) with tier-info rows, cooldown labels, and entry buttons.
+- **Cooldown live updates** — `DungeonsUIPage` reads `OutlanderBridgeRewardCooldowns.get()` and updates the status label each tick via the new 1 Hz `HudRefreshSystem` branch.
+- **Placeholder artwork**: `EndlessOutlanderBridgePlaceholder.png`, `EndlessDailyBossPlaceholder.png`, `EndlessWeeklyBossPlaceholder.png`.
+- **Patreon CTA**: `PATREON_URL = "https://www.patreon.com/cw/airijko"`.
+
+### Profile / Support / Servers / Nav (`Feature` — 7.9.8 / 7.11.2)
+
+Commit `3f81e1e` + `36fa96e`.
+
+- **New `Pages/Support/`** directory — rebuilt from the single old `Pages/SupportPage.ui` (364 lines) into [`Pages/Support/SupportPage.ui`](src/main/resources/Common/UI/Custom/Pages/Support/SupportPage.ui) (614 lines) + an `Icons/` subfolder (`Books.png`, `EndlessLevelingAvatarIcon.png`, `IconAlert.png`, `IconCheckmark.png`, `Portal.png`, `Wave.png`). [`SupportUIPage`](src/main/java/com/airijko/endlessleveling/ui/SupportUIPage.java) (+44 lines).
+- **New Servers page** — [`ServersUIPage`](src/main/java/com/airijko/endlessleveling/ui/ServersUIPage.java) (148 lines), [`ServersPage.ui`](src/main/resources/Common/UI/Custom/Pages/Servers/ServersPage.ui) (108 lines), [`ServerCarouselCard.ui`](src/main/resources/Common/UI/Custom/Pages/Servers/ServerCarouselCard.ui) (197 lines).
+- **Partner profile variant** — [`ProfilePagePartner.ui`](src/main/resources/Common/UI/Custom/Pages/Profile/ProfilePagePartner.ui) (26 lines) + [`ProfileUIPage`](src/main/java/com/airijko/endlessleveling/ui/ProfileUIPage.java) (+83 lines).
+- **Top nav bar** — [`TopNavBar.ui`](src/main/resources/Common/UI/Custom/Pages/Nav/TopNavBar.ui) (47 lines) + `Icons/Any_Book.png` / `NavQuestsIcon.png`. [`NavUIHelper`](src/main/java/com/airijko/endlessleveling/ui/NavUIHelper.java) (+41+43 lines) adds Quests icon binding for the new Quests addon.
+- **UI title integrity guard** — [`UiTitleIntegrityGuard`](src/main/java/com/airijko/endlessleveling/security/UiTitleIntegrityGuard.java) now supports an optional `expectedText` third field on `SelectorCheck`, and enforces `SupportDeveloperLabel = "Developer: Airijko"` on the new Support page.
+- **Leaderboards pagination** — [`LeaderboardsPage.ui`](src/main/resources/Common/UI/Custom/Pages/Leaderboards/LeaderboardsPage.ui) / [`LeaderboardsPagePartner.ui`](src/main/resources/Common/UI/Custom/Pages/Leaderboards/LeaderboardsPagePartner.ui): PREV button width 160→200, `#PageLabel` gets explicit `Anchor: (Width: 120)`, `ClassesPage.ui` status-info width 260→440 (commit `2ce1283`).
+
+### Builtin Config Preservation Fix (`Fix` — 7.9.9)
+
+Commit `e1773a2`. [`ConfigManager`](src/main/java/com/airijko/endlessleveling/managers/ConfigManager.java) — preserved-toggle list expanded from 3 keys to 11:
+
+```java
+private static final List<String> CONFIG_YML_PRESERVED_TOGGLES = List.of(
+    "force_builtin_config", "force_builtin_leveling", "force_builtin_events",
+    "force_builtin_races", "force_builtin_classes", "force_builtin_augments",
+    "force_builtin_languages", "force_builtin_world_settings",
+    "enable_builtin_races", "enable_builtin_classes", "enable_builtin_augments"
+);
+```
+
+Before: toggling `force_builtin_races` required flipping `force_builtin_config` off first, because the force-sync would otherwise overwrite the user's value on the next builtin-resource bump.
+
+### Endless Rifts and Raids (`New Sibling Mod — Referenced`)
+
+[`Endless-Rifts-and-Raids/`](../../Endless-Rifts-and-Raids/) — sibling Gradle project at `com.airijko:EndlessRiftsAndRaids:1.0.2`, depends on `com.airijko:EndlessLeveling >=7.2.0`. Not part of this EL changelog, but called out here because:
+
+1. EL ships the `EndlessLevelingAPI.WaveGateCompletedEvent` surface specifically to let Rifts (or anything that clears wave-based gates) notify subscribers like the new Quests addon.
+2. The [`EndlessQuestAndRewards`](../../EndlessQuestAndRewards/) premium addon lists it as an `OptionalDependency` and ships quests gated on its rank-based `wave_gate_complete` event (`weekly_outbreak_a_rank`, `daily_outbreak_any`).
+
+### Other Fixes
+
+- [`XpEventSystem`](src/main/java/com/airijko/endlessleveling/leveling/XpEventSystem.java) (+15 lines) — fires `notifyMobKill(playerUuid, mobType, null)` on every mob death, independent of XP gating (blacklist / level range). Keeps quest/objective tracking decoupled from XP eligibility.
+- [`ClassesUIPage`](src/main/java/com/airijko/endlessleveling/ui/ClassesUIPage.java) / [`RacesUIPage`](src/main/java/com/airijko/endlessleveling/ui/RacesUIPage.java) (+11 lines each, 7.9.8) — layout/refresh fixes paired with the `UiTitleIntegrityGuard` update.
+- [`leveling.yml`](src/main/resources/leveling.yml) — `LEVELING_YML_VERSION` 47 → 48 → 49.
+- [`VersionRegistry`](src/main/java/com/airijko/endlessleveling/managers/VersionRegistry.java): `CONFIG_YML_VERSION` 44 → 45, `BUILTIN_AUGMENTS_VERSION` 67 → 68, `BUILTIN_CLASSES_VERSION` 41 → 42, `BUILTIN_RACES_VERSION` 41 → 42, `BUILTIN_WORLD_SETTINGS_VERSION` 16 → 17.
+
+### Version Progression
+
+| Version | Commit | Date | Focus |
+|---------|--------|------|-------|
+| 7.9.4 | `2ce1283` | 2026-04-16 | Leaderboards pagination + ClassesPage status-info width |
+| 7.9.5 | `235c587` | 2026-04-16 | Mob rebalance — common augment drop weights, 15% zero-drop chance |
+| 7.9.6 | `5605a8e` | 2026-04-16 | Dungeons UI v2 — category tabs, per-dungeon cards |
+| 7.9.8 | `3f81e1e` | 2026-04-16 | Support/Servers pages rebuild, UiTitleIntegrityGuard expectedText |
+| (7.9.8→7.9.9 internal) | `e1773a2` | 2026-04-16 | Builtin config toggle preservation fix |
+| 7.9.9 | `e0e94a3` | 2026-04-16 | Blacklist flat-XP, tier preview API, damage-scaling tune |
+| 7.10.0 | `b670278` | 2026-04-16 | HUD refresh cadence rework (dirty + overlay only) |
+| (internal) | `def756d` | 2026-04-16 | Combat zone radius 30→25 |
+| (internal) | `92c85f1` | 2026-04-16 | Outlander aggro rewrite + 9 ELBridge NPC JSONs |
+| (internal) | `6612deb` | 2026-04-16 | Endless-dungeons world-settings tweak |
+| 7.11.0 | `b280ae7` | 2026-04-17 | Secondary class buff + world-settings defense bumps |
+| (internal) | `ee036db` | 2026-04-17 | Necromancer summon damage fixes + GC hot-path fixes |
+| (internal) | `908929f` | 2026-04-17 | Necromancer summon level-diff damage reduction |
+| (internal) | `57d0573` | 2026-04-17 | XP banking exploit fix + party TP fix |
+| (internal) | `bf0e42a` | 2026-04-17 | Party TP routing via live-world scan |
+| (internal) | `5bd80e1` | 2026-04-17 | Outlander Bridge music volume |
+| (internal) | `0fde9a6` | 2026-04-17 | Augments UI page rework |
+| 7.11.1 | `a0d058b` | 2026-04-17 | Bump for augments UI rework |
+| (internal) | `673db19` | 2026-04-17 | Haste nerfs across 96 JSONs |
+| 7.11.2 (first) | `975b14d` | 2026-04-17 | PR #9: summon knockback + non-combat targeting |
+| (internal) | `0d22999` | 2026-04-17 | Negative haste fix + per-player haste cap slider |
+| (internal) | `6ce8c0b` | 2026-04-17 | PR #10: JarFile close crash fix |
+| (internal) | `d173b44` | 2026-04-19 | PR #11: store-aware per-entity level override |
+| 7.11.2 (real) | `36fa96e` | 2026-04-20 | Public EL API (5 listener types), Quests nav icon, TopNavBar |
+| 7.12.0 | `1e0978f` | 2026-04-21 | Quests UI templates (`.ui` files) for premium addon |
+
+### Version Bump
+
+- [`manifest.json`](src/main/resources/manifest.json) — `Version`: `7.11.2` → `7.12.0`.
+- `gradle.properties` — `version=7.12.0`.
+
+### Files Changed Summary
+
+- **Java (new, core EL):** `ServersUIPage`, `NavUIHelper` (net new methods).
+- **Java (modified, core EL):** `MobDamageScalingSystem`, `ArmyOfTheDeadPassive`, `ArmyOfTheDeadDeathSystem`, `MobLevelingManager`, `LevelingManager`, `XpEventSystem`, `EndlessLevelingAPI`, `PlayerData`, `PlayerDataManager`, `SkillManager`, `ClassManager`, `ArchetypePassiveManager`, `ConfigManager`, `SettingsUIPage`, `SkillsUIPage`, `ProfileUIPage`, `AugmentsUIPage`, `DungeonsUIPage`, `SupportUIPage`, `ClassesUIPage`, `RacesUIPage`, `PartyManager`, `OutlanderBridgeWaveManager`, `OutlanderBridgeXpBank`, `HudRefreshSystem`, `ModularCardUiAppender`, `SafeUICommandBuilder`, `AugmentUnlockManager`, `UiTitleIntegrityGuard`, `PlayerHud`, `CommonAugment`, `EndlessLeveling`, `VersionRegistry`.
+- **Java (new, addon):** entire `EndlessQuestAndRewards/` tree — 17 files, ~2000 lines.
+- **UI (new, core EL):** `Pages/Quests/{QuestsPage, QuestRow, QuestStatsRow, QuestSectionHeader}.ui`, `Pages/Nav/TopNavBar.ui`, `Pages/Support/SupportPage.ui`, `Pages/Servers/{ServersPage, ServerCarouselCard}.ui`, `Pages/Profile/ProfilePagePartner.ui`, `Pages/Settings/PlayerSettings.ui`, 3 new dungeon cards under `Pages/Dungeons/Cards/Endless/`.
+- **UI (modified):** `DungeonsPage.ui`, 6 existing dungeon cards under `Cards/Endgame/` + `Cards/Major/`, `AugmentsPage.ui`, `LeaderboardsPage.ui`, `LeaderboardsPagePartner.ui`, `ClassesPage.ui`, `ProfilePage.ui`, `SettingsPage.ui`, `AddonsPage.ui`.
+- **Config/Data:** `quests.json`, `rewards.json` (new, addon); 9 new `ELBridge_Outlander_*.json` NPC defs; `world-settings/{global, endgame-dungeons, endless-dungeons, major-dungeons, shiva-dungeons}.json` rebalanced; 96 augment/class/race JSONs with haste nerfs.
+- **Audio:** `Outlander-Bridge.ogg` volume reduced.
+- **Deleted:** `OutlanderBridgeWaveManager.java.bak`, `OutlanderBridgeWaveManager.java.bak2`, `waves/aram_bridge_waves.json`, old `Pages/SupportPage.ui`.
+- **Images:** `EndlessLevelingAvatarIcon.png` (×3 paths), `NavQuestsIcon.png`, `Any_Book.png`, 6 Support icons, 3 dungeon-card placeholders.
+
 ## 2026-04-15 — 7.9.0 (compared to 7.8.3)
 
 A **content release** introducing the **Outlander Bridge** — a wave-based instanced dungeon with XP banking, tiered reward claiming, and a full HUD overlay. Seven escalating waves of Outlander mobs spawn across a flat arena bridge; XP earned during waves is banked rather than applied directly, split into **pending** (current wave, lost on death) and **saved** (checkpointed on wave clear). After victory or death, a 60-second reward window opens for claiming banked XP, subject to a 1-hour cooldown. The system ships with 4 new ECS systems, a wave orchestration manager, dedicated UI pages, combat music, a portal item, and a pre-built instance world.
