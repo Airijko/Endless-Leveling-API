@@ -1,0 +1,42 @@
+EndlessLeveling API — Source-Available Reference License
+Copyright (c) 2024–2026 Airijko
+
+This repository contains the PUBLIC API SURFACE of the EndlessLeveling
+Hytale plugin, published for reference and documentation purposes only.
+
+The full implementation ("EndlessLeveling Core") is proprietary and is
+NOT included in this repository.
+
+1. Grant
+   You are granted a non-exclusive, non-transferable, royalty-free license
+   to:
+     (a) view, read, and study the contents of this repository;
+     (b) quote or link to this repository for educational, review, or
+         interoperability-documentation purposes;
+     (c) reference these method signatures when writing plugins that
+         depend on the EndlessLeveling runtime through normal public
+         API usage.
+
+2. Restrictions
+   You may NOT, without prior written permission from the copyright holder:
+     (a) redistribute, republish, mirror, or sublicense this repository
+         or any substantial portion of it;
+     (b) use the contents of this repository to create a competing
+         implementation of the EndlessLeveling plugin;
+     (c) modify these files and present the result as an official
+         EndlessLeveling API;
+     (d) bundle these files with any shipped/compiled artifact.
+
+3. No compile target
+   This repository is NOT a build target. The Java source here is a
+   reference stub — it references internal EndlessLeveling types that
+   are not included. Do not treat this as a compilable module.
+
+4. No warranty
+   THE CONTENT IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+   OR IMPLIED. IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM,
+   DAMAGES, OR OTHER LIABILITY ARISING FROM THE USE OR INABILITY TO USE
+   THIS REPOSITORY.
+
+5. Termination
+   Any breach of sections 1 or 2 terminates this license automatically.
